@@ -6,7 +6,9 @@ requires-python = ">=3.11"
 
 # No runtime dependencies: fotmob needs no API key, so fetching uses
 # urllib.request and everything downstream uses the standard library.
-dependencies = []
+# tzdata is the exception: Windows ships no IANA tz database, and
+# zoneinfo.ZoneInfo("Europe/Oslo") needs it to assign kickoffs to a matchday.
+dependencies = ["tzdata; sys_platform == 'win32'"]
 
 [project.optional-dependencies]
 dev = ["pytest>=8.0"]

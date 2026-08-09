@@ -13,6 +13,10 @@ season simulation, and a local website — all standard library, no runtime depe
 - `sources/fotmob.py` — parameterized by league and season, no API key. `sources/cache.py`
   is a read-through disk cache that validates payloads **on read as well as on write**,
   so a stale or foreign-schema entry can never be served.
+- `refresh.py` — **one command to pull finished matches into the model.** Fetches both
+  divisions, normalizes, validates and rewrites the match files atomically
+  (`python -m elitetracker.refresh`). A bad fetch or a payload that fails validation
+  leaves the previous normalized data untouched.
 - `normalize/` — canonical `Match` and `Standing` schemas with per-source adapters
   (`fotmob`, `parse_bot`), so dedupe, ordering and validation are written once.
 - `validation/` — errors vs. warnings, non-zero exit on error.
@@ -85,7 +89,9 @@ Lillestrøm of 21 July and its replay on 21 August, so the raw feed has 241 rows
 - Clubs promoted from the third tier start at the ladder floor.
 
 ## 🔧 Next steps
-- [ ] Refresh data on a schedule (the cache supports it; nothing calls it yet).
+- [x] One-command refresh after each matchday: `python -m elitetracker.refresh` (fetches,
+      normalizes, validates, writes; `--no-force` to reuse a fresh cache entry).
+- [ ] Refresh on a schedule, e.g. a Windows Task Scheduler job pointing at the refresh command.
 - [ ] `elo-v3`: let ratings drift inside a simulation and sample scorelines so goal
       difference moves — the first two limits above.
 - [ ] Backtest elo-v2 against the seasons now held, and tune K and home advantage on it.
@@ -95,6 +101,9 @@ Lillestrøm of 21 July and its replay on 21 August, so the raw feed has 241 rows
 ```bash
 # fetch (cached; --force to refresh)
 .venv/bin/python -m elitetracker.sources.fotmob {matches|standings} {eliteserien|obosligaen} <season>
+
+# one-command refresh of the current season's results
+.venv/bin/python -m elitetracker.refresh [--season <year>] [--no-force]
 
 # normalize / validate
 .venv/bin/python -m elitetracker.normalize.fotmob {matches|standings} <raw.json> <out.json>
@@ -107,4 +116,4 @@ Lillestrøm of 21 July and its replay on 21 August, so the raw feed has 241 rows
 .venv/bin/python -m pytest
 ```
 
-275 tests, all passing.
+284 tests, all passing.

@@ -12,6 +12,7 @@ them as epoch milliseconds, which broke every downstream consumer.
 from __future__ import annotations
 
 import json
+import os
 import re
 from dataclasses import asdict, dataclass
 from pathlib import Path
@@ -126,8 +127,19 @@ def load_json(path: Path) -> list[dict[str, Any]]:
 
 
 def dump(matches: list[Match], path: Path) -> None:
+    """Write the records, replacing any existing file atomically.
+
+    The JSON is written to a temporary sibling and renamed into place, so a
+    crash mid-write never leaves a truncated fixture list masquerading as a
+    complete one.
+    """
     path.parent.mkdir(parents=True, exist_ok=True)
     records = [asdict(match) for match in matches]
-    with path.open("w", encoding="utf-8") as handle:
-        json.dump(records, handle, indent=2, ensure_ascii=False)
-        handle.write("\n")
+    temp = path.with_suffix(path.suffix + ".tmp")
+    try:
+        with temp.open("w", encoding="utf-8") as handle:
+            json.dump(records, handle, indent=2, ensure_ascii=False)
+            handle.write("\n")
+        os.replace(temp, path)
+    finally:
+        temp.unlink(missing_ok=True)
