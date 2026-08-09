@@ -32,9 +32,11 @@ from elitetracker.simulation.season import DEFAULT_SEED, SimulationConfig, simul
 
 @dataclass(frozen=True)
 class HistoryConfig:
-    # Fewer runs than the headline projection: this is a trend line, and it is
-    # computed once per snapshot rather than once per season.
-    simulations: int = 4_000
+    # Fewer runs than the headline projection: this is a trend line read off a
+    # chart, not a number read off a table, and it is computed ~20 times per
+    # league. At 10,000 the worst band is within 1.3pp, below what a stacked
+    # area chart can show.
+    simulations: int = 10_000
     seed: int = DEFAULT_SEED
     # Cap the number of snapshots so a long season cannot blow up start-up time.
     max_snapshots: int = 20

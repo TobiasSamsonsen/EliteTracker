@@ -3993,12 +3993,21 @@
     "status": {
       "utcTime": "2026-08-09T17:15:00.000Z",
       "halfs": {
-        "firstHalfStarted": "09.08.2026 19:15:00"
+        "firstHalfStarted": "09.08.2026 19:15:07",
+        "secondHalfStarted": "09.08.2026 20:19:08"
       },
       "periodLength": 45,
-      "started": false,
+      "finished": true,
+      "started": true,
       "cancelled": false,
-      "finished": false
+      "awarded": false,
+      "scoreStr": "2 - 1",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
     }
   },
   {

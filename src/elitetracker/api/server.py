@@ -70,15 +70,16 @@ class ReportStore:
         self._careers: dict[str, Any] | None = None
         self._reports: dict[tuple[str, int, str | None], Any] = {}
 
-    # Rewound views are for browsing, not for the headline projection, so they
-    # run fewer simulations. The Monte Carlo error at 3,000 runs is under a
-    # point of probability, which no one is reading off a history slider.
+    # A rewound view is dragged through, so it trades accuracy for latency.
+    # 25,000 runs holds the worst grid cell inside ~0.8pp -- half the model's
+    # own calibration error -- and both leagues rebuild in about a second.
+    # Results are cached per day, so that cost is paid once per date visited.
     def _configs(self, asof: str | None) -> tuple[SimulationConfig, HistoryConfig]:
         if not asof:
             return self.simulation, self.history
         return (
-            SimulationConfig(simulations=3_000, seed=self.simulation.seed),
-            HistoryConfig(simulations=1_200, seed=self.history.seed, max_snapshots=12),
+            SimulationConfig(simulations=25_000, seed=self.simulation.seed),
+            HistoryConfig(simulations=2_500, seed=self.history.seed, max_snapshots=8),
         )
 
     def careers(self) -> dict[str, Any]:

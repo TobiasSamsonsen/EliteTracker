@@ -244,6 +244,33 @@ class TestSimulation:
         with pytest.raises(ValueError, match="at least 1"):
             SimulationConfig(simulations=0)
 
+    def test_clubs_level_on_points_are_split_on_goal_difference(self):
+        """Regression: the tiebreak must not be read off the current table.
+
+        The table is already ordered by points, so using its order as the
+        tiebreak lets today's points decide a finish between clubs who end the
+        season level -- which is precisely what the tiebreak exists to avoid.
+
+        Here A leads on points but trails on goal difference. B is certain to
+        win its last match and draw level, at which point B must finish above A.
+        """
+        played = [
+            match(1, "A", "C", day=1, score=(1, 0)),
+            match(2, "A", "D", day=2, score=(1, 0)),
+            match(3, "B", "C", day=3, score=(5, 0)),
+            match(4, "D", "B", day=4, score=(1, 0)),
+        ]
+        # A: 6 pts, GD +2.  B: 3 pts, GD +4.
+        games = played + [match(5, "B", "C", day=9)]
+        projection = simulate_season(
+            games,
+            {"A": 1500, "B": 2400, "C": 1000, "D": 1500},
+            config=SimulationConfig(simulations=400),
+        )
+        by_team = {team.team: team for team in projection.teams}
+        assert by_team["B"].position_probabilities[0] > 0.9
+        assert by_team["B"].position_probabilities[0] > by_team["A"].position_probabilities[0]
+
     def test_counts_of_played_and_remaining(self):
         projection = simulate_season(
             two_team_season(played=[match(1, "A", "B", score=(1, 0))], remaining=3),

@@ -27,7 +27,23 @@ from elitetracker.model.table import TableRow, ranking_key, table_from_matches
 from elitetracker.normalize.matches import Match
 from elitetracker.normalize.standings import POINTS_FOR_DRAW, POINTS_FOR_WIN
 
-DEFAULT_SIMULATIONS = 10_000
+# Chosen by measurement, not taste. Monte Carlo error falls as 1/sqrt(N), and
+# the point of diminishing returns is set by the model's own accuracy: elo-v3
+# has a calibration error of 1.54 percentage points, so sampling error well
+# under a fifth of that is already invisible.
+#
+# Measured against a 4,000,000-run reference, worst single cell in the grid:
+#
+#      10,000   1.31 pp    0.07 s per league
+#      50,000   0.50 pp    0.37 s
+#     200,000   0.23 pp    1.43 s     <- here
+#   1,000,000   0.11 pp    7.2  s
+#  10,000,000   0.04 pp   72    s
+#
+# Past 200,000 each halving of sampling error costs four times the wait and
+# moves nothing anyone can see, on a number the model cannot justify to that
+# precision anyway.
+DEFAULT_SIMULATIONS = 200_000
 DEFAULT_SEED = 20260809
 
 
@@ -111,50 +127,81 @@ def simulate_season(
     if missing:
         raise KeyError(f"no rating for {missing}")
 
-    odds = _fixture_odds(matches, ratings, elo_config)
-    base_points = {team_id: row.points for team_id, row in by_id.items()}
-    # Frozen tiebreaks: simulated matches do not produce goals.
-    tiebreak = {
-        team_id: (-row.goal_difference, -row.goals_for, row.team) for team_id, row in by_id.items()
-    }
+    # The hot loop works on integer indices rather than team ids: a list slice
+    # per simulation instead of a dict rebuild, and one packed integer per club
+    # instead of a lambda that builds a tuple. Same maths, same seed, same
+    # numbers -- about 1.5x the throughput, which is 1.5x the accuracy for the
+    # same wait.
+    count = len(team_ids)
+    index_of = {team_id: index for index, team_id in enumerate(team_ids)}
+    rows = [by_id[team_id] for team_id in team_ids]
 
-    counts = {team_id: [0] * len(team_ids) for team_id in team_ids}
-    points_total = {team_id: 0 for team_id in team_ids}
+    odds = [
+        (index_of[home], index_of[away], home_chance, home_or_draw_chance)
+        for home, away, home_chance, home_or_draw_chance
+        in _fixture_odds(matches, ratings, elo_config)
+    ]
+    base_points = [row.points for row in rows]
+
+    # Frozen tiebreaks: simulated matches do not produce goals, so clubs level
+    # on simulated points are separated on goal difference, then goals scored,
+    # then name. This must NOT be read off the current table order, which has
+    # today's points already baked into it -- that would let points decide a
+    # tie that only exists because the points are equal.
+    tie_order = sorted(
+        range(count),
+        key=lambda index: (-rows[index].goal_difference, -rows[index].goals_for, rows[index].team),
+    )
+    tie_bonus = [0] * count
+    for rank, index in enumerate(tie_order):
+        tie_bonus[index] = count - 1 - rank
+
+    # points | tiebreak | index packed into one sortable integer, best first.
+    width = count.bit_length()
+    mask = (1 << width) - 1
+
+    counts = [[0] * count for _ in range(count)]
+    points_total = [0] * count
 
     rng = random.Random(config.seed)
     random_value = rng.random  # bound once; this is the hot path
 
     for _ in range(config.simulations):
-        points = dict(base_points)
-        for home_id, away_id, home_chance, home_or_draw_chance in odds:
+        points = base_points[:]
+        for home, away, home_chance, home_or_draw_chance in odds:
             roll = random_value()
             if roll < home_chance:
-                points[home_id] += POINTS_FOR_WIN
+                points[home] += POINTS_FOR_WIN
             elif roll < home_or_draw_chance:
-                points[home_id] += POINTS_FOR_DRAW
-                points[away_id] += POINTS_FOR_DRAW
+                points[home] += POINTS_FOR_DRAW
+                points[away] += POINTS_FOR_DRAW
             else:
-                points[away_id] += POINTS_FOR_WIN
+                points[away] += POINTS_FOR_WIN
 
-        order = sorted(team_ids, key=lambda team_id: (-points[team_id], *tiebreak[team_id]))
-        for index, team_id in enumerate(order):
-            counts[team_id][index] += 1
-            points_total[team_id] += points[team_id]
+        packed = [
+            (((points[index] << width) | tie_bonus[index]) << width) | index
+            for index in range(count)
+        ]
+        packed.sort(reverse=True)
+        for position, value in enumerate(packed):
+            index = value & mask
+            counts[index][position] += 1
+            points_total[index] += points[index]
 
     simulations = config.simulations
     projections = [
         TeamProjection(
             team_id=team_id,
-            team=by_id[team_id].team,
+            team=rows[index].team,
             rating=ratings[team_id],
             current_position=positions[team_id],
-            current_points=by_id[team_id].points,
-            current_goal_difference=by_id[team_id].goal_difference,
-            played=by_id[team_id].played,
-            position_probabilities=[count / simulations for count in counts[team_id]],
-            expected_points=points_total[team_id] / simulations,
+            current_points=rows[index].points,
+            current_goal_difference=rows[index].goal_difference,
+            played=rows[index].played,
+            position_probabilities=[value / simulations for value in counts[index]],
+            expected_points=points_total[index] / simulations,
         )
-        for team_id in team_ids
+        for index, team_id in enumerate(team_ids)
     ]
     projections.sort(key=lambda projection: (-projection.expected_points, projection.team))
 

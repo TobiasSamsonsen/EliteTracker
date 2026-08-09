@@ -140,6 +140,44 @@ The lesson worth keeping: four of these looked like wins against elo-v2 alone, a
 of them were the same calibration fix in disguise. Anything proposed next has to be
 measured *marginally*, with the mapping refitted on both sides.
 
+## 🎲 How many simulations a season needs
+
+Measured, not guessed. Monte Carlo error falls as 1/√N, so the question is where it stops
+mattering — and that is set by the model's own accuracy, not by the arithmetic. elo-v3's
+calibration error is **1.54 percentage points**; sampling error well under a fifth of that
+is already invisible.
+
+Worst single grid cell, against a 4,000,000-run reference (Eliteserien 2026, 111 fixtures
+remaining, six seeds per row):
+
+| simulations | RMS error | worst cell | title % error | time per league |
+|---|---|---|---|---|
+| 10,000 | 0.209 pp | 1.31 pp | 0.54 pp | 0.07 s |
+| 50,000 | 0.096 pp | 0.50 pp | 0.40 pp | 0.37 s |
+| **200,000** | **0.045 pp** | **0.23 pp** | **0.17 pp** | **1.43 s** |
+| 1,000,000 | 0.022 pp | 0.11 pp | 0.07 pp | 7.2 s |
+| 10,000,000 | ~0.007 pp | ~0.04 pp | ~0.02 pp | ~72 s |
+
+**Settled on 200,000** for the live projection. Its worst cell is 0.23pp, about a seventh
+of the model's own error; past that, each halving of sampling error costs four times the
+wait and moves nothing anyone can see. 10,000,000 buys precision two orders of magnitude
+finer than the model can justify, for fifty times the wait.
+
+Also set from the same curve: **10,000** per history snapshot (a trend line read off a
+chart, ~20 per league) and **25,000** for rewound views, which are dragged through and
+cached per date. Start-up is 7.0s; a rewound day builds in 0.95s.
+
+The simulation loop was rewritten to work on integer indices with a single packed sort
+key, which is **1.53× faster** (91k → 139k runs/second) and bit-identical — verified
+against the previous implementation on both divisions. That is 1.5× the accuracy for the
+same wait.
+
+One thing the numbers expose: the table prints title and relegation chances to one decimal
+(`53.9%`), but at 200,000 runs the sampling error alone is ±0.23pp, and the model's
+calibration error is ±1.54pp. **That decimal is noise in both directions.** Rounding those
+two columns to whole percent would be more honest than raising the simulation count — no
+achievable N makes a tenth of a percent meaningful here.
+
 ## ❗ Known limits (also stated on the site)
 - Ratings are held fixed for the rest of the season inside a simulation.
 - Simulated matches produce points but not scorelines, so ties break on goal difference
@@ -178,4 +216,4 @@ measured *marginally*, with the mapping refitted on both sides.
 .venv/bin/python -m pytest
 ```
 
-304 tests, all passing.
+305 tests, all passing.
