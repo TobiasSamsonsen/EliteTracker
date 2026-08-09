@@ -158,25 +158,28 @@ remaining, six seeds per row):
 | 1,000,000 | 0.022 pp | 0.11 pp | 0.07 pp | 7.2 s |
 | 10,000,000 | ~0.007 pp | ~0.04 pp | ~0.02 pp | ~72 s |
 
-**Settled on 200,000** for the live projection. Its worst cell is 0.23pp, about a seventh
-of the model's own error; past that, each halving of sampling error costs four times the
-wait and moves nothing anyone can see. 10,000,000 buys precision two orders of magnitude
-finer than the model can justify, for fifty times the wait.
+**Settled on 50,000** for the live projection. Its worst cell is 0.50pp — a third of the
+model's own error, and half of one displayed digit now that the table rounds to whole
+percent. Past that, each halving of sampling error costs four times the wait and buys
+precision beneath both the display and the model. 10,000,000 would be two orders of
+magnitude finer than the model can justify, for two hundred times the wait.
 
 Also set from the same curve: **10,000** per history snapshot (a trend line read off a
-chart, ~20 per league) and **25,000** for rewound views, which are dragged through and
-cached per date. Start-up is 7.0s; a rewound day builds in 0.95s.
+chart, ~20 per league). Rewound views keep the same 50,000 as the live one so the grid
+does not change fidelity as you drag back to today, but cut the history to 2,500 × 8 —
+otherwise a rewound day costs six seconds instead of one and a half. They are cached per
+date. Start-up is 5.1s; a rewound day builds in 1.4s.
 
 The simulation loop was rewritten to work on integer indices with a single packed sort
 key, which is **1.53× faster** (91k → 139k runs/second) and bit-identical — verified
 against the previous implementation on both divisions. That is 1.5× the accuracy for the
 same wait.
 
-One thing the numbers expose: the table prints title and relegation chances to one decimal
-(`53.9%`), but at 200,000 runs the sampling error alone is ±0.23pp, and the model's
-calibration error is ±1.54pp. **That decimal is noise in both directions.** Rounding those
-two columns to whole percent would be more honest than raising the simulation count — no
-achievable N makes a tenth of a percent meaningful here.
+The table's title and relegation columns print **whole percent**. Sampling error at 50,000
+is ±0.50pp and the model's calibration error is ±1.54pp, so a tenth of a percent there was
+noise dressed as precision, and no achievable simulation count would have fixed it. The
+em-dash threshold follows the precision, so a value that would round to a bare `0%` shows
+as nothing instead.
 
 ## ❗ Known limits (also stated on the site)
 - Ratings are held fixed for the rest of the season inside a simulation.

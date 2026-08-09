@@ -590,7 +590,7 @@ table.standings .muted { color: var(--ink-muted); }
 .meter--down .meter__fill { background: var(--meter-down); }
 
 .meter__value {
-  min-width: 3.1rem;
+  min-width: 2.6rem; /* "100%" is the widest it now gets */
   text-align: right;
   font-variant-numeric: tabular-nums;
 }

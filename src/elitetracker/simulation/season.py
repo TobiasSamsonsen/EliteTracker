@@ -35,15 +35,15 @@ from elitetracker.normalize.standings import POINTS_FOR_DRAW, POINTS_FOR_WIN
 # Measured against a 4,000,000-run reference, worst single cell in the grid:
 #
 #      10,000   1.31 pp    0.07 s per league
-#      50,000   0.50 pp    0.37 s
-#     200,000   0.23 pp    1.43 s     <- here
+#      50,000   0.50 pp    0.37 s     <- here
+#     200,000   0.23 pp    1.43 s
 #   1,000,000   0.11 pp    7.2  s
 #  10,000,000   0.04 pp   72    s
 #
-# Past 200,000 each halving of sampling error costs four times the wait and
-# moves nothing anyone can see, on a number the model cannot justify to that
-# precision anyway.
-DEFAULT_SIMULATIONS = 200_000
+# 50,000 keeps the worst cell at a third of the model's error while the page
+# still shows whole percent, where 0.5pp is half a displayed digit. Going
+# further buys precision beneath both the display and the model.
+DEFAULT_SIMULATIONS = 50_000
 DEFAULT_SEED = 20260809
 
 

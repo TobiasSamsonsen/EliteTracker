@@ -22,8 +22,16 @@ const el = (tag, className, text) => {
   return node;
 };
 
-const pct = (value, digits = 1) =>
-  value >= 0.9995 ? '100%' : value < 0.0005 ? '—' : `${(value * 100).toFixed(digits)}%`;
+/* The em-dash threshold follows the precision: anything that would print as a
+   bare 0% is shown as nothing instead, and the same at the top end. */
+const smallestShown = (digits) => 0.5 / 10 ** digits / 100;
+
+const pct = (value, digits = 1) => {
+  const smallest = smallestShown(digits);
+  if (value >= 1 - smallest) return '100%';
+  if (value < smallest) return '—';
+  return `${(value * 100).toFixed(digits)}%`;
+};
 
 const pctShort = (value) =>
   value < 0.005 ? '' : `${Math.round(value * 100)}`;
@@ -404,13 +412,19 @@ function renderStandings(report) {
   }
 }
 
+const METER_DIGITS = 0;
+
 /* `kind` is 'up' or 'down' -- the good column and the bad one. Colour is a
    second channel here, not the only one: the columns are labelled, fixed in
    place, and the percentage is printed beside the bar. */
 function meterCell(value, kind) {
   const clamped = Math.max(0, Math.min(1, value));
   const cell = el('td', 'num');
-  const meter = el('span', `meter meter--${kind}${clamped < 0.0005 ? ' meter--empty' : ''}`);
+  // Whole percent: sampling error is +/-0.5pp and the model's own calibration
+  // error is +/-1.5pp, so a tenth of a percent here would be noise dressed as
+  // precision. The bar carries the finer detail.
+  const empty = clamped < smallestShown(METER_DIGITS);
+  const meter = el('span', `meter meter--${kind}${empty ? ' meter--empty' : ''}`);
 
   const track = el('span', 'meter__track');
   const fill = el('span', 'meter__fill');
@@ -418,7 +432,7 @@ function meterCell(value, kind) {
   track.appendChild(fill);
 
   meter.appendChild(track);
-  meter.appendChild(el('span', 'meter__value', pct(value)));
+  meter.appendChild(el('span', 'meter__value', pct(value, METER_DIGITS)));
   cell.appendChild(meter);
   return cell;
 }
