@@ -82,8 +82,11 @@ def _check_fields(matches: list[Match], report: Report) -> None:
         elif goals != (None, None):
             report.error(f"match {match.match_id}: marked unplayed but carries score {goals}")
 
-        if match.venue is None:
-            report.warn(f"match {match.match_id}: no venue")
+    # Venue is optional and absent for whole sources, so report it once rather
+    # than once per match.
+    missing_venue = sum(1 for match in matches if match.venue is None)
+    if missing_venue:
+        report.warn(f"{missing_venue} of {len(matches)} matches have no venue")
 
 
 def _check_order(matches: list[Match], report: Report) -> None:

@@ -6,13 +6,12 @@ from elitetracker.normalize.matches import (
     Match,
     NormalizationError,
     deduplicate,
-    load_raw,
-    normalize,
-    normalize_match,
-    parse_date,
-    parse_result,
+    dump,
+    load_json,
+    parse_score,
     parse_time,
 )
+from elitetracker.normalize.parse_bot import normalize, normalize_match, parse_date
 
 
 def raw(**overrides):
@@ -65,28 +64,28 @@ class TestParseTime:
             parse_time(value)
 
 
-class TestParseResult:
+class TestParseScore:
     def test_splits_score(self):
-        assert parse_result("2 - 1") == (2, 1)
+        assert parse_score("2 - 1") == (2, 1)
 
     def test_tolerates_missing_spaces_and_en_dash(self):
-        assert parse_result("2-1") == (2, 1)
-        assert parse_result("2 – 1") == (2, 1)
+        assert parse_score("2-1") == (2, 1)
+        assert parse_score("2 – 1") == (2, 1)
 
     def test_draw(self):
-        assert parse_result("1 - 1") == (1, 1)
+        assert parse_score("1 - 1") == (1, 1)
 
     def test_goalless_draw_is_not_confused_with_missing(self):
-        assert parse_result("0 - 0") == (0, 0)
+        assert parse_score("0 - 0") == (0, 0)
 
     def test_unplayed_match(self):
-        assert parse_result("-") == (None, None)
-        assert parse_result(None) == (None, None)
+        assert parse_score("-") == (None, None)
+        assert parse_score(None) == (None, None)
 
     @pytest.mark.parametrize("value", ["2:1", "two - one", "2 - "])
     def test_unparseable_result_is_rejected(self, value):
         with pytest.raises(NormalizationError):
-            parse_result(value)
+            parse_score(value)
 
 
 class TestNormalizeMatch:
@@ -176,25 +175,23 @@ class TestNormalize:
         assert normalize([]) == []
 
 
-class TestLoadRaw:
+class TestLoadJson:
     def test_null_payload_is_rejected(self, tmp_path):
         path = tmp_path / "empty.json"
         path.write_text("null", encoding="utf-8")
         with pytest.raises(NormalizationError, match="never succeeded"):
-            load_raw(path)
+            load_json(path)
 
     def test_non_list_payload_is_rejected(self, tmp_path):
         path = tmp_path / "object.json"
         path.write_text('{"matches": []}', encoding="utf-8")
         with pytest.raises(NormalizationError, match="list of matches"):
-            load_raw(path)
+            load_json(path)
 
 
 class TestSerialization:
     def test_dates_survive_a_json_round_trip_as_strings(self, tmp_path):
         """Regression: the pandas version wrote dates as epoch milliseconds."""
-        from elitetracker.normalize.matches import dump
-
         path = tmp_path / "out.json"
         dump(normalize([raw()]), path)
         record = json.loads(path.read_text(encoding="utf-8"))[0]
@@ -202,8 +199,6 @@ class TestSerialization:
         assert isinstance(record["date"], str)
 
     def test_dumped_records_reload_as_matches(self, tmp_path):
-        from elitetracker.normalize.matches import dump
-
         path = tmp_path / "out.json"
         original = normalize([raw()])
         dump(original, path)
