@@ -181,6 +181,60 @@ noise dressed as precision, and no achievable simulation count would have fixed 
 em-dash threshold follows the precision, so a value that would round to a bare `0%` shows
 as nothing instead.
 
+## 🚑 elo-v4: player availability — investigated and rejected
+
+The proposal: rate a club lower for a match when its best players are injured, suspended
+or sold. Investigated properly — a full lineup corpus was fetched (**5,542 of 5,544
+matches, both divisions, 2015–2026, 100% coverage of both starting elevens**) and three
+formulations were backtested. All three failed, and a ceiling calculation says no version
+of this could have worked on this data.
+
+**The ceiling is the whole answer.** A squad-strength term shifts a club's effective
+rating by some amount each match; the spread of that shift caps what it can buy. Injecting
+a *random* shift of the same spread measures the cap directly, because a perfectly
+informative adjustment gains at most what a random one of the same size loses:
+
+| shift spread | ceiling on the gain | what it corresponds to |
+|---|---|---|
+| 5.5 Elo | 0.00018 | inferred player ability (ridge-APM) |
+| 8.6 Elo | 0.00055 | the injury list — the deployable version |
+| 13.8 Elo | 0.00161 | value of the starting XI, squad wealth removed |
+| 17.0 Elo | 0.00252 | value of the XI, best case and leaky |
+| — | **0.00635** | **minimum detectable effect (t = 2, n = 3,624)** |
+
+Knowing the exact starting eleven of both sides, perfectly, is worth at most **0.0025**
+log loss — about **40% of what it would take to distinguish from noise**, and a sixth of
+what the elo-v3 draw refit was worth. The deployable version, knowing only who is unfit,
+tops out at **0.00055**: 9% of the detection floor. The reason is that the scenario is
+rare — 67% of team-sides have nobody from their top five missing, and only 1.4% have three
+or more out.
+
+**Measured results, all three negative:**
+
+- **Inferred player ability** (ridge-regularised adjusted plus-minus over the corpus, no
+  external data, no anachronism): honest walk-forward **+0.0050 worse**, in both halves,
+  hit rate 0.5197 → 0.5124.
+- **Market value of the XI**: a real, correctly-signed effect (t = +3.15) but only 17 Elo
+  of spread on 22.5% coverage, best Δ = −0.0014 with a confidence interval spanning zero,
+  and the sign flips between halves. Leaky by construction: fotmob serves one present-day
+  value per player, so the anachronism premium can never be measured away.
+- **Injury list**: holdout **+0.0028 worse**, and the feed is provably back-stamped —
+  41.9% of `unavailable` entries name a player whose first appearance for that club comes
+  a median **545 days later**. It is reconstructed after the fact, not as it stood.
+
+**It is also unshippable regardless.** Upcoming fixtures return `lineupType: "unavailable"`
+with an empty `starters` list — the eleven does not exist until about an hour before
+kickoff. The site projects ~111 remaining fixtures, so the adjustment would be zero for
+every one of them.
+
+Sample size needed to detect the best (leaky) effect at t = 3: **n ≈ 12,950**. The entire
+replayable history of both Norwegian divisions since 2015 is 5,542 matches.
+
+By-product worth remembering: `https://www.fotmob.com/api/data/matchDetails?matchId=<id>`
+returns the same content as the match page at 313 kB against 1.19 MB — roughly a quarter
+the bytes, and far less gzipped. Nothing currently fetches match detail, but that is the
+route if anything ever does.
+
 ## ❗ Known limits (also stated on the site)
 - Ratings are held fixed for the rest of the season inside a simulation.
 - Simulated matches produce points but not scorelines, so ties break on goal difference
