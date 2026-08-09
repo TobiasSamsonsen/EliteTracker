@@ -55,7 +55,6 @@
         </div>
         <div class="scroller">
           <div class="grid-wrap">
-            <div class="band-strip" id="band-strip" aria-hidden="true"></div>
             <table class="grid" id="grid">
               <caption class="visually-hidden">Probability that each team finishes in each position</caption>
             </table>
@@ -77,20 +76,48 @@
           <table class="standings" id="standings">
             <thead>
               <tr>
-                <th class="pos" scope="col">#</th>
-                <th class="club" scope="col">Club</th>
-                <th class="num" scope="col">Pl</th>
-                <th class="num" scope="col">W</th>
-                <th class="num" scope="col">D</th>
-                <th class="num" scope="col">L</th>
-                <th class="num" scope="col">GF</th>
-                <th class="num" scope="col">GA</th>
-                <th class="num" scope="col">GD</th>
-                <th class="num" scope="col">Pts</th>
-                <th class="num sep" scope="col">Rating</th>
-                <th class="num" scope="col">xPts</th>
-                <th class="num" scope="col" id="head-first">Win it</th>
-                <th class="num" scope="col" id="head-last">Go down</th>
+                <th class="pos" scope="col" aria-sort="none" data-sort-col="position">
+                  <button type="button" class="sort-btn" data-sort-key="position"><span class="sort-btn__label">#</span><span class="visually-hidden">, position</span><span class="sort-btn__caret" aria-hidden="true"></span></button>
+                </th>
+                <th class="club" scope="col" aria-sort="none" data-sort-col="team">
+                  <button type="button" class="sort-btn" data-sort-key="team"><span class="sort-btn__label">Club</span><span class="visually-hidden">, club name</span><span class="sort-btn__caret" aria-hidden="true"></span></button>
+                </th>
+                <th class="num" scope="col" aria-sort="none" data-sort-col="played">
+                  <button type="button" class="sort-btn" data-sort-key="played"><span class="sort-btn__label">Pl</span><span class="visually-hidden">, matches played</span><span class="sort-btn__caret" aria-hidden="true"></span></button>
+                </th>
+                <th class="num" scope="col" aria-sort="none" data-sort-col="wins">
+                  <button type="button" class="sort-btn" data-sort-key="wins"><span class="sort-btn__label">W</span><span class="visually-hidden">, wins</span><span class="sort-btn__caret" aria-hidden="true"></span></button>
+                </th>
+                <th class="num" scope="col" aria-sort="none" data-sort-col="draws">
+                  <button type="button" class="sort-btn" data-sort-key="draws"><span class="sort-btn__label">D</span><span class="visually-hidden">, draws</span><span class="sort-btn__caret" aria-hidden="true"></span></button>
+                </th>
+                <th class="num" scope="col" aria-sort="none" data-sort-col="losses">
+                  <button type="button" class="sort-btn" data-sort-key="losses"><span class="sort-btn__label">L</span><span class="visually-hidden">, losses</span><span class="sort-btn__caret" aria-hidden="true"></span></button>
+                </th>
+                <th class="num" scope="col" aria-sort="none" data-sort-col="goals_for">
+                  <button type="button" class="sort-btn" data-sort-key="goals_for"><span class="sort-btn__label">GF</span><span class="visually-hidden">, goals for</span><span class="sort-btn__caret" aria-hidden="true"></span></button>
+                </th>
+                <th class="num" scope="col" aria-sort="none" data-sort-col="goals_against">
+                  <button type="button" class="sort-btn" data-sort-key="goals_against"><span class="sort-btn__label">GA</span><span class="visually-hidden">, goals against</span><span class="sort-btn__caret" aria-hidden="true"></span></button>
+                </th>
+                <th class="num" scope="col" aria-sort="none" data-sort-col="goal_difference">
+                  <button type="button" class="sort-btn" data-sort-key="goal_difference"><span class="sort-btn__label">GD</span><span class="visually-hidden">, goal difference</span><span class="sort-btn__caret" aria-hidden="true"></span></button>
+                </th>
+                <th class="num" scope="col" aria-sort="none" data-sort-col="points">
+                  <button type="button" class="sort-btn" data-sort-key="points"><span class="sort-btn__label">Pts</span><span class="visually-hidden">, points</span><span class="sort-btn__caret" aria-hidden="true"></span></button>
+                </th>
+                <th class="num sep" scope="col" aria-sort="none" data-sort-col="rating">
+                  <button type="button" class="sort-btn" data-sort-key="rating"><span class="sort-btn__label">Rating</span><span class="visually-hidden">, ELO rating</span><span class="sort-btn__caret" aria-hidden="true"></span></button>
+                </th>
+                <th class="num" scope="col" aria-sort="none" data-sort-col="expected_points">
+                  <button type="button" class="sort-btn" data-sort-key="expected_points"><span class="sort-btn__label">xPts</span><span class="visually-hidden">, expected final points</span><span class="sort-btn__caret" aria-hidden="true"></span></button>
+                </th>
+                <th class="num" scope="col" aria-sort="none" data-sort-col="up">
+                  <button type="button" class="sort-btn" data-sort-key="up"><span class="sort-btn__label" id="head-first">Win it</span><span class="visually-hidden" id="head-first-desc">, chance of finishing top</span><span class="sort-btn__caret" aria-hidden="true"></span></button>
+                </th>
+                <th class="num" scope="col" aria-sort="none" data-sort-col="down">
+                  <button type="button" class="sort-btn" data-sort-key="down"><span class="sort-btn__label" id="head-last">Go down</span><span class="visually-hidden" id="head-last-desc">, chance of relegation</span><span class="sort-btn__caret" aria-hidden="true"></span></button>
+                </th>
               </tr>
             </thead>
             <tbody></tbody>

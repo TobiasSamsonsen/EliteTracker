@@ -53,15 +53,24 @@
   --away: #e34948;
 
 
+  /* Outcome meters in the table. They borrow the qualification-marker colours
+     on purpose: the stripe on a row's leading edge and the bar in its "Win it"
+     column then mean the same thing in the same colour. Blue against red is
+     also the validated diverging pair, holding CVD dE 21.6 light / 19.2 dark
+     -- far clear of green against red, which manages only 12.4.
+
+     Drawn SOLID: diluted into pale washes these collapse to dE ~3, and the two
+     columns would read identically to a colour-blind viewer. Dark mode needs no
+     override, because --outcome-* is already redefined there. */
+  --meter-up: var(--outcome-good);
+  --meter-down: var(--outcome-bad);
+
   /* Division identity on the ladder: two categories, so two fixed hues. */
   --tier-1: #2a78d6;
   --tier-2: #eb6834;
 
   /* Reserved status hues for qualification bands. Each ships with a label. */
   --band-champion: #f2b705;
-  --band-europe: #2a78d6;
-  --band-playoff: #eb6834;
-  --band-relegation: #e34948;
 
   --shadow: 0 1px 2px rgb(13 26 34 / 0.06), 0 8px 24px -12px rgb(13 26 34 / 0.18);
 
@@ -106,14 +115,10 @@
     --draw: #b5b5ac;
     --away: #e66767;
 
-
     --tier-1: #3987e5;
     --tier-2: #d95926;
 
     --band-champion: #eda100;
-    --band-europe: #3987e5;
-    --band-playoff: #d95926;
-    --band-relegation: #e66767;
 
     --shadow: 0 1px 2px rgb(0 0 0 / 0.4), 0 8px 24px -12px rgb(0 0 0 / 0.6);
   }
@@ -149,14 +154,10 @@
   --draw: #b5b5ac;
   --away: #e66767;
 
-
   --tier-1: #3987e5;
   --tier-2: #d95926;
 
   --band-champion: #eda100;
-  --band-europe: #3987e5;
-  --band-playoff: #d95926;
-  --band-relegation: #e66767;
 
   --shadow: 0 1px 2px rgb(0 0 0 / 0.4), 0 8px 24px -12px rgb(0 0 0 / 0.6);
 }
@@ -430,14 +431,8 @@ table.grid tbody th .pos {
   z-index: 2;
 }
 
-/* Vertical zones behind the columns that carry meaning. */
-.band-strip {
-  display: flex;
-  gap: 2px;
-  margin: 0 0 0.35rem;
-  padding-left: var(--grid-label-width, 0);
-}
-
+/* One segment per column, marking what that finishing place is worth. Lives in
+   the table head (.grid__bands) so it inherits the column geometry. */
 .band-strip__seg {
   height: 3px;
   border-radius: 2px;
@@ -494,11 +489,55 @@ table.standings thead th {
   font-weight: 600;
   letter-spacing: 0.09em;
   text-transform: uppercase;
-  color: var(--ink-faint);
+  /* These label 14 controls, so they need text contrast: --ink-faint is
+     3.07:1 on the light panel, --ink-muted is 5.97:1. */
+  color: var(--ink-muted);
   border-bottom-color: var(--rule-strong);
 }
 
 table.standings tbody tr:hover { background: var(--panel-sunk); }
+
+/* Sortable headers. A real button so the keyboard and screen readers get it
+   for free; the <th> carries aria-sort. */
+/* The padding moves off the cell and onto the button, so the whole header cell
+   is clickable rather than just the few glyphs of the label. */
+#standings thead th { padding: 0; }
+
+.sort-btn {
+  appearance: none;
+  border: 0;
+  margin: 0;
+  padding: 0.55rem 0.6rem;
+  background: none;
+  font: inherit;
+  letter-spacing: inherit;
+  text-transform: inherit;
+  color: inherit;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 0.3em;
+  width: 100%;
+  min-height: 2.25rem; /* clears the 24px minimum target size */
+}
+
+.sort-btn:hover { color: var(--ink); }
+
+#standings thead th.num .sort-btn { justify-content: flex-end; }
+#standings thead th.club .sort-btn { justify-content: flex-start; }
+#standings thead th.pos .sort-btn { justify-content: center; }
+
+/* Reserve the caret's space so a column does not shift when it becomes the
+   sorted one. It inherits colour rather than taking an accent, which would
+   land at 4.42:1 against the light panel. */
+.sort-btn__caret {
+  display: inline-block;
+  min-width: 0.8em;
+  font-size: 0.9em;
+  line-height: 1;
+}
+
+table.standings th.is-sorted { color: var(--ink); }
 table.standings .num { width: 3.2rem; }
 table.standings .club { text-align: left; width: 100%; font-weight: 600; }
 table.standings .pos { text-align: center; width: 2.6rem; color: var(--ink-muted); }
@@ -519,21 +558,45 @@ table.standings .muted { color: var(--ink-muted); }
 
 
 
-/* A probability rendered as a thin bar behind its own number. */
+/* A probability as a solid bar next to its own number. The bar is at full
+   strength rather than washed out behind the text: at low opacity the green
+   and the red are the same colour to a deuteranope. */
 .meter {
-  position: relative;
-  display: block;
-  min-width: 4.5rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.45rem;
+  width: 100%;
+}
+
+.meter__track {
+  flex: none;
+  width: 2.5rem;
+  height: 0.45rem;
+  border-radius: 3px;
+  /* Not --panel-sunk: that is also the row hover colour, so the unfilled part
+     of the bar disappeared exactly when you pointed at it. */
+  background: var(--rule);
+  overflow: hidden;
 }
 
 .meter__fill {
-  position: absolute;
-  inset: 0 auto 0 0;
-  border-radius: 2px;
-  background: color-mix(in srgb, var(--home) 24%, transparent);
+  display: block;
+  height: 100%;
+  border-radius: 3px;
+  background: var(--meter-up);
 }
 
-.meter__value { position: relative; padding-inline: 0.35rem; }
+.meter--down .meter__fill { background: var(--meter-down); }
+
+.meter__value {
+  min-width: 3.1rem;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Nothing to show: drop the track so the column reads as empty, not as zero. */
+.meter--empty .meter__track { visibility: hidden; }
 
 /* ---------- season shape (stacked area) ---------------------------- */
 
@@ -602,13 +665,25 @@ table.standings .muted { color: var(--ink-muted); }
 
 /* ---------- rating ladder ----------------------------------------- */
 
-.ladder { padding: 1.4rem 1.25rem 1rem; }
+/* Dot geometry lives here and is read by both the track height and the JS that
+   places each dot, so the box can never be shorter than what it has to hold.
+   An earlier stale copy of these rules set the track to 2.1rem while the script
+   was still stacking dots 30px up, which is how they ended up outside the box. */
+.ladder {
+  padding: 1.4rem 1.25rem 2.1rem;
+  --ladder-dot: 11px;
+  --ladder-row-gap: 12px;
+  --ladder-rows: 3; /* replaced at run time by the real row count */
+  --ladder-floor: 7px;
+}
 
 .ladder__axis {
   position: relative;
   height: 2px;
   background: var(--rule-strong);
-  margin: 3.5rem 0 0;
+  /* Just enough to clear the dots; the axis belongs with the track, not adrift
+     below it. */
+  margin: 0.9rem 0 0;
 }
 
 .ladder__tick {
@@ -635,22 +710,26 @@ table.standings .muted { color: var(--ink-muted); }
    marker shape rather than by being put on different rows. */
 .ladder__track {
   position: relative;
-  height: 3.4rem;
+  /* floor + (rows - 1) gaps + one dot + the same headroom as the floor */
+  height: calc(
+    var(--ladder-floor) * 2 + (var(--ladder-rows) - 1) * var(--ladder-row-gap) + var(--ladder-dot)
+  );
   border-radius: 3px;
   background: var(--panel-sunk);
 }
 
 .ladder__team {
   position: absolute;
-  width: 11px;
-  height: 11px;
+  bottom: calc(var(--ladder-floor) + var(--ladder-row, 0) * var(--ladder-row-gap));
+  width: var(--ladder-dot);
+  height: var(--ladder-dot);
   border-radius: 50%;
-  transform: translateX(-5.5px);
+  transform: translateX(calc(var(--ladder-dot) / -2));
   cursor: default;
   transition: transform 0.12s var(--ease);
 }
 
-.ladder__team:hover { transform: translateX(-5.5px) scale(1.7); z-index: 3; }
+.ladder__team:hover { transform: translateX(calc(var(--ladder-dot) / -2)) scale(1.7); z-index: 3; }
 
 /* Filled for the top flight, hollow for the second: colour alone should not
    be carrying the division. */
@@ -664,57 +743,6 @@ table.standings .muted { color: var(--ink-muted); }
   border: 2.5px solid var(--tier-2);
 }
 
-.ladder__axis {
-  position: relative;
-  height: 2px;
-  background: var(--rule-strong);
-  margin: 3.5rem 0 0;
-}
-
-.ladder__tick {
-  position: absolute;
-  top: -0.4rem;
-  width: 2px;
-  height: 0.9rem;
-  background: var(--ink-faint);
-  transform: translateX(-1px);
-}
-
-.ladder__tick span {
-  position: absolute;
-  top: 1.1rem;
-  left: 50%;
-  transform: translateX(-50%);
-  font-size: 0.6875rem;
-  color: var(--ink-faint);
-  white-space: nowrap;
-}
-
-/* One lane per division, both on the shared axis below, so the comparison the
-   section is about is the thing you actually see. */
-
-.ladder__track {
-  position: relative;
-  height: 2.1rem;
-  border-radius: 3px;
-  background: var(--panel-sunk);
-}
-
-.ladder__team {
-  position: absolute;
-  bottom: 0.35rem;
-  width: 10px;
-  height: 10px;
-  border-radius: 50%;
-  transform: translateX(-5px);
-  border: 2px solid var(--panel);
-  cursor: default;
-  transition: transform 0.12s var(--ease);
-}
-
-.ladder__team:hover { transform: translateX(-5px) scale(1.7); z-index: 3; }
-.ladder__team[data-tier="1"] { background: var(--home); }
-.ladder__team[data-tier="2"] { background: var(--band-playoff); }
 
 /* ---------- fixtures ---------------------------------------------- */
 
@@ -935,4 +963,19 @@ footer {
 .career-table .up { color: var(--outcome-good); font-weight: 700; }
 .career-table .down { color: var(--outcome-bad); font-weight: 700; }
 
-table.standings tbody tr[role="button"] { cursor: pointer; }
+#standings tbody tr { cursor: pointer; }
+
+.club-btn {
+  appearance: none;
+  border: 0;
+  margin: 0;
+  padding: 0;
+  background: none;
+  font: inherit;
+  font-weight: 600;
+  color: inherit;
+  cursor: pointer;
+  text-align: left;
+}
+
+.club-btn:hover { text-decoration: underline; }

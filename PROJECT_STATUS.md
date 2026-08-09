@@ -42,7 +42,8 @@ season simulation, and a local website — all standard library, no runtime depe
   motion, mobile layout. `?league=`, `?season=`, `?team=`, `?career=` make any view linkable.
   - **The finish grid** — 16×16 heat matrix of finishing-position probability.
   - **Table** — standings, rating, expected points, title and relegation odds.
-    Picking a club opens its full rating history.
+    Every column sorts on click (`aria-sort`, keyboard-operable); the good and bad
+    probability columns carry blue and red bars. Picking a club opens its rating history.
   - **Season shape** — per-club stacked area of position probability over the season.
   - **The ladder** — both divisions on one line, sharing the rating scale.
   - **Career modal** — a club's rating across every season, plus a season-by-season table.
@@ -55,6 +56,11 @@ season simulation, and a local website — all standard library, no runtime depe
   Lightness stays monotone and the worst adjacent pair is ΔE 10.5 light / 11.3 dark.
 - Qualification markers and the division colours on the ladder are separate, labelled
   categorical marks, not part of the quantitative encoding.
+- **Table meters** reuse the qualification-marker colours — blue for the good column, red
+  for the bad — so a row's leading stripe and its "Win it" bar mean the same thing in the
+  same colour. Blue against red also holds CVD ΔE 21.6 light / 19.2 dark, well clear of
+  green against red (12.4). Bars are drawn solid: diluted into washes any such pair
+  collapses to ΔE ~3 and the two columns become indistinguishable.
 
 ## ⚠️ Decisions worth knowing
 

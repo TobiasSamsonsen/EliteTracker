@@ -2,7 +2,14 @@
    Plain modules, no framework: the whole payload is one JSON document and the
    page is a few pure render functions over it. */
 
-const state = { reports: null, league: 'eliteserien', season: null, careers: null };
+const state = {
+  reports: null,
+  league: 'eliteserien',
+  season: null,
+  careers: null,
+  // Default view is the league table as it actually stands.
+  sort: { key: 'position', dir: 1 },
+};
 
 const $ = (selector) => document.querySelector(selector);
 const el = (tag, className, text) => {
@@ -259,18 +266,74 @@ function renderOddsLegend() {
 
 /* ---------- standings --------------------------------------------- */
 
+/* Rows with the two derived probability columns folded in, so sorting can see
+   the same values the table shows. */
+function standingsRows(report) {
+  const bands = report.league.bands;
+  const relegation = bands.find((band) => band.tone === 'relegation');
+  const promotion = report.league.slug === 'obosligaen';
+  const sum = (values) => values.reduce((total, value) => total + value, 0);
+
+  return report.table.map((row) => ({
+    ...row,
+    // Promotion for the second tier is the top band, not just the title.
+    up: promotion ? sum(row.position_probabilities.slice(0, 2)) : row.position_probabilities[0],
+    down: relegation
+      ? sum(row.position_probabilities.slice(relegation.first - 1, relegation.last))
+      : 0,
+  }));
+}
+
+/* Position and club read naturally smallest-first; every other column is a
+   "more is notable" number, so it opens on the largest. */
+const SORT_ASCENDING_FIRST = new Set(['position', 'team']);
+
+function sortedStandings(rows) {
+  const { key, dir } = state.sort;
+  const compare = (a, b) => {
+    if (key === 'team') return a.team.localeCompare(b.team, 'nb') * dir;
+    const difference = (a[key] - b[key]) * dir;
+    // League position is the tiebreak, so equal values keep table order and
+    // the sort stays stable and predictable.
+    return difference || a.position - b.position;
+  };
+  return [...rows].sort(compare);
+}
+
+function toggleSort(key) {
+  if (!state.reports) return; // headers are bound at boot, before the first fetch lands
+  const opening = SORT_ASCENDING_FIRST.has(key) ? 1 : -1;
+  state.sort =
+    state.sort.key === key ? { key, dir: -state.sort.dir } : { key, dir: opening };
+  renderStandings(state.reports[state.league]);
+}
+
+function renderSortHeaders() {
+  for (const header of document.querySelectorAll('#standings th[data-sort-col]')) {
+    const active = header.dataset.sortCol === state.sort.key;
+    header.setAttribute('aria-sort', active ? (state.sort.dir === 1 ? 'ascending' : 'descending') : 'none');
+    header.classList.toggle('is-sorted', active);
+    const caret = header.querySelector('.sort-btn__caret');
+    if (caret) caret.textContent = active ? (state.sort.dir === 1 ? '\u25b2' : '\u25bc') : '';
+  }
+}
+
 function renderStandings(report) {
   const body = $('#standings tbody');
   body.replaceChildren();
 
   const bands = report.league.bands;
-  const relegation = bands.find((band) => band.tone === 'relegation');
   const count = report.table.length;
 
-  $('#head-first').textContent = report.league.slug === 'obosligaen' ? 'Go up' : 'Win it';
+  const promotion = report.league.slug === 'obosligaen';
+  $('#head-first').textContent = promotion ? 'Go up' : 'Win it';
+  $('#head-first-desc').textContent = promotion
+    ? ', chance of promotion'
+    : ', chance of finishing top';
   $('#head-last').textContent = 'Go down';
+  renderSortHeaders();
 
-  for (const row of report.table) {
+  for (const row of sortedStandings(standingsRows(report))) {
     const tr = el('tr');
     const band = bandFor(bands, row.position);
 
@@ -284,7 +347,18 @@ function renderStandings(report) {
     position.appendChild(document.createTextNode(String(row.position)));
     tr.appendChild(position);
 
-    tr.appendChild(el('td', 'club', row.team));
+    // The club name is the control. Marking the whole <tr> role="button" made
+    // every cell presentational, which hid the scores from screen readers and
+    // stopped the new aria-sort from ever being announced.
+    const club = el('td', 'club');
+    const clubButton = el('button', 'club-btn', row.team);
+    clubButton.type = 'button';
+    clubButton.addEventListener('click', (event) => {
+      event.stopPropagation();
+      openCareer(row.team_id, row.team);
+    });
+    club.appendChild(clubButton);
+    tr.appendChild(club);
     for (const key of ['played', 'wins', 'draws', 'losses', 'goals_for', 'goals_against']) {
       tr.appendChild(el('td', 'num muted', String(row[key])));
     }
@@ -296,40 +370,30 @@ function renderStandings(report) {
     tr.appendChild(el('td', 'num sep', row.rating.toFixed(0)));
     tr.appendChild(el('td', 'num muted', row.expected_points.toFixed(1)));
 
-    const first = row.position_probabilities[0];
-    const down = relegation
-      ? row.position_probabilities.slice(relegation.first - 1, relegation.last).reduce((a, b) => a + b, 0)
-      : 0;
-    // Promotion for the second tier is the top band, not just the title.
-    const up = report.league.slug === 'obosligaen'
-      ? row.position_probabilities.slice(0, 2).reduce((a, b) => a + b, 0)
-      : first;
+    tr.appendChild(meterCell(row.up, 'up'));
+    tr.appendChild(meterCell(row.down, 'down'));
 
-    tr.appendChild(meterCell(up, count));
-    tr.appendChild(meterCell(down, count));
-
-    // Picking a row opens that club's full rating history.
-    tr.tabIndex = 0;
-    tr.setAttribute('role', 'button');
-    tr.setAttribute('aria-label', `Show ${row.team}'s rating history`);
-    const choose = () => openCareer(row.team_id, row.team);
-    tr.addEventListener('click', choose);
-    tr.addEventListener('keydown', (event) => {
-      if (event.key === 'Enter' || event.key === ' ') {
-        event.preventDefault();
-        choose();
-      }
-    });
+    // Clicking anywhere on the row is a mouse convenience on top of that
+    // button; it adds no keyboard or ARIA semantics of its own.
+    tr.addEventListener('click', () => openCareer(row.team_id, row.team));
     body.appendChild(tr);
   }
 }
 
-function meterCell(value, count) {
+/* `kind` is 'up' or 'down' -- the good column and the bad one. Colour is a
+   second channel here, not the only one: the columns are labelled, fixed in
+   place, and the percentage is printed beside the bar. */
+function meterCell(value, kind) {
+  const clamped = Math.max(0, Math.min(1, value));
   const cell = el('td', 'num');
-  const meter = el('span', 'meter');
+  const meter = el('span', `meter meter--${kind}${clamped < 0.0005 ? ' meter--empty' : ''}`);
+
+  const track = el('span', 'meter__track');
   const fill = el('span', 'meter__fill');
-  fill.style.width = `${Math.max(0, Math.min(1, value)) * 100}%`;
-  meter.appendChild(fill);
+  fill.style.width = `${clamped * 100}%`;
+  track.appendChild(fill);
+
+  meter.appendChild(track);
   meter.appendChild(el('span', 'meter__value', pct(value)));
   cell.appendChild(meter);
   return cell;
@@ -615,6 +679,7 @@ function renderLadder(reports) {
   // splitting them into rows hid exactly that. Division stays legible through
   // colour and marker shape rather than through position.
   const track = el('div', 'ladder__track');
+  // One entry per stacked row, holding the right-most x placed on it.
   const rows = [];
   for (const team of [...teams].sort((a, b) => a.rating - b.rating)) {
     const x = position(team.rating);
@@ -625,7 +690,9 @@ function renderLadder(reports) {
     const dot = el('span', 'ladder__team');
     dot.dataset.tier = String(team.tier);
     dot.style.left = `${x}%`;
-    dot.style.bottom = `${6 + (row % 3) * 12}px`;
+    // The row offset and the track height are both derived from --ladder-*
+    // in the stylesheet, so a dot cannot be placed outside its box.
+    dot.style.setProperty('--ladder-row', String(row));
     dot.addEventListener('pointerenter', (event) =>
       showTooltip(event, `<b>${team.team}</b><br>Rating ${team.rating.toFixed(0)} · ${team.league}`)
     );
@@ -633,6 +700,10 @@ function renderLadder(reports) {
     dot.addEventListener('pointerleave', hideTooltip);
     track.appendChild(dot);
   }
+  // Tell the stylesheet how tall the track has to be. Wrapping the row index
+  // instead would silently stack two clubs on top of each other the first time
+  // a season needs a fourth row.
+  $('.ladder').style.setProperty('--ladder-rows', String(Math.max(1, rows.length)));
   holder.appendChild(track);
 
   const legend = $('#ladder-legend');
@@ -1014,6 +1085,10 @@ function wire() {
     drawShape(state.reports[state.league], event.target.value);
   });
 
+  for (const button of document.querySelectorAll('#standings .sort-btn')) {
+    button.addEventListener('click', () => toggleSort(button.dataset.sortKey));
+  }
+
   $('#season-select').addEventListener('change', async (event) => {
     await loadSeason(Number(event.target.value));
   });
@@ -1033,6 +1108,18 @@ function wire() {
 
 /* ?league=obosligaen&team=Viking makes any view linkable. Team is matched on
    name so a shared link stays readable. */
+/* ?sort=rating&dir=desc — the table view is linkable like the rest. */
+function applySortParameter() {
+  const params = new URLSearchParams(window.location.search);
+  const key = params.get('sort');
+  if (!key) return;
+  const known = document.querySelector(`#standings th[data-sort-col="${CSS.escape(key)}"]`);
+  if (!known) return;
+  const dir = params.get('dir') === 'asc' ? 1 : params.get('dir') === 'desc' ? -1
+    : SORT_ASCENDING_FIRST.has(key) ? 1 : -1;
+  state.sort = { key, dir };
+}
+
 function applyLeagueParameter() {
   const league = new URLSearchParams(window.location.search).get('league');
   if (!league || !state.reports[league]) return;
@@ -1118,6 +1205,7 @@ async function boot() {
     $('#status').hidden = true;
     $('#content').hidden = false;
     applyLeagueParameter();
+    applySortParameter();
     render();
 
     const wantedSeason = Number(new URLSearchParams(window.location.search).get('season'));
