@@ -1,0 +1,25 @@
+[project]
+name = "elitetracker"
+version = "0.1.0"
+description = "ELO-based prediction and ranking for Eliteserien and OBOS-ligaen (2026 season)"
+requires-python = ">=3.11"
+
+# Runtime dependencies are only needed for fetching from remote sources.
+# Normalization, validation and (later) the ELO model use the standard library.
+dependencies = [
+    "requests>=2.31",
+    "python-dotenv>=1.0",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=8.0"]
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
