@@ -471,11 +471,11 @@ table.standings td {
   white-space: nowrap;
 }
 
+/* Not sticky: .scroller sets overflow-x, which makes it the sticky scrollport,
+   so a top offset would push the header down over the first rows instead of
+   pinning it to the window. */
 table.standings thead th {
-  position: sticky;
-  top: 60px;
   background: var(--panel);
-  z-index: 1;
   font-size: 0.6875rem;
   font-weight: 600;
   letter-spacing: 0.09em;
@@ -763,6 +763,5 @@ footer {
 @media (max-width: 760px) {
   .fixture { grid-template-columns: 1fr; gap: 0.5rem; }
   .fixture__when { order: -1; }
-  table.standings thead th { top: 0; }
   .hero__meta { gap: 0.4rem 1.25rem; }
 }

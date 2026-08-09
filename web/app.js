@@ -825,6 +825,11 @@ async function boot() {
     applyLeagueParameter();
     render();
     applyTeamParameter();
+    // The browser resolved any #fragment while the content was still hidden,
+    // so re-run it now that the sections exist.
+    if (window.location.hash) {
+      document.querySelector(window.location.hash)?.scrollIntoView();
+    }
   } catch (error) {
     $('#status').textContent = `Could not load the season: ${error.message}. Is the server running?`;
   }
