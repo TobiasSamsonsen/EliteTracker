@@ -1,0 +1,189 @@
+<!doctype html>
+<html lang="en" data-theme="">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>EliteTracker — Norwegian football, 2026</title>
+<meta name="description" content="ELO ratings and simulated finishing positions for Eliteserien and OBOS-ligaen, 2026.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:ital,wdth,wght@0,62..125,400..800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/styles.css">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'><rect width='16' height='16' rx='3' fill='%232a78d6'/><rect x='3' y='9' width='2.5' height='4' fill='white'/><rect x='6.75' y='6' width='2.5' height='7' fill='white'/><rect x='10.5' y='3' width='2.5' height='10' fill='white'/></svg>">
+</head>
+<body>
+
+<header class="masthead">
+  <div class="shell masthead__inner">
+    <div class="wordmark">EliteTracker <span>elo-v1</span></div>
+
+    <div class="switch" role="group" aria-label="Choose a division">
+      <button type="button" data-league="eliteserien" aria-pressed="true">Eliteserien</button>
+      <button type="button" data-league="obosligaen" aria-pressed="false">OBOS-ligaen</button>
+    </div>
+
+    <div class="switch" role="group" aria-label="Colour theme">
+      <button type="button" data-theme-choice="light" aria-pressed="false">Light</button>
+      <button type="button" data-theme-choice="dark" aria-pressed="false">Dark</button>
+    </div>
+  </div>
+</header>
+
+<main class="shell" id="app">
+  <div class="status" id="status">Loading the season…</div>
+
+  <div id="content" hidden>
+
+    <section class="hero">
+      <h1 id="hero-title">Where everyone finishes</h1>
+      <p id="hero-lede"></p>
+      <div class="hero__meta label" id="hero-meta"></div>
+    </section>
+
+    <!-- Signature: the finishing-position probability matrix. -->
+    <section>
+      <div class="panel">
+        <div class="panel__head">
+          <div>
+            <h2>The finish grid</h2>
+            <p>Every team against every finishing position. Darker means more likely. Read a row to see one team's range; read a column to see who is competing for that place.</p>
+          </div>
+          <div class="label" id="grid-count"></div>
+        </div>
+        <div class="scroller">
+          <div class="grid-wrap">
+            <div class="band-strip" id="band-strip" aria-hidden="true"></div>
+            <table class="grid" id="grid">
+              <caption class="visually-hidden">Probability that each team finishes in each position</caption>
+            </table>
+          </div>
+        </div>
+        <div class="legend" id="grid-legend"></div>
+      </div>
+    </section>
+
+    <section>
+      <div class="panel">
+        <div class="panel__head">
+          <div>
+            <h2>Table</h2>
+            <p>Live standings, the rating the model gives each side, and the points it expects them to end on.</p>
+          </div>
+        </div>
+        <div class="scroller">
+          <table class="standings" id="standings">
+            <thead>
+              <tr>
+                <th class="pos" scope="col">#</th>
+                <th class="club" scope="col">Club</th>
+                <th class="num" scope="col">Pl</th>
+                <th class="num" scope="col">W</th>
+                <th class="num" scope="col">D</th>
+                <th class="num" scope="col">L</th>
+                <th class="num" scope="col">GF</th>
+                <th class="num" scope="col">GA</th>
+                <th class="num" scope="col">GD</th>
+                <th class="num" scope="col">Pts</th>
+                <th class="num sep" scope="col">Rating</th>
+                <th class="num" scope="col">xPts</th>
+                <th class="num" scope="col" id="head-first">Win it</th>
+                <th class="num" scope="col" id="head-last">Go down</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+        <div class="legend" id="band-legend"></div>
+      </div>
+    </section>
+
+    <section>
+      <div class="panel">
+        <div class="panel__head">
+          <div>
+            <h2>Season shape</h2>
+            <p>One club's whole range of outcomes across the season. Each band is a finishing position; its thickness is how likely that place looked on the day. The season is re-simulated from scratch at each date, using only results known by then. The axis is the calendar, not the round number — rounds are not played in order.</p>
+          </div>
+          <div class="label" id="shape-rounds"></div>
+        </div>
+        <div class="shape">
+          <div class="shape__controls">
+            <label class="label" for="shape-team">Club</label>
+            <select id="shape-team"></select>
+            <span class="ramp-legend">
+              <span class="label">1st</span>
+              <span class="ramp-legend__bar" role="img" aria-label="Colour ramp from first place to last place"></span>
+              <span class="label" id="ramp-last">16th</span>
+            </span>
+          </div>
+          <svg class="chart" id="shape-chart" role="img" aria-labelledby="shape-desc"></svg>
+          <p class="visually-hidden" id="shape-desc"></p>
+          <div class="shape__summary" id="shape-summary"></div>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="panel">
+        <div class="panel__head">
+          <div>
+            <h2>The ladder</h2>
+            <p>Both divisions share one rating scale. That is how a promoted champion can start above a side that just went down — and it is the only place the two leagues are compared directly.</p>
+          </div>
+        </div>
+        <div class="ladder">
+          <div id="ladder-lanes"></div>
+          <div class="ladder__axis" id="ladder-axis"></div>
+        </div>
+        <div class="legend" id="ladder-legend"></div>
+      </div>
+    </section>
+
+    <section>
+      <div class="panel">
+        <div class="panel__head">
+          <div>
+            <h2>Next up</h2>
+            <p>The model's three-way odds for the coming fixtures.</p>
+          </div>
+          <div class="label" id="fixture-count"></div>
+        </div>
+        <div class="fixtures" id="fixtures"></div>
+        <div class="legend" id="odds-legend"></div>
+      </div>
+    </section>
+
+    <section>
+      <div class="panel">
+        <div class="panel__head">
+          <div>
+            <h2>Model card</h2>
+            <p>Every number above comes from these settings and this data. Nothing is fetched while you read.</p>
+          </div>
+        </div>
+        <dl class="model-grid" id="model-grid"></dl>
+        <div class="caveats">
+          <div class="label">Known limits</div>
+          <ul>
+            <li>Ratings are held fixed for the rest of the season. A team does not get stronger inside a simulation by winning simulated matches.</li>
+            <li>Simulated matches produce points but not scorelines, so ties are broken on goal difference as it stands today. That slightly favours teams already ahead on it.</li>
+            <li>Starting ratings come only from where each club finished in 2025. Transfers, injuries and European commitments are not modelled.</li>
+            <li>Two OBOS-ligaen clubs were promoted from the third tier, which is outside this project's data. They start at the bottom of the ladder and are corrected only by results.</li>
+            <li>Season shape is sampled by date, not by round. Rounds run out of order — Eliteserien 2026 plays round 12 after rounds 13 to 16 — so a round axis would show results before they happened.</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+  </div>
+</main>
+
+<footer class="shell">
+  <div>EliteTracker — Eliteserien and OBOS-ligaen, 2026 season. Match data and 2025 final tables from fotmob. Served locally by Python; no data leaves this machine.</div>
+</footer>
+
+<div id="tooltip" role="tooltip" aria-hidden="true"></div>
+
+<script src="/app.js"></script>
+</body>
+</html>

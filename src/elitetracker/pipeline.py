@@ -19,6 +19,7 @@ from elitetracker.model.ratings import build_rating_table
 from elitetracker.model.table import table_from_matches
 from elitetracker.normalize.matches import Match
 from elitetracker.normalize.standings import load_standings
+from elitetracker.simulation.history import HistoryConfig, build_history
 from elitetracker.simulation.season import SeasonProjection, SimulationConfig, simulate_season
 
 NORMALIZED_DIR = Path("data/normalized")
@@ -104,8 +105,9 @@ def build_report(
     elo_config: EloConfig | None = None,
     seeding: SeedingConfig | None = None,
     simulation: SimulationConfig | None = None,
+    history: HistoryConfig | None = None,
 ) -> dict[str, Any]:
-    """Ratings, live table, upcoming odds and finishing-position matrix."""
+    """Ratings, live table, upcoming odds, finishing-position matrix and its history."""
     spec = LEAGUE_SPECS[slug]
     elo_config = elo_config or EloConfig()
 
@@ -146,6 +148,38 @@ def build_report(
         "table": _table_payload(matches, rating_table.ratings, projection),
         "fixtures": _fixtures_payload(matches, rating_table.ratings, elo_config),
         "results": _results_payload(matches),
+        "history": _history_payload(
+            build_history(matches, all_matches, seeds, elo_config=elo_config, config=history),
+            {row.team_id: row.team for row in table_from_matches(matches)},
+        ),
+    }
+
+
+def _history_payload(
+    snapshots: list[Any], names: dict[str, str]
+) -> dict[str, Any]:
+    """Position probabilities per team over time, shaped for a stacked area chart.
+
+    The axis is calendar dates. Rounds are not played in order, so they cannot
+    carry the timeline; `latest_round` is along only as a label.
+    """
+    return {
+        "dates": [snapshot.date for snapshot in snapshots],
+        "latest_rounds": [snapshot.latest_round for snapshot in snapshots],
+        "matches_played": [snapshot.matches_played for snapshot in snapshots],
+        "teams": [
+            {
+                "team_id": team_id,
+                "team": names.get(team_id, team_id),
+                # positions[i][p] = chance of finishing (p+1)th at snapshot i
+                "positions": [
+                    [round(value, 5) for value in snapshot.positions[team_id]]
+                    for snapshot in snapshots
+                ],
+                "ratings": [round(snapshot.ratings[team_id], 1) for snapshot in snapshots],
+            }
+            for team_id in names
+        ],
     }
 
 
@@ -230,11 +264,14 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--root", type=Path, default=NORMALIZED_DIR)
     parser.add_argument("--simulations", type=int, default=SimulationConfig.simulations)
     parser.add_argument("--seed", type=int, default=SimulationConfig.seed)
+    parser.add_argument("--history-simulations", type=int, default=HistoryConfig.simulations)
     parser.add_argument("--output", type=Path, help="write the full report as JSON")
     args = parser.parse_args(argv)
 
     reports = build_all(
-        args.root, simulation=SimulationConfig(simulations=args.simulations, seed=args.seed)
+        args.root,
+        simulation=SimulationConfig(simulations=args.simulations, seed=args.seed),
+        history=HistoryConfig(simulations=args.history_simulations, seed=args.seed),
     )
 
     for slug, report in reports.items():

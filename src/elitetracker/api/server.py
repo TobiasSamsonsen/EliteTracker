@@ -1,0 +1,175 @@
+"""Backend API for the EliteTracker site, on the standard library alone.
+
+Reports are built once at start-up (a full run is well under a second) and held
+in memory, so page loads never trigger a simulation and never touch the network.
+``--reload`` rebuilds on every request instead, which is what you want while
+editing the model.
+
+    python -m elitetracker.api.server --port 8000
+
+Routes:
+    GET /                      the site
+    GET /api/health            build status
+    GET /api/report            every league
+    GET /api/report/<slug>     one league
+"""
+
+from __future__ import annotations
+
+import argparse
+import json
+import mimetypes
+import threading
+from functools import partial
+from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+from pathlib import Path
+from typing import Any
+
+from elitetracker.model.elo import MODEL_VERSION, EloConfig
+from elitetracker.pipeline import LEAGUE_SPECS, NORMALIZED_DIR, build_all
+from elitetracker.simulation.season import SimulationConfig
+
+WEB_DIR = Path(__file__).resolve().parents[3] / "web"
+
+
+class ReportStore:
+    """Holds the built reports. Rebuilds are serialized behind a lock."""
+
+    def __init__(
+        self,
+        root: Path = NORMALIZED_DIR,
+        *,
+        elo_config: EloConfig | None = None,
+        simulation: SimulationConfig | None = None,
+        always_reload: bool = False,
+    ) -> None:
+        self.root = root
+        self.elo_config = elo_config or EloConfig()
+        self.simulation = simulation or SimulationConfig()
+        self.always_reload = always_reload
+        self._lock = threading.Lock()
+        self._reports: dict[str, Any] | None = None
+
+    def build(self) -> dict[str, Any]:
+        return build_all(self.root, elo_config=self.elo_config, simulation=self.simulation)
+
+    def reports(self) -> dict[str, Any]:
+        with self._lock:
+            if self._reports is None or self.always_reload:
+                self._reports = self.build()
+            return self._reports
+
+
+class Handler(BaseHTTPRequestHandler):
+    server_version = "EliteTracker"
+    protocol_version = "HTTP/1.1"
+
+    def __init__(self, *args: Any, store: ReportStore, web_dir: Path, **kwargs: Any) -> None:
+        self.store = store
+        self.web_dir = web_dir
+        super().__init__(*args, **kwargs)
+
+    # Quieter than the default one-line-per-asset logging.
+    def log_message(self, format: str, *args: Any) -> None:
+        if self.path.startswith("/api/"):
+            super().log_message(format, *args)
+
+    def do_GET(self) -> None:  # noqa: N802 - name fixed by BaseHTTPRequestHandler
+        path = self.path.split("?", 1)[0]
+        try:
+            if path == "/api/health":
+                self._json({"status": "ok", "model": MODEL_VERSION, "leagues": sorted(LEAGUE_SPECS)})
+            elif path == "/api/report":
+                self._json(self.store.reports())
+            elif path.startswith("/api/report/"):
+                slug = path.removeprefix("/api/report/")
+                reports = self.store.reports()
+                if slug not in reports:
+                    self._json({"error": f"unknown league {slug!r}"}, status=404)
+                else:
+                    self._json(reports[slug])
+            elif path.startswith("/api/"):
+                self._json({"error": "no such endpoint"}, status=404)
+            else:
+                self._static(path)
+        except BrokenPipeError:
+            pass  # the browser navigated away mid-response
+        except Exception as exc:  # keep one bad request from killing the server
+            self.log_error("%s", exc)
+            self._json({"error": str(exc)}, status=500)
+
+    def _json(self, payload: Any, status: int = 200) -> None:
+        body = json.dumps(payload, ensure_ascii=False).encode("utf-8")
+        self.send_response(status)
+        self.send_header("Content-Type", "application/json; charset=utf-8")
+        self.send_header("Content-Length", str(len(body)))
+        self.send_header("Cache-Control", "no-store")
+        self.end_headers()
+        self.wfile.write(body)
+
+    def _static(self, path: str) -> None:
+        relative = "index.html" if path == "/" else path.lstrip("/")
+        target = (self.web_dir / relative).resolve()
+        # Refuse anything that escapes the web directory.
+        if not target.is_file() or self.web_dir.resolve() not in target.parents:
+            self._json({"error": "not found"}, status=404)
+            return
+
+        body = target.read_bytes()
+        content_type = mimetypes.guess_type(target.name)[0] or "application/octet-stream"
+        if content_type.startswith("text/") or content_type == "application/javascript":
+            content_type += "; charset=utf-8"
+
+        self.send_response(200)
+        self.send_header("Content-Type", content_type)
+        self.send_header("Content-Length", str(len(body)))
+        self.send_header("Cache-Control", "no-cache")
+        self.end_headers()
+        self.wfile.write(body)
+
+
+def serve(
+    host: str = "127.0.0.1",
+    port: int = 8000,
+    *,
+    store: ReportStore | None = None,
+    web_dir: Path = WEB_DIR,
+) -> None:
+    store = store or ReportStore()
+    handler = partial(Handler, store=store, web_dir=web_dir)
+    with ThreadingHTTPServer((host, port), handler) as httpd:
+        print(f"EliteTracker [{MODEL_VERSION}] serving on http://{host}:{port}")
+        try:
+            httpd.serve_forever()
+        except KeyboardInterrupt:
+            print("\nstopped")
+
+
+def main(argv: list[str] | None = None) -> int:
+    parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
+    parser.add_argument("--host", default="127.0.0.1")
+    parser.add_argument("--port", type=int, default=8000)
+    parser.add_argument("--simulations", type=int, default=SimulationConfig.simulations)
+    parser.add_argument("--seed", type=int, default=SimulationConfig.seed)
+    parser.add_argument("--k-factor", type=float, default=EloConfig.k_factor)
+    parser.add_argument("--home-advantage", type=float, default=EloConfig.home_advantage)
+    parser.add_argument("--reload", action="store_true", help="rebuild reports on every request")
+    parser.add_argument("--root", type=Path, default=NORMALIZED_DIR)
+    args = parser.parse_args(argv)
+
+    store = ReportStore(
+        args.root,
+        elo_config=EloConfig(k_factor=args.k_factor, home_advantage=args.home_advantage),
+        simulation=SimulationConfig(simulations=args.simulations, seed=args.seed),
+        always_reload=args.reload,
+    )
+    print(f"building reports ({args.simulations:,} simulations per league)...")
+    store.reports()
+    print("ready")
+
+    serve(args.host, args.port, store=store)
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

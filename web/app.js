@@ -1,0 +1,833 @@
+/* EliteTracker front end.
+   Plain modules, no framework: the whole payload is one JSON document and the
+   page is a few pure render functions over it. */
+
+const state = { reports: null, league: 'eliteserien' };
+
+const $ = (selector) => document.querySelector(selector);
+const el = (tag, className, text) => {
+  const node = document.createElement(tag);
+  if (className) node.className = className;
+  if (text !== undefined) node.textContent = text;
+  return node;
+};
+
+const pct = (value, digits = 1) =>
+  value >= 0.9995 ? '100%' : value < 0.0005 ? '—' : `${(value * 100).toFixed(digits)}%`;
+
+const pctShort = (value) =>
+  value < 0.005 ? '' : `${Math.round(value * 100)}`;
+
+/* ---------- sequential ramp ---------------------------------------
+   Probability -> one of eight steps of a single hue. The break points are
+   perceptual rather than linear: most cells in a 16x16 matrix are near zero,
+   so a linear scale would render the whole grid pale. */
+const HEAT_STOPS = [0.005, 0.02, 0.05, 0.1, 0.2, 0.35, 0.6];
+
+function heatStep(probability) {
+  let step = 0;
+  while (step < HEAT_STOPS.length && probability >= HEAT_STOPS[step]) step += 1;
+  return step; // 0..7
+}
+
+/* Text must stay legible as the fill darkens. In dark mode the ramp runs the
+   other way, so the flip point moves with it. */
+function heatTextClass(step) {
+  // Flip the label colour where the ramp crosses the point at which white text
+  // drops under 3:1. In dark mode the ramp runs the other way, so does this.
+  const darkMode = document.documentElement.dataset.resolvedTheme === 'dark';
+  return darkMode ? (step >= 6 ? 'cell--dark-text' : '') : (step <= 3 ? 'cell--dark-text' : '');
+}
+
+/* ---------- tooltip ---------------------------------------------- */
+
+const tooltip = $('#tooltip');
+
+function showTooltip(event, html) {
+  tooltip.innerHTML = html;
+  tooltip.dataset.show = 'true';
+  moveTooltip(event);
+}
+
+function moveTooltip(event) {
+  const pad = 14;
+  const box = tooltip.getBoundingClientRect();
+  let x = event.clientX + pad;
+  let y = event.clientY + pad;
+  if (x + box.width > window.innerWidth - 8) x = event.clientX - box.width - pad;
+  if (y + box.height > window.innerHeight - 8) y = event.clientY - box.height - pad;
+  tooltip.style.left = `${Math.max(8, x)}px`;
+  tooltip.style.top = `${Math.max(8, y)}px`;
+}
+
+function hideTooltip() {
+  tooltip.dataset.show = 'false';
+}
+
+/* ---------- bands ------------------------------------------------- */
+
+/* The most specific band wins, so "Champions" beats the broader
+   "Champions League qualification" block it sits inside. */
+function bandFor(bands, position) {
+  const matches = bands.filter((band) => position >= band.first && position <= band.last);
+  if (!matches.length) return null;
+  return matches.reduce((best, band) =>
+    band.last - band.first < best.last - best.first ? band : best
+  );
+}
+
+/* ---------- the finish grid --------------------------------------- */
+
+function renderGrid(report) {
+  const table = $('#grid');
+  const rows = report.table;
+  const count = rows.length;
+
+  table.replaceChildren(table.querySelector('caption'));
+
+  const head = el('thead');
+
+  // The band strip lives inside the table so it inherits the column geometry
+  // exactly; positioning it separately drifts as soon as the table is centred.
+  const bandRow = el('tr', 'grid__bands');
+  bandRow.appendChild(el('td', '', ''));
+  for (let position = 1; position <= count; position += 1) {
+    const band = bandFor(report.league.bands, position);
+    const cell = el('td');
+    const bar = el('span', 'band-strip__seg');
+    if (band) {
+      bar.style.background = `var(--band-${toneVar(band.tone)})`;
+      bar.title = band.label;
+    }
+    cell.appendChild(bar);
+    bandRow.appendChild(cell);
+  }
+  head.appendChild(bandRow);
+
+  const headRow = el('tr');
+  headRow.appendChild(el('th', '', ''));
+  for (let position = 1; position <= count; position += 1) {
+    const cell = el('th', '', String(position));
+    cell.scope = 'col';
+    headRow.appendChild(cell);
+  }
+  head.appendChild(headRow);
+  table.appendChild(head);
+
+  const body = el('tbody');
+  for (const row of rows) {
+    const tr = el('tr');
+    const label = el('th');
+    label.scope = 'row';
+    label.appendChild(el('span', 'pos', String(row.position)));
+    label.appendChild(document.createTextNode(row.team));
+    tr.appendChild(label);
+
+    row.position_probabilities.forEach((probability, index) => {
+      const step = heatStep(probability);
+      const cell = el('td', `cell ${heatTextClass(step)}`.trim());
+      cell.style.background = `var(--heat-${step})`;
+      cell.style.setProperty('--col', String(index));
+      cell.textContent = pctShort(probability);
+      if (!cell.textContent) cell.classList.add('cell--empty');
+
+      const position = index + 1;
+      const band = bandFor(report.league.bands, position);
+      cell.addEventListener('pointerenter', (event) =>
+        showTooltip(
+          event,
+          `<b>${row.team}</b> finishes ${ordinal(position)}<br>${pct(probability, 2)}` +
+            (band ? `<br>${band.label}` : '')
+        )
+      );
+      cell.addEventListener('pointermove', moveTooltip);
+      cell.addEventListener('pointerleave', hideTooltip);
+      tr.appendChild(cell);
+    });
+    body.appendChild(tr);
+  }
+  table.appendChild(body);
+
+  // Restart the load animation whenever the grid is rebuilt.
+  const wrap = table.parentElement;
+  wrap.classList.remove('grid-animate');
+  void wrap.offsetWidth;
+  wrap.classList.add('grid-animate');
+
+  $('#grid-count').textContent = `${count} clubs × ${count} places`;
+}
+
+const toneVar = (tone) =>
+  ({ champion: 'champion', top: 'europe', europe: 'europe', playoff: 'playoff', relegation: 'relegation' }[tone] ||
+  'europe');
+
+function ordinal(n) {
+  const suffix = ['th', 'st', 'nd', 'rd'][(n % 100 - 20) % 10] || ['th', 'st', 'nd', 'rd'][n % 100] || 'th';
+  return `${n}${suffix}`;
+}
+
+/* ---------- legends ----------------------------------------------- */
+
+function renderGridLegend() {
+  const legend = $('#grid-legend');
+  legend.replaceChildren();
+
+  legend.appendChild(el('span', 'label', 'Chance of finishing there'));
+  const ramp = el('span', 'legend__ramp');
+  for (let step = 0; step <= 7; step += 1) {
+    const swatch = el('i');
+    swatch.style.background = `var(--heat-${step})`;
+    ramp.appendChild(swatch);
+  }
+  legend.appendChild(ramp);
+  legend.appendChild(el('span', '', 'never → certain'));
+  legend.appendChild(el('span', '', 'Cells show whole percent; hover for the exact figure.'));
+}
+
+function renderBandLegend(report) {
+  const legend = $('#band-legend');
+  legend.replaceChildren();
+  for (const band of report.league.bands) {
+    const key = el('span', 'legend__key');
+    const swatch = el('span', 'legend__swatch');
+    swatch.style.background = `var(--band-${toneVar(band.tone)})`;
+    key.appendChild(swatch);
+    const range = band.first === band.last ? `${band.first}` : `${band.first}–${band.last}`;
+    key.appendChild(el('span', '', `${band.label} (${range})`));
+    legend.appendChild(key);
+  }
+}
+
+function renderOddsLegend() {
+  const legend = $('#odds-legend');
+  legend.replaceChildren();
+  legend.appendChild(el('span', 'label', 'Result'));
+  for (const [outcome, name] of [['home', 'Home win'], ['draw', 'Draw'], ['away', 'Away win']]) {
+    const key = el('span', 'legend__key');
+    const swatch = el('span', 'legend__swatch');
+    swatch.style.background = `var(--${outcome})`;
+    key.appendChild(swatch);
+    key.appendChild(el('span', '', name));
+    legend.appendChild(key);
+  }
+}
+
+/* ---------- standings --------------------------------------------- */
+
+function renderStandings(report) {
+  const body = $('#standings tbody');
+  body.replaceChildren();
+
+  const bands = report.league.bands;
+  const relegation = bands.find((band) => band.tone === 'relegation');
+  const count = report.table.length;
+
+  $('#head-first').textContent = report.league.slug === 'obosligaen' ? 'Go up' : 'Win it';
+  $('#head-last').textContent = 'Go down';
+
+  for (const row of report.table) {
+    const tr = el('tr');
+    const band = bandFor(bands, row.position);
+
+    const position = el('td', 'pos');
+    const mark = el('span', 'band-mark');
+    if (band) mark.dataset.tone = band.tone;
+    position.appendChild(mark);
+    position.appendChild(document.createTextNode(String(row.position)));
+    tr.appendChild(position);
+
+    tr.appendChild(el('td', 'club', row.team));
+    for (const key of ['played', 'wins', 'draws', 'losses', 'goals_for', 'goals_against']) {
+      tr.appendChild(el('td', 'num muted', String(row[key])));
+    }
+    tr.appendChild(el('td', 'num', row.goal_difference > 0 ? `+${row.goal_difference}` : String(row.goal_difference)));
+    const points = el('td', 'num', String(row.points));
+    points.style.fontWeight = '700';
+    tr.appendChild(points);
+
+    tr.appendChild(el('td', 'num sep', row.rating.toFixed(0)));
+    tr.appendChild(el('td', 'num muted', row.expected_points.toFixed(1)));
+
+    const first = row.position_probabilities[0];
+    const down = relegation
+      ? row.position_probabilities.slice(relegation.first - 1, relegation.last).reduce((a, b) => a + b, 0)
+      : 0;
+    // Promotion for the second tier is the top band, not just the title.
+    const up = report.league.slug === 'obosligaen'
+      ? row.position_probabilities.slice(0, 2).reduce((a, b) => a + b, 0)
+      : first;
+
+    tr.appendChild(meterCell(up, count));
+    tr.appendChild(meterCell(down, count));
+
+    // Picking a row drives the season-shape chart below.
+    tr.tabIndex = 0;
+    tr.setAttribute('role', 'button');
+    tr.setAttribute('aria-label', `Show ${row.team}'s season shape`);
+    const choose = () => {
+      $('#shape-team').value = row.team_id;
+      drawShape(report, row.team_id);
+      $('#shape-chart').scrollIntoView({ behavior: 'smooth', block: 'center' });
+    };
+    tr.addEventListener('click', choose);
+    tr.addEventListener('keydown', (event) => {
+      if (event.key === 'Enter' || event.key === ' ') {
+        event.preventDefault();
+        choose();
+      }
+    });
+    body.appendChild(tr);
+  }
+}
+
+function meterCell(value, count) {
+  const cell = el('td', 'num');
+  const meter = el('span', 'meter');
+  const fill = el('span', 'meter__fill');
+  fill.style.width = `${Math.max(0, Math.min(1, value)) * 100}%`;
+  meter.appendChild(fill);
+  meter.appendChild(el('span', 'meter__value', pct(value)));
+  cell.appendChild(meter);
+  return cell;
+}
+
+/* ---------- season shape: stacked area over the season ------------- */
+
+/* Position is a diverging quantity — winning the league and being relegated
+   are opposite outcomes with an unremarkable middle — so the ramp runs from
+   one pole through a neutral mid-table to the other. Mixing in oklab keeps the
+   steps perceptually even, and using CSS variables means a theme switch
+   recolours the chart without recomputing anything. */
+function positionColor(position, count) {
+  const t = count > 1 ? (position - 1) / (count - 1) : 0;
+  if (t <= 0.5) {
+    return `color-mix(in oklab, var(--pos-top) ${((0.5 - t) * 2 * 100).toFixed(1)}%, var(--pos-mid))`;
+  }
+  return `color-mix(in oklab, var(--pos-bottom) ${((t - 0.5) * 2 * 100).toFixed(1)}%, var(--pos-mid))`;
+}
+
+const SVG_NS = 'http://www.w3.org/2000/svg';
+const svgEl = (tag, attrs = {}) => {
+  const node = document.createElementNS(SVG_NS, tag);
+  for (const [key, value] of Object.entries(attrs)) node.setAttribute(key, String(value));
+  return node;
+};
+
+function renderShape(report) {
+  const history = report.history;
+  const select = $('#shape-team');
+  const teams = history.teams;
+
+  // Keep the chosen club when switching leagues if it plays in both (it will
+  // not), otherwise fall back to the league leader.
+  const previous = select.value;
+  select.replaceChildren();
+  for (const team of [...teams].sort((a, b) => a.team.localeCompare(b.team, 'nb'))) {
+    const option = el('option', '', team.team);
+    option.value = team.team_id;
+    select.appendChild(option);
+  }
+  const fallback = report.table[0].team_id;
+  select.value = teams.some((t) => t.team_id === previous) ? previous : fallback;
+
+  $('#shape-rounds').textContent = `${history.dates.length} snapshots`;
+  $('#ramp-last').textContent = `${ordinal(report.table.length)}`;
+
+  drawShape(report, select.value);
+}
+
+function drawShape(report, teamId) {
+  const history = report.history;
+  const team = history.teams.find((t) => t.team_id === teamId);
+  const chart = $('#shape-chart');
+  if (!team) return;
+
+  const count = report.table.length;
+  const snapshots = history.dates.length;
+
+  const width = 900;
+  const height = 340;
+  const pad = { top: 12, right: 16, bottom: 34, left: 44 };
+  const plotWidth = width - pad.left - pad.right;
+  const plotHeight = height - pad.top - pad.bottom;
+
+  chart.setAttribute('viewBox', `0 0 ${width} ${height}`);
+  chart.replaceChildren();
+
+  /* A real time axis. Rounds are not played in chronological order and the
+     calendar has gaps (breaks, rescheduled rounds), so spacing snapshots
+     evenly would distort how fast the picture actually changed. */
+  const times = history.dates.map((iso) => Date.parse(`${iso}T12:00:00Z`));
+  const firstTime = times[0];
+  const lastTime = times[times.length - 1];
+  const span = lastTime - firstTime || 1;
+  const x = (index) => pad.left + ((times[index] - firstTime) / span) * plotWidth;
+  const y = (cumulative) => pad.top + cumulative * plotHeight;
+
+  // Cumulative sums per snapshot, so band p spans [cum(p-1), cum(p)].
+  const cumulative = history.dates.map((_, index) => {
+    const running = [0];
+    for (let position = 0; position < count; position += 1) {
+      running.push(running[position] + team.positions[index][position]);
+    }
+    return running;
+  });
+
+  for (let gridline = 0; gridline <= 4; gridline += 1) {
+    const value = gridline / 4;
+    chart.appendChild(
+      svgEl('line', { class: 'grid-line', x1: pad.left, x2: width - pad.right, y1: y(value), y2: y(value) })
+    );
+    const label = svgEl('text', { class: 'tick', x: pad.left - 8, y: y(value) + 3.5, 'text-anchor': 'end' });
+    label.textContent = `${100 - gridline * 100 / 4}%`;
+    chart.appendChild(label);
+  }
+
+  // Position 1 sits at the top of the stack so the chart reads like a table.
+  for (let position = 1; position <= count; position += 1) {
+    const upper = [];
+    const lower = [];
+    for (let index = 0; index < snapshots; index += 1) {
+      upper.push(`${x(index)},${y(cumulative[index][position - 1])}`);
+      lower.push(`${x(index)},${y(cumulative[index][position])}`);
+    }
+    const band = svgEl('polygon', {
+      class: 'band',
+      points: [...upper, ...lower.reverse()].join(' '),
+      fill: positionColor(position, count),
+    });
+
+    const bandLabel = bandFor(report.league.bands, position);
+    band.addEventListener('pointerenter', (event) => {
+      const latest = team.positions[snapshots - 1][position - 1];
+      showTooltip(
+        event,
+        `<b>${ordinal(position)}</b>${bandLabel ? ` · ${bandLabel.label}` : ''}<br>` +
+          `now ${pct(latest, 1)}`
+      );
+    });
+    band.addEventListener('pointermove', moveTooltip);
+    band.addEventListener('pointerleave', hideTooltip);
+    chart.appendChild(band);
+  }
+
+  chart.appendChild(
+    svgEl('line', { class: 'axis-line', x1: pad.left, x2: width - pad.right, y1: y(1), y2: y(1) })
+  );
+
+  // Tick the first of each month, so the axis reads as a calendar rather than
+  // as a list of snapshots.
+  let lastMonth = null;
+  history.dates.forEach((iso, index) => {
+    const month = iso.slice(0, 7);
+    if (month === lastMonth) return;
+    lastMonth = month;
+    const label = svgEl('text', { class: 'tick', x: x(index), y: height - pad.bottom + 15, 'text-anchor': 'middle' });
+    label.textContent = new Date(`${iso}T12:00:00Z`).toLocaleDateString('en-GB', { month: 'short' });
+    chart.appendChild(label);
+    chart.appendChild(
+      svgEl('line', { class: 'grid-line', x1: x(index), x2: x(index), y1: pad.top, y2: y(1) })
+    );
+  });
+
+  const axisTitle = svgEl('text', { class: 'axis-title', x: pad.left, y: height - 6 });
+  axisTitle.textContent = `${history.dates[0].slice(0, 4)} season`;
+  chart.appendChild(axisTitle);
+
+  const yTitle = svgEl('text', {
+    class: 'axis-title',
+    x: -(pad.top + plotHeight / 2),
+    y: 12,
+    transform: 'rotate(-90)',
+    'text-anchor': 'middle',
+  });
+  yTitle.textContent = 'Share of simulated seasons';
+  chart.appendChild(yTitle);
+
+  attachShapeCrosshair(chart, report, team, { x, pad, plotWidth, plotHeight, width, height, snapshots, count });
+  renderShapeSummary(report, team);
+
+  chart.setAttribute(
+    'aria-label',
+    `Stacked area chart: ${team.team}'s probability of each finishing position, ` +
+      `${snapshots} snapshots from ${history.dates[0]} to ${history.dates[snapshots - 1]}`
+  );
+  $('#shape-desc').textContent =
+    `${team.team}: as of ${history.dates[snapshots - 1]}, most likely finish ` +
+    `${ordinal(mostLikely(team.positions[snapshots - 1]) + 1)}.`;
+}
+
+function mostLikely(probabilities) {
+  let best = 0;
+  probabilities.forEach((value, index) => {
+    if (value > probabilities[best]) best = index;
+  });
+  return best;
+}
+
+/* A crosshair reading out the round under the pointer. Sixteen bands is too
+   many to list, so the tooltip reports the most likely place plus the blocks
+   that actually matter. */
+function attachShapeCrosshair(chart, report, team, geometry) {
+  const { x, pad, plotWidth, plotHeight, width, snapshots, count } = geometry;
+  const history = report.history;
+  const line = svgEl('line', { class: 'crosshair', y1: pad.top, y2: pad.top + plotHeight, x1: -10, x2: -10 });
+  line.style.opacity = '0';
+  chart.appendChild(line);
+
+  const relegation = report.league.bands.find((band) => band.tone === 'relegation');
+  const top = report.league.bands.find((band) => band.tone === 'top');
+  const totalMatches = report.model.matches_played + report.model.matches_remaining;
+
+  const surface = svgEl('rect', {
+    x: pad.left, y: pad.top, width: plotWidth, height: plotHeight, fill: 'transparent',
+  });
+  surface.addEventListener('pointermove', (event) => {
+    const box = chart.getBoundingClientRect();
+    const scale = width / box.width;
+    const localX = (event.clientX - box.left) * scale;
+    // Snapshots are unevenly spaced in time, so pick the nearest one by pixel
+    // distance rather than by interpolating an index.
+    let index = 0;
+    for (let candidate = 1; candidate < snapshots; candidate += 1) {
+      if (Math.abs(x(candidate) - localX) < Math.abs(x(index) - localX)) index = candidate;
+    }
+
+    line.setAttribute('x1', x(index));
+    line.setAttribute('x2', x(index));
+    line.style.opacity = '1';
+
+    const probabilities = team.positions[index];
+    const best = mostLikely(probabilities);
+    const sum = (band) => (band ? probabilities.slice(band.first - 1, band.last).reduce((a, b) => a + b, 0) : 0);
+    const when = new Date(`${history.dates[index]}T12:00:00Z`).toLocaleDateString('en-GB', {
+      day: 'numeric', month: 'short', year: 'numeric',
+    });
+    const played = history.matches_played[index];
+
+    showTooltip(
+      event,
+      `<b>${team.team}</b> · ${played === 0 ? 'pre-season' : when}<br>` +
+        `${played} of ${totalMatches} matches played<br>` +
+        `Rating ${team.ratings[index]}<br>` +
+        `Most likely ${ordinal(best + 1)} (${pct(probabilities[best])})<br>` +
+        `${top ? `Top ${top.last}: ${pct(sum(top))} · ` : ''}Bottom ${count - (relegation ? relegation.first - 1 : count)}: ${pct(sum(relegation))}`
+    );
+  });
+  surface.addEventListener('pointerleave', () => {
+    line.style.opacity = '0';
+    hideTooltip();
+  });
+  chart.appendChild(surface);
+}
+
+function renderShapeSummary(report, team) {
+  const summary = $('#shape-summary');
+  summary.replaceChildren();
+
+  const latest = team.positions[team.positions.length - 1];
+  const first = team.positions[0];
+  const best = mostLikely(latest);
+
+  const parts = [
+    ['Most likely finish', ordinal(best + 1)],
+    ['Chance of that', pct(latest[best])],
+    ['Rating now', String(team.ratings[team.ratings.length - 1])],
+    ['Pre-season pick', ordinal(mostLikely(first) + 1)],
+  ];
+  for (const [name, value] of parts) {
+    const item = el('div');
+    item.appendChild(el('span', '', `${name} `));
+    item.appendChild(el('b', '', value));
+    summary.appendChild(item);
+  }
+}
+
+/* ---------- rating ladder ----------------------------------------- */
+
+/* Both divisions on one axis, which is the only place the model compares
+   them directly. Domain is padded to the nearest 50 so ticks stay round. */
+function renderLadder(reports) {
+  const teams = [];
+  for (const [slug, report] of Object.entries(reports)) {
+    for (const row of report.table) {
+      teams.push({ team: row.team, rating: row.rating, tier: slug === 'eliteserien' ? 1 : 2, league: report.league.name });
+    }
+  }
+
+  const ratings = teams.map((t) => t.rating);
+  const low = Math.floor(Math.min(...ratings) / 50) * 50;
+  const high = Math.ceil(Math.max(...ratings) / 50) * 50;
+  const position = (rating) => ((rating - low) / (high - low)) * 100;
+
+  const axis = $('#ladder-axis');
+  axis.replaceChildren();
+  for (let value = low; value <= high; value += 50) {
+    const tick = el('span', 'ladder__tick');
+    tick.style.left = `${position(value)}%`;
+    tick.appendChild(el('span', '', String(value)));
+    axis.appendChild(tick);
+  }
+
+  const holder = $('#ladder-lanes');
+  holder.replaceChildren();
+
+  for (const [tier, name] of [[1, 'Eliteserien'], [2, 'OBOS-ligaen']]) {
+    const lane = el('div', 'ladder__lane');
+    lane.appendChild(el('div', 'label', name));
+    const track = el('div', 'ladder__track');
+
+    // Nudge overlapping clubs onto a second or third row so none is hidden.
+    const rows = [];
+    for (const team of teams.filter((t) => t.tier === tier).sort((a, b) => a.rating - b.rating)) {
+      const x = position(team.rating);
+      let row = rows.findIndex((lastX) => x - lastX > 2.4);
+      if (row === -1) { rows.push(x); row = rows.length - 1; } else { rows[row] = x; }
+
+      const dot = el('span', 'ladder__team');
+      dot.dataset.tier = String(team.tier);
+      dot.style.left = `${x}%`;
+      dot.style.bottom = `${0.35 * 16 + (row % 3) * 11}px`;
+      dot.addEventListener('pointerenter', (event) =>
+        showTooltip(event, `<b>${team.team}</b><br>Rating ${team.rating.toFixed(0)} · ${team.league}`)
+      );
+      dot.addEventListener('pointermove', moveTooltip);
+      dot.addEventListener('pointerleave', hideTooltip);
+      track.appendChild(dot);
+    }
+    lane.appendChild(track);
+    holder.appendChild(lane);
+  }
+
+  const legend = $('#ladder-legend');
+  legend.replaceChildren();
+  for (const [tier, name] of [[1, 'Eliteserien'], [2, 'OBOS-ligaen']]) {
+    const key = el('span', 'legend__key');
+    const swatch = el('span', 'legend__swatch');
+    swatch.style.background = tier === 1 ? 'var(--home)' : 'var(--band-playoff)';
+    swatch.style.borderRadius = '50%';
+    key.appendChild(swatch);
+    key.appendChild(el('span', '', name));
+    legend.appendChild(key);
+  }
+  legend.appendChild(el('span', '', 'Every club in the top two divisions, on the one scale the model uses.'));
+}
+
+/* ---------- fixtures ---------------------------------------------- */
+
+function renderFixtures(report) {
+  const holder = $('#fixtures');
+  holder.replaceChildren();
+
+  const next = report.fixtures.slice(0, 12);
+  $('#fixture-count').textContent = `next ${next.length} of ${report.fixtures.length}`;
+
+  for (const fixture of next) {
+    const row = el('div', 'fixture');
+
+    const when = el('div', 'fixture__when');
+    when.textContent = formatDate(fixture.date) + (fixture.time ? ` · ${fixture.time}` : '');
+    row.appendChild(when);
+
+    const teams = el('div', 'fixture__teams');
+    teams.appendChild(document.createTextNode(fixture.home));
+    teams.appendChild(el('em', '', 'v'));
+    teams.appendChild(document.createTextNode(fixture.away));
+    row.appendChild(teams);
+
+    const odds = el('div', 'odds');
+    odds.setAttribute('role', 'img');
+    odds.setAttribute(
+      'aria-label',
+      `${fixture.home} win ${pct(fixture.home_win)}, draw ${pct(fixture.draw)}, ${fixture.away} win ${pct(fixture.away_win)}`
+    );
+    for (const [outcome, value, who] of [
+      ['home', fixture.home_win, fixture.home],
+      ['draw', fixture.draw, 'Draw'],
+      ['away', fixture.away_win, fixture.away],
+    ]) {
+      const segment = el('div', 'odds__seg');
+      segment.dataset.outcome = outcome;
+      segment.style.flex = `${Math.max(value, 0.001)}`;
+      segment.textContent = value >= 0.12 ? `${Math.round(value * 100)}%` : '';
+      segment.addEventListener('pointerenter', (event) =>
+        showTooltip(event, `<b>${who}</b><br>${pct(value, 1)}`)
+      );
+      segment.addEventListener('pointermove', moveTooltip);
+      segment.addEventListener('pointerleave', hideTooltip);
+      odds.appendChild(segment);
+    }
+    row.appendChild(odds);
+    holder.appendChild(row);
+  }
+}
+
+function formatDate(iso) {
+  const date = new Date(`${iso}T12:00:00Z`);
+  return date.toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' });
+}
+
+/* ---------- hero & model card ------------------------------------- */
+
+function renderHero(report) {
+  const model = report.model;
+  const leader = report.table[0];
+  const favourite = report.table.reduce((best, row) =>
+    row.position_probabilities[0] > best.position_probabilities[0] ? row : best
+  );
+
+  $('#hero-title').textContent = `${report.league.name} ${report.league.season}`;
+
+  const lede =
+    favourite.team === leader.team
+      ? `${leader.team} lead on ${leader.points} points and the model agrees: ` +
+        `${pct(favourite.position_probabilities[0])} to finish top.`
+      : `${leader.team} lead on ${leader.points} points, but the model makes ${favourite.team} ` +
+        `favourite at ${pct(favourite.position_probabilities[0])}.`;
+  $('#hero-lede').textContent =
+    `${lede} ${model.matches_remaining} matches left, each one played ${model.simulations.toLocaleString()} times over.`;
+
+  const meta = $('#hero-meta');
+  meta.replaceChildren();
+  for (const [name, value] of [
+    ['Played', `${model.matches_played}`],
+    ['Remaining', `${model.matches_remaining}`],
+    ['Seasons simulated', model.simulations.toLocaleString()],
+    ['Model', model.version],
+  ]) {
+    const cell = el('div');
+    cell.appendChild(el('span', '', name));
+    cell.appendChild(el('b', '', value));
+    meta.appendChild(cell);
+  }
+}
+
+function renderModelCard(report) {
+  const model = report.model;
+  const grid = $('#model-grid');
+  grid.replaceChildren();
+  for (const [name, value] of [
+    ['Version', model.version],
+    ['K-factor', model.k_factor],
+    ['Home advantage', `${model.home_advantage} pts`],
+    ['Peak draw rate', pct(model.draw_base, 0)],
+    ['Simulations', model.simulations.toLocaleString()],
+    ['Random seed', model.seed],
+  ]) {
+    const cell = el('div');
+    cell.appendChild(el('dt', '', name));
+    cell.appendChild(el('dd', '', String(value)));
+    grid.appendChild(cell);
+  }
+}
+
+/* ---------- theme -------------------------------------------------- */
+
+function resolveTheme() {
+  const chosen = localStorage.getItem('elitetracker-theme');
+  const root = document.documentElement;
+  if (chosen === 'light' || chosen === 'dark') {
+    root.dataset.theme = chosen;
+    root.dataset.resolvedTheme = chosen;
+  } else {
+    root.dataset.theme = '';
+    root.dataset.resolvedTheme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+  }
+  for (const button of document.querySelectorAll('[data-theme-choice]')) {
+    button.setAttribute('aria-pressed', String(button.dataset.themeChoice === chosen));
+  }
+}
+
+/* ---------- wiring -------------------------------------------------- */
+
+function render() {
+  const report = state.reports[state.league];
+  renderHero(report);
+  renderGrid(report);
+  renderGridLegend();
+  renderStandings(report);
+  renderBandLegend(report);
+  renderShape(report);
+  renderLadder(state.reports);
+  renderFixtures(report);
+  renderOddsLegend();
+  renderModelCard(report);
+  document.title = `${report.league.name} ${report.league.season} — EliteTracker`;
+}
+
+function wire() {
+  for (const button of document.querySelectorAll('[data-league]')) {
+    button.addEventListener('click', () => {
+      state.league = button.dataset.league;
+      for (const other of document.querySelectorAll('[data-league]')) {
+        other.setAttribute('aria-pressed', String(other === button));
+      }
+      render();
+      hideTooltip();
+    });
+  }
+
+  for (const button of document.querySelectorAll('[data-theme-choice]')) {
+    button.addEventListener('click', () => {
+      const choice = button.dataset.themeChoice;
+      const current = localStorage.getItem('elitetracker-theme');
+      if (current === choice) localStorage.removeItem('elitetracker-theme');
+      else localStorage.setItem('elitetracker-theme', choice);
+      resolveTheme();
+      render();
+    });
+  }
+
+  $('#shape-team').addEventListener('change', (event) => {
+    drawShape(state.reports[state.league], event.target.value);
+  });
+
+  window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => {
+    resolveTheme();
+    render();
+  });
+}
+
+/* ?league=obosligaen&team=Viking makes any view linkable. Team is matched on
+   name so a shared link stays readable. */
+function applyLeagueParameter() {
+  const league = new URLSearchParams(window.location.search).get('league');
+  if (!league || !state.reports[league]) return;
+  state.league = league;
+  for (const button of document.querySelectorAll('[data-league]')) {
+    button.setAttribute('aria-pressed', String(button.dataset.league === league));
+  }
+}
+
+/* Team is matched on name so a shared link stays readable. Applied after the
+   first render, once the club list exists. */
+function applyTeamParameter() {
+  const wanted = new URLSearchParams(window.location.search).get('team');
+  if (!wanted) return;
+  const match = state.reports[state.league].history.teams.find(
+    (team) => team.team.toLowerCase() === wanted.toLowerCase()
+  );
+  if (match) {
+    $('#shape-team').value = match.team_id;
+    drawShape(state.reports[state.league], match.team_id);
+  }
+}
+
+async function boot() {
+  resolveTheme();
+  wire();
+  try {
+    const response = await fetch('/api/report');
+    if (!response.ok) throw new Error(`server returned ${response.status}`);
+    state.reports = await response.json();
+    $('#status').hidden = true;
+    $('#content').hidden = false;
+    applyLeagueParameter();
+    render();
+    applyTeamParameter();
+  } catch (error) {
+    $('#status').textContent = `Could not load the season: ${error.message}. Is the server running?`;
+  }
+}
+
+boot();
