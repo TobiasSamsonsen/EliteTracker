@@ -22,18 +22,34 @@ import mimetypes
 import threading
 from functools import partial
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+from urllib.parse import parse_qs
 from pathlib import Path
 from typing import Any
 
 from elitetracker.model.elo import MODEL_VERSION, EloConfig
-from elitetracker.pipeline import LEAGUE_SPECS, NORMALIZED_DIR, build_all
+from elitetracker.pipeline import (
+    LEAGUE_SPECS,
+    NORMALIZED_DIR,
+    available_seasons,
+    build_all_careers,
+    build_report,
+    careers_payload,
+    current_season,
+)
+from elitetracker.simulation.history import HistoryConfig
 from elitetracker.simulation.season import SimulationConfig
 
 WEB_DIR = Path(__file__).resolve().parents[3] / "web"
 
 
 class ReportStore:
-    """Holds the built reports. Rebuilds are serialized behind a lock."""
+    """Careers plus a lazily-filled cache of per-season reports.
+
+    The rating replay spans every season and is done once. Individual season
+    reports are expensive enough (a simulation plus twenty rewound ones) that
+    building all of them up front would cost half a minute, so they are built
+    on first request and kept.
+    """
 
     def __init__(
         self,
@@ -41,23 +57,45 @@ class ReportStore:
         *,
         elo_config: EloConfig | None = None,
         simulation: SimulationConfig | None = None,
+        history: HistoryConfig | None = None,
         always_reload: bool = False,
     ) -> None:
         self.root = root
         self.elo_config = elo_config or EloConfig()
         self.simulation = simulation or SimulationConfig()
+        self.history = history or HistoryConfig()
         self.always_reload = always_reload
-        self._lock = threading.Lock()
-        self._reports: dict[str, Any] | None = None
+        self._lock = threading.RLock()
+        self._careers: dict[str, Any] | None = None
+        self._reports: dict[tuple[str, int], Any] = {}
 
-    def build(self) -> dict[str, Any]:
-        return build_all(self.root, elo_config=self.elo_config, simulation=self.simulation)
-
-    def reports(self) -> dict[str, Any]:
+    def careers(self) -> dict[str, Any]:
         with self._lock:
-            if self._reports is None or self.always_reload:
-                self._reports = self.build()
-            return self._reports
+            if self._careers is None or self.always_reload:
+                self._careers = build_all_careers(self.root, elo_config=self.elo_config)
+            return self._careers
+
+    def seasons(self) -> list[int]:
+        return available_seasons(self.root)
+
+    def report(self, slug: str, season: int) -> Any:
+        key = (slug, season)
+        with self._lock:
+            if key not in self._reports or self.always_reload:
+                self._reports[key] = build_report(
+                    slug,
+                    season,
+                    root=self.root,
+                    careers=self.careers(),
+                    elo_config=self.elo_config,
+                    simulation=self.simulation,
+                    history=self.history,
+                )
+            return self._reports[key]
+
+    def reports(self, season: int | None = None) -> dict[str, Any]:
+        target = season or current_season(self.root)
+        return {slug: self.report(slug, target) for slug in LEAGUE_SPECS}
 
 
 class Handler(BaseHTTPRequestHandler):
@@ -79,15 +117,19 @@ class Handler(BaseHTTPRequestHandler):
         try:
             if path == "/api/health":
                 self._json({"status": "ok", "model": MODEL_VERSION, "leagues": sorted(LEAGUE_SPECS)})
+            elif path == "/api/seasons":
+                self._json(
+                    {
+                        "seasons": self.store.seasons(),
+                        "current": current_season(self.store.root),
+                    }
+                )
+            elif path == "/api/careers":
+                self._json(careers_payload(self.store.careers()))
             elif path == "/api/report":
-                self._json(self.store.reports())
+                self._json(self.store.reports(self._season_param()))
             elif path.startswith("/api/report/"):
-                slug = path.removeprefix("/api/report/")
-                reports = self.store.reports()
-                if slug not in reports:
-                    self._json({"error": f"unknown league {slug!r}"}, status=404)
-                else:
-                    self._json(reports[slug])
+                self._report_route(path.removeprefix("/api/report/"))
             elif path.startswith("/api/"):
                 self._json({"error": "no such endpoint"}, status=404)
             else:
@@ -97,6 +139,41 @@ class Handler(BaseHTTPRequestHandler):
         except Exception as exc:  # keep one bad request from killing the server
             self.log_error("%s", exc)
             self._json({"error": str(exc)}, status=500)
+
+    def _season_param(self) -> int | None:
+        """?season=2019 on any report route."""
+        if "?" not in self.path:
+            return None
+        query = parse_qs(self.path.split("?", 1)[1])
+        values = query.get("season")
+        if not values:
+            return None
+        try:
+            return int(values[0])
+        except ValueError:
+            return None
+
+    def _report_route(self, rest: str) -> None:
+        """/api/report/<league> or /api/report/<league>/<season>."""
+        parts = [part for part in rest.split("/") if part]
+        if not parts or parts[0] not in LEAGUE_SPECS:
+            self._json({"error": f"unknown league {parts[0] if parts else ''!r}"}, status=404)
+            return
+
+        slug = parts[0]
+        season = self._season_param()
+        if len(parts) > 1:
+            try:
+                season = int(parts[1])
+            except ValueError:
+                self._json({"error": f"bad season {parts[1]!r}"}, status=400)
+                return
+
+        season = season or current_season(self.store.root)
+        if season not in self.store.seasons():
+            self._json({"error": f"no data for season {season}"}, status=404)
+            return
+        self._json(self.store.report(slug, season))
 
     def _json(self, payload: Any, status: int = 200) -> None:
         body = json.dumps(payload, ensure_ascii=False).encode("utf-8")
@@ -153,6 +230,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--seed", type=int, default=SimulationConfig.seed)
     parser.add_argument("--k-factor", type=float, default=EloConfig.k_factor)
     parser.add_argument("--home-advantage", type=float, default=EloConfig.home_advantage)
+    parser.add_argument("--history-simulations", type=int, default=HistoryConfig.simulations)
     parser.add_argument("--reload", action="store_true", help="rebuild reports on every request")
     parser.add_argument("--root", type=Path, default=NORMALIZED_DIR)
     args = parser.parse_args(argv)
@@ -161,11 +239,16 @@ def main(argv: list[str] | None = None) -> int:
         args.root,
         elo_config=EloConfig(k_factor=args.k_factor, home_advantage=args.home_advantage),
         simulation=SimulationConfig(simulations=args.simulations, seed=args.seed),
+        history=HistoryConfig(simulations=args.history_simulations, seed=args.seed),
         always_reload=args.reload,
     )
-    print(f"building reports ({args.simulations:,} simulations per league)...")
+    print("replaying every season...")
+    careers = store.careers()
+    seasons = store.seasons()
+    print(f"  {len(careers)} clubs across {seasons[0]}-{seasons[-1]}")
+    print(f"building the current season ({args.simulations:,} simulations per league)...")
     store.reports()
-    print("ready")
+    print("ready -- older seasons are built on first view")
 
     serve(args.host, args.port, store=store)
     return 0

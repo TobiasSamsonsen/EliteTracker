@@ -136,7 +136,7 @@ class TestConfig:
             EloConfig(**kwargs)
 
     def test_model_version_is_declared(self):
-        assert MODEL_VERSION == "elo-v1"
+        assert MODEL_VERSION == "elo-v2"
 
 
 class TestCalibration:

@@ -1,0 +1,7472 @@
+[
+  {
+    "round": "1",
+    "roundName": 1,
+    "pageUrl": "/matches/odds-ballklubb-vs-fk-haugesund/291znm#4385397",
+    "id": "4385397",
+    "home": {
+      "name": "Odds Ballklubb",
+      "shortName": "Odd",
+      "id": "7988"
+    },
+    "away": {
+      "name": "FK Haugesund",
+      "shortName": "FK Haugesund",
+      "id": "8512"
+    },
+    "status": {
+      "utcTime": "2024-03-31T16:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "1 - 2",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "1",
+    "roundName": 1,
+    "pageUrl": "/matches/bodoglimt-vs-fredrikstad/2c7wb3#4385393",
+    "id": "4385393",
+    "home": {
+      "name": "Fredrikstad",
+      "shortName": "Fredrikstad",
+      "id": "8417"
+    },
+    "away": {
+      "name": "Bodø/Glimt",
+      "shortName": "Bodø/Glimt",
+      "id": "8402"
+    },
+    "status": {
+      "utcTime": "2024-04-01T12:30:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "0 - 2",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "1",
+    "roundName": 1,
+    "pageUrl": "/matches/lillestrom-vs-kristiansund/2ev36a#4385395",
+    "id": "4385395",
+    "home": {
+      "name": "Lillestrøm",
+      "shortName": "Lillestrøm",
+      "id": "8476"
+    },
+    "away": {
+      "name": "Kristiansund",
+      "shortName": "Kristiansund",
+      "id": "8605"
+    },
+    "status": {
+      "utcTime": "2024-04-01T15:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "2 - 3",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "1",
+    "roundName": 1,
+    "pageUrl": "/matches/stromsgodset-vs-molde/2pi5hi#4385396",
+    "id": "4385396",
+    "home": {
+      "name": "Molde",
+      "shortName": "Molde",
+      "id": "9917"
+    },
+    "away": {
+      "name": "Strømsgodset",
+      "shortName": "Strømsgodset",
+      "id": "8180"
+    },
+    "status": {
+      "utcTime": "2024-04-01T15:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "4 - 0",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "1",
+    "roundName": 1,
+    "pageUrl": "/matches/rosenborg-vs-sandefjord/2ect4t#4385398",
+    "id": "4385398",
+    "home": {
+      "name": "Rosenborg",
+      "shortName": "Rosenborg",
+      "id": "8422"
+    },
+    "away": {
+      "name": "Sandefjord",
+      "shortName": "Sandefjord",
+      "id": "8609"
+    },
+    "status": {
+      "utcTime": "2024-04-01T15:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "2 - 0",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "1",
+    "roundName": 1,
+    "pageUrl": "/matches/brann-vs-tromso/2et9aa#4385399",
+    "id": "4385399",
+    "home": {
+      "name": "Tromsø",
+      "shortName": "Tromsø",
+      "id": "8608"
+    },
+    "away": {
+      "name": "Brann",
+      "shortName": "Brann",
+      "id": "8468"
+    },
+    "status": {
+      "utcTime": "2024-04-01T15:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "2 - 4",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "1",
+    "roundName": 1,
+    "pageUrl": "/matches/viking-vs-sarpsborg-08/2dwrkn#4385400",
+    "id": "4385400",
+    "home": {
+      "name": "Viking",
+      "shortName": "Viking",
+      "id": "8478"
+    },
+    "away": {
+      "name": "Sarpsborg 08",
+      "shortName": "Sarpsborg 08",
+      "id": "8509"
+    },
+    "status": {
+      "utcTime": "2024-04-01T17:15:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "1 - 0",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "1",
+    "roundName": 1,
+    "pageUrl": "/matches/kfum-vs-hamarkameratene/yffup#4385394",
+    "id": "4385394",
+    "home": {
+      "name": "KFUM",
+      "shortName": "KFUM",
+      "id": "2305"
+    },
+    "away": {
+      "name": "Hamarkameratene",
+      "shortName": "HamKam",
+      "id": "8448"
+    },
+    "status": {
+      "utcTime": "2024-04-02T17:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "1 - 1",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "2",
+    "roundName": 2,
+    "pageUrl": "/matches/bodoglimt-vs-viking/2ctxg6#4385401",
+    "id": "4385401",
+    "home": {
+      "name": "Bodø/Glimt",
+      "shortName": "Bodø/Glimt",
+      "id": "8402"
+    },
+    "away": {
+      "name": "Viking",
+      "shortName": "Viking",
+      "id": "8478"
+    },
+    "status": {
+      "utcTime": "2024-04-06T16:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "1 - 0",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "2",
+    "roundName": 2,
+    "pageUrl": "/matches/kfum-vs-kristiansund/zfw6m#4385405",
+    "id": "4385405",
+    "home": {
+      "name": "Kristiansund",
+      "shortName": "Kristiansund",
+      "id": "8605"
+    },
+    "away": {
+      "name": "KFUM",
+      "shortName": "KFUM",
+      "id": "2305"
+    },
+    "status": {
+      "utcTime": "2024-04-07T12:30:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "1 - 1",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "2",
+    "roundName": 2,
+    "pageUrl": "/matches/lillestrom-vs-fk-haugesund/2dx4om#4385404",
+    "id": "4385404",
+    "home": {
+      "name": "FK Haugesund",
+      "shortName": "FK Haugesund",
+      "id": "8512"
+    },
+    "away": {
+      "name": "Lillestrøm",
+      "shortName": "Lillestrøm",
+      "id": "8476"
+    },
+    "status": {
+      "utcTime": "2024-04-07T15:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "0 - 2",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "2",
+    "roundName": 2,
+    "pageUrl": "/matches/hamarkameratene-vs-molde/2sevkw#4385403",
+    "id": "4385403",
+    "home": {
+      "name": "Hamarkameratene",
+      "shortName": "HamKam",
+      "id": "8448"
+    },
+    "away": {
+      "name": "Molde",
+      "shortName": "Molde",
+      "id": "9917"
+    },
+    "status": {
+      "utcTime": "2024-04-07T15:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "0 - 1",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "2",
+    "roundName": 2,
+    "pageUrl": "/matches/odds-ballklubb-vs-sarpsborg-08/290xgm#4385407",
+    "id": "4385407",
+    "home": {
+      "name": "Sarpsborg 08",
+      "shortName": "Sarpsborg 08",
+      "id": "8509"
+    },
+    "away": {
+      "name": "Odds Ballklubb",
+      "shortName": "Odd",
+      "id": "7988"
+    },
+    "status": {
+      "utcTime": "2024-04-07T15:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "0 - 1",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "2",
+    "roundName": 2,
+    "pageUrl": "/matches/stromsgodset-vs-rosenborg/2a2691#4385408",
+    "id": "4385408",
+    "home": {
+      "name": "Strømsgodset",
+      "shortName": "Strømsgodset",
+      "id": "8180"
+    },
+    "away": {
+      "name": "Rosenborg",
+      "shortName": "Rosenborg",
+      "id": "8422"
+    },
+    "status": {
+      "utcTime": "2024-04-07T15:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "1 - 0",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "2",
+    "roundName": 2,
+    "pageUrl": "/matches/fredrikstad-vs-brann/2cvqkr#4385402",
+    "id": "4385402",
+    "home": {
+      "name": "Brann",
+      "shortName": "Brann",
+      "id": "8468"
+    },
+    "away": {
+      "name": "Fredrikstad",
+      "shortName": "Fredrikstad",
+      "id": "8417"
+    },
+    "status": {
+      "utcTime": "2024-04-07T17:15:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "0 - 2",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "3",
+    "roundName": 3,
+    "pageUrl": "/matches/fredrikstad-vs-sarpsborg-08/2dalfy#4385409",
+    "id": "4385409",
+    "home": {
+      "name": "Fredrikstad",
+      "shortName": "Fredrikstad",
+      "id": "8417"
+    },
+    "away": {
+      "name": "Sarpsborg 08",
+      "shortName": "Sarpsborg 08",
+      "id": "8509"
+    },
+    "status": {
+      "utcTime": "2024-04-13T16:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "2 - 2",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "3",
+    "roundName": 3,
+    "pageUrl": "/matches/brann-vs-viking/2dhus9#4385416",
+    "id": "4385416",
+    "home": {
+      "name": "Viking",
+      "shortName": "Viking",
+      "id": "8478"
+    },
+    "away": {
+      "name": "Brann",
+      "shortName": "Brann",
+      "id": "8468"
+    },
+    "status": {
+      "utcTime": "2024-04-14T12:30:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "1 - 1",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "3",
+    "roundName": 3,
+    "pageUrl": "/matches/kristiansund-vs-molde/2u4xx8#4385412",
+    "id": "4385412",
+    "home": {
+      "name": "Molde",
+      "shortName": "Molde",
+      "id": "9917"
+    },
+    "away": {
+      "name": "Kristiansund",
+      "shortName": "Kristiansund",
+      "id": "8605"
+    },
+    "status": {
+      "utcTime": "2024-04-14T15:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "2 - 0",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "3",
+    "roundName": 3,
+    "pageUrl": "/matches/odds-ballklubb-vs-sandefjord/2a0eco#4385413",
+    "id": "4385413",
+    "home": {
+      "name": "Odds Ballklubb",
+      "shortName": "Odd",
+      "id": "7988"
+    },
+    "away": {
+      "name": "Sandefjord",
+      "shortName": "Sandefjord",
+      "id": "8609"
+    },
+    "status": {
+      "utcTime": "2024-04-14T15:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "2 - 2",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "3",
+    "roundName": 3,
+    "pageUrl": "/matches/rosenborg-vs-hamarkameratene/2cqb7p#4385414",
+    "id": "4385414",
+    "home": {
+      "name": "Rosenborg",
+      "shortName": "Rosenborg",
+      "id": "8422"
+    },
+    "away": {
+      "name": "Hamarkameratene",
+      "shortName": "HamKam",
+      "id": "8448"
+    },
+    "status": {
+      "utcTime": "2024-04-14T15:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "1 - 0",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "3",
+    "roundName": 3,
+    "pageUrl": "/matches/fk-haugesund-vs-tromso/2f9dsg#4385415",
+    "id": "4385415",
+    "home": {
+      "name": "Tromsø",
+      "shortName": "Tromsø",
+      "id": "8608"
+    },
+    "away": {
+      "name": "FK Haugesund",
+      "shortName": "FK Haugesund",
+      "id": "8512"
+    },
+    "status": {
+      "utcTime": "2024-04-14T15:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "0 - 1",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "3",
+    "roundName": 3,
+    "pageUrl": "/matches/bodoglimt-vs-lillestrom/2ct7ed#4385411",
+    "id": "4385411",
+    "home": {
+      "name": "Lillestrøm",
+      "shortName": "Lillestrøm",
+      "id": "8476"
+    },
+    "away": {
+      "name": "Bodø/Glimt",
+      "shortName": "Bodø/Glimt",
+      "id": "8402"
+    },
+    "status": {
+      "utcTime": "2024-04-14T17:15:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "0 - 5",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "3",
+    "roundName": 3,
+    "pageUrl": "/matches/kfum-vs-stromsgodset/wqfmz#4385410",
+    "id": "4385410",
+    "home": {
+      "name": "KFUM",
+      "shortName": "KFUM",
+      "id": "2305"
+    },
+    "away": {
+      "name": "Strømsgodset",
+      "shortName": "Strømsgodset",
+      "id": "8180"
+    },
+    "status": {
+      "utcTime": "2024-04-16T17:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "1 - 3",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "16",
+    "roundName": 16,
+    "pageUrl": "/matches/hamarkameratene-vs-brann/2d6yue#4385593",
+    "id": "4385593",
+    "home": {
+      "name": "Brann",
+      "shortName": "Brann",
+      "id": "8468"
+    },
+    "away": {
+      "name": "Hamarkameratene",
+      "shortName": "HamKam",
+      "id": "8448"
+    },
+    "status": {
+      "utcTime": "2024-04-17T16:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "1 - 0",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "17",
+    "roundName": 17,
+    "pageUrl": "/matches/odds-ballklubb-vs-molde/2ng2li#4385605",
+    "id": "4385605",
+    "home": {
+      "name": "Molde",
+      "shortName": "Molde",
+      "id": "9917"
+    },
+    "away": {
+      "name": "Odds Ballklubb",
+      "shortName": "Odd",
+      "id": "7988"
+    },
+    "status": {
+      "utcTime": "2024-04-17T16:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "1 - 2",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "4",
+    "roundName": 4,
+    "pageUrl": "/matches/stromsgodset-vs-hamarkameratene/2abflu#4385419",
+    "id": "4385419",
+    "home": {
+      "name": "Hamarkameratene",
+      "shortName": "HamKam",
+      "id": "8448"
+    },
+    "away": {
+      "name": "Strømsgodset",
+      "shortName": "Strømsgodset",
+      "id": "8180"
+    },
+    "status": {
+      "utcTime": "2024-04-21T12:30:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "0 - 1",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "4",
+    "roundName": 4,
+    "pageUrl": "/matches/odds-ballklubb-vs-brann/28mg60#4385418",
+    "id": "4385418",
+    "home": {
+      "name": "Brann",
+      "shortName": "Brann",
+      "id": "8468"
+    },
+    "away": {
+      "name": "Odds Ballklubb",
+      "shortName": "Odd",
+      "id": "7988"
+    },
+    "status": {
+      "utcTime": "2024-04-21T15:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "2 - 0",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "4",
+    "roundName": 4,
+    "pageUrl": "/matches/rosenborg-vs-fk-haugesund/2ddhyd#4385420",
+    "id": "4385420",
+    "home": {
+      "name": "FK Haugesund",
+      "shortName": "FK Haugesund",
+      "id": "8512"
+    },
+    "away": {
+      "name": "Rosenborg",
+      "shortName": "Rosenborg",
+      "id": "8422"
+    },
+    "status": {
+      "utcTime": "2024-04-21T15:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "1 - 3",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "4",
+    "roundName": 4,
+    "pageUrl": "/matches/kristiansund-vs-tromso/2g7loj#4385421",
+    "id": "4385421",
+    "home": {
+      "name": "Kristiansund",
+      "shortName": "Kristiansund",
+      "id": "8605"
+    },
+    "away": {
+      "name": "Tromsø",
+      "shortName": "Tromsø",
+      "id": "8608"
+    },
+    "status": {
+      "utcTime": "2024-04-21T15:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "1 - 0",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "4",
+    "roundName": 4,
+    "pageUrl": "/matches/lillestrom-vs-sandefjord/2ewjwk#4385422",
+    "id": "4385422",
+    "home": {
+      "name": "Sandefjord",
+      "shortName": "Sandefjord",
+      "id": "8609"
+    },
+    "away": {
+      "name": "Lillestrøm",
+      "shortName": "Lillestrøm",
+      "id": "8476"
+    },
+    "status": {
+      "utcTime": "2024-04-21T15:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "0 - 1",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "4",
+    "roundName": 4,
+    "pageUrl": "/matches/kfum-vs-sarpsborg-08/ytjha#4385423",
+    "id": "4385423",
+    "home": {
+      "name": "Sarpsborg 08",
+      "shortName": "Sarpsborg 08",
+      "id": "8509"
+    },
+    "away": {
+      "name": "KFUM",
+      "shortName": "KFUM",
+      "id": "2305"
+    },
+    "status": {
+      "utcTime": "2024-04-21T15:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "0 - 2",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "4",
+    "roundName": 4,
+    "pageUrl": "/matches/fredrikstad-vs-viking/2czcwu#4385424",
+    "id": "4385424",
+    "home": {
+      "name": "Viking",
+      "shortName": "Viking",
+      "id": "8478"
+    },
+    "away": {
+      "name": "Fredrikstad",
+      "shortName": "Fredrikstad",
+      "id": "8417"
+    },
+    "status": {
+      "utcTime": "2024-04-21T15:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "1 - 1",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "4",
+    "roundName": 4,
+    "pageUrl": "/matches/bodoglimt-vs-molde/2rwsj9#4385417",
+    "id": "4385417",
+    "home": {
+      "name": "Bodø/Glimt",
+      "shortName": "Bodø/Glimt",
+      "id": "8402"
+    },
+    "away": {
+      "name": "Molde",
+      "shortName": "Molde",
+      "id": "9917"
+    },
+    "status": {
+      "utcTime": "2024-04-21T17:15:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "1 - 1",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "5",
+    "roundName": 5,
+    "pageUrl": "/matches/bodoglimt-vs-rosenborg/2c9p7m#4385430",
+    "id": "4385430",
+    "home": {
+      "name": "Rosenborg",
+      "shortName": "Rosenborg",
+      "id": "8422"
+    },
+    "away": {
+      "name": "Bodø/Glimt",
+      "shortName": "Bodø/Glimt",
+      "id": "8402"
+    },
+    "status": {
+      "utcTime": "2024-04-27T16:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "1 - 3",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "5",
+    "roundName": 5,
+    "pageUrl": "/matches/fredrikstad-vs-sandefjord/2eazfo#4385425",
+    "id": "4385425",
+    "home": {
+      "name": "Fredrikstad",
+      "shortName": "Fredrikstad",
+      "id": "8417"
+    },
+    "away": {
+      "name": "Sandefjord",
+      "shortName": "Sandefjord",
+      "id": "8609"
+    },
+    "status": {
+      "utcTime": "2024-04-28T15:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "1 - 0",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "5",
+    "roundName": 5,
+    "pageUrl": "/matches/kfum-vs-brann/yk1yz#4385426",
+    "id": "4385426",
+    "home": {
+      "name": "KFUM",
+      "shortName": "KFUM",
+      "id": "2305"
+    },
+    "away": {
+      "name": "Brann",
+      "shortName": "Brann",
+      "id": "8468"
+    },
+    "status": {
+      "utcTime": "2024-04-28T15:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "0 - 0",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "5",
+    "roundName": 5,
+    "pageUrl": "/matches/hamarkameratene-vs-lillestrom/2d9vaq#4385427",
+    "id": "4385427",
+    "home": {
+      "name": "Lillestrøm",
+      "shortName": "Lillestrøm",
+      "id": "8476"
+    },
+    "away": {
+      "name": "Hamarkameratene",
+      "shortName": "HamKam",
+      "id": "8448"
+    },
+    "status": {
+      "utcTime": "2024-04-28T15:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "1 - 1",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "5",
+    "roundName": 5,
+    "pageUrl": "/matches/fk-haugesund-vs-molde/2t443k#4385428",
+    "id": "4385428",
+    "home": {
+      "name": "Molde",
+      "shortName": "Molde",
+      "id": "9917"
+    },
+    "away": {
+      "name": "FK Haugesund",
+      "shortName": "FK Haugesund",
+      "id": "8512"
+    },
+    "status": {
+      "utcTime": "2024-04-28T15:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "2 - 1",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "5",
+    "roundName": 5,
+    "pageUrl": "/matches/stromsgodset-vs-kristiansund/2bvnna#4385431",
+    "id": "4385431",
+    "home": {
+      "name": "Strømsgodset",
+      "shortName": "Strømsgodset",
+      "id": "8180"
+    },
+    "away": {
+      "name": "Kristiansund",
+      "shortName": "Kristiansund",
+      "id": "8605"
+    },
+    "status": {
+      "utcTime": "2024-04-28T15:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "2 - 2",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "5",
+    "roundName": 5,
+    "pageUrl": "/matches/sarpsborg-08-vs-tromso/2f8a5v#4385432",
+    "id": "4385432",
+    "home": {
+      "name": "Tromsø",
+      "shortName": "Tromsø",
+      "id": "8608"
+    },
+    "away": {
+      "name": "Sarpsborg 08",
+      "shortName": "Sarpsborg 08",
+      "id": "8509"
+    },
+    "status": {
+      "utcTime": "2024-04-28T15:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "0 - 3",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "5",
+    "roundName": 5,
+    "pageUrl": "/matches/odds-ballklubb-vs-viking/28pz6x#4385429",
+    "id": "4385429",
+    "home": {
+      "name": "Odds Ballklubb",
+      "shortName": "Odd",
+      "id": "7988"
+    },
+    "away": {
+      "name": "Viking",
+      "shortName": "Viking",
+      "id": "8478"
+    },
+    "status": {
+      "utcTime": "2024-04-28T17:15:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "3 - 3",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "6",
+    "roundName": 6,
+    "pageUrl": "/matches/rosenborg-vs-brann/2cxjqb#4385434",
+    "id": "4385434",
+    "home": {
+      "name": "Brann",
+      "shortName": "Brann",
+      "id": "8468"
+    },
+    "away": {
+      "name": "Rosenborg",
+      "shortName": "Rosenborg",
+      "id": "8422"
+    },
+    "status": {
+      "utcTime": "2024-05-04T16:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "3 - 0",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "6",
+    "roundName": 6,
+    "pageUrl": "/matches/stromsgodset-vs-bodoglimt/29v26f#4385433",
+    "id": "4385433",
+    "home": {
+      "name": "Bodø/Glimt",
+      "shortName": "Bodø/Glimt",
+      "id": "8402"
+    },
+    "away": {
+      "name": "Strømsgodset",
+      "shortName": "Strømsgodset",
+      "id": "8180"
+    },
+    "status": {
+      "utcTime": "2024-05-05T15:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "1 - 0",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "6",
+    "roundName": 6,
+    "pageUrl": "/matches/kfum-vs-fk-haugesund/yu8ip#4385435",
+    "id": "4385435",
+    "home": {
+      "name": "FK Haugesund",
+      "shortName": "FK Haugesund",
+      "id": "8512"
+    },
+    "away": {
+      "name": "KFUM",
+      "shortName": "KFUM",
+      "id": "2305"
+    },
+    "status": {
+      "utcTime": "2024-05-05T15:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "0 - 1",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "6",
+    "roundName": 6,
+    "pageUrl": "/matches/hamarkameratene-vs-kristiansund/2ekufk#4385436",
+    "id": "4385436",
+    "home": {
+      "name": "Kristiansund",
+      "shortName": "Kristiansund",
+      "id": "8605"
+    },
+    "away": {
+      "name": "Hamarkameratene",
+      "shortName": "HamKam",
+      "id": "8448"
+    },
+    "status": {
+      "utcTime": "2024-05-05T15:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "1 - 1",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "6",
+    "roundName": 6,
+    "pageUrl": "/matches/odds-ballklubb-vs-fredrikstad/284hjc#4385437",
+    "id": "4385437",
+    "home": {
+      "name": "Odds Ballklubb",
+      "shortName": "Odd",
+      "id": "7988"
+    },
+    "away": {
+      "name": "Fredrikstad",
+      "shortName": "Fredrikstad",
+      "id": "8417"
+    },
+    "status": {
+      "utcTime": "2024-05-05T15:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "0 - 2",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "6",
+    "roundName": 6,
+    "pageUrl": "/matches/sandefjord-vs-molde/2u6j3i#4385438",
+    "id": "4385438",
+    "home": {
+      "name": "Sandefjord",
+      "shortName": "Sandefjord",
+      "id": "8609"
+    },
+    "away": {
+      "name": "Molde",
+      "shortName": "Molde",
+      "id": "9917"
+    },
+    "status": {
+      "utcTime": "2024-05-05T15:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "3 - 1",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "6",
+    "roundName": 6,
+    "pageUrl": "/matches/lillestrom-vs-sarpsborg-08/2dw1cy#4385439",
+    "id": "4385439",
+    "home": {
+      "name": "Sarpsborg 08",
+      "shortName": "Sarpsborg 08",
+      "id": "8509"
+    },
+    "away": {
+      "name": "Lillestrøm",
+      "shortName": "Lillestrøm",
+      "id": "8476"
+    },
+    "status": {
+      "utcTime": "2024-05-05T15:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "1 - 0",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "6",
+    "roundName": 6,
+    "pageUrl": "/matches/viking-vs-tromso/2ewx35#4385440",
+    "id": "4385440",
+    "home": {
+      "name": "Viking",
+      "shortName": "Viking",
+      "id": "8478"
+    },
+    "away": {
+      "name": "Tromsø",
+      "shortName": "Tromsø",
+      "id": "8608"
+    },
+    "status": {
+      "utcTime": "2024-05-05T17:15:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "2 - 1",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "7",
+    "roundName": 7,
+    "pageUrl": "/matches/rosenborg-vs-molde/2s4neb#4385525",
+    "id": "4385525",
+    "home": {
+      "name": "Molde",
+      "shortName": "Molde",
+      "id": "9917"
+    },
+    "away": {
+      "name": "Rosenborg",
+      "shortName": "Rosenborg",
+      "id": "8422"
+    },
+    "status": {
+      "utcTime": "2024-05-11T16:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "2 - 2",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "7",
+    "roundName": 7,
+    "pageUrl": "/matches/bodoglimt-vs-kristiansund/2e41yd#4385523",
+    "id": "4385523",
+    "home": {
+      "name": "Kristiansund",
+      "shortName": "Kristiansund",
+      "id": "8605"
+    },
+    "away": {
+      "name": "Bodø/Glimt",
+      "shortName": "Bodø/Glimt",
+      "id": "8402"
+    },
+    "status": {
+      "utcTime": "2024-05-12T12:30:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "2 - 4",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "7",
+    "roundName": 7,
+    "pageUrl": "/matches/hamarkameratene-vs-fk-haugesund/2dmxy8#4385521",
+    "id": "4385521",
+    "home": {
+      "name": "Hamarkameratene",
+      "shortName": "HamKam",
+      "id": "8448"
+    },
+    "away": {
+      "name": "FK Haugesund",
+      "shortName": "FK Haugesund",
+      "id": "8512"
+    },
+    "status": {
+      "utcTime": "2024-05-12T15:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "2 - 2",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "7",
+    "roundName": 7,
+    "pageUrl": "/matches/kfum-vs-fredrikstad/y8az8#4385522",
+    "id": "4385522",
+    "home": {
+      "name": "KFUM",
+      "shortName": "KFUM",
+      "id": "2305"
+    },
+    "away": {
+      "name": "Fredrikstad",
+      "shortName": "Fredrikstad",
+      "id": "8417"
+    },
+    "status": {
+      "utcTime": "2024-05-12T15:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "1 - 4",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "7",
+    "roundName": 7,
+    "pageUrl": "/matches/sarpsborg-08-vs-sandefjord/2f8nde#4385526",
+    "id": "4385526",
+    "home": {
+      "name": "Sandefjord",
+      "shortName": "Sandefjord",
+      "id": "8609"
+    },
+    "away": {
+      "name": "Sarpsborg 08",
+      "shortName": "Sarpsborg 08",
+      "id": "8509"
+    },
+    "status": {
+      "utcTime": "2024-05-12T15:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "4 - 1",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "7",
+    "roundName": 7,
+    "pageUrl": "/matches/stromsgodset-vs-viking/2am4w9#4385527",
+    "id": "4385527",
+    "home": {
+      "name": "Strømsgodset",
+      "shortName": "Strømsgodset",
+      "id": "8180"
+    },
+    "away": {
+      "name": "Viking",
+      "shortName": "Viking",
+      "id": "8478"
+    },
+    "status": {
+      "utcTime": "2024-05-12T15:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "0 - 1",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "7",
+    "roundName": 7,
+    "pageUrl": "/matches/odds-ballklubb-vs-tromso/2a01jm#4385528",
+    "id": "4385528",
+    "home": {
+      "name": "Tromsø",
+      "shortName": "Tromsø",
+      "id": "8608"
+    },
+    "away": {
+      "name": "Odds Ballklubb",
+      "shortName": "Odd",
+      "id": "7988"
+    },
+    "status": {
+      "utcTime": "2024-05-12T15:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "4 - 0",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "7",
+    "roundName": 7,
+    "pageUrl": "/matches/brann-vs-lillestrom/2dh4ms#4385524",
+    "id": "4385524",
+    "home": {
+      "name": "Lillestrøm",
+      "shortName": "Lillestrøm",
+      "id": "8476"
+    },
+    "away": {
+      "name": "Brann",
+      "shortName": "Brann",
+      "id": "8468"
+    },
+    "status": {
+      "utcTime": "2024-05-12T17:15:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "0 - 2",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "8",
+    "roundName": 8,
+    "pageUrl": "/matches/bodoglimt-vs-tromso/2e55bv#4385529",
+    "id": "4385529",
+    "home": {
+      "name": "Bodø/Glimt",
+      "shortName": "Bodø/Glimt",
+      "id": "8402"
+    },
+    "away": {
+      "name": "Tromsø",
+      "shortName": "Tromsø",
+      "id": "8608"
+    },
+    "status": {
+      "utcTime": "2024-05-16T16:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "4 - 0",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "8",
+    "roundName": 8,
+    "pageUrl": "/matches/brann-vs-sandefjord/2etmgo#4385530",
+    "id": "4385530",
+    "home": {
+      "name": "Brann",
+      "shortName": "Brann",
+      "id": "8468"
+    },
+    "away": {
+      "name": "Sandefjord",
+      "shortName": "Sandefjord",
+      "id": "8609"
+    },
+    "status": {
+      "utcTime": "2024-05-16T16:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "2 - 1",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "8",
+    "roundName": 8,
+    "pageUrl": "/matches/fk-haugesund-vs-kristiansund/2f8a5s#4385532",
+    "id": "4385532",
+    "home": {
+      "name": "FK Haugesund",
+      "shortName": "FK Haugesund",
+      "id": "8512"
+    },
+    "away": {
+      "name": "Kristiansund",
+      "shortName": "Kristiansund",
+      "id": "8605"
+    },
+    "status": {
+      "utcTime": "2024-05-16T16:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "1 - 0",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "8",
+    "roundName": 8,
+    "pageUrl": "/matches/stromsgodset-vs-fredrikstad/2a0e7c#4385531",
+    "id": "4385531",
+    "home": {
+      "name": "Fredrikstad",
+      "shortName": "Fredrikstad",
+      "id": "8417"
+    },
+    "away": {
+      "name": "Strømsgodset",
+      "shortName": "Strømsgodset",
+      "id": "8180"
+    },
+    "status": {
+      "utcTime": "2024-05-16T16:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "4 - 1",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "8",
+    "roundName": 8,
+    "pageUrl": "/matches/odds-ballklubb-vs-molde/2ng2li#4385533",
+    "id": "4385533",
+    "home": {
+      "name": "Odds Ballklubb",
+      "shortName": "Odd",
+      "id": "7988"
+    },
+    "away": {
+      "name": "Molde",
+      "shortName": "Molde",
+      "id": "9917"
+    },
+    "status": {
+      "utcTime": "2024-05-16T16:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "0 - 4",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "8",
+    "roundName": 8,
+    "pageUrl": "/matches/kfum-vs-rosenborg/y9gcy#4385534",
+    "id": "4385534",
+    "home": {
+      "name": "Rosenborg",
+      "shortName": "Rosenborg",
+      "id": "8422"
+    },
+    "away": {
+      "name": "KFUM",
+      "shortName": "KFUM",
+      "id": "2305"
+    },
+    "status": {
+      "utcTime": "2024-05-16T16:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "1 - 3",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "8",
+    "roundName": 8,
+    "pageUrl": "/matches/hamarkameratene-vs-sarpsborg-08/2dluow#4385535",
+    "id": "4385535",
+    "home": {
+      "name": "Sarpsborg 08",
+      "shortName": "Sarpsborg 08",
+      "id": "8509"
+    },
+    "away": {
+      "name": "Hamarkameratene",
+      "shortName": "HamKam",
+      "id": "8448"
+    },
+    "status": {
+      "utcTime": "2024-05-16T16:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "1 - 7",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "8",
+    "roundName": 8,
+    "pageUrl": "/matches/lillestrom-vs-viking/2dkrf1#4385536",
+    "id": "4385536",
+    "home": {
+      "name": "Viking",
+      "shortName": "Viking",
+      "id": "8478"
+    },
+    "away": {
+      "name": "Lillestrøm",
+      "shortName": "Lillestrøm",
+      "id": "8476"
+    },
+    "status": {
+      "utcTime": "2024-05-16T16:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "1 - 4",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "9",
+    "roundName": 9,
+    "pageUrl": "/matches/bodoglimt-vs-hamarkameratene/2cj30r#4385537",
+    "id": "4385537",
+    "home": {
+      "name": "Hamarkameratene",
+      "shortName": "HamKam",
+      "id": "8448"
+    },
+    "away": {
+      "name": "Bodø/Glimt",
+      "shortName": "Bodø/Glimt",
+      "id": "8402"
+    },
+    "status": {
+      "utcTime": "2024-05-20T15:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "1 - 0",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "9",
+    "roundName": 9,
+    "pageUrl": "/matches/kfum-vs-odds-ballklubb/vjoaz#4385538",
+    "id": "4385538",
+    "home": {
+      "name": "KFUM",
+      "shortName": "KFUM",
+      "id": "2305"
+    },
+    "away": {
+      "name": "Odds Ballklubb",
+      "shortName": "Odd",
+      "id": "7988"
+    },
+    "status": {
+      "utcTime": "2024-05-20T15:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "0 - 0",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "9",
+    "roundName": 9,
+    "pageUrl": "/matches/brann-vs-kristiansund/2es5ra#4385539",
+    "id": "4385539",
+    "home": {
+      "name": "Kristiansund",
+      "shortName": "Kristiansund",
+      "id": "8605"
+    },
+    "away": {
+      "name": "Brann",
+      "shortName": "Brann",
+      "id": "8468"
+    },
+    "status": {
+      "utcTime": "2024-05-20T15:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "2 - 2",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "9",
+    "roundName": 9,
+    "pageUrl": "/matches/fredrikstad-vs-lillestrom/2cymu7#4385540",
+    "id": "4385540",
+    "home": {
+      "name": "Lillestrøm",
+      "shortName": "Lillestrøm",
+      "id": "8476"
+    },
+    "away": {
+      "name": "Fredrikstad",
+      "shortName": "Fredrikstad",
+      "id": "8417"
+    },
+    "status": {
+      "utcTime": "2024-05-20T15:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "0 - 3",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "9",
+    "roundName": 9,
+    "pageUrl": "/matches/sarpsborg-08-vs-molde/2t2xfw#4385541",
+    "id": "4385541",
+    "home": {
+      "name": "Molde",
+      "shortName": "Molde",
+      "id": "9917"
+    },
+    "away": {
+      "name": "Sarpsborg 08",
+      "shortName": "Sarpsborg 08",
+      "id": "8509"
+    },
+    "status": {
+      "utcTime": "2024-05-20T15:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "2 - 4",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "9",
+    "roundName": 9,
+    "pageUrl": "/matches/viking-vs-sandefjord/2exa9t#4385542",
+    "id": "4385542",
+    "home": {
+      "name": "Sandefjord",
+      "shortName": "Sandefjord",
+      "id": "8609"
+    },
+    "away": {
+      "name": "Viking",
+      "shortName": "Viking",
+      "id": "8478"
+    },
+    "status": {
+      "utcTime": "2024-05-20T15:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "0 - 3",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "9",
+    "roundName": 9,
+    "pageUrl": "/matches/stromsgodset-vs-fk-haugesund/2ayaea#4385543",
+    "id": "4385543",
+    "home": {
+      "name": "Strømsgodset",
+      "shortName": "Strømsgodset",
+      "id": "8180"
+    },
+    "away": {
+      "name": "FK Haugesund",
+      "shortName": "FK Haugesund",
+      "id": "8512"
+    },
+    "status": {
+      "utcTime": "2024-05-20T15:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "2 - 0",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "9",
+    "roundName": 9,
+    "pageUrl": "/matches/rosenborg-vs-tromso/2ecfzp#4385544",
+    "id": "4385544",
+    "home": {
+      "name": "Tromsø",
+      "shortName": "Tromsø",
+      "id": "8608"
+    },
+    "away": {
+      "name": "Rosenborg",
+      "shortName": "Rosenborg",
+      "id": "8422"
+    },
+    "status": {
+      "utcTime": "2024-05-20T17:15:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "3 - 2",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "10",
+    "roundName": 10,
+    "pageUrl": "/matches/kfum-vs-bodoglimt/y4uy8#4385585",
+    "id": "4385585",
+    "home": {
+      "name": "Bodø/Glimt",
+      "shortName": "Bodø/Glimt",
+      "id": "8402"
+    },
+    "away": {
+      "name": "KFUM",
+      "shortName": "KFUM",
+      "id": "2305"
+    },
+    "status": {
+      "utcTime": "2024-05-24T17:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "2 - 2",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "10",
+    "roundName": 10,
+    "pageUrl": "/matches/fredrikstad-vs-tromso/2eamap#4385587",
+    "id": "4385587",
+    "home": {
+      "name": "Fredrikstad",
+      "shortName": "Fredrikstad",
+      "id": "8417"
+    },
+    "away": {
+      "name": "Tromsø",
+      "shortName": "Tromsø",
+      "id": "8608"
+    },
+    "status": {
+      "utcTime": "2024-05-25T16:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "0 - 0",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "10",
+    "roundName": 10,
+    "pageUrl": "/matches/fk-haugesund-vs-sandefjord/2f9r02#4385588",
+    "id": "4385588",
+    "home": {
+      "name": "FK Haugesund",
+      "shortName": "FK Haugesund",
+      "id": "8512"
+    },
+    "away": {
+      "name": "Sandefjord",
+      "shortName": "Sandefjord",
+      "id": "8609"
+    },
+    "status": {
+      "utcTime": "2024-05-26T15:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "2 - 1",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "10",
+    "roundName": 10,
+    "pageUrl": "/matches/odds-ballklubb-vs-lillestrom/28p9s4#4385589",
+    "id": "4385589",
+    "home": {
+      "name": "Odds Ballklubb",
+      "shortName": "Odd",
+      "id": "7988"
+    },
+    "away": {
+      "name": "Lillestrøm",
+      "shortName": "Lillestrøm",
+      "id": "8476"
+    },
+    "status": {
+      "utcTime": "2024-05-26T15:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "2 - 1",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "10",
+    "roundName": 10,
+    "pageUrl": "/matches/rosenborg-vs-kristiansund/2ebckj#4385590",
+    "id": "4385590",
+    "home": {
+      "name": "Rosenborg",
+      "shortName": "Rosenborg",
+      "id": "8422"
+    },
+    "away": {
+      "name": "Kristiansund",
+      "shortName": "Kristiansund",
+      "id": "8605"
+    },
+    "status": {
+      "utcTime": "2024-05-26T15:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "2 - 1",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "10",
+    "roundName": 10,
+    "pageUrl": "/matches/stromsgodset-vs-sarpsborg-08/2ax7ra#4385591",
+    "id": "4385591",
+    "home": {
+      "name": "Sarpsborg 08",
+      "shortName": "Sarpsborg 08",
+      "id": "8509"
+    },
+    "away": {
+      "name": "Strømsgodset",
+      "shortName": "Strømsgodset",
+      "id": "8180"
+    },
+    "status": {
+      "utcTime": "2024-05-26T15:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "1 - 3",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "10",
+    "roundName": 10,
+    "pageUrl": "/matches/hamarkameratene-vs-viking/2dalf3#4385592",
+    "id": "4385592",
+    "home": {
+      "name": "Viking",
+      "shortName": "Viking",
+      "id": "8478"
+    },
+    "away": {
+      "name": "Hamarkameratene",
+      "shortName": "HamKam",
+      "id": "8448"
+    },
+    "status": {
+      "utcTime": "2024-05-26T15:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "3 - 0",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "10",
+    "roundName": 10,
+    "pageUrl": "/matches/brann-vs-molde/2smr5i#4385586",
+    "id": "4385586",
+    "home": {
+      "name": "Brann",
+      "shortName": "Brann",
+      "id": "8468"
+    },
+    "away": {
+      "name": "Molde",
+      "shortName": "Molde",
+      "id": "9917"
+    },
+    "status": {
+      "utcTime": "2024-05-26T17:15:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "1 - 3",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "19",
+    "roundName": 19,
+    "pageUrl": "/matches/bodoglimt-vs-sandefjord/2e5igf#4385617",
+    "id": "4385617",
+    "home": {
+      "name": "Bodø/Glimt",
+      "shortName": "Bodø/Glimt",
+      "id": "8402"
+    },
+    "away": {
+      "name": "Sandefjord",
+      "shortName": "Sandefjord",
+      "id": "8609"
+    },
+    "status": {
+      "utcTime": "2024-05-29T17:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "1 - 1",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "18",
+    "roundName": 18,
+    "pageUrl": "/matches/brann-vs-kristiansund/2es5ra#4385609",
+    "id": "4385609",
+    "home": {
+      "name": "Brann",
+      "shortName": "Brann",
+      "id": "8468"
+    },
+    "away": {
+      "name": "Kristiansund",
+      "shortName": "Kristiansund",
+      "id": "8605"
+    },
+    "status": {
+      "utcTime": "2024-05-29T17:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "2 - 1",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "18",
+    "roundName": 18,
+    "pageUrl": "/matches/fredrikstad-vs-tromso/2eamap#4385615",
+    "id": "4385615",
+    "home": {
+      "name": "Tromsø",
+      "shortName": "Tromsø",
+      "id": "8608"
+    },
+    "away": {
+      "name": "Fredrikstad",
+      "shortName": "Fredrikstad",
+      "id": "8417"
+    },
+    "status": {
+      "utcTime": "2024-05-29T17:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "3 - 0",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "11",
+    "roundName": 11,
+    "pageUrl": "/matches/hamarkameratene-vs-brann/2d6yue#4385545",
+    "id": "4385545",
+    "home": {
+      "name": "Hamarkameratene",
+      "shortName": "HamKam",
+      "id": "8448"
+    },
+    "away": {
+      "name": "Brann",
+      "shortName": "Brann",
+      "id": "8468"
+    },
+    "status": {
+      "utcTime": "2024-06-01T16:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "1 - 2",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "11",
+    "roundName": 11,
+    "pageUrl": "/matches/viking-vs-molde/2sqp1z#4385546",
+    "id": "4385546",
+    "home": {
+      "name": "Molde",
+      "shortName": "Molde",
+      "id": "9917"
+    },
+    "away": {
+      "name": "Viking",
+      "shortName": "Viking",
+      "id": "8478"
+    },
+    "status": {
+      "utcTime": "2024-06-02T12:30:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "2 - 2",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "11",
+    "roundName": 11,
+    "pageUrl": "/matches/bodoglimt-vs-fk-haugesund/2d68rv#4385547",
+    "id": "4385547",
+    "home": {
+      "name": "FK Haugesund",
+      "shortName": "FK Haugesund",
+      "id": "8512"
+    },
+    "away": {
+      "name": "Bodø/Glimt",
+      "shortName": "Bodø/Glimt",
+      "id": "8402"
+    },
+    "status": {
+      "utcTime": "2024-06-02T15:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "0 - 1",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "11",
+    "roundName": 11,
+    "pageUrl": "/matches/kfum-vs-sandefjord/zgtv8#4385548",
+    "id": "4385548",
+    "home": {
+      "name": "KFUM",
+      "shortName": "KFUM",
+      "id": "2305"
+    },
+    "away": {
+      "name": "Sandefjord",
+      "shortName": "Sandefjord",
+      "id": "8609"
+    },
+    "status": {
+      "utcTime": "2024-06-02T15:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "3 - 3",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "11",
+    "roundName": 11,
+    "pageUrl": "/matches/sarpsborg-08-vs-kristiansund/2f76jg#4385549",
+    "id": "4385549",
+    "home": {
+      "name": "Kristiansund",
+      "shortName": "Kristiansund",
+      "id": "8605"
+    },
+    "away": {
+      "name": "Sarpsborg 08",
+      "shortName": "Sarpsborg 08",
+      "id": "8509"
+    },
+    "status": {
+      "utcTime": "2024-06-02T15:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "3 - 1",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "11",
+    "roundName": 11,
+    "pageUrl": "/matches/odds-ballklubb-vs-stromsgodset/25tqy0#4385550",
+    "id": "4385550",
+    "home": {
+      "name": "Strømsgodset",
+      "shortName": "Strømsgodset",
+      "id": "8180"
+    },
+    "away": {
+      "name": "Odds Ballklubb",
+      "shortName": "Odd",
+      "id": "7988"
+    },
+    "status": {
+      "utcTime": "2024-06-02T15:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "1 - 1",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "11",
+    "roundName": 11,
+    "pageUrl": "/matches/lillestrom-vs-tromso/2ew6py#4385551",
+    "id": "4385551",
+    "home": {
+      "name": "Tromsø",
+      "shortName": "Tromsø",
+      "id": "8608"
+    },
+    "away": {
+      "name": "Lillestrøm",
+      "shortName": "Lillestrøm",
+      "id": "8476"
+    },
+    "status": {
+      "utcTime": "2024-06-02T15:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "1 - 2",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "11",
+    "roundName": 11,
+    "pageUrl": "/matches/fredrikstad-vs-rosenborg/2cf40y#4385552",
+    "id": "4385552",
+    "home": {
+      "name": "Rosenborg",
+      "shortName": "Rosenborg",
+      "id": "8422"
+    },
+    "away": {
+      "name": "Fredrikstad",
+      "shortName": "Fredrikstad",
+      "id": "8417"
+    },
+    "status": {
+      "utcTime": "2024-06-02T17:15:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "1 - 1",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "12",
+    "roundName": 12,
+    "pageUrl": "/matches/hamarkameratene-vs-sandefjord/2emb2q#4385553",
+    "id": "4385553",
+    "home": {
+      "name": "Sandefjord",
+      "shortName": "Sandefjord",
+      "id": "8609"
+    },
+    "away": {
+      "name": "Hamarkameratene",
+      "shortName": "HamKam",
+      "id": "8448"
+    },
+    "status": {
+      "utcTime": "2024-06-27T17:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "1 - 2",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "12",
+    "roundName": 12,
+    "pageUrl": "/matches/kfum-vs-lillestrom/ylwi7#4385554",
+    "id": "4385554",
+    "home": {
+      "name": "Lillestrøm",
+      "shortName": "Lillestrøm",
+      "id": "8476"
+    },
+    "away": {
+      "name": "KFUM",
+      "shortName": "KFUM",
+      "id": "2305"
+    },
+    "status": {
+      "utcTime": "2024-06-27T19:15:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "2 - 1",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "12",
+    "roundName": 12,
+    "pageUrl": "/matches/stromsgodset-vs-brann/2aike0#4385555",
+    "id": "4385555",
+    "home": {
+      "name": "Brann",
+      "shortName": "Brann",
+      "id": "8468"
+    },
+    "away": {
+      "name": "Strømsgodset",
+      "shortName": "Strømsgodset",
+      "id": "8180"
+    },
+    "status": {
+      "utcTime": "2024-06-28T17:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "0 - 0",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "12",
+    "roundName": 12,
+    "pageUrl": "/matches/odds-ballklubb-vs-kristiansund/29yz4m#4385557",
+    "id": "4385557",
+    "home": {
+      "name": "Odds Ballklubb",
+      "shortName": "Odd",
+      "id": "7988"
+    },
+    "away": {
+      "name": "Kristiansund",
+      "shortName": "Kristiansund",
+      "id": "8605"
+    },
+    "status": {
+      "utcTime": "2024-06-28T17:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "1 - 1",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "12",
+    "roundName": 12,
+    "pageUrl": "/matches/bodoglimt-vs-sarpsborg-08/2d55md#4385558",
+    "id": "4385558",
+    "home": {
+      "name": "Sarpsborg 08",
+      "shortName": "Sarpsborg 08",
+      "id": "8509"
+    },
+    "away": {
+      "name": "Bodø/Glimt",
+      "shortName": "Bodø/Glimt",
+      "id": "8402"
+    },
+    "status": {
+      "utcTime": "2024-06-28T17:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "1 - 2",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "12",
+    "roundName": 12,
+    "pageUrl": "/matches/tromso-vs-molde/2u64sw#4385559",
+    "id": "4385559",
+    "home": {
+      "name": "Tromsø",
+      "shortName": "Tromsø",
+      "id": "8608"
+    },
+    "away": {
+      "name": "Molde",
+      "shortName": "Molde",
+      "id": "9917"
+    },
+    "status": {
+      "utcTime": "2024-06-28T19:15:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "0 - 2",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "12",
+    "roundName": 12,
+    "pageUrl": "/matches/rosenborg-vs-viking/2d163s#4385560",
+    "id": "4385560",
+    "home": {
+      "name": "Viking",
+      "shortName": "Viking",
+      "id": "8478"
+    },
+    "away": {
+      "name": "Rosenborg",
+      "shortName": "Rosenborg",
+      "id": "8422"
+    },
+    "status": {
+      "utcTime": "2024-06-30T13:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "4 - 2",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "2",
+    "roundName": 2,
+    "pageUrl": "/matches/tromso-vs-sandefjord/2g92te#4385406",
+    "id": "4385406",
+    "home": {
+      "name": "Sandefjord",
+      "shortName": "Sandefjord",
+      "id": "8609"
+    },
+    "away": {
+      "name": "Tromsø",
+      "shortName": "Tromsø",
+      "id": "8608"
+    },
+    "status": {
+      "utcTime": "2024-07-03T17:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "1 - 2",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "13",
+    "roundName": 13,
+    "pageUrl": "/matches/bodoglimt-vs-brann/2cqb89#4385561",
+    "id": "4385561",
+    "home": {
+      "name": "Bodø/Glimt",
+      "shortName": "Bodø/Glimt",
+      "id": "8402"
+    },
+    "away": {
+      "name": "Brann",
+      "shortName": "Brann",
+      "id": "8468"
+    },
+    "status": {
+      "utcTime": "2024-07-07T12:30:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "5 - 1",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "13",
+    "roundName": 13,
+    "pageUrl": "/matches/sarpsborg-08-vs-fk-haugesund/2e95oj#4385563",
+    "id": "4385563",
+    "home": {
+      "name": "FK Haugesund",
+      "shortName": "FK Haugesund",
+      "id": "8512"
+    },
+    "away": {
+      "name": "Sarpsborg 08",
+      "shortName": "Sarpsborg 08",
+      "id": "8509"
+    },
+    "status": {
+      "utcTime": "2024-07-07T15:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "1 - 2",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "13",
+    "roundName": 13,
+    "pageUrl": "/matches/hamarkameratene-vs-tromso/2elxww#4385562",
+    "id": "4385562",
+    "home": {
+      "name": "Hamarkameratene",
+      "shortName": "HamKam",
+      "id": "8448"
+    },
+    "away": {
+      "name": "Tromsø",
+      "shortName": "Tromsø",
+      "id": "8608"
+    },
+    "status": {
+      "utcTime": "2024-07-07T15:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "0 - 0",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "13",
+    "roundName": 13,
+    "pageUrl": "/matches/kfum-vs-viking/ymd5a#4385564",
+    "id": "4385564",
+    "home": {
+      "name": "KFUM",
+      "shortName": "KFUM",
+      "id": "2305"
+    },
+    "away": {
+      "name": "Viking",
+      "shortName": "Viking",
+      "id": "8478"
+    },
+    "status": {
+      "utcTime": "2024-07-07T15:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "1 - 2",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "13",
+    "roundName": 13,
+    "pageUrl": "/matches/lillestrom-vs-molde/2spwo2#4385566",
+    "id": "4385566",
+    "home": {
+      "name": "Molde",
+      "shortName": "Molde",
+      "id": "9917"
+    },
+    "away": {
+      "name": "Lillestrøm",
+      "shortName": "Lillestrøm",
+      "id": "8476"
+    },
+    "status": {
+      "utcTime": "2024-07-07T15:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "3 - 0",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "13",
+    "roundName": 13,
+    "pageUrl": "/matches/odds-ballklubb-vs-rosenborg/2868ud#4385567",
+    "id": "4385567",
+    "home": {
+      "name": "Rosenborg",
+      "shortName": "Rosenborg",
+      "id": "8422"
+    },
+    "away": {
+      "name": "Odds Ballklubb",
+      "shortName": "Odd",
+      "id": "7988"
+    },
+    "status": {
+      "utcTime": "2024-07-07T17:15:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "2 - 1",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "13",
+    "roundName": 13,
+    "pageUrl": "/matches/fredrikstad-vs-kristiansund/2e9ivy#4385565",
+    "id": "4385565",
+    "home": {
+      "name": "Kristiansund",
+      "shortName": "Kristiansund",
+      "id": "8605"
+    },
+    "away": {
+      "name": "Fredrikstad",
+      "shortName": "Fredrikstad",
+      "id": "8417"
+    },
+    "status": {
+      "utcTime": "2024-07-08T17:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "3 - 1",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "13",
+    "roundName": 13,
+    "pageUrl": "/matches/stromsgodset-vs-sandefjord/2bx3go#4385568",
+    "id": "4385568",
+    "home": {
+      "name": "Strømsgodset",
+      "shortName": "Strømsgodset",
+      "id": "8180"
+    },
+    "away": {
+      "name": "Sandefjord",
+      "shortName": "Sandefjord",
+      "id": "8609"
+    },
+    "status": {
+      "utcTime": "2024-07-08T17:15:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "1 - 1",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "14",
+    "roundName": 14,
+    "pageUrl": "/matches/rosenborg-vs-sarpsborg-08/2dcer7#4385569",
+    "id": "4385569",
+    "home": {
+      "name": "Sarpsborg 08",
+      "shortName": "Sarpsborg 08",
+      "id": "8509"
+    },
+    "away": {
+      "name": "Rosenborg",
+      "shortName": "Rosenborg",
+      "id": "8422"
+    },
+    "status": {
+      "utcTime": "2024-07-12T17:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "4 - 1",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "14",
+    "roundName": 14,
+    "pageUrl": "/matches/fredrikstad-vs-molde/2s2oni#4385570",
+    "id": "4385570",
+    "home": {
+      "name": "Fredrikstad",
+      "shortName": "Fredrikstad",
+      "id": "8417"
+    },
+    "away": {
+      "name": "Molde",
+      "shortName": "Molde",
+      "id": "9917"
+    },
+    "status": {
+      "utcTime": "2024-07-13T15:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "0 - 0",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "14",
+    "roundName": 14,
+    "pageUrl": "/matches/stromsgodset-vs-lillestrom/2alf6s#4385571",
+    "id": "4385571",
+    "home": {
+      "name": "Lillestrøm",
+      "shortName": "Lillestrøm",
+      "id": "8476"
+    },
+    "away": {
+      "name": "Strømsgodset",
+      "shortName": "Strømsgodset",
+      "id": "8180"
+    },
+    "status": {
+      "utcTime": "2024-07-13T15:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "3 - 1",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "14",
+    "roundName": 14,
+    "pageUrl": "/matches/odds-ballklubb-vs-hamarkameratene/28feci#4385572",
+    "id": "4385572",
+    "home": {
+      "name": "Odds Ballklubb",
+      "shortName": "Odd",
+      "id": "7988"
+    },
+    "away": {
+      "name": "Hamarkameratene",
+      "shortName": "HamKam",
+      "id": "8448"
+    },
+    "status": {
+      "utcTime": "2024-07-13T15:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "1 - 2",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "14",
+    "roundName": 14,
+    "pageUrl": "/matches/bodoglimt-vs-sandefjord/2e5igf#4385573",
+    "id": "4385573",
+    "home": {
+      "name": "Sandefjord",
+      "shortName": "Sandefjord",
+      "id": "8609"
+    },
+    "away": {
+      "name": "Bodø/Glimt",
+      "shortName": "Bodø/Glimt",
+      "id": "8402"
+    },
+    "status": {
+      "utcTime": "2024-07-13T15:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "2 - 1",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "14",
+    "roundName": 14,
+    "pageUrl": "/matches/viking-vs-kristiansund/2evtjb#4385574",
+    "id": "4385574",
+    "home": {
+      "name": "Viking",
+      "shortName": "Viking",
+      "id": "8478"
+    },
+    "away": {
+      "name": "Kristiansund",
+      "shortName": "Kristiansund",
+      "id": "8605"
+    },
+    "status": {
+      "utcTime": "2024-07-13T15:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "2 - 0",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "14",
+    "roundName": 14,
+    "pageUrl": "/matches/brann-vs-fk-haugesund/2du7ua#4385575",
+    "id": "4385575",
+    "home": {
+      "name": "Brann",
+      "shortName": "Brann",
+      "id": "8468"
+    },
+    "away": {
+      "name": "FK Haugesund",
+      "shortName": "FK Haugesund",
+      "id": "8512"
+    },
+    "status": {
+      "utcTime": "2024-07-13T17:15:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "1 - 1",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "14",
+    "roundName": 14,
+    "pageUrl": "/matches/kfum-vs-tromso/zglg1#4385576",
+    "id": "4385576",
+    "home": {
+      "name": "Tromsø",
+      "shortName": "Tromsø",
+      "id": "8608"
+    },
+    "away": {
+      "name": "KFUM",
+      "shortName": "KFUM",
+      "id": "2305"
+    },
+    "status": {
+      "utcTime": "2024-07-13T20:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "1 - 2",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "15",
+    "roundName": 15,
+    "pageUrl": "/matches/odds-ballklubb-vs-bodoglimt/27z7qf#4385577",
+    "id": "4385577",
+    "home": {
+      "name": "Bodø/Glimt",
+      "shortName": "Bodø/Glimt",
+      "id": "8402"
+    },
+    "away": {
+      "name": "Odds Ballklubb",
+      "shortName": "Odd",
+      "id": "7988"
+    },
+    "status": {
+      "utcTime": "2024-07-19T17:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "3 - 1",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "15",
+    "roundName": 15,
+    "pageUrl": "/matches/brann-vs-sarpsborg-08/2dt4ja#4385578",
+    "id": "4385578",
+    "home": {
+      "name": "Sarpsborg 08",
+      "shortName": "Sarpsborg 08",
+      "id": "8509"
+    },
+    "away": {
+      "name": "Brann",
+      "shortName": "Brann",
+      "id": "8468"
+    },
+    "status": {
+      "utcTime": "2024-07-20T16:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "1 - 1",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "15",
+    "roundName": 15,
+    "pageUrl": "/matches/kfum-vs-molde/18h6hq#4385583",
+    "id": "4385583",
+    "home": {
+      "name": "Molde",
+      "shortName": "Molde",
+      "id": "9917"
+    },
+    "away": {
+      "name": "KFUM",
+      "shortName": "KFUM",
+      "id": "2305"
+    },
+    "status": {
+      "utcTime": "2024-07-20T18:15:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "2 - 3",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "15",
+    "roundName": 15,
+    "pageUrl": "/matches/stromsgodset-vs-tromso/2bwqia#4385579",
+    "id": "4385579",
+    "home": {
+      "name": "Strømsgodset",
+      "shortName": "Strømsgodset",
+      "id": "8180"
+    },
+    "away": {
+      "name": "Tromsø",
+      "shortName": "Tromsø",
+      "id": "8608"
+    },
+    "status": {
+      "utcTime": "2024-07-21T12:30:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "0 - 1",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "15",
+    "roundName": 15,
+    "pageUrl": "/matches/viking-vs-fk-haugesund/2dxuwh#4385581",
+    "id": "4385581",
+    "home": {
+      "name": "FK Haugesund",
+      "shortName": "FK Haugesund",
+      "id": "8512"
+    },
+    "away": {
+      "name": "Viking",
+      "shortName": "Viking",
+      "id": "8478"
+    },
+    "status": {
+      "utcTime": "2024-07-21T15:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "1 - 0",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "15",
+    "roundName": 15,
+    "pageUrl": "/matches/fredrikstad-vs-hamarkameratene/2coi4x#4385580",
+    "id": "4385580",
+    "home": {
+      "name": "Hamarkameratene",
+      "shortName": "HamKam",
+      "id": "8448"
+    },
+    "away": {
+      "name": "Fredrikstad",
+      "shortName": "Fredrikstad",
+      "id": "8417"
+    },
+    "status": {
+      "utcTime": "2024-07-21T15:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "0 - 1",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "15",
+    "roundName": 15,
+    "pageUrl": "/matches/rosenborg-vs-lillestrom/2d0g0v#4385584",
+    "id": "4385584",
+    "home": {
+      "name": "Rosenborg",
+      "shortName": "Rosenborg",
+      "id": "8422"
+    },
+    "away": {
+      "name": "Lillestrøm",
+      "shortName": "Lillestrøm",
+      "id": "8476"
+    },
+    "status": {
+      "utcTime": "2024-07-21T17:15:00Z",
+      "timezone": "UTC",
+      "cancelled": true,
+      "started": true,
+      "finished": true,
+      "reason": {
+        "short": "Ab",
+        "shortKey": "aborted_short",
+        "long": "Abandoned",
+        "longKey": "aborted"
+      },
+      "scoreStr": "0 - 0"
+    }
+  },
+  {
+    "round": "16",
+    "roundName": 16,
+    "pageUrl": "/matches/kfum-vs-bodoglimt/y4uy8#4385595",
+    "id": "4385595",
+    "home": {
+      "name": "KFUM",
+      "shortName": "KFUM",
+      "id": "2305"
+    },
+    "away": {
+      "name": "Bodø/Glimt",
+      "shortName": "Bodø/Glimt",
+      "id": "8402"
+    },
+    "status": {
+      "utcTime": "2024-07-27T14:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "1 - 1",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "16",
+    "roundName": 16,
+    "pageUrl": "/matches/fredrikstad-vs-rosenborg/2cf40y#4385594",
+    "id": "4385594",
+    "home": {
+      "name": "Fredrikstad",
+      "shortName": "Fredrikstad",
+      "id": "8417"
+    },
+    "away": {
+      "name": "Rosenborg",
+      "shortName": "Rosenborg",
+      "id": "8422"
+    },
+    "status": {
+      "utcTime": "2024-07-27T16:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "2 - 2",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "16",
+    "roundName": 16,
+    "pageUrl": "/matches/lillestrom-vs-sarpsborg-08/2dw1cy#4385596",
+    "id": "4385596",
+    "home": {
+      "name": "Lillestrøm",
+      "shortName": "Lillestrøm",
+      "id": "8476"
+    },
+    "away": {
+      "name": "Sarpsborg 08",
+      "shortName": "Sarpsborg 08",
+      "id": "8509"
+    },
+    "status": {
+      "utcTime": "2024-07-28T15:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "2 - 2",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "16",
+    "roundName": 16,
+    "pageUrl": "/matches/odds-ballklubb-vs-stromsgodset/25tqy0#4385597",
+    "id": "4385597",
+    "home": {
+      "name": "Odds Ballklubb",
+      "shortName": "Odd",
+      "id": "7988"
+    },
+    "away": {
+      "name": "Strømsgodset",
+      "shortName": "Strømsgodset",
+      "id": "8180"
+    },
+    "status": {
+      "utcTime": "2024-07-28T15:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "2 - 0",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "16",
+    "roundName": 16,
+    "pageUrl": "/matches/fk-haugesund-vs-sandefjord/2f9r02#4385598",
+    "id": "4385598",
+    "home": {
+      "name": "Sandefjord",
+      "shortName": "Sandefjord",
+      "id": "8609"
+    },
+    "away": {
+      "name": "FK Haugesund",
+      "shortName": "FK Haugesund",
+      "id": "8512"
+    },
+    "status": {
+      "utcTime": "2024-07-28T15:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "4 - 3",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "16",
+    "roundName": 16,
+    "pageUrl": "/matches/kristiansund-vs-tromso/2g7loj#4385599",
+    "id": "4385599",
+    "home": {
+      "name": "Tromsø",
+      "shortName": "Tromsø",
+      "id": "8608"
+    },
+    "away": {
+      "name": "Kristiansund",
+      "shortName": "Kristiansund",
+      "id": "8605"
+    },
+    "status": {
+      "utcTime": "2024-07-28T15:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "0 - 0",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "16",
+    "roundName": 16,
+    "pageUrl": "/matches/viking-vs-molde/2sqp1z#4385600",
+    "id": "4385600",
+    "home": {
+      "name": "Viking",
+      "shortName": "Viking",
+      "id": "8478"
+    },
+    "away": {
+      "name": "Molde",
+      "shortName": "Molde",
+      "id": "9917"
+    },
+    "status": {
+      "utcTime": "2024-07-28T17:15:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "1 - 0",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "17",
+    "roundName": 17,
+    "pageUrl": "/matches/bodoglimt-vs-fk-haugesund/2d68rv#4385601",
+    "id": "4385601",
+    "home": {
+      "name": "Bodø/Glimt",
+      "shortName": "Bodø/Glimt",
+      "id": "8402"
+    },
+    "away": {
+      "name": "FK Haugesund",
+      "shortName": "FK Haugesund",
+      "id": "8512"
+    },
+    "status": {
+      "utcTime": "2024-08-03T16:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "4 - 2",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "17",
+    "roundName": 17,
+    "pageUrl": "/matches/kfum-vs-fredrikstad/y8az8#4385602",
+    "id": "4385602",
+    "home": {
+      "name": "Fredrikstad",
+      "shortName": "Fredrikstad",
+      "id": "8417"
+    },
+    "away": {
+      "name": "KFUM",
+      "shortName": "KFUM",
+      "id": "2305"
+    },
+    "status": {
+      "utcTime": "2024-08-04T15:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "0 - 0",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "17",
+    "roundName": 17,
+    "pageUrl": "/matches/hamarkameratene-vs-viking/2dalf3#4385603",
+    "id": "4385603",
+    "home": {
+      "name": "Hamarkameratene",
+      "shortName": "HamKam",
+      "id": "8448"
+    },
+    "away": {
+      "name": "Viking",
+      "shortName": "Viking",
+      "id": "8478"
+    },
+    "status": {
+      "utcTime": "2024-08-04T15:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "3 - 3",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "17",
+    "roundName": 17,
+    "pageUrl": "/matches/lillestrom-vs-kristiansund/2ev36a#4385604",
+    "id": "4385604",
+    "home": {
+      "name": "Kristiansund",
+      "shortName": "Kristiansund",
+      "id": "8605"
+    },
+    "away": {
+      "name": "Lillestrøm",
+      "shortName": "Lillestrøm",
+      "id": "8476"
+    },
+    "status": {
+      "utcTime": "2024-08-04T15:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "2 - 1",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "17",
+    "roundName": 17,
+    "pageUrl": "/matches/sarpsborg-08-vs-sandefjord/2f8nde#4385607",
+    "id": "4385607",
+    "home": {
+      "name": "Sarpsborg 08",
+      "shortName": "Sarpsborg 08",
+      "id": "8509"
+    },
+    "away": {
+      "name": "Sandefjord",
+      "shortName": "Sandefjord",
+      "id": "8609"
+    },
+    "status": {
+      "utcTime": "2024-08-04T15:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "2 - 1",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "17",
+    "roundName": 17,
+    "pageUrl": "/matches/stromsgodset-vs-brann/2aike0#4385608",
+    "id": "4385608",
+    "home": {
+      "name": "Strømsgodset",
+      "shortName": "Strømsgodset",
+      "id": "8180"
+    },
+    "away": {
+      "name": "Brann",
+      "shortName": "Brann",
+      "id": "8468"
+    },
+    "status": {
+      "utcTime": "2024-08-04T15:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "2 - 3",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "17",
+    "roundName": 17,
+    "pageUrl": "/matches/rosenborg-vs-tromso/2ecfzp#4385606",
+    "id": "4385606",
+    "home": {
+      "name": "Rosenborg",
+      "shortName": "Rosenborg",
+      "id": "8422"
+    },
+    "away": {
+      "name": "Tromsø",
+      "shortName": "Tromsø",
+      "id": "8608"
+    },
+    "status": {
+      "utcTime": "2024-08-04T17:15:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "1 - 0",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "18",
+    "roundName": 18,
+    "pageUrl": "/matches/stromsgodset-vs-sandefjord/2bx3go#4385614",
+    "id": "4385614",
+    "home": {
+      "name": "Sandefjord",
+      "shortName": "Sandefjord",
+      "id": "8609"
+    },
+    "away": {
+      "name": "Strømsgodset",
+      "shortName": "Strømsgodset",
+      "id": "8180"
+    },
+    "status": {
+      "utcTime": "2024-08-09T17:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "2 - 2",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "18",
+    "roundName": 18,
+    "pageUrl": "/matches/hamarkameratene-vs-fk-haugesund/2dmxy8#4385610",
+    "id": "4385610",
+    "home": {
+      "name": "FK Haugesund",
+      "shortName": "FK Haugesund",
+      "id": "8512"
+    },
+    "away": {
+      "name": "Hamarkameratene",
+      "shortName": "HamKam",
+      "id": "8448"
+    },
+    "status": {
+      "utcTime": "2024-08-10T14:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "0 - 1",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "18",
+    "roundName": 18,
+    "pageUrl": "/matches/bodoglimt-vs-viking/2ctxg6#4385616",
+    "id": "4385616",
+    "home": {
+      "name": "Viking",
+      "shortName": "Viking",
+      "id": "8478"
+    },
+    "away": {
+      "name": "Bodø/Glimt",
+      "shortName": "Bodø/Glimt",
+      "id": "8402"
+    },
+    "status": {
+      "utcTime": "2024-08-10T16:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "1 - 1",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "18",
+    "roundName": 18,
+    "pageUrl": "/matches/kfum-vs-rosenborg/y9gcy#4385611",
+    "id": "4385611",
+    "home": {
+      "name": "KFUM",
+      "shortName": "KFUM",
+      "id": "2305"
+    },
+    "away": {
+      "name": "Rosenborg",
+      "shortName": "Rosenborg",
+      "id": "8422"
+    },
+    "status": {
+      "utcTime": "2024-08-11T15:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "1 - 0",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "18",
+    "roundName": 18,
+    "pageUrl": "/matches/odds-ballklubb-vs-sarpsborg-08/290xgm#4385613",
+    "id": "4385613",
+    "home": {
+      "name": "Odds Ballklubb",
+      "shortName": "Odd",
+      "id": "7988"
+    },
+    "away": {
+      "name": "Sarpsborg 08",
+      "shortName": "Sarpsborg 08",
+      "id": "8509"
+    },
+    "status": {
+      "utcTime": "2024-08-11T15:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "1 - 1",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "18",
+    "roundName": 18,
+    "pageUrl": "/matches/lillestrom-vs-molde/2spwo2#4385612",
+    "id": "4385612",
+    "home": {
+      "name": "Lillestrøm",
+      "shortName": "Lillestrøm",
+      "id": "8476"
+    },
+    "away": {
+      "name": "Molde",
+      "shortName": "Molde",
+      "id": "9917"
+    },
+    "status": {
+      "utcTime": "2024-08-11T17:15:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "1 - 2",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "12",
+    "roundName": 12,
+    "pageUrl": "/matches/fredrikstad-vs-fk-haugesund/2dbomp#4385556",
+    "id": "4385556",
+    "home": {
+      "name": "Fredrikstad",
+      "shortName": "Fredrikstad",
+      "id": "8417"
+    },
+    "away": {
+      "name": "FK Haugesund",
+      "shortName": "FK Haugesund",
+      "id": "8512"
+    },
+    "status": {
+      "utcTime": "2024-08-14T17:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "1 - 0",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "19",
+    "roundName": 19,
+    "pageUrl": "/matches/stromsgodset-vs-lillestrom/2alf6s#4385624",
+    "id": "4385624",
+    "home": {
+      "name": "Strømsgodset",
+      "shortName": "Strømsgodset",
+      "id": "8180"
+    },
+    "away": {
+      "name": "Lillestrøm",
+      "shortName": "Lillestrøm",
+      "id": "8476"
+    },
+    "status": {
+      "utcTime": "2024-08-17T16:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "3 - 2",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "19",
+    "roundName": 19,
+    "pageUrl": "/matches/fredrikstad-vs-brann/2cvqkr#4385618",
+    "id": "4385618",
+    "home": {
+      "name": "Fredrikstad",
+      "shortName": "Fredrikstad",
+      "id": "8417"
+    },
+    "away": {
+      "name": "Brann",
+      "shortName": "Brann",
+      "id": "8468"
+    },
+    "status": {
+      "utcTime": "2024-08-18T12:30:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "0 - 4",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "19",
+    "roundName": 19,
+    "pageUrl": "/matches/odds-ballklubb-vs-hamarkameratene/28feci#4385619",
+    "id": "4385619",
+    "home": {
+      "name": "Hamarkameratene",
+      "shortName": "HamKam",
+      "id": "8448"
+    },
+    "away": {
+      "name": "Odds Ballklubb",
+      "shortName": "Odd",
+      "id": "7988"
+    },
+    "status": {
+      "utcTime": "2024-08-18T15:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "1 - 0",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "19",
+    "roundName": 19,
+    "pageUrl": "/matches/kfum-vs-tromso/zglg1#4385620",
+    "id": "4385620",
+    "home": {
+      "name": "KFUM",
+      "shortName": "KFUM",
+      "id": "2305"
+    },
+    "away": {
+      "name": "Tromsø",
+      "shortName": "Tromsø",
+      "id": "8608"
+    },
+    "status": {
+      "utcTime": "2024-08-18T15:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "0 - 1",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "19",
+    "roundName": 19,
+    "pageUrl": "/matches/sarpsborg-08-vs-fk-haugesund/2e95oj#4385623",
+    "id": "4385623",
+    "home": {
+      "name": "Sarpsborg 08",
+      "shortName": "Sarpsborg 08",
+      "id": "8509"
+    },
+    "away": {
+      "name": "FK Haugesund",
+      "shortName": "FK Haugesund",
+      "id": "8512"
+    },
+    "status": {
+      "utcTime": "2024-08-18T15:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "2 - 2",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "19",
+    "roundName": 19,
+    "pageUrl": "/matches/rosenborg-vs-viking/2d163s#4385622",
+    "id": "4385622",
+    "home": {
+      "name": "Rosenborg",
+      "shortName": "Rosenborg",
+      "id": "8422"
+    },
+    "away": {
+      "name": "Viking",
+      "shortName": "Viking",
+      "id": "8478"
+    },
+    "status": {
+      "utcTime": "2024-08-18T17:15:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "2 - 1",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "15",
+    "roundName": 15,
+    "pageUrl": "/matches/rosenborg-vs-lillestrom/2d0g0v#4583736",
+    "id": "4583736",
+    "home": {
+      "name": "Rosenborg",
+      "shortName": "Rosenborg",
+      "id": "8422"
+    },
+    "away": {
+      "name": "Lillestrøm",
+      "shortName": "Lillestrøm",
+      "id": "8476"
+    },
+    "status": {
+      "utcTime": "2024-08-21T17:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "4 - 0",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "20",
+    "roundName": 20,
+    "pageUrl": "/matches/bodoglimt-vs-sarpsborg-08/2d55md#4385625",
+    "id": "4385625",
+    "home": {
+      "name": "Bodø/Glimt",
+      "shortName": "Bodø/Glimt",
+      "id": "8402"
+    },
+    "away": {
+      "name": "Sarpsborg 08",
+      "shortName": "Sarpsborg 08",
+      "id": "8509"
+    },
+    "status": {
+      "utcTime": "2024-08-24T14:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "6 - 0",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "20",
+    "roundName": 20,
+    "pageUrl": "/matches/lillestrom-vs-tromso/2ew6py#4385628",
+    "id": "4385628",
+    "home": {
+      "name": "Lillestrøm",
+      "shortName": "Lillestrøm",
+      "id": "8476"
+    },
+    "away": {
+      "name": "Tromsø",
+      "shortName": "Tromsø",
+      "id": "8608"
+    },
+    "status": {
+      "utcTime": "2024-08-25T12:30:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "0 - 1",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "20",
+    "roundName": 20,
+    "pageUrl": "/matches/fredrikstad-vs-fk-haugesund/2dbomp#4385627",
+    "id": "4385627",
+    "home": {
+      "name": "FK Haugesund",
+      "shortName": "FK Haugesund",
+      "id": "8512"
+    },
+    "away": {
+      "name": "Fredrikstad",
+      "shortName": "Fredrikstad",
+      "id": "8417"
+    },
+    "status": {
+      "utcTime": "2024-08-25T15:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "1 - 0",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "20",
+    "roundName": 20,
+    "pageUrl": "/matches/hamarkameratene-vs-molde/2sevkw#4385629",
+    "id": "4385629",
+    "home": {
+      "name": "Molde",
+      "shortName": "Molde",
+      "id": "9917"
+    },
+    "away": {
+      "name": "Hamarkameratene",
+      "shortName": "HamKam",
+      "id": "8448"
+    },
+    "status": {
+      "utcTime": "2024-08-25T15:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "3 - 0",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "20",
+    "roundName": 20,
+    "pageUrl": "/matches/kristiansund-vs-sandefjord/2g7yyq#4385631",
+    "id": "4385631",
+    "home": {
+      "name": "Sandefjord",
+      "shortName": "Sandefjord",
+      "id": "8609"
+    },
+    "away": {
+      "name": "Kristiansund",
+      "shortName": "Kristiansund",
+      "id": "8605"
+    },
+    "status": {
+      "utcTime": "2024-08-25T15:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "1 - 0",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "20",
+    "roundName": 20,
+    "pageUrl": "/matches/stromsgodset-vs-viking/2am4w9#4385632",
+    "id": "4385632",
+    "home": {
+      "name": "Viking",
+      "shortName": "Viking",
+      "id": "8478"
+    },
+    "away": {
+      "name": "Strømsgodset",
+      "shortName": "Strømsgodset",
+      "id": "8180"
+    },
+    "status": {
+      "utcTime": "2024-08-25T15:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "5 - 2",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "20",
+    "roundName": 20,
+    "pageUrl": "/matches/odds-ballklubb-vs-rosenborg/2868ud#4385630",
+    "id": "4385630",
+    "home": {
+      "name": "Odds Ballklubb",
+      "shortName": "Odd",
+      "id": "7988"
+    },
+    "away": {
+      "name": "Rosenborg",
+      "shortName": "Rosenborg",
+      "id": "8422"
+    },
+    "status": {
+      "utcTime": "2024-08-25T17:15:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "1 - 3",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "21",
+    "roundName": 21,
+    "pageUrl": "/matches/kfum-vs-lillestrom/ylwi7#4385444",
+    "id": "4385444",
+    "home": {
+      "name": "KFUM",
+      "shortName": "KFUM",
+      "id": "2305"
+    },
+    "away": {
+      "name": "Lillestrøm",
+      "shortName": "Lillestrøm",
+      "id": "8476"
+    },
+    "status": {
+      "utcTime": "2024-08-30T17:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "2 - 0",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "21",
+    "roundName": 21,
+    "pageUrl": "/matches/odds-ballklubb-vs-fredrikstad/284hjc#4385442",
+    "id": "4385442",
+    "home": {
+      "name": "Fredrikstad",
+      "shortName": "Fredrikstad",
+      "id": "8417"
+    },
+    "away": {
+      "name": "Odds Ballklubb",
+      "shortName": "Odd",
+      "id": "7988"
+    },
+    "status": {
+      "utcTime": "2024-08-31T16:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "2 - 0",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "21",
+    "roundName": 21,
+    "pageUrl": "/matches/hamarkameratene-vs-sandefjord/2emb2q#4385443",
+    "id": "4385443",
+    "home": {
+      "name": "Hamarkameratene",
+      "shortName": "HamKam",
+      "id": "8448"
+    },
+    "away": {
+      "name": "Sandefjord",
+      "shortName": "Sandefjord",
+      "id": "8609"
+    },
+    "status": {
+      "utcTime": "2024-09-01T15:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "1 - 1",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "21",
+    "roundName": 21,
+    "pageUrl": "/matches/fk-haugesund-vs-kristiansund/2f8a5s#4385445",
+    "id": "4385445",
+    "home": {
+      "name": "Kristiansund",
+      "shortName": "Kristiansund",
+      "id": "8605"
+    },
+    "away": {
+      "name": "FK Haugesund",
+      "shortName": "FK Haugesund",
+      "id": "8512"
+    },
+    "status": {
+      "utcTime": "2024-09-01T15:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "2 - 2",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "21",
+    "roundName": 21,
+    "pageUrl": "/matches/rosenborg-vs-molde/2s4neb#4385446",
+    "id": "4385446",
+    "home": {
+      "name": "Rosenborg",
+      "shortName": "Rosenborg",
+      "id": "8422"
+    },
+    "away": {
+      "name": "Molde",
+      "shortName": "Molde",
+      "id": "9917"
+    },
+    "status": {
+      "utcTime": "2024-09-01T15:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "2 - 1",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "21",
+    "roundName": 21,
+    "pageUrl": "/matches/stromsgodset-vs-bodoglimt/29v26f#4385447",
+    "id": "4385447",
+    "home": {
+      "name": "Strømsgodset",
+      "shortName": "Strømsgodset",
+      "id": "8180"
+    },
+    "away": {
+      "name": "Bodø/Glimt",
+      "shortName": "Bodø/Glimt",
+      "id": "8402"
+    },
+    "status": {
+      "utcTime": "2024-09-01T15:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "0 - 1",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "21",
+    "roundName": 21,
+    "pageUrl": "/matches/viking-vs-tromso/2ewx35#4385448",
+    "id": "4385448",
+    "home": {
+      "name": "Tromsø",
+      "shortName": "Tromsø",
+      "id": "8608"
+    },
+    "away": {
+      "name": "Viking",
+      "shortName": "Viking",
+      "id": "8478"
+    },
+    "status": {
+      "utcTime": "2024-09-01T15:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "2 - 2",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "21",
+    "roundName": 21,
+    "pageUrl": "/matches/brann-vs-sarpsborg-08/2dt4ja#4385441",
+    "id": "4385441",
+    "home": {
+      "name": "Brann",
+      "shortName": "Brann",
+      "id": "8468"
+    },
+    "away": {
+      "name": "Sarpsborg 08",
+      "shortName": "Sarpsborg 08",
+      "id": "8509"
+    },
+    "status": {
+      "utcTime": "2024-09-01T17:15:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "1 - 3",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "22",
+    "roundName": 22,
+    "pageUrl": "/matches/bodoglimt-vs-hamarkameratene/2cj30r#4385449",
+    "id": "4385449",
+    "home": {
+      "name": "Bodø/Glimt",
+      "shortName": "Bodø/Glimt",
+      "id": "8402"
+    },
+    "away": {
+      "name": "Hamarkameratene",
+      "shortName": "HamKam",
+      "id": "8448"
+    },
+    "status": {
+      "utcTime": "2024-09-13T17:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "3 - 0",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "22",
+    "roundName": 22,
+    "pageUrl": "/matches/kfum-vs-viking/ymd5a#4385456",
+    "id": "4385456",
+    "home": {
+      "name": "Viking",
+      "shortName": "Viking",
+      "id": "8478"
+    },
+    "away": {
+      "name": "KFUM",
+      "shortName": "KFUM",
+      "id": "2305"
+    },
+    "status": {
+      "utcTime": "2024-09-14T14:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "1 - 0",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "22",
+    "roundName": 22,
+    "pageUrl": "/matches/fredrikstad-vs-molde/2s2oni#4385452",
+    "id": "4385452",
+    "home": {
+      "name": "Molde",
+      "shortName": "Molde",
+      "id": "9917"
+    },
+    "away": {
+      "name": "Fredrikstad",
+      "shortName": "Fredrikstad",
+      "id": "8417"
+    },
+    "status": {
+      "utcTime": "2024-09-14T16:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "6 - 1",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "22",
+    "roundName": 22,
+    "pageUrl": "/matches/odds-ballklubb-vs-tromso/2a01jm#4385453",
+    "id": "4385453",
+    "home": {
+      "name": "Odds Ballklubb",
+      "shortName": "Odd",
+      "id": "7988"
+    },
+    "away": {
+      "name": "Tromsø",
+      "shortName": "Tromsø",
+      "id": "8608"
+    },
+    "status": {
+      "utcTime": "2024-09-15T12:30:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "1 - 0",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "22",
+    "roundName": 22,
+    "pageUrl": "/matches/stromsgodset-vs-fk-haugesund/2ayaea#4385450",
+    "id": "4385450",
+    "home": {
+      "name": "FK Haugesund",
+      "shortName": "FK Haugesund",
+      "id": "8512"
+    },
+    "away": {
+      "name": "Strømsgodset",
+      "shortName": "Strømsgodset",
+      "id": "8180"
+    },
+    "status": {
+      "utcTime": "2024-09-15T15:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "0 - 0",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "22",
+    "roundName": 22,
+    "pageUrl": "/matches/brann-vs-sandefjord/2etmgo#4385454",
+    "id": "4385454",
+    "home": {
+      "name": "Sandefjord",
+      "shortName": "Sandefjord",
+      "id": "8609"
+    },
+    "away": {
+      "name": "Brann",
+      "shortName": "Brann",
+      "id": "8468"
+    },
+    "status": {
+      "utcTime": "2024-09-15T15:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "2 - 2",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "22",
+    "roundName": 22,
+    "pageUrl": "/matches/sarpsborg-08-vs-kristiansund/2f76jg#4385455",
+    "id": "4385455",
+    "home": {
+      "name": "Sarpsborg 08",
+      "shortName": "Sarpsborg 08",
+      "id": "8509"
+    },
+    "away": {
+      "name": "Kristiansund",
+      "shortName": "Kristiansund",
+      "id": "8605"
+    },
+    "status": {
+      "utcTime": "2024-09-15T15:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "0 - 2",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "22",
+    "roundName": 22,
+    "pageUrl": "/matches/rosenborg-vs-lillestrom/2d0g0v#4385451",
+    "id": "4385451",
+    "home": {
+      "name": "Lillestrøm",
+      "shortName": "Lillestrøm",
+      "id": "8476"
+    },
+    "away": {
+      "name": "Rosenborg",
+      "shortName": "Rosenborg",
+      "id": "8422"
+    },
+    "status": {
+      "utcTime": "2024-09-15T17:15:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "1 - 1",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "19",
+    "roundName": 19,
+    "pageUrl": "/matches/kristiansund-vs-molde/2u4xx8#4385621",
+    "id": "4385621",
+    "home": {
+      "name": "Kristiansund",
+      "shortName": "Kristiansund",
+      "id": "8605"
+    },
+    "away": {
+      "name": "Molde",
+      "shortName": "Molde",
+      "id": "9917"
+    },
+    "status": {
+      "utcTime": "2024-09-18T16:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "0 - 4",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "20",
+    "roundName": 20,
+    "pageUrl": "/matches/kfum-vs-brann/yk1yz#4385626",
+    "id": "4385626",
+    "home": {
+      "name": "Brann",
+      "shortName": "Brann",
+      "id": "8468"
+    },
+    "away": {
+      "name": "KFUM",
+      "shortName": "KFUM",
+      "id": "2305"
+    },
+    "status": {
+      "utcTime": "2024-09-18T17:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "2 - 0",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "23",
+    "roundName": 23,
+    "pageUrl": "/matches/stromsgodset-vs-sarpsborg-08/2ax7ra#4385463",
+    "id": "4385463",
+    "home": {
+      "name": "Strømsgodset",
+      "shortName": "Strømsgodset",
+      "id": "8180"
+    },
+    "away": {
+      "name": "Sarpsborg 08",
+      "shortName": "Sarpsborg 08",
+      "id": "8509"
+    },
+    "status": {
+      "utcTime": "2024-09-21T14:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "2 - 1",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "23",
+    "roundName": 23,
+    "pageUrl": "/matches/hamarkameratene-vs-lillestrom/2d9vaq#4385459",
+    "id": "4385459",
+    "home": {
+      "name": "Hamarkameratene",
+      "shortName": "HamKam",
+      "id": "8448"
+    },
+    "away": {
+      "name": "Lillestrøm",
+      "shortName": "Lillestrøm",
+      "id": "8476"
+    },
+    "status": {
+      "utcTime": "2024-09-21T16:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "5 - 0",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "23",
+    "roundName": 23,
+    "pageUrl": "/matches/bodoglimt-vs-brann/2cqb89#4385457",
+    "id": "4385457",
+    "home": {
+      "name": "Brann",
+      "shortName": "Brann",
+      "id": "8468"
+    },
+    "away": {
+      "name": "Bodø/Glimt",
+      "shortName": "Bodø/Glimt",
+      "id": "8402"
+    },
+    "status": {
+      "utcTime": "2024-09-22T12:30:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "4 - 1",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "23",
+    "roundName": 23,
+    "pageUrl": "/matches/odds-ballklubb-vs-kristiansund/29yz4m#4385461",
+    "id": "4385461",
+    "home": {
+      "name": "Kristiansund",
+      "shortName": "Kristiansund",
+      "id": "8605"
+    },
+    "away": {
+      "name": "Odds Ballklubb",
+      "shortName": "Odd",
+      "id": "7988"
+    },
+    "status": {
+      "utcTime": "2024-09-22T15:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "0 - 0",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "23",
+    "roundName": 23,
+    "pageUrl": "/matches/rosenborg-vs-fk-haugesund/2ddhyd#4385462",
+    "id": "4385462",
+    "home": {
+      "name": "Rosenborg",
+      "shortName": "Rosenborg",
+      "id": "8422"
+    },
+    "away": {
+      "name": "FK Haugesund",
+      "shortName": "FK Haugesund",
+      "id": "8512"
+    },
+    "status": {
+      "utcTime": "2024-09-22T15:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "4 - 0",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "23",
+    "roundName": 23,
+    "pageUrl": "/matches/tromso-vs-sandefjord/2g92te#4385464",
+    "id": "4385464",
+    "home": {
+      "name": "Tromsø",
+      "shortName": "Tromsø",
+      "id": "8608"
+    },
+    "away": {
+      "name": "Sandefjord",
+      "shortName": "Sandefjord",
+      "id": "8609"
+    },
+    "status": {
+      "utcTime": "2024-09-22T15:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "3 - 0",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "23",
+    "roundName": 23,
+    "pageUrl": "/matches/fredrikstad-vs-viking/2czcwu#4385458",
+    "id": "4385458",
+    "home": {
+      "name": "Fredrikstad",
+      "shortName": "Fredrikstad",
+      "id": "8417"
+    },
+    "away": {
+      "name": "Viking",
+      "shortName": "Viking",
+      "id": "8478"
+    },
+    "status": {
+      "utcTime": "2024-09-22T17:15:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "3 - 2",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "23",
+    "roundName": 23,
+    "pageUrl": "/matches/kfum-vs-molde/18h6hq#4385460",
+    "id": "4385460",
+    "home": {
+      "name": "KFUM",
+      "shortName": "KFUM",
+      "id": "2305"
+    },
+    "away": {
+      "name": "Molde",
+      "shortName": "Molde",
+      "id": "9917"
+    },
+    "status": {
+      "utcTime": "2024-09-23T17:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "1 - 1",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "24",
+    "roundName": 24,
+    "pageUrl": "/matches/tromso-vs-molde/2u64sw#4385468",
+    "id": "4385468",
+    "home": {
+      "name": "Molde",
+      "shortName": "Molde",
+      "id": "9917"
+    },
+    "away": {
+      "name": "Tromsø",
+      "shortName": "Tromsø",
+      "id": "8608"
+    },
+    "status": {
+      "utcTime": "2024-09-28T12:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "5 - 3",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "24",
+    "roundName": 24,
+    "pageUrl": "/matches/brann-vs-fk-haugesund/2du7ua#4385466",
+    "id": "4385466",
+    "home": {
+      "name": "FK Haugesund",
+      "shortName": "FK Haugesund",
+      "id": "8512"
+    },
+    "away": {
+      "name": "Brann",
+      "shortName": "Brann",
+      "id": "8468"
+    },
+    "status": {
+      "utcTime": "2024-09-28T16:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "0 - 1",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "24",
+    "roundName": 24,
+    "pageUrl": "/matches/fredrikstad-vs-sarpsborg-08/2dalfy#4385471",
+    "id": "4385471",
+    "home": {
+      "name": "Sarpsborg 08",
+      "shortName": "Sarpsborg 08",
+      "id": "8509"
+    },
+    "away": {
+      "name": "Fredrikstad",
+      "shortName": "Fredrikstad",
+      "id": "8417"
+    },
+    "status": {
+      "utcTime": "2024-09-28T18:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "0 - 1",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "24",
+    "roundName": 24,
+    "pageUrl": "/matches/stromsgodset-vs-hamarkameratene/2abflu#4385472",
+    "id": "4385472",
+    "home": {
+      "name": "Strømsgodset",
+      "shortName": "Strømsgodset",
+      "id": "8180"
+    },
+    "away": {
+      "name": "Hamarkameratene",
+      "shortName": "HamKam",
+      "id": "8448"
+    },
+    "status": {
+      "utcTime": "2024-09-29T12:30:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "1 - 1",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "24",
+    "roundName": 24,
+    "pageUrl": "/matches/bodoglimt-vs-kristiansund/2e41yd#4385465",
+    "id": "4385465",
+    "home": {
+      "name": "Bodø/Glimt",
+      "shortName": "Bodø/Glimt",
+      "id": "8402"
+    },
+    "away": {
+      "name": "Kristiansund",
+      "shortName": "Kristiansund",
+      "id": "8605"
+    },
+    "status": {
+      "utcTime": "2024-09-29T15:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "4 - 0",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "24",
+    "roundName": 24,
+    "pageUrl": "/matches/lillestrom-vs-viking/2dkrf1#4385467",
+    "id": "4385467",
+    "home": {
+      "name": "Lillestrøm",
+      "shortName": "Lillestrøm",
+      "id": "8476"
+    },
+    "away": {
+      "name": "Viking",
+      "shortName": "Viking",
+      "id": "8478"
+    },
+    "status": {
+      "utcTime": "2024-09-29T15:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "1 - 4",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "24",
+    "roundName": 24,
+    "pageUrl": "/matches/kfum-vs-odds-ballklubb/vjoaz#4385469",
+    "id": "4385469",
+    "home": {
+      "name": "Odds Ballklubb",
+      "shortName": "Odd",
+      "id": "7988"
+    },
+    "away": {
+      "name": "KFUM",
+      "shortName": "KFUM",
+      "id": "2305"
+    },
+    "status": {
+      "utcTime": "2024-09-29T15:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "1 - 3",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "24",
+    "roundName": 24,
+    "pageUrl": "/matches/rosenborg-vs-sandefjord/2ect4t#4385470",
+    "id": "4385470",
+    "home": {
+      "name": "Sandefjord",
+      "shortName": "Sandefjord",
+      "id": "8609"
+    },
+    "away": {
+      "name": "Rosenborg",
+      "shortName": "Rosenborg",
+      "id": "8422"
+    },
+    "status": {
+      "utcTime": "2024-09-29T17:15:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "0 - 1",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "15",
+    "roundName": 15,
+    "pageUrl": "/matches/kristiansund-vs-sandefjord/2g7yyq#4385582",
+    "id": "4385582",
+    "home": {
+      "name": "Kristiansund",
+      "shortName": "Kristiansund",
+      "id": "8605"
+    },
+    "away": {
+      "name": "Sandefjord",
+      "shortName": "Sandefjord",
+      "id": "8609"
+    },
+    "status": {
+      "utcTime": "2024-10-05T13:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "2 - 1",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "25",
+    "roundName": 25,
+    "pageUrl": "/matches/sandefjord-vs-molde/2u6j3i#4385477",
+    "id": "4385477",
+    "home": {
+      "name": "Molde",
+      "shortName": "Molde",
+      "id": "9917"
+    },
+    "away": {
+      "name": "Sandefjord",
+      "shortName": "Sandefjord",
+      "id": "8609"
+    },
+    "status": {
+      "utcTime": "2024-10-19T14:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "0 - 1",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "25",
+    "roundName": 25,
+    "pageUrl": "/matches/bodoglimt-vs-tromso/2e55bv#4385479",
+    "id": "4385479",
+    "home": {
+      "name": "Tromsø",
+      "shortName": "Tromsø",
+      "id": "8608"
+    },
+    "away": {
+      "name": "Bodø/Glimt",
+      "shortName": "Bodø/Glimt",
+      "id": "8402"
+    },
+    "status": {
+      "utcTime": "2024-10-19T16:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "0 - 0",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "25",
+    "roundName": 25,
+    "pageUrl": "/matches/rosenborg-vs-brann/2cxjqb#4385478",
+    "id": "4385478",
+    "home": {
+      "name": "Rosenborg",
+      "shortName": "Rosenborg",
+      "id": "8422"
+    },
+    "away": {
+      "name": "Brann",
+      "shortName": "Brann",
+      "id": "8468"
+    },
+    "status": {
+      "utcTime": "2024-10-20T12:30:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "1 - 2",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "25",
+    "roundName": 25,
+    "pageUrl": "/matches/hamarkameratene-vs-sarpsborg-08/2dluow#4385474",
+    "id": "4385474",
+    "home": {
+      "name": "Hamarkameratene",
+      "shortName": "HamKam",
+      "id": "8448"
+    },
+    "away": {
+      "name": "Sarpsborg 08",
+      "shortName": "Sarpsborg 08",
+      "id": "8509"
+    },
+    "status": {
+      "utcTime": "2024-10-20T15:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "0 - 2",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "25",
+    "roundName": 25,
+    "pageUrl": "/matches/kfum-vs-fk-haugesund/yu8ip#4385475",
+    "id": "4385475",
+    "home": {
+      "name": "KFUM",
+      "shortName": "KFUM",
+      "id": "2305"
+    },
+    "away": {
+      "name": "FK Haugesund",
+      "shortName": "FK Haugesund",
+      "id": "8512"
+    },
+    "status": {
+      "utcTime": "2024-10-20T15:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "0 - 0",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "25",
+    "roundName": 25,
+    "pageUrl": "/matches/stromsgodset-vs-kristiansund/2bvnna#4385476",
+    "id": "4385476",
+    "home": {
+      "name": "Kristiansund",
+      "shortName": "Kristiansund",
+      "id": "8605"
+    },
+    "away": {
+      "name": "Strømsgodset",
+      "shortName": "Strømsgodset",
+      "id": "8180"
+    },
+    "status": {
+      "utcTime": "2024-10-20T15:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "0 - 0",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "25",
+    "roundName": 25,
+    "pageUrl": "/matches/odds-ballklubb-vs-viking/28pz6x#4385480",
+    "id": "4385480",
+    "home": {
+      "name": "Viking",
+      "shortName": "Viking",
+      "id": "8478"
+    },
+    "away": {
+      "name": "Odds Ballklubb",
+      "shortName": "Odd",
+      "id": "7988"
+    },
+    "status": {
+      "utcTime": "2024-10-20T15:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "3 - 3",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "25",
+    "roundName": 25,
+    "pageUrl": "/matches/fredrikstad-vs-lillestrom/2cymu7#4385473",
+    "id": "4385473",
+    "home": {
+      "name": "Fredrikstad",
+      "shortName": "Fredrikstad",
+      "id": "8417"
+    },
+    "away": {
+      "name": "Lillestrøm",
+      "shortName": "Lillestrøm",
+      "id": "8476"
+    },
+    "status": {
+      "utcTime": "2024-10-20T17:15:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "2 - 1",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "26",
+    "roundName": 26,
+    "pageUrl": "/matches/stromsgodset-vs-fredrikstad/2a0e7c#4385488",
+    "id": "4385488",
+    "home": {
+      "name": "Strømsgodset",
+      "shortName": "Strømsgodset",
+      "id": "8180"
+    },
+    "away": {
+      "name": "Fredrikstad",
+      "shortName": "Fredrikstad",
+      "id": "8417"
+    },
+    "status": {
+      "utcTime": "2024-10-26T16:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "2 - 0",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "26",
+    "roundName": 26,
+    "pageUrl": "/matches/fk-haugesund-vs-molde/2t443k#4385484",
+    "id": "4385484",
+    "home": {
+      "name": "FK Haugesund",
+      "shortName": "FK Haugesund",
+      "id": "8512"
+    },
+    "away": {
+      "name": "Molde",
+      "shortName": "Molde",
+      "id": "9917"
+    },
+    "status": {
+      "utcTime": "2024-10-27T16:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "0 - 3",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "26",
+    "roundName": 26,
+    "pageUrl": "/matches/hamarkameratene-vs-kristiansund/2ekufk#4385483",
+    "id": "4385483",
+    "home": {
+      "name": "Hamarkameratene",
+      "shortName": "HamKam",
+      "id": "8448"
+    },
+    "away": {
+      "name": "Kristiansund",
+      "shortName": "Kristiansund",
+      "id": "8605"
+    },
+    "status": {
+      "utcTime": "2024-10-27T16:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "1 - 0",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "26",
+    "roundName": 26,
+    "pageUrl": "/matches/odds-ballklubb-vs-lillestrom/28p9s4#4385485",
+    "id": "4385485",
+    "home": {
+      "name": "Lillestrøm",
+      "shortName": "Lillestrøm",
+      "id": "8476"
+    },
+    "away": {
+      "name": "Odds Ballklubb",
+      "shortName": "Odd",
+      "id": "7988"
+    },
+    "status": {
+      "utcTime": "2024-10-27T16:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "3 - 0",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "26",
+    "roundName": 26,
+    "pageUrl": "/matches/kfum-vs-sandefjord/zgtv8#4385486",
+    "id": "4385486",
+    "home": {
+      "name": "Sandefjord",
+      "shortName": "Sandefjord",
+      "id": "8609"
+    },
+    "away": {
+      "name": "KFUM",
+      "shortName": "KFUM",
+      "id": "2305"
+    },
+    "status": {
+      "utcTime": "2024-10-27T16:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "2 - 1",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "26",
+    "roundName": 26,
+    "pageUrl": "/matches/viking-vs-sarpsborg-08/2dwrkn#4385487",
+    "id": "4385487",
+    "home": {
+      "name": "Sarpsborg 08",
+      "shortName": "Sarpsborg 08",
+      "id": "8509"
+    },
+    "away": {
+      "name": "Viking",
+      "shortName": "Viking",
+      "id": "8478"
+    },
+    "status": {
+      "utcTime": "2024-10-27T16:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "1 - 2",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "26",
+    "roundName": 26,
+    "pageUrl": "/matches/brann-vs-tromso/2et9aa#4385482",
+    "id": "4385482",
+    "home": {
+      "name": "Brann",
+      "shortName": "Brann",
+      "id": "8468"
+    },
+    "away": {
+      "name": "Tromsø",
+      "shortName": "Tromsø",
+      "id": "8608"
+    },
+    "status": {
+      "utcTime": "2024-10-27T18:15:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "4 - 0",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "26",
+    "roundName": 26,
+    "pageUrl": "/matches/bodoglimt-vs-rosenborg/2c9p7m#4385481",
+    "id": "4385481",
+    "home": {
+      "name": "Bodø/Glimt",
+      "shortName": "Bodø/Glimt",
+      "id": "8402"
+    },
+    "away": {
+      "name": "Rosenborg",
+      "shortName": "Rosenborg",
+      "id": "8422"
+    },
+    "status": {
+      "utcTime": "2024-10-28T18:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "2 - 3",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "27",
+    "roundName": 27,
+    "pageUrl": "/matches/viking-vs-sandefjord/2exa9t#4385496",
+    "id": "4385496",
+    "home": {
+      "name": "Viking",
+      "shortName": "Viking",
+      "id": "8478"
+    },
+    "away": {
+      "name": "Sandefjord",
+      "shortName": "Sandefjord",
+      "id": "8609"
+    },
+    "status": {
+      "utcTime": "2024-11-02T17:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "3 - 2",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "27",
+    "roundName": 27,
+    "pageUrl": "/matches/fredrikstad-vs-kristiansund/2e9ivy#4385489",
+    "id": "4385489",
+    "home": {
+      "name": "Fredrikstad",
+      "shortName": "Fredrikstad",
+      "id": "8417"
+    },
+    "away": {
+      "name": "Kristiansund",
+      "shortName": "Kristiansund",
+      "id": "8605"
+    },
+    "status": {
+      "utcTime": "2024-11-03T16:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "1 - 1",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "27",
+    "roundName": 27,
+    "pageUrl": "/matches/kfum-vs-sarpsborg-08/ytjha#4385490",
+    "id": "4385490",
+    "home": {
+      "name": "KFUM",
+      "shortName": "KFUM",
+      "id": "2305"
+    },
+    "away": {
+      "name": "Sarpsborg 08",
+      "shortName": "Sarpsborg 08",
+      "id": "8509"
+    },
+    "status": {
+      "utcTime": "2024-11-03T16:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "1 - 2",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "27",
+    "roundName": 27,
+    "pageUrl": "/matches/lillestrom-vs-fk-haugesund/2dx4om#4385491",
+    "id": "4385491",
+    "home": {
+      "name": "Lillestrøm",
+      "shortName": "Lillestrøm",
+      "id": "8476"
+    },
+    "away": {
+      "name": "FK Haugesund",
+      "shortName": "FK Haugesund",
+      "id": "8512"
+    },
+    "status": {
+      "utcTime": "2024-11-03T16:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "0 - 1",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "27",
+    "roundName": 27,
+    "pageUrl": "/matches/bodoglimt-vs-molde/2rwsj9#4385492",
+    "id": "4385492",
+    "home": {
+      "name": "Molde",
+      "shortName": "Molde",
+      "id": "9917"
+    },
+    "away": {
+      "name": "Bodø/Glimt",
+      "shortName": "Bodø/Glimt",
+      "id": "8402"
+    },
+    "status": {
+      "utcTime": "2024-11-03T16:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "3 - 3",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "27",
+    "roundName": 27,
+    "pageUrl": "/matches/odds-ballklubb-vs-brann/28mg60#4385493",
+    "id": "4385493",
+    "home": {
+      "name": "Odds Ballklubb",
+      "shortName": "Odd",
+      "id": "7988"
+    },
+    "away": {
+      "name": "Brann",
+      "shortName": "Brann",
+      "id": "8468"
+    },
+    "status": {
+      "utcTime": "2024-11-03T16:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "0 - 3",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "27",
+    "roundName": 27,
+    "pageUrl": "/matches/hamarkameratene-vs-tromso/2elxww#4385495",
+    "id": "4385495",
+    "home": {
+      "name": "Tromsø",
+      "shortName": "Tromsø",
+      "id": "8608"
+    },
+    "away": {
+      "name": "Hamarkameratene",
+      "shortName": "HamKam",
+      "id": "8448"
+    },
+    "status": {
+      "utcTime": "2024-11-03T16:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "3 - 3",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "27",
+    "roundName": 27,
+    "pageUrl": "/matches/stromsgodset-vs-rosenborg/2a2691#4385494",
+    "id": "4385494",
+    "home": {
+      "name": "Rosenborg",
+      "shortName": "Rosenborg",
+      "id": "8422"
+    },
+    "away": {
+      "name": "Strømsgodset",
+      "shortName": "Strømsgodset",
+      "id": "8180"
+    },
+    "status": {
+      "utcTime": "2024-11-03T18:15:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "1 - 0",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "28",
+    "roundName": 28,
+    "pageUrl": "/matches/brann-vs-lillestrom/2dh4ms#4385498",
+    "id": "4385498",
+    "home": {
+      "name": "Brann",
+      "shortName": "Brann",
+      "id": "8468"
+    },
+    "away": {
+      "name": "Lillestrøm",
+      "shortName": "Lillestrøm",
+      "id": "8476"
+    },
+    "status": {
+      "utcTime": "2024-11-09T17:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "2 - 1",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "28",
+    "roundName": 28,
+    "pageUrl": "/matches/fk-haugesund-vs-tromso/2f9dsg#4385500",
+    "id": "4385500",
+    "home": {
+      "name": "FK Haugesund",
+      "shortName": "FK Haugesund",
+      "id": "8512"
+    },
+    "away": {
+      "name": "Tromsø",
+      "shortName": "Tromsø",
+      "id": "8608"
+    },
+    "status": {
+      "utcTime": "2024-11-10T16:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "2 - 0",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "28",
+    "roundName": 28,
+    "pageUrl": "/matches/rosenborg-vs-hamarkameratene/2cqb7p#4385499",
+    "id": "4385499",
+    "home": {
+      "name": "Hamarkameratene",
+      "shortName": "HamKam",
+      "id": "8448"
+    },
+    "away": {
+      "name": "Rosenborg",
+      "shortName": "Rosenborg",
+      "id": "8422"
+    },
+    "status": {
+      "utcTime": "2024-11-10T16:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "0 - 2",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "28",
+    "roundName": 28,
+    "pageUrl": "/matches/viking-vs-kristiansund/2evtjb#4385501",
+    "id": "4385501",
+    "home": {
+      "name": "Kristiansund",
+      "shortName": "Kristiansund",
+      "id": "8605"
+    },
+    "away": {
+      "name": "Viking",
+      "shortName": "Viking",
+      "id": "8478"
+    },
+    "status": {
+      "utcTime": "2024-11-10T16:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "0 - 1",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "28",
+    "roundName": 28,
+    "pageUrl": "/matches/odds-ballklubb-vs-sandefjord/2a0eco#4385502",
+    "id": "4385502",
+    "home": {
+      "name": "Sandefjord",
+      "shortName": "Sandefjord",
+      "id": "8609"
+    },
+    "away": {
+      "name": "Odds Ballklubb",
+      "shortName": "Odd",
+      "id": "7988"
+    },
+    "status": {
+      "utcTime": "2024-11-10T16:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "1 - 0",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "28",
+    "roundName": 28,
+    "pageUrl": "/matches/sarpsborg-08-vs-molde/2t2xfw#4385503",
+    "id": "4385503",
+    "home": {
+      "name": "Sarpsborg 08",
+      "shortName": "Sarpsborg 08",
+      "id": "8509"
+    },
+    "away": {
+      "name": "Molde",
+      "shortName": "Molde",
+      "id": "9917"
+    },
+    "status": {
+      "utcTime": "2024-11-10T16:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "2 - 2",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "28",
+    "roundName": 28,
+    "pageUrl": "/matches/kfum-vs-stromsgodset/wqfmz#4385504",
+    "id": "4385504",
+    "home": {
+      "name": "Strømsgodset",
+      "shortName": "Strømsgodset",
+      "id": "8180"
+    },
+    "away": {
+      "name": "KFUM",
+      "shortName": "KFUM",
+      "id": "2305"
+    },
+    "status": {
+      "utcTime": "2024-11-10T16:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "1 - 0",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "28",
+    "roundName": 28,
+    "pageUrl": "/matches/bodoglimt-vs-fredrikstad/2c7wb3#4385497",
+    "id": "4385497",
+    "home": {
+      "name": "Bodø/Glimt",
+      "shortName": "Bodø/Glimt",
+      "id": "8402"
+    },
+    "away": {
+      "name": "Fredrikstad",
+      "shortName": "Fredrikstad",
+      "id": "8417"
+    },
+    "status": {
+      "utcTime": "2024-11-10T18:15:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "2 - 2",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "29",
+    "roundName": 29,
+    "pageUrl": "/matches/fredrikstad-vs-hamarkameratene/2coi4x#4385505",
+    "id": "4385505",
+    "home": {
+      "name": "Fredrikstad",
+      "shortName": "Fredrikstad",
+      "id": "8417"
+    },
+    "away": {
+      "name": "Hamarkameratene",
+      "shortName": "HamKam",
+      "id": "8448"
+    },
+    "status": {
+      "utcTime": "2024-11-23T16:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "1 - 0",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "29",
+    "roundName": 29,
+    "pageUrl": "/matches/kfum-vs-kristiansund/zfw6m#4385506",
+    "id": "4385506",
+    "home": {
+      "name": "KFUM",
+      "shortName": "KFUM",
+      "id": "2305"
+    },
+    "away": {
+      "name": "Kristiansund",
+      "shortName": "Kristiansund",
+      "id": "8605"
+    },
+    "status": {
+      "utcTime": "2024-11-23T16:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "1 - 2",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "29",
+    "roundName": 29,
+    "pageUrl": "/matches/lillestrom-vs-sandefjord/2ewjwk#4385507",
+    "id": "4385507",
+    "home": {
+      "name": "Lillestrøm",
+      "shortName": "Lillestrøm",
+      "id": "8476"
+    },
+    "away": {
+      "name": "Sandefjord",
+      "shortName": "Sandefjord",
+      "id": "8609"
+    },
+    "status": {
+      "utcTime": "2024-11-23T16:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "0 - 3",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "29",
+    "roundName": 29,
+    "pageUrl": "/matches/brann-vs-molde/2smr5i#4385508",
+    "id": "4385508",
+    "home": {
+      "name": "Molde",
+      "shortName": "Molde",
+      "id": "9917"
+    },
+    "away": {
+      "name": "Brann",
+      "shortName": "Brann",
+      "id": "8468"
+    },
+    "status": {
+      "utcTime": "2024-11-23T16:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "2 - 1",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "29",
+    "roundName": 29,
+    "pageUrl": "/matches/odds-ballklubb-vs-bodoglimt/27z7qf#4385509",
+    "id": "4385509",
+    "home": {
+      "name": "Odds Ballklubb",
+      "shortName": "Odd",
+      "id": "7988"
+    },
+    "away": {
+      "name": "Bodø/Glimt",
+      "shortName": "Bodø/Glimt",
+      "id": "8402"
+    },
+    "status": {
+      "utcTime": "2024-11-23T16:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "0 - 2",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "29",
+    "roundName": 29,
+    "pageUrl": "/matches/rosenborg-vs-sarpsborg-08/2dcer7#4385510",
+    "id": "4385510",
+    "home": {
+      "name": "Rosenborg",
+      "shortName": "Rosenborg",
+      "id": "8422"
+    },
+    "away": {
+      "name": "Sarpsborg 08",
+      "shortName": "Sarpsborg 08",
+      "id": "8509"
+    },
+    "status": {
+      "utcTime": "2024-11-23T16:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "1 - 1",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "29",
+    "roundName": 29,
+    "pageUrl": "/matches/stromsgodset-vs-tromso/2bwqia#4385511",
+    "id": "4385511",
+    "home": {
+      "name": "Tromsø",
+      "shortName": "Tromsø",
+      "id": "8608"
+    },
+    "away": {
+      "name": "Strømsgodset",
+      "shortName": "Strømsgodset",
+      "id": "8180"
+    },
+    "status": {
+      "utcTime": "2024-11-23T16:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "2 - 0",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "29",
+    "roundName": 29,
+    "pageUrl": "/matches/viking-vs-fk-haugesund/2dxuwh#4385512",
+    "id": "4385512",
+    "home": {
+      "name": "Viking",
+      "shortName": "Viking",
+      "id": "8478"
+    },
+    "away": {
+      "name": "FK Haugesund",
+      "shortName": "FK Haugesund",
+      "id": "8512"
+    },
+    "status": {
+      "utcTime": "2024-11-23T16:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "5 - 1",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "30",
+    "roundName": 30,
+    "pageUrl": "/matches/bodoglimt-vs-lillestrom/2ct7ed#4385513",
+    "id": "4385513",
+    "home": {
+      "name": "Bodø/Glimt",
+      "shortName": "Bodø/Glimt",
+      "id": "8402"
+    },
+    "away": {
+      "name": "Lillestrøm",
+      "shortName": "Lillestrøm",
+      "id": "8476"
+    },
+    "status": {
+      "utcTime": "2024-12-01T16:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "5 - 2",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "30",
+    "roundName": 30,
+    "pageUrl": "/matches/brann-vs-viking/2dhus9#4385514",
+    "id": "4385514",
+    "home": {
+      "name": "Brann",
+      "shortName": "Brann",
+      "id": "8468"
+    },
+    "away": {
+      "name": "Viking",
+      "shortName": "Viking",
+      "id": "8478"
+    },
+    "status": {
+      "utcTime": "2024-12-01T16:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "1 - 1",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "30",
+    "roundName": 30,
+    "pageUrl": "/matches/odds-ballklubb-vs-fk-haugesund/291znm#4385516",
+    "id": "4385516",
+    "home": {
+      "name": "FK Haugesund",
+      "shortName": "FK Haugesund",
+      "id": "8512"
+    },
+    "away": {
+      "name": "Odds Ballklubb",
+      "shortName": "Odd",
+      "id": "7988"
+    },
+    "status": {
+      "utcTime": "2024-12-01T16:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "2 - 1",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "30",
+    "roundName": 30,
+    "pageUrl": "/matches/kfum-vs-hamarkameratene/yffup#4385515",
+    "id": "4385515",
+    "home": {
+      "name": "Hamarkameratene",
+      "shortName": "HamKam",
+      "id": "8448"
+    },
+    "away": {
+      "name": "KFUM",
+      "shortName": "KFUM",
+      "id": "2305"
+    },
+    "status": {
+      "utcTime": "2024-12-01T16:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "0 - 2",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "30",
+    "roundName": 30,
+    "pageUrl": "/matches/rosenborg-vs-kristiansund/2ebckj#4385517",
+    "id": "4385517",
+    "home": {
+      "name": "Kristiansund",
+      "shortName": "Kristiansund",
+      "id": "8605"
+    },
+    "away": {
+      "name": "Rosenborg",
+      "shortName": "Rosenborg",
+      "id": "8422"
+    },
+    "status": {
+      "utcTime": "2024-12-01T16:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "0 - 4",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "30",
+    "roundName": 30,
+    "pageUrl": "/matches/fredrikstad-vs-sandefjord/2eazfo#4385518",
+    "id": "4385518",
+    "home": {
+      "name": "Sandefjord",
+      "shortName": "Sandefjord",
+      "id": "8609"
+    },
+    "away": {
+      "name": "Fredrikstad",
+      "shortName": "Fredrikstad",
+      "id": "8417"
+    },
+    "status": {
+      "utcTime": "2024-12-01T16:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "0 - 1",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "30",
+    "roundName": 30,
+    "pageUrl": "/matches/sarpsborg-08-vs-tromso/2f8a5v#4385519",
+    "id": "4385519",
+    "home": {
+      "name": "Sarpsborg 08",
+      "shortName": "Sarpsborg 08",
+      "id": "8509"
+    },
+    "away": {
+      "name": "Tromsø",
+      "shortName": "Tromsø",
+      "id": "8608"
+    },
+    "status": {
+      "utcTime": "2024-12-01T16:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "2 - 1",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "30",
+    "roundName": 30,
+    "pageUrl": "/matches/stromsgodset-vs-molde/2pi5hi#4385520",
+    "id": "4385520",
+    "home": {
+      "name": "Strømsgodset",
+      "shortName": "Strømsgodset",
+      "id": "8180"
+    },
+    "away": {
+      "name": "Molde",
+      "shortName": "Molde",
+      "id": "9917"
+    },
+    "status": {
+      "utcTime": "2024-12-01T16:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "1 - 0",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  }
+]

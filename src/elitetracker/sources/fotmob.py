@@ -137,8 +137,14 @@ def _validate_matches(payload: Any, lg: League) -> None:
     expected = lg.team_count * (lg.team_count - 1)
     if not isinstance(payload, list):
         raise FetchError("match payload is not a list")
-    if len(payload) != expected:
-        raise FetchError(f"expected {expected} matches for {lg.name}, got {len(payload)}")
+    # Abandoned fixtures are listed alongside their replay, so count only the
+    # ones that are actually part of the schedule.
+    live = [m for m in payload if not (m.get("status") or {}).get("cancelled")]
+    if len(live) != expected:
+        raise FetchError(
+            f"expected {expected} matches for {lg.name}, got {len(live)}"
+            + (f" ({len(payload) - len(live)} cancelled)" if len(payload) != len(live) else "")
+        )
 
 
 def _validate_standings(payload: Any, lg: League) -> None:

@@ -18,7 +18,12 @@ import math
 from dataclasses import dataclass
 
 # Bump on any change that alters produced ratings or probabilities.
-MODEL_VERSION = "elo-v1"
+#
+# elo-v2: ratings are no longer seeded from the previous season's table each
+# year. They are seeded once, from the 2014 final tables, and every played
+# match from 2015 onward is replayed in order, so a club carries its rating
+# across seasons and across divisions.
+MODEL_VERSION = "elo-v2"
 
 # A 400-point rating gap means the stronger side is expected to score 10 times
 # as often as the weaker one; this is the constant that defines the ELO scale.

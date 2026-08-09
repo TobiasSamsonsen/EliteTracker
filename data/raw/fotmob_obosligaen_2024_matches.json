@@ -1,0 +1,7442 @@
+[
+  {
+    "round": "1",
+    "roundName": 1,
+    "pageUrl": "/matches/aalesund-vs-stabaek/2rxyy1#4385655",
+    "id": "4385655",
+    "home": {
+      "name": "Aalesund",
+      "shortName": "Aalesund",
+      "id": "8404"
+    },
+    "away": {
+      "name": "Stabæk",
+      "shortName": "Stabæk",
+      "id": "9918"
+    },
+    "status": {
+      "utcTime": "2024-04-01T15:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "1 - 1",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "1",
+    "roundName": 1,
+    "pageUrl": "/matches/levanger-vs-asane/29v0ra#4385654",
+    "id": "4385654",
+    "home": {
+      "name": "Åsane",
+      "shortName": "Åsane",
+      "id": "10021"
+    },
+    "away": {
+      "name": "Levanger",
+      "shortName": "Levanger",
+      "id": "6561"
+    },
+    "status": {
+      "utcTime": "2024-04-01T15:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "2 - 2",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "1",
+    "roundName": 1,
+    "pageUrl": "/matches/bryne-vs-start/2tcewa#4385652",
+    "id": "4385652",
+    "home": {
+      "name": "Bryne",
+      "shortName": "Bryne",
+      "id": "8531"
+    },
+    "away": {
+      "name": "Start",
+      "shortName": "Start",
+      "id": "9919"
+    },
+    "status": {
+      "utcTime": "2024-04-01T15:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "3 - 1",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "1",
+    "roundName": 1,
+    "pageUrl": "/matches/ranheim-vs-kongsvinger/1spd4g#4385660",
+    "id": "4385660",
+    "home": {
+      "name": "Kongsvinger",
+      "shortName": "Kongsvinger",
+      "id": "8179"
+    },
+    "away": {
+      "name": "Ranheim",
+      "shortName": "Ranheim",
+      "id": "6563"
+    },
+    "status": {
+      "utcTime": "2024-04-01T15:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "2 - 1",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "1",
+    "roundName": 1,
+    "pageUrl": "/matches/mjondalen-vs-raufoss/27m9et#4385659",
+    "id": "4385659",
+    "home": {
+      "name": "Mjøndalen",
+      "shortName": "Mjøndalen",
+      "id": "6541"
+    },
+    "away": {
+      "name": "Raufoss",
+      "shortName": "Raufoss",
+      "id": "9812"
+    },
+    "status": {
+      "utcTime": "2024-04-01T15:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "1 - 1",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "1",
+    "roundName": 1,
+    "pageUrl": "/matches/moss-vs-lyn/2vbif8#4385658",
+    "id": "4385658",
+    "home": {
+      "name": "Moss",
+      "shortName": "Moss",
+      "id": "8405"
+    },
+    "away": {
+      "name": "Lyn",
+      "shortName": "Lyn",
+      "id": "10224"
+    },
+    "status": {
+      "utcTime": "2024-04-01T15:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "3 - 0",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "1",
+    "roundName": 1,
+    "pageUrl": "/matches/egersund-vs-sandnes-ulf/1d79hl#4385657",
+    "id": "4385657",
+    "home": {
+      "name": "Sandnes Ulf",
+      "shortName": "Sandnes Ulf",
+      "id": "8133"
+    },
+    "away": {
+      "name": "Egersund",
+      "shortName": "Egersund",
+      "id": "4722"
+    },
+    "status": {
+      "utcTime": "2024-04-01T15:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "3 - 4",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "1",
+    "roundName": 1,
+    "pageUrl": "/matches/valerenga-vs-sogndal/2a9nlc#4385656",
+    "id": "4385656",
+    "home": {
+      "name": "Vålerenga",
+      "shortName": "Vålerenga",
+      "id": "8007"
+    },
+    "away": {
+      "name": "Sogndal",
+      "shortName": "Sogndal",
+      "id": "8616"
+    },
+    "status": {
+      "utcTime": "2024-04-01T15:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "1 - 1",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "2",
+    "roundName": 2,
+    "pageUrl": "/matches/levanger-vs-moss/1uooqq#4385642",
+    "id": "4385642",
+    "home": {
+      "name": "Levanger",
+      "shortName": "Levanger",
+      "id": "6561"
+    },
+    "away": {
+      "name": "Moss",
+      "shortName": "Moss",
+      "id": "8405"
+    },
+    "status": {
+      "utcTime": "2024-04-06T14:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "5 - 0",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "2",
+    "roundName": 2,
+    "pageUrl": "/matches/ranheim-vs-sandnes-ulf/1saumx#4385650",
+    "id": "4385650",
+    "home": {
+      "name": "Ranheim",
+      "shortName": "Ranheim",
+      "id": "6563"
+    },
+    "away": {
+      "name": "Sandnes Ulf",
+      "shortName": "Sandnes Ulf",
+      "id": "8133"
+    },
+    "status": {
+      "utcTime": "2024-04-06T14:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "3 - 1",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "2",
+    "roundName": 2,
+    "pageUrl": "/matches/valerenga-vs-raufoss/2mj572#4385649",
+    "id": "4385649",
+    "home": {
+      "name": "Raufoss",
+      "shortName": "Raufoss",
+      "id": "9812"
+    },
+    "away": {
+      "name": "Vålerenga",
+      "shortName": "Vålerenga",
+      "id": "8007"
+    },
+    "status": {
+      "utcTime": "2024-04-06T14:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "1 - 2",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "2",
+    "roundName": 2,
+    "pageUrl": "/matches/mjondalen-vs-sogndal/1wecov#4385648",
+    "id": "4385648",
+    "home": {
+      "name": "Sogndal",
+      "shortName": "Sogndal",
+      "id": "8616"
+    },
+    "away": {
+      "name": "Mjøndalen",
+      "shortName": "Mjøndalen",
+      "id": "6541"
+    },
+    "status": {
+      "utcTime": "2024-04-06T14:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "3 - 1",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "2",
+    "roundName": 2,
+    "pageUrl": "/matches/bryne-vs-stabaek/2tc0nr#4385647",
+    "id": "4385647",
+    "home": {
+      "name": "Stabæk",
+      "shortName": "Stabæk",
+      "id": "9918"
+    },
+    "away": {
+      "name": "Bryne",
+      "shortName": "Bryne",
+      "id": "8531"
+    },
+    "status": {
+      "utcTime": "2024-04-06T14:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "1 - 0",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "2",
+    "roundName": 2,
+    "pageUrl": "/matches/aalesund-vs-start/2ryd31#4385646",
+    "id": "4385646",
+    "home": {
+      "name": "Start",
+      "shortName": "Start",
+      "id": "9919"
+    },
+    "away": {
+      "name": "Aalesund",
+      "shortName": "Aalesund",
+      "id": "8404"
+    },
+    "status": {
+      "utcTime": "2024-04-06T14:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "1 - 3",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "2",
+    "roundName": 2,
+    "pageUrl": "/matches/kongsvinger-vs-lyn/2sttah#4385651",
+    "id": "4385651",
+    "home": {
+      "name": "Lyn",
+      "shortName": "Lyn",
+      "id": "10224"
+    },
+    "away": {
+      "name": "Kongsvinger",
+      "shortName": "Kongsvinger",
+      "id": "8179"
+    },
+    "status": {
+      "utcTime": "2024-04-07T15:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "1 - 1",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "3",
+    "roundName": 3,
+    "pageUrl": "/matches/valerenga-vs-stabaek/2nnr2l#4385645",
+    "id": "4385645",
+    "home": {
+      "name": "Vålerenga",
+      "shortName": "Vålerenga",
+      "id": "8007"
+    },
+    "away": {
+      "name": "Stabæk",
+      "shortName": "Stabæk",
+      "id": "9918"
+    },
+    "status": {
+      "utcTime": "2024-04-14T15:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "1 - 3",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "3",
+    "roundName": 3,
+    "pageUrl": "/matches/aalesund-vs-lyn/2vb41q#4385681",
+    "id": "4385681",
+    "home": {
+      "name": "Aalesund",
+      "shortName": "Aalesund",
+      "id": "8404"
+    },
+    "away": {
+      "name": "Lyn",
+      "shortName": "Lyn",
+      "id": "10224"
+    },
+    "status": {
+      "utcTime": "2024-04-15T17:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "0 - 3",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "3",
+    "roundName": 3,
+    "pageUrl": "/matches/sogndal-vs-asane/2veplv#4385680",
+    "id": "4385680",
+    "home": {
+      "name": "Åsane",
+      "shortName": "Åsane",
+      "id": "10021"
+    },
+    "away": {
+      "name": "Sogndal",
+      "shortName": "Sogndal",
+      "id": "8616"
+    },
+    "status": {
+      "utcTime": "2024-04-15T17:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "1 - 1",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "3",
+    "roundName": 3,
+    "pageUrl": "/matches/levanger-vs-bryne/1vta1h#4385682",
+    "id": "4385682",
+    "home": {
+      "name": "Bryne",
+      "shortName": "Bryne",
+      "id": "8531"
+    },
+    "away": {
+      "name": "Levanger",
+      "shortName": "Levanger",
+      "id": "6561"
+    },
+    "status": {
+      "utcTime": "2024-04-15T17:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "0 - 1",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "3",
+    "roundName": 3,
+    "pageUrl": "/matches/egersund-vs-kongsvinger/1djymq#4385644",
+    "id": "4385644",
+    "home": {
+      "name": "Kongsvinger",
+      "shortName": "Kongsvinger",
+      "id": "8179"
+    },
+    "away": {
+      "name": "Egersund",
+      "shortName": "Egersund",
+      "id": "4722"
+    },
+    "status": {
+      "utcTime": "2024-04-15T17:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "3 - 3",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "3",
+    "roundName": 3,
+    "pageUrl": "/matches/mjondalen-vs-start/28nw31#4385643",
+    "id": "4385643",
+    "home": {
+      "name": "Mjøndalen",
+      "shortName": "Mjøndalen",
+      "id": "6541"
+    },
+    "away": {
+      "name": "Start",
+      "shortName": "Start",
+      "id": "9919"
+    },
+    "status": {
+      "utcTime": "2024-04-15T17:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "1 - 1",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "3",
+    "roundName": 3,
+    "pageUrl": "/matches/ranheim-vs-moss/1upbu9#4385673",
+    "id": "4385673",
+    "home": {
+      "name": "Moss",
+      "shortName": "Moss",
+      "id": "8405"
+    },
+    "away": {
+      "name": "Ranheim",
+      "shortName": "Ranheim",
+      "id": "6563"
+    },
+    "status": {
+      "utcTime": "2024-04-15T17:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "2 - 1",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "3",
+    "roundName": 3,
+    "pageUrl": "/matches/sandnes-ulf-vs-raufoss/2nvfrt#4385683",
+    "id": "4385683",
+    "home": {
+      "name": "Sandnes Ulf",
+      "shortName": "Sandnes Ulf",
+      "id": "8133"
+    },
+    "away": {
+      "name": "Raufoss",
+      "shortName": "Raufoss",
+      "id": "9812"
+    },
+    "status": {
+      "utcTime": "2024-04-15T17:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "2 - 0",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "4",
+    "roundName": 4,
+    "pageUrl": "/matches/egersund-vs-aalesund/1faq6h#4385679",
+    "id": "4385679",
+    "home": {
+      "name": "Egersund",
+      "shortName": "Egersund",
+      "id": "4722"
+    },
+    "away": {
+      "name": "Aalesund",
+      "shortName": "Aalesund",
+      "id": "8404"
+    },
+    "status": {
+      "utcTime": "2024-04-20T14:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "3 - 1",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "4",
+    "roundName": 4,
+    "pageUrl": "/matches/levanger-vs-kongsvinger/1soqdh#4385678",
+    "id": "4385678",
+    "home": {
+      "name": "Levanger",
+      "shortName": "Levanger",
+      "id": "6561"
+    },
+    "away": {
+      "name": "Kongsvinger",
+      "shortName": "Kongsvinger",
+      "id": "8179"
+    },
+    "status": {
+      "utcTime": "2024-04-20T14:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "1 - 2",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "4",
+    "roundName": 4,
+    "pageUrl": "/matches/ranheim-vs-asane/29vqcn#4385676",
+    "id": "4385676",
+    "home": {
+      "name": "Ranheim",
+      "shortName": "Ranheim",
+      "id": "6563"
+    },
+    "away": {
+      "name": "Åsane",
+      "shortName": "Åsane",
+      "id": "10021"
+    },
+    "status": {
+      "utcTime": "2024-04-20T14:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "2 - 2",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "4",
+    "roundName": 4,
+    "pageUrl": "/matches/bryne-vs-raufoss/2s67xc#4385675",
+    "id": "4385675",
+    "home": {
+      "name": "Raufoss",
+      "shortName": "Raufoss",
+      "id": "9812"
+    },
+    "away": {
+      "name": "Bryne",
+      "shortName": "Bryne",
+      "id": "8531"
+    },
+    "status": {
+      "utcTime": "2024-04-20T14:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "0 - 1",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "4",
+    "roundName": 4,
+    "pageUrl": "/matches/moss-vs-sogndal/2e95rf#4385674",
+    "id": "4385674",
+    "home": {
+      "name": "Sogndal",
+      "shortName": "Sogndal",
+      "id": "8616"
+    },
+    "away": {
+      "name": "Moss",
+      "shortName": "Moss",
+      "id": "8405"
+    },
+    "status": {
+      "utcTime": "2024-04-20T14:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "1 - 0",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "4",
+    "roundName": 4,
+    "pageUrl": "/matches/sandnes-ulf-vs-start/2p0pvt#4385672",
+    "id": "4385672",
+    "home": {
+      "name": "Start",
+      "shortName": "Start",
+      "id": "9919"
+    },
+    "away": {
+      "name": "Sandnes Ulf",
+      "shortName": "Sandnes Ulf",
+      "id": "8133"
+    },
+    "status": {
+      "utcTime": "2024-04-20T14:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "1 - 1",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "4",
+    "roundName": 4,
+    "pageUrl": "/matches/valerenga-vs-lyn/2qya4r#4385677",
+    "id": "4385677",
+    "home": {
+      "name": "Lyn",
+      "shortName": "Lyn",
+      "id": "10224"
+    },
+    "away": {
+      "name": "Vålerenga",
+      "shortName": "Vålerenga",
+      "id": "8007"
+    },
+    "status": {
+      "utcTime": "2024-04-20T16:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "1 - 1",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "5",
+    "roundName": 5,
+    "pageUrl": "/matches/aalesund-vs-raufoss/2qsglk#4385667",
+    "id": "4385667",
+    "home": {
+      "name": "Aalesund",
+      "shortName": "Aalesund",
+      "id": "8404"
+    },
+    "away": {
+      "name": "Raufoss",
+      "shortName": "Raufoss",
+      "id": "9812"
+    },
+    "status": {
+      "utcTime": "2024-04-27T14:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "1 - 4",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "5",
+    "roundName": 5,
+    "pageUrl": "/matches/stabaek-vs-asane/3ad0es#4385666",
+    "id": "4385666",
+    "home": {
+      "name": "Åsane",
+      "shortName": "Åsane",
+      "id": "10021"
+    },
+    "away": {
+      "name": "Stabæk",
+      "shortName": "Stabæk",
+      "id": "9918"
+    },
+    "status": {
+      "utcTime": "2024-04-27T14:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "2 - 2",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "5",
+    "roundName": 5,
+    "pageUrl": "/matches/bryne-vs-sogndal/2fjar6#4385670",
+    "id": "4385670",
+    "home": {
+      "name": "Bryne",
+      "shortName": "Bryne",
+      "id": "8531"
+    },
+    "away": {
+      "name": "Sogndal",
+      "shortName": "Sogndal",
+      "id": "8616"
+    },
+    "status": {
+      "utcTime": "2024-04-27T14:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "1 - 0",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "5",
+    "roundName": 5,
+    "pageUrl": "/matches/kongsvinger-vs-start/2pijga#4385671",
+    "id": "4385671",
+    "home": {
+      "name": "Kongsvinger",
+      "shortName": "Kongsvinger",
+      "id": "8179"
+    },
+    "away": {
+      "name": "Start",
+      "shortName": "Start",
+      "id": "9919"
+    },
+    "status": {
+      "utcTime": "2024-04-27T14:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "3 - 0",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "5",
+    "roundName": 5,
+    "pageUrl": "/matches/egersund-vs-moss/1fb0b5#4385669",
+    "id": "4385669",
+    "home": {
+      "name": "Moss",
+      "shortName": "Moss",
+      "id": "8405"
+    },
+    "away": {
+      "name": "Egersund",
+      "shortName": "Egersund",
+      "id": "4722"
+    },
+    "status": {
+      "utcTime": "2024-04-27T14:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "1 - 2",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "5",
+    "roundName": 5,
+    "pageUrl": "/matches/levanger-vs-sandnes-ulf/1sa7yi#4385668",
+    "id": "4385668",
+    "home": {
+      "name": "Sandnes Ulf",
+      "shortName": "Sandnes Ulf",
+      "id": "8133"
+    },
+    "away": {
+      "name": "Levanger",
+      "shortName": "Levanger",
+      "id": "6561"
+    },
+    "status": {
+      "utcTime": "2024-04-27T14:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "2 - 2",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "5",
+    "roundName": 5,
+    "pageUrl": "/matches/mjondalen-vs-valerenga/1r0gop#4385664",
+    "id": "4385664",
+    "home": {
+      "name": "Mjøndalen",
+      "shortName": "Mjøndalen",
+      "id": "6541"
+    },
+    "away": {
+      "name": "Vålerenga",
+      "shortName": "Vålerenga",
+      "id": "8007"
+    },
+    "status": {
+      "utcTime": "2024-04-28T12:30:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "5 - 3",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "5",
+    "roundName": 5,
+    "pageUrl": "/matches/ranheim-vs-lyn/2bwbz5#4385665",
+    "id": "4385665",
+    "home": {
+      "name": "Lyn",
+      "shortName": "Lyn",
+      "id": "10224"
+    },
+    "away": {
+      "name": "Ranheim",
+      "shortName": "Ranheim",
+      "id": "6563"
+    },
+    "status": {
+      "utcTime": "2024-04-28T15:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "1 - 1",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "6",
+    "roundName": 6,
+    "pageUrl": "/matches/egersund-vs-lyn/1ui739#4385663",
+    "id": "4385663",
+    "home": {
+      "name": "Egersund",
+      "shortName": "Egersund",
+      "id": "4722"
+    },
+    "away": {
+      "name": "Lyn",
+      "shortName": "Lyn",
+      "id": "10224"
+    },
+    "status": {
+      "utcTime": "2024-05-04T14:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "1 - 1",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "6",
+    "roundName": 6,
+    "pageUrl": "/matches/levanger-vs-sogndal/1wkur9#4385662",
+    "id": "4385662",
+    "home": {
+      "name": "Levanger",
+      "shortName": "Levanger",
+      "id": "6561"
+    },
+    "away": {
+      "name": "Sogndal",
+      "shortName": "Sogndal",
+      "id": "8616"
+    },
+    "status": {
+      "utcTime": "2024-05-04T14:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "0 - 0",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "6",
+    "roundName": 6,
+    "pageUrl": "/matches/mjondalen-vs-aalesund/1uhyed#4385716",
+    "id": "4385716",
+    "home": {
+      "name": "Mjøndalen",
+      "shortName": "Mjøndalen",
+      "id": "6541"
+    },
+    "away": {
+      "name": "Aalesund",
+      "shortName": "Aalesund",
+      "id": "8404"
+    },
+    "status": {
+      "utcTime": "2024-05-04T14:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "1 - 1",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "6",
+    "roundName": 6,
+    "pageUrl": "/matches/raufoss-vs-asane/393tt5#4385706",
+    "id": "4385706",
+    "home": {
+      "name": "Raufoss",
+      "shortName": "Raufoss",
+      "id": "9812"
+    },
+    "away": {
+      "name": "Åsane",
+      "shortName": "Åsane",
+      "id": "10021"
+    },
+    "status": {
+      "utcTime": "2024-05-04T14:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "1 - 0",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "6",
+    "roundName": 6,
+    "pageUrl": "/matches/sandnes-ulf-vs-moss/29ffxw#4385707",
+    "id": "4385707",
+    "home": {
+      "name": "Sandnes Ulf",
+      "shortName": "Sandnes Ulf",
+      "id": "8133"
+    },
+    "away": {
+      "name": "Moss",
+      "shortName": "Moss",
+      "id": "8405"
+    },
+    "status": {
+      "utcTime": "2024-05-04T14:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "3 - 3",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "6",
+    "roundName": 6,
+    "pageUrl": "/matches/kongsvinger-vs-stabaek/2pi5hj#4385708",
+    "id": "4385708",
+    "home": {
+      "name": "Stabæk",
+      "shortName": "Stabæk",
+      "id": "9918"
+    },
+    "away": {
+      "name": "Kongsvinger",
+      "shortName": "Kongsvinger",
+      "id": "8179"
+    },
+    "status": {
+      "utcTime": "2024-05-04T14:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "5 - 0",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "6",
+    "roundName": 6,
+    "pageUrl": "/matches/ranheim-vs-start/28vnoy#4385709",
+    "id": "4385709",
+    "home": {
+      "name": "Start",
+      "shortName": "Start",
+      "id": "9919"
+    },
+    "away": {
+      "name": "Ranheim",
+      "shortName": "Ranheim",
+      "id": "6563"
+    },
+    "status": {
+      "utcTime": "2024-05-04T14:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "0 - 0",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "6",
+    "roundName": 6,
+    "pageUrl": "/matches/valerenga-vs-bryne/29fg1e#4385710",
+    "id": "4385710",
+    "home": {
+      "name": "Vålerenga",
+      "shortName": "Vålerenga",
+      "id": "8007"
+    },
+    "away": {
+      "name": "Bryne",
+      "shortName": "Bryne",
+      "id": "8531"
+    },
+    "status": {
+      "utcTime": "2024-05-04T14:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "1 - 0",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "7",
+    "roundName": 7,
+    "pageUrl": "/matches/valerenga-vs-aalesund/286lhq#4385717",
+    "id": "4385717",
+    "home": {
+      "name": "Aalesund",
+      "shortName": "Aalesund",
+      "id": "8404"
+    },
+    "away": {
+      "name": "Vålerenga",
+      "shortName": "Vålerenga",
+      "id": "8007"
+    },
+    "status": {
+      "utcTime": "2024-05-11T14:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "0 - 2",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "7",
+    "roundName": 7,
+    "pageUrl": "/matches/start-vs-asane/3adfsp#4385718",
+    "id": "4385718",
+    "home": {
+      "name": "Åsane",
+      "shortName": "Åsane",
+      "id": "10021"
+    },
+    "away": {
+      "name": "Start",
+      "shortName": "Start",
+      "id": "9919"
+    },
+    "status": {
+      "utcTime": "2024-05-11T14:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "1 - 0",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "7",
+    "roundName": 7,
+    "pageUrl": "/matches/mjondalen-vs-bryne/1vmtab#4385711",
+    "id": "4385711",
+    "home": {
+      "name": "Bryne",
+      "shortName": "Bryne",
+      "id": "8531"
+    },
+    "away": {
+      "name": "Mjøndalen",
+      "shortName": "Mjøndalen",
+      "id": "6541"
+    },
+    "status": {
+      "utcTime": "2024-05-11T14:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "1 - 0",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "7",
+    "roundName": 7,
+    "pageUrl": "/matches/kongsvinger-vs-raufoss/2od5jk#4385712",
+    "id": "4385712",
+    "home": {
+      "name": "Kongsvinger",
+      "shortName": "Kongsvinger",
+      "id": "8179"
+    },
+    "away": {
+      "name": "Raufoss",
+      "shortName": "Raufoss",
+      "id": "9812"
+    },
+    "status": {
+      "utcTime": "2024-05-11T14:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "1 - 1",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "7",
+    "roundName": 7,
+    "pageUrl": "/matches/levanger-vs-lyn/2bvm2i#4385713",
+    "id": "4385713",
+    "home": {
+      "name": "Lyn",
+      "shortName": "Lyn",
+      "id": "10224"
+    },
+    "away": {
+      "name": "Levanger",
+      "shortName": "Levanger",
+      "id": "6561"
+    },
+    "status": {
+      "utcTime": "2024-05-11T14:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "3 - 1",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "7",
+    "roundName": 7,
+    "pageUrl": "/matches/moss-vs-stabaek/2ryd30#4385714",
+    "id": "4385714",
+    "home": {
+      "name": "Moss",
+      "shortName": "Moss",
+      "id": "8405"
+    },
+    "away": {
+      "name": "Stabæk",
+      "shortName": "Stabæk",
+      "id": "9918"
+    },
+    "status": {
+      "utcTime": "2024-05-11T14:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "3 - 3",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "7",
+    "roundName": 7,
+    "pageUrl": "/matches/egersund-vs-ranheim/11x1u2#4385715",
+    "id": "4385715",
+    "home": {
+      "name": "Ranheim",
+      "shortName": "Ranheim",
+      "id": "6563"
+    },
+    "away": {
+      "name": "Egersund",
+      "shortName": "Egersund",
+      "id": "4722"
+    },
+    "status": {
+      "utcTime": "2024-05-11T14:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "1 - 3",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "7",
+    "roundName": 7,
+    "pageUrl": "/matches/sandnes-ulf-vs-sogndal/2bipw3#4385705",
+    "id": "4385705",
+    "home": {
+      "name": "Sogndal",
+      "shortName": "Sogndal",
+      "id": "8616"
+    },
+    "away": {
+      "name": "Sandnes Ulf",
+      "shortName": "Sandnes Ulf",
+      "id": "8133"
+    },
+    "status": {
+      "utcTime": "2024-05-11T14:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "5 - 1",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "8",
+    "roundName": 8,
+    "pageUrl": "/matches/mjondalen-vs-asane/29nwzs#4385720",
+    "id": "4385720",
+    "home": {
+      "name": "Mjøndalen",
+      "shortName": "Mjøndalen",
+      "id": "6541"
+    },
+    "away": {
+      "name": "Åsane",
+      "shortName": "Åsane",
+      "id": "10021"
+    },
+    "status": {
+      "utcTime": "2024-05-16T15:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "2 - 1",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "8",
+    "roundName": 8,
+    "pageUrl": "/matches/aalesund-vs-sogndal/2e8smm#4385695",
+    "id": "4385695",
+    "home": {
+      "name": "Aalesund",
+      "shortName": "Aalesund",
+      "id": "8404"
+    },
+    "away": {
+      "name": "Sogndal",
+      "shortName": "Sogndal",
+      "id": "8616"
+    },
+    "status": {
+      "utcTime": "2024-05-16T16:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "0 - 2",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "8",
+    "roundName": 8,
+    "pageUrl": "/matches/levanger-vs-ranheim/1fa4i5#4385719",
+    "id": "4385719",
+    "home": {
+      "name": "Levanger",
+      "shortName": "Levanger",
+      "id": "6561"
+    },
+    "away": {
+      "name": "Ranheim",
+      "shortName": "Ranheim",
+      "id": "6563"
+    },
+    "status": {
+      "utcTime": "2024-05-16T16:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "2 - 2",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "8",
+    "roundName": 8,
+    "pageUrl": "/matches/moss-vs-raufoss/2qsunl#4385721",
+    "id": "4385721",
+    "home": {
+      "name": "Raufoss",
+      "shortName": "Raufoss",
+      "id": "9812"
+    },
+    "away": {
+      "name": "Moss",
+      "shortName": "Moss",
+      "id": "8405"
+    },
+    "status": {
+      "utcTime": "2024-05-16T16:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "0 - 2",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "8",
+    "roundName": 8,
+    "pageUrl": "/matches/sandnes-ulf-vs-bryne/2aoa2n#4385722",
+    "id": "4385722",
+    "home": {
+      "name": "Sandnes Ulf",
+      "shortName": "Sandnes Ulf",
+      "id": "8133"
+    },
+    "away": {
+      "name": "Bryne",
+      "shortName": "Bryne",
+      "id": "8531"
+    },
+    "status": {
+      "utcTime": "2024-05-16T16:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "2 - 1",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "8",
+    "roundName": 8,
+    "pageUrl": "/matches/stabaek-vs-lyn/3cs7jr#4385723",
+    "id": "4385723",
+    "home": {
+      "name": "Stabæk",
+      "shortName": "Stabæk",
+      "id": "9918"
+    },
+    "away": {
+      "name": "Lyn",
+      "shortName": "Lyn",
+      "id": "10224"
+    },
+    "status": {
+      "utcTime": "2024-05-16T16:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "2 - 2",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "8",
+    "roundName": 8,
+    "pageUrl": "/matches/egersund-vs-start/1rtlhk#4385724",
+    "id": "4385724",
+    "home": {
+      "name": "Start",
+      "shortName": "Start",
+      "id": "9919"
+    },
+    "away": {
+      "name": "Egersund",
+      "shortName": "Egersund",
+      "id": "4722"
+    },
+    "status": {
+      "utcTime": "2024-05-16T16:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "4 - 3",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "8",
+    "roundName": 8,
+    "pageUrl": "/matches/valerenga-vs-kongsvinger/25zzmq#4385725",
+    "id": "4385725",
+    "home": {
+      "name": "Vålerenga",
+      "shortName": "Vålerenga",
+      "id": "8007"
+    },
+    "away": {
+      "name": "Kongsvinger",
+      "shortName": "Kongsvinger",
+      "id": "8179"
+    },
+    "status": {
+      "utcTime": "2024-05-16T16:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "0 - 2",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "9",
+    "roundName": 9,
+    "pageUrl": "/matches/moss-vs-start/2ryr81#4385685",
+    "id": "4385685",
+    "home": {
+      "name": "Moss",
+      "shortName": "Moss",
+      "id": "8405"
+    },
+    "away": {
+      "name": "Start",
+      "shortName": "Start",
+      "id": "9919"
+    },
+    "status": {
+      "utcTime": "2024-05-21T17:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "2 - 1",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "9",
+    "roundName": 9,
+    "pageUrl": "/matches/valerenga-vs-asane/2orebp#4385691",
+    "id": "4385691",
+    "home": {
+      "name": "Åsane",
+      "shortName": "Åsane",
+      "id": "10021"
+    },
+    "away": {
+      "name": "Vålerenga",
+      "shortName": "Vålerenga",
+      "id": "8007"
+    },
+    "status": {
+      "utcTime": "2024-05-22T17:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "1 - 5",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "9",
+    "roundName": 9,
+    "pageUrl": "/matches/aalesund-vs-bryne/2ddv1b#4385686",
+    "id": "4385686",
+    "home": {
+      "name": "Bryne",
+      "shortName": "Bryne",
+      "id": "8531"
+    },
+    "away": {
+      "name": "Aalesund",
+      "shortName": "Aalesund",
+      "id": "8404"
+    },
+    "status": {
+      "utcTime": "2024-05-22T17:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "2 - 0",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "9",
+    "roundName": 9,
+    "pageUrl": "/matches/egersund-vs-levanger/11wkf3#4385687",
+    "id": "4385687",
+    "home": {
+      "name": "Egersund",
+      "shortName": "Egersund",
+      "id": "4722"
+    },
+    "away": {
+      "name": "Levanger",
+      "shortName": "Levanger",
+      "id": "6561"
+    },
+    "status": {
+      "utcTime": "2024-05-22T17:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "2 - 2",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "9",
+    "roundName": 9,
+    "pageUrl": "/matches/mjondalen-vs-kongsvinger/1sif1v#4385688",
+    "id": "4385688",
+    "home": {
+      "name": "Kongsvinger",
+      "shortName": "Kongsvinger",
+      "id": "8179"
+    },
+    "away": {
+      "name": "Mjøndalen",
+      "shortName": "Mjøndalen",
+      "id": "6541"
+    },
+    "status": {
+      "utcTime": "2024-05-22T17:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "3 - 2",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "9",
+    "roundName": 9,
+    "pageUrl": "/matches/ranheim-vs-stabaek/28vaz3#4385689",
+    "id": "4385689",
+    "home": {
+      "name": "Ranheim",
+      "shortName": "Ranheim",
+      "id": "6563"
+    },
+    "away": {
+      "name": "Stabæk",
+      "shortName": "Stabæk",
+      "id": "9918"
+    },
+    "status": {
+      "utcTime": "2024-05-22T17:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "3 - 0",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "9",
+    "roundName": 9,
+    "pageUrl": "/matches/sogndal-vs-raufoss/2t3psq#4385690",
+    "id": "4385690",
+    "home": {
+      "name": "Sogndal",
+      "shortName": "Sogndal",
+      "id": "8616"
+    },
+    "away": {
+      "name": "Raufoss",
+      "shortName": "Raufoss",
+      "id": "9812"
+    },
+    "status": {
+      "utcTime": "2024-05-22T17:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "1 - 1",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "9",
+    "roundName": 9,
+    "pageUrl": "/matches/sandnes-ulf-vs-lyn/2sbov0#4385692",
+    "id": "4385692",
+    "home": {
+      "name": "Lyn",
+      "shortName": "Lyn",
+      "id": "10224"
+    },
+    "away": {
+      "name": "Sandnes Ulf",
+      "shortName": "Sandnes Ulf",
+      "id": "8133"
+    },
+    "status": {
+      "utcTime": "2024-05-23T17:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "5 - 0",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "10",
+    "roundName": 10,
+    "pageUrl": "/matches/levanger-vs-valerenga/1r6pcr#4385693",
+    "id": "4385693",
+    "home": {
+      "name": "Vålerenga",
+      "shortName": "Vålerenga",
+      "id": "8007"
+    },
+    "away": {
+      "name": "Levanger",
+      "shortName": "Levanger",
+      "id": "6561"
+    },
+    "status": {
+      "utcTime": "2024-05-26T12:30:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "3 - 1",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "10",
+    "roundName": 10,
+    "pageUrl": "/matches/aalesund-vs-asane/2t2i21#4385699",
+    "id": "4385699",
+    "home": {
+      "name": "Aalesund",
+      "shortName": "Aalesund",
+      "id": "8404"
+    },
+    "away": {
+      "name": "Åsane",
+      "shortName": "Åsane",
+      "id": "10021"
+    },
+    "status": {
+      "utcTime": "2024-05-27T17:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "4 - 1",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "10",
+    "roundName": 10,
+    "pageUrl": "/matches/ranheim-vs-bryne/1vtxc0#4385694",
+    "id": "4385694",
+    "home": {
+      "name": "Bryne",
+      "shortName": "Bryne",
+      "id": "8531"
+    },
+    "away": {
+      "name": "Ranheim",
+      "shortName": "Ranheim",
+      "id": "6563"
+    },
+    "status": {
+      "utcTime": "2024-05-27T17:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "3 - 2",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "10",
+    "roundName": 10,
+    "pageUrl": "/matches/mjondalen-vs-moss/1ui9xk#4385684",
+    "id": "4385684",
+    "home": {
+      "name": "Mjøndalen",
+      "shortName": "Mjøndalen",
+      "id": "6541"
+    },
+    "away": {
+      "name": "Moss",
+      "shortName": "Moss",
+      "id": "8405"
+    },
+    "status": {
+      "utcTime": "2024-05-27T17:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "1 - 2",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "10",
+    "roundName": 10,
+    "pageUrl": "/matches/raufoss-vs-lyn/3bikce#4385696",
+    "id": "4385696",
+    "home": {
+      "name": "Raufoss",
+      "shortName": "Raufoss",
+      "id": "9812"
+    },
+    "away": {
+      "name": "Lyn",
+      "shortName": "Lyn",
+      "id": "10224"
+    },
+    "status": {
+      "utcTime": "2024-05-27T17:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "1 - 0",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "10",
+    "roundName": 10,
+    "pageUrl": "/matches/sandnes-ulf-vs-kongsvinger/277vfz#4385697",
+    "id": "4385697",
+    "home": {
+      "name": "Sandnes Ulf",
+      "shortName": "Sandnes Ulf",
+      "id": "8133"
+    },
+    "away": {
+      "name": "Kongsvinger",
+      "shortName": "Kongsvinger",
+      "id": "8179"
+    },
+    "status": {
+      "utcTime": "2024-05-27T17:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "0 - 2",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "10",
+    "roundName": 10,
+    "pageUrl": "/matches/egersund-vs-stabaek/1rta6u#4385698",
+    "id": "4385698",
+    "home": {
+      "name": "Stabæk",
+      "shortName": "Stabæk",
+      "id": "9918"
+    },
+    "away": {
+      "name": "Egersund",
+      "shortName": "Egersund",
+      "id": "4722"
+    },
+    "status": {
+      "utcTime": "2024-05-27T17:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "4 - 5",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "10",
+    "roundName": 10,
+    "pageUrl": "/matches/sogndal-vs-start/2ua3sb#4385700",
+    "id": "4385700",
+    "home": {
+      "name": "Start",
+      "shortName": "Start",
+      "id": "9919"
+    },
+    "away": {
+      "name": "Sogndal",
+      "shortName": "Sogndal",
+      "id": "8616"
+    },
+    "status": {
+      "utcTime": "2024-05-28T17:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "2 - 1",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "11",
+    "roundName": 11,
+    "pageUrl": "/matches/mjondalen-vs-lyn/2bof68#4385701",
+    "id": "4385701",
+    "home": {
+      "name": "Lyn",
+      "shortName": "Lyn",
+      "id": "10224"
+    },
+    "away": {
+      "name": "Mjøndalen",
+      "shortName": "Mjøndalen",
+      "id": "6541"
+    },
+    "status": {
+      "utcTime": "2024-05-31T17:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "1 - 1",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "11",
+    "roundName": 11,
+    "pageUrl": "/matches/sandnes-ulf-vs-asane/2q49bg#4385750",
+    "id": "4385750",
+    "home": {
+      "name": "Åsane",
+      "shortName": "Åsane",
+      "id": "10021"
+    },
+    "away": {
+      "name": "Sandnes Ulf",
+      "shortName": "Sandnes Ulf",
+      "id": "8133"
+    },
+    "status": {
+      "utcTime": "2024-06-01T14:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "1 - 0",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "11",
+    "roundName": 11,
+    "pageUrl": "/matches/egersund-vs-raufoss/1qw4zt#4385702",
+    "id": "4385702",
+    "home": {
+      "name": "Egersund",
+      "shortName": "Egersund",
+      "id": "4722"
+    },
+    "away": {
+      "name": "Raufoss",
+      "shortName": "Raufoss",
+      "id": "9812"
+    },
+    "status": {
+      "utcTime": "2024-06-01T14:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "1 - 2",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "11",
+    "roundName": 11,
+    "pageUrl": "/matches/kongsvinger-vs-bryne/2b4qdk#4385703",
+    "id": "4385703",
+    "home": {
+      "name": "Kongsvinger",
+      "shortName": "Kongsvinger",
+      "id": "8179"
+    },
+    "away": {
+      "name": "Bryne",
+      "shortName": "Bryne",
+      "id": "8531"
+    },
+    "status": {
+      "utcTime": "2024-06-01T14:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "3 - 1",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "11",
+    "roundName": 11,
+    "pageUrl": "/matches/levanger-vs-start/28uy9b#4385704",
+    "id": "4385704",
+    "home": {
+      "name": "Levanger",
+      "shortName": "Levanger",
+      "id": "6561"
+    },
+    "away": {
+      "name": "Start",
+      "shortName": "Start",
+      "id": "9919"
+    },
+    "status": {
+      "utcTime": "2024-06-01T14:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "1 - 1",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "11",
+    "roundName": 11,
+    "pageUrl": "/matches/aalesund-vs-moss/2c4ak2#4385758",
+    "id": "4385758",
+    "home": {
+      "name": "Moss",
+      "shortName": "Moss",
+      "id": "8405"
+    },
+    "away": {
+      "name": "Aalesund",
+      "shortName": "Aalesund",
+      "id": "8404"
+    },
+    "status": {
+      "utcTime": "2024-06-01T14:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "1 - 0",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "11",
+    "roundName": 11,
+    "pageUrl": "/matches/ranheim-vs-valerenga/1r7bu6#4385748",
+    "id": "4385748",
+    "home": {
+      "name": "Ranheim",
+      "shortName": "Ranheim",
+      "id": "6563"
+    },
+    "away": {
+      "name": "Vålerenga",
+      "shortName": "Vålerenga",
+      "id": "8007"
+    },
+    "status": {
+      "utcTime": "2024-06-01T14:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "1 - 3",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "11",
+    "roundName": 11,
+    "pageUrl": "/matches/sogndal-vs-stabaek/2u9phf#4385749",
+    "id": "4385749",
+    "home": {
+      "name": "Sogndal",
+      "shortName": "Sogndal",
+      "id": "8616"
+    },
+    "away": {
+      "name": "Stabæk",
+      "shortName": "Stabæk",
+      "id": "9918"
+    },
+    "status": {
+      "utcTime": "2024-06-01T14:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "2 - 3",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "2",
+    "roundName": 2,
+    "pageUrl": "/matches/egersund-vs-asane/1splty#4385653",
+    "id": "4385653",
+    "home": {
+      "name": "Egersund",
+      "shortName": "Egersund",
+      "id": "4722"
+    },
+    "away": {
+      "name": "Åsane",
+      "shortName": "Åsane",
+      "id": "10021"
+    },
+    "status": {
+      "utcTime": "2024-06-05T15:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "1 - 0",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "12",
+    "roundName": 12,
+    "pageUrl": "/matches/kongsvinger-vs-aalesund/29vez4#4385747",
+    "id": "4385747",
+    "home": {
+      "name": "Aalesund",
+      "shortName": "Aalesund",
+      "id": "8404"
+    },
+    "away": {
+      "name": "Kongsvinger",
+      "shortName": "Kongsvinger",
+      "id": "8179"
+    },
+    "status": {
+      "utcTime": "2024-06-09T15:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "4 - 4",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "12",
+    "roundName": 12,
+    "pageUrl": "/matches/bryne-vs-asane/2ugtyn#4385751",
+    "id": "4385751",
+    "home": {
+      "name": "Bryne",
+      "shortName": "Bryne",
+      "id": "8531"
+    },
+    "away": {
+      "name": "Åsane",
+      "shortName": "Åsane",
+      "id": "10021"
+    },
+    "status": {
+      "utcTime": "2024-06-09T15:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "1 - 0",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "12",
+    "roundName": 12,
+    "pageUrl": "/matches/mjondalen-vs-ranheim/1f4i4b#4385752",
+    "id": "4385752",
+    "home": {
+      "name": "Mjøndalen",
+      "shortName": "Mjøndalen",
+      "id": "6541"
+    },
+    "away": {
+      "name": "Ranheim",
+      "shortName": "Ranheim",
+      "id": "6563"
+    },
+    "status": {
+      "utcTime": "2024-06-09T15:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "3 - 3",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "12",
+    "roundName": 12,
+    "pageUrl": "/matches/egersund-vs-sogndal/1gyux3#4385754",
+    "id": "4385754",
+    "home": {
+      "name": "Sogndal",
+      "shortName": "Sogndal",
+      "id": "8616"
+    },
+    "away": {
+      "name": "Egersund",
+      "shortName": "Egersund",
+      "id": "4722"
+    },
+    "status": {
+      "utcTime": "2024-06-09T15:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "2 - 2",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "12",
+    "roundName": 12,
+    "pageUrl": "/matches/start-vs-lyn/3csn3b#4385756",
+    "id": "4385756",
+    "home": {
+      "name": "Start",
+      "shortName": "Start",
+      "id": "9919"
+    },
+    "away": {
+      "name": "Lyn",
+      "shortName": "Lyn",
+      "id": "10224"
+    },
+    "status": {
+      "utcTime": "2024-06-09T15:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "1 - 4",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "12",
+    "roundName": 12,
+    "pageUrl": "/matches/valerenga-vs-moss/286y5n#4385757",
+    "id": "4385757",
+    "home": {
+      "name": "Vålerenga",
+      "shortName": "Vålerenga",
+      "id": "8007"
+    },
+    "away": {
+      "name": "Moss",
+      "shortName": "Moss",
+      "id": "8405"
+    },
+    "status": {
+      "utcTime": "2024-06-09T17:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "5 - 1",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "4",
+    "roundName": 4,
+    "pageUrl": "/matches/mjondalen-vs-stabaek/28njds#4385661",
+    "id": "4385661",
+    "home": {
+      "name": "Stabæk",
+      "shortName": "Stabæk",
+      "id": "9918"
+    },
+    "away": {
+      "name": "Mjøndalen",
+      "shortName": "Mjøndalen",
+      "id": "6541"
+    },
+    "status": {
+      "utcTime": "2024-06-12T17:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "4 - 2",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "13",
+    "roundName": 13,
+    "pageUrl": "/matches/egersund-vs-valerenga/1c8poc#4385759",
+    "id": "4385759",
+    "home": {
+      "name": "Egersund",
+      "shortName": "Egersund",
+      "id": "4722"
+    },
+    "away": {
+      "name": "Vålerenga",
+      "shortName": "Vålerenga",
+      "id": "8007"
+    },
+    "status": {
+      "utcTime": "2024-06-16T13:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "1 - 1",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "13",
+    "roundName": 13,
+    "pageUrl": "/matches/kongsvinger-vs-asane/2qm6jj#4385760",
+    "id": "4385760",
+    "home": {
+      "name": "Kongsvinger",
+      "shortName": "Kongsvinger",
+      "id": "8179"
+    },
+    "away": {
+      "name": "Åsane",
+      "shortName": "Åsane",
+      "id": "10021"
+    },
+    "status": {
+      "utcTime": "2024-06-16T13:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "0 - 5",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "13",
+    "roundName": 13,
+    "pageUrl": "/matches/levanger-vs-aalesund/1uod6z#4385761",
+    "id": "4385761",
+    "home": {
+      "name": "Levanger",
+      "shortName": "Levanger",
+      "id": "6561"
+    },
+    "away": {
+      "name": "Aalesund",
+      "shortName": "Aalesund",
+      "id": "8404"
+    },
+    "status": {
+      "utcTime": "2024-06-16T13:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "4 - 0",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "13",
+    "roundName": 13,
+    "pageUrl": "/matches/sogndal-vs-lyn/2xo8t0#4385762",
+    "id": "4385762",
+    "home": {
+      "name": "Lyn",
+      "shortName": "Lyn",
+      "id": "10224"
+    },
+    "away": {
+      "name": "Sogndal",
+      "shortName": "Sogndal",
+      "id": "8616"
+    },
+    "status": {
+      "utcTime": "2024-06-16T13:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "1 - 2",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "13",
+    "roundName": 13,
+    "pageUrl": "/matches/moss-vs-bryne/2de83r#4385763",
+    "id": "4385763",
+    "home": {
+      "name": "Moss",
+      "shortName": "Moss",
+      "id": "8405"
+    },
+    "away": {
+      "name": "Bryne",
+      "shortName": "Bryne",
+      "id": "8531"
+    },
+    "status": {
+      "utcTime": "2024-06-16T13:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "1 - 0",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "13",
+    "roundName": 13,
+    "pageUrl": "/matches/ranheim-vs-raufoss/27tz7c#4385764",
+    "id": "4385764",
+    "home": {
+      "name": "Ranheim",
+      "shortName": "Ranheim",
+      "id": "6563"
+    },
+    "away": {
+      "name": "Raufoss",
+      "shortName": "Raufoss",
+      "id": "9812"
+    },
+    "status": {
+      "utcTime": "2024-06-16T13:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "1 - 0",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "13",
+    "roundName": 13,
+    "pageUrl": "/matches/mjondalen-vs-sandnes-ulf/1s3xcg#4385765",
+    "id": "4385765",
+    "home": {
+      "name": "Sandnes Ulf",
+      "shortName": "Sandnes Ulf",
+      "id": "8133"
+    },
+    "away": {
+      "name": "Mjøndalen",
+      "shortName": "Mjøndalen",
+      "id": "6541"
+    },
+    "status": {
+      "utcTime": "2024-06-16T13:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "2 - 3",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "13",
+    "roundName": 13,
+    "pageUrl": "/matches/stabaek-vs-start/395j42#4385766",
+    "id": "4385766",
+    "home": {
+      "name": "Start",
+      "shortName": "Start",
+      "id": "9919"
+    },
+    "away": {
+      "name": "Stabæk",
+      "shortName": "Stabæk",
+      "id": "9918"
+    },
+    "status": {
+      "utcTime": "2024-06-16T13:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "4 - 3",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "14",
+    "roundName": 14,
+    "pageUrl": "/matches/kongsvinger-vs-sogndal/2bz97m#4385728",
+    "id": "4385728",
+    "home": {
+      "name": "Sogndal",
+      "shortName": "Sogndal",
+      "id": "8616"
+    },
+    "away": {
+      "name": "Kongsvinger",
+      "shortName": "Kongsvinger",
+      "id": "8179"
+    },
+    "status": {
+      "utcTime": "2024-06-22T15:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "2 - 0",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "14",
+    "roundName": 14,
+    "pageUrl": "/matches/ranheim-vs-aalesund/1up0ag#4385731",
+    "id": "4385731",
+    "home": {
+      "name": "Aalesund",
+      "shortName": "Aalesund",
+      "id": "8404"
+    },
+    "away": {
+      "name": "Ranheim",
+      "shortName": "Ranheim",
+      "id": "6563"
+    },
+    "status": {
+      "utcTime": "2024-06-23T15:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "1 - 2",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "14",
+    "roundName": 14,
+    "pageUrl": "/matches/moss-vs-asane/2t2w9w#4385732",
+    "id": "4385732",
+    "home": {
+      "name": "Åsane",
+      "shortName": "Åsane",
+      "id": "10021"
+    },
+    "away": {
+      "name": "Moss",
+      "shortName": "Moss",
+      "id": "8405"
+    },
+    "status": {
+      "utcTime": "2024-06-23T15:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "1 - 4",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "14",
+    "roundName": 14,
+    "pageUrl": "/matches/bryne-vs-lyn/2wpzuh#4385767",
+    "id": "4385767",
+    "home": {
+      "name": "Bryne",
+      "shortName": "Bryne",
+      "id": "8531"
+    },
+    "away": {
+      "name": "Lyn",
+      "shortName": "Lyn",
+      "id": "10224"
+    },
+    "status": {
+      "utcTime": "2024-06-23T15:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "5 - 3",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "14",
+    "roundName": 14,
+    "pageUrl": "/matches/egersund-vs-mjondalen/11rqfh#4385737",
+    "id": "4385737",
+    "home": {
+      "name": "Mjøndalen",
+      "shortName": "Mjøndalen",
+      "id": "6541"
+    },
+    "away": {
+      "name": "Egersund",
+      "shortName": "Egersund",
+      "id": "4722"
+    },
+    "status": {
+      "utcTime": "2024-06-23T15:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "0 - 3",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "14",
+    "roundName": 14,
+    "pageUrl": "/matches/raufoss-vs-start/37wkxp#4385727",
+    "id": "4385727",
+    "home": {
+      "name": "Raufoss",
+      "shortName": "Raufoss",
+      "id": "9812"
+    },
+    "away": {
+      "name": "Start",
+      "shortName": "Start",
+      "id": "9919"
+    },
+    "status": {
+      "utcTime": "2024-06-23T15:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "2 - 1",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "14",
+    "roundName": 14,
+    "pageUrl": "/matches/levanger-vs-stabaek/28ulji#4385729",
+    "id": "4385729",
+    "home": {
+      "name": "Stabæk",
+      "shortName": "Stabæk",
+      "id": "9918"
+    },
+    "away": {
+      "name": "Levanger",
+      "shortName": "Levanger",
+      "id": "6561"
+    },
+    "status": {
+      "utcTime": "2024-06-23T15:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "1 - 0",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "14",
+    "roundName": 14,
+    "pageUrl": "/matches/valerenga-vs-sandnes-ulf/25k1w3#4385730",
+    "id": "4385730",
+    "home": {
+      "name": "Vålerenga",
+      "shortName": "Vålerenga",
+      "id": "8007"
+    },
+    "away": {
+      "name": "Sandnes Ulf",
+      "shortName": "Sandnes Ulf",
+      "id": "8133"
+    },
+    "status": {
+      "utcTime": "2024-06-23T15:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "8 - 0",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "15",
+    "roundName": 15,
+    "pageUrl": "/matches/egersund-vs-bryne/1gamte#4385733",
+    "id": "4385733",
+    "home": {
+      "name": "Egersund",
+      "shortName": "Egersund",
+      "id": "4722"
+    },
+    "away": {
+      "name": "Bryne",
+      "shortName": "Bryne",
+      "id": "8531"
+    },
+    "status": {
+      "utcTime": "2024-07-20T14:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "0 - 2",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "15",
+    "roundName": 15,
+    "pageUrl": "/matches/asane-vs-lyn/3e0spj#4385735",
+    "id": "4385735",
+    "home": {
+      "name": "Lyn",
+      "shortName": "Lyn",
+      "id": "10224"
+    },
+    "away": {
+      "name": "Åsane",
+      "shortName": "Åsane",
+      "id": "10021"
+    },
+    "status": {
+      "utcTime": "2024-07-20T14:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "3 - 1",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "15",
+    "roundName": 15,
+    "pageUrl": "/matches/kongsvinger-vs-moss/29vrrt#4385736",
+    "id": "4385736",
+    "home": {
+      "name": "Moss",
+      "shortName": "Moss",
+      "id": "8405"
+    },
+    "away": {
+      "name": "Kongsvinger",
+      "shortName": "Kongsvinger",
+      "id": "8179"
+    },
+    "status": {
+      "utcTime": "2024-07-20T14:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "1 - 0",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "15",
+    "roundName": 15,
+    "pageUrl": "/matches/ranheim-vs-sogndal/1wli6i#4385726",
+    "id": "4385726",
+    "home": {
+      "name": "Ranheim",
+      "shortName": "Ranheim",
+      "id": "6563"
+    },
+    "away": {
+      "name": "Sogndal",
+      "shortName": "Sogndal",
+      "id": "8616"
+    },
+    "status": {
+      "utcTime": "2024-07-20T14:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "3 - 0",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "15",
+    "roundName": 15,
+    "pageUrl": "/matches/raufoss-vs-stabaek/37w5pl#4385738",
+    "id": "4385738",
+    "home": {
+      "name": "Raufoss",
+      "shortName": "Raufoss",
+      "id": "9812"
+    },
+    "away": {
+      "name": "Stabæk",
+      "shortName": "Stabæk",
+      "id": "9918"
+    },
+    "status": {
+      "utcTime": "2024-07-20T14:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "0 - 0",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "15",
+    "roundName": 15,
+    "pageUrl": "/matches/valerenga-vs-start/2no4wk#4385740",
+    "id": "4385740",
+    "home": {
+      "name": "Start",
+      "shortName": "Start",
+      "id": "9919"
+    },
+    "away": {
+      "name": "Vålerenga",
+      "shortName": "Vålerenga",
+      "id": "8007"
+    },
+    "status": {
+      "utcTime": "2024-07-20T14:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "1 - 2",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "12",
+    "roundName": 12,
+    "pageUrl": "/matches/levanger-vs-raufoss/27t9xn#4385753",
+    "id": "4385753",
+    "home": {
+      "name": "Raufoss",
+      "shortName": "Raufoss",
+      "id": "9812"
+    },
+    "away": {
+      "name": "Levanger",
+      "shortName": "Levanger",
+      "id": "6561"
+    },
+    "status": {
+      "utcTime": "2024-07-23T17:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "0 - 3",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "16",
+    "roundName": 16,
+    "pageUrl": "/matches/egersund-vs-aalesund/1faq6h#4385769",
+    "id": "4385769",
+    "home": {
+      "name": "Aalesund",
+      "shortName": "Aalesund",
+      "id": "8404"
+    },
+    "away": {
+      "name": "Egersund",
+      "shortName": "Egersund",
+      "id": "4722"
+    },
+    "status": {
+      "utcTime": "2024-07-27T14:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "2 - 3",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "16",
+    "roundName": 16,
+    "pageUrl": "/matches/raufoss-vs-asane/393tt5#4385768",
+    "id": "4385768",
+    "home": {
+      "name": "Åsane",
+      "shortName": "Åsane",
+      "id": "10021"
+    },
+    "away": {
+      "name": "Raufoss",
+      "shortName": "Raufoss",
+      "id": "9812"
+    },
+    "status": {
+      "utcTime": "2024-07-27T14:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "0 - 0",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "16",
+    "roundName": 16,
+    "pageUrl": "/matches/sandnes-ulf-vs-bryne/2aoa2n#4385741",
+    "id": "4385741",
+    "home": {
+      "name": "Bryne",
+      "shortName": "Bryne",
+      "id": "8531"
+    },
+    "away": {
+      "name": "Sandnes Ulf",
+      "shortName": "Sandnes Ulf",
+      "id": "8133"
+    },
+    "status": {
+      "utcTime": "2024-07-27T14:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "1 - 1",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "16",
+    "roundName": 16,
+    "pageUrl": "/matches/levanger-vs-kongsvinger/1soqdh#4385742",
+    "id": "4385742",
+    "home": {
+      "name": "Kongsvinger",
+      "shortName": "Kongsvinger",
+      "id": "8179"
+    },
+    "away": {
+      "name": "Levanger",
+      "shortName": "Levanger",
+      "id": "6561"
+    },
+    "status": {
+      "utcTime": "2024-07-27T14:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "3 - 3",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "16",
+    "roundName": 16,
+    "pageUrl": "/matches/mjondalen-vs-lyn/2bof68#4385743",
+    "id": "4385743",
+    "home": {
+      "name": "Mjøndalen",
+      "shortName": "Mjøndalen",
+      "id": "6541"
+    },
+    "away": {
+      "name": "Lyn",
+      "shortName": "Lyn",
+      "id": "10224"
+    },
+    "status": {
+      "utcTime": "2024-07-27T14:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "1 - 2",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "16",
+    "roundName": 16,
+    "pageUrl": "/matches/sogndal-vs-start/2ua3sb#4385744",
+    "id": "4385744",
+    "home": {
+      "name": "Sogndal",
+      "shortName": "Sogndal",
+      "id": "8616"
+    },
+    "away": {
+      "name": "Start",
+      "shortName": "Start",
+      "id": "9919"
+    },
+    "status": {
+      "utcTime": "2024-07-27T14:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "4 - 0",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "16",
+    "roundName": 16,
+    "pageUrl": "/matches/moss-vs-stabaek/2ryd30#4385745",
+    "id": "4385745",
+    "home": {
+      "name": "Stabæk",
+      "shortName": "Stabæk",
+      "id": "9918"
+    },
+    "away": {
+      "name": "Moss",
+      "shortName": "Moss",
+      "id": "8405"
+    },
+    "status": {
+      "utcTime": "2024-07-27T14:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "1 - 4",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "16",
+    "roundName": 16,
+    "pageUrl": "/matches/ranheim-vs-valerenga/1r7bu6#4385746",
+    "id": "4385746",
+    "home": {
+      "name": "Vålerenga",
+      "shortName": "Vålerenga",
+      "id": "8007"
+    },
+    "away": {
+      "name": "Ranheim",
+      "shortName": "Ranheim",
+      "id": "6563"
+    },
+    "status": {
+      "utcTime": "2024-07-29T17:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "3 - 1",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "12",
+    "roundName": 12,
+    "pageUrl": "/matches/sandnes-ulf-vs-stabaek/2p0byc#4385755",
+    "id": "4385755",
+    "home": {
+      "name": "Stabæk",
+      "shortName": "Stabæk",
+      "id": "9918"
+    },
+    "away": {
+      "name": "Sandnes Ulf",
+      "shortName": "Sandnes Ulf",
+      "id": "8133"
+    },
+    "status": {
+      "utcTime": "2024-07-31T17:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "3 - 0",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "17",
+    "roundName": 17,
+    "pageUrl": "/matches/egersund-vs-sogndal/1gyux3#4385778",
+    "id": "4385778",
+    "home": {
+      "name": "Egersund",
+      "shortName": "Egersund",
+      "id": "4722"
+    },
+    "away": {
+      "name": "Sogndal",
+      "shortName": "Sogndal",
+      "id": "8616"
+    },
+    "status": {
+      "utcTime": "2024-08-03T14:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "0 - 2",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "17",
+    "roundName": 17,
+    "pageUrl": "/matches/levanger-vs-bryne/1vta1h#4385777",
+    "id": "4385777",
+    "home": {
+      "name": "Levanger",
+      "shortName": "Levanger",
+      "id": "6561"
+    },
+    "away": {
+      "name": "Bryne",
+      "shortName": "Bryne",
+      "id": "8531"
+    },
+    "status": {
+      "utcTime": "2024-08-03T14:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "0 - 1",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "17",
+    "roundName": 17,
+    "pageUrl": "/matches/valerenga-vs-moss/286y5n#4385775",
+    "id": "4385775",
+    "home": {
+      "name": "Moss",
+      "shortName": "Moss",
+      "id": "8405"
+    },
+    "away": {
+      "name": "Vålerenga",
+      "shortName": "Vålerenga",
+      "id": "8007"
+    },
+    "status": {
+      "utcTime": "2024-08-03T14:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "0 - 2",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "17",
+    "roundName": 17,
+    "pageUrl": "/matches/ranheim-vs-kongsvinger/1spd4g#4385774",
+    "id": "4385774",
+    "home": {
+      "name": "Ranheim",
+      "shortName": "Ranheim",
+      "id": "6563"
+    },
+    "away": {
+      "name": "Kongsvinger",
+      "shortName": "Kongsvinger",
+      "id": "8179"
+    },
+    "status": {
+      "utcTime": "2024-08-03T14:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "2 - 2",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "17",
+    "roundName": 17,
+    "pageUrl": "/matches/aalesund-vs-raufoss/2qsglk#4385773",
+    "id": "4385773",
+    "home": {
+      "name": "Raufoss",
+      "shortName": "Raufoss",
+      "id": "9812"
+    },
+    "away": {
+      "name": "Aalesund",
+      "shortName": "Aalesund",
+      "id": "8404"
+    },
+    "status": {
+      "utcTime": "2024-08-03T14:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "0 - 2",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "17",
+    "roundName": 17,
+    "pageUrl": "/matches/sandnes-ulf-vs-asane/2q49bg#4385772",
+    "id": "4385772",
+    "home": {
+      "name": "Sandnes Ulf",
+      "shortName": "Sandnes Ulf",
+      "id": "8133"
+    },
+    "away": {
+      "name": "Åsane",
+      "shortName": "Åsane",
+      "id": "10021"
+    },
+    "status": {
+      "utcTime": "2024-08-03T14:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "0 - 3",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "17",
+    "roundName": 17,
+    "pageUrl": "/matches/mjondalen-vs-start/28nw31#4385771",
+    "id": "4385771",
+    "home": {
+      "name": "Start",
+      "shortName": "Start",
+      "id": "9919"
+    },
+    "away": {
+      "name": "Mjøndalen",
+      "shortName": "Mjøndalen",
+      "id": "6541"
+    },
+    "status": {
+      "utcTime": "2024-08-03T14:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "1 - 0",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "17",
+    "roundName": 17,
+    "pageUrl": "/matches/stabaek-vs-lyn/3cs7jr#4385776",
+    "id": "4385776",
+    "home": {
+      "name": "Lyn",
+      "shortName": "Lyn",
+      "id": "10224"
+    },
+    "away": {
+      "name": "Stabæk",
+      "shortName": "Stabæk",
+      "id": "9918"
+    },
+    "status": {
+      "utcTime": "2024-08-04T12:30:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "7 - 1",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "18",
+    "roundName": 18,
+    "pageUrl": "/matches/aalesund-vs-moss/2c4ak2#4385804",
+    "id": "4385804",
+    "home": {
+      "name": "Aalesund",
+      "shortName": "Aalesund",
+      "id": "8404"
+    },
+    "away": {
+      "name": "Moss",
+      "shortName": "Moss",
+      "id": "8405"
+    },
+    "status": {
+      "utcTime": "2024-08-10T14:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "1 - 0",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "18",
+    "roundName": 18,
+    "pageUrl": "/matches/bryne-vs-asane/2ugtyn#4385803",
+    "id": "4385803",
+    "home": {
+      "name": "Åsane",
+      "shortName": "Åsane",
+      "id": "10021"
+    },
+    "away": {
+      "name": "Bryne",
+      "shortName": "Bryne",
+      "id": "8531"
+    },
+    "status": {
+      "utcTime": "2024-08-10T14:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "2 - 5",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "18",
+    "roundName": 18,
+    "pageUrl": "/matches/mjondalen-vs-sandnes-ulf/1s3xcg#4385808",
+    "id": "4385808",
+    "home": {
+      "name": "Mjøndalen",
+      "shortName": "Mjøndalen",
+      "id": "6541"
+    },
+    "away": {
+      "name": "Sandnes Ulf",
+      "shortName": "Sandnes Ulf",
+      "id": "8133"
+    },
+    "status": {
+      "utcTime": "2024-08-10T14:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "0 - 1",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "18",
+    "roundName": 18,
+    "pageUrl": "/matches/levanger-vs-sogndal/1wkur9#4385807",
+    "id": "4385807",
+    "home": {
+      "name": "Sogndal",
+      "shortName": "Sogndal",
+      "id": "8616"
+    },
+    "away": {
+      "name": "Levanger",
+      "shortName": "Levanger",
+      "id": "6561"
+    },
+    "status": {
+      "utcTime": "2024-08-10T14:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "1 - 1",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "18",
+    "roundName": 18,
+    "pageUrl": "/matches/ranheim-vs-stabaek/28vaz3#4385806",
+    "id": "4385806",
+    "home": {
+      "name": "Stabæk",
+      "shortName": "Stabæk",
+      "id": "9918"
+    },
+    "away": {
+      "name": "Ranheim",
+      "shortName": "Ranheim",
+      "id": "6563"
+    },
+    "status": {
+      "utcTime": "2024-08-10T14:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "3 - 0",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "18",
+    "roundName": 18,
+    "pageUrl": "/matches/valerenga-vs-raufoss/2mj572#4385805",
+    "id": "4385805",
+    "home": {
+      "name": "Vålerenga",
+      "shortName": "Vålerenga",
+      "id": "8007"
+    },
+    "away": {
+      "name": "Raufoss",
+      "shortName": "Raufoss",
+      "id": "9812"
+    },
+    "status": {
+      "utcTime": "2024-08-11T12:30:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "3 - 0",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "18",
+    "roundName": 18,
+    "pageUrl": "/matches/egersund-vs-start/1rtlhk#4385770",
+    "id": "4385770",
+    "home": {
+      "name": "Egersund",
+      "shortName": "Egersund",
+      "id": "4722"
+    },
+    "away": {
+      "name": "Start",
+      "shortName": "Start",
+      "id": "9919"
+    },
+    "status": {
+      "utcTime": "2024-08-11T15:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "3 - 2",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "18",
+    "roundName": 18,
+    "pageUrl": "/matches/kongsvinger-vs-lyn/2sttah#4385809",
+    "id": "4385809",
+    "home": {
+      "name": "Kongsvinger",
+      "shortName": "Kongsvinger",
+      "id": "8179"
+    },
+    "away": {
+      "name": "Lyn",
+      "shortName": "Lyn",
+      "id": "10224"
+    },
+    "status": {
+      "utcTime": "2024-08-11T15:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "1 - 1",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "15",
+    "roundName": 15,
+    "pageUrl": "/matches/mjondalen-vs-levanger/1f3xwa#4385734",
+    "id": "4385734",
+    "home": {
+      "name": "Levanger",
+      "shortName": "Levanger",
+      "id": "6561"
+    },
+    "away": {
+      "name": "Mjøndalen",
+      "shortName": "Mjøndalen",
+      "id": "6541"
+    },
+    "status": {
+      "utcTime": "2024-08-14T17:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "1 - 1",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "15",
+    "roundName": 15,
+    "pageUrl": "/matches/sandnes-ulf-vs-aalesund/29f36h#4385739",
+    "id": "4385739",
+    "home": {
+      "name": "Sandnes Ulf",
+      "shortName": "Sandnes Ulf",
+      "id": "8133"
+    },
+    "away": {
+      "name": "Aalesund",
+      "shortName": "Aalesund",
+      "id": "8404"
+    },
+    "status": {
+      "utcTime": "2024-08-14T17:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "0 - 2",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "19",
+    "roundName": 19,
+    "pageUrl": "/matches/levanger-vs-valerenga/1r6pcr#4385801",
+    "id": "4385801",
+    "home": {
+      "name": "Levanger",
+      "shortName": "Levanger",
+      "id": "6561"
+    },
+    "away": {
+      "name": "Vålerenga",
+      "shortName": "Vålerenga",
+      "id": "8007"
+    },
+    "status": {
+      "utcTime": "2024-08-18T15:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "1 - 4",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "19",
+    "roundName": 19,
+    "pageUrl": "/matches/egersund-vs-raufoss/1qw4zt#4385797",
+    "id": "4385797",
+    "home": {
+      "name": "Raufoss",
+      "shortName": "Raufoss",
+      "id": "9812"
+    },
+    "away": {
+      "name": "Egersund",
+      "shortName": "Egersund",
+      "id": "4722"
+    },
+    "status": {
+      "utcTime": "2024-08-19T16:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "4 - 1",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "19",
+    "roundName": 19,
+    "pageUrl": "/matches/kongsvinger-vs-bryne/2b4qdk#4385802",
+    "id": "4385802",
+    "home": {
+      "name": "Bryne",
+      "shortName": "Bryne",
+      "id": "8531"
+    },
+    "away": {
+      "name": "Kongsvinger",
+      "shortName": "Kongsvinger",
+      "id": "8179"
+    },
+    "status": {
+      "utcTime": "2024-08-19T17:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "1 - 1",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "19",
+    "roundName": 19,
+    "pageUrl": "/matches/start-vs-lyn/3csn3b#4385800",
+    "id": "4385800",
+    "home": {
+      "name": "Lyn",
+      "shortName": "Lyn",
+      "id": "10224"
+    },
+    "away": {
+      "name": "Start",
+      "shortName": "Start",
+      "id": "9919"
+    },
+    "status": {
+      "utcTime": "2024-08-19T17:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "2 - 2",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "19",
+    "roundName": 19,
+    "pageUrl": "/matches/moss-vs-sogndal/2e95rf#4385799",
+    "id": "4385799",
+    "home": {
+      "name": "Moss",
+      "shortName": "Moss",
+      "id": "8405"
+    },
+    "away": {
+      "name": "Sogndal",
+      "shortName": "Sogndal",
+      "id": "8616"
+    },
+    "status": {
+      "utcTime": "2024-08-19T17:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "3 - 0",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "19",
+    "roundName": 19,
+    "pageUrl": "/matches/mjondalen-vs-ranheim/1f4i4b#4385798",
+    "id": "4385798",
+    "home": {
+      "name": "Ranheim",
+      "shortName": "Ranheim",
+      "id": "6563"
+    },
+    "away": {
+      "name": "Mjøndalen",
+      "shortName": "Mjøndalen",
+      "id": "6541"
+    },
+    "status": {
+      "utcTime": "2024-08-19T17:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "0 - 1",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "19",
+    "roundName": 19,
+    "pageUrl": "/matches/sandnes-ulf-vs-stabaek/2p0byc#4385796",
+    "id": "4385796",
+    "home": {
+      "name": "Sandnes Ulf",
+      "shortName": "Sandnes Ulf",
+      "id": "8133"
+    },
+    "away": {
+      "name": "Stabæk",
+      "shortName": "Stabæk",
+      "id": "9918"
+    },
+    "status": {
+      "utcTime": "2024-08-19T17:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "1 - 3",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "19",
+    "roundName": 19,
+    "pageUrl": "/matches/aalesund-vs-asane/2t2i21#4385795",
+    "id": "4385795",
+    "home": {
+      "name": "Åsane",
+      "shortName": "Åsane",
+      "id": "10021"
+    },
+    "away": {
+      "name": "Aalesund",
+      "shortName": "Aalesund",
+      "id": "8404"
+    },
+    "status": {
+      "utcTime": "2024-08-20T17:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "2 - 0",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "20",
+    "roundName": 20,
+    "pageUrl": "/matches/valerenga-vs-lyn/2qya4r#4385785",
+    "id": "4385785",
+    "home": {
+      "name": "Vålerenga",
+      "shortName": "Vålerenga",
+      "id": "8007"
+    },
+    "away": {
+      "name": "Lyn",
+      "shortName": "Lyn",
+      "id": "10224"
+    },
+    "status": {
+      "utcTime": "2024-08-24T16:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "4 - 2",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "20",
+    "roundName": 20,
+    "pageUrl": "/matches/ranheim-vs-sogndal/1wli6i#4385782",
+    "id": "4385782",
+    "home": {
+      "name": "Sogndal",
+      "shortName": "Sogndal",
+      "id": "8616"
+    },
+    "away": {
+      "name": "Ranheim",
+      "shortName": "Ranheim",
+      "id": "6563"
+    },
+    "status": {
+      "utcTime": "2024-08-25T15:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "0 - 2",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "20",
+    "roundName": 20,
+    "pageUrl": "/matches/egersund-vs-moss/1fb0b5#4385794",
+    "id": "4385794",
+    "home": {
+      "name": "Egersund",
+      "shortName": "Egersund",
+      "id": "4722"
+    },
+    "away": {
+      "name": "Moss",
+      "shortName": "Moss",
+      "id": "8405"
+    },
+    "status": {
+      "utcTime": "2024-08-26T15:30:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "3 - 2",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "20",
+    "roundName": 20,
+    "pageUrl": "/matches/aalesund-vs-bryne/2ddv1b#4385786",
+    "id": "4385786",
+    "home": {
+      "name": "Aalesund",
+      "shortName": "Aalesund",
+      "id": "8404"
+    },
+    "away": {
+      "name": "Bryne",
+      "shortName": "Bryne",
+      "id": "8531"
+    },
+    "status": {
+      "utcTime": "2024-08-26T17:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "1 - 2",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "20",
+    "roundName": 20,
+    "pageUrl": "/matches/mjondalen-vs-levanger/1f3xwa#4385781",
+    "id": "4385781",
+    "home": {
+      "name": "Mjøndalen",
+      "shortName": "Mjøndalen",
+      "id": "6541"
+    },
+    "away": {
+      "name": "Levanger",
+      "shortName": "Levanger",
+      "id": "6561"
+    },
+    "status": {
+      "utcTime": "2024-08-26T17:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "2 - 0",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "20",
+    "roundName": 20,
+    "pageUrl": "/matches/stabaek-vs-asane/3ad0es#4385783",
+    "id": "4385783",
+    "home": {
+      "name": "Stabæk",
+      "shortName": "Stabæk",
+      "id": "9918"
+    },
+    "away": {
+      "name": "Åsane",
+      "shortName": "Åsane",
+      "id": "10021"
+    },
+    "status": {
+      "utcTime": "2024-08-26T17:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "1 - 1",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "20",
+    "roundName": 20,
+    "pageUrl": "/matches/raufoss-vs-start/37wkxp#4385784",
+    "id": "4385784",
+    "home": {
+      "name": "Start",
+      "shortName": "Start",
+      "id": "9919"
+    },
+    "away": {
+      "name": "Raufoss",
+      "shortName": "Raufoss",
+      "id": "9812"
+    },
+    "status": {
+      "utcTime": "2024-08-26T17:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "1 - 2",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "20",
+    "roundName": 20,
+    "pageUrl": "/matches/sandnes-ulf-vs-kongsvinger/277vfz#4385779",
+    "id": "4385779",
+    "home": {
+      "name": "Kongsvinger",
+      "shortName": "Kongsvinger",
+      "id": "8179"
+    },
+    "away": {
+      "name": "Sandnes Ulf",
+      "shortName": "Sandnes Ulf",
+      "id": "8133"
+    },
+    "status": {
+      "utcTime": "2024-08-27T17:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "1 - 0",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "21",
+    "roundName": 21,
+    "pageUrl": "/matches/valerenga-vs-sandnes-ulf/25k1w3#4385793",
+    "id": "4385793",
+    "home": {
+      "name": "Sandnes Ulf",
+      "shortName": "Sandnes Ulf",
+      "id": "8133"
+    },
+    "away": {
+      "name": "Vålerenga",
+      "shortName": "Vålerenga",
+      "id": "8007"
+    },
+    "status": {
+      "utcTime": "2024-09-01T12:30:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "0 - 2",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "21",
+    "roundName": 21,
+    "pageUrl": "/matches/bryne-vs-stabaek/2tc0nr#4385787",
+    "id": "4385787",
+    "home": {
+      "name": "Bryne",
+      "shortName": "Bryne",
+      "id": "8531"
+    },
+    "away": {
+      "name": "Stabæk",
+      "shortName": "Stabæk",
+      "id": "9918"
+    },
+    "status": {
+      "utcTime": "2024-09-01T15:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "3 - 0",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "21",
+    "roundName": 21,
+    "pageUrl": "/matches/mjondalen-vs-moss/1ui9xk#4385790",
+    "id": "4385790",
+    "home": {
+      "name": "Moss",
+      "shortName": "Moss",
+      "id": "8405"
+    },
+    "away": {
+      "name": "Mjøndalen",
+      "shortName": "Mjøndalen",
+      "id": "6541"
+    },
+    "status": {
+      "utcTime": "2024-09-01T15:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "1 - 0",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "21",
+    "roundName": 21,
+    "pageUrl": "/matches/aalesund-vs-lyn/2vb41q#4385789",
+    "id": "4385789",
+    "home": {
+      "name": "Lyn",
+      "shortName": "Lyn",
+      "id": "10224"
+    },
+    "away": {
+      "name": "Aalesund",
+      "shortName": "Aalesund",
+      "id": "8404"
+    },
+    "status": {
+      "utcTime": "2024-09-01T17:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "0 - 0",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "21",
+    "roundName": 21,
+    "pageUrl": "/matches/kongsvinger-vs-asane/2qm6jj#4385780",
+    "id": "4385780",
+    "home": {
+      "name": "Åsane",
+      "shortName": "Åsane",
+      "id": "10021"
+    },
+    "away": {
+      "name": "Kongsvinger",
+      "shortName": "Kongsvinger",
+      "id": "8179"
+    },
+    "status": {
+      "utcTime": "2024-09-02T17:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "2 - 1",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "21",
+    "roundName": 21,
+    "pageUrl": "/matches/egersund-vs-levanger/11wkf3#4385788",
+    "id": "4385788",
+    "home": {
+      "name": "Levanger",
+      "shortName": "Levanger",
+      "id": "6561"
+    },
+    "away": {
+      "name": "Egersund",
+      "shortName": "Egersund",
+      "id": "4722"
+    },
+    "status": {
+      "utcTime": "2024-09-02T17:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "2 - 1",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "21",
+    "roundName": 21,
+    "pageUrl": "/matches/ranheim-vs-start/28vnoy#4385791",
+    "id": "4385791",
+    "home": {
+      "name": "Ranheim",
+      "shortName": "Ranheim",
+      "id": "6563"
+    },
+    "away": {
+      "name": "Start",
+      "shortName": "Start",
+      "id": "9919"
+    },
+    "status": {
+      "utcTime": "2024-09-02T17:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "2 - 3",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "21",
+    "roundName": 21,
+    "pageUrl": "/matches/sogndal-vs-raufoss/2t3psq#4385792",
+    "id": "4385792",
+    "home": {
+      "name": "Raufoss",
+      "shortName": "Raufoss",
+      "id": "9812"
+    },
+    "away": {
+      "name": "Sogndal",
+      "shortName": "Sogndal",
+      "id": "8616"
+    },
+    "status": {
+      "utcTime": "2024-09-02T17:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "4 - 1",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "22",
+    "roundName": 22,
+    "pageUrl": "/matches/sogndal-vs-lyn/2xo8t0#4385835",
+    "id": "4385835",
+    "home": {
+      "name": "Sogndal",
+      "shortName": "Sogndal",
+      "id": "8616"
+    },
+    "away": {
+      "name": "Lyn",
+      "shortName": "Lyn",
+      "id": "10224"
+    },
+    "status": {
+      "utcTime": "2024-09-15T15:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "0 - 1",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "22",
+    "roundName": 22,
+    "pageUrl": "/matches/egersund-vs-ranheim/11x1u2#4385824",
+    "id": "4385824",
+    "home": {
+      "name": "Egersund",
+      "shortName": "Egersund",
+      "id": "4722"
+    },
+    "away": {
+      "name": "Ranheim",
+      "shortName": "Ranheim",
+      "id": "6563"
+    },
+    "status": {
+      "utcTime": "2024-09-16T14:30:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "0 - 2",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "22",
+    "roundName": 22,
+    "pageUrl": "/matches/sandnes-ulf-vs-aalesund/29f36h#4385831",
+    "id": "4385831",
+    "home": {
+      "name": "Aalesund",
+      "shortName": "Aalesund",
+      "id": "8404"
+    },
+    "away": {
+      "name": "Sandnes Ulf",
+      "shortName": "Sandnes Ulf",
+      "id": "8133"
+    },
+    "status": {
+      "utcTime": "2024-09-16T17:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "2 - 0",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "22",
+    "roundName": 22,
+    "pageUrl": "/matches/kongsvinger-vs-moss/29vrrt#4385837",
+    "id": "4385837",
+    "home": {
+      "name": "Kongsvinger",
+      "shortName": "Kongsvinger",
+      "id": "8179"
+    },
+    "away": {
+      "name": "Moss",
+      "shortName": "Moss",
+      "id": "8405"
+    },
+    "status": {
+      "utcTime": "2024-09-16T17:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "0 - 0",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "22",
+    "roundName": 22,
+    "pageUrl": "/matches/mjondalen-vs-bryne/1vmtab#4385836",
+    "id": "4385836",
+    "home": {
+      "name": "Mjøndalen",
+      "shortName": "Mjøndalen",
+      "id": "6541"
+    },
+    "away": {
+      "name": "Bryne",
+      "shortName": "Bryne",
+      "id": "8531"
+    },
+    "status": {
+      "utcTime": "2024-09-16T17:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "1 - 1",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "22",
+    "roundName": 22,
+    "pageUrl": "/matches/raufoss-vs-stabaek/37w5pl#4385834",
+    "id": "4385834",
+    "home": {
+      "name": "Stabæk",
+      "shortName": "Stabæk",
+      "id": "9918"
+    },
+    "away": {
+      "name": "Raufoss",
+      "shortName": "Raufoss",
+      "id": "9812"
+    },
+    "status": {
+      "utcTime": "2024-09-16T17:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "1 - 2",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "22",
+    "roundName": 22,
+    "pageUrl": "/matches/levanger-vs-start/28uy9b#4385833",
+    "id": "4385833",
+    "home": {
+      "name": "Start",
+      "shortName": "Start",
+      "id": "9919"
+    },
+    "away": {
+      "name": "Levanger",
+      "shortName": "Levanger",
+      "id": "6561"
+    },
+    "status": {
+      "utcTime": "2024-09-16T17:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "1 - 1",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "22",
+    "roundName": 22,
+    "pageUrl": "/matches/valerenga-vs-asane/2orebp#4385832",
+    "id": "4385832",
+    "home": {
+      "name": "Vålerenga",
+      "shortName": "Vålerenga",
+      "id": "8007"
+    },
+    "away": {
+      "name": "Åsane",
+      "shortName": "Åsane",
+      "id": "10021"
+    },
+    "status": {
+      "utcTime": "2024-09-16T17:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "5 - 0",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "23",
+    "roundName": 23,
+    "pageUrl": "/matches/kongsvinger-vs-aalesund/29vez4#4385829",
+    "id": "4385829",
+    "home": {
+      "name": "Kongsvinger",
+      "shortName": "Kongsvinger",
+      "id": "8179"
+    },
+    "away": {
+      "name": "Aalesund",
+      "shortName": "Aalesund",
+      "id": "8404"
+    },
+    "status": {
+      "utcTime": "2024-09-21T13:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "1 - 5",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "23",
+    "roundName": 23,
+    "pageUrl": "/matches/mjondalen-vs-asane/29nwzs#4385823",
+    "id": "4385823",
+    "home": {
+      "name": "Åsane",
+      "shortName": "Åsane",
+      "id": "10021"
+    },
+    "away": {
+      "name": "Mjøndalen",
+      "shortName": "Mjøndalen",
+      "id": "6541"
+    },
+    "status": {
+      "utcTime": "2024-09-21T14:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "5 - 0",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "23",
+    "roundName": 23,
+    "pageUrl": "/matches/valerenga-vs-bryne/29fg1e#4385830",
+    "id": "4385830",
+    "home": {
+      "name": "Bryne",
+      "shortName": "Bryne",
+      "id": "8531"
+    },
+    "away": {
+      "name": "Vålerenga",
+      "shortName": "Vålerenga",
+      "id": "8007"
+    },
+    "status": {
+      "utcTime": "2024-09-21T14:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "1 - 1",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "23",
+    "roundName": 23,
+    "pageUrl": "/matches/levanger-vs-raufoss/27t9xn#4385828",
+    "id": "4385828",
+    "home": {
+      "name": "Levanger",
+      "shortName": "Levanger",
+      "id": "6561"
+    },
+    "away": {
+      "name": "Raufoss",
+      "shortName": "Raufoss",
+      "id": "9812"
+    },
+    "status": {
+      "utcTime": "2024-09-21T14:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "0 - 1",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "23",
+    "roundName": 23,
+    "pageUrl": "/matches/ranheim-vs-moss/1upbu9#4385826",
+    "id": "4385826",
+    "home": {
+      "name": "Ranheim",
+      "shortName": "Ranheim",
+      "id": "6563"
+    },
+    "away": {
+      "name": "Moss",
+      "shortName": "Moss",
+      "id": "8405"
+    },
+    "status": {
+      "utcTime": "2024-09-21T14:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "1 - 0",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "23",
+    "roundName": 23,
+    "pageUrl": "/matches/sandnes-ulf-vs-sogndal/2bipw3#4385825",
+    "id": "4385825",
+    "home": {
+      "name": "Sandnes Ulf",
+      "shortName": "Sandnes Ulf",
+      "id": "8133"
+    },
+    "away": {
+      "name": "Sogndal",
+      "shortName": "Sogndal",
+      "id": "8616"
+    },
+    "status": {
+      "utcTime": "2024-09-21T14:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "1 - 0",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "23",
+    "roundName": 23,
+    "pageUrl": "/matches/stabaek-vs-start/395j42#4385810",
+    "id": "4385810",
+    "home": {
+      "name": "Stabæk",
+      "shortName": "Stabæk",
+      "id": "9918"
+    },
+    "away": {
+      "name": "Start",
+      "shortName": "Start",
+      "id": "9919"
+    },
+    "status": {
+      "utcTime": "2024-09-21T14:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "2 - 3",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "24",
+    "roundName": 24,
+    "pageUrl": "/matches/valerenga-vs-aalesund/286lhq#4385815",
+    "id": "4385815",
+    "home": {
+      "name": "Vålerenga",
+      "shortName": "Vålerenga",
+      "id": "8007"
+    },
+    "away": {
+      "name": "Aalesund",
+      "shortName": "Aalesund",
+      "id": "8404"
+    },
+    "status": {
+      "utcTime": "2024-09-24T17:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "4 - 1",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "24",
+    "roundName": 24,
+    "pageUrl": "/matches/egersund-vs-stabaek/1rta6u#4385822",
+    "id": "4385822",
+    "home": {
+      "name": "Egersund",
+      "shortName": "Egersund",
+      "id": "4722"
+    },
+    "away": {
+      "name": "Stabæk",
+      "shortName": "Stabæk",
+      "id": "9918"
+    },
+    "status": {
+      "utcTime": "2024-09-25T14:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "2 - 1",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "24",
+    "roundName": 24,
+    "pageUrl": "/matches/levanger-vs-lyn/2bvm2i#4385821",
+    "id": "4385821",
+    "home": {
+      "name": "Levanger",
+      "shortName": "Levanger",
+      "id": "6561"
+    },
+    "away": {
+      "name": "Lyn",
+      "shortName": "Lyn",
+      "id": "10224"
+    },
+    "status": {
+      "utcTime": "2024-09-25T17:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "1 - 3",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "24",
+    "roundName": 24,
+    "pageUrl": "/matches/mjondalen-vs-kongsvinger/1sif1v#4385820",
+    "id": "4385820",
+    "home": {
+      "name": "Mjøndalen",
+      "shortName": "Mjøndalen",
+      "id": "6541"
+    },
+    "away": {
+      "name": "Kongsvinger",
+      "shortName": "Kongsvinger",
+      "id": "8179"
+    },
+    "status": {
+      "utcTime": "2024-09-25T17:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "1 - 2",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "24",
+    "roundName": 24,
+    "pageUrl": "/matches/sandnes-ulf-vs-moss/29ffxw#4385819",
+    "id": "4385819",
+    "home": {
+      "name": "Moss",
+      "shortName": "Moss",
+      "id": "8405"
+    },
+    "away": {
+      "name": "Sandnes Ulf",
+      "shortName": "Sandnes Ulf",
+      "id": "8133"
+    },
+    "status": {
+      "utcTime": "2024-09-25T17:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "6 - 1",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "24",
+    "roundName": 24,
+    "pageUrl": "/matches/ranheim-vs-raufoss/27tz7c#4385818",
+    "id": "4385818",
+    "home": {
+      "name": "Raufoss",
+      "shortName": "Raufoss",
+      "id": "9812"
+    },
+    "away": {
+      "name": "Ranheim",
+      "shortName": "Ranheim",
+      "id": "6563"
+    },
+    "status": {
+      "utcTime": "2024-09-25T17:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "1 - 1",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "24",
+    "roundName": 24,
+    "pageUrl": "/matches/bryne-vs-sogndal/2fjar6#4385817",
+    "id": "4385817",
+    "home": {
+      "name": "Sogndal",
+      "shortName": "Sogndal",
+      "id": "8616"
+    },
+    "away": {
+      "name": "Bryne",
+      "shortName": "Bryne",
+      "id": "8531"
+    },
+    "status": {
+      "utcTime": "2024-09-25T17:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "2 - 3",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "24",
+    "roundName": 24,
+    "pageUrl": "/matches/start-vs-asane/3adfsp#4385816",
+    "id": "4385816",
+    "home": {
+      "name": "Start",
+      "shortName": "Start",
+      "id": "9919"
+    },
+    "away": {
+      "name": "Åsane",
+      "shortName": "Åsane",
+      "id": "10021"
+    },
+    "status": {
+      "utcTime": "2024-09-25T17:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "3 - 1",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "25",
+    "roundName": 25,
+    "pageUrl": "/matches/mjondalen-vs-aalesund/1uhyed#4385840",
+    "id": "4385840",
+    "home": {
+      "name": "Aalesund",
+      "shortName": "Aalesund",
+      "id": "8404"
+    },
+    "away": {
+      "name": "Mjøndalen",
+      "shortName": "Mjøndalen",
+      "id": "6541"
+    },
+    "status": {
+      "utcTime": "2024-09-28T14:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "0 - 1",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "25",
+    "roundName": 25,
+    "pageUrl": "/matches/egersund-vs-asane/1splty#4385841",
+    "id": "4385841",
+    "home": {
+      "name": "Åsane",
+      "shortName": "Åsane",
+      "id": "10021"
+    },
+    "away": {
+      "name": "Egersund",
+      "shortName": "Egersund",
+      "id": "4722"
+    },
+    "status": {
+      "utcTime": "2024-09-28T14:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "1 - 2",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "25",
+    "roundName": 25,
+    "pageUrl": "/matches/moss-vs-bryne/2de83r#4385814",
+    "id": "4385814",
+    "home": {
+      "name": "Bryne",
+      "shortName": "Bryne",
+      "id": "8531"
+    },
+    "away": {
+      "name": "Moss",
+      "shortName": "Moss",
+      "id": "8405"
+    },
+    "status": {
+      "utcTime": "2024-09-28T14:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "3 - 0",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "25",
+    "roundName": 25,
+    "pageUrl": "/matches/valerenga-vs-kongsvinger/25zzmq#4385813",
+    "id": "4385813",
+    "home": {
+      "name": "Kongsvinger",
+      "shortName": "Kongsvinger",
+      "id": "8179"
+    },
+    "away": {
+      "name": "Vålerenga",
+      "shortName": "Vålerenga",
+      "id": "8007"
+    },
+    "status": {
+      "utcTime": "2024-09-28T14:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "2 - 2",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "25",
+    "roundName": 25,
+    "pageUrl": "/matches/levanger-vs-ranheim/1fa4i5#4385811",
+    "id": "4385811",
+    "home": {
+      "name": "Ranheim",
+      "shortName": "Ranheim",
+      "id": "6563"
+    },
+    "away": {
+      "name": "Levanger",
+      "shortName": "Levanger",
+      "id": "6561"
+    },
+    "status": {
+      "utcTime": "2024-09-28T14:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "1 - 1",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "25",
+    "roundName": 25,
+    "pageUrl": "/matches/sandnes-ulf-vs-start/2p0pvt#4385838",
+    "id": "4385838",
+    "home": {
+      "name": "Sandnes Ulf",
+      "shortName": "Sandnes Ulf",
+      "id": "8133"
+    },
+    "away": {
+      "name": "Start",
+      "shortName": "Start",
+      "id": "9919"
+    },
+    "status": {
+      "utcTime": "2024-09-28T14:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "0 - 4",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "25",
+    "roundName": 25,
+    "pageUrl": "/matches/sogndal-vs-stabaek/2u9phf#4385839",
+    "id": "4385839",
+    "home": {
+      "name": "Stabæk",
+      "shortName": "Stabæk",
+      "id": "9918"
+    },
+    "away": {
+      "name": "Sogndal",
+      "shortName": "Sogndal",
+      "id": "8616"
+    },
+    "status": {
+      "utcTime": "2024-09-28T14:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "2 - 0",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "25",
+    "roundName": 25,
+    "pageUrl": "/matches/raufoss-vs-lyn/3bikce#4385812",
+    "id": "4385812",
+    "home": {
+      "name": "Lyn",
+      "shortName": "Lyn",
+      "id": "10224"
+    },
+    "away": {
+      "name": "Raufoss",
+      "shortName": "Raufoss",
+      "id": "9812"
+    },
+    "status": {
+      "utcTime": "2024-09-29T14:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "1 - 2",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "26",
+    "roundName": 26,
+    "pageUrl": "/matches/levanger-vs-stabaek/28ulji#4385843",
+    "id": "4385843",
+    "home": {
+      "name": "Levanger",
+      "shortName": "Levanger",
+      "id": "6561"
+    },
+    "away": {
+      "name": "Stabæk",
+      "shortName": "Stabæk",
+      "id": "9918"
+    },
+    "status": {
+      "utcTime": "2024-10-02T17:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "1 - 2",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "23",
+    "roundName": 23,
+    "pageUrl": "/matches/egersund-vs-lyn/1ui739#4385827",
+    "id": "4385827",
+    "home": {
+      "name": "Lyn",
+      "shortName": "Lyn",
+      "id": "10224"
+    },
+    "away": {
+      "name": "Egersund",
+      "shortName": "Egersund",
+      "id": "4722"
+    },
+    "status": {
+      "utcTime": "2024-10-02T17:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "2 - 1",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "26",
+    "roundName": 26,
+    "pageUrl": "/matches/sandnes-ulf-vs-raufoss/2nvfrt#4385846",
+    "id": "4385846",
+    "home": {
+      "name": "Raufoss",
+      "shortName": "Raufoss",
+      "id": "9812"
+    },
+    "away": {
+      "name": "Sandnes Ulf",
+      "shortName": "Sandnes Ulf",
+      "id": "8133"
+    },
+    "status": {
+      "utcTime": "2024-10-02T17:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "1 - 1",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "26",
+    "roundName": 26,
+    "pageUrl": "/matches/mjondalen-vs-valerenga/1r0gop#4385849",
+    "id": "4385849",
+    "home": {
+      "name": "Vålerenga",
+      "shortName": "Vålerenga",
+      "id": "8007"
+    },
+    "away": {
+      "name": "Mjøndalen",
+      "shortName": "Mjøndalen",
+      "id": "6541"
+    },
+    "status": {
+      "utcTime": "2024-10-02T17:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "4 - 2",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "26",
+    "roundName": 26,
+    "pageUrl": "/matches/aalesund-vs-sogndal/2e8smm#4385847",
+    "id": "4385847",
+    "home": {
+      "name": "Sogndal",
+      "shortName": "Sogndal",
+      "id": "8616"
+    },
+    "away": {
+      "name": "Aalesund",
+      "shortName": "Aalesund",
+      "id": "8404"
+    },
+    "status": {
+      "utcTime": "2024-10-05T15:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "0 - 1",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "26",
+    "roundName": 26,
+    "pageUrl": "/matches/bryne-vs-start/2tcewa#4385848",
+    "id": "4385848",
+    "home": {
+      "name": "Start",
+      "shortName": "Start",
+      "id": "9919"
+    },
+    "away": {
+      "name": "Bryne",
+      "shortName": "Bryne",
+      "id": "8531"
+    },
+    "status": {
+      "utcTime": "2024-10-05T15:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "2 - 1",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "26",
+    "roundName": 26,
+    "pageUrl": "/matches/egersund-vs-kongsvinger/1djymq#4385842",
+    "id": "4385842",
+    "home": {
+      "name": "Egersund",
+      "shortName": "Egersund",
+      "id": "4722"
+    },
+    "away": {
+      "name": "Kongsvinger",
+      "shortName": "Kongsvinger",
+      "id": "8179"
+    },
+    "status": {
+      "utcTime": "2024-10-06T12:30:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "0 - 1",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "26",
+    "roundName": 26,
+    "pageUrl": "/matches/moss-vs-asane/2t2w9w#4385844",
+    "id": "4385844",
+    "home": {
+      "name": "Moss",
+      "shortName": "Moss",
+      "id": "8405"
+    },
+    "away": {
+      "name": "Åsane",
+      "shortName": "Åsane",
+      "id": "10021"
+    },
+    "status": {
+      "utcTime": "2024-10-06T12:30:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "1 - 1",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "26",
+    "roundName": 26,
+    "pageUrl": "/matches/ranheim-vs-lyn/2bwbz5#4385845",
+    "id": "4385845",
+    "home": {
+      "name": "Ranheim",
+      "shortName": "Ranheim",
+      "id": "6563"
+    },
+    "away": {
+      "name": "Lyn",
+      "shortName": "Lyn",
+      "id": "10224"
+    },
+    "status": {
+      "utcTime": "2024-10-06T12:30:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "1 - 1",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "27",
+    "roundName": 27,
+    "pageUrl": "/matches/aalesund-vs-start/2ryd31#4385878",
+    "id": "4385878",
+    "home": {
+      "name": "Aalesund",
+      "shortName": "Aalesund",
+      "id": "8404"
+    },
+    "away": {
+      "name": "Start",
+      "shortName": "Start",
+      "id": "9919"
+    },
+    "status": {
+      "utcTime": "2024-10-21T17:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "3 - 1",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "27",
+    "roundName": 27,
+    "pageUrl": "/matches/bryne-vs-raufoss/2s67xc#4385850",
+    "id": "4385850",
+    "home": {
+      "name": "Bryne",
+      "shortName": "Bryne",
+      "id": "8531"
+    },
+    "away": {
+      "name": "Raufoss",
+      "shortName": "Raufoss",
+      "id": "9812"
+    },
+    "status": {
+      "utcTime": "2024-10-21T17:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "1 - 0",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "27",
+    "roundName": 27,
+    "pageUrl": "/matches/kongsvinger-vs-stabaek/2pi5hj#4385851",
+    "id": "4385851",
+    "home": {
+      "name": "Kongsvinger",
+      "shortName": "Kongsvinger",
+      "id": "8179"
+    },
+    "away": {
+      "name": "Stabæk",
+      "shortName": "Stabæk",
+      "id": "9918"
+    },
+    "status": {
+      "utcTime": "2024-10-21T17:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "1 - 3",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "27",
+    "roundName": 27,
+    "pageUrl": "/matches/mjondalen-vs-sogndal/1wecov#4385867",
+    "id": "4385867",
+    "home": {
+      "name": "Mjøndalen",
+      "shortName": "Mjøndalen",
+      "id": "6541"
+    },
+    "away": {
+      "name": "Sogndal",
+      "shortName": "Sogndal",
+      "id": "8616"
+    },
+    "status": {
+      "utcTime": "2024-10-21T17:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "0 - 0",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "27",
+    "roundName": 27,
+    "pageUrl": "/matches/levanger-vs-moss/1uooqq#4385881",
+    "id": "4385881",
+    "home": {
+      "name": "Moss",
+      "shortName": "Moss",
+      "id": "8405"
+    },
+    "away": {
+      "name": "Levanger",
+      "shortName": "Levanger",
+      "id": "6561"
+    },
+    "status": {
+      "utcTime": "2024-10-21T17:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "5 - 1",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "27",
+    "roundName": 27,
+    "pageUrl": "/matches/sandnes-ulf-vs-lyn/2sbov0#4385880",
+    "id": "4385880",
+    "home": {
+      "name": "Sandnes Ulf",
+      "shortName": "Sandnes Ulf",
+      "id": "8133"
+    },
+    "away": {
+      "name": "Lyn",
+      "shortName": "Lyn",
+      "id": "10224"
+    },
+    "status": {
+      "utcTime": "2024-10-21T17:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "0 - 1",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "27",
+    "roundName": 27,
+    "pageUrl": "/matches/egersund-vs-valerenga/1c8poc#4385879",
+    "id": "4385879",
+    "home": {
+      "name": "Vålerenga",
+      "shortName": "Vålerenga",
+      "id": "8007"
+    },
+    "away": {
+      "name": "Egersund",
+      "shortName": "Egersund",
+      "id": "4722"
+    },
+    "status": {
+      "utcTime": "2024-10-21T17:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "4 - 0",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "27",
+    "roundName": 27,
+    "pageUrl": "/matches/ranheim-vs-asane/29vqcn#4385877",
+    "id": "4385877",
+    "home": {
+      "name": "Åsane",
+      "shortName": "Åsane",
+      "id": "10021"
+    },
+    "away": {
+      "name": "Ranheim",
+      "shortName": "Ranheim",
+      "id": "6563"
+    },
+    "status": {
+      "utcTime": "2024-10-21T18:15:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "1 - 2",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "28",
+    "roundName": 28,
+    "pageUrl": "/matches/valerenga-vs-stabaek/2nnr2l#4385870",
+    "id": "4385870",
+    "home": {
+      "name": "Stabæk",
+      "shortName": "Stabæk",
+      "id": "9918"
+    },
+    "away": {
+      "name": "Vålerenga",
+      "shortName": "Vålerenga",
+      "id": "8007"
+    },
+    "status": {
+      "utcTime": "2024-10-25T17:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "1 - 2",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "28",
+    "roundName": 28,
+    "pageUrl": "/matches/egersund-vs-mjondalen/11rqfh#4385876",
+    "id": "4385876",
+    "home": {
+      "name": "Egersund",
+      "shortName": "Egersund",
+      "id": "4722"
+    },
+    "away": {
+      "name": "Mjøndalen",
+      "shortName": "Mjøndalen",
+      "id": "6541"
+    },
+    "status": {
+      "utcTime": "2024-10-26T12:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "3 - 1",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "28",
+    "roundName": 28,
+    "pageUrl": "/matches/levanger-vs-sandnes-ulf/1sa7yi#4385875",
+    "id": "4385875",
+    "home": {
+      "name": "Levanger",
+      "shortName": "Levanger",
+      "id": "6561"
+    },
+    "away": {
+      "name": "Sandnes Ulf",
+      "shortName": "Sandnes Ulf",
+      "id": "8133"
+    },
+    "status": {
+      "utcTime": "2024-10-26T14:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "4 - 0",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "28",
+    "roundName": 28,
+    "pageUrl": "/matches/bryne-vs-lyn/2wpzuh#4385874",
+    "id": "4385874",
+    "home": {
+      "name": "Lyn",
+      "shortName": "Lyn",
+      "id": "10224"
+    },
+    "away": {
+      "name": "Bryne",
+      "shortName": "Bryne",
+      "id": "8531"
+    },
+    "status": {
+      "utcTime": "2024-10-26T14:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "1 - 0",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "28",
+    "roundName": 28,
+    "pageUrl": "/matches/ranheim-vs-aalesund/1up0ag#4385873",
+    "id": "4385873",
+    "home": {
+      "name": "Ranheim",
+      "shortName": "Ranheim",
+      "id": "6563"
+    },
+    "away": {
+      "name": "Aalesund",
+      "shortName": "Aalesund",
+      "id": "8404"
+    },
+    "status": {
+      "utcTime": "2024-10-26T14:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "0 - 1",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "28",
+    "roundName": 28,
+    "pageUrl": "/matches/kongsvinger-vs-raufoss/2od5jk#4385872",
+    "id": "4385872",
+    "home": {
+      "name": "Raufoss",
+      "shortName": "Raufoss",
+      "id": "9812"
+    },
+    "away": {
+      "name": "Kongsvinger",
+      "shortName": "Kongsvinger",
+      "id": "8179"
+    },
+    "status": {
+      "utcTime": "2024-10-26T14:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "1 - 1",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "28",
+    "roundName": 28,
+    "pageUrl": "/matches/sogndal-vs-asane/2veplv#4385871",
+    "id": "4385871",
+    "home": {
+      "name": "Sogndal",
+      "shortName": "Sogndal",
+      "id": "8616"
+    },
+    "away": {
+      "name": "Åsane",
+      "shortName": "Åsane",
+      "id": "10021"
+    },
+    "status": {
+      "utcTime": "2024-10-26T14:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "0 - 2",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "28",
+    "roundName": 28,
+    "pageUrl": "/matches/moss-vs-start/2ryr81#4385869",
+    "id": "4385869",
+    "home": {
+      "name": "Start",
+      "shortName": "Start",
+      "id": "9919"
+    },
+    "away": {
+      "name": "Moss",
+      "shortName": "Moss",
+      "id": "8405"
+    },
+    "status": {
+      "utcTime": "2024-10-26T14:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "1 - 1",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "29",
+    "roundName": 29,
+    "pageUrl": "/matches/levanger-vs-aalesund/1uod6z#4385862",
+    "id": "4385862",
+    "home": {
+      "name": "Aalesund",
+      "shortName": "Aalesund",
+      "id": "8404"
+    },
+    "away": {
+      "name": "Levanger",
+      "shortName": "Levanger",
+      "id": "6561"
+    },
+    "status": {
+      "utcTime": "2024-11-02T15:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "4 - 3",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "29",
+    "roundName": 29,
+    "pageUrl": "/matches/asane-vs-lyn/3e0spj#4385861",
+    "id": "4385861",
+    "home": {
+      "name": "Åsane",
+      "shortName": "Åsane",
+      "id": "10021"
+    },
+    "away": {
+      "name": "Lyn",
+      "shortName": "Lyn",
+      "id": "10224"
+    },
+    "status": {
+      "utcTime": "2024-11-02T15:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "3 - 2",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "29",
+    "roundName": 29,
+    "pageUrl": "/matches/egersund-vs-bryne/1gamte#4385868",
+    "id": "4385868",
+    "home": {
+      "name": "Bryne",
+      "shortName": "Bryne",
+      "id": "8531"
+    },
+    "away": {
+      "name": "Egersund",
+      "shortName": "Egersund",
+      "id": "4722"
+    },
+    "status": {
+      "utcTime": "2024-11-02T15:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "2 - 1",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "29",
+    "roundName": 29,
+    "pageUrl": "/matches/kongsvinger-vs-sogndal/2bz97m#4385852",
+    "id": "4385852",
+    "home": {
+      "name": "Kongsvinger",
+      "shortName": "Kongsvinger",
+      "id": "8179"
+    },
+    "away": {
+      "name": "Sogndal",
+      "shortName": "Sogndal",
+      "id": "8616"
+    },
+    "status": {
+      "utcTime": "2024-11-02T15:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "0 - 1",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "29",
+    "roundName": 29,
+    "pageUrl": "/matches/mjondalen-vs-stabaek/28njds#4385866",
+    "id": "4385866",
+    "home": {
+      "name": "Mjøndalen",
+      "shortName": "Mjøndalen",
+      "id": "6541"
+    },
+    "away": {
+      "name": "Stabæk",
+      "shortName": "Stabæk",
+      "id": "9918"
+    },
+    "status": {
+      "utcTime": "2024-11-02T15:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "3 - 0",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "29",
+    "roundName": 29,
+    "pageUrl": "/matches/moss-vs-raufoss/2qsunl#4385865",
+    "id": "4385865",
+    "home": {
+      "name": "Moss",
+      "shortName": "Moss",
+      "id": "8405"
+    },
+    "away": {
+      "name": "Raufoss",
+      "shortName": "Raufoss",
+      "id": "9812"
+    },
+    "status": {
+      "utcTime": "2024-11-02T15:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "3 - 2",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "29",
+    "roundName": 29,
+    "pageUrl": "/matches/ranheim-vs-sandnes-ulf/1saumx#4385864",
+    "id": "4385864",
+    "home": {
+      "name": "Sandnes Ulf",
+      "shortName": "Sandnes Ulf",
+      "id": "8133"
+    },
+    "away": {
+      "name": "Ranheim",
+      "shortName": "Ranheim",
+      "id": "6563"
+    },
+    "status": {
+      "utcTime": "2024-11-02T15:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "2 - 6",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "29",
+    "roundName": 29,
+    "pageUrl": "/matches/valerenga-vs-start/2no4wk#4385863",
+    "id": "4385863",
+    "home": {
+      "name": "Vålerenga",
+      "shortName": "Vålerenga",
+      "id": "8007"
+    },
+    "away": {
+      "name": "Start",
+      "shortName": "Start",
+      "id": "9919"
+    },
+    "status": {
+      "utcTime": "2024-11-02T15:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "1 - 1",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "30",
+    "roundName": 30,
+    "pageUrl": "/matches/egersund-vs-sandnes-ulf/1d79hl#4385860",
+    "id": "4385860",
+    "home": {
+      "name": "Egersund",
+      "shortName": "Egersund",
+      "id": "4722"
+    },
+    "away": {
+      "name": "Sandnes Ulf",
+      "shortName": "Sandnes Ulf",
+      "id": "8133"
+    },
+    "status": {
+      "utcTime": "2024-11-09T15:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "3 - 1",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "30",
+    "roundName": 30,
+    "pageUrl": "/matches/levanger-vs-asane/29v0ra#4385859",
+    "id": "4385859",
+    "home": {
+      "name": "Levanger",
+      "shortName": "Levanger",
+      "id": "6561"
+    },
+    "away": {
+      "name": "Åsane",
+      "shortName": "Åsane",
+      "id": "10021"
+    },
+    "status": {
+      "utcTime": "2024-11-09T15:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "2 - 3",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "30",
+    "roundName": 30,
+    "pageUrl": "/matches/moss-vs-lyn/2vbif8#4385858",
+    "id": "4385858",
+    "home": {
+      "name": "Lyn",
+      "shortName": "Lyn",
+      "id": "10224"
+    },
+    "away": {
+      "name": "Moss",
+      "shortName": "Moss",
+      "id": "8405"
+    },
+    "status": {
+      "utcTime": "2024-11-09T15:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "1 - 2",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "30",
+    "roundName": 30,
+    "pageUrl": "/matches/ranheim-vs-bryne/1vtxc0#4385857",
+    "id": "4385857",
+    "home": {
+      "name": "Ranheim",
+      "shortName": "Ranheim",
+      "id": "6563"
+    },
+    "away": {
+      "name": "Bryne",
+      "shortName": "Bryne",
+      "id": "8531"
+    },
+    "status": {
+      "utcTime": "2024-11-09T15:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "1 - 4",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "30",
+    "roundName": 30,
+    "pageUrl": "/matches/mjondalen-vs-raufoss/27m9et#4385856",
+    "id": "4385856",
+    "home": {
+      "name": "Raufoss",
+      "shortName": "Raufoss",
+      "id": "9812"
+    },
+    "away": {
+      "name": "Mjøndalen",
+      "shortName": "Mjøndalen",
+      "id": "6541"
+    },
+    "status": {
+      "utcTime": "2024-11-09T15:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "0 - 1",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "30",
+    "roundName": 30,
+    "pageUrl": "/matches/valerenga-vs-sogndal/2a9nlc#4385855",
+    "id": "4385855",
+    "home": {
+      "name": "Sogndal",
+      "shortName": "Sogndal",
+      "id": "8616"
+    },
+    "away": {
+      "name": "Vålerenga",
+      "shortName": "Vålerenga",
+      "id": "8007"
+    },
+    "status": {
+      "utcTime": "2024-11-09T15:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "0 - 3",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "30",
+    "roundName": 30,
+    "pageUrl": "/matches/aalesund-vs-stabaek/2rxyy1#4385854",
+    "id": "4385854",
+    "home": {
+      "name": "Stabæk",
+      "shortName": "Stabæk",
+      "id": "9918"
+    },
+    "away": {
+      "name": "Aalesund",
+      "shortName": "Aalesund",
+      "id": "8404"
+    },
+    "status": {
+      "utcTime": "2024-11-09T15:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "1 - 4",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "30",
+    "roundName": 30,
+    "pageUrl": "/matches/kongsvinger-vs-start/2pijga#4385853",
+    "id": "4385853",
+    "home": {
+      "name": "Start",
+      "shortName": "Start",
+      "id": "9919"
+    },
+    "away": {
+      "name": "Kongsvinger",
+      "shortName": "Kongsvinger",
+      "id": "8179"
+    },
+    "status": {
+      "utcTime": "2024-11-09T15:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "1 - 4",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  }
+]

@@ -2,7 +2,7 @@
    Plain modules, no framework: the whole payload is one JSON document and the
    page is a few pure render functions over it. */
 
-const state = { reports: null, league: 'eliteserien' };
+const state = { reports: null, league: 'eliteserien', season: null, careers: null };
 
 const $ = (selector) => document.querySelector(selector);
 const el = (tag, className, text) => {
@@ -18,65 +18,55 @@ const pct = (value, digits = 1) =>
 const pctShort = (value) =>
   value < 0.005 ? '' : `${Math.round(value * 100)}`;
 
-/* ---------- the dual outcome palette ------------------------------
-   A finishing position is not just a magnitude, it is a good or a bad
-   outcome. So colour is split in two: HUE says which kind of outcome a place
-   is (blue at the top of the table, red at the bottom, neutral in between),
-   and INTENSITY says how likely it is. One hue would tell you a cell is dark
-   without telling you whether that is worth celebrating.
+/* ---------- the sequential ramp -----------------------------------
+   One gradient does all the quantitative colour on the page: probability in
+   the finish grid, and finishing position in the season-shape chart.
 
-   The split follows each league's own qualification bands, so it lands in the
-   right place for both: Eliteserien turns red at the relegation play-off,
-   OBOS-ligaen keeps its promotion play-off blue. */
+   It is multi-hue by necessity. Sixteen stacked bands in a single hue are not
+   tellable apart, so the ramp travels pale green -> teal -> blue -> deep navy,
+   resampled at uniform OKLab lightness. That keeps lightness monotone (so it
+   still reads as one ordered scale) while giving every neighbouring pair a
+   real colour gap: worst adjacent dE 10.5 light, 11.3 dark.
 
+   Step 0 is "as good as never" and stays at the surface, so a 16x16 grid of
+   mostly-zero cells reads as empty rather than as pale noise. */
+
+const SEQ_STEPS = 7;
 const HEAT_STOPS = [0.005, 0.02, 0.05, 0.1, 0.2, 0.35, 0.6];
 
 function heatStep(probability) {
   let step = 0;
   while (step < HEAT_STOPS.length && probability >= HEAT_STOPS[step]) step += 1;
-  return step; // 0..7
+  return step; // 0 = effectively never, 1..7 = the ramp
+}
+
+function seqStepColor(step) {
+  return step <= 0 ? 'var(--panel-sunk)' : `var(--seq-${Math.min(step, SEQ_STEPS)})`;
+}
+
+/* A continuous position on the ramp, for encodings with more levels than the
+   ramp has stops. t = 0 sits nearest the surface, t = 1 furthest from it. */
+function seqColor(t) {
+  const clamped = Math.max(0, Math.min(1, t));
+  const scaled = clamped * (SEQ_STEPS - 1);
+  const lower = Math.floor(scaled);
+  const upper = Math.min(SEQ_STEPS - 1, lower + 1);
+  const blend = (scaled - lower) * 100;
+  return `color-mix(in oklab, var(--seq-${upper + 1}) ${blend.toFixed(1)}%, var(--seq-${lower + 1}))`;
 }
 
 function outcomeClass(position, bands, count) {
   const band = bandFor(bands, position);
   if (!band) return 'neutral';
   // A band in the top half of the table is something to win, one in the
-  // bottom half something to avoid.
+  // bottom half something to avoid. Used only for the qualification markers,
+  // which are labelled status marks rather than part of the data encoding.
   return band.first < (count + 1) / 2 ? 'good' : 'bad';
-}
-
-/* Where the table stops being good and starts being bad. */
-function outcomeBounds(bands, count) {
-  let lastGood = 0;
-  let firstBad = count + 1;
-  for (let position = 1; position <= count; position += 1) {
-    const kind = outcomeClass(position, bands, count);
-    if (kind === 'good') lastGood = Math.max(lastGood, position);
-    if (kind === 'bad') firstBad = Math.min(firstBad, position);
-  }
-  return { lastGood, firstBad };
-}
-
-/* Steps 0-4 run from the surface to the family's status colour; 5-7 push on
-   to its far end. Mixing in oklab keeps the steps perceptually even, and
-   because the tokens flip per theme the ramp always moves away from the
-   background rather than toward it. */
-const NEAR_STOPS = [0, 25, 45, 70, 100];
-const FAR_STOPS = [0, 33, 66, 100];
-
-function outcomeFill(kind, step) {
-  if (step <= 4) {
-    return `color-mix(in oklab, var(--outcome-${kind}) ${NEAR_STOPS[step]}%, var(--outcome-base))`;
-  }
-  return `color-mix(in oklab, var(--outcome-${kind}-far) ${FAR_STOPS[step - 4]}%, var(--outcome-${kind}))`;
 }
 
 /* Text must stay legible as the fill moves away from the surface, which is a
    different direction in each theme. */
 function heatTextClass(step) {
-  // Invert the label once the fill is far enough from the surface to swallow
-  // the default ink. Light mode darkens as probability rises, dark mode
-  // lightens, but in both the deep end is what needs the flip.
   const darkMode = document.documentElement.dataset.resolvedTheme === 'dark';
   return step >= (darkMode ? 5 : 4) ? 'cell--invert' : '';
 }
@@ -167,9 +157,8 @@ function renderGrid(report) {
 
     row.position_probabilities.forEach((probability, index) => {
       const step = heatStep(probability);
-      const kind = outcomeClass(index + 1, report.league.bands, count);
       const cell = el('td', `cell ${heatTextClass(step)}`.trim());
-      cell.style.background = outcomeFill(kind, step);
+      cell.style.background = seqStepColor(step);
       cell.style.setProperty('--col', String(index));
       cell.textContent = pctShort(probability);
       if (!cell.textContent) cell.classList.add('cell--empty');
@@ -220,34 +209,24 @@ function ordinal(n) {
 
 /* ---------- legends ----------------------------------------------- */
 
-/* Three labelled ramps rather than one: colour is doing two jobs here, and the
-   legend has to show both of them. */
-function renderGridLegend(report) {
+function renderGridLegend() {
   const legend = $('#grid-legend');
   legend.replaceChildren();
-  const count = report.table.length;
-  const { lastGood, firstBad } = outcomeBounds(report.league.bands, count);
 
-  const families = [
-    ['good', `Top ${lastGood}`],
-    ['neutral', `Mid-table ${lastGood + 1}–${firstBad - 1}`],
-    ['bad', `Bottom ${count - firstBad + 1}`],
-  ];
-
-  for (const [kind, name] of families) {
-    const key = el('span', 'legend__key');
-    const ramp = el('span', 'legend__ramp');
-    for (let step = 1; step <= 7; step += 1) {
-      const swatch = el('i');
-      swatch.style.background = outcomeFill(kind, step);
-      ramp.appendChild(swatch);
-    }
-    key.appendChild(ramp);
-    key.appendChild(el('span', '', name));
-    legend.appendChild(key);
+  legend.appendChild(el('span', 'label', 'Chance of finishing there'));
+  const key = el('span', 'legend__key');
+  key.appendChild(el('span', '', 'never'));
+  const ramp = el('span', 'legend__ramp');
+  for (let step = 1; step <= SEQ_STEPS; step += 1) {
+    const swatch = el('i');
+    swatch.style.background = seqStepColor(step);
+    ramp.appendChild(swatch);
   }
+  key.appendChild(ramp);
+  key.appendChild(el('span', '', 'certain'));
+  legend.appendChild(key);
 
-  legend.appendChild(el('span', '', 'Hue is the kind of finish, depth is how likely. Hover for the exact figure.'));
+  legend.appendChild(el('span', '', 'Cells show whole percent; hover for the exact figure.'));
 }
 
 function renderBandLegend(report) {
@@ -329,15 +308,11 @@ function renderStandings(report) {
     tr.appendChild(meterCell(up, count));
     tr.appendChild(meterCell(down, count));
 
-    // Picking a row drives the season-shape chart below.
+    // Picking a row opens that club's full rating history.
     tr.tabIndex = 0;
     tr.setAttribute('role', 'button');
-    tr.setAttribute('aria-label', `Show ${row.team}'s season shape`);
-    const choose = () => {
-      $('#shape-team').value = row.team_id;
-      drawShape(report, row.team_id);
-      $('#shape-chart').scrollIntoView({ behavior: 'smooth', block: 'center' });
-    };
+    tr.setAttribute('aria-label', `Show ${row.team}'s rating history`);
+    const choose = () => openCareer(row.team_id, row.team);
     tr.addEventListener('click', choose);
     tr.addEventListener('keydown', (event) => {
       if (event.key === 'Enter' || event.key === ' ') {
@@ -362,29 +337,12 @@ function meterCell(value, count) {
 
 /* ---------- season shape: stacked area over the season ------------- */
 
-/* Position is a diverging quantity — winning the league and being relegated
-   are opposite outcomes with an unremarkable middle — so the ramp runs from
-   one pole through a neutral mid-table to the other. Mixing in oklab keeps the
-   steps perceptually even, and using CSS variables means a theme switch
-   recolours the chart without recomputing anything. */
-function positionColor(position, count, bands) {
-  const kind = outcomeClass(position, bands, count);
-  const { lastGood, firstBad } = outcomeBounds(bands, count);
-
-  // Deepest at the extremes of each family, fading toward the boundary, so
-  // the colour change lands exactly where the league's own cut-offs are.
-  if (kind === 'good') {
-    const depth = lastGood > 1 ? (lastGood - position) / (lastGood - 1) : 1;
-    return `color-mix(in oklab, var(--outcome-good-far) ${(depth * 100).toFixed(1)}%, var(--outcome-good))`;
-  }
-  if (kind === 'bad') {
-    const depth = count > firstBad ? (position - firstBad) / (count - firstBad) : 1;
-    return `color-mix(in oklab, var(--outcome-bad-far) ${(depth * 100).toFixed(1)}%, var(--outcome-bad))`;
-  }
-  // Mid-table: neutral throughout, leaning heavier toward the drop zone.
-  const span = Math.max(1, firstBad - lastGood - 2);
-  const toward = (position - lastGood - 1) / span;
-  return `color-mix(in oklab, var(--outcome-neutral) ${(55 + toward * 32).toFixed(1)}%, var(--outcome-base))`;
+/* Finishing position on the same sequential ramp. First place sits furthest
+   from the surface and last place nearest it, so a club's chart darkens as it
+   climbs. Band boundaries are carried by the tooltip and the table's own
+   markers rather than by a hue change, which keeps this one ordered scale. */
+function positionColor(position, count) {
+  return seqColor(count > 1 ? (count - position) / (count - 1) : 1);
 }
 
 const SVG_NS = 'http://www.w3.org/2000/svg';
@@ -475,7 +433,7 @@ function drawShape(report, teamId) {
     const band = svgEl('polygon', {
       class: 'band',
       points: [...upper, ...lower.reverse()].join(' '),
-      fill: positionColor(position, count, report.league.bands),
+      fill: positionColor(position, count),
     });
 
     const bandLabel = bandFor(report.league.bands, position);
@@ -653,45 +611,47 @@ function renderLadder(reports) {
   const holder = $('#ladder-lanes');
   holder.replaceChildren();
 
-  for (const [tier, name] of [[1, 'Eliteserien'], [2, 'OBOS-ligaen']]) {
-    const lane = el('div', 'ladder__lane');
-    lane.appendChild(el('div', 'label', name));
-    const track = el('div', 'ladder__track');
+  // One shared line: the whole point is that the two divisions overlap, and
+  // splitting them into rows hid exactly that. Division stays legible through
+  // colour and marker shape rather than through position.
+  const track = el('div', 'ladder__track');
+  const rows = [];
+  for (const team of [...teams].sort((a, b) => a.rating - b.rating)) {
+    const x = position(team.rating);
+    // Stack only where clubs would otherwise sit on top of each other.
+    let row = rows.findIndex((lastX) => x - lastX > 2.4);
+    if (row === -1) { rows.push(x); row = rows.length - 1; } else { rows[row] = x; }
 
-    // Nudge overlapping clubs onto a second or third row so none is hidden.
-    const rows = [];
-    for (const team of teams.filter((t) => t.tier === tier).sort((a, b) => a.rating - b.rating)) {
-      const x = position(team.rating);
-      let row = rows.findIndex((lastX) => x - lastX > 2.4);
-      if (row === -1) { rows.push(x); row = rows.length - 1; } else { rows[row] = x; }
-
-      const dot = el('span', 'ladder__team');
-      dot.dataset.tier = String(team.tier);
-      dot.style.left = `${x}%`;
-      dot.style.bottom = `${0.35 * 16 + (row % 3) * 11}px`;
-      dot.addEventListener('pointerenter', (event) =>
-        showTooltip(event, `<b>${team.team}</b><br>Rating ${team.rating.toFixed(0)} · ${team.league}`)
-      );
-      dot.addEventListener('pointermove', moveTooltip);
-      dot.addEventListener('pointerleave', hideTooltip);
-      track.appendChild(dot);
-    }
-    lane.appendChild(track);
-    holder.appendChild(lane);
+    const dot = el('span', 'ladder__team');
+    dot.dataset.tier = String(team.tier);
+    dot.style.left = `${x}%`;
+    dot.style.bottom = `${6 + (row % 3) * 12}px`;
+    dot.addEventListener('pointerenter', (event) =>
+      showTooltip(event, `<b>${team.team}</b><br>Rating ${team.rating.toFixed(0)} · ${team.league}`)
+    );
+    dot.addEventListener('pointermove', moveTooltip);
+    dot.addEventListener('pointerleave', hideTooltip);
+    track.appendChild(dot);
   }
+  holder.appendChild(track);
 
   const legend = $('#ladder-legend');
   legend.replaceChildren();
   for (const [tier, name] of [[1, 'Eliteserien'], [2, 'OBOS-ligaen']]) {
     const key = el('span', 'legend__key');
     const swatch = el('span', 'legend__swatch');
-    swatch.style.background = tier === 1 ? 'var(--home)' : 'var(--band-playoff)';
     swatch.style.borderRadius = '50%';
+    if (tier === 1) {
+      swatch.style.background = 'var(--tier-1)';
+    } else {
+      swatch.style.background = 'var(--panel)';
+      swatch.style.border = '2.5px solid var(--tier-2)';
+    }
     key.appendChild(swatch);
     key.appendChild(el('span', '', name));
     legend.appendChild(key);
   }
-  legend.appendChild(el('span', '', 'Every club in the top two divisions, on the one scale the model uses.'));
+  legend.appendChild(el('span', '', 'Every club in the top two divisions on one scale. Where the two overlap, a second-tier side is rated above a top-flight one.'));
 }
 
 /* ---------- fixtures ---------------------------------------------- */
@@ -758,15 +718,23 @@ function renderHero(report) {
   );
 
   $('#hero-title').textContent = `${report.league.name} ${report.league.season}`;
+  $('#model-badge').textContent = model.version;
 
-  const lede =
-    favourite.team === leader.team
-      ? `${leader.team} lead on ${leader.points} points and the model agrees: ` +
-        `${pct(favourite.position_probabilities[0])} to finish top.`
-      : `${leader.team} lead on ${leader.points} points, but the model makes ${favourite.team} ` +
-        `favourite at ${pct(favourite.position_probabilities[0])}.`;
-  $('#hero-lede').textContent =
-    `${lede} ${model.matches_remaining} matches left, each one played ${model.simulations.toLocaleString()} times over.`;
+  // A finished season has nothing left to simulate, so it gets told as history.
+  if (model.matches_remaining === 0) {
+    $('#hero-lede').textContent =
+      `${leader.team} finished top on ${leader.points} points. ` +
+      `All ${model.matches_played} matches played; ratings shown are where each club ended the season.`;
+  } else {
+    const lede =
+      favourite.team === leader.team
+        ? `${leader.team} lead on ${leader.points} points and the model agrees: ` +
+          `${pct(favourite.position_probabilities[0])} to finish top.`
+        : `${leader.team} lead on ${leader.points} points, but the model makes ${favourite.team} ` +
+          `favourite at ${pct(favourite.position_probabilities[0])}.`;
+    $('#hero-lede').textContent =
+      `${lede} ${model.matches_remaining} matches left, each one played ${model.simulations.toLocaleString()} times over.`;
+  }
 
   const meta = $('#hero-meta');
   meta.replaceChildren();
@@ -775,6 +743,7 @@ function renderHero(report) {
     ['Remaining', `${model.matches_remaining}`],
     ['Seasons simulated', model.simulations.toLocaleString()],
     ['Model', model.version],
+    ['Ratings from', `${model.seed_season} onward`],
   ]) {
     const cell = el('div');
     cell.appendChild(el('span', '', name));
@@ -802,6 +771,187 @@ function renderModelCard(report) {
   }
 }
 
+
+/* ---------- career: one club's rating across every season ---------- */
+
+function openCareer(teamId, fallbackName) {
+  const modal = $('#career-modal');
+  const career = (state.careers?.teams || []).find((team) => team.team_id === teamId);
+
+  $('#career-title').textContent = career ? career.team : fallbackName;
+  modal.hidden = false;
+  document.body.style.overflow = 'hidden';
+  $('.modal__close').focus();
+
+  if (!career || career.points.length < 2) {
+    $('#career-sub').textContent = 'No rating history for this club yet.';
+    $('#career-chart').replaceChildren();
+    $('#career-stats').replaceChildren();
+    $('#career-seasons tbody').replaceChildren();
+    return;
+  }
+
+  const first = career.seasons[0];
+  const last = career.seasons[career.seasons.length - 1];
+  $('#career-sub').textContent =
+    `${career.seasons.length} seasons tracked, ${first.season} to ${last.season}. ` +
+    `Rating ${career.points[0][1]} then, ${career.current_rating} now.`;
+
+  drawCareer(career);
+  renderCareerStats(career);
+  renderCareerSeasons(career);
+}
+
+function closeCareer() {
+  $('#career-modal').hidden = true;
+  document.body.style.overflow = '';
+  hideTooltip();
+}
+
+function drawCareer(career) {
+  const chart = $('#career-chart');
+  const points = career.points;
+
+  const width = 940;
+  const height = 300;
+  const pad = { top: 14, right: 16, bottom: 30, left: 46 };
+  const plotWidth = width - pad.left - pad.right;
+  const plotHeight = height - pad.top - pad.bottom;
+
+  chart.setAttribute('viewBox', `0 0 ${width} ${height}`);
+  chart.replaceChildren();
+
+  const times = points.map(([date]) => Date.parse(`${date}T12:00:00Z`));
+  const first = times[0];
+  const span = (times[times.length - 1] - first) || 1;
+  const ratings = points.map(([, rating]) => rating);
+
+  // Round the domain outward so the axis lands on tidy rating numbers.
+  const low = Math.floor(Math.min(...ratings) / 50) * 50;
+  const high = Math.ceil(Math.max(...ratings) / 50) * 50;
+  const x = (time) => pad.left + ((time - first) / span) * plotWidth;
+  const y = (rating) => pad.top + (1 - (rating - low) / (high - low || 1)) * plotHeight;
+
+  for (let value = low; value <= high; value += 50) {
+    chart.appendChild(
+      svgEl('line', { class: 'grid-line', x1: pad.left, x2: width - pad.right, y1: y(value), y2: y(value) })
+    );
+    const label = svgEl('text', { class: 'tick', x: pad.left - 8, y: y(value) + 3.5, 'text-anchor': 'end' });
+    label.textContent = String(value);
+    chart.appendChild(label);
+  }
+
+  // A tick where each season starts, so the line can be read against seasons.
+  for (const record of career.seasons) {
+    const start = Date.parse(`${record.season}-01-01T12:00:00Z`);
+    if (start < first || start > times[times.length - 1]) continue;
+    chart.appendChild(
+      svgEl('line', { class: 'season-split', x1: x(start), x2: x(start), y1: pad.top, y2: pad.top + plotHeight })
+    );
+    const label = svgEl('text', { class: 'season-label', x: x(start) + 3, y: pad.top + 10 });
+    label.textContent = String(record.season);
+    chart.appendChild(label);
+  }
+
+  const line = points.map(([date, rating], index) => `${x(times[index])},${y(rating)}`).join(' ');
+  chart.appendChild(
+    svgEl('polygon', {
+      class: 'career-area',
+      points: `${pad.left},${pad.top + plotHeight} ${line} ${pad.left + plotWidth},${pad.top + plotHeight}`,
+    })
+  );
+  chart.appendChild(svgEl('polyline', { class: 'career-line', points: line }));
+  chart.appendChild(
+    svgEl('circle', {
+      class: 'career-dot',
+      cx: x(times[times.length - 1]),
+      cy: y(ratings[ratings.length - 1]),
+      r: 4,
+    })
+  );
+
+  const axis = svgEl('text', { class: 'axis-title', x: pad.left, y: height - 6 });
+  axis.textContent = 'Rating after every match played';
+  chart.appendChild(axis);
+
+  // Nearest-point readout.
+  const crosshair = svgEl('line', { class: 'crosshair', y1: pad.top, y2: pad.top + plotHeight, x1: -10, x2: -10 });
+  crosshair.style.opacity = '0';
+  chart.appendChild(crosshair);
+
+  const surface = svgEl('rect', {
+    x: pad.left, y: pad.top, width: plotWidth, height: plotHeight, fill: 'transparent',
+  });
+  surface.addEventListener('pointermove', (event) => {
+    const box = chart.getBoundingClientRect();
+    const localX = (event.clientX - box.left) * (width / box.width);
+    let index = 0;
+    for (let candidate = 1; candidate < times.length; candidate += 1) {
+      if (Math.abs(x(times[candidate]) - localX) < Math.abs(x(times[index]) - localX)) index = candidate;
+    }
+    crosshair.setAttribute('x1', x(times[index]));
+    crosshair.setAttribute('x2', x(times[index]));
+    crosshair.style.opacity = '1';
+    const when = new Date(times[index]).toLocaleDateString('en-GB', {
+      day: 'numeric', month: 'short', year: 'numeric',
+    });
+    showTooltip(event, `<b>${career.team}</b><br>${when}<br>Rating ${points[index][1]}`);
+  });
+  surface.addEventListener('pointerleave', () => {
+    crosshair.style.opacity = '0';
+    hideTooltip();
+  });
+  chart.appendChild(surface);
+
+  chart.setAttribute('aria-label', `${career.team} rating from ${points[0][0]} to ${points[points.length - 1][0]}`);
+  $('#career-desc').textContent =
+    `${career.team}: rating moved from ${points[0][1]} to ${career.current_rating} across ${career.seasons.length} seasons.`;
+}
+
+function renderCareerStats(career) {
+  const stats = $('#career-stats');
+  stats.replaceChildren();
+  const promotions = career.seasons.filter(
+    (record, index) => index > 0 && record.league !== career.seasons[index - 1].league
+  ).length;
+
+  const entries = [
+    ['Now', String(career.current_rating)],
+    ['Peak', career.peak ? `${career.peak[1]} (${career.peak[0].slice(0, 4)})` : '—'],
+    ['Low', career.trough ? `${career.trough[1]} (${career.trough[0].slice(0, 4)})` : '—'],
+    ['Matches', String(career.points.length)],
+    ['Division changes', String(promotions)],
+  ];
+  for (const [name, value] of entries) {
+    const key = el('span', 'legend__key');
+    key.appendChild(el('span', 'label', name));
+    key.appendChild(el('span', '', value));
+    stats.appendChild(key);
+  }
+}
+
+function renderCareerSeasons(career) {
+  const body = $('#career-seasons tbody');
+  body.replaceChildren();
+  for (const record of [...career.seasons].reverse()) {
+    const tr = el('tr');
+    tr.appendChild(el('td', 'pos', String(record.season)));
+    tr.appendChild(el('td', 'club', record.league_name));
+    tr.appendChild(el('td', 'num', String(record.position)));
+    tr.appendChild(el('td', 'num muted', String(record.played)));
+    tr.appendChild(el('td', 'num', String(record.points)));
+    tr.appendChild(
+      el('td', 'num muted', record.goal_difference > 0 ? `+${record.goal_difference}` : String(record.goal_difference))
+    );
+    tr.appendChild(el('td', 'num sep muted', String(record.rating_start)));
+    tr.appendChild(el('td', 'num', String(record.rating_end)));
+    const change = el('td', `num ${record.rating_change >= 0 ? 'up' : 'down'}`);
+    change.textContent = record.rating_change >= 0 ? `+${record.rating_change}` : String(record.rating_change);
+    tr.appendChild(change);
+    body.appendChild(tr);
+  }
+}
+
 /* ---------- theme -------------------------------------------------- */
 
 function resolveTheme() {
@@ -823,9 +973,10 @@ function resolveTheme() {
 
 function render() {
   const report = state.reports[state.league];
+  renderSeasonOptions(report);
   renderHero(report);
   renderGrid(report);
-  renderGridLegend(report);
+  renderGridLegend();
   renderStandings(report);
   renderBandLegend(report);
   renderShape(report);
@@ -863,6 +1014,17 @@ function wire() {
     drawShape(state.reports[state.league], event.target.value);
   });
 
+  $('#season-select').addEventListener('change', async (event) => {
+    await loadSeason(Number(event.target.value));
+  });
+
+  for (const closer of document.querySelectorAll('[data-close-modal]')) {
+    closer.addEventListener('click', closeCareer);
+  }
+  document.addEventListener('keydown', (event) => {
+    if (event.key === 'Escape' && !$('#career-modal').hidden) closeCareer();
+  });
+
   window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => {
     resolveTheme();
     render();
@@ -883,7 +1045,17 @@ function applyLeagueParameter() {
 /* Team is matched on name so a shared link stays readable. Applied after the
    first render, once the club list exists. */
 function applyTeamParameter() {
-  const wanted = new URLSearchParams(window.location.search).get('team');
+  const params = new URLSearchParams(window.location.search);
+
+  const career = params.get('career');
+  if (career) {
+    const club = (state.careers?.teams || []).find(
+      (team) => team.team.toLowerCase() === career.toLowerCase()
+    );
+    if (club) openCareer(club.team_id, club.team);
+  }
+
+  const wanted = params.get('team');
   if (!wanted) return;
   const match = state.reports[state.league].history.teams.find(
     (team) => team.team.toLowerCase() === wanted.toLowerCase()
@@ -894,17 +1066,63 @@ function applyTeamParameter() {
   }
 }
 
+/* Older seasons are built on the server the first time they are asked for,
+   so this can take a moment. Say so rather than appearing to hang. */
+async function loadSeason(season) {
+  const select = $('#season-select');
+  select.disabled = true;
+  const previous = state.season;
+  try {
+    const response = await fetch(`/api/report?season=${season}`);
+    if (!response.ok) throw new Error(`server returned ${response.status}`);
+    state.reports = await response.json();
+    state.season = season;
+    render();
+  } catch (error) {
+    select.value = String(previous);
+    $('#status').hidden = false;
+    $('#status').textContent = `Could not load ${season}: ${error.message}`;
+  } finally {
+    select.disabled = false;
+  }
+}
+
+function renderSeasonOptions(report) {
+  const select = $('#season-select');
+  const seasons = report.league.seasons || [report.league.season];
+  if (select.options.length !== seasons.length) {
+    select.replaceChildren();
+    for (const season of [...seasons].reverse()) {
+      const option = el('option', '', season === report.league.current_season ? `${season} (live)` : String(season));
+      option.value = String(season);
+      select.appendChild(option);
+    }
+  }
+  select.value = String(report.league.season);
+}
+
 async function boot() {
   resolveTheme();
   wire();
   try {
-    const response = await fetch('/api/report');
-    if (!response.ok) throw new Error(`server returned ${response.status}`);
-    state.reports = await response.json();
+    const [reports, careers] = await Promise.all([
+      fetch('/api/report').then((r) => {
+        if (!r.ok) throw new Error(`server returned ${r.status}`);
+        return r.json();
+      }),
+      fetch('/api/careers').then((r) => (r.ok ? r.json() : null)),
+    ]);
+    state.reports = reports;
+    state.careers = careers;
+    state.season = reports[state.league].league.season;
     $('#status').hidden = true;
     $('#content').hidden = false;
     applyLeagueParameter();
     render();
+
+    const wantedSeason = Number(new URLSearchParams(window.location.search).get('season'));
+    if (wantedSeason && wantedSeason !== state.season) await loadSeason(wantedSeason);
+
     applyTeamParameter();
     // The browser resolved any #fragment while the content was still hidden,
     // so re-run it now that the sections exist.

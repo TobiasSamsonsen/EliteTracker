@@ -15,12 +15,15 @@
 
 <header class="masthead">
   <div class="shell masthead__inner">
-    <div class="wordmark">EliteTracker <span>elo-v1</span></div>
+    <div class="wordmark">EliteTracker <span id="model-badge"></span></div>
 
     <div class="switch" role="group" aria-label="Choose a division">
       <button type="button" data-league="eliteserien" aria-pressed="true">Eliteserien</button>
       <button type="button" data-league="obosligaen" aria-pressed="false">OBOS-ligaen</button>
     </div>
+
+    <label class="visually-hidden" for="season-select">Season</label>
+    <select id="season-select" class="season-select"></select>
 
     <div class="switch" role="group" aria-label="Colour theme">
       <button type="button" data-theme-choice="light" aria-pressed="false">Light</button>
@@ -46,7 +49,7 @@
         <div class="panel__head">
           <div>
             <h2>The finish grid</h2>
-            <p>Every team against every finishing position. Colour says what kind of finish a place is — blue at the top of the table, red at the bottom — and depth says how likely it is. Read a row for one club's range; read a column for who is competing for that place.</p>
+            <p>Every team against every finishing position. The deeper the colour, the more likely that finish. Read a row for one club's range; read a column for who is competing for that place. The strip above marks what each place is worth.</p>
           </div>
           <div class="label" id="grid-count"></div>
         </div>
@@ -67,7 +70,7 @@
         <div class="panel__head">
           <div>
             <h2>Table</h2>
-            <p>Live standings, the rating the model gives each side, and the points it expects them to end on.</p>
+            <p>Live standings, the rating the model gives each side, and the points it expects them to end on. Pick any club for its full rating history.</p>
           </div>
         </div>
         <div class="scroller">
@@ -102,7 +105,7 @@
         <div class="panel__head">
           <div>
             <h2>Season shape</h2>
-            <p>One club's whole range of outcomes across the season. Each band is a finishing position; its thickness is how likely that place looked on the day. The season is re-simulated from scratch at each date, using only results known by then. The axis is the calendar, not the round number — rounds are not played in order.</p>
+            <p>One club's whole range of outcomes across the season. Each band is a finishing position — deepest for first, palest for last — and its thickness is how likely that place looked on the day. The season is re-simulated from scratch at each date, using only results known by then. The axis is the calendar, not the round number — rounds are not played in order.</p>
           </div>
           <div class="label" id="shape-rounds"></div>
         </div>
@@ -183,6 +186,43 @@
 </footer>
 
 <div id="tooltip" role="tooltip" aria-hidden="true"></div>
+
+<!-- Career history, opened from a row in the table. -->
+<div class="modal" id="career-modal" hidden>
+  <div class="modal__scrim" data-close-modal></div>
+  <div class="modal__panel" role="dialog" aria-modal="true" aria-labelledby="career-title">
+    <div class="modal__head">
+      <div>
+        <h2 id="career-title"></h2>
+        <p id="career-sub"></p>
+      </div>
+      <button type="button" class="modal__close" data-close-modal aria-label="Close">&times;</button>
+    </div>
+    <div class="modal__body">
+      <svg class="chart" id="career-chart" role="img" aria-labelledby="career-desc"></svg>
+      <p class="visually-hidden" id="career-desc"></p>
+      <div class="legend" id="career-stats"></div>
+      <div class="scroller">
+        <table class="standings career-table" id="career-seasons">
+          <thead>
+            <tr>
+              <th class="pos" scope="col">Season</th>
+              <th class="club" scope="col">Division</th>
+              <th class="num" scope="col">Pos</th>
+              <th class="num" scope="col">Pl</th>
+              <th class="num" scope="col">Pts</th>
+              <th class="num" scope="col">GD</th>
+              <th class="num sep" scope="col">Rating start</th>
+              <th class="num" scope="col">Rating end</th>
+              <th class="num" scope="col">Change</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
 
 <script src="/app.js"></script>
 </body>

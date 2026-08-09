@@ -79,9 +79,7 @@ def normalize_match(raw: dict[str, Any]) -> Match:
     kickoff = _parse_utc(status.get("utcTime"))
     local = kickoff.astimezone(LEAGUE_TIMEZONE)
 
-    # A cancelled or awarded match has no playable score we can feed the model.
-    cancelled = bool(status.get("cancelled"))
-    finished = bool(status.get("finished")) and not cancelled
+    finished = bool(status.get("finished")) and not status.get("cancelled")
     home_goals, away_goals = parse_score(status.get("scoreStr")) if finished else (None, None)
     if finished and home_goals is None:
         raise NormalizationError(f"match {match_id}: finished but has no score")
@@ -103,8 +101,19 @@ def normalize_match(raw: dict[str, Any]) -> Match:
     )
 
 
+def is_cancelled(raw: dict[str, Any]) -> bool:
+    """An abandoned or cancelled fixture, which is not part of the schedule.
+
+    Eliteserien 2024 carries both the abandoned Rosenborg v Lillestrøm of
+    21 July and its replay on 21 August, so the raw list has 241 rows for a
+    240-match season. The void record has to go, or those two clubs end up
+    with an extra fixture each.
+    """
+    return bool((raw.get("status") or {}).get("cancelled"))
+
+
 def normalize_matches(raw_matches: list[dict[str, Any]]) -> list[Match]:
-    return finalize(normalize_match(raw) for raw in raw_matches)
+    return finalize(normalize_match(raw) for raw in raw_matches if not is_cancelled(raw))
 
 
 def normalize_standing(raw: dict[str, Any]) -> Standing:

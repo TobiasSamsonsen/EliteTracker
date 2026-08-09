@@ -29,24 +29,33 @@
   --cell-ink: #0d1a22;
   --cell-ink-invert: #ffffff;
 
-  /* Dual status palette. A finishing position is a good or a bad outcome, so
-     HUE carries which one it is and INTENSITY carries how likely it is. Each
-     family runs base -> status -> "far" (its most extreme step); the far end
-     inverts per theme, so the ramp always moves away from the surface.
-     Poles validated in both themes: CVD dE 11.4 light / 9.3 dark. */
-  --outcome-base: #f3f6f8;
+  /* Qualification markers only -- labelled status marks, not part of the
+     quantitative encoding above. */
   --outcome-good: #2a78d6;
-  --outcome-good-far: #0d366b;
-  --outcome-neutral: #85929b;
-  --outcome-neutral-far: #35424a;
   --outcome-bad: #e34948;
-  --outcome-bad-far: #7d1a19;
+
+  /* Sequential data ramp. Multi-hue on purpose: sixteen stacked bands cannot
+     be told apart in one hue. Resampled at uniform OKLab lightness from the
+     ColorBrewer YlGnBu path, so lightness is monotone and every neighbouring
+     pair clears dE 10.5 (light) / 11.3 (dark). The ramp is oriented per theme
+     so it always moves away from the surface. */
+  --seq-1: #d0edb3;
+  --seq-2: #8bd1ba;
+  --seq-3: #3db2c4;
+  --seq-4: #1e8cbe;
+  --seq-5: #2265ac;
+  --seq-6: #253d98;
+  --seq-7: #12246b;
 
   /* Diverging: home win <- draw -> away win. */
   --home: #2a78d6;
   --draw: #8c8c86;
   --away: #e34948;
 
+
+  /* Division identity on the ladder: two categories, so two fixed hues. */
+  --tier-1: #2a78d6;
+  --tier-2: #eb6834;
 
   /* Reserved status hues for qualification bands. Each ships with a label. */
   --band-champion: #f2b705;
@@ -82,18 +91,24 @@
     --cell-ink: #ffffff;
     --cell-ink-invert: #0d1a22;
 
-    --outcome-base: #0f171c;
     --outcome-good: #3987e5;
-    --outcome-good-far: #9ec5f4;
-    --outcome-neutral: #8b98a2;
-    --outcome-neutral-far: #ccd6dc;
     --outcome-bad: #e66767;
-    --outcome-bad-far: #f4a8a8;
+
+    --seq-1: #081d58;
+    --seq-2: #22318d;
+    --seq-3: #225aa6;
+    --seq-4: #1f83b9;
+    --seq-5: #36abc3;
+    --seq-6: #80cdbb;
+    --seq-7: #caeab4;
 
     --home: #3987e5;
     --draw: #b5b5ac;
     --away: #e66767;
 
+
+    --tier-1: #3987e5;
+    --tier-2: #d95926;
 
     --band-champion: #eda100;
     --band-europe: #3987e5;
@@ -119,18 +134,24 @@
   --cell-ink: #ffffff;
   --cell-ink-invert: #0d1a22;
 
-  --outcome-base: #0f171c;
   --outcome-good: #3987e5;
-  --outcome-good-far: #9ec5f4;
-  --outcome-neutral: #8b98a2;
-  --outcome-neutral-far: #ccd6dc;
   --outcome-bad: #e66767;
-  --outcome-bad-far: #f4a8a8;
+
+  --seq-1: #081d58;
+  --seq-2: #22318d;
+  --seq-3: #225aa6;
+  --seq-4: #1f83b9;
+  --seq-5: #36abc3;
+  --seq-6: #80cdbb;
+  --seq-7: #caeab4;
 
   --home: #3987e5;
   --draw: #b5b5ac;
   --away: #e66767;
 
+
+  --tier-1: #3987e5;
+  --tier-2: #d95926;
 
   --band-champion: #eda100;
   --band-europe: #3987e5;
@@ -561,11 +582,8 @@ table.standings .muted { color: var(--ink-muted); }
   border-radius: 2px;
   background: linear-gradient(
     to right,
-    var(--outcome-good-far),
-    var(--outcome-good),
-    var(--outcome-neutral),
-    var(--outcome-bad),
-    var(--outcome-bad-far)
+    var(--seq-7), var(--seq-6), var(--seq-5), var(--seq-4),
+    var(--seq-3), var(--seq-2), var(--seq-1)
   );
 }
 
@@ -612,10 +630,68 @@ table.standings .muted { color: var(--ink-muted); }
   white-space: nowrap;
 }
 
+/* One shared line. The divisions overlap on the rating scale, and that overlap
+   is the whole point of the section, so they are separated by colour and
+   marker shape rather than by being put on different rows. */
+.ladder__track {
+  position: relative;
+  height: 3.4rem;
+  border-radius: 3px;
+  background: var(--panel-sunk);
+}
+
+.ladder__team {
+  position: absolute;
+  width: 11px;
+  height: 11px;
+  border-radius: 50%;
+  transform: translateX(-5.5px);
+  cursor: default;
+  transition: transform 0.12s var(--ease);
+}
+
+.ladder__team:hover { transform: translateX(-5.5px) scale(1.7); z-index: 3; }
+
+/* Filled for the top flight, hollow for the second: colour alone should not
+   be carrying the division. */
+.ladder__team[data-tier="1"] {
+  background: var(--tier-1);
+  border: 2px solid var(--panel);
+}
+
+.ladder__team[data-tier="2"] {
+  background: var(--panel);
+  border: 2.5px solid var(--tier-2);
+}
+
+.ladder__axis {
+  position: relative;
+  height: 2px;
+  background: var(--rule-strong);
+  margin: 3.5rem 0 0;
+}
+
+.ladder__tick {
+  position: absolute;
+  top: -0.4rem;
+  width: 2px;
+  height: 0.9rem;
+  background: var(--ink-faint);
+  transform: translateX(-1px);
+}
+
+.ladder__tick span {
+  position: absolute;
+  top: 1.1rem;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 0.6875rem;
+  color: var(--ink-faint);
+  white-space: nowrap;
+}
+
 /* One lane per division, both on the shared axis below, so the comparison the
    section is about is the thing you actually see. */
-.ladder__lane { margin-bottom: 0.9rem; }
-.ladder__lane .label { display: block; margin-bottom: 0.3rem; }
 
 .ladder__track {
   position: relative;
@@ -762,3 +838,101 @@ footer {
   .fixture__when { order: -1; }
   .hero__meta { gap: 0.4rem 1.25rem; }
 }
+
+/* ---------- season selector --------------------------------------- */
+
+.season-select {
+  appearance: none;
+  font: inherit;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--ink);
+  background: var(--panel-sunk);
+  border: 1px solid var(--rule);
+  border-radius: var(--radius);
+  padding: 0.36rem 1.9rem 0.36rem 0.7rem;
+  cursor: pointer;
+  background-image: linear-gradient(45deg, transparent 50%, currentColor 50%),
+                    linear-gradient(135deg, currentColor 50%, transparent 50%);
+  background-position: right 0.9rem center, right 0.6rem center;
+  background-size: 5px 5px, 5px 5px;
+  background-repeat: no-repeat;
+}
+
+/* ---------- career modal ------------------------------------------ */
+
+.modal {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: grid;
+  place-items: center;
+  padding: clamp(0.5rem, 3vw, 2rem);
+}
+
+.modal[hidden] { display: none; }
+
+.modal__scrim {
+  position: absolute;
+  inset: 0;
+  background: color-mix(in srgb, var(--ink) 55%, transparent);
+  backdrop-filter: blur(3px);
+}
+
+.modal__panel {
+  position: relative;
+  width: min(1000px, 100%);
+  max-height: 90vh;
+  overflow-y: auto;
+  background: var(--panel);
+  border: 1px solid var(--rule);
+  border-radius: var(--radius);
+  box-shadow: 0 24px 64px -24px rgb(0 0 0 / 0.5);
+}
+
+.modal__head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1.1rem 1.25rem;
+  border-bottom: 1px solid var(--rule);
+  position: sticky;
+  top: 0;
+  background: var(--panel);
+  z-index: 1;
+}
+
+.modal__head h2 { font-size: 1.4rem; }
+.modal__head p { margin: 0.3rem 0 0; color: var(--ink-muted); font-size: 0.875rem; }
+
+.modal__close {
+  appearance: none;
+  border: 1px solid var(--rule);
+  background: var(--panel-sunk);
+  color: var(--ink-muted);
+  font-size: 1.25rem;
+  line-height: 1;
+  width: 2rem;
+  height: 2rem;
+  border-radius: var(--radius);
+  cursor: pointer;
+  flex: none;
+}
+
+.modal__close:hover { color: var(--ink); }
+.modal__body { padding: 1.25rem; }
+
+/* A club's rating line. One series, so no legend box: the title names it. */
+.chart .career-line { fill: none; stroke: var(--seq-5); stroke-width: 2; }
+.chart .career-area { fill: var(--seq-5); opacity: 0.12; }
+.chart .season-split { stroke: var(--rule); stroke-width: 1; }
+.chart .season-label { fill: var(--ink-faint); font-size: 9px; }
+.chart .career-dot { fill: var(--seq-5); stroke: var(--panel); stroke-width: 2; }
+.chart .tier-band { fill: var(--outcome-good); opacity: 0.06; }
+
+.career-table { min-width: 640px; margin-top: 1rem; }
+.career-table .up { color: var(--outcome-good); font-weight: 700; }
+.career-table .down { color: var(--outcome-bad); font-weight: 700; }
+
+table.standings tbody tr[role="button"] { cursor: pointer; }
