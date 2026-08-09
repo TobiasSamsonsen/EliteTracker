@@ -18,10 +18,17 @@ const pct = (value, digits = 1) =>
 const pctShort = (value) =>
   value < 0.005 ? '' : `${Math.round(value * 100)}`;
 
-/* ---------- sequential ramp ---------------------------------------
-   Probability -> one of eight steps of a single hue. The break points are
-   perceptual rather than linear: most cells in a 16x16 matrix are near zero,
-   so a linear scale would render the whole grid pale. */
+/* ---------- the dual outcome palette ------------------------------
+   A finishing position is not just a magnitude, it is a good or a bad
+   outcome. So colour is split in two: HUE says which kind of outcome a place
+   is (blue at the top of the table, red at the bottom, neutral in between),
+   and INTENSITY says how likely it is. One hue would tell you a cell is dark
+   without telling you whether that is worth celebrating.
+
+   The split follows each league's own qualification bands, so it lands in the
+   right place for both: Eliteserien turns red at the relegation play-off,
+   OBOS-ligaen keeps its promotion play-off blue. */
+
 const HEAT_STOPS = [0.005, 0.02, 0.05, 0.1, 0.2, 0.35, 0.6];
 
 function heatStep(probability) {
@@ -30,13 +37,48 @@ function heatStep(probability) {
   return step; // 0..7
 }
 
-/* Text must stay legible as the fill darkens. In dark mode the ramp runs the
-   other way, so the flip point moves with it. */
+function outcomeClass(position, bands, count) {
+  const band = bandFor(bands, position);
+  if (!band) return 'neutral';
+  // A band in the top half of the table is something to win, one in the
+  // bottom half something to avoid.
+  return band.first < (count + 1) / 2 ? 'good' : 'bad';
+}
+
+/* Where the table stops being good and starts being bad. */
+function outcomeBounds(bands, count) {
+  let lastGood = 0;
+  let firstBad = count + 1;
+  for (let position = 1; position <= count; position += 1) {
+    const kind = outcomeClass(position, bands, count);
+    if (kind === 'good') lastGood = Math.max(lastGood, position);
+    if (kind === 'bad') firstBad = Math.min(firstBad, position);
+  }
+  return { lastGood, firstBad };
+}
+
+/* Steps 0-4 run from the surface to the family's status colour; 5-7 push on
+   to its far end. Mixing in oklab keeps the steps perceptually even, and
+   because the tokens flip per theme the ramp always moves away from the
+   background rather than toward it. */
+const NEAR_STOPS = [0, 25, 45, 70, 100];
+const FAR_STOPS = [0, 33, 66, 100];
+
+function outcomeFill(kind, step) {
+  if (step <= 4) {
+    return `color-mix(in oklab, var(--outcome-${kind}) ${NEAR_STOPS[step]}%, var(--outcome-base))`;
+  }
+  return `color-mix(in oklab, var(--outcome-${kind}-far) ${FAR_STOPS[step - 4]}%, var(--outcome-${kind}))`;
+}
+
+/* Text must stay legible as the fill moves away from the surface, which is a
+   different direction in each theme. */
 function heatTextClass(step) {
-  // Flip the label colour where the ramp crosses the point at which white text
-  // drops under 3:1. In dark mode the ramp runs the other way, so does this.
+  // Invert the label once the fill is far enough from the surface to swallow
+  // the default ink. Light mode darkens as probability rises, dark mode
+  // lightens, but in both the deep end is what needs the flip.
   const darkMode = document.documentElement.dataset.resolvedTheme === 'dark';
-  return darkMode ? (step >= 6 ? 'cell--dark-text' : '') : (step <= 3 ? 'cell--dark-text' : '');
+  return step >= (darkMode ? 5 : 4) ? 'cell--invert' : '';
 }
 
 /* ---------- tooltip ---------------------------------------------- */
@@ -96,7 +138,7 @@ function renderGrid(report) {
     const cell = el('td');
     const bar = el('span', 'band-strip__seg');
     if (band) {
-      bar.style.background = `var(--band-${toneVar(band.tone)})`;
+      bar.style.background = bandColor(band, count);
       bar.title = band.label;
     }
     cell.appendChild(bar);
@@ -125,8 +167,9 @@ function renderGrid(report) {
 
     row.position_probabilities.forEach((probability, index) => {
       const step = heatStep(probability);
+      const kind = outcomeClass(index + 1, report.league.bands, count);
       const cell = el('td', `cell ${heatTextClass(step)}`.trim());
-      cell.style.background = `var(--heat-${step})`;
+      cell.style.background = outcomeFill(kind, step);
       cell.style.setProperty('--col', String(index));
       cell.textContent = pctShort(probability);
       if (!cell.textContent) cell.classList.add('cell--empty');
@@ -157,9 +200,18 @@ function renderGrid(report) {
   $('#grid-count').textContent = `${count} clubs × ${count} places`;
 }
 
-const toneVar = (tone) =>
-  ({ champion: 'champion', top: 'europe', europe: 'europe', playoff: 'playoff', relegation: 'relegation' }[tone] ||
-  'europe');
+/* Marker colour for a qualification band.
+
+   Winning the league keeps its own gold; everything else takes the outcome
+   family, so a marker never disagrees with the cells beneath it. The tone
+   alone is not enough: a play-off is a good thing in OBOS-ligaen (promotion)
+   and a bad one in Eliteserien (relegation). */
+function bandColor(band, count) {
+  if (band.tone === 'champion') return 'var(--band-champion)';
+  return outcomeClass(band.first, [band], count) === 'good'
+    ? 'var(--outcome-good)'
+    : 'var(--outcome-bad)';
+}
 
 function ordinal(n) {
   const suffix = ['th', 'st', 'nd', 'rd'][(n % 100 - 20) % 10] || ['th', 'st', 'nd', 'rd'][n % 100] || 'th';
@@ -168,20 +220,34 @@ function ordinal(n) {
 
 /* ---------- legends ----------------------------------------------- */
 
-function renderGridLegend() {
+/* Three labelled ramps rather than one: colour is doing two jobs here, and the
+   legend has to show both of them. */
+function renderGridLegend(report) {
   const legend = $('#grid-legend');
   legend.replaceChildren();
+  const count = report.table.length;
+  const { lastGood, firstBad } = outcomeBounds(report.league.bands, count);
 
-  legend.appendChild(el('span', 'label', 'Chance of finishing there'));
-  const ramp = el('span', 'legend__ramp');
-  for (let step = 0; step <= 7; step += 1) {
-    const swatch = el('i');
-    swatch.style.background = `var(--heat-${step})`;
-    ramp.appendChild(swatch);
+  const families = [
+    ['good', `Top ${lastGood}`],
+    ['neutral', `Mid-table ${lastGood + 1}–${firstBad - 1}`],
+    ['bad', `Bottom ${count - firstBad + 1}`],
+  ];
+
+  for (const [kind, name] of families) {
+    const key = el('span', 'legend__key');
+    const ramp = el('span', 'legend__ramp');
+    for (let step = 1; step <= 7; step += 1) {
+      const swatch = el('i');
+      swatch.style.background = outcomeFill(kind, step);
+      ramp.appendChild(swatch);
+    }
+    key.appendChild(ramp);
+    key.appendChild(el('span', '', name));
+    legend.appendChild(key);
   }
-  legend.appendChild(ramp);
-  legend.appendChild(el('span', '', 'never → certain'));
-  legend.appendChild(el('span', '', 'Cells show whole percent; hover for the exact figure.'));
+
+  legend.appendChild(el('span', '', 'Hue is the kind of finish, depth is how likely. Hover for the exact figure.'));
 }
 
 function renderBandLegend(report) {
@@ -190,7 +256,7 @@ function renderBandLegend(report) {
   for (const band of report.league.bands) {
     const key = el('span', 'legend__key');
     const swatch = el('span', 'legend__swatch');
-    swatch.style.background = `var(--band-${toneVar(band.tone)})`;
+    swatch.style.background = bandColor(band, report.table.length);
     key.appendChild(swatch);
     const range = band.first === band.last ? `${band.first}` : `${band.first}–${band.last}`;
     key.appendChild(el('span', '', `${band.label} (${range})`));
@@ -231,7 +297,10 @@ function renderStandings(report) {
 
     const position = el('td', 'pos');
     const mark = el('span', 'band-mark');
-    if (band) mark.dataset.tone = band.tone;
+    if (band) {
+      mark.style.background = bandColor(band, count);
+      mark.title = band.label;
+    }
     position.appendChild(mark);
     position.appendChild(document.createTextNode(String(row.position)));
     tr.appendChild(position);
@@ -298,12 +367,24 @@ function meterCell(value, count) {
    one pole through a neutral mid-table to the other. Mixing in oklab keeps the
    steps perceptually even, and using CSS variables means a theme switch
    recolours the chart without recomputing anything. */
-function positionColor(position, count) {
-  const t = count > 1 ? (position - 1) / (count - 1) : 0;
-  if (t <= 0.5) {
-    return `color-mix(in oklab, var(--pos-top) ${((0.5 - t) * 2 * 100).toFixed(1)}%, var(--pos-mid))`;
+function positionColor(position, count, bands) {
+  const kind = outcomeClass(position, bands, count);
+  const { lastGood, firstBad } = outcomeBounds(bands, count);
+
+  // Deepest at the extremes of each family, fading toward the boundary, so
+  // the colour change lands exactly where the league's own cut-offs are.
+  if (kind === 'good') {
+    const depth = lastGood > 1 ? (lastGood - position) / (lastGood - 1) : 1;
+    return `color-mix(in oklab, var(--outcome-good-far) ${(depth * 100).toFixed(1)}%, var(--outcome-good))`;
   }
-  return `color-mix(in oklab, var(--pos-bottom) ${((t - 0.5) * 2 * 100).toFixed(1)}%, var(--pos-mid))`;
+  if (kind === 'bad') {
+    const depth = count > firstBad ? (position - firstBad) / (count - firstBad) : 1;
+    return `color-mix(in oklab, var(--outcome-bad-far) ${(depth * 100).toFixed(1)}%, var(--outcome-bad))`;
+  }
+  // Mid-table: neutral throughout, leaning heavier toward the drop zone.
+  const span = Math.max(1, firstBad - lastGood - 2);
+  const toward = (position - lastGood - 1) / span;
+  return `color-mix(in oklab, var(--outcome-neutral) ${(55 + toward * 32).toFixed(1)}%, var(--outcome-base))`;
 }
 
 const SVG_NS = 'http://www.w3.org/2000/svg';
@@ -394,7 +475,7 @@ function drawShape(report, teamId) {
     const band = svgEl('polygon', {
       class: 'band',
       points: [...upper, ...lower.reverse()].join(' '),
-      fill: positionColor(position, count),
+      fill: positionColor(position, count, report.league.bands),
     });
 
     const bandLabel = bandFor(report.league.bands, position);
@@ -744,7 +825,7 @@ function render() {
   const report = state.reports[state.league];
   renderHero(report);
   renderGrid(report);
-  renderGridLegend();
+  renderGridLegend(report);
   renderStandings(report);
   renderBandLegend(report);
   renderShape(report);

@@ -24,30 +24,29 @@
   --rule: #d2dae1;
   --rule-strong: #b3c0c9;
 
-  /* Sequential ramp: probability of finishing in a position. */
-  --heat-0: #f3f6f8;
-  --heat-1: #cde2fb;
-  --heat-2: #9ec5f4;
-  --heat-3: #6da7ec;
-  --heat-4: #3987e5;
-  --heat-5: #2a78d6;
-  --heat-6: #1c5cab;
-  --heat-7: #0d366b;
-  --on-heat-light: #0d1a22;
-  --on-heat-dark: #ffffff;
+  /* Default label ink on a cell, and the inverted ink used once the fill
+     has moved far enough from the surface. */
+  --cell-ink: #0d1a22;
+  --cell-ink-invert: #ffffff;
+
+  /* Dual status palette. A finishing position is a good or a bad outcome, so
+     HUE carries which one it is and INTENSITY carries how likely it is. Each
+     family runs base -> status -> "far" (its most extreme step); the far end
+     inverts per theme, so the ramp always moves away from the surface.
+     Poles validated in both themes: CVD dE 11.4 light / 9.3 dark. */
+  --outcome-base: #f3f6f8;
+  --outcome-good: #2a78d6;
+  --outcome-good-far: #0d366b;
+  --outcome-neutral: #85929b;
+  --outcome-neutral-far: #35424a;
+  --outcome-bad: #e34948;
+  --outcome-bad-far: #7d1a19;
 
   /* Diverging: home win <- draw -> away win. */
   --home: #2a78d6;
   --draw: #8c8c86;
   --away: #e34948;
 
-  /* Diverging ramp for finishing position: winning it and going down are
-     opposite outcomes, so they get opposite poles with a neutral mid-table
-     between them. Steps are mixed in oklab from these three anchors, which is
-     also what makes the ramp follow a theme change for free. */
-  --pos-top: #0d366b;
-  --pos-mid: #ccd4dc; /* held off the panel white so mid-table bands stay visible */
-  --pos-bottom: #8f1f1e;
 
   /* Reserved status hues for qualification bands. Each ships with a label. */
   --band-champion: #f2b705;
@@ -80,24 +79,21 @@
     --rule: #22303a;
     --rule-strong: #34454f;
 
-    --heat-0: #0f171c;
-    --heat-1: #104281;
-    --heat-2: #184f95;
-    --heat-3: #1c5cab;
-    --heat-4: #256abf;
-    --heat-5: #2a78d6;
-    --heat-6: #5598e7;
-    --heat-7: #9ec5f4;
-    --on-heat-light: #ffffff;
-    --on-heat-dark: #0d1a22;
+    --cell-ink: #ffffff;
+    --cell-ink-invert: #0d1a22;
+
+    --outcome-base: #0f171c;
+    --outcome-good: #3987e5;
+    --outcome-good-far: #9ec5f4;
+    --outcome-neutral: #8b98a2;
+    --outcome-neutral-far: #ccd6dc;
+    --outcome-bad: #e66767;
+    --outcome-bad-far: #f4a8a8;
 
     --home: #3987e5;
     --draw: #b5b5ac;
     --away: #e66767;
 
-    --pos-top: #9ec5f4;
-    --pos-mid: #2c3843;
-    --pos-bottom: #e66767;
 
     --band-champion: #eda100;
     --band-europe: #3987e5;
@@ -120,24 +116,21 @@
   --rule: #22303a;
   --rule-strong: #34454f;
 
-  --heat-0: #0f171c;
-  --heat-1: #104281;
-  --heat-2: #184f95;
-  --heat-3: #1c5cab;
-  --heat-4: #256abf;
-  --heat-5: #2a78d6;
-  --heat-6: #5598e7;
-  --heat-7: #9ec5f4;
-  --on-heat-light: #ffffff;
-  --on-heat-dark: #0d1a22;
+  --cell-ink: #ffffff;
+  --cell-ink-invert: #0d1a22;
+
+  --outcome-base: #0f171c;
+  --outcome-good: #3987e5;
+  --outcome-good-far: #9ec5f4;
+  --outcome-neutral: #8b98a2;
+  --outcome-neutral-far: #ccd6dc;
+  --outcome-bad: #e66767;
+  --outcome-bad-far: #f4a8a8;
 
   --home: #3987e5;
   --draw: #b5b5ac;
   --away: #e66767;
 
-  --pos-top: #9ec5f4;
-  --pos-mid: #2c3843;
-  --pos-bottom: #e66767;
 
   --band-champion: #eda100;
   --band-europe: #3987e5;
@@ -395,13 +388,13 @@ table.grid tbody th .pos {
   height: 1.75rem;
   text-align: center;
   border-radius: 3px;
-  color: var(--on-heat-light);
+  color: var(--cell-ink);
   font-variant-numeric: tabular-nums;
   cursor: default;
   transition: transform 0.12s var(--ease), box-shadow 0.12s var(--ease);
 }
 
-.cell--dark-text { color: var(--on-heat-dark); }
+.cell--invert { color: var(--cell-ink-invert); }
 .cell--empty { color: transparent; }
 
 /* Crosshair: hovering a cell dims everything outside its row and column. */
@@ -491,7 +484,8 @@ table.standings .pos { text-align: center; width: 2.6rem; color: var(--ink-muted
 table.standings .sep { border-left: 1px solid var(--rule); }
 table.standings .muted { color: var(--ink-muted); }
 
-/* The band a position sits in, as a stripe on the row's leading edge. */
+/* The band a position sits in, as a stripe on the row's leading edge.
+   Coloured from JS by the same rule as the grid, so the two never disagree. */
 .band-mark {
   display: inline-block;
   width: 3px;
@@ -502,11 +496,7 @@ table.standings .muted { color: var(--ink-muted); }
   background: transparent;
 }
 
-.band-mark[data-tone="champion"]   { background: var(--band-champion); }
-.band-mark[data-tone="top"]        { background: var(--band-europe); }
-.band-mark[data-tone="europe"]     { background: var(--band-europe); opacity: 0.55; }
-.band-mark[data-tone="playoff"]    { background: var(--band-playoff); }
-.band-mark[data-tone="relegation"] { background: var(--band-relegation); }
+
 
 /* A probability rendered as a thin bar behind its own number. */
 .meter {
@@ -569,7 +559,14 @@ table.standings .muted { color: var(--ink-muted); }
   width: 190px;
   height: 0.85rem;
   border-radius: 2px;
-  background: linear-gradient(to right, var(--pos-top), var(--pos-mid), var(--pos-bottom));
+  background: linear-gradient(
+    to right,
+    var(--outcome-good-far),
+    var(--outcome-good),
+    var(--outcome-neutral),
+    var(--outcome-bad),
+    var(--outcome-bad-far)
+  );
 }
 
 .shape__summary {
