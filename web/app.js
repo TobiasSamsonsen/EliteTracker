@@ -120,9 +120,30 @@ function bandFor(bands, position) {
 
 /* ---------- the finish grid --------------------------------------- */
 
+/* Where the model expects a club to finish: the mean of its distribution.
+
+   The grid is ordered by this rather than by the current table, so the heavy
+   cells lie on the diagonal. Ordering by the live standings falls apart as
+   soon as you rewind -- on 11 April 2026 it leaves only 2.00 of the 16.0
+   probability mass on the diagonal against 3.86 for this ordering, which is
+   what made the grid look like noise.
+
+   The obvious alternative, walking the columns and taking whichever club is
+   likeliest to land in each place, actually scores worse (3.26): it spends the
+   strong clubs early and strands the rest. This is within 0.4% of the best
+   ordering an exhaustive pairwise search can find. */
+function expectedFinish(row) {
+  return row.position_probabilities.reduce(
+    (total, probability, index) => total + probability * (index + 1),
+    0,
+  );
+}
+
 function renderGrid(report) {
   const table = $('#grid');
-  const rows = report.table;
+  const rows = [...report.table].sort(
+    (a, b) => expectedFinish(a) - expectedFinish(b) || a.position - b.position,
+  );
   const count = rows.length;
 
   table.replaceChildren(table.querySelector('caption'));

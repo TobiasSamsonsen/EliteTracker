@@ -22,7 +22,7 @@ season simulation, and a local website — all standard library, no runtime depe
 - `validation/` — errors vs. warnings, non-zero exit on error.
 - **24 season-league match files (2015–2026) plus 2014 seed tables, all validating clean.**
 
-### Model (elo-v2)
+### Model (elo-v3)
 - `model/elo.py` — `expected_score` / `actual_score` / `update` kept separate.
   K-factor 20 and home advantage 75, both calibrated against real results.
 - `model/career.py` — **one continuous rating replay.** Seeded once from the 2014 final
@@ -31,6 +31,8 @@ season simulation, and a local website — all standard library, no runtime depe
 - `model/probabilities.py` — three-way odds where `P(win) + 0.5·P(draw)` reproduces the
   rating-implied expectation exactly.
 - `simulation/season.py` — seeded Monte Carlo, 10,000 runs, ~10M match-samples/second.
+- `model/backtest.py` — walk-forward harness. Every match is predicted from prior
+  information only, then revealed. This is what elo-v3 was fitted with.
 - `simulation/history.py` — the projection re-run at ~20 points **by date, not by round.**
 
 ### Site
@@ -42,7 +44,8 @@ season simulation, and a local website — all standard library, no runtime depe
   motion, mobile layout. `?league=`, `?season=`, `?team=`, `?career=` make any view linkable.
   - **Rewind the season** — a slider over every matchday played. Moving it rebuilds the
     *whole page* from only the results known that evening, via `?asof=` on the API.
-  - **The finish grid** — 16×16 heat matrix of finishing-position probability.
+  - **The finish grid** — 16×16 heat matrix of finishing-position probability, rows
+    ordered by expected finish so the mass sits on the diagonal at any point in the season.
   - **Table** — standings, rating, expected points, title and relegation odds.
     Every column sorts on click (`aria-sort`, keyboard-operable); the good and bad
     probability columns carry blue and red bars. Picking a club opens its rating history.
@@ -89,6 +92,54 @@ would show results before they happened.
 Lillestrøm of 21 July and its replay on 21 August, so the raw feed has 241 rows for a
 240-match season.
 
+## 🔬 elo-v3: what the backtest found
+
+Fitted with `model/backtest.py` on 2019-2026 (3,623 scored matches, walk-forward, no
+leakage). Baseline elo-v2 scored 1.01754 log loss against 1.06015 for a constant
+base-rate predictor — a real but thin edge — while its calibration error was 0.0396
+against the constant model's 0.0043. That pointed at the probability mapping, not the
+ratings, and that is where the whole gain turned out to be.
+
+**Shipped: the draw model, refitted.** `draw_base` 0.22 → 0.26, `draw_scale` 250 → 375.
+
+| | log loss | Brier | hit | calibration |
+|---|---|---|---|---|
+| elo-v2 | 1.01754 | 0.60443 | 51.97% | 0.0396 |
+| elo-v3 | **1.00173** | 0.59819 | 51.97% | **0.0154** |
+
+−0.0158 log loss, paired t = −4.98, and it holds in both halves (−0.0202 on 2019-2022,
+−0.0109 on 2023-2026). The hit rate does not move: every bit of the gain is calibration,
+none is better discrimination. **Ratings are byte-identical to elo-v2** — this is a
+probability-only version bump, so stored ratings and career histories are untouched.
+
+The old constants came from eyeballing 255 matches of a single part-season, which made the
+draw model far too narrow.
+
+**Tested and rejected — each of these looked good until it was measured properly:**
+
+- **Margin of victory** (538-style damped log, plain log, √, linear caps, over a 120-cell
+  K grid). Every form was *worse* than the baseline at its own best K. Norwegian margins
+  are mostly noise: of 5,543 matches, 1,323 were draws and 2,060 were one-goal games, with
+  only 159 at 5+ goals.
+- **Goals as repeated mini-contests.** Tested literally, 84 settings, including fixes for
+  the 0-0 problem (a goalless draw otherwise produces *no update at all*) and both
+  sequential and simultaneous variants. Best solo result −0.0036 at t = −1.56, and its own
+  control showed ~87% of that was recalibration rather than the goal information. Stacked
+  on the final config it is **+0.0018 worse**. Algebraically it reduces to a goal-difference
+  ELO, and 8.3% of its updates move the match *winner* down.
+- **Home advantage 75 → 50** and **inter-season regression to the mean (0.15)**. Both real
+  against elo-v2 in isolation, but ~90% redundant with the draw fix: marginal t = −0.46 and
+  −0.16 once the mapping is refitted, and the sign flips between halves.
+- **The autocorrelation damper** was the clearest trap: worth −0.0030 alone, but
+  **+0.0031 worse** inside the stack (t = +3.40). It is a duplicate of the calibration fix
+  and overshoots into under-confidence.
+- Also rejected: dynamic K, EWMA form, per-league / per-season / per-team home advantage
+  (including a COVID-seasons term — even an oracle version hurt).
+
+The lesson worth keeping: four of these looked like wins against elo-v2 alone, and three
+of them were the same calibration fix in disguise. Anything proposed next has to be
+measured *marginally*, with the mapping refitted on both sides.
+
 ## ❗ Known limits (also stated on the site)
 - Ratings are held fixed for the rest of the season inside a simulation.
 - Simulated matches produce points but not scorelines, so ties break on goal difference
@@ -101,10 +152,10 @@ Lillestrøm of 21 July and its replay on 21 August, so the raw feed has 241 rows
 - [x] One-command refresh after each matchday: `python -m elitetracker.refresh` (fetches,
       normalizes, validates, writes; `--no-force` to reuse a fresh cache entry).
 - [ ] Refresh on a schedule, e.g. a Windows Task Scheduler job pointing at the refresh command.
-- [ ] `elo-v3` — see `model/backtest.py`, a walk-forward harness that scores any rating
-      model on 2019-2026 (3,623 matches) using only prior information. Baseline elo-v2:
-      log loss 1.01754 against 1.06015 for constant base rates, so the edge is real but
-      thin, and its calibration error (0.0396) is ten times the constant model's.
+- [x] `elo-v3` — shipped. See below.
+- [ ] Ordered-logit probability mapping. Worth a further ~0.0013 log loss, but it breaks
+      the `expected = P(win) + 0.5·P(draw)` identity the rest of the model rests on.
+- [ ] Re-fit the draw model periodically as seasons accumulate.
 - [ ] Backtest elo-v2 against the seasons now held, and tune K and home advantage on it.
 
 ## Commands
@@ -127,4 +178,4 @@ Lillestrøm of 21 July and its replay on 21 August, so the raw feed has 241 rows
 .venv/bin/python -m pytest
 ```
 
-284 tests, all passing.
+304 tests, all passing.

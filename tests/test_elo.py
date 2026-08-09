@@ -136,7 +136,29 @@ class TestConfig:
             EloConfig(**kwargs)
 
     def test_model_version_is_declared(self):
-        assert MODEL_VERSION == "elo-v2"
+        assert MODEL_VERSION == "elo-v3"
+
+
+class TestFittedDefaults:
+    """The draw model is fitted, so pin it: a silent edit would move every
+    probability on the site without moving a single rating."""
+
+    def test_draw_model_defaults(self):
+        config = EloConfig()
+        assert (config.draw_base, config.draw_scale) == (0.26, 375.0)
+
+    def test_the_draw_model_is_wider_than_the_first_guess(self):
+        """0.22/250 came from one part-season and was far too narrow."""
+        fitted = EloConfig()
+        first_guess = EloConfig(draw_base=0.22, draw_scale=250.0)
+        # Wider: at a 300-point gap the fitted model still expects real draws.
+        assert draw_probability(300, fitted) > 2 * draw_probability(300, first_guess)
+
+    def test_ratings_are_untouched_by_the_draw_model(self):
+        """elo-v3 changes probabilities only; a stored rating must not move."""
+        wide = updated_pair(1500, 1400, 2, 1, EloConfig())
+        narrow = updated_pair(1500, 1400, 2, 1, EloConfig(draw_base=0.22, draw_scale=250.0))
+        assert wide == narrow
 
 
 class TestCalibration:

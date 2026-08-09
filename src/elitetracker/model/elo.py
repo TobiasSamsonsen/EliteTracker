@@ -4,12 +4,16 @@ Kept deliberately plain. The three steps are separate functions so each can be
 tested on its own and so a later model can reuse the pieces it still agrees
 with. Any change to how ratings are produced must bump MODEL_VERSION.
 
-Defaults are calibrated against the 2026 season to date (255 played matches
-across both divisions):
+Defaults are fitted by walk-forward backtest over every season held (see
+`model.backtest`), not by eyeballing one season:
 
-* Home teams took an expected score of 0.61, which is a rating edge of
-  ``-400 * log10(1/0.61 - 1)`` ~= 78 points. HOME_ADVANTAGE defaults to 75.
-* 16.9% of matches were drawn, which sets the draw model's scale.
+* HOME_ADVANTAGE 75 came from the 2026 home expected score of 0.61, and the
+  backtest agrees: retuning it around the current draw model buys nothing worth
+  having.
+* The draw model was originally set from 255 matches of a single part-season,
+  which made it far too narrow. Refitting over 5,543 replayed matches moved it
+  to 0.26/375 and cut the calibration error by more than half. That is the
+  whole of elo-v3.
 """
 
 from __future__ import annotations
@@ -23,7 +27,10 @@ from dataclasses import dataclass
 # year. They are seeded once, from the 2014 final tables, and every played
 # match from 2015 onward is replayed in order, so a club carries its rating
 # across seasons and across divisions.
-MODEL_VERSION = "elo-v2"
+#
+# elo-v3: the draw model is refitted. Ratings are byte-identical to elo-v2 --
+# only the mapping from a rating gap to win/draw/loss probabilities changes.
+MODEL_VERSION = "elo-v3"
 
 # A 400-point rating gap means the stronger side is expected to score 10 times
 # as often as the weaker one; this is the constant that defines the ELO scale.
@@ -36,10 +43,18 @@ class EloConfig:
 
     k_factor: float = 20.0
     home_advantage: float = 75.0
-    # Peak draw probability, reached when two sides are exactly level.
-    draw_base: float = 0.22
-    # Rating gap over which the chance of a draw decays.
-    draw_scale: float = 250.0
+    # Peak draw probability, reached when two sides are exactly level, and the
+    # rating gap over which the chance of a draw decays.
+    #
+    # Fitted by walk-forward backtest on 2019-2026 (3,623 scored matches). Against
+    # the previous 0.22/250 this is worth -0.0158 log loss (paired t = -4.98) and
+    # halves the calibration error, 0.0396 -> 0.0154. It holds in both halves of
+    # the period, -0.0202 on 2019-2022 and -0.0109 on 2023-2026.
+    #
+    # The hit rate does not move: every bit of the gain is better-calibrated
+    # probabilities, none of it is better discrimination between teams.
+    draw_base: float = 0.26
+    draw_scale: float = 375.0
 
     def __post_init__(self) -> None:
         if self.k_factor <= 0:
