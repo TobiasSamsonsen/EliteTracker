@@ -761,6 +761,14 @@ table.standings .muted { color: var(--ink-muted); }
 .fixture__when { font-size: 0.75rem; color: var(--ink-muted); }
 .fixture__teams { font-weight: 600; font-size: 0.9375rem; }
 .fixture__teams em { font-style: normal; color: var(--ink-faint); font-weight: 400; padding-inline: 0.4rem; }
+.fixture__side { display: inline-flex; align-items: baseline; gap: 0.4rem; }
+
+.fixture__rating {
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: var(--ink-faint);
+  font-variant-numeric: tabular-nums;
+}
 
 /* Stacked diverging bar: home | draw | away, with 2px surface gaps. */
 .odds { display: flex; gap: 2px; height: 1.5rem; }
@@ -811,7 +819,9 @@ footer {
 
 #tooltip {
   position: fixed;
-  z-index: 50;
+  /* Above the career modal (60): the rating chart inside it has its own
+     hover readout, which was rendering behind the card. */
+  z-index: 80;
   pointer-events: none;
   background: var(--ink);
   color: var(--paper);
@@ -979,3 +989,108 @@ footer {
 }
 
 .club-btn:hover { text-decoration: underline; }
+
+/* ---------- season rewind timeline -------------------------------- */
+
+.timeline-section { margin-block: clamp(1.5rem, 4vw, 2.5rem) 0; }
+.timeline { padding: 1.1rem 1.25rem 1rem; }
+
+.timeline__head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 0.9rem;
+}
+
+.timeline__head p {
+  margin: 0.25rem 0 0;
+  font-size: 1rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.timeline__now {
+  appearance: none;
+  font: inherit;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--ink);
+  background: var(--panel-sunk);
+  border: 1px solid var(--rule-strong);
+  border-radius: var(--radius);
+  padding: 0.35rem 0.8rem;
+  cursor: pointer;
+  flex: none;
+}
+
+.timeline__now:hover { border-color: var(--ink-faint); }
+
+.timeline__control { position: relative; }
+
+.timeline input[type="range"] {
+  appearance: none;
+  width: 100%;
+  height: 1.5rem;
+  background: none;
+  cursor: pointer;
+  margin: 0;
+}
+
+/* The rail is the season; the thumb is where you are standing in it. */
+.timeline input[type="range"]::-webkit-slider-runnable-track {
+  height: 6px;
+  border-radius: 3px;
+  background: var(--rule);
+}
+
+.timeline input[type="range"]::-moz-range-track {
+  height: 6px;
+  border-radius: 3px;
+  background: var(--rule);
+}
+
+.timeline input[type="range"]::-webkit-slider-thumb {
+  appearance: none;
+  width: 18px;
+  height: 18px;
+  margin-top: -6px;
+  border-radius: 50%;
+  background: var(--tier-1);
+  border: 3px solid var(--panel);
+  box-shadow: 0 0 0 1px var(--rule-strong);
+}
+
+.timeline input[type="range"]::-moz-range-thumb {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--tier-1);
+  border: 3px solid var(--panel);
+  box-shadow: 0 0 0 1px var(--rule-strong);
+}
+
+.timeline input[type="range"]:focus-visible { outline: 2px solid var(--tier-1); outline-offset: 4px; }
+
+.timeline__scale {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 0.1rem;
+  font-size: 0.6875rem;
+  color: var(--ink-faint);
+  font-variant-numeric: tabular-nums;
+}
+
+.timeline__note {
+  margin: 0.85rem 0 0;
+  font-size: 0.8125rem;
+  color: var(--ink-muted);
+  max-width: var(--measure);
+}
+
+/* Everything downstream dims while a rewound view is being fetched, so it is
+   obvious the numbers on screen are about to change. */
+#content.is-rewinding .panel:not(.timeline) { opacity: 0.55; transition: opacity 0.15s var(--ease); }
+
+.timeline.is-past { border-color: var(--tier-1); }
+.timeline.is-past .timeline__head p { color: var(--tier-1); }

@@ -43,6 +43,28 @@
       <div class="hero__meta label" id="hero-meta"></div>
     </section>
 
+    <!-- Rewind the whole page to any day the league has played. -->
+    <section class="timeline-section">
+      <div class="panel timeline" id="timeline" hidden>
+        <div class="timeline__head">
+          <div>
+            <div class="label">Rewind the season</div>
+            <p id="timeline-when">Live — everything played so far</p>
+          </div>
+          <button type="button" class="timeline__now" id="timeline-now" hidden>Back to live</button>
+        </div>
+        <div class="timeline__control">
+          <label class="visually-hidden" for="timeline-range">Matchday to view the season as of</label>
+          <input type="range" id="timeline-range" min="0" max="0" value="0" step="1">
+          <div class="timeline__scale" id="timeline-scale" aria-hidden="true"></div>
+        </div>
+        <p class="timeline__note">
+          Everything below — the grid, the table, the ratings and the fixtures — is rebuilt
+          from only the results known on the day you pick.
+        </p>
+      </div>
+    </section>
+
     <!-- Signature: the finishing-position probability matrix. -->
     <section>
       <div class="panel">

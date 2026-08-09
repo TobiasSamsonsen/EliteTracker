@@ -26,7 +26,7 @@ from elitetracker.model.table import table_from_matches
 from elitetracker.model.initial_ratings import TeamRating
 from elitetracker.normalize.matches import Match
 from elitetracker.normalize.standings import load_standings
-from elitetracker.simulation.history import HistoryConfig, build_history
+from elitetracker.simulation.history import HistoryConfig, as_of_date, build_history
 from elitetracker.simulation.season import SeasonProjection, SimulationConfig, simulate_season
 
 NORMALIZED_DIR = Path("data/normalized")
@@ -174,8 +174,16 @@ def build_report(
     seeding: SeedingConfig | None = None,
     simulation: SimulationConfig | None = None,
     history: HistoryConfig | None = None,
+    asof: str | None = None,
 ) -> dict[str, Any]:
-    """Ratings, table, odds, finishing-position matrix and its history."""
+    """Ratings, table, odds, finishing-position matrix and its history.
+
+    With `asof` set to an ISO date, the whole report is rewound: results after
+    that day are treated as unplayed, so it shows what the site would have said
+    on the evening of that date. Nothing else about the pipeline changes --
+    the rewind happens once, on the fixture list, and everything downstream
+    follows from it.
+    """
     spec = LEAGUE_SPECS[slug]
     elo_config = elo_config or EloConfig()
     season = season or current_season(root)
@@ -188,9 +196,17 @@ def build_report(
     all_matches: list[Match] = []
     for other in LEAGUE_SPECS:
         all_matches.extend(load_matches(_matches_path(other, season, root)))
-    rating_table = build_rating_table(seeds, all_matches, config=elo_config)
-
     matches = load_matches(_matches_path(slug, season, root))
+
+    # The slider spans every day this league actually played, taken from the
+    # full fixture list so the range does not shrink as you rewind.
+    matchdays = _matchdays(matches)
+
+    if asof:
+        all_matches = as_of_date(all_matches, asof)
+        matches = as_of_date(matches, asof)
+
+    rating_table = build_rating_table(seeds, all_matches, config=elo_config)
     projection = simulate_season(
         matches, rating_table.ratings, config=simulation, elo_config=elo_config
     )
@@ -202,6 +218,8 @@ def build_report(
             "season": season,
             "seasons": available_seasons(root),
             "current_season": current_season(root),
+            "matchdays": matchdays,
+            "asof": asof,
             "bands": [
                 {"label": band.label, "first": band.first, "last": band.last, "tone": band.tone}
                 for band in spec.bands
@@ -227,6 +245,28 @@ def build_report(
             {row.team_id: row.team for row in table_from_matches(matches)},
         ),
     }
+
+
+def _matchdays(matches: list[Match]) -> list[dict[str, Any]]:
+    """Every date this league played on, with the running match count.
+
+    Rounds are not chronological, so a matchday here is a calendar date, which
+    is what "as it looked back then" actually means.
+    """
+    played = sorted((m for m in matches if m.played), key=Match.sort_key)
+    days: list[dict[str, Any]] = []
+    running = 0
+    for match in played:
+        running += 1
+        if days and days[-1]["date"] == match.date:
+            days[-1]["matches_played"] = running
+            if match.round is not None:
+                days[-1]["round"] = match.round
+        else:
+            days.append(
+                {"date": match.date, "matches_played": running, "round": match.round}
+            )
+    return days
 
 
 def _history_payload(snapshots: list[Any], names: dict[str, str]) -> dict[str, Any]:
@@ -309,6 +349,8 @@ def _fixtures_payload(
                 "away": match.away,
                 "home_id": home_id,
                 "away_id": away_id,
+                "home_rating": round(ratings[home_id], 1),
+                "away_rating": round(ratings[away_id], 1),
                 "home_win": round(probabilities.home_win, 4),
                 "draw": round(probabilities.draw, 4),
                 "away_win": round(probabilities.away_win, 4),

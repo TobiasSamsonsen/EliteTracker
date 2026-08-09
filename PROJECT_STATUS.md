@@ -40,6 +40,8 @@ season simulation, and a local website — all standard library, no runtime depe
   `/api/report/<league>[/<season>]`.
 - `web/` — no framework, no build step. Light/dark themes, keyboard focus, reduced
   motion, mobile layout. `?league=`, `?season=`, `?team=`, `?career=` make any view linkable.
+  - **Rewind the season** — a slider over every matchday played. Moving it rebuilds the
+    *whole page* from only the results known that evening, via `?asof=` on the API.
   - **The finish grid** — 16×16 heat matrix of finishing-position probability.
   - **Table** — standings, rating, expected points, title and relegation odds.
     Every column sorts on click (`aria-sort`, keyboard-operable); the good and bad
@@ -47,7 +49,8 @@ season simulation, and a local website — all standard library, no runtime depe
   - **Season shape** — per-club stacked area of position probability over the season.
   - **The ladder** — both divisions on one line, sharing the rating scale.
   - **Career modal** — a club's rating across every season, plus a season-by-season table.
-  - **Next up** and a **model card** stating the known limits.
+  - **Next up** — three-way odds per fixture, with each side's rating beside its name.
+  - **Model card** stating the known limits.
 
 ### Colour
 - **Sequential ramp** for all quantitative colour (grid probability, season shape).
@@ -98,8 +101,10 @@ Lillestrøm of 21 July and its replay on 21 August, so the raw feed has 241 rows
 - [x] One-command refresh after each matchday: `python -m elitetracker.refresh` (fetches,
       normalizes, validates, writes; `--no-force` to reuse a fresh cache entry).
 - [ ] Refresh on a schedule, e.g. a Windows Task Scheduler job pointing at the refresh command.
-- [ ] `elo-v3`: let ratings drift inside a simulation and sample scorelines so goal
-      difference moves — the first two limits above.
+- [ ] `elo-v3` — see `model/backtest.py`, a walk-forward harness that scores any rating
+      model on 2019-2026 (3,623 matches) using only prior information. Baseline elo-v2:
+      log loss 1.01754 against 1.06015 for constant base rates, so the edge is real but
+      thin, and its calibration error (0.0396) is ten times the constant model's.
 - [ ] Backtest elo-v2 against the seasons now held, and tune K and home advantage on it.
 
 ## Commands

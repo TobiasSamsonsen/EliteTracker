@@ -22,6 +22,7 @@ import mimetypes
 import threading
 from functools import partial
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+from datetime import date
 from urllib.parse import parse_qs
 from pathlib import Path
 from typing import Any
@@ -67,7 +68,18 @@ class ReportStore:
         self.always_reload = always_reload
         self._lock = threading.RLock()
         self._careers: dict[str, Any] | None = None
-        self._reports: dict[tuple[str, int], Any] = {}
+        self._reports: dict[tuple[str, int, str | None], Any] = {}
+
+    # Rewound views are for browsing, not for the headline projection, so they
+    # run fewer simulations. The Monte Carlo error at 3,000 runs is under a
+    # point of probability, which no one is reading off a history slider.
+    def _configs(self, asof: str | None) -> tuple[SimulationConfig, HistoryConfig]:
+        if not asof:
+            return self.simulation, self.history
+        return (
+            SimulationConfig(simulations=3_000, seed=self.simulation.seed),
+            HistoryConfig(simulations=1_200, seed=self.history.seed, max_snapshots=12),
+        )
 
     def careers(self) -> dict[str, Any]:
         with self._lock:
@@ -78,24 +90,26 @@ class ReportStore:
     def seasons(self) -> list[int]:
         return available_seasons(self.root)
 
-    def report(self, slug: str, season: int) -> Any:
-        key = (slug, season)
+    def report(self, slug: str, season: int, asof: str | None = None) -> Any:
+        key = (slug, season, asof)
         with self._lock:
             if key not in self._reports or self.always_reload:
+                simulation, history = self._configs(asof)
                 self._reports[key] = build_report(
                     slug,
                     season,
                     root=self.root,
                     careers=self.careers(),
                     elo_config=self.elo_config,
-                    simulation=self.simulation,
-                    history=self.history,
+                    simulation=simulation,
+                    history=history,
+                    asof=asof,
                 )
             return self._reports[key]
 
-    def reports(self, season: int | None = None) -> dict[str, Any]:
+    def reports(self, season: int | None = None, asof: str | None = None) -> dict[str, Any]:
         target = season or current_season(self.root)
-        return {slug: self.report(slug, target) for slug in LEAGUE_SPECS}
+        return {slug: self.report(slug, target, asof) for slug in LEAGUE_SPECS}
 
 
 class Handler(BaseHTTPRequestHandler):
@@ -127,7 +141,7 @@ class Handler(BaseHTTPRequestHandler):
             elif path == "/api/careers":
                 self._json(careers_payload(self.store.careers()))
             elif path == "/api/report":
-                self._json(self.store.reports(self._season_param()))
+                self._json(self.store.reports(self._season_param(), self._asof_param()))
             elif path.startswith("/api/report/"):
                 self._report_route(path.removeprefix("/api/report/"))
             elif path.startswith("/api/"):
@@ -153,6 +167,20 @@ class Handler(BaseHTTPRequestHandler):
         except ValueError:
             return None
 
+    def _asof_param(self) -> str | None:
+        """?asof=2026-05-01 rewinds the whole report to that evening."""
+        if "?" not in self.path:
+            return None
+        values = parse_qs(self.path.split("?", 1)[1]).get("asof")
+        if not values:
+            return None
+        candidate = values[0].strip()
+        try:
+            date.fromisoformat(candidate)
+        except ValueError:
+            return None
+        return candidate
+
     def _report_route(self, rest: str) -> None:
         """/api/report/<league> or /api/report/<league>/<season>."""
         parts = [part for part in rest.split("/") if part]
@@ -173,7 +201,7 @@ class Handler(BaseHTTPRequestHandler):
         if season not in self.store.seasons():
             self._json({"error": f"no data for season {season}"}, status=404)
             return
-        self._json(self.store.report(slug, season))
+        self._json(self.store.report(slug, season, self._asof_param()))
 
     def _json(self, payload: Any, status: int = 200) -> None:
         body = json.dumps(payload, ensure_ascii=False).encode("utf-8")

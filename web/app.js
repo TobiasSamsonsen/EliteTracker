@@ -9,6 +9,9 @@ const state = {
   careers: null,
   // Default view is the league table as it actually stands.
   sort: { key: 'position', dir: 1 },
+  // ISO date the whole page is rewound to; null means live.
+  asof: null,
+  rewindTimer: null,
 };
 
 const $ = (selector) => document.querySelector(selector);
@@ -741,10 +744,17 @@ function renderFixtures(report) {
     when.textContent = formatDate(fixture.date) + (fixture.time ? ` · ${fixture.time}` : '');
     row.appendChild(when);
 
+    // The rating is what drives the odds beside it, so show the working.
     const teams = el('div', 'fixture__teams');
-    teams.appendChild(document.createTextNode(fixture.home));
+    const side = (name, rating) => {
+      const holder = el('span', 'fixture__side');
+      holder.appendChild(el('span', '', name));
+      holder.appendChild(el('span', 'fixture__rating', rating.toFixed(0)));
+      return holder;
+    };
+    teams.appendChild(side(fixture.home, fixture.home_rating));
     teams.appendChild(el('em', '', 'v'));
-    teams.appendChild(document.createTextNode(fixture.away));
+    teams.appendChild(side(fixture.away, fixture.away_rating));
     row.appendChild(teams);
 
     const odds = el('div', 'odds');
@@ -1023,6 +1033,95 @@ function renderCareerSeasons(career) {
   }
 }
 
+
+/* ---------- season rewind ------------------------------------------
+   The slider moves the entire page, not just one panel: the server rebuilds
+   the report from only the results known on the chosen day, so the grid, the
+   table, the ratings and the fixtures all agree with each other. */
+
+function matchdays(report) {
+  return report.league.matchdays || [];
+}
+
+function renderTimeline(report) {
+  const panel = $('#timeline');
+  const days = matchdays(report);
+  const range = $('#timeline-range');
+
+  // A season with nothing played has nothing to rewind through.
+  panel.hidden = days.length < 2;
+  if (panel.hidden) return;
+
+  if (Number(range.max) !== days.length - 1) {
+    range.max = String(days.length - 1);
+    range.step = '1';
+  }
+
+  const index = state.asof
+    ? Math.max(0, days.findIndex((day) => day.date === state.asof))
+    : days.length - 1;
+  range.value = String(index);
+
+  const day = days[index];
+  const live = !state.asof || index === days.length - 1;
+  panel.classList.toggle('is-past', !live);
+  $('#timeline-now').hidden = live;
+
+  const when = new Date(`${day.date}T12:00:00Z`).toLocaleDateString('en-GB', {
+    weekday: 'short', day: 'numeric', month: 'long', year: 'numeric',
+  });
+  $('#timeline-when').textContent = live
+    ? `Live — ${day.matches_played} matches played`
+    : `As of ${when} — ${day.matches_played} of ${report.model.matches_played + report.model.matches_remaining} played`;
+
+  const scale = $('#timeline-scale');
+  scale.replaceChildren();
+  const first = new Date(`${days[0].date}T12:00:00Z`);
+  const last = new Date(`${days[days.length - 1].date}T12:00:00Z`);
+  const month = (d) => d.toLocaleDateString('en-GB', { month: 'short', year: 'numeric' });
+  scale.appendChild(el('span', '', month(first)));
+  scale.appendChild(el('span', '', `${days.length} matchdays`));
+  scale.appendChild(el('span', '', month(last)));
+}
+
+/* Dragging fires continuously; only the value you settle on is worth a fetch. */
+function onTimelineInput(event) {
+  const report = state.reports[state.league];
+  const days = matchdays(report);
+  const index = Number(event.target.value);
+  const day = days[index];
+  if (!day) return;
+
+  const live = index === days.length - 1;
+  const when = new Date(`${day.date}T12:00:00Z`).toLocaleDateString('en-GB', {
+    weekday: 'short', day: 'numeric', month: 'long', year: 'numeric',
+  });
+  $('#timeline-when').textContent = live ? 'Live — latest results' : `As of ${when}`;
+  $('#timeline').classList.toggle('is-past', !live);
+
+  clearTimeout(state.rewindTimer);
+  state.rewindTimer = setTimeout(() => rewindTo(live ? null : day.date), 220);
+}
+
+async function rewindTo(asof) {
+  if (asof === state.asof) return;
+  const content = $('#content');
+  content.classList.add('is-rewinding');
+  try {
+    const query = new URLSearchParams({ season: String(state.season) });
+    if (asof) query.set('asof', asof);
+    const response = await fetch(`/api/report?${query}`);
+    if (!response.ok) throw new Error(`server returned ${response.status}`);
+    state.reports = await response.json();
+    state.asof = asof;
+    render();
+  } catch (error) {
+    $('#timeline-when').textContent = `Could not rewind: ${error.message}`;
+  } finally {
+    content.classList.remove('is-rewinding');
+  }
+}
+
 /* ---------- theme -------------------------------------------------- */
 
 function resolveTheme() {
@@ -1045,6 +1144,7 @@ function resolveTheme() {
 function render() {
   const report = state.reports[state.league];
   renderSeasonOptions(report);
+  renderTimeline(report);
   renderHero(report);
   renderGrid(report);
   renderGridLegend();
@@ -1090,8 +1190,12 @@ function wire() {
   }
 
   $('#season-select').addEventListener('change', async (event) => {
+    state.asof = null; // a different season has a different timeline
     await loadSeason(Number(event.target.value));
   });
+
+  $('#timeline-range').addEventListener('input', onTimelineInput);
+  $('#timeline-now').addEventListener('click', () => rewindTo(null));
 
   for (const closer of document.querySelectorAll('[data-close-modal]')) {
     closer.addEventListener('click', closeCareer);
@@ -1208,8 +1312,12 @@ async function boot() {
     applySortParameter();
     render();
 
-    const wantedSeason = Number(new URLSearchParams(window.location.search).get('season'));
+    const params = new URLSearchParams(window.location.search);
+    const wantedSeason = Number(params.get('season'));
     if (wantedSeason && wantedSeason !== state.season) await loadSeason(wantedSeason);
+
+    const wantedAsof = params.get('asof');
+    if (wantedAsof) await rewindTo(wantedAsof);
 
     applyTeamParameter();
     // The browser resolved any #fragment while the content was still hidden,
