@@ -4014,12 +4014,8 @@
       "id": "8179"
     },
     "status": {
-      "utcTime": "2026-08-09T15:00:00.000Z",
-      "halfs": {
-        "firstHalfStarted": "09.08.2026 17:00:23",
-        "secondHalfStarted": "09.08.2026 18:04:52"
-      },
-      "periodLength": 45,
+      "utcTime": "2026-08-09T15:00:00Z",
+      "timezone": "UTC",
       "finished": true,
       "started": true,
       "cancelled": false,
@@ -4049,12 +4045,8 @@
       "id": "9812"
     },
     "status": {
-      "utcTime": "2026-08-09T15:00:00.000Z",
-      "halfs": {
-        "firstHalfStarted": "09.08.2026 17:01:08",
-        "secondHalfStarted": "09.08.2026 18:06:22"
-      },
-      "periodLength": 45,
+      "utcTime": "2026-08-09T15:00:00Z",
+      "timezone": "UTC",
       "finished": true,
       "started": true,
       "cancelled": false,
@@ -4084,12 +4076,8 @@
       "id": "7937"
     },
     "status": {
-      "utcTime": "2026-08-09T15:00:00.000Z",
-      "halfs": {
-        "firstHalfStarted": "09.08.2026 17:01:09",
-        "secondHalfStarted": "09.08.2026 18:03:55"
-      },
-      "periodLength": 45,
+      "utcTime": "2026-08-09T15:00:00Z",
+      "timezone": "UTC",
       "finished": true,
       "started": true,
       "cancelled": false,
@@ -4119,12 +4107,8 @@
       "id": "8531"
     },
     "status": {
-      "utcTime": "2026-08-09T15:00:00.000Z",
-      "halfs": {
-        "firstHalfStarted": "09.08.2026 17:00:23",
-        "secondHalfStarted": "09.08.2026 18:02:52"
-      },
-      "periodLength": 45,
+      "utcTime": "2026-08-09T15:00:00Z",
+      "timezone": "UTC",
       "finished": true,
       "started": true,
       "cancelled": false,
@@ -4154,12 +4138,8 @@
       "id": "6563"
     },
     "status": {
-      "utcTime": "2026-08-09T15:00:00.000Z",
-      "halfs": {
-        "firstHalfStarted": "09.08.2026 17:01:32",
-        "secondHalfStarted": "09.08.2026 18:03:26"
-      },
-      "periodLength": 45,
+      "utcTime": "2026-08-09T15:00:00Z",
+      "timezone": "UTC",
       "finished": true,
       "started": true,
       "cancelled": false,
@@ -4189,12 +4169,8 @@
       "id": "4722"
     },
     "status": {
-      "utcTime": "2026-08-09T15:00:00.000Z",
-      "halfs": {
-        "firstHalfStarted": "09.08.2026 17:01:08",
-        "secondHalfStarted": "09.08.2026 18:03:26"
-      },
-      "periodLength": 45,
+      "utcTime": "2026-08-09T15:00:00Z",
+      "timezone": "UTC",
       "finished": true,
       "started": true,
       "cancelled": false,
@@ -4226,9 +4202,17 @@
     "status": {
       "utcTime": "2026-08-10T17:00:00Z",
       "timezone": "UTC",
-      "started": false,
+      "finished": true,
+      "started": true,
       "cancelled": false,
-      "finished": false
+      "awarded": false,
+      "scoreStr": "3 - 3",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
     }
   },
   {
