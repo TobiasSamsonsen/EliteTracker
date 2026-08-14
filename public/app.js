@@ -7,12 +7,49 @@ const state = {
   league: 'eliteserien',
   season: null,
   careers: null,
+  // 'api' when the Python server is running; 'static' on Firebase Hosting,
+  // where /api/* does not exist and the prebuilt JSON under /data/ is served.
+  dataMode: null,
   // Default view is the league table as it actually stands.
   sort: { key: 'position', dir: 1 },
   // ISO date the whole page is rewound to; null means live.
   asof: null,
   rewindTimer: null,
 };
+
+/* One probe decides the data source for the whole session. A static host
+   answers nothing under /api/*, so a missing /api/health means: read the
+   prebuilt files instead. */
+async function detectDataMode() {
+  try {
+    const response = await fetch('/api/health', { cache: 'no-store' });
+    return response.ok ? 'api' : 'static';
+  } catch {
+    return 'static';
+  }
+}
+
+/* Map a (season, asof) view onto either the live API or a static file:
+     /data/report.json                    current season, live
+     /data/report-<season>.json           that season, live
+     /data/report-<season>-<asof>.json    rewound to that date
+   The API equivalents keep their current query strings. */
+function reportUrl(season, asof = null) {
+  if (state.dataMode === 'static') {
+    if (asof) return `/data/report-${season}-${asof}.json`;
+    if (season) return `/data/report-${season}.json`;
+    return '/data/report.json';
+  }
+  const query = new URLSearchParams();
+  if (season) query.set('season', String(season));
+  if (asof) query.set('asof', asof);
+  const qs = query.toString();
+  return qs ? `/api/report?${qs}` : '/api/report';
+}
+
+function careersUrl() {
+  return state.dataMode === 'static' ? '/data/careers.json' : '/api/careers';
+}
 
 const $ = (selector) => document.querySelector(selector);
 const el = (tag, className, text) => {
@@ -1143,9 +1180,7 @@ async function rewindTo(asof) {
   const content = $('#content');
   content.classList.add('is-rewinding');
   try {
-    const query = new URLSearchParams({ season: String(state.season) });
-    if (asof) query.set('asof', asof);
-    const response = await fetch(`/api/report?${query}`);
+    const response = await fetch(reportUrl(state.season, asof));
     if (!response.ok) throw new Error(`server returned ${response.status}`);
     state.reports = await response.json();
     state.asof = asof;
@@ -1292,14 +1327,15 @@ function applyTeamParameter() {
   }
 }
 
-/* Older seasons are built on the server the first time they are asked for,
-   so this can take a moment. Say so rather than appearing to hang. */
+/* Older seasons exist as static files (or are built on the live server the
+   first time they are asked for), so this can take a moment. Say so rather
+   than appearing to hang. */
 async function loadSeason(season) {
   const select = $('#season-select');
   select.disabled = true;
   const previous = state.season;
   try {
-    const response = await fetch(`/api/report?season=${season}`);
+    const response = await fetch(reportUrl(season));
     if (!response.ok) throw new Error(`server returned ${response.status}`);
     state.reports = await response.json();
     state.season = season;
@@ -1331,12 +1367,13 @@ async function boot() {
   resolveTheme();
   wire();
   try {
+    state.dataMode = await detectDataMode();
     const [reports, careers] = await Promise.all([
-      fetch('/api/report').then((r) => {
+      fetch(reportUrl(null)).then((r) => {
         if (!r.ok) throw new Error(`server returned ${r.status}`);
         return r.json();
       }),
-      fetch('/api/careers').then((r) => (r.ok ? r.json() : null)),
+      fetch(careersUrl()).then((r) => (r.ok ? r.json() : null)),
     ]);
     state.reports = reports;
     state.careers = careers;
@@ -1361,7 +1398,11 @@ async function boot() {
       document.querySelector(window.location.hash)?.scrollIntoView();
     }
   } catch (error) {
-    $('#status').textContent = `Could not load the season: ${error.message}. Is the server running?`;
+    const hint =
+      state.dataMode === 'static'
+        ? 'Are the prebuilt data files deployed?'
+        : 'Is the server running?';
+    $('#status').textContent = `Could not load the season: ${error.message}. ${hint}`;
   }
 }
 
