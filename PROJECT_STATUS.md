@@ -1,10 +1,15 @@
 # Project Status
 
 Norwegian top-two-division prediction and history, 2015–2026. ELO ratings, Monte Carlo
-season simulation, and a local website — all standard library, no runtime dependencies.
+season simulation, and a website on Firebase Hosting — all standard library, no runtime
+dependencies. The same frontend runs two ways: against the live Python API server, or as
+pure static files on Firebase Hosting.
 
 ```bash
+# local, live API
 .venv/bin/python -m elitetracker.api.server --port 8000   # then open http://127.0.0.1:8000
+# static preview of exactly what gets deployed
+.venv/bin/python -m elitetracker.build_site               # writes public/data/, then serve public/ as-is
 ```
 
 ## ✅ Done
@@ -40,7 +45,7 @@ season simulation, and a local website — all standard library, no runtime depe
   season reports are built on first request and cached, so start-up stays quick.
   Routes: `/`, `/api/health`, `/api/seasons`, `/api/careers`, `/api/report`,
   `/api/report/<league>[/<season>]`.
-- `web/` — no framework, no build step. Light/dark themes, keyboard focus, reduced
+- `public/` — no framework, no build step. Light/dark themes, keyboard focus, reduced
   motion, mobile layout. `?league=`, `?season=`, `?team=`, `?career=` make any view linkable.
   - **Rewind the season** — a slider over every matchday played. Moving it rebuilds the
     *whole page* from only the results known that evening, via `?asof=` on the API.
@@ -54,6 +59,16 @@ season simulation, and a local website — all standard library, no runtime depe
   - **Career modal** — a club's rating across every season, plus a season-by-season table.
   - **Next up** — three-way odds per fixture, with each side's rating beside its name.
   - **Model card** stating the known limits.
+- **Static build for Firebase Hosting** — `build_site.py` prebuilds every season's live
+  and rewound reports plus careers as plain JSON under `public/data/`, so the same frontend
+  works on a static host with no Python runtime. The browser probes `/api/health` once; on
+  a static host that answers 404 and everything falls back to `/data/*.json`. Reports use
+  the same configuration as the API's `?asof=` rewind, so static and live numbers match.
+  The ~1,100 rewound dates are farmed across worker processes.
+- **Deployed at `elitetrackerno.web.app`.** A GitHub Action installs the package, runs
+  `build_site`, and deploys `public/` on every push to `main` — no manual deploy needed.
+  HTML and `app.js` are served `no-cache` and the script tag is versioned, so a new deploy
+  is picked up without a hard refresh.
 
 ### Colour
 - **Sequential ramp** for all quantitative colour (grid probability, season shape).
@@ -247,6 +262,8 @@ route if anything ever does.
 - [x] One-command refresh after each matchday: `python -m elitetracker.refresh` (fetches,
       normalizes, validates, writes; `--no-force` to reuse a fresh cache entry).
 - [ ] Refresh on a schedule, e.g. a Windows Task Scheduler job pointing at the refresh command.
+- [x] Static build + CI deploy: `build_site` feeds Firebase Hosting, triggered by every
+      push to `main` (`.github/workflows/firebase-hosting-merge.yml`).
 - [x] `elo-v3` — shipped. See below.
 - [ ] Ordered-logit probability mapping. Worth a further ~0.0013 log loss, but it breaks
       the `expected = P(win) + 0.5·P(draw)` identity the rest of the model rests on.
@@ -270,7 +287,40 @@ route if anything ever does.
 # model + site
 .venv/bin/python -m elitetracker.pipeline [--season 2019] [--output data/reports.json]
 .venv/bin/python -m elitetracker.api.server --port 8000
+.venv/bin/python -m elitetracker.build_site [--out public/data] [--jobs <n>]
 .venv/bin/python -m pytest
+```
+
+### Updating the stats
+
+Run this whenever a round has finished — it pulls both divisions from fotmob, normalizes,
+validates, and rewrites the 2026 (or `--season`) match files. Nothing else is needed for
+the numbers to update.
+
+```bash
+.venv/bin/python -m elitetracker.refresh
+```
+
+### Deploying to the website
+
+1. Commit the refreshed `data/normalized/` files and push to `main`.
+2. The GitHub Action (`firebase-hosting-merge.yml`) runs `python -m elitetracker.build_site`
+   to regenerate all of `public/data/`, then deploys `public/` to Firebase Hosting live.
+3. The site updates within a couple of minutes at `https://elitetrackerno.web.app`.
+
+Worked example:
+
+```bash
+git add data/normalized
+git commit -m "Refresh 2026 matchday results"
+git push
+```
+
+The prebuilt `public/data/` is gitignored — the Action rebuilds it on the server, so the
+committed input is just the normalized fixture files. To test the static site locally first:
+
+```bash
+.venv/bin/python -m elitetracker.build_site && python -m http.server --directory public
 ```
 
 305 tests, all passing.
