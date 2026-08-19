@@ -410,10 +410,14 @@ table.grid tbody th .pos {
 }
 
 /* Club crests, loaded locally. White-heavy crests get the panel colour behind
-   them so they stay visible through transparent PNGs in both themes. */
+   them so they stay visible through transparent PNGs in both themes. The
+   base rule carries a text-sized default so a misplaced crest never renders
+   at its natural, full-size pixels; the context rules below refine it. */
 .team-logo {
   display: inline-block;
   flex: none;
+  width: 18px;
+  height: 18px;
   border-radius: 4px;
   background: var(--panel);
   object-fit: contain;
