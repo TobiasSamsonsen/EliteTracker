@@ -54,21 +54,105 @@ class LeagueSpec:
     bands: tuple[Band, ...]
 
 
-# Position meanings follow fotmob's own legend for Eliteserien; the
-# OBOS-ligaen bands mirror the standard Norwegian promotion structure.
+# Position meanings follow the UEFA allocation for that season. Relegation has
+# been a 16-team constant since 2009; the European blocks have moved almost
+# every year, so Eliteserien has a per-season map. Cup-displaced spots (e.g.
+# 4th in 2018 or 5th in 2019) depend on who wins the cup, so they are not a
+# league position a club can plan for and are left out.
+ELITESERIEN_BANDS_BY_SEASON: dict[int, tuple[Band, ...]] = {
+    2015: (
+        Band("Champions", 1, 1, "champion"),
+        Band("Champions League qualification", 1, 1, "top"),
+        Band("Europa League qualification", 2, 3, "europe"),
+        Band("Relegation play-off", 14, 14, "playoff"),
+        Band("Relegation", 15, 16, "relegation"),
+    ),
+    2016: (
+        Band("Champions", 1, 1, "champion"),
+        Band("Champions League qualification", 1, 1, "top"),
+        Band("Europa League qualification", 2, 3, "europe"),
+        Band("Relegation play-off", 14, 14, "playoff"),
+        Band("Relegation", 15, 16, "relegation"),
+    ),
+    2017: (
+        Band("Champions", 1, 1, "champion"),
+        Band("Champions League qualification", 1, 1, "top"),
+        Band("Europa League qualification", 2, 2, "europe"),
+        Band("Relegation play-off", 14, 14, "playoff"),
+        Band("Relegation", 15, 16, "relegation"),
+    ),
+    2018: (
+        Band("Champions", 1, 1, "champion"),
+        Band("Champions League qualification", 1, 1, "top"),
+        Band("Europa League qualification", 2, 2, "europe"),
+        Band("Relegation play-off", 14, 14, "playoff"),
+        Band("Relegation", 15, 16, "relegation"),
+    ),
+    2019: (
+        Band("Champions", 1, 1, "champion"),
+        Band("Champions League qualification", 1, 1, "top"),
+        Band("Europa League qualification", 2, 2, "europe"),
+        Band("Relegation play-off", 14, 14, "playoff"),
+        Band("Relegation", 15, 16, "relegation"),
+    ),
+    2020: (
+        Band("Champions", 1, 1, "champion"),
+        Band("Champions League qualification", 1, 1, "top"),
+        Band("Conference League qualification", 2, 2, "europe"),
+        Band("Relegation play-off", 14, 14, "playoff"),
+        Band("Relegation", 15, 16, "relegation"),
+    ),
+    2021: (
+        Band("Champions", 1, 1, "champion"),
+        Band("Champions League qualification", 1, 1, "top"),
+        Band("Conference League qualification", 2, 2, "europe"),
+        Band("Relegation play-off", 14, 14, "playoff"),
+        Band("Relegation", 15, 16, "relegation"),
+    ),
+    2022: (
+        Band("Champions", 1, 1, "champion"),
+        Band("Champions League qualification", 1, 1, "top"),
+        Band("Conference League qualification", 2, 2, "europe"),
+        Band("Relegation play-off", 14, 14, "playoff"),
+        Band("Relegation", 15, 16, "relegation"),
+    ),
+    2023: (
+        Band("Champions", 1, 1, "champion"),
+        Band("Champions League qualification", 1, 1, "top"),
+        Band("Conference League qualification", 2, 2, "europe"),
+        Band("Relegation play-off", 14, 14, "playoff"),
+        Band("Relegation", 15, 16, "relegation"),
+    ),
+    2024: (
+        Band("Champions", 1, 1, "champion"),
+        Band("Champions League qualification", 1, 2, "top"),
+        Band("Conference League qualification", 3, 3, "europe"),
+        Band("Relegation play-off", 14, 14, "playoff"),
+        Band("Relegation", 15, 16, "relegation"),
+    ),
+    2025: (
+        Band("Champions", 1, 1, "champion"),
+        Band("Champions League qualification", 1, 2, "top"),
+        Band("Europa League qualification", 3, 3, "europe"),
+        Band("Conference League qualification", 4, 4, "europe"),
+        Band("Relegation play-off", 14, 14, "playoff"),
+        Band("Relegation", 15, 16, "relegation"),
+    ),
+    2026: (
+        Band("Champions", 1, 1, "champion"),
+        Band("Champions League qualification", 1, 2, "top"),
+        Band("Conference League qualification", 3, 3, "europe"),
+        Band("Relegation play-off", 14, 14, "playoff"),
+        Band("Relegation", 15, 16, "relegation"),
+    ),
+}
+
 LEAGUE_SPECS: dict[str, LeagueSpec] = {
     "eliteserien": LeagueSpec(
         slug="eliteserien",
         name="Eliteserien",
         tier=TOP_TIER,
-        bands=(
-            Band("Champions", 1, 1, "champion"),
-            Band("Champions League qualification", 1, 2, "top"),
-            Band("Europa League qualification", 3, 3, "europe"),
-            Band("Conference League qualification", 4, 4, "europe"),
-            Band("Relegation play-off", 14, 14, "playoff"),
-            Band("Relegation", 15, 16, "relegation"),
-        ),
+        bands=ELITESERIEN_BANDS_BY_SEASON[max(ELITESERIEN_BANDS_BY_SEASON)],
     ),
     "obosligaen": LeagueSpec(
         slug="obosligaen",
@@ -85,6 +169,20 @@ LEAGUE_SPECS: dict[str, LeagueSpec] = {
 }
 
 _MATCH_FILE = re.compile(r"^(?P<league>[a-z]+)_(?P<season>\d{4})_matches\.json$")
+
+
+def bands_for(spec: LeagueSpec, season: int) -> tuple[Band, ...]:
+    """The position blocks that applied to `spec` in `season`.
+
+    OBOS-ligaen's promotion structure has been constant, so it reuses its
+    static spec bands. Eliteserien's European allocation drifts year to year;
+    unknown future seasons fall back to the newest known layout.
+    """
+    if spec.slug != "eliteserien":
+        return spec.bands
+    return ELITESERIEN_BANDS_BY_SEASON.get(
+        season, ELITESERIEN_BANDS_BY_SEASON[max(ELITESERIEN_BANDS_BY_SEASON)]
+    )
 
 
 def _matches_path(slug: str, season: int, root: Path) -> Path:
@@ -222,7 +320,7 @@ def build_report(
             "asof": asof,
             "bands": [
                 {"label": band.label, "first": band.first, "last": band.last, "tone": band.tone}
-                for band in spec.bands
+                for band in bands_for(spec, season)
             ],
         },
         "model": {
