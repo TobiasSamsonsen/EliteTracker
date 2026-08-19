@@ -409,6 +409,23 @@ table.grid tbody th .pos {
   font-size: 0.6875rem;
 }
 
+/* Club crests, loaded locally. White-heavy crests get the panel colour behind
+   them so they stay visible through transparent PNGs in both themes. */
+.team-logo {
+  display: inline-block;
+  flex: none;
+  border-radius: 4px;
+  background: var(--panel);
+  object-fit: contain;
+}
+
+table.grid tbody th .team-logo {
+  width: 16px;
+  height: 16px;
+  margin-right: 0.4rem;
+  vertical-align: middle;
+}
+
 /* The band strip rides in the table head so it shares the column geometry. */
 .grid__bands td { padding: 0 0 0.3rem; height: 6px; }
 .grid__bands .band-strip__seg { display: block; width: 100%; }
@@ -771,6 +788,12 @@ table.standings .muted { color: var(--ink-muted); }
 .fixture__teams em { font-style: normal; color: var(--ink-faint); font-weight: 400; padding-inline: 0.4rem; }
 .fixture__side { display: inline-flex; align-items: baseline; gap: 0.4rem; }
 
+.fixture__side .team-logo {
+  width: 18px;
+  height: 18px;
+  align-self: center;
+}
+
 .fixture__rating {
   font-size: 0.75rem;
   font-weight: 500;
@@ -1016,6 +1039,13 @@ footer {
 }
 
 .club-btn:hover { text-decoration: underline; }
+
+.club-btn--crest .team-logo {
+  width: 18px;
+  height: 18px;
+  margin-right: 0.45rem;
+  vertical-align: -0.3em;
+}
 
 /* ---------- season rewind timeline -------------------------------- */
 

@@ -59,6 +59,19 @@ const el = (tag, className, text) => {
   return node;
 };
 
+/* Club crests, served locally from the prebuilt logo bundle so the page stays
+   dependency-free at render time. Keyed by the same fotmob team id the data
+   uses, so a missing crest fails silently rather than breaking a row. */
+const teamLogo = (teamId, name) => {
+  if (!teamId) return null;
+  const img = el('img', 'team-logo');
+  img.src = `/logos/${teamId}.png`;
+  img.alt = '';
+  img.loading = 'lazy';
+  img.title = name;
+  return img;
+};
+
 /* The em-dash threshold follows the precision: anything that would print as a
    bare 0% is shown as nothing instead, and the same at the top end. */
 const smallestShown = (digits) => 0.5 / 10 ** digits / 100;
@@ -225,9 +238,11 @@ function renderGrid(report) {
   const body = el('tbody');
   for (const row of rows) {
     const tr = el('tr');
-    const label = el('th');
+    const label = el('th', 'grid__team');
     label.scope = 'row';
     label.appendChild(el('span', 'pos', String(row.position)));
+    const crest = teamLogo(row.team_id, row.team);
+    if (crest) label.appendChild(crest);
     label.appendChild(document.createTextNode(row.team));
     tr.appendChild(label);
 
@@ -395,11 +410,11 @@ function renderStandings(report) {
   const count = report.table.length;
 
   const promotion = report.league.slug === 'obosligaen';
-  $('#head-first').textContent = promotion ? 'Go up' : 'Win it';
+  $('#head-first').textContent = promotion ? 'Promotion' : 'Champion';
   $('#head-first-desc').textContent = promotion
     ? ', chance of promotion'
-    : ', chance of finishing top';
-  $('#head-last').textContent = 'Go down';
+    : ', chance of winning the title';
+  $('#head-last').textContent = 'Relegation';
   renderSortHeaders();
 
   for (const row of sortedStandings(standingsRows(report))) {
@@ -420,8 +435,12 @@ function renderStandings(report) {
     // every cell presentational, which hid the scores from screen readers and
     // stopped the new aria-sort from ever being announced.
     const club = el('td', 'club');
-    const clubButton = el('button', 'club-btn', row.team);
+    const clubButton = el('button', 'club-btn');
     clubButton.type = 'button';
+    clubButton.classList.add('club-btn--crest');
+    const crest = teamLogo(row.team_id, row.team);
+    if (crest) clubButton.appendChild(crest);
+    clubButton.appendChild(document.createTextNode(row.team));
     clubButton.addEventListener('click', (event) => {
       event.stopPropagation();
       openCareer(row.team_id, row.team);
@@ -709,7 +728,7 @@ function renderShapeSummary(report, team) {
 
   const parts = [
     ['Most likely finish', ordinal(best + 1)],
-    ['Chance of that', pct(latest[best])],
+    ['Chance of that finish', pct(latest[best])],
     ['Rating now', String(team.ratings[team.ratings.length - 1])],
     ['Pre-season pick', ordinal(mostLikely(first) + 1)],
   ];
@@ -797,7 +816,7 @@ function renderLadder(reports) {
     key.appendChild(el('span', '', name));
     legend.appendChild(key);
   }
-  legend.appendChild(el('span', '', 'Every club in the top two divisions on one scale. Where the two overlap, a second-tier side is rated above a top-flight one.'));
+  legend.appendChild(el('span', '', 'Every club in the top two divisions on one scale. Where the two overlap, a second-tier club is rated above a top-flight one.'));
 }
 
 /* ---------- fixtures ---------------------------------------------- */
@@ -818,15 +837,17 @@ function renderFixtures(report) {
 
     // The rating is what drives the odds beside it, so show the working.
     const teams = el('div', 'fixture__teams');
-    const side = (name, rating) => {
+    const side = (name, teamId, rating) => {
       const holder = el('span', 'fixture__side');
+      const crest = teamLogo(teamId, name);
+      if (crest) holder.appendChild(crest);
       holder.appendChild(el('span', '', name));
       holder.appendChild(el('span', 'fixture__rating', rating.toFixed(0)));
       return holder;
     };
-    teams.appendChild(side(fixture.home, fixture.home_rating));
+    teams.appendChild(side(fixture.home, fixture.home_id, fixture.home_rating));
     teams.appendChild(el('em', '', 'v'));
-    teams.appendChild(side(fixture.away, fixture.away_rating));
+    teams.appendChild(side(fixture.away, fixture.away_id, fixture.away_rating));
     row.appendChild(teams);
 
     const odds = el('div', 'odds');
