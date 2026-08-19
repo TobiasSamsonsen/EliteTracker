@@ -170,6 +170,11 @@
 
 html { -webkit-text-size-adjust: 100%; }
 
+/* The page must never scroll sideways. Wide tables scroll inside their own
+   panels, so anything overflowing to this level is a layout bug. clip (rather
+   than hidden) avoids making <body> a scroll container. */
+html, body { overflow-x: clip; }
+
 body {
   margin: 0;
   background: var(--paper);
@@ -357,7 +362,10 @@ section { margin-block: clamp(2rem, 5vw, 3.25rem); }
   max-width: 62ch;
 }
 
-.scroller { overflow-x: auto; }
+/* A scrollport. position: relative keeps absolutely-positioned descendants
+   (the .visually-hidden header labels inside the wide tables) inside this box,
+   so they are clipped here instead of escaping to widen the page. */
+.scroller { position: relative; overflow-x: auto; }
 
 /* ---------- the finish grid (signature) --------------------------- */
 
@@ -875,6 +883,25 @@ footer {
   .fixture { grid-template-columns: 1fr; gap: 0.5rem; }
   .fixture__when { order: -1; }
   .hero__meta { gap: 0.4rem 1.25rem; }
+
+  /* A tighter masthead: smaller wordmark, less gap, so the controls wrap
+     onto fewer, neater rows instead of a tall three-row stack. */
+  .masthead__inner { gap: 0.7rem 1rem; min-height: 0; padding-block: 0.7rem; }
+  .wordmark { font-size: 0.95rem; }
+  .switch button { padding: 0.35rem 0.65rem; }
+
+  /* Let the rewind button fall onto its own line if the title is long. */
+  .timeline__head { flex-wrap: wrap; }
+}
+
+@media (max-width: 480px) {
+  /* Less generous panel padding so the wide tables and controls get the
+     maximum usable width on small phones. */
+  .panel__head, .timeline { padding: 0.9rem 1rem; }
+  .grid-wrap, .shape, .ladder { padding: 1rem; }
+  .ladder { padding-bottom: 2rem; }
+  .legend { padding: 0.8rem 1rem; }
+  .fixture { padding: 0.65rem 1rem; }
 }
 
 /* ---------- season selector --------------------------------------- */
