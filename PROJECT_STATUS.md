@@ -27,15 +27,26 @@ pure static files on Firebase Hosting.
 - `validation/` — errors vs. warnings, non-zero exit on error.
 - **24 season-league match files (2015–2026) plus 2014 seed tables, all validating clean.**
 
-### Model (elo-v3)
-- `model/elo.py` — `expected_score` / `actual_score` / `update` kept separate.
-  K-factor 20 and home advantage 75, both calibrated against real results.
+### Model (elo-v5)
+- `model/elo.py` — `expected_score` / `actual_score` / `update` kept separate. K-factor 20
+  (flat across 18-24, so left at 20); **home advantage refit 75 → 60** by full-season
+  walk-forward backtest (the 0.61 marginal rate implies ~75, but prediction prefers 60);
+  **cross-season regression 0.95** — each close season pulls every rating 5% toward the
+  pool mean, so a freak year does not carry. Both fitted by backtest, not eyeballed.
 - `model/career.py` — **one continuous rating replay.** Seeded once from the 2014 final
   tables, then every played match from 2015 to now applied in kickoff order. Ratings
-  carry across seasons and across divisions; nothing is re-seeded each year.
+  carry across seasons and across divisions; at each offseason they mean-revert by the
+  configured regression factor.
 - `model/probabilities.py` — three-way odds where `P(win) + 0.5·P(draw)` reproduces the
   rating-implied expectation exactly.
-- `simulation/season.py` — seeded Monte Carlo, 10,000 runs, ~10M match-samples/second.
+- `model/scorelines.py` — scorelines sampled from the empirical result distribution,
+  **conditioned on outcome *and* the pre-match rating gap** (5 equal-count gap bins; empty
+  cells fall back to the outcome's global distribution). `build_scoreline_model.py` replays
+  the corpus with the production config to label each match with its true gap and emits
+  `data/scoreline_model.json`. So goal difference moves inside the simulation, a heavy
+  favourite draws bigger scorelines, and ties resolve on simulated GD.
+- `simulation/season.py` — seeded Monte Carlo, 50,000 runs, drawing a scoreline per
+  fixture from `model/scorelines.py`.
 - `model/backtest.py` — walk-forward harness. Every match is predicted from prior
   information only, then revealed. This is what elo-v3 was fitted with.
 - `simulation/history.py` — the projection re-run at ~20 points **by date, not by round.**
@@ -183,12 +194,13 @@ Also set from the same curve: **10,000** per history snapshot (a trend line read
 chart, ~20 per league). Rewound views keep the same 50,000 as the live one so the grid
 does not change fidelity as you drag back to today, but cut the history to 2,500 × 8 —
 otherwise a rewound day costs six seconds instead of one and a half. They are cached per
-date. Start-up is 5.1s; a rewound day builds in 1.4s.
+date. Start-up is 5.1s; a rewound day builds in ~1.8s.
 
-The simulation loop was rewritten to work on integer indices with a single packed sort
-key, which is **1.53× faster** (91k → 139k runs/second) and bit-identical — verified
-against the previous implementation on both divisions. That is 1.5× the accuracy for the
-same wait.
+The simulation loop works on integer indices with a single packed sort key. Drawing a
+scoreline per match (see `model/scorelines.py`) adds one RNG draw and a goal-difference
+update per fixture, so throughput is now ~28k runs/second — 50,000 runs still finishes a
+league in ~1.8s. Against a 1,000,000-run reference the worst grid cell at 50,000 is
+**0.45pp**, a third of the model's 1.54pp calibration error, so the count is unchanged.
 
 The table's title and relegation columns print **whole percent**. Sampling error at 50,000
 is ±0.50pp and the model's calibration error is ±1.54pp, so a tenth of a percent there was
@@ -252,10 +264,12 @@ route if anything ever does.
 
 ## ❗ Known limits (also stated on the site)
 - Ratings are held fixed for the rest of the season inside a simulation.
-- Simulated matches produce points but not scorelines, so ties break on goal difference
-  as it stands today.
-- No inter-season regression toward the mean; a club carries its full rating into the
-  next year.
+- Simulated matches draw a scoreline from the empirical distribution of real results
+  (`model/scorelines.py`), conditioned on the win/draw/loss outcome *and* the pre-match
+  rating gap, so a heavy favourite draws bigger scorelines than a slight one (real margins
+  grow with the gap) and goal difference moves within a simulation. Tied finishes resolve on
+  simulated goal difference, not today's. The rating-implied probabilities remain the sole
+  driver of who wins.
 - Clubs promoted from the third tier start at the ladder floor.
 
 ## 🔧 Next steps
@@ -264,11 +278,14 @@ route if anything ever does.
 - [ ] Refresh on a schedule, e.g. a Windows Task Scheduler job pointing at the refresh command.
 - [x] Static build + CI deploy: `build_site` feeds Firebase Hosting, triggered by every
       push to `main` (`.github/workflows/firebase-hosting-merge.yml`).
-- [x] `elo-v3` — shipped. See below.
+- [x] `elo-v5` — shipped. See below. Home advantage refit 75→60 and cross-season regression
+      (0.95) by walk-forward backtest (`backtest_cli`); scoreline margins now conditioned on
+      the rating gap (`model/scorelines.py`, generated by `build_scoreline_model.py`).
 - [ ] Ordered-logit probability mapping. Worth a further ~0.0013 log loss, but it breaks
       the `expected = P(win) + 0.5·P(draw)` identity the rest of the model rests on.
 - [ ] Re-fit the draw model periodically as seasons accumulate.
-- [ ] Backtest elo-v2 against the seasons now held, and tune K and home advantage on it.
+- [ ] Re-run `backtest_cli` after each new season to keep K / home advantage / regression
+      fitted; regenerate `data/scoreline_model.json` with `build_scoreline_model.py`.
 
 ## Commands
 

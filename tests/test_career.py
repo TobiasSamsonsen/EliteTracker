@@ -5,7 +5,10 @@ from elitetracker.model.elo import EloConfig
 from elitetracker.model.initial_ratings import TeamRating
 from elitetracker.normalize.matches import Match
 
-NEUTRAL = EloConfig(home_advantage=0)
+# No home advantage and no cross-season regression: the original "plain ELO"
+# baseline used by these continuity tests. (Regression is now on by default in
+# EloConfig, so it must be switched off explicitly here.)
+NEUTRAL = EloConfig(home_advantage=0, season_regression=1.0)
 
 
 def match(match_id, home, away, date, score=None):
@@ -63,6 +66,24 @@ class TestContinuity:
         careers = build_careers(two_season_slices(), SEEDS, config=NEUTRAL)
         assert careers["A"].seasons[0].rating_start == pytest.approx(1600)
         assert careers["A"].seasons[1].rating_start != pytest.approx(1600)
+
+
+class TestCrossSeasonRegression:
+    def test_offseason_pulls_ratings_toward_the_mean(self):
+        """With regression on, a club does not carry its full rating into next year."""
+        config = EloConfig(home_advantage=0, season_regression=0.95)
+        careers = build_careers(two_season_slices(), SEEDS, config=config)
+        first, secondseason = careers["A"].seasons
+        # A started at 1600, won, so first.rating_end > 1600; the offseason pulls
+        # it back partway toward the (1600/1400) pool mean of 1500.
+        assert secondseason.rating_start < first.rating_end
+        assert secondseason.rating_start > 1500.0
+
+    def test_no_regression_keeps_the_full_rating(self):
+        config = EloConfig(home_advantage=0, season_regression=1.0)
+        careers = build_careers(two_season_slices(), SEEDS, config=config)
+        first, secondseason = careers["A"].seasons
+        assert secondseason.rating_start == pytest.approx(first.rating_end)
 
     def test_a_point_is_recorded_for_every_match_played(self):
         careers = build_careers(two_season_slices(), SEEDS, config=NEUTRAL)

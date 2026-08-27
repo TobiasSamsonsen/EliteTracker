@@ -934,6 +934,7 @@ function renderModelCard(report) {
     ['Version', model.version],
     ['K-factor', model.k_factor],
     ['Home advantage', `${model.home_advantage} pts`],
+    ['Cross-season regression', `${Math.round((1 - model.season_regression) * 100)}% toward mean`],
     ['Peak draw rate', pct(model.draw_base, 0)],
     ['Simulations', model.simulations.toLocaleString()],
     ['Random seed', model.seed],

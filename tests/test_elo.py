@@ -125,7 +125,8 @@ class TestDrawProbability:
 class TestConfig:
     def test_defaults_are_documented_values(self):
         config = EloConfig()
-        assert (config.k_factor, config.home_advantage) == (20.0, 75.0)
+        assert (config.k_factor, config.home_advantage) == (20.0, 60.0)
+        assert config.season_regression == pytest.approx(0.95)
 
     @pytest.mark.parametrize(
         "kwargs",
@@ -136,7 +137,7 @@ class TestConfig:
             EloConfig(**kwargs)
 
     def test_model_version_is_declared(self):
-        assert MODEL_VERSION == "elo-v3"
+        assert MODEL_VERSION == "elo-v5"
 
 
 class TestFittedDefaults:
@@ -162,12 +163,17 @@ class TestFittedDefaults:
 
 
 class TestCalibration:
-    def test_default_home_advantage_matches_the_observed_edge(self):
-        """2026 to date: home sides averaged an expected score of ~0.61."""
-        implied = expected_score(1500 + EloConfig().home_advantage, 1500)
-        assert implied == pytest.approx(0.61, abs=0.02)
+    def test_default_home_advantage_is_the_backtest_fitted_value(self):
+        """The full-season sweep prefers 60 over the 0.61-implied ~75; pin it so a
+        silent edit cannot move every rating on the site."""
+        config = EloConfig()
+        assert config.home_advantage == pytest.approx(60.0)
+        implied_home_edge = expected_score(1500 + config.home_advantage, 1500)
+        # Lower than the raw 0.61 marginal rate, but the better full-season predictor.
+        assert implied_home_edge == pytest.approx(0.585, abs=0.01)
 
-    def test_implied_home_advantage_in_rating_points(self):
-        observed = 0.61
-        gap = -400 * math.log10(1 / observed - 1)
-        assert gap == pytest.approx(EloConfig().home_advantage, abs=10)
+    def test_default_season_regression_mean_reverts(self):
+        """0.95 pulls each rating 5% toward the pool mean across the close season."""
+        config = EloConfig()
+        assert config.season_regression == pytest.approx(0.95)
+        assert 0.0 < config.season_regression < 1.0

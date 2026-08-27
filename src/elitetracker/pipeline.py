@@ -329,6 +329,7 @@ def build_report(
             "home_advantage": elo_config.home_advantage,
             "draw_base": elo_config.draw_base,
             "draw_scale": elo_config.draw_scale,
+            "season_regression": elo_config.season_regression,
             "seed_season": SEED_SEASON,
             "simulations": projection.simulations,
             "seed": projection.seed,

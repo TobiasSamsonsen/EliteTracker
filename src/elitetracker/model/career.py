@@ -93,7 +93,19 @@ def build_careers(
 
     # Seasons run in parallel across the two divisions, so group by season and
     # replay each season's matches from both leagues in one chronological pass.
-    for season in sorted({slice_.season for slice_ in slices}):
+    seasons_sorted = sorted({slice_.season for slice_ in slices})
+    first_season = seasons_sorted[0] if seasons_sorted else None
+    for season in seasons_sorted:
+        # Mean-revert ratings across the close season, except before the first
+        # replayed year (whose ratings are the deliberate seed from the standings).
+        if season != first_season and config.season_regression < 1.0:
+            rated = list(ratings.values())
+            if rated:
+                mean = sum(rated) / len(rated)
+                factor = config.season_regression
+                for team_id in list(ratings):
+                    ratings[team_id] = mean + factor * (ratings[team_id] - mean)
+
         in_season = [slice_ for slice_ in slices if slice_.season == season]
 
         rating_start: dict[str, float] = {}

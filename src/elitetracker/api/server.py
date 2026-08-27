@@ -260,6 +260,8 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--seed", type=int, default=SimulationConfig.seed)
     parser.add_argument("--k-factor", type=float, default=EloConfig.k_factor)
     parser.add_argument("--home-advantage", type=float, default=EloConfig.home_advantage)
+    parser.add_argument("--regression", type=float, default=EloConfig.season_regression,
+                        help="cross-season mean reversion (1.0 = none)")
     parser.add_argument("--history-simulations", type=int, default=HistoryConfig.simulations)
     parser.add_argument("--reload", action="store_true", help="rebuild reports on every request")
     parser.add_argument("--root", type=Path, default=NORMALIZED_DIR)
@@ -267,7 +269,11 @@ def main(argv: list[str] | None = None) -> int:
 
     store = ReportStore(
         args.root,
-        elo_config=EloConfig(k_factor=args.k_factor, home_advantage=args.home_advantage),
+        elo_config=EloConfig(
+            k_factor=args.k_factor,
+            home_advantage=args.home_advantage,
+            season_regression=args.regression,
+        ),
         simulation=SimulationConfig(simulations=args.simulations, seed=args.seed),
         history=HistoryConfig(simulations=args.history_simulations, seed=args.seed),
         always_reload=args.reload,
