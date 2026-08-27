@@ -1,9 +1,11 @@
 import pytest
+import random
 
 from elitetracker.model.elo import EloConfig, expected_score
 from elitetracker.model.initial_ratings import TeamRating
 from elitetracker.model.probabilities import match_probabilities
 from elitetracker.model.ratings import build_rating_table
+from elitetracker.model.scorelines import DEFAULT_SCORELINE_MODEL, ScorelineModel
 from elitetracker.model.table import table_from_matches
 from elitetracker.normalize.matches import Match
 from elitetracker.simulation.season import SimulationConfig, simulate_season
@@ -163,6 +165,39 @@ def two_team_season(played=None, remaining=2):
     return games
 
 
+class TestScorelineModel:
+    def test_sample_respects_the_outcome(self):
+        """A home_win must never come back as a draw or an away_win, etc."""
+        rng = random.Random(1)
+        for outcome, sign in (("home_win", 1), ("draw", 0), ("away_win", -1)):
+            for _ in range(500):
+                home_goals, away_goals = DEFAULT_SCORELINE_MODEL.sample(outcome, rng)
+                assert (home_goals - away_goals) * sign > 0 or (
+                    outcome == "draw" and home_goals == away_goals
+                )
+
+    def test_sample_is_deterministic_for_a_seed(self):
+        first = [DEFAULT_SCORELINE_MODEL.sample(o, random.Random(42)) for o in ("home_win", "draw", "away_win")]
+        second = [DEFAULT_SCORELINE_MODEL.sample(o, random.Random(42)) for o in ("home_win", "draw", "away_win")]
+        assert first == second
+
+    def test_from_matches_builds_the_conditional_distribution(self):
+        matches = [
+            match(1, "A", "B", score=(2, 1)),
+            match(2, "A", "B", score=(1, 1)),
+            match(3, "A", "B", score=(0, 2)),
+            match(4, "A", "B", score=(2, 1)),
+        ]
+        model = ScorelineModel.from_matches(matches)
+        # (2,1) appears twice among three scored home/away wins plus a draw.
+        counts = {}
+        rng = random.Random(0)
+        for _ in range(3000):
+            hg, ag = model.sample("home_win", rng)
+            counts[(hg, ag)] = counts.get((hg, ag), 0) + 1
+        assert counts[(2, 1)] > counts.get((1, 0), 0)
+
+
 class TestSimulation:
     def test_position_probabilities_sum_to_one_per_team(self):
         projection = simulate_season(
@@ -270,6 +305,42 @@ class TestSimulation:
         by_team = {team.team: team for team in projection.teams}
         assert by_team["B"].position_probabilities[0] > 0.9
         assert by_team["B"].position_probabilities[0] > by_team["A"].position_probabilities[0]
+
+    def test_goal_difference_moves_within_a_simulation(self):
+        """Regression: tied teams must not be split on today's goal difference.
+
+        A and B are level on points and on goal difference going into the last
+        round, each facing a weak side. Under the old frozen tiebreak they would
+        always be separated by the current table (a fixed name/order tiebreak),
+        so one of them would be certain to finish first. With scorelines drawn,
+        the two clubs' simulated margins differ, so the title is a toss-up.
+        """
+        played = [
+            match(1, "A", "C", day=1, score=(1, 0)),
+            match(2, "B", "D", day=2, score=(1, 0)),
+        ]
+        # A: 3 pts, GD +1.  B: 3 pts, GD +1.  Each has one game left.
+        games = played + [match(3, "A", "D", day=9), match(4, "B", "C", day=9)]
+        projection = simulate_season(
+            games,
+            {"A": 1800, "B": 1800, "C": 1000, "D": 1000},
+            config=SimulationConfig(simulations=2000, seed=3),
+        )
+        by_team = {team.team: team for team in projection.teams}
+        for team in ("A", "B"):
+            first = by_team[team].position_probabilities[0]
+            assert 0.3 < first < 0.7
+
+    def test_a_passed_scoreline_model_reproduces_the_run(self):
+        model = ScorelineModel.from_matches(
+            [match(i, "A", "B", score=(2, 1)) for i in range(1, 30)]
+        )
+        args = (two_team_season(remaining=8), {"A": 1500, "B": 1500})
+        first = simulate_season(*args, config=SimulationConfig(simulations=300, seed=11), scoreline_model=model)
+        second = simulate_season(*args, config=SimulationConfig(simulations=300, seed=11), scoreline_model=model)
+        assert [t.position_probabilities for t in first.teams] == [
+            t.position_probabilities for t in second.teams
+        ]
 
     def test_counts_of_played_and_remaining(self):
         projection = simulate_season(

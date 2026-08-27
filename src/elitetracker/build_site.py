@@ -69,9 +69,11 @@ class _Worker:
     elo_config: EloConfig = EloConfig()
 
     @classmethod
-    def init(cls, root: str, k_factor: float, home_advantage: float) -> None:
+    def init(cls, root: str, k_factor: float, home_advantage: float, season_regression: float) -> None:
         cls.root = Path(root)
-        cls.elo_config = EloConfig(k_factor=k_factor, home_advantage=home_advantage)
+        cls.elo_config = EloConfig(
+            k_factor=k_factor, home_advantage=home_advantage, season_regression=season_regression
+        )
         cls.careers = build_all_careers(cls.root, elo_config=cls.elo_config)
 
 
@@ -108,6 +110,7 @@ def build_site(
     root: Path = NORMALIZED_DIR,
     out_dir: Path = Path("public/data"),
     jobs: int | None = None,
+    season_regression: float = EloConfig.season_regression,
 ) -> None:
     """Write every season's live and rewound reports as static JSON."""
     out_dir.mkdir(parents=True, exist_ok=True)
@@ -121,7 +124,7 @@ def build_site(
     with ProcessPoolExecutor(
         max_workers=jobs,
         initializer=_Worker.init,
-        initargs=(str(root), EloConfig().k_factor, EloConfig().home_advantage),
+        initargs=(str(root), EloConfig().k_factor, EloConfig().home_advantage, EloConfig().season_regression),
     ) as executor:
         # Live view of every season, plus a copy of the current one under a
         # fixed name so the frontend's default request has a stable URL.
@@ -159,9 +162,11 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--root", type=Path, default=NORMALIZED_DIR)
     parser.add_argument("--out", type=Path, default=Path("public/data"))
     parser.add_argument("--jobs", type=int, help="worker processes (default: CPU count)")
+    parser.add_argument("--regression", type=float, default=EloConfig.season_regression,
+                        help="cross-season mean reversion (1.0 = none)")
     args = parser.parse_args(argv)
 
-    build_site(args.root, args.out, jobs=args.jobs)
+    build_site(args.root, args.out, jobs=args.jobs, season_regression=args.regression)
     return 0
 
 

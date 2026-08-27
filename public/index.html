@@ -218,8 +218,8 @@
           <div class="label">Known limits</div>
           <ul>
             <li>Ratings are held fixed for the rest of the season. A team does not get stronger inside a simulation by winning simulated matches.</li>
-            <li>Simulated matches produce points but not scorelines, so ties are broken on goal difference as it stands today. That slightly favours teams already ahead on it.</li>
-            <li>Starting ratings come only from where each club finished in 2025. Transfers, injuries and European commitments are not modelled.</li>
+            <li>Simulated matches draw a scoreline from real results, conditioned on the win/draw/loss outcome <em>and</em> the pre-match rating gap, so goal difference moves within a simulation and ties break on simulated goal difference — not today's. The rating-implied probabilities still decide who wins.</li>
+            <li>Each close season every rating mean-reverts 5% toward the pool average, so one freak year does not carry. Starting ratings still come only from where each club finished in 2025; transfers, injuries and European commitments are not modelled.</li>
             <li>Two OBOS-ligaen clubs were promoted from the third tier, which is outside this project's data. They start at the bottom of the ladder and are corrected only by results.</li>
             <li>Season shape is sampled by date, not by round. Rounds run out of order — Eliteserien 2026 plays round 12 after rounds 13 to 16 — so a round axis would show results before they happened.</li>
           </ul>

@@ -156,6 +156,34 @@ def team_ids(match: Match) -> tuple[str, str]:
     return (match.home_id or match.home, match.away_id or match.away)
 
 
+class RegressionRatingModel(RatingModel):
+    """Plain ELO plus a pull toward the pool mean at every offseason.
+
+    `config.season_regression` of 1.0 is a no-op (the historical behaviour: a
+    club carries its full rating into the next year); smaller values
+    mean-revert. The first replayed season is the seed and is left alone.
+    """
+
+    def __init__(self, config: EloConfig | None = None, *, floor_rating: float = 1300.0) -> None:
+        super().__init__(config, floor_rating=floor_rating)
+        self._first_season = True
+
+    def start_season(self, season: int) -> None:
+        factor = self.config.season_regression
+        if self._first_season or factor >= 1.0:
+            self._first_season = False
+            return
+        ratings = list(self.ratings.values())
+        if not ratings:
+            self._first_season = False
+            return
+        mean = sum(ratings) / len(ratings)
+        for team_id in list(self.ratings):
+            self.ratings[team_id] = mean + factor * (self.ratings[team_id] - mean)
+        self._first_season = False
+
+
+
 def walk_forward(
     seasons: list[tuple[int, list[Match]]],
     seeds: dict[str, float],
