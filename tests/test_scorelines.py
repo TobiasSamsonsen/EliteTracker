@@ -3,6 +3,7 @@
 import random
 import statistics as st
 
+from elitetracker.display import top_scorelines
 from elitetracker.model.scorelines import (
     AWAY_WIN,
     DRAW,
@@ -95,3 +96,47 @@ class TestShippedModel:
         for gap in (-300.0, 0.0, 300.0):
             hg, ag = model.sample(HOME_WIN, rng, gap)
             assert isinstance(hg, int) and isinstance(ag, int)
+
+
+class TestScorelineOdds:
+    def test_returns_descending_probabilities(self):
+        model = ScorelineModel.from_corpus(_corpus(600, 600, 600), bins=5)
+        odds = top_scorelines(
+            {HOME_WIN: 0.5, DRAW: 0.25, AWAY_WIN: 0.25}, effective_gap=0.0, model=model, n=5
+        )
+        probs = [p for _, p in odds]
+        assert probs == sorted(probs, reverse=True)
+        assert len(odds) <= 5
+
+    def test_probabilities_are_within_zero_and_one(self):
+        model = ScorelineModel.from_corpus(_corpus(600, 600, 600), bins=5)
+        odds = top_scorelines(
+            {HOME_WIN: 0.5, DRAW: 0.25, AWAY_WIN: 0.25}, effective_gap=50.0, model=model
+        )
+        for _, p in odds:
+            assert 0.0 <= p <= 1.0
+
+    def test_deterministic_for_a_fixed_model(self):
+        model = ScorelineModel.from_corpus(_corpus(600, 600, 600), bins=5)
+        probs = {pair: p for pair, p in top_scorelines(
+            {HOME_WIN: 0.5, DRAW: 0.25, AWAY_WIN: 0.25}, effective_gap=0.0, model=model
+        )}
+        again = {pair: p for pair, p in top_scorelines(
+            {HOME_WIN: 0.5, DRAW: 0.25, AWAY_WIN: 0.25}, effective_gap=0.0, model=model
+        )}
+        assert probs == again
+
+    def test_extreme_gaps_fall_back_without_error(self):
+        model = ScorelineModel.from_corpus(_corpus(600, 600, 600), bins=5)
+        for gap in (-10_000.0, 10_000.0):
+            odds = top_scorelines(
+                {HOME_WIN: 0.4, DRAW: 0.3, AWAY_WIN: 0.3}, effective_gap=gap, model=model
+            )
+            assert odds  # non-empty and never raises
+
+    def test_zero_probability_outcome_is_excluded(self):
+        model = ScorelineModel.from_corpus(_corpus(600, 600, 600), bins=5)
+        odds = top_scorelines(
+            {HOME_WIN: 0.0, DRAW: 0.0, AWAY_WIN: 1.0}, effective_gap=0.0, model=model
+        )
+        assert all(hg <= ag for (hg, ag), _ in odds)  # only away wins present

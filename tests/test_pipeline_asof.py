@@ -187,3 +187,34 @@ class TestFixtureRatings:
         # B hosts A having just lost to them, so A is away favourite.
         assert fixture["away_rating"] > fixture["home_rating"]
         assert fixture["away_win"] > fixture["home_win"]
+
+
+class TestFixtureScorelines:
+    def test_every_unplayed_fixture_carries_scorelines(self, tiny_league):
+        report = build(tiny_league, asof="2016-03-01")
+        assert report["fixtures"]
+        for fixture in report["fixtures"]:
+            assert "scorelines" in fixture
+            assert 0 < len(fixture["scorelines"]) <= 5
+
+    def test_scorelines_are_probabilities_under_their_outcome(self, tiny_league):
+        fixture = build(tiny_league, asof="2016-03-01")["fixtures"][0]
+        # The best single scoreline cannot outrank the largest outcome's probability.
+        best = fixture["scorelines"][0]
+        top_outcome = max(fixture["home_win"], fixture["draw"], fixture["away_win"])
+        assert best["probability"] <= top_outcome + 1e-6
+        assert all(0.0 <= line["probability"] <= 1.0 for line in fixture["scorelines"])
+
+    def test_scorelines_sum_to_at_most_one(self, tiny_league):
+        fixture = build(tiny_league, asof="2016-03-01")["fixtures"][0]
+        assert sum(line["probability"] for line in fixture["scorelines"]) <= 1.0 + 1e-9
+
+    def test_scorelines_are_descending(self, tiny_league):
+        fixture = build(tiny_league, asof="2016-03-01")["fixtures"][0]
+        probs = [line["probability"] for line in fixture["scorelines"]]
+        assert probs == sorted(probs, reverse=True)
+
+    def test_scorelines_are_reproducible(self, tiny_league):
+        first = build(tiny_league, asof="2016-03-01")["fixtures"][0]["scorelines"]
+        second = build(tiny_league, asof="2016-03-01")["fixtures"][0]["scorelines"]
+        assert first == second
