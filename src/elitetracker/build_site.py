@@ -46,6 +46,14 @@ from elitetracker.simulation.season import SimulationConfig
 # but the season-shape history is thinned so a rewound view builds fast.
 REWOUND_HISTORY = HistoryConfig(simulations=2_500, max_snapshots=8)
 
+# The rewound grid is also thinned: dragging back through the season reads off
+# the same finish-probability matrix, but it is a trend view, not a number off
+# the live table. At 10,000 the worst grid cell is ~1.31 pp -- still below the
+# model's 1.54 pp calibration error -- so the drop in fidelity is invisible at
+# whole-percent display, while the ~2,266 rewound reports build roughly 5x
+# faster than at the live 50,000. The live view keeps 50,000 for full precision.
+REWOUND_SIM = SimulationConfig(simulations=10_000)
+
 
 def matchday_dates(root: Path, season: int) -> list[str]:
     """Every day either league played on, in order.
@@ -86,7 +94,7 @@ def _build_league(spec: tuple[str, int, str | None]) -> dict[str, Any]:
         root=_Worker.root,
         careers=_Worker.careers,
         elo_config=_Worker.elo_config,
-        simulation=SimulationConfig(),
+        simulation=REWOUND_SIM if asof else SimulationConfig(),
         history=REWOUND_HISTORY if asof else HistoryConfig(),
         asof=asof,
     )
@@ -111,14 +119,27 @@ def build_site(
     out_dir: Path = Path("public/data"),
     jobs: int | None = None,
     season_regression: float = EloConfig.season_regression,
+    only_season: int | None = None,
 ) -> None:
-    """Write every season's live and rewound reports as static JSON."""
+    """Write every season's live and rewound reports as static JSON.
+
+    With ``only_season`` set, only that season's live and rewound reports are
+    written (careers.json is still built once, since the current view needs it).
+    This lets the deploy workflow refresh just the current season while reusing
+    cached past-season reports, rather than rerunning every simulation.
+    """
     out_dir.mkdir(parents=True, exist_ok=True)
     jobs = jobs or os.cpu_count() or 1
 
-    seasons = available_seasons(root)
-    if not seasons:
+    all_seasons = available_seasons(root)
+    if not all_seasons:
         raise FileNotFoundError(f"no normalized match data in {root}")
+    if only_season is not None:
+        if only_season not in all_seasons:
+            raise ValueError(f"no normalized match data for season {only_season}")
+        seasons = [only_season]
+    else:
+        seasons = all_seasons
     current = current_season(root)
 
     with ProcessPoolExecutor(
@@ -164,9 +185,17 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--jobs", type=int, help="worker processes (default: CPU count)")
     parser.add_argument("--regression", type=float, default=EloConfig.season_regression,
                         help="cross-season mean reversion (1.0 = none)")
+    parser.add_argument("--only-season", type=int, default=None,
+                        help="rebuild just this season (default: all seasons)")
     args = parser.parse_args(argv)
 
-    build_site(args.root, args.out, jobs=args.jobs, season_regression=args.regression)
+    build_site(
+        args.root,
+        args.out,
+        jobs=args.jobs,
+        season_regression=args.regression,
+        only_season=args.only_season,
+    )
     return 0
 
 

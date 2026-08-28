@@ -850,6 +850,7 @@ function renderFixtures(report) {
     teams.appendChild(side(fixture.away, fixture.away_id, fixture.away_rating));
     row.appendChild(teams);
 
+    const oddsCol = el('div', 'fixture__odds-col');
     const odds = el('div', 'odds');
     odds.setAttribute('role', 'img');
     odds.setAttribute(
@@ -872,7 +873,23 @@ function renderFixtures(report) {
       segment.addEventListener('pointerleave', hideTooltip);
       odds.appendChild(segment);
     }
-    row.appendChild(odds);
+    oddsCol.appendChild(odds);
+
+    // The most likely scorelines read straight off the three-way odds above.
+    if (fixture.scorelines && fixture.scorelines.length) {
+      const lines = el('div', 'fixture__lines');
+      for (const line of fixture.scorelines.slice(0, 4)) {
+        const chip = el('span', 'fixture__line');
+        chip.textContent = `${line.home_goals}-${line.away_goals} ${pct(line.probability, 0)}`;
+        chip.setAttribute(
+          'aria-label',
+          `${line.home_goals}-${line.away_goals} about ${pct(line.probability, 1)}`
+        );
+        lines.appendChild(chip);
+      }
+      oddsCol.appendChild(lines);
+    }
+    row.appendChild(oddsCol);
     holder.appendChild(row);
   }
 }

@@ -70,16 +70,17 @@ class ReportStore:
         self._careers: dict[str, Any] | None = None
         self._reports: dict[tuple[str, int, str | None], Any] = {}
 
-    # A rewound view keeps the same simulation count as the live one, so the
-    # grid does not change fidelity as you drag back to today. What it does cut
-    # is the season-shape history, which is ~20 rebuilds per league and would
-    # otherwise put a rewound day at six seconds instead of one and a half.
-    # Results are cached per date, so that cost is paid once per day visited.
+    # The rewound view thins both the grid (10,000) and the season-shape
+    # history (2,500 x 8) versus the live view (50,000 grid). At 10,000 the
+    # worst grid cell is ~1.31 pp -- still below the model's 1.54 pp
+    # calibration error -- so the small fidelity step as you drag back is
+    # invisible at whole-percent display, while rewound reports build far
+    # faster. Results are cached per date, so that cost is paid once per day.
     def _configs(self, asof: str | None) -> tuple[SimulationConfig, HistoryConfig]:
         if not asof:
             return self.simulation, self.history
         return (
-            self.simulation,
+            SimulationConfig(simulations=10_000, seed=self.simulation.seed),
             HistoryConfig(simulations=2_500, seed=self.history.seed, max_snapshots=8),
         )
 

@@ -11,6 +11,7 @@ shown in 2026 are on the same scale and connected by its results in between.
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import re
 from dataclasses import dataclass
@@ -19,11 +20,10 @@ from typing import Any
 
 from elitetracker.model.career import SeasonSlice, TeamCareer, build_careers
 from elitetracker.model.elo import MODEL_VERSION, EloConfig
-from elitetracker.model.initial_ratings import SECOND_TIER, TOP_TIER, SeedingConfig, initial_ratings
-from elitetracker.model.probabilities import match_probabilities
+from elitetracker.model.initial_ratings import SECOND_TIER, TOP_TIER, SeedingConfig, TeamRating, initial_ratings
 from elitetracker.model.ratings import build_rating_table
 from elitetracker.model.table import table_from_matches
-from elitetracker.model.initial_ratings import TeamRating
+from elitetracker.display import build_fixtures_payload
 from elitetracker.normalize.matches import Match
 from elitetracker.normalize.standings import load_standings
 from elitetracker.simulation.history import HistoryConfig, as_of_date, build_history
@@ -216,6 +216,88 @@ def current_season(root: Path = NORMALIZED_DIR) -> int:
     return seasons[-1]
 
 
+def _source_paths(root: Path) -> list[Path]:
+    """Source modules that influence a report's simulation-derived fields.
+
+    The live API server under ``api/`` is excluded (it is not used by the
+    static site), as is the ``display`` package: display code turns already
+    computed ratings and odds into the "Next up" view and never feeds the
+    Monte Carlo, so editing it cannot change a simulation-derived byte. A
+    completed past season has no upcoming fixtures anyway, and the current
+    season is rebuilt on every deploy regardless.
+    """
+    excluded = {"api", "display"}
+    src_root = Path(__file__).resolve().parent
+    return [path for path in sorted(src_root.rglob("*.py")) if not excluded.intersection(path.parts)]
+
+
+def simulation_signature(root: Path = NORMALIZED_DIR) -> str:
+    """Stable hash that changes iff the simulation output would change.
+
+    Used by the deploy workflow as the cache key for past-season reports. Two
+    builds from the same signature produce byte-identical simulation-derived
+    fields, so cached files are safe to reuse.
+
+    The signature covers everything that influences a report's computed fields:
+
+    * every source module that participates in the static build (pipeline,
+      simulation, model, normalize -- the live API server under ``api/`` and
+      the ``display`` package are excluded, for the reasons in ``_source_paths``);
+    * the scoreline model file (a retrained distribution changes outcomes);
+    * the normalized match data for every season *except the current one*.
+
+    The current season's data is deliberately excluded: an ordinary results
+    refresh only adds played matches there, which never alters a past season's
+    finished outcome, so it must not force past seasons to rebuild. A code
+    change (model tweak or report-field change) or a past-season backfill
+    changes the hash and triggers a full rebuild.
+    """
+    hasher = hashlib.sha256()
+
+    for path in _source_paths(Path(__file__).resolve().parent):
+        hasher.update(path.read_bytes())
+
+    scoreline_path = root.parent / "scoreline_model.json"
+    if scoreline_path.exists():
+        hasher.update(b"scoreline:")
+        hasher.update(scoreline_path.read_bytes())
+    else:
+        hasher.update(b"scoreline:missing")
+
+    seasons = available_seasons(root)
+    current = seasons[-1] if seasons else None
+    for path in sorted(root.glob("*_matches.json")):
+        found = _MATCH_FILE.match(path.name)
+        if not found:
+            continue
+        if current is not None and int(found["season"]) == current:
+            continue
+        hasher.update(b"data:")
+        hasher.update(path.read_bytes())
+
+    return hasher.hexdigest()
+
+
+def current_data_signature(root: Path = NORMALIZED_DIR) -> str:
+    """Hash of the current season's match files, for change detection.
+
+    Unlike `simulation_signature`, this reflects results arriving in the
+    current season. The deploy workflow uses it to tell whether the current
+    season needs rebuilding even when the simulation code is unchanged -- an
+    ordinary matchday refresh changes this but not `simulation_signature`.
+    """
+    hasher = hashlib.sha256()
+    try:
+        current = current_season(root)
+    except FileNotFoundError:
+        return ""
+    for slug in LEAGUE_SPECS:
+        path = root / f"{slug}_{current}_matches.json"
+        if path.exists():
+            hasher.update(path.read_bytes())
+    return hasher.hexdigest()
+
+
 def seed_ratings(root: Path = NORMALIZED_DIR, *, seeding: SeedingConfig | None = None):
     """Starting ratings, from the final tables of the season before the replay."""
     return initial_ratings(
@@ -337,7 +419,7 @@ def build_report(
             "matches_remaining": projection.matches_remaining,
         },
         "table": _table_payload(matches, rating_table.ratings, projection, seeds),
-        "fixtures": _fixtures_payload(matches, rating_table.ratings, elo_config),
+        "fixtures": build_fixtures_payload(matches, rating_table.ratings, elo_config),
         "results": _results_payload(matches),
         "history": _history_payload(
             build_history(matches, all_matches, seeds, elo_config=elo_config, config=history),
@@ -423,36 +505,6 @@ def _table_payload(
                 "rating_change": round(ratings[row.team_id] - started, 1),
                 "expected_points": round(team.expected_points, 1),
                 "position_probabilities": [round(value, 6) for value in team.position_probabilities],
-            }
-        )
-    return payload
-
-
-def _fixtures_payload(
-    matches: list[Match], ratings: dict[str, float], elo_config: EloConfig
-) -> list[dict[str, Any]]:
-    payload = []
-    for match in matches:
-        if match.played:
-            continue
-        home_id = match.home_id or match.home
-        away_id = match.away_id or match.away
-        probabilities = match_probabilities(ratings[home_id], ratings[away_id], elo_config)
-        payload.append(
-            {
-                "match_id": match.match_id,
-                "date": match.date,
-                "time": match.time,
-                "round": match.round,
-                "home": match.home,
-                "away": match.away,
-                "home_id": home_id,
-                "away_id": away_id,
-                "home_rating": round(ratings[home_id], 1),
-                "away_rating": round(ratings[away_id], 1),
-                "home_win": round(probabilities.home_win, 4),
-                "draw": round(probabilities.draw, 4),
-                "away_win": round(probabilities.away_win, 4),
             }
         )
     return payload
