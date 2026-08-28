@@ -6,4 +6,5 @@ __pycache__/
 .pytest_cache/
 data/reports.json
 public/data/
+.build_cache/
 .firebase/
