@@ -17,11 +17,52 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: '3.12'
-      - name: Install and prebuild the static site data
+      - name: Install and compute signatures
+        id: sig
         run: |
           python -m pip install --upgrade pip
           pip install .
-          python -m elitetracker.build_site
+          SIG=$(python -c "from elitetracker.pipeline import simulation_signature; print(simulation_signature())")
+          CURRENT=$(python -c "from elitetracker.pipeline import current_season; print(current_season())")
+          CURRENT_DATA=$(python -c "from elitetracker.pipeline import current_data_signature; print(current_data_signature())")
+          echo "SIG=$SIG" >> "$GITHUB_ENV"
+          echo "CURRENT=$CURRENT" >> "$GITHUB_ENV"
+          echo "CURRENT_DATA=$CURRENT_DATA" >> "$GITHUB_ENV"
+          echo "signature: $SIG"
+          echo "current season: $CURRENT"
+      - name: Cache past-season reports
+        id: cache-data
+        uses: actions/cache@v4
+        with:
+          path: public/data
+          key: sims-${{ env.SIG }}
+      - name: Cache last-build state
+        id: cache-state
+        uses: actions/cache@v4
+        with:
+          path: .build_cache
+          key: state-${{ env.SIG }}
+      - name: Build site
+        run: |
+          STORED=""
+          if [ -f .build_cache/last_data_hash ]; then
+            STORED=$(cat .build_cache/last_data_hash)
+          fi
+
+          if [ "${{ steps.cache-data.outputs.cache-hit }}" = "true" ]; then
+            if [ "$STORED" = "$CURRENT_DATA" ]; then
+              echo "No simulation-affecting change since last build; reusing cached reports (skip build)."
+            else
+              echo "Current-season data changed; rebuilding only the current season ($CURRENT)."
+              python -m elitetracker.build_site --only-season "$CURRENT"
+            fi
+          else
+            echo "Full rebuild (model/code change, past-season backfill, or no cache)."
+            python -m elitetracker.build_site
+          fi
+
+          mkdir -p .build_cache
+          echo "$CURRENT_DATA" > .build_cache/last_data_hash
       - uses: FirebaseExtended/action-hosting-deploy@v0
         with:
           repoToken: ${{ secrets.GITHUB_TOKEN }}
