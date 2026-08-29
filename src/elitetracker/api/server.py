@@ -37,6 +37,7 @@ from elitetracker.pipeline import (
     careers_payload,
     current_season,
 )
+from elitetracker.display import combined_pairwise
 from elitetracker.simulation.history import HistoryConfig
 from elitetracker.simulation.season import SimulationConfig
 
@@ -112,7 +113,13 @@ class ReportStore:
 
     def reports(self, season: int | None = None, asof: str | None = None) -> dict[str, Any]:
         target = season or current_season(self.root)
-        return {slug: self.report(slug, target, asof) for slug in LEAGUE_SPECS}
+        reports = {slug: self.report(slug, target, asof) for slug in LEAGUE_SPECS}
+        # One rating scale spans both divisions, so a combined pairwise lets the
+        # compare tool pit an Eliteserien club against an OBOS-ligaen one.
+        combined = combined_pairwise(reports, self.elo_config)
+        for report in reports.values():
+            report["pairwise"] = combined
+        return reports
 
 
 class Handler(BaseHTTPRequestHandler):

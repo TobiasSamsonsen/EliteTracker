@@ -15,6 +15,8 @@ const state = {
   // ISO date the whole page is rewound to; null means live.
   asof: null,
   rewindTimer: null,
+  // Key of the league+season the compare pickers were last populated for.
+  compareKey: '',
 };
 
 /* One probe decides the data source for the whole session. A static host
@@ -417,7 +419,13 @@ function renderStandings(report) {
   $('#head-last').textContent = 'Relegation';
   renderSortHeaders();
 
-  for (const row of sortedStandings(standingsRows(report))) {
+  const formByTeamName = formByTeam(report.results);
+  const rows = standingsRows(report).map((row) => ({
+    ...row,
+    form: formPoints(formByTeamName[row.team]),
+  }));
+
+  for (const row of sortedStandings(rows)) {
     const tr = el('tr');
     const band = bandFor(bands, row.position);
 
@@ -457,6 +465,9 @@ function renderStandings(report) {
 
     tr.appendChild(el('td', 'num sep', row.rating.toFixed(0)));
     tr.appendChild(el('td', 'num muted', row.expected_points.toFixed(1)));
+    const formTd = el('td', 'num form');
+    formTd.appendChild(formChipsEl(formByTeamName[row.team]));
+    tr.appendChild(formTd);
 
     tr.appendChild(meterCell(row.up, 'up'));
     tr.appendChild(meterCell(row.down, 'down'));
@@ -899,6 +910,38 @@ function formatDate(iso) {
   return date.toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' });
 }
 
+/* Recent results per club, newest last. Built from the played-results list so
+   it follows the rewind slider (that list is per-asof). */
+function formByTeam(results, n = 5) {
+  const map = {};
+  const sorted = [...(results || [])].sort((a, b) =>
+    a.date < b.date ? -1 : a.date > b.date ? 1 : 0
+  );
+  for (const r of sorted) {
+    const draw = r.home_goals === r.away_goals;
+    (map[r.home] ||= []).push(draw ? 'D' : r.home_goals > r.away_goals ? 'W' : 'L');
+    (map[r.away] ||= []).push(draw ? 'D' : r.away_goals > r.home_goals ? 'W' : 'L');
+  }
+  for (const name in map) map[name] = map[name].slice(-n);
+  return map;
+}
+
+function formPoints(form) {
+  if (!form || !form.length) return 0;
+  return form.reduce((total, letter) => total + (letter === 'W' ? 3 : letter === 'D' ? 1 : 0), 0);
+}
+
+function formChipsEl(form) {
+  const holder = el('span', 'form__chips');
+  if (!form || !form.length) return holder;
+  for (const letter of form) {
+    const chip = el('span', `form__chip form__chip--${letter.toLowerCase()}`, letter);
+    chip.title = letter === 'W' ? 'Win' : letter === 'D' ? 'Draw' : 'Loss';
+    holder.appendChild(chip);
+  }
+  return holder;
+}
+
 /* ---------- hero & model card ------------------------------------- */
 
 function renderHero(report) {
@@ -1263,6 +1306,10 @@ function render() {
   renderLadder(state.reports);
   renderFixtures(report);
   renderOddsLegend();
+  if (report.pairwise) {
+    populateCompare(report);
+    renderCompare(report);
+  }
   renderModelCard(report);
   document.title = `${report.league.name} ${report.league.season} — EliteTracker`;
 }
@@ -1305,6 +1352,9 @@ function wire() {
 
   $('#timeline-range').addEventListener('input', onTimelineInput);
   $('#timeline-now').addEventListener('click', () => rewindTo(null));
+
+  $('#compare-a').addEventListener('change', () => renderCompare(state.reports[state.league]));
+  $('#compare-b').addEventListener('change', () => renderCompare(state.reports[state.league]));
 
   for (const closer of document.querySelectorAll('[data-close-modal]')) {
     closer.addEventListener('click', closeCareer);
@@ -1400,6 +1450,361 @@ function renderSeasonOptions(report) {
     }
   }
   select.value = String(report.league.season);
+}
+
+/* ---------- compare clubs ----------------------------------------- */
+
+function allTeams() {
+  const seen = new Set();
+  const teams = [];
+  for (const report of Object.values(state.reports || {})) {
+    for (const row of report.table || []) {
+      if (seen.has(row.team_id)) continue;
+      seen.add(row.team_id);
+      teams.push(row);
+    }
+  }
+  teams.sort((a, b) => a.team.localeCompare(b.team, 'nb'));
+  return teams;
+}
+
+function teamNameById(report, id) {
+  return allTeams().find((team) => team.team_id === id)?.team || id;
+}
+
+function careerById(id) {
+  return (state.careers?.teams || []).find((team) => team.team_id === id);
+}
+
+function careerRating(report, id) {
+  const career = careerById(id);
+  if (career) return career.current_rating;
+  return allTeams().find((team) => team.team_id === id)?.rating ?? 0;
+}
+
+function compareTeamBlock(id, name, rating, crest, side) {
+  const block = el('div', 'compare__team');
+  const main = el('div', 'compare__card-main');
+  if (crest) main.appendChild(crest);
+  const text = el('div', 'compare__team-text');
+  text.appendChild(el('div', 'compare__team-side', side));
+  text.appendChild(el('div', 'compare__team-name', name));
+  text.appendChild(el('div', 'compare__team-rating', String(Math.round(rating))));
+  main.appendChild(text);
+  block.appendChild(main);
+  block.appendChild(el('div', 'compare__pick-hint', 'Click to change'));
+  return block;
+}
+
+function oddsBar(homeName, awayName, entry) {
+  const odds = el('div', 'odds');
+  odds.setAttribute('role', 'img');
+  odds.setAttribute(
+    'aria-label',
+    `${homeName} win ${pct(entry.home_win)}, draw ${pct(entry.draw)}, ${awayName} win ${pct(entry.away_win)}`
+  );
+  for (const [outcome, value, who] of [
+    ['home', entry.home_win, homeName],
+    ['draw', entry.draw, 'Draw'],
+    ['away', entry.away_win, awayName],
+  ]) {
+    const segment = el('div', 'odds__seg');
+    segment.dataset.outcome = outcome;
+    segment.style.flex = `${Math.max(value, 0.001)}`;
+    segment.textContent = value >= 0.12 ? `${Math.round(value * 100)}%` : '';
+    segment.addEventListener('pointerenter', (event) => showTooltip(event, `<b>${who}</b><br>${pct(value, 1)}`));
+    segment.addEventListener('pointermove', moveTooltip);
+    segment.addEventListener('pointerleave', hideTooltip);
+    odds.appendChild(segment);
+  }
+  return odds;
+}
+
+function populateCompare(report) {
+  // The picker spans both divisions, so the team list is the same every season
+  // regardless of which division the page is showing; key on the season alone.
+  const key = String(report.league.season);
+  if (state.compareKey === key && $('#compare-a').options.length) return;
+  state.compareKey = key;
+  const a = $('#compare-a');
+  const b = $('#compare-b');
+  a.replaceChildren();
+  b.replaceChildren();
+  for (const team of allTeams()) {
+    a.appendChild(el('option', '', team.team)).value = team.team_id;
+    b.appendChild(el('option', '', team.team)).value = team.team_id;
+  }
+  // Sensible defaults: the two highest-rated clubs overall.
+  const byRating = [...allTeams()].sort((x, y) => y.rating - x.rating);
+  a.value = byRating[0].team_id;
+  b.value = byRating[1]?.team_id || byRating[0].team_id;
+}
+let compareMenuEl = null;
+
+function closeCompareMenu() {
+  if (compareMenuEl) {
+    compareMenuEl.remove();
+    compareMenuEl = null;
+  }
+  document.removeEventListener('pointerdown', compareMenuOutside, true);
+  document.removeEventListener('keydown', compareMenuKey);
+  window.removeEventListener('scroll', compareMenuScroll, true);
+}
+
+function compareMenuOutside(event) {
+  if (compareMenuEl && !compareMenuEl.contains(event.target)) closeCompareMenu();
+}
+
+function compareMenuKey(event) {
+  if (event.key === 'Escape') closeCompareMenu();
+}
+
+function compareMenuScroll(event) {
+  // Scrolling inside the menu (its own scrollbar) must not dismiss it.
+  if (compareMenuEl && compareMenuEl.contains(event.target)) return;
+  closeCompareMenu();
+}
+
+/* A custom picker: the native <select> can't show crests or be positioned, so
+   the cards open this popover under themselves, listing every club with its
+   logo. Selecting one sets the hidden select's value and fires its change. */
+function openCompareMenu(box, side, report) {
+  closeCompareMenu();
+  const menu = el('div', 'compare__menu');
+  menu.setAttribute('role', 'listbox');
+  menu.dataset.side = side;
+  const select = side === 'home' ? $('#compare-a') : $('#compare-b');
+  const otherId = side === 'home' ? $('#compare-b').value : $('#compare-a').value;
+  for (const team of allTeams()) {
+    const option = el('button', 'compare__option');
+    option.type = 'button';
+    option.setAttribute('role', 'option');
+    if (team.team_id === otherId) option.disabled = true;
+    const crest = teamLogo(team.team_id, team.team);
+    if (crest) option.appendChild(crest);
+    option.appendChild(el('span', 'compare__option-name', team.team));
+    option.addEventListener('click', () => {
+      select.value = team.team_id;
+      select.dispatchEvent(new Event('change'));
+      closeCompareMenu();
+    });
+    menu.appendChild(option);
+  }
+  const rect = box.getBoundingClientRect();
+  menu.style.position = 'fixed';
+  menu.style.top = `${rect.bottom + 6}px`;
+  menu.style.left = `${rect.left}px`;
+  menu.style.width = `${rect.width}px`;
+  document.body.appendChild(menu);
+  compareMenuEl = menu;
+  // Defer so the click that opened the menu doesn't immediately close it.
+  setTimeout(() => {
+    document.addEventListener('pointerdown', compareMenuOutside, true);
+    document.addEventListener('keydown', compareMenuKey);
+    window.addEventListener('scroll', compareMenuScroll, true);
+  }, 0);
+}
+
+function renderCompare(report) {
+  const holder = $('#compare-output');
+  holder.replaceChildren();
+
+  if (!report.pairwise) {
+    holder.appendChild(el('p', 'muted', 'Comparison odds are not available for this season.'));
+    return;
+  }
+
+  const aId = $('#compare-a').value;
+  const bId = $('#compare-b').value;
+  const homeId = aId;
+  const awayId = bId;
+  const homeName = teamNameById(report, homeId);
+  const awayName = teamNameById(report, awayId);
+
+  const entry = report.pairwise[homeId]?.[awayId];
+
+  // Fictional match: the two clubs, who hosts, and the model's odds + scorelines.
+  const matchBlock = el('div', 'compare__block');
+  matchBlock.appendChild(el('h3', 'compare__subhead', 'Fictional match'));
+
+  const teamsRow = el('div', 'compare__teams');
+  const homeBlock = compareTeamBlock(homeId, homeName, careerRating(report, homeId), teamLogo(homeId, homeName), 'Home');
+  const awayBlock = compareTeamBlock(awayId, awayName, careerRating(report, awayId), teamLogo(awayId, awayName), 'Away');
+  const swapBtn = el('button', 'compare__swap-center', '⇄');
+  swapBtn.type = 'button';
+  swapBtn.setAttribute('aria-label', 'Swap the two clubs');
+  swapBtn.addEventListener('click', () => {
+    const a = $('#compare-a');
+    const b = $('#compare-b');
+    const swap = a.value;
+    a.value = b.value;
+    b.value = swap;
+    renderCompare(report);
+  });
+  teamsRow.appendChild(homeBlock);
+  teamsRow.appendChild(swapBtn);
+  teamsRow.appendChild(awayBlock);
+
+  // Clicking a card opens the custom team picker for that side.
+  const makePicker = (box, side) => {
+    box.setAttribute('role', 'button');
+    box.setAttribute('tabindex', '0');
+    box.setAttribute('aria-label', 'Choose a club');
+    box.setAttribute('aria-haspopup', 'listbox');
+    box.title = 'Choose a club';
+    const toggle = () => {
+      if (compareMenuEl && compareMenuEl.dataset.side === side) closeCompareMenu();
+      else openCompareMenu(box, side, report);
+    };
+    box.addEventListener('click', toggle);
+    box.addEventListener('keydown', (event) => {
+      if (event.key === 'Enter' || event.key === ' ') {
+        event.preventDefault();
+        toggle();
+      }
+    });
+  };
+  makePicker(homeBlock, 'home');
+  makePicker(awayBlock, 'away');
+  matchBlock.appendChild(teamsRow);
+  matchBlock.appendChild(el('p', 'compare__note', `${homeName} host this fixture · home advantage is included.`));
+
+  if (entry) {
+    matchBlock.appendChild(oddsBar(homeName, awayName, entry));
+    if (entry.scorelines && entry.scorelines.length) {
+      const linesWrap = el('div', 'compare__scorelines');
+      linesWrap.appendChild(el('div', 'compare__scorelines-label', 'Most likely scorelines'));
+      const lines = el('div', 'compare__scorelines-chips');
+      for (const line of entry.scorelines.slice(0, 4)) {
+        const chip = el('span', 'compare__scoreline');
+        chip.textContent = `${line.home_goals}–${line.away_goals}`;
+        chip.appendChild(el('span', 'compare__scoreline-prob', pct(line.probability, 0)));
+        chip.setAttribute('aria-label', `${line.home_goals}-${line.away_goals} about ${pct(line.probability, 1)}`);
+        lines.appendChild(chip);
+      }
+      linesWrap.appendChild(lines);
+      matchBlock.appendChild(linesWrap);
+    }
+  } else {
+    matchBlock.appendChild(el('p', 'muted', 'No odds available for this pairing.'));
+  }
+  holder.appendChild(matchBlock);
+
+  // Rating history: both clubs overlaid on one time axis.
+  const careerA = careerById(aId);
+  const careerB = careerById(bId);
+  if (careerA && careerB) {
+    const histBlock = el('div', 'compare__block');
+    histBlock.appendChild(el('h3', 'compare__subhead', 'Rating history'));
+    const svg = svgEl('svg', { class: 'chart', role: 'img' });
+    svg.setAttribute('aria-label', `Rating history for ${homeName} and ${awayName}`);
+    drawCompareHistory(svg, careerA, careerB, teamNameById(report, aId), teamNameById(report, bId));
+    histBlock.appendChild(svg);
+    const legend = el('div', 'legend');
+    legend.appendChild(el('span', 'compare-legend__a', teamNameById(report, aId)));
+    legend.appendChild(el('span', 'compare-legend__b', teamNameById(report, bId)));
+    histBlock.appendChild(legend);
+    holder.appendChild(histBlock);
+  }
+}
+
+function drawCompareHistory(svg, careerA, careerB, labelA, labelB) {
+  const width = 900;
+  const height = 320;
+  const pad = { top: 14, right: 18, bottom: 34, left: 46 };
+  svg.setAttribute('viewBox', `0 0 ${width} ${height}`);
+  svg.replaceChildren();
+
+  const series = [careerA.points, careerB.points].filter(Boolean);
+  if (!series.length) return;
+  const all = series.flat();
+  const times = all.map((point) => new Date(point[0]).getTime());
+  const ratings = all.map((point) => point[1]);
+  const tMin = Math.min(...times);
+  const tMax = Math.max(...times);
+  let rMin = Math.min(...ratings);
+  let rMax = Math.max(...ratings);
+  const rPad = (rMax - rMin) * 0.08 || 20;
+  rMin -= rPad;
+  rMax += rPad;
+  const plotW = width - pad.left - pad.right;
+  const plotH = height - pad.top - pad.bottom;
+
+  const x = (t) => pad.left + ((t - tMin) / (tMax - tMin || 1)) * plotW;
+  const y = (r) => pad.top + (1 - (r - rMin) / (rMax - rMin || 1)) * plotH;
+
+  for (let i = 0; i <= 4; i += 1) {
+    const value = rMin + (i / 4) * (rMax - rMin);
+    svg.appendChild(svgEl('line', { class: 'grid-line', x1: pad.left, x2: width - pad.right, y1: y(value), y2: y(value) }));
+    const tick = svgEl('text', { class: 'tick', x: pad.left - 8, y: y(value) + 3.5, 'text-anchor': 'end' });
+    tick.textContent = String(Math.round(value));
+    svg.appendChild(tick);
+  }
+
+  svg.appendChild(svgEl('line', { class: 'axis-line', x1: pad.left, x2: width - pad.right, y1: height - pad.bottom, y2: height - pad.bottom }));
+  svg.appendChild(svgEl('line', { class: 'axis-line', x1: pad.left, x2: pad.left, y1: pad.top, y2: height - pad.bottom }));
+
+  // One vertical tick per season present, so the axis reads as years.
+  const seen = new Set();
+  for (const point of all) {
+    const year = point[0].slice(0, 4);
+    if (seen.has(year)) continue;
+    seen.add(year);
+    const px = x(Math.max(tMin, Math.min(tMax, Date.parse(`${year}-01-01T12:00:00Z`))));
+    svg.appendChild(svgEl('line', { class: 'grid-line', x1: px, x2: px, y1: pad.top, y2: height - pad.bottom }));
+    const label = svgEl('text', { class: 'tick', x: px, y: height - pad.bottom + 15, 'text-anchor': 'middle' });
+    label.textContent = year;
+    svg.appendChild(label);
+  }
+
+  const colors = ['#2a78d6', '#e0682a'];
+  [careerA, careerB].forEach((career, index) => {
+    if (!career.points || !career.points.length) return;
+    const points = career.points
+      .map((point) => `${x(new Date(point[0]).getTime())},${y(point[1])}`)
+      .join(' ');
+    svg.appendChild(svgEl('polyline', { class: `compare-line compare-line--${index === 0 ? 'a' : 'b'}`, points, stroke: colors[index] }));
+    const last = career.points[career.points.length - 1];
+    svg.appendChild(svgEl('circle', { cx: x(new Date(last[0]).getTime()), cy: y(last[1]), r: 3, fill: colors[index] }));
+  });
+
+  const xTitle = svgEl('text', { class: 'axis-title', x: pad.left + plotW / 2, y: height - 4, 'text-anchor': 'middle' });
+  xTitle.textContent = 'Season';
+  svg.appendChild(xTitle);
+  const yTitle = svgEl('text', { class: 'axis-title', x: -(pad.top + plotH / 2), y: 12, transform: 'rotate(-90)', 'text-anchor': 'middle' });
+  yTitle.textContent = 'ELO rating';
+  svg.appendChild(yTitle);
+
+  // Crosshair + tooltip reading out both clubs' rating at the hovered date.
+  const line = svgEl('line', { class: 'crosshair', y1: pad.top, y2: height - pad.bottom, x1: -10, x2: -10 });
+  line.style.opacity = '0';
+  svg.appendChild(line);
+  const pointsOf = (career) => career.points || [];
+  const nearest = (points, localX) => {
+    let best = 0;
+    for (let i = 1; i < points.length; i += 1) {
+      if (Math.abs(x(new Date(points[i][0]).getTime()) - localX) < Math.abs(x(new Date(points[best][0]).getTime()) - localX)) best = i;
+    }
+    return points[best];
+  };
+  const surface = svgEl('rect', { x: pad.left, y: pad.top, width: plotW, height: plotH, fill: 'transparent' });
+  surface.addEventListener('pointermove', (event) => {
+    const box = svg.getBoundingClientRect();
+    const localX = (event.clientX - box.left) * (width / box.width);
+    const pa = nearest(pointsOf(careerA), localX);
+    const pb = nearest(pointsOf(careerB), localX);
+    const px = (x(new Date(pa[0]).getTime()) + x(new Date(pb[0]).getTime())) / 2;
+    line.setAttribute('x1', px);
+    line.setAttribute('x2', px);
+    line.style.opacity = '1';
+    const when = new Date(`${pa[0]}T12:00:00Z`).toLocaleDateString('en-GB', { month: 'short', year: 'numeric' });
+    showTooltip(event, `<b>${labelA}</b> ${Math.round(pa[1])} · <b>${labelB}</b> ${Math.round(pb[1])}<br>${when}`);
+  });
+  surface.addEventListener('pointerleave', () => {
+    line.style.opacity = '0';
+    hideTooltip();
+  });
+  svg.appendChild(surface);
 }
 
 async function boot() {

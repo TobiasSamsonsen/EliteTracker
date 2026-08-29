@@ -86,6 +86,55 @@ class TestMatchProbabilities:
         assert 0.10 < average < 0.25
 
 
+class TestOrderedLogitProbabilities:
+    def _config(self, slope=0.0055, cut=0.55):
+        return EloConfig(probability_model="ordered_logit", logit_slope=slope,
+                         logit_cutpoint=cut)
+
+    def test_probabilities_sum_to_one(self):
+        config = self._config()
+        for gap in (-600, -200, 0, 150, 900):
+            p = match_probabilities(1500 + gap, 1500, config)
+            assert p.home_win + p.draw + p.away_win == pytest.approx(1.0)
+
+    def test_all_probabilities_are_non_negative(self):
+        config = self._config()
+        for gap in (-1200, -400, 0, 400, 1200):
+            p = match_probabilities(1500 + gap, 1500, config)
+            assert min(p.home_win, p.draw, p.away_win) >= 0.0
+
+    def test_draw_is_even_in_the_gap(self):
+        config = EloConfig(probability_model="ordered_logit", logit_slope=0.0055,
+                           logit_cutpoint=0.55, home_advantage=0)
+        for gap in (100, 300, 500):
+            forward = match_probabilities(1500 + gap, 1500, config).draw
+            reverse = match_probabilities(1500 - gap, 1500, config).draw
+            assert forward == pytest.approx(reverse)
+
+    def test_draw_at_even_match_is_tanh_of_half_the_cutpoint(self):
+        import math
+        config = EloConfig(probability_model="ordered_logit", logit_slope=0.0055,
+                           logit_cutpoint=0.55, home_advantage=0)
+        draw = match_probabilities(1500, 1500, config).draw
+        assert draw == pytest.approx(math.tanh(0.55 / 2.0), abs=1e-6)
+
+    def test_stronger_home_side_is_favoured_and_monotone(self):
+        config = self._config()
+        prev = -1.0
+        for gap in range(-600, 601, 100):
+            p = match_probabilities(1500 + gap, 1500, config)
+            assert p.home_win >= prev
+            prev = p.home_win
+
+    def test_expectation_does_not_equal_the_elo_score(self):
+        """Documented break: ordered logit refits the discrimination, so its
+        P(win) + 0.5*P(draw) is no longer the ELO expected_score."""
+        config = self._config()
+        p = match_probabilities(1700, 1400, config)
+        elo_expected = expected_score(1700 + config.home_advantage, 1400)
+        assert p.expected_home_score != pytest.approx(elo_expected, abs=1e-3)
+
+
 class TestRatingTable:
     def test_seeds_are_used_when_no_matches_are_played(self):
         seeds = {"A": TeamRating("A", "A", 1600, "seed"), "B": TeamRating("B", "B", 1400, "seed")}

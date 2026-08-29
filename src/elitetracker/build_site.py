@@ -41,6 +41,7 @@ from elitetracker.pipeline import (
 )
 from elitetracker.simulation.history import HistoryConfig
 from elitetracker.simulation.season import SimulationConfig
+from elitetracker.display import combined_pairwise
 
 # Matches ReportStore._configs(asof): the grid keeps the live simulation count
 # but the season-shape history is thinned so a rewound view builds fast.
@@ -103,10 +104,17 @@ def _build_league(spec: tuple[str, int, str | None]) -> dict[str, Any]:
 def _build_pair(
     season: int, asof: str | None, executor: ProcessPoolExecutor
 ) -> dict[str, dict[str, Any]]:
-    """Both leagues for one (season, asof) view, keyed by league slug."""
+    """Both leagues for one (season, asof) view, keyed by league slug.
+
+    Each report gets the same combined pairwise so the compare tool can mix
+    clubs from either division (they share one rating scale).
+    """
     specs = [(slug, season, asof) for slug in LEAGUE_SPECS]
-    reports = list(executor.map(_build_league, specs))
-    return dict(zip(LEAGUE_SPECS, reports))
+    reports = dict(zip(LEAGUE_SPECS, executor.map(_build_league, specs)))
+    combined = combined_pairwise(reports, EloConfig())
+    for report in reports.values():
+        report["pairwise"] = combined
+    return reports
 
 
 def write_payload(path: Path, payload: Any) -> None:

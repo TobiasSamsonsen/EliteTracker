@@ -332,8 +332,16 @@ route if anything ever does.
        Computed in the `elitetracker/display` package, which is excluded from
        `simulation_signature` (see decisions), so tweaking the display never rebuilds past
        seasons.
-- [ ] Ordered-logit probability mapping. Worth a further ~0.0013 log loss, but it breaks
-      the `expected = P(win) + 0.5·P(draw)` identity the rest of the model rests on.
+- [ ] Ordered-logit probability mapping. **Measured and set aside.** Implemented and
+      selectable (`EloConfig.probability_model = "ordered_logit"`, with `logit_slope` /
+      `logit_cutpoint` fit by walk-forward backtest via `backtest_cli --probability-model
+      ordered_logit`). Coarse, fine, and all-match (score-from 2015) sweeps all converge on
+      the same optimum (slope ≈ 0.0057, cut ≈ 0.55) with a marginal gain of only **−0.00036**
+      (2016 window) / **−0.00027** (2015→, n = 5,560) log loss — about a quarter of the
+      ~0.0013 once projected, and inside the sampling noise (SE of a log-loss difference at
+      n ≈ 5,000 is ~0.01). It also breaks the `expected = P(win) + 0.5·P(draw)` identity. Not
+      worth shipping: it does not beat the baseline it would replace, and carries a real cost.
+      Left behind as a switch, not a default, so a later season's data can re-test it cheaply.
 - [ ] Re-fit the draw model periodically as seasons accumulate.
 - [ ] Re-run `backtest_cli` after each new season to keep K / home advantage / regression
       fitted; regenerate `data/scoreline_model.json` with `build_scoreline_model.py`.
@@ -352,6 +360,33 @@ route if anything ever does.
       note: with `season_regression = 0.88` the seed's influence decays each close season, so
       the gain shows up mainly in the early seasons — don't expect much movement in 2026's
       carried ratings.
+
+## 💡 Website feature backlog
+
+Ideas that build on the data already in the report payload (no new modelling). The
+list is a scratchpad, not a commitment — each is picked up only when wanted.
+
+- [x] **Form (W/D/L, last 5)** — added to the standings table and under each side
+      in "Next up". Computed client-side from the `results` payload, so it follows
+      the rewind slider. Not sortable beyond the numeric points total.
+- [x] **Compare clubs** — pick any two clubs for a fictional match: choose the host,
+      see the model's three-way odds and most likely scorelines (precomputed in the
+      `pairwise` report field, one ordered pair per club), both current ratings, and
+      their rating histories overlaid on one line. Implemented in `public/app.js` +
+      a `Compare clubs` section in `index.html`.
+- [ ] **Played-results feed** — a scrollable list of completed matches with scores
+      and the rating swing each side took. The `results` payload already carries
+      everything; this is a presentation section only.
+- [ ] **Team focus page** — fold the career modal, a club's finish-grid row, and its
+      recent + upcoming fixtures into one dedicated view (deep-linkable, like
+      `?team=`).
+- [ ] **Head-to-head tool** — the same odds as Compare but framed as a rivalry: the
+      two clubs' record against *each other* from the results, plus the model's
+      current match odds.
+- [ ] **"What-if" simulator** — let the visitor nudge a club's rating and instantly
+      see the grid/table update. Needs a backend addition (re-simulate on demand),
+      so it is the only item here that is not pure-frontend; lower priority until the
+      static-host story for on-demand simulation is settled.
 
 ## Commands
 
