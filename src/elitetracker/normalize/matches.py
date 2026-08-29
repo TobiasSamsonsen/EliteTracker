@@ -1,6 +1,6 @@
 """The canonical match schema and the source-independent normalization steps.
 
-Per-source adapters live alongside this module (``parse_bot``, ``fotmob``) and
+Per-source adapters live alongside this module (``fotmob``) and
 all produce :class:`Match` objects, so deduplication, ordering, serialization
 and validation are written once.
 

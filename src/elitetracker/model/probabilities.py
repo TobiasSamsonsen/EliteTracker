@@ -27,9 +27,6 @@ class MatchProbabilities:
     def expected_home_score(self) -> float:
         return self.home_win + 0.5 * self.draw
 
-    def as_dict(self) -> dict[str, float]:
-        return {"home_win": self.home_win, "draw": self.draw, "away_win": self.away_win}
-
 
 def match_probabilities(
     home_rating: float, away_rating: float, config: EloConfig | None = None

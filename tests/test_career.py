@@ -1,6 +1,6 @@
 import pytest
 
-from elitetracker.model.career import SeasonSlice, build_careers, current_ratings
+from elitetracker.model.career import SeasonSlice, build_careers
 from elitetracker.model.elo import EloConfig
 from elitetracker.model.initial_ratings import TeamRating
 from elitetracker.normalize.matches import Match
@@ -97,7 +97,7 @@ class TestCrossSeasonRegression:
 
     def test_ratings_stay_zero_sum_across_seasons(self):
         careers = build_careers(two_season_slices(), SEEDS, config=NEUTRAL)
-        assert sum(current_ratings(careers).values()) == pytest.approx(3000)
+        assert sum(career.current_rating for career in careers.values()) == pytest.approx(3000)
 
     def test_unplayed_matches_record_nothing(self):
         slices = [top(2020, [match(1, "A", "B", "2020-04-01")])]
