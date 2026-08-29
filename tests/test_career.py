@@ -130,7 +130,7 @@ class TestDivisions:
     def test_a_club_with_no_history_starts_at_the_floor(self):
         slices = [top(2020, [match(1, "New", "Other", "2020-04-01", score=(1, 0))])]
         careers = build_careers(slices, {}, config=NEUTRAL)
-        assert careers["New"].seasons[0].rating_start == pytest.approx(1300)
+        assert careers["New"].seasons[0].rating_start == pytest.approx(1330)
 
     def test_seasons_are_replayed_oldest_first_whatever_the_input_order(self):
         forward = build_careers(two_season_slices(), SEEDS, config=NEUTRAL)
@@ -189,6 +189,58 @@ class TestSummaries:
         ]
         careers = build_careers(slices, SEEDS, config=NEUTRAL)
         assert careers["Old Name"].team == "Old Name"
+
+
+class TestPerDivisionRegression:
+    def test_each_division_mean_is_preserved_across_the_offseason(self):
+        """Per-division regression conserves each division's mean, so the
+        inter-division gap is not compressed the way the old combined-pool
+        pull did."""
+        seeds = {
+            "A": TeamRating("A", "A", 1800, "seed"),
+            "B": TeamRating("B", "B", 1600, "seed"),
+            "C": TeamRating("C", "C", 1400, "seed"),
+            "D": TeamRating("D", "D", 1200, "seed"),
+        }
+        slices = [
+            top(2020, [match(1, "A", "B", "2020-04-01", score=(1, 0))]),
+            second(2020, [match(2, "C", "D", "2020-04-02", score=(1, 0))]),
+            top(2021, [match(3, "A", "B", "2021-04-01", score=(1, 0))]),
+            second(2021, [match(4, "C", "D", "2021-04-02", score=(1, 0))]),
+        ]
+        config = EloConfig(home_advantage=0, season_regression=0.95)
+        careers = build_careers(slices, seeds, config=config)
+
+        top_end = (careers["A"].seasons[0].rating_end + careers["B"].seasons[0].rating_end) / 2
+        top_start = (careers["A"].seasons[1].rating_start + careers["B"].seasons[1].rating_start) / 2
+        second_end = (careers["C"].seasons[0].rating_end + careers["D"].seasons[0].rating_end) / 2
+        second_start = (careers["C"].seasons[1].rating_start + careers["D"].seasons[1].rating_start) / 2
+
+        assert top_start == pytest.approx(top_end)
+        assert second_start == pytest.approx(second_end)
+        assert top_start - second_start == pytest.approx(top_end - second_end)
+
+    def test_the_gap_is_not_pulled_toward_the_combined_mean(self):
+        """A stronger top division keeps its lead; the combined pool mean would
+        have dragged it down toward the weaker second tier."""
+        seeds = {
+            "A": TeamRating("A", "A", 1800, "seed"),
+            "B": TeamRating("B", "B", 1600, "seed"),
+            "C": TeamRating("C", "C", 1400, "seed"),
+            "D": TeamRating("D", "D", 1200, "seed"),
+        }
+        slices = [
+            top(2020, [match(1, "A", "B", "2020-04-01", score=(1, 0))]),
+            second(2020, [match(2, "C", "D", "2020-04-02", score=(1, 0))]),
+            top(2021, [match(3, "A", "B", "2021-04-01", score=(1, 0))]),
+            second(2021, [match(4, "C", "D", "2021-04-02", score=(1, 0))]),
+        ]
+        config = EloConfig(home_advantage=0, season_regression=0.95)
+        careers = build_careers(slices, seeds, config=config)
+        top_mean = (careers["A"].seasons[1].rating_start + careers["B"].seasons[1].rating_start) / 2
+        # The top division is stronger than the combined pool mean (1500), so a
+        # correct per-division pull leaves its mean above 1500.
+        assert top_mean > 1500.0
 
 
 class TestReproducibility:

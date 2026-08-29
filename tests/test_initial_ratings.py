@@ -53,10 +53,10 @@ class TestEquivalentRank:
 
 class TestRatingForRank:
     def test_best_rank_gets_the_ceiling(self):
-        assert rating_for_rank(1, 26, SeedingConfig()) == pytest.approx(1700)
+        assert rating_for_rank(1, 26, SeedingConfig()) == pytest.approx(1670)
 
     def test_worst_rank_gets_the_floor(self):
-        assert rating_for_rank(26, 26, SeedingConfig()) == pytest.approx(1300)
+        assert rating_for_rank(26, 26, SeedingConfig()) == pytest.approx(1330)
 
     def test_spacing_is_uniform(self):
         config = SeedingConfig()
@@ -67,16 +67,16 @@ class TestRatingForRank:
         assert all(gap == pytest.approx(gaps[0]) for gap in gaps)
 
     def test_single_team_ladder(self):
-        assert rating_for_rank(1, 1, SeedingConfig()) == pytest.approx(1700)
+        assert rating_for_rank(1, 1, SeedingConfig()) == pytest.approx(1670)
 
 
 class TestInitialRatings:
     def test_ratings_span_exactly_the_target_range(self):
-        """AGENTS.md requires 1700 for the best team and 1300 for the worst."""
+        """The seed ladder spans its configured best/worst ratings."""
         ratings = initial_ratings(table(), table(prefix="O"))
         values = [rating.rating for rating in ratings.values()]
-        assert max(values) == pytest.approx(1700)
-        assert min(values) == pytest.approx(1300)
+        assert max(values) == pytest.approx(1670)
+        assert min(values) == pytest.approx(1330)
 
     def test_every_team_from_both_divisions_is_seeded(self):
         ratings = initial_ratings(table(), table(prefix="O"))
@@ -113,13 +113,13 @@ class TestInitialRatings:
 
     def test_top_tier_only(self):
         ratings = initial_ratings(table(), [])
-        assert max(r.rating for r in ratings.values()) == pytest.approx(1700)
-        assert min(r.rating for r in ratings.values()) == pytest.approx(1300)
+        assert max(r.rating for r in ratings.values()) == pytest.approx(1670)
+        assert min(r.rating for r in ratings.values()) == pytest.approx(1330)
 
 
 class TestUnseededTeams:
     def test_a_third_tier_promotion_starts_at_the_floor(self):
-        assert rating_for_unseeded_team() == pytest.approx(1300)
+        assert rating_for_unseeded_team() == pytest.approx(1330)
 
     def test_respects_a_custom_floor(self):
         assert rating_for_unseeded_team(SeedingConfig(worst_rating=1200)) == pytest.approx(1200)

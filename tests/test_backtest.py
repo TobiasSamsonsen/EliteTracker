@@ -1,5 +1,7 @@
 """Tests for the walk-forward backtest harness and the regression model."""
 
+import pytest
+
 from elitetracker.model.backtest import (
     RatingModel,
     RegressionRatingModel,
@@ -87,3 +89,19 @@ class TestRegressionModel:
         model.start_season(2021)
         assert model.ratings["A"] == 1700.0
         assert model.ratings["B"] == 1300.0
+
+    def test_per_division_pulls_toward_each_division_mean(self):
+        model = RegressionRatingModel(EloConfig(season_regression=0.95))
+        model.seed({"A": 1800.0, "B": 1600.0, "C": 1400.0, "D": 1200.0, "E": 1500.0})
+        model.start_season(2020)
+        # A,B in "top" (mean 1700), C,D in "second" (mean 1300); E is dormant
+        # this season and must be left untouched.
+        model.start_season(2021, {"A": "top", "B": "top", "C": "second", "D": "second"})
+        assert model.ratings["A"] == pytest.approx(1700.0 + 0.95 * 100.0)
+        assert model.ratings["B"] == pytest.approx(1700.0 + 0.95 * -100.0)
+        assert (model.ratings["A"] + model.ratings["B"]) / 2 == pytest.approx(1700.0)
+        assert model.ratings["C"] == pytest.approx(1300.0 + 0.95 * 100.0)
+        assert model.ratings["D"] == pytest.approx(1300.0 + 0.95 * -100.0)
+        assert (model.ratings["C"] + model.ratings["D"]) / 2 == pytest.approx(1300.0)
+        # Dormant team is frozen, not pulled toward any mean.
+        assert model.ratings["E"] == 1500.0

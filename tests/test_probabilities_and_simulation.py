@@ -106,7 +106,7 @@ class TestRatingTable:
 
     def test_unseeded_team_starts_at_the_floor(self):
         table = build_rating_table({}, [match(1, "New", "Other")])
-        assert table.get("New") == pytest.approx(1300)
+        assert table.get("New") == pytest.approx(1330)
         assert table.unseeded == {"New", "Other"}
 
     def test_replay_is_chronological_not_input_order(self):

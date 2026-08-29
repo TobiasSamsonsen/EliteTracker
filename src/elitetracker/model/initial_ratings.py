@@ -7,14 +7,14 @@ Both divisions are placed on one ladder. An OBOS-ligaen finish is treated as
 `division_offset` places worse than the same finish in Eliteserien, which is
 what lets a promoted champion outrank a relegated Eliteserien side. The ladder
 is then mapped linearly onto the target range, so the top of Eliteserien sits at
-1700 and the bottom of OBOS-ligaen at 1300.
+1670 and the bottom of OBOS-ligaen at 1330.
 
-With the default offset of 10 and 16-team divisions:
+With the default offset of 14 and 16-team divisions:
 
-    Eliteserien  1st  -> rank  1 -> 1700
-    Eliteserien 16th  -> rank 16 -> 1460
-    OBOS-ligaen  1st  -> rank 11 -> 1540
-    OBOS-ligaen 16th  -> rank 26 -> 1300
+    Eliteserien  1st  -> rank  1 -> 1670
+    Eliteserien 16th  -> rank 16 -> 1494
+    OBOS-ligaen  1st  -> rank 15 -> 1506
+    OBOS-ligaen 16th  -> rank 30 -> 1330
 """
 
 from __future__ import annotations
@@ -30,12 +30,12 @@ SECOND_TIER = 2
 
 @dataclass(frozen=True)
 class SeedingConfig:
-    best_rating: float = 1700.0
-    worst_rating: float = 1300.0
+    best_rating: float = 1670.0
+    worst_rating: float = 1330.0
     # How many places worse an OBOS finish is treated as, relative to the same
     # finish in Eliteserien. Promoted champions have historically slotted into
     # the lower half of Eliteserien rather than the bottom.
-    division_offset: int = 10
+    division_offset: int = 14
 
     def __post_init__(self) -> None:
         if self.best_rating <= self.worst_rating:

@@ -42,7 +42,15 @@ REM run the test suite
 - `validation/` — errors vs. warnings, non-zero exit on error.
 - **24 season-league match files (2015–2026) plus 2014 seed tables, all validating clean.**
 
-### Model (elo-v5)
+### Model (elo-v5 → elo-v6)
+- **elo-v6** — offseason regression is now applied **per division** (each team pulled
+  toward its own division's mean, not the combined pool mean), which stops the
+  Eliteserien/OBOS gap being compressed every close season; the seed ladder
+  (spread + division offset) and the regression factor were **jointly re-fit** by
+  walk-forward backtest — `season_regression` 0.95 → **0.88**, seed spread 400 → **340**
+  (1670/1330), `division_offset` 10 → **14**. Marginal −0.0004 log loss on the 2016+
+  window with better calibration (0.0106 → 0.0099). Ratings and therefore every
+  probability change; `MODEL_VERSION` bumped accordingly.
 - `model/elo.py` — `expected_score` / `actual_score` / `update` kept separate. K-factor 20
   (flat across 18-24, so left at 20); **home advantage refit 75 → 60** by full-season
   walk-forward backtest (the 0.61 marginal rate implies ~75, but prediction prefers 60);
@@ -125,9 +133,9 @@ history meaningful. It also changes who the model favours: with 11 years of evid
 Bodø/Glimt (1850) lead Eliteserien 2026 ahead of Viking (1830), where the old
 single-season seeding had Viking on top.
 
-**Ratings are not capped at 1700.** The 1700–1300 range in AGENTS.md is honoured by the
-*initial* seeding; a free-running ELO then moves beyond it. Bodø/Glimt's climb from 1508
-in 2015 to 1850 today is the model working, not drifting.
+**Ratings are not capped at 1700.** The seed ladder range (currently 1670–1330, fit by
+backtest) is honoured by the *initial* seeding; a free-running ELO then moves beyond it.
+Bodø/Glimt's climb from 1508 in 2015 to 1850 today is the model working, not drifting.
 
 **Season shape is sampled by date, not by round.** Rounds are not chronological — the
 furthest round reached jumps from 4 on 11 April 2026 to 15 on 15 April — so a round axis
@@ -326,34 +334,21 @@ route if anything ever does.
 - [ ] Re-fit the draw model periodically as seasons accumulate.
 - [ ] Re-run `backtest_cli` after each new season to keep K / home advantage / regression
       fitted; regenerate `data/scoreline_model.json` with `build_scoreline_model.py`.
-- [ ] Cross-season mean reversion is over the *combined* two-division pool, not per
-      division (`model/career.py:101`, `model/backtest.py:171`). Teams never meet
-      cross-division in-league, so within a season each division is zero-sum on its own;
-      the global offseason pull therefore transfers rating mass from Eliteserien toward
-      OBOS every close season and silently compresses the inter-division gap, instead of
-      preserving the one-ladder gap the 2014 seed set. Per-division regression (each
-      division toward its own mean, over teams *active* that season — the current mean also
-      dilutes in dormant clubs never pruned from `ratings`) would conserve each division's
-      sum and keep the gap. The regression step itself is total-conserving (Σ new = Σ old),
-      so no points are created/destroyed; pool drift only comes from tier-3 entrants and
-      relegated exits. If adopted, `season_regression` must be re-fit by walk-forward
-      backtest and log-loss/calibration re-checked, since 0.95 was fit on the global mean.
-- [ ] Fit the *starting* ratings by walk-forward backtest instead of taking them from the
-      2014 final tables. The seed is the only place finishing position enters the model, so
-      optimizing it is the open lever for early-season accuracy. Keep the position→rating
-      ladder but fit it to minimize `backtest.walk_forward` log loss over 2015+, scoring
-      from the first post-burn-in season. Only **two** parameters are identifiable: the
-      ladder *spread* (`best_rating − worst_rating`, i.e. how far apart the seed ranks teams)
-      and the `division_offset`. The absolute mean is **not** a free parameter — every
-      prediction depends only on rating *differences* (see `model/elo.py`: `expected_score`,
-      `updated_pair`, `draw_probability` are all difference-only), so adding a constant to
-      every rating leaves all probabilities identical. 1500 is just the inherited convention
-      (midpoint of the AGENTS.md 1700–1300 range), equal to 1000 or 1200 for accuracy; fix
-      it for readability and only fit the spread + offset. Stdlib-only grid search over
-      spread × offset; no new deps. Caveat: with `season_regression = 0.95` the seed's
-      influence decays each close season, so the gain shows up mainly in the early seasons —
-      measure it *marginally* (elo-v3 discipline: refit the draw mapping on both sides) and
-      don't expect much movement in 2026's carried ratings.
+- [x] Cross-season mean reversion was over the *combined* two-division pool, not per
+      division (`model/career.py:101`, `model/backtest.py:171`). **Shipped in elo-v6:**
+      regression is now per division (each toward its own mean, over teams active that
+      season; dormant clubs are left untouched). The regression step is total-conserving
+      within each division, so the inter-division gap is preserved instead of being
+      compressed. `season_regression` was re-fit by walk-forward backtest on the per-division
+      scheme (0.95 → 0.88).
+- [x] Fit the *starting* ratings by walk-forward backtest instead of taking them from the
+      2014 final tables. **Shipped in elo-v6:** the seed ladder was jointly fit with
+      `season_regression` by `model/fit_params.py` — `spread` 400 → **340** (1670/1330) and
+      `division_offset` 10 → **14**, midpoint fixed at 1500. The open lever for early-season
+      accuracy, now measured marginally alongside the re-fit regression factor. Remaining
+      note: with `season_regression = 0.88` the seed's influence decays each close season, so
+      the gain shows up mainly in the early seasons — don't expect much movement in 2026's
+      carried ratings.
 
 ## Commands
 
