@@ -134,6 +134,9 @@
                 <th class="num" scope="col" aria-sort="none" data-sort-col="expected_points">
                   <button type="button" class="sort-btn" data-sort-key="expected_points"><span class="sort-btn__label">xPts</span><span class="visually-hidden">, expected final points</span><span class="sort-btn__caret" aria-hidden="true"></span></button>
                 </th>
+                <th class="num form" scope="col" aria-sort="none" data-sort-col="form">
+                  <button type="button" class="sort-btn" data-sort-key="form"><span class="sort-btn__label">Form</span><span class="visually-hidden">, recent results</span><span class="sort-btn__caret" aria-hidden="true"></span></button>
+                </th>
                 <th class="num" scope="col" aria-sort="none" data-sort-col="up">
                   <button type="button" class="sort-btn" data-sort-key="up"><span class="sort-btn__label" id="head-first">Champion</span><span class="visually-hidden" id="head-first-desc">, chance of winning the title</span><span class="sort-btn__caret" aria-hidden="true"></span></button>
                 </th>
@@ -202,6 +205,22 @@
         </div>
         <div class="fixtures" id="fixtures"></div>
         <div class="legend" id="odds-legend"></div>
+      </div>
+    </section>
+
+    <section>
+      <div class="panel">
+        <div class="panel__head">
+          <div>
+            <h2>Compare clubs</h2>
+            <p>Pick any two clubs for a fictional match — from either division. The club on the left hosts; swap them to flip home advantage. The model's three-way odds and most likely scorelines appear, alongside each club's current rating and how their ratings have tracked across every season on one shared line.</p>
+          </div>
+        </div>
+        <div class="compare__pickers">
+          <select id="compare-a" class="compare__select compare__select--hidden" aria-hidden="true" tabindex="-1"></select>
+          <select id="compare-b" class="compare__select compare__select--hidden" aria-hidden="true" tabindex="-1"></select>
+        </div>
+        <div id="compare-output"></div>
       </div>
     </section>
 

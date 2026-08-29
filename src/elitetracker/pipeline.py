@@ -23,7 +23,7 @@ from elitetracker.model.elo import MODEL_VERSION, EloConfig
 from elitetracker.model.initial_ratings import SECOND_TIER, TOP_TIER, SeedingConfig, TeamRating, initial_ratings
 from elitetracker.model.ratings import build_rating_table
 from elitetracker.model.table import table_from_matches
-from elitetracker.display import build_fixtures_payload
+from elitetracker.display import build_fixtures_payload, build_pairwise_payload
 from elitetracker.normalize.matches import Match
 from elitetracker.normalize.standings import load_standings
 from elitetracker.simulation.history import HistoryConfig, as_of_date, build_history
@@ -420,6 +420,7 @@ def build_report(
         },
         "table": _table_payload(matches, rating_table.ratings, projection, seeds),
         "fixtures": build_fixtures_payload(matches, rating_table.ratings, elo_config),
+        "pairwise": build_pairwise_payload(rating_table.ratings, elo_config),
         "results": _results_payload(matches),
         "history": _history_payload(
             build_history(matches, all_matches, seeds, elo_config=elo_config, config=history),

@@ -80,6 +80,18 @@ class EloConfig:
     # mean-revert. Applied per division now, so the inter-division gap is
     # preserved. Re-fit by walk-forward backtest on the per-division scheme.
     season_regression: float = 0.88
+    # Which map turns the effective rating gap into a win/draw/loss triple.
+    # "draw" is the historical bell-curve draw model (elo-v2..v6); it preserves
+    # the ELO expectation exactly. "ordered_logit" models the three outcomes as
+    # an ordered latent variable (see model.probabilities); it fits the
+    # discrimination jointly with the draw threshold and so is more accurate, but
+    # its P(win) + 0.5*P(draw) no longer equals the ELO expected_score.
+    probability_model: str = "draw"
+    # Ordered-logit parameters (used only when probability_model == "ordered_logit").
+    # `logit_slope` scales the effective gap; `logit_cutpoint` is the (symmetric)
+    # threshold around an even match. Fitted by walk-forward backtest.
+    logit_slope: float = 1.0
+    logit_cutpoint: float = 1.0
 
     def __post_init__(self) -> None:
         if self.k_factor <= 0:
@@ -90,6 +102,14 @@ class EloConfig:
             raise ValueError(f"draw_scale must be positive, got {self.draw_scale}")
         if not 0.0 < self.season_regression <= 1.0:
             raise ValueError(f"season_regression must be in (0, 1], got {self.season_regression}")
+        if self.probability_model not in ("draw", "ordered_logit"):
+            raise ValueError(
+                f"probability_model must be 'draw' or 'ordered_logit', got {self.probability_model!r}"
+            )
+        if self.logit_slope <= 0:
+            raise ValueError(f"logit_slope must be positive, got {self.logit_slope}")
+        if self.logit_cutpoint <= 0:
+            raise ValueError(f"logit_cutpoint must be positive, got {self.logit_cutpoint}")
 
 
 def expected_score(rating: float, opponent_rating: float) -> float:
