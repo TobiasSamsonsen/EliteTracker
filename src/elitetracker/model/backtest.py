@@ -121,8 +121,16 @@ class RatingModel:
     def ensure(self, team_id: str) -> None:
         self.ratings.setdefault(team_id, self.floor_rating)
 
-    def start_season(self, season: int) -> None:
-        """Hook for anything that happens between seasons (e.g. regression)."""
+    def start_season(self, season: int, divisions: dict[str, str] | None = None) -> None:
+        """Hook for anything that happens between seasons (e.g. regression).
+
+        Pass `divisions` (team_id -> league slug for the teams active this
+        season) to regress each team toward its *own division's* mean instead
+        of the combined pool mean. That keeps the inter-division gap from being
+        compressed every close season and avoids dragging dormant clubs (which
+        are never pruned from `ratings`) toward the pool mean. With
+        `divisions=None` the historical combined-pool behaviour is preserved.
+        """
 
     # -- prediction ------------------------------------------------------
     def effective_home_advantage(self, home_id: str, away_id: str) -> float:
@@ -168,18 +176,35 @@ class RegressionRatingModel(RatingModel):
         super().__init__(config, floor_rating=floor_rating)
         self._first_season = True
 
-    def start_season(self, season: int) -> None:
+    def start_season(self, season: int, divisions: dict[str, str] | None = None) -> None:
         factor = self.config.season_regression
         if self._first_season or factor >= 1.0:
             self._first_season = False
             return
-        ratings = list(self.ratings.values())
-        if not ratings:
+        if not self.ratings:
             self._first_season = False
             return
-        mean = sum(ratings) / len(ratings)
-        for team_id in list(self.ratings):
-            self.ratings[team_id] = mean + factor * (self.ratings[team_id] - mean)
+        if divisions is None:
+            # Historical behaviour: pull every rating toward the combined pool
+            # mean across the close season.
+            ratings = list(self.ratings.values())
+            mean = sum(ratings) / len(ratings)
+            for team_id in list(self.ratings):
+                self.ratings[team_id] = mean + factor * (self.ratings[team_id] - mean)
+            self._first_season = False
+            return
+        # Per-division regression: group the active teams by league and pull
+        # each toward its own division's mean. Dormant teams (absent from
+        # `divisions`) are left untouched, so their rating is frozen between
+        # appearances and the inter-division gap is preserved.
+        by_league: dict[str, list[str]] = {}
+        for team_id, league in divisions.items():
+            if team_id in self.ratings:
+                by_league.setdefault(league, []).append(team_id)
+        for team_ids in by_league.values():
+            mean = sum(self.ratings[team_id] for team_id in team_ids) / len(team_ids)
+            for team_id in team_ids:
+                self.ratings[team_id] = mean + factor * (self.ratings[team_id] - mean)
         self._first_season = False
 
 
@@ -190,17 +215,22 @@ def walk_forward(
     model: RatingModel,
     *,
     score_from_season: int,
+    division_map: dict[int, dict[str, str]] | None = None,
 ) -> Scorecard:
     """Replay every season in order, scoring only from `score_from_season` on.
 
     `seasons` is [(season, matches)] with both divisions already merged, so the
-    rating pool is shared exactly as it is in production.
+    rating pool is shared exactly as it is in production. When `division_map`
+    maps each season to its active team_id -> league slug, the offseason
+    regression (if the model performs one) is applied per division.
     """
     model.seed(seeds)
     card = Scorecard(name=model.name)
 
     for season, matches in sorted(seasons, key=lambda pair: pair[0]):
-        model.start_season(season)
+        model.start_season(
+            season, division_map.get(season) if division_map else None
+        )
         for team_id in {tid for match in matches for tid in team_ids(match)}:
             model.ensure(team_id)
 

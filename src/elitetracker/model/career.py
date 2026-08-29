@@ -96,17 +96,29 @@ def build_careers(
     seasons_sorted = sorted({slice_.season for slice_ in slices})
     first_season = seasons_sorted[0] if seasons_sorted else None
     for season in seasons_sorted:
-        # Mean-revert ratings across the close season, except before the first
-        # replayed year (whose ratings are the deliberate seed from the standings).
-        if season != first_season and config.season_regression < 1.0:
-            rated = list(ratings.values())
-            if rated:
-                mean = sum(rated) / len(rated)
-                factor = config.season_regression
-                for team_id in list(ratings):
-                    ratings[team_id] = mean + factor * (ratings[team_id] - mean)
-
         in_season = [slice_ for slice_ in slices if slice_.season == season]
+
+        # Mean-revert ratings across the close season (except before the first
+        # replayed year, whose ratings are the deliberate seed from the standings),
+        # toward each division's own mean over the teams that will actually play
+        # this season. Pulling per division preserves the inter-division gap and
+        # leaves dormant clubs (never pruned from `ratings`) untouched instead of
+        # dragging them toward the combined pool mean.
+        if season != first_season and config.season_regression < 1.0:
+            active: dict[str, str] = {}
+            for slice_ in in_season:
+                for match in slice_.matches:
+                    active[match.home_id or match.home] = slice_.league
+                    active[match.away_id or match.away] = slice_.league
+            by_league: dict[str, list[str]] = {}
+            for team_id, league in active.items():
+                if team_id in ratings:
+                    by_league.setdefault(league, []).append(team_id)
+            factor = config.season_regression
+            for team_ids in by_league.values():
+                mean = sum(ratings[team_id] for team_id in team_ids) / len(team_ids)
+                for team_id in team_ids:
+                    ratings[team_id] = mean + factor * (ratings[team_id] - mean)
 
         rating_start: dict[str, float] = {}
         for slice_ in in_season:

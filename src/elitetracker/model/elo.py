@@ -11,10 +11,11 @@ Defaults are fitted by walk-forward backtest over every season held (see
   full-season sweep prefers 60: against the 0.61-implied value it is worth
   ~0.001 log loss on both the 2016+ and 2019+ windows (K is flat across 18-24,
   so K stays at 20). The full-season prediction is the more honest target.
-* SEASON_REGRESSION 0.95. At each close season every rating is pulled 5% toward
-  the pool mean, so a club does not carry one freak year into the next. The
-  walk-forward sweep peaks at 0.92-0.97 and is worth ~0.001 log loss on top of
-  the home-advantage change, and nearly halves the calibration error.
+* SEASON_REGRESSION 0.88. At each close season every rating is pulled 12% toward
+  its own division's mean, so a club does not carry one freak year into the next
+  and the Eliteserien/OBOS gap is preserved. Re-fit by walk-forward backtest on
+  the per-division scheme (the 0.95 figure was fit on the old combined-pool
+  pull).
 * The draw model was originally set from 255 matches of a single part-season,
   which made it far too narrow. Refitting over 5,543 replayed matches moved it
   to 0.26/375 and cut the calibration error by more than half. That is the
@@ -42,7 +43,14 @@ from dataclasses import dataclass
 # elo-v5: home advantage refit 75 -> 60 and cross-season regression (5% toward
 # the pool mean each close season) added. Both fitted by walk-forward backtest;
 # ratings and therefore every probability change.
-MODEL_VERSION = "elo-v5"
+#
+# elo-v6: offseason regression is now applied per division (each team pulled
+# toward its own division's mean, not the combined pool mean), which stops the
+# inter-division gap being compressed every close season; the seed ladder
+# (spread + division offset) and the regression factor were jointly re-fit by
+# walk-forward backtest on the per-division scheme. Ratings and therefore every
+# probability change.
+MODEL_VERSION = "elo-v6"
 
 # A 400-point rating gap means the stronger side is expected to score 10 times
 # as often as the weaker one; this is the constant that defines the ELO scale.
@@ -67,10 +75,11 @@ class EloConfig:
     # probabilities, none of it is better discrimination between teams.
     draw_base: float = 0.26
     draw_scale: float = 375.0
-    # Pull every rating toward the pool mean at each offseason. 1.0 is a no-op
-    # (the historical behaviour: a club carries its full rating into the next
-    # year); smaller values mean-revert. Fitted by walk-forward backtest.
-    season_regression: float = 0.95
+    # Pull every rating toward its own division's mean at each offseason. 1.0 is
+    # a no-op (a club carries its full rating into the next year); smaller values
+    # mean-revert. Applied per division now, so the inter-division gap is
+    # preserved. Re-fit by walk-forward backtest on the per-division scheme.
+    season_regression: float = 0.88
 
     def __post_init__(self) -> None:
         if self.k_factor <= 0:

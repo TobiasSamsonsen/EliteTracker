@@ -44,7 +44,7 @@ Handle edge cases: postponed matches, missing data, unusual team names.
 
 ## ELO System Details
 
-- Target rating range: 1700 (best) to 1300 (worst)
+- Target rating range: 1700 (best) to 1300 (worst) for the seed ladder; the seed spread and division offset are fit by walk-forward backtest (currently 1670–1330, offset 14) and the absolute mean is not a free parameter
 - Use deterministic method for initial ratings
 - Separate expected result calculation, actual results, and rating updates
 - Home-field advantage and K-factor must be configurable

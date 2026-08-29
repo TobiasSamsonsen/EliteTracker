@@ -126,7 +126,7 @@ class TestConfig:
     def test_defaults_are_documented_values(self):
         config = EloConfig()
         assert (config.k_factor, config.home_advantage) == (20.0, 60.0)
-        assert config.season_regression == pytest.approx(0.95)
+        assert config.season_regression == pytest.approx(0.88)
 
     @pytest.mark.parametrize(
         "kwargs",
@@ -137,7 +137,7 @@ class TestConfig:
             EloConfig(**kwargs)
 
     def test_model_version_is_declared(self):
-        assert MODEL_VERSION == "elo-v5"
+        assert MODEL_VERSION == "elo-v6"
 
 
 class TestFittedDefaults:
@@ -173,7 +173,7 @@ class TestCalibration:
         assert implied_home_edge == pytest.approx(0.585, abs=0.01)
 
     def test_default_season_regression_mean_reverts(self):
-        """0.95 pulls each rating 5% toward the pool mean across the close season."""
+        """0.88 pulls each rating 12% toward its division mean across the close season."""
         config = EloConfig()
-        assert config.season_regression == pytest.approx(0.95)
+        assert config.season_regression == pytest.approx(0.88)
         assert 0.0 < config.season_regression < 1.0
