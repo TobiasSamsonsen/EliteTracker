@@ -75,13 +75,6 @@ class TeamProjection:
     position_probabilities: list[float]
     expected_points: float
 
-    def probability_of_position(self, position: int) -> float:
-        return self.position_probabilities[position - 1]
-
-    def probability_within(self, best: int, worst: int) -> float:
-        """Chance of finishing between `best` and `worst` inclusive (1-indexed)."""
-        return sum(self.position_probabilities[best - 1 : worst])
-
 
 @dataclass
 class SeasonProjection:

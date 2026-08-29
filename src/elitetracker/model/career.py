@@ -149,7 +149,3 @@ def build_careers(
                 )
 
     return careers
-
-
-def current_ratings(careers: dict[str, TeamCareer]) -> dict[str, float]:
-    return {team_id: career.current_rating for team_id, career in careers.items()}

@@ -808,16 +808,16 @@ table.standings .muted { color: var(--ink-muted); }
 /* Odds cell: the three-way bar on top, likely scorelines beneath. */
 .fixture__odds-col { display: flex; flex-direction: column; gap: 0.35rem; min-width: 0; }
 
-.fixture__lines { display: flex; flex-wrap: wrap; gap: 0.3rem; }
+.fixture__lines { display: flex; flex-wrap: nowrap; gap: 0.3rem; overflow: hidden; }
 
 .fixture__line {
-  font-size: 0.6875rem;
+  font-size: 0.625rem;
   font-weight: 600;
   color: var(--ink-muted);
   background: var(--panel-sunk);
   border: 1px solid var(--rule);
   border-radius: 999px;
-  padding: 0.05rem 0.45rem;
+  padding: 0.05rem 0.3rem;
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
 }

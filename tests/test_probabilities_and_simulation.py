@@ -264,12 +264,12 @@ class TestSimulation:
         for team in projection.teams:
             assert team.current_points <= team.expected_points <= team.current_points + 3 * 4
 
-    def test_probability_within_a_band(self):
+    def test_position_probabilities_sum_to_one(self):
         projection = simulate_season(
             two_team_season(), {"A": 1500, "B": 1500}, config=SimulationConfig(simulations=100)
         )
-        team = projection.teams[0]
-        assert team.probability_within(1, 2) == pytest.approx(1.0)
+        for team in projection.teams:
+            assert sum(team.position_probabilities) == pytest.approx(1.0)
 
     def test_missing_rating_is_reported(self):
         with pytest.raises(KeyError, match="no rating"):

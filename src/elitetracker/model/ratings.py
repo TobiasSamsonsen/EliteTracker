@@ -28,13 +28,6 @@ class RatingTable:
     def get(self, team_id: str) -> float:
         return self.ratings[team_id]
 
-    def sorted_by_rating(self) -> list[tuple[str, str, float]]:
-        """(team_id, team name, rating), strongest first."""
-        return sorted(
-            ((team_id, self.names.get(team_id, team_id), rating) for team_id, rating in self.ratings.items()),
-            key=lambda row: (-row[2], row[1]),
-        )
-
 
 def _team_ids(match: Match) -> tuple[str, str]:
     if match.home_id is None or match.away_id is None:
