@@ -315,7 +315,10 @@ route if anything ever does.
 ## 🔧 Next steps
 - [x] One-command refresh after each matchday: `python -m elitetracker.refresh` (fetches,
       normalizes, validates, writes; `--no-force` to reuse a fresh cache entry).
-- [ ] Refresh on a schedule, e.g. a Windows Task Scheduler job pointing at the refresh command.
+- [x] Refresh on a schedule — no local machine needed. `.github/workflows/refresh.yml` runs
+      `elitetracker.refresh` daily (21:30 UTC) and, only if `data/normalized` changed, commits
+      and pushes via the `REFRESH_PAT` secret; the push re-triggers the existing deploy workflow
+      (current season rebuilt on a cache hit). Off-season days with no new results are no-ops.
 - [x] Static build + CI deploy: `build_site` feeds Firebase Hosting, triggered by every
       push to `main` (`.github/workflows/firebase-hosting-merge.yml`).
 - [x] `elo-v5` — shipped. See below. Home advantage refit 75→60 and cross-season regression
