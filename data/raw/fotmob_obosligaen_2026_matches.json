@@ -4481,9 +4481,17 @@
     "status": {
       "utcTime": "2026-08-22T14:00:00Z",
       "timezone": "UTC",
-      "started": false,
+      "finished": true,
+      "started": true,
       "cancelled": false,
-      "finished": false
+      "awarded": false,
+      "scoreStr": "0 - 1",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
     }
   },
   {
@@ -4504,9 +4512,17 @@
     "status": {
       "utcTime": "2026-08-26T16:00:00Z",
       "timezone": "UTC",
-      "started": false,
+      "finished": true,
+      "started": true,
       "cancelled": false,
-      "finished": false
+      "awarded": false,
+      "scoreStr": "3 - 1",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
     }
   },
   {
@@ -4527,9 +4543,17 @@
     "status": {
       "utcTime": "2026-08-26T17:00:00Z",
       "timezone": "UTC",
-      "started": false,
+      "finished": true,
+      "started": true,
       "cancelled": false,
-      "finished": false
+      "awarded": false,
+      "scoreStr": "1 - 2",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
     }
   },
   {
@@ -4550,9 +4574,17 @@
     "status": {
       "utcTime": "2026-08-26T17:00:00Z",
       "timezone": "UTC",
-      "started": false,
+      "finished": true,
+      "started": true,
       "cancelled": false,
-      "finished": false
+      "awarded": false,
+      "scoreStr": "3 - 0",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
     }
   },
   {
@@ -4573,9 +4605,17 @@
     "status": {
       "utcTime": "2026-08-26T17:00:00Z",
       "timezone": "UTC",
-      "started": false,
+      "finished": true,
+      "started": true,
       "cancelled": false,
-      "finished": false
+      "awarded": false,
+      "scoreStr": "2 - 2",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
     }
   },
   {
@@ -4596,9 +4636,17 @@
     "status": {
       "utcTime": "2026-08-26T17:00:00Z",
       "timezone": "UTC",
-      "started": false,
+      "finished": true,
+      "started": true,
       "cancelled": false,
-      "finished": false
+      "awarded": false,
+      "scoreStr": "0 - 1",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
     }
   },
   {
@@ -4619,9 +4667,17 @@
     "status": {
       "utcTime": "2026-08-26T17:00:00Z",
       "timezone": "UTC",
-      "started": false,
+      "finished": true,
+      "started": true,
       "cancelled": false,
-      "finished": false
+      "awarded": false,
+      "scoreStr": "4 - 2",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
     }
   },
   {
@@ -4642,9 +4698,17 @@
     "status": {
       "utcTime": "2026-08-26T17:00:00Z",
       "timezone": "UTC",
-      "started": false,
+      "finished": true,
+      "started": true,
       "cancelled": false,
-      "finished": false
+      "awarded": false,
+      "scoreStr": "3 - 1",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
     }
   },
   {
@@ -4663,11 +4727,23 @@
       "id": "8512"
     },
     "status": {
-      "utcTime": "2026-08-29T12:00:00Z",
-      "timezone": "UTC",
-      "started": false,
+      "utcTime": "2026-08-30T15:00:00.000Z",
+      "halfs": {
+        "firstHalfStarted": "30.08.2026 17:01:47",
+        "secondHalfStarted": "30.08.2026 18:03:35"
+      },
+      "periodLength": 45,
+      "finished": true,
+      "started": true,
       "cancelled": false,
-      "finished": false
+      "awarded": false,
+      "scoreStr": "0 - 2",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
     }
   },
   {
@@ -4686,11 +4762,23 @@
       "id": "10021"
     },
     "status": {
-      "utcTime": "2026-08-30T15:00:00Z",
-      "timezone": "UTC",
-      "started": false,
+      "utcTime": "2026-08-30T15:00:00.000Z",
+      "halfs": {
+        "firstHalfStarted": "30.08.2026 17:01:47",
+        "secondHalfStarted": "30.08.2026 18:06:28"
+      },
+      "periodLength": 45,
+      "finished": true,
+      "started": true,
       "cancelled": false,
-      "finished": false
+      "awarded": false,
+      "scoreStr": "2 - 2",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
     }
   },
   {
@@ -4709,11 +4797,23 @@
       "id": "9918"
     },
     "status": {
-      "utcTime": "2026-08-30T15:00:00Z",
-      "timezone": "UTC",
-      "started": false,
+      "utcTime": "2026-08-30T15:00:00.000Z",
+      "halfs": {
+        "firstHalfStarted": "30.08.2026 17:01:47",
+        "secondHalfStarted": "30.08.2026 18:02:44"
+      },
+      "periodLength": 45,
+      "finished": true,
+      "started": true,
       "cancelled": false,
-      "finished": false
+      "awarded": false,
+      "scoreStr": "2 - 1",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
     }
   },
   {
@@ -4732,11 +4832,23 @@
       "id": "10224"
     },
     "status": {
-      "utcTime": "2026-08-30T15:00:00Z",
-      "timezone": "UTC",
-      "started": false,
+      "utcTime": "2026-08-30T15:00:00.000Z",
+      "halfs": {
+        "firstHalfStarted": "30.08.2026 17:02:51",
+        "secondHalfStarted": "30.08.2026 18:05:50"
+      },
+      "periodLength": 45,
+      "finished": true,
+      "started": true,
       "cancelled": false,
-      "finished": false
+      "awarded": false,
+      "scoreStr": "4 - 4",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
     }
   },
   {
@@ -4755,11 +4867,23 @@
       "id": "4249"
     },
     "status": {
-      "utcTime": "2026-08-30T15:00:00Z",
-      "timezone": "UTC",
-      "started": false,
+      "utcTime": "2026-08-30T15:00:00.000Z",
+      "halfs": {
+        "firstHalfStarted": "30.08.2026 17:02:51",
+        "secondHalfStarted": "30.08.2026 18:05:50"
+      },
+      "periodLength": 45,
+      "finished": true,
+      "started": true,
       "cancelled": false,
-      "finished": false
+      "awarded": false,
+      "scoreStr": "1 - 2",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
     }
   },
   {
@@ -4778,11 +4902,23 @@
       "id": "7988"
     },
     "status": {
-      "utcTime": "2026-08-30T15:00:00Z",
-      "timezone": "UTC",
-      "started": false,
+      "utcTime": "2026-08-30T15:00:00.000Z",
+      "halfs": {
+        "firstHalfStarted": "30.08.2026 17:02:19",
+        "secondHalfStarted": "30.08.2026 18:04:54"
+      },
+      "periodLength": 45,
+      "finished": true,
+      "started": true,
       "cancelled": false,
-      "finished": false
+      "awarded": false,
+      "scoreStr": "3 - 5",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
     }
   },
   {
@@ -4801,11 +4937,23 @@
       "id": "8133"
     },
     "status": {
-      "utcTime": "2026-08-30T15:00:00Z",
-      "timezone": "UTC",
-      "started": false,
+      "utcTime": "2026-08-30T15:00:00.000Z",
+      "halfs": {
+        "firstHalfStarted": "30.08.2026 17:01:11",
+        "secondHalfStarted": "30.08.2026 18:03:35"
+      },
+      "periodLength": 45,
+      "finished": true,
+      "started": true,
       "cancelled": false,
-      "finished": false
+      "awarded": false,
+      "scoreStr": "0 - 3",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
     }
   },
   {
@@ -4824,11 +4972,24 @@
       "id": "8180"
     },
     "status": {
-      "utcTime": "2026-08-30T15:00:00Z",
-      "timezone": "UTC",
-      "started": false,
+      "utcTime": "2026-08-30T15:00:00.000Z",
+      "numberOfHomeRedCards": 2,
+      "halfs": {
+        "firstHalfStarted": "30.08.2026 17:04:18",
+        "secondHalfStarted": "30.08.2026 18:06:28"
+      },
+      "periodLength": 45,
+      "finished": true,
+      "started": true,
       "cancelled": false,
-      "finished": false
+      "awarded": false,
+      "scoreStr": "2 - 3",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
     }
   },
   {
@@ -5409,6 +5570,29 @@
   {
     "round": "24",
     "roundName": 24,
+    "pageUrl": "/matches/strommen-vs-sandnes-ulf/19nbxy#5105272",
+    "id": "5105272",
+    "home": {
+      "name": "Strømmen",
+      "shortName": "Strømmen",
+      "id": "4249"
+    },
+    "away": {
+      "name": "Sandnes Ulf",
+      "shortName": "Sandnes Ulf",
+      "id": "8133"
+    },
+    "status": {
+      "utcTime": "2026-10-03T12:30:00Z",
+      "timezone": "UTC",
+      "started": false,
+      "cancelled": false,
+      "finished": false
+    }
+  },
+  {
+    "round": "24",
+    "roundName": 24,
     "pageUrl": "/matches/fk-haugesund-vs-stabaek/2t4ibj#5105267",
     "id": "5105267",
     "home": {
@@ -5466,29 +5650,6 @@
       "name": "Raufoss",
       "shortName": "Raufoss",
       "id": "9812"
-    },
-    "status": {
-      "utcTime": "2026-10-03T14:00:00Z",
-      "timezone": "UTC",
-      "started": false,
-      "cancelled": false,
-      "finished": false
-    }
-  },
-  {
-    "round": "24",
-    "roundName": 24,
-    "pageUrl": "/matches/strommen-vs-sandnes-ulf/19nbxy#5105272",
-    "id": "5105272",
-    "home": {
-      "name": "Strømmen",
-      "shortName": "Strømmen",
-      "id": "4249"
-    },
-    "away": {
-      "name": "Sandnes Ulf",
-      "shortName": "Sandnes Ulf",
-      "id": "8133"
     },
     "status": {
       "utcTime": "2026-10-03T14:00:00Z",
@@ -5754,6 +5915,29 @@
   {
     "round": "26",
     "roundName": 26,
+    "pageUrl": "/matches/strommen-vs-asane/1omiuy#5105288",
+    "id": "5105288",
+    "home": {
+      "name": "Strømmen",
+      "shortName": "Strømmen",
+      "id": "4249"
+    },
+    "away": {
+      "name": "Åsane",
+      "shortName": "Åsane",
+      "id": "10021"
+    },
+    "status": {
+      "utcTime": "2026-10-14T13:00:00Z",
+      "timezone": "UTC",
+      "started": false,
+      "cancelled": false,
+      "finished": false
+    }
+  },
+  {
+    "round": "26",
+    "roundName": 26,
     "pageUrl": "/matches/bryne-vs-raufoss/2s67xc#5105282",
     "id": "5105282",
     "home": {
@@ -5892,29 +6076,6 @@
   {
     "round": "26",
     "roundName": 26,
-    "pageUrl": "/matches/strommen-vs-asane/1omiuy#5105288",
-    "id": "5105288",
-    "home": {
-      "name": "Strømmen",
-      "shortName": "Strømmen",
-      "id": "4249"
-    },
-    "away": {
-      "name": "Åsane",
-      "shortName": "Åsane",
-      "id": "10021"
-    },
-    "status": {
-      "utcTime": "2026-10-14T17:00:00Z",
-      "timezone": "UTC",
-      "started": false,
-      "cancelled": false,
-      "finished": false
-    }
-  },
-  {
-    "round": "26",
-    "roundName": 26,
     "pageUrl": "/matches/kongsvinger-vs-stromsgodset/27obvk#5105289",
     "id": "5105289",
     "home": {
@@ -5938,29 +6099,6 @@
   {
     "round": "27",
     "roundName": 27,
-    "pageUrl": "/matches/stabaek-vs-asane/3ad0es#5105297",
-    "id": "5105297",
-    "home": {
-      "name": "Åsane",
-      "shortName": "Åsane",
-      "id": "10021"
-    },
-    "away": {
-      "name": "Stabæk",
-      "shortName": "Stabæk",
-      "id": "9918"
-    },
-    "status": {
-      "utcTime": "2026-10-18T15:00:00Z",
-      "timezone": "UTC",
-      "started": false,
-      "cancelled": false,
-      "finished": false
-    }
-  },
-  {
-    "round": "27",
-    "roundName": 27,
     "pageUrl": "/matches/egersund-vs-sogndal/1gyux3#5105290",
     "id": "5105290",
     "home": {
@@ -5972,6 +6110,52 @@
       "name": "Sogndal",
       "shortName": "Sogndal",
       "id": "8616"
+    },
+    "status": {
+      "utcTime": "2026-10-18T12:30:00Z",
+      "timezone": "UTC",
+      "started": false,
+      "cancelled": false,
+      "finished": false
+    }
+  },
+  {
+    "round": "27",
+    "roundName": 27,
+    "pageUrl": "/matches/stromsgodset-vs-fk-haugesund/2ayaea#5105296",
+    "id": "5105296",
+    "home": {
+      "name": "Strømsgodset",
+      "shortName": "Strømsgodset",
+      "id": "8180"
+    },
+    "away": {
+      "name": "FK Haugesund",
+      "shortName": "FK Haugesund",
+      "id": "8512"
+    },
+    "status": {
+      "utcTime": "2026-10-18T12:30:00Z",
+      "timezone": "UTC",
+      "started": false,
+      "cancelled": false,
+      "finished": false
+    }
+  },
+  {
+    "round": "27",
+    "roundName": 27,
+    "pageUrl": "/matches/stabaek-vs-asane/3ad0es#5105297",
+    "id": "5105297",
+    "home": {
+      "name": "Åsane",
+      "shortName": "Åsane",
+      "id": "10021"
+    },
+    "away": {
+      "name": "Stabæk",
+      "shortName": "Stabæk",
+      "id": "9918"
     },
     "status": {
       "utcTime": "2026-10-18T15:00:00Z",
@@ -6097,22 +6281,91 @@
     }
   },
   {
-    "round": "27",
-    "roundName": 27,
-    "pageUrl": "/matches/stromsgodset-vs-fk-haugesund/2ayaea#5105296",
-    "id": "5105296",
+    "round": "28",
+    "roundName": 28,
+    "pageUrl": "/matches/ranheim-vs-raufoss/27tz7c#5105302",
+    "id": "5105302",
     "home": {
+      "name": "Raufoss",
+      "shortName": "Raufoss",
+      "id": "9812"
+    },
+    "away": {
+      "name": "Ranheim",
+      "shortName": "Ranheim",
+      "id": "6563"
+    },
+    "status": {
+      "utcTime": "2026-10-24T12:00:00Z",
+      "timezone": "UTC",
+      "started": false,
+      "cancelled": false,
+      "finished": false
+    }
+  },
+  {
+    "round": "28",
+    "roundName": 28,
+    "pageUrl": "/matches/strommen-vs-stromsgodset/19ztvz#5105305",
+    "id": "5105305",
+    "home": {
+      "name": "Strømmen",
+      "shortName": "Strømmen",
+      "id": "4249"
+    },
+    "away": {
       "name": "Strømsgodset",
       "shortName": "Strømsgodset",
       "id": "8180"
     },
-    "away": {
+    "status": {
+      "utcTime": "2026-10-25T12:00:00Z",
+      "timezone": "UTC",
+      "started": false,
+      "cancelled": false,
+      "finished": false
+    }
+  },
+  {
+    "round": "28",
+    "roundName": 28,
+    "pageUrl": "/matches/hodd-vs-fk-haugesund/28jzc1#5105300",
+    "id": "5105300",
+    "home": {
       "name": "FK Haugesund",
       "shortName": "FK Haugesund",
       "id": "8512"
     },
+    "away": {
+      "name": "Hødd",
+      "shortName": "Hødd",
+      "id": "7937"
+    },
     "status": {
-      "utcTime": "2026-10-18T15:00:00Z",
+      "utcTime": "2026-10-25T13:30:00Z",
+      "timezone": "UTC",
+      "started": false,
+      "cancelled": false,
+      "finished": false
+    }
+  },
+  {
+    "round": "28",
+    "roundName": 28,
+    "pageUrl": "/matches/sandnes-ulf-vs-lyn/2sbov0#5105303",
+    "id": "5105303",
+    "home": {
+      "name": "Sandnes Ulf",
+      "shortName": "Sandnes Ulf",
+      "id": "8133"
+    },
+    "away": {
+      "name": "Lyn",
+      "shortName": "Lyn",
+      "id": "10224"
+    },
+    "status": {
+      "utcTime": "2026-10-25T13:30:00Z",
       "timezone": "UTC",
       "started": false,
       "cancelled": false,
@@ -6145,29 +6398,6 @@
   {
     "round": "28",
     "roundName": 28,
-    "pageUrl": "/matches/hodd-vs-fk-haugesund/28jzc1#5105300",
-    "id": "5105300",
-    "home": {
-      "name": "FK Haugesund",
-      "shortName": "FK Haugesund",
-      "id": "8512"
-    },
-    "away": {
-      "name": "Hødd",
-      "shortName": "Hødd",
-      "id": "7937"
-    },
-    "status": {
-      "utcTime": "2026-10-25T16:00:00Z",
-      "timezone": "UTC",
-      "started": false,
-      "cancelled": false,
-      "finished": false
-    }
-  },
-  {
-    "round": "28",
-    "roundName": 28,
     "pageUrl": "/matches/moss-vs-asane/2t2w9w#5105301",
     "id": "5105301",
     "home": {
@@ -6179,52 +6409,6 @@
       "name": "Åsane",
       "shortName": "Åsane",
       "id": "10021"
-    },
-    "status": {
-      "utcTime": "2026-10-25T16:00:00Z",
-      "timezone": "UTC",
-      "started": false,
-      "cancelled": false,
-      "finished": false
-    }
-  },
-  {
-    "round": "28",
-    "roundName": 28,
-    "pageUrl": "/matches/ranheim-vs-raufoss/27tz7c#5105302",
-    "id": "5105302",
-    "home": {
-      "name": "Raufoss",
-      "shortName": "Raufoss",
-      "id": "9812"
-    },
-    "away": {
-      "name": "Ranheim",
-      "shortName": "Ranheim",
-      "id": "6563"
-    },
-    "status": {
-      "utcTime": "2026-10-25T16:00:00Z",
-      "timezone": "UTC",
-      "started": false,
-      "cancelled": false,
-      "finished": false
-    }
-  },
-  {
-    "round": "28",
-    "roundName": 28,
-    "pageUrl": "/matches/sandnes-ulf-vs-lyn/2sbov0#5105303",
-    "id": "5105303",
-    "home": {
-      "name": "Sandnes Ulf",
-      "shortName": "Sandnes Ulf",
-      "id": "8133"
-    },
-    "away": {
-      "name": "Lyn",
-      "shortName": "Lyn",
-      "id": "10224"
     },
     "status": {
       "utcTime": "2026-10-25T16:00:00Z",
@@ -6271,29 +6455,6 @@
       "name": "Odds Ballklubb",
       "shortName": "Odd",
       "id": "7988"
-    },
-    "status": {
-      "utcTime": "2026-10-25T16:00:00Z",
-      "timezone": "UTC",
-      "started": false,
-      "cancelled": false,
-      "finished": false
-    }
-  },
-  {
-    "round": "28",
-    "roundName": 28,
-    "pageUrl": "/matches/strommen-vs-stromsgodset/19ztvz#5105305",
-    "id": "5105305",
-    "home": {
-      "name": "Strømmen",
-      "shortName": "Strømmen",
-      "id": "4249"
-    },
-    "away": {
-      "name": "Strømsgodset",
-      "shortName": "Strømsgodset",
-      "id": "8180"
     },
     "status": {
       "utcTime": "2026-10-25T16:00:00Z",
@@ -6363,29 +6524,6 @@
       "name": "Bryne",
       "shortName": "Bryne",
       "id": "8531"
-    },
-    "status": {
-      "utcTime": "2026-11-01T16:00:00Z",
-      "timezone": "UTC",
-      "started": false,
-      "cancelled": false,
-      "finished": false
-    }
-  },
-  {
-    "round": "29",
-    "roundName": 29,
-    "pageUrl": "/matches/kongsvinger-vs-stabaek/2pi5hj#5105308",
-    "id": "5105308",
-    "home": {
-      "name": "Kongsvinger",
-      "shortName": "Kongsvinger",
-      "id": "8179"
-    },
-    "away": {
-      "name": "Stabæk",
-      "shortName": "Stabæk",
-      "id": "9918"
     },
     "status": {
       "utcTime": "2026-11-01T16:00:00Z",
@@ -6488,6 +6626,29 @@
     }
   },
   {
+    "round": "29",
+    "roundName": 29,
+    "pageUrl": "/matches/kongsvinger-vs-stabaek/2pi5hj#5105308",
+    "id": "5105308",
+    "home": {
+      "name": "Kongsvinger",
+      "shortName": "Kongsvinger",
+      "id": "8179"
+    },
+    "away": {
+      "name": "Stabæk",
+      "shortName": "Stabæk",
+      "id": "9918"
+    },
+    "status": {
+      "utcTime": "2026-11-02T18:00:00Z",
+      "timezone": "UTC",
+      "started": false,
+      "cancelled": false,
+      "finished": false
+    }
+  },
+  {
     "round": "30",
     "roundName": 30,
     "pageUrl": "/matches/kongsvinger-vs-bryne/2b4qdk#5105314",
@@ -6503,7 +6664,7 @@
       "id": "8179"
     },
     "status": {
-      "utcTime": "2026-11-08T16:00:00Z",
+      "utcTime": "2026-11-08T12:00:00Z",
       "timezone": "UTC",
       "started": false,
       "cancelled": false,
@@ -6526,7 +6687,7 @@
       "id": "7988"
     },
     "status": {
-      "utcTime": "2026-11-08T16:00:00Z",
+      "utcTime": "2026-11-08T12:00:00Z",
       "timezone": "UTC",
       "started": false,
       "cancelled": false,
@@ -6549,7 +6710,7 @@
       "id": "6563"
     },
     "status": {
-      "utcTime": "2026-11-08T16:00:00Z",
+      "utcTime": "2026-11-08T12:00:00Z",
       "timezone": "UTC",
       "started": false,
       "cancelled": false,
@@ -6572,7 +6733,7 @@
       "id": "4722"
     },
     "status": {
-      "utcTime": "2026-11-08T16:00:00Z",
+      "utcTime": "2026-11-08T12:00:00Z",
       "timezone": "UTC",
       "started": false,
       "cancelled": false,
@@ -6595,7 +6756,7 @@
       "id": "10021"
     },
     "status": {
-      "utcTime": "2026-11-08T16:00:00Z",
+      "utcTime": "2026-11-08T12:00:00Z",
       "timezone": "UTC",
       "started": false,
       "cancelled": false,
@@ -6618,7 +6779,7 @@
       "id": "7937"
     },
     "status": {
-      "utcTime": "2026-11-08T16:00:00Z",
+      "utcTime": "2026-11-08T12:00:00Z",
       "timezone": "UTC",
       "started": false,
       "cancelled": false,
@@ -6641,7 +6802,7 @@
       "id": "8180"
     },
     "status": {
-      "utcTime": "2026-11-08T16:00:00Z",
+      "utcTime": "2026-11-08T12:00:00Z",
       "timezone": "UTC",
       "started": false,
       "cancelled": false,
@@ -6664,7 +6825,7 @@
       "id": "10224"
     },
     "status": {
-      "utcTime": "2026-11-08T16:00:00Z",
+      "utcTime": "2026-11-08T12:00:00Z",
       "timezone": "UTC",
       "started": false,
       "cancelled": false,

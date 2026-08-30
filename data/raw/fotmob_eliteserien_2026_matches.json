@@ -4218,52 +4218,6 @@
   {
     "round": "19",
     "roundName": 19,
-    "pageUrl": "/matches/valerenga-vs-molde/2nnd8n#5104992",
-    "id": "5104992",
-    "home": {
-      "name": "Vålerenga",
-      "shortName": "Vålerenga",
-      "id": "8007"
-    },
-    "away": {
-      "name": "Molde",
-      "shortName": "Molde",
-      "id": "9917"
-    },
-    "status": {
-      "utcTime": "2026-08-29T14:00:00Z",
-      "timezone": "UTC",
-      "started": false,
-      "cancelled": false,
-      "finished": false
-    }
-  },
-  {
-    "round": "19",
-    "roundName": 19,
-    "pageUrl": "/matches/aalesund-vs-viking/2cuni1#5104991",
-    "id": "5104991",
-    "home": {
-      "name": "Viking",
-      "shortName": "Viking",
-      "id": "8478"
-    },
-    "away": {
-      "name": "Aalesund",
-      "shortName": "Aalesund",
-      "id": "8404"
-    },
-    "status": {
-      "utcTime": "2026-08-29T16:00:00Z",
-      "timezone": "UTC",
-      "started": false,
-      "cancelled": false,
-      "finished": false
-    }
-  },
-  {
-    "round": "19",
-    "roundName": 19,
     "pageUrl": "/matches/bodoglimt-vs-rosenborg/2c9p7m#5104986",
     "id": "5104986",
     "home": {
@@ -4277,11 +4231,23 @@
       "id": "8422"
     },
     "status": {
-      "utcTime": "2026-08-30T12:30:00Z",
-      "timezone": "UTC",
-      "started": false,
+      "utcTime": "2026-08-30T12:30:00.000Z",
+      "halfs": {
+        "firstHalfStarted": "30.08.2026 14:32:07",
+        "secondHalfStarted": "30.08.2026 15:34:48"
+      },
+      "periodLength": 45,
+      "finished": true,
+      "started": true,
       "cancelled": false,
-      "finished": false
+      "awarded": false,
+      "scoreStr": "4 - 2",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
     }
   },
   {
@@ -4300,11 +4266,23 @@
       "id": "8605"
     },
     "status": {
-      "utcTime": "2026-08-30T15:00:00Z",
-      "timezone": "UTC",
-      "started": false,
+      "utcTime": "2026-08-30T15:00:00.000Z",
+      "halfs": {
+        "firstHalfStarted": "30.08.2026 17:02:05",
+        "secondHalfStarted": "30.08.2026 18:05:23"
+      },
+      "periodLength": 45,
+      "finished": true,
+      "started": true,
       "cancelled": false,
-      "finished": false
+      "awarded": false,
+      "scoreStr": "2 - 2",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
     }
   },
   {
@@ -4323,11 +4301,23 @@
       "id": "8468"
     },
     "status": {
-      "utcTime": "2026-08-30T15:00:00Z",
-      "timezone": "UTC",
-      "started": false,
+      "utcTime": "2026-08-30T15:00:00.000Z",
+      "halfs": {
+        "firstHalfStarted": "30.08.2026 17:01:42",
+        "secondHalfStarted": "30.08.2026 18:02:23"
+      },
+      "periodLength": 45,
+      "finished": true,
+      "started": true,
       "cancelled": false,
-      "finished": false
+      "awarded": false,
+      "scoreStr": "0 - 0",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
     }
   },
   {
@@ -4346,11 +4336,24 @@
       "id": "2305"
     },
     "status": {
-      "utcTime": "2026-08-30T15:00:00Z",
-      "timezone": "UTC",
-      "started": false,
+      "utcTime": "2026-08-30T15:00:00.000Z",
+      "numberOfAwayRedCards": 1,
+      "halfs": {
+        "firstHalfStarted": "30.08.2026 17:02:20",
+        "secondHalfStarted": "30.08.2026 18:07:36"
+      },
+      "periodLength": 45,
+      "finished": true,
+      "started": true,
       "cancelled": false,
-      "finished": false
+      "awarded": false,
+      "scoreStr": "4 - 1",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
     }
   },
   {
@@ -4369,11 +4372,93 @@
       "id": "8509"
     },
     "status": {
-      "utcTime": "2026-08-30T15:00:00Z",
-      "timezone": "UTC",
-      "started": false,
+      "utcTime": "2026-08-30T15:00:00.000Z",
+      "halfs": {
+        "firstHalfStarted": "30.08.2026 17:01:32",
+        "secondHalfStarted": "30.08.2026 18:03:32"
+      },
+      "periodLength": 45,
+      "finished": true,
+      "started": true,
       "cancelled": false,
-      "finished": false
+      "awarded": false,
+      "scoreStr": "0 - 0",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "19",
+    "roundName": 19,
+    "pageUrl": "/matches/valerenga-vs-molde/2nnd8n#5104992",
+    "id": "5104992",
+    "home": {
+      "name": "Vålerenga",
+      "shortName": "Vålerenga",
+      "id": "8007"
+    },
+    "away": {
+      "name": "Molde",
+      "shortName": "Molde",
+      "id": "9917"
+    },
+    "status": {
+      "utcTime": "2026-08-30T15:00:00.000Z",
+      "halfs": {
+        "firstHalfStarted": "30.08.2026 17:01:53",
+        "secondHalfStarted": "30.08.2026 18:07:12"
+      },
+      "periodLength": 45,
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "3 - 4",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "19",
+    "roundName": 19,
+    "pageUrl": "/matches/aalesund-vs-viking/2cuni1#5104991",
+    "id": "5104991",
+    "home": {
+      "name": "Viking",
+      "shortName": "Viking",
+      "id": "8478"
+    },
+    "away": {
+      "name": "Aalesund",
+      "shortName": "Aalesund",
+      "id": "8404"
+    },
+    "status": {
+      "utcTime": "2026-08-30T15:00:00.000Z",
+      "halfs": {
+        "firstHalfStarted": "30.08.2026 17:02:30",
+        "secondHalfStarted": "30.08.2026 18:06:51"
+      },
+      "periodLength": 45,
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "2 - 1",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
     }
   },
   {
@@ -4392,11 +4477,25 @@
       "id": "8417"
     },
     "status": {
-      "utcTime": "2026-08-30T17:15:00Z",
-      "timezone": "UTC",
-      "started": false,
+      "utcTime": "2026-08-30T17:15:00.000Z",
+      "halfs": {
+        "firstHalfStarted": "30.08.2026 19:16:45"
+      },
+      "periodLength": 45,
+      "finished": false,
+      "started": true,
       "cancelled": false,
-      "finished": false
+      "ongoing": true,
+      "scoreStr": "0 - 2",
+      "liveTime": {
+        "short": "20‎’‎",
+        "shortKey": "",
+        "long": "19:12",
+        "longKey": "",
+        "maxTime": 45,
+        "basePeriod": 45,
+        "addedTime": 0
+      }
     }
   },
   {
@@ -4540,6 +4639,29 @@
   {
     "round": "20",
     "roundName": 20,
+    "pageUrl": "/matches/valerenga-vs-sarpsborg-08/297ngn#5104998",
+    "id": "5104998",
+    "home": {
+      "name": "Sarpsborg 08",
+      "shortName": "Sarpsborg 08",
+      "id": "8509"
+    },
+    "away": {
+      "name": "Vålerenga",
+      "shortName": "Vålerenga",
+      "id": "8007"
+    },
+    "status": {
+      "utcTime": "2026-09-06T15:00:00Z",
+      "timezone": "UTC",
+      "started": false,
+      "cancelled": false,
+      "finished": false
+    }
+  },
+  {
+    "round": "20",
+    "roundName": 20,
     "pageUrl": "/matches/kristiansund-vs-tromso/2g7loj#5104996",
     "id": "5104996",
     "home": {
@@ -4554,29 +4676,6 @@
     },
     "status": {
       "utcTime": "2026-09-06T17:15:00Z",
-      "timezone": "UTC",
-      "started": false,
-      "cancelled": false,
-      "finished": false
-    }
-  },
-  {
-    "round": "20",
-    "roundName": 20,
-    "pageUrl": "/matches/valerenga-vs-sarpsborg-08/297ngn#5104998",
-    "id": "5104998",
-    "home": {
-      "name": "Sarpsborg 08",
-      "shortName": "Sarpsborg 08",
-      "id": "8509"
-    },
-    "away": {
-      "name": "Vålerenga",
-      "shortName": "Vålerenga",
-      "id": "8007"
-    },
-    "status": {
-      "utcTime": "2026-09-07T17:00:00Z",
       "timezone": "UTC",
       "started": false,
       "cancelled": false,
