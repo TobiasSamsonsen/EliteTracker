@@ -117,6 +117,14 @@ class TestRewind:
         assert report["model"]["matches_played"] == 2
         assert report["model"]["matches_remaining"] == 0
 
+    def test_results_carry_team_ids(self, tiny_league):
+        """The played-results view looks ratings up by id, so ids must be present."""
+        report = build(tiny_league)
+        assert report["results"]
+        for result in report["results"]:
+            assert result["home_id"] == result["home"]
+            assert result["away_id"] == result["away"]
+
     def test_rewinding_hides_later_results(self, tiny_league):
         report = build(tiny_league, asof="2016-03-01")
         assert report["league"]["asof"] == "2016-03-01"

@@ -17,6 +17,8 @@ const state = {
   rewindTimer: null,
   // Key of the league+season the compare pickers were last populated for.
   compareKey: '',
+  // Active view tab: 'table', 'grid', 'shape', 'ladder', 'next-up', 'compare', 'played', 'model'
+  activeView: 'table',
 };
 
 /* One probe decides the data source for the whole session. A static host
@@ -905,6 +907,97 @@ function renderFixtures(report) {
   }
 }
 
+/* ---------- played results ------------------------------------------ */
+
+/* Build a map of rating changes per team per match date from careers data.
+   career.points is an array of [date, rating] after each match.
+   The rating change for a match is rating_after - rating_before (previous entry). */
+function buildRatingChanges(careers) {
+  const changes = new Map(); // key: "teamId|date" -> change
+  if (!careers?.teams) return changes;
+
+  for (const career of careers.teams) {
+    const points = career.points;
+    if (!points || points.length < 2) continue;
+
+    for (let i = 1; i < points.length; i++) {
+      const [date, ratingAfter] = points[i];
+      const [, ratingBefore] = points[i - 1];
+      const change = Math.round(ratingAfter - ratingBefore);
+      changes.set(`${career.team_id}|${date}`, change);
+    }
+  }
+  return changes;
+}
+
+function renderPlayedResults(report) {
+  const holder = $('#played-results');
+  holder.replaceChildren();
+
+  const results = report.results || [];
+  if (!results.length) {
+    holder.appendChild(el('p', 'muted', 'No played matches yet.'));
+    return;
+  }
+
+  // Build rating changes map from careers
+  const ratingChanges = buildRatingChanges(state.careers);
+
+  // Sort by date descending (most recent first)
+  const sorted = [...results].sort((a, b) => b.date.localeCompare(a.date));
+
+  for (const match of sorted) {
+    const row = el('div', 'played-result');
+
+    const when = el('div', 'played-result__when');
+    when.textContent = formatDate(match.date) + (match.round ? ` · R${match.round}` : '');
+    row.appendChild(when);
+
+    const teams = el('div', 'played-result__teams');
+
+    const side = (name, teamId) => {
+      const holder = el('span', 'played-result__side');
+      const crest = teamLogo(teamId, name);
+      if (crest) holder.appendChild(crest);
+      holder.appendChild(el('span', '', name));
+      return holder;
+    };
+
+    // Rating-change badge: +N/-N if the side moved, em-dash if it did not.
+    const badge = (change, label) => {
+      const node = el('span', 'played-result__rating-change');
+      if (change !== 0) {
+        node.textContent = `${change > 0 ? '+' : ''}${change}`;
+        node.classList.add(change > 0 ? 'played-result__rating-change--up' : 'played-result__rating-change--down');
+      } else {
+        node.textContent = '—';
+        node.classList.add('played-result__rating-change--neutral');
+      }
+      node.title = label;
+      return node;
+    };
+
+    teams.appendChild(side(match.home, match.home_id));
+    teams.appendChild(el('em', '', 'v'));
+    teams.appendChild(side(match.away, match.away_id));
+    row.appendChild(teams);
+
+    // Score
+    const score = el('div', 'played-result__score');
+    score.textContent = `${match.home_goals}–${match.away_goals}`;
+    row.appendChild(score);
+
+    // Rating changes
+    const homeChange = ratingChanges.get(`${match.home_id}|${match.date}`) ?? 0;
+    const awayChange = ratingChanges.get(`${match.away_id}|${match.date}`) ?? 0;
+
+    row.appendChild(badge(homeChange, 'Home team rating change'));
+    row.appendChild(badge(awayChange, 'Away team rating change'));
+
+    holder.appendChild(row);
+  }
+}
+
 function formatDate(iso) {
   const date = new Date(`${iso}T12:00:00Z`);
   return date.toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' });
@@ -1295,22 +1388,59 @@ function resolveTheme() {
 
 function render() {
   const report = state.reports[state.league];
+
+  // Always render these (they're either always visible or quick)
   renderSeasonOptions(report);
   renderTimeline(report);
   renderHero(report);
-  renderGrid(report);
-  renderGridLegend();
-  renderStandings(report);
-  renderBandLegend(report);
-  renderShape(report);
-  renderLadder(state.reports);
-  renderFixtures(report);
-  renderOddsLegend();
-  if (report.pairwise) {
-    populateCompare(report);
-    renderCompare(report);
+
+  // Show/hide sections based on active view
+  for (const section of document.querySelectorAll('[data-section]')) {
+    const views = section.dataset.section.split(' ');
+    section.hidden = !views.includes(state.activeView);
   }
-  renderModelCard(report);
+
+  // View-specific renders
+  switch (state.activeView) {
+    case 'table':
+      renderGrid(report);
+      renderGridLegend();
+      renderStandings(report);
+      renderBandLegend(report);
+      break;
+    case 'grid':
+      renderGrid(report);
+      renderGridLegend();
+      break;
+    case 'shape':
+      renderShape(report);
+      break;
+    case 'ladder':
+      renderLadder(state.reports);
+      break;
+    case 'next-up':
+      renderFixtures(report);
+      renderOddsLegend();
+      break;
+    case 'compare':
+      if (report.pairwise) {
+        populateCompare(report);
+        renderCompare(report);
+      }
+      break;
+    case 'played':
+      renderPlayedResults(report);
+      break;
+    case 'model':
+      renderModelCard(report);
+      break;
+  }
+
+  // Persist active view to URL for linkability
+  const params = new URLSearchParams(window.location.search);
+  params.set('view', state.activeView);
+  window.history.replaceState(null, '', `${window.location.pathname}?${params.toString()}${window.location.hash}`);
+
   document.title = `${report.league.name} ${report.league.season} — EliteTracker`;
 }
 
@@ -1334,6 +1464,17 @@ function wire() {
       else localStorage.setItem('elitetracker-theme', choice);
       resolveTheme();
       render();
+    });
+  }
+
+  for (const button of document.querySelectorAll('[data-view]')) {
+    button.addEventListener('click', () => {
+      state.activeView = button.dataset.view;
+      for (const other of document.querySelectorAll('[data-view]')) {
+        other.setAttribute('aria-pressed', String(other === button));
+      }
+      render();
+      hideTooltip();
     });
   }
 
@@ -1413,6 +1554,19 @@ function applyTeamParameter() {
   if (match) {
     $('#shape-team').value = match.team_id;
     drawShape(state.reports[state.league], match.team_id);
+  }
+}
+
+/* ?view=grid makes any view linkable. Applied early so the first render
+   shows the requested view instead of the default table. */
+function applyViewParameter() {
+  const view = new URLSearchParams(window.location.search).get('view');
+  const validViews = new Set(['table', 'grid', 'shape', 'ladder', 'next-up', 'compare', 'played', 'model']);
+  if (view && validViews.has(view)) {
+    state.activeView = view;
+    for (const button of document.querySelectorAll('[data-view]')) {
+      button.setAttribute('aria-pressed', String(button.dataset.view === view));
+    }
   }
 }
 
@@ -1826,6 +1980,7 @@ async function boot() {
     $('#content').hidden = false;
     applyLeagueParameter();
     applySortParameter();
+    applyViewParameter();
     render();
 
     const params = new URLSearchParams(window.location.search);

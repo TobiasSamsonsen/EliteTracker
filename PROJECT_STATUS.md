@@ -94,7 +94,18 @@ REM run the test suite
    - **Next up** — three-way odds per fixture, with each side's rating beside its name and
      the most likely scorelines beneath the odds (e.g. `2-1 28% · 1-1 19%`), drawn from the
      same gap-conditioned scoreline model that feeds the Monte Carlo.
-  - **Model card** stating the known limits.
+   - **Model card** stating the known limits.
+   - **Tabbed views** — the single long scroll is split into eight view tabs (`?view=`
+      makes each linkable): Table, Finish Grid, Season Shape, Ladder, Next Up, Compare
+      Clubs, Played Results, Model Card. Each tab shows only its own sections; the
+      hero, season options and rewind timeline stay on every view. The rewind slider
+      still filters each view (the `results` payload is rebuilt per `asof=`).
+   - **Played results** — a completed-match feed (most recent first) with date + round,
+      both sides and crests, the final score, and the rating change each side took
+      (computed client-side from the `careers` rating replay: the delta between the
+      rating after a match and the entry before it). The `results` payload carries each
+      side's `home_id`/`away_id` so the change lookup keys on stable ids. Part of the
+      tabbed views.
 - **Static build for Firebase Hosting** — `build_site.py` prebuilds every season's live
   and rewound reports plus careers as plain JSON under `public/data/`, so the same frontend
   works on a static host with no Python runtime. The browser probes `/api/health` once; on
@@ -374,9 +385,11 @@ list is a scratchpad, not a commitment — each is picked up only when wanted.
       `pairwise` report field, one ordered pair per club), both current ratings, and
       their rating histories overlaid on one line. Implemented in `public/app.js` +
       a `Compare clubs` section in `index.html`.
-- [ ] **Played-results feed** — a scrollable list of completed matches with scores
-      and the rating swing each side took. The `results` payload already carries
-      everything; this is a presentation section only.
+- [x] **Played-results feed** — a scrollable list of completed matches with scores
+      and the rating swing each side took. Shipped as part of the tabbed views: a
+      `Played results` tab showing date + round, crests, score, and each side's
+      rating change (read from the `careers` replay). The `results` payload already
+      carried everything else; rating swings are computed client-side from `careers`.
 - [ ] **Team focus page** — fold the career modal, a club's finish-grid row, and its
       recent + upcoming fixtures into one dedicated view (deep-linkable, like
       `?team=`).
@@ -450,4 +463,4 @@ committed input is just the normalized fixture files. To test the static site lo
 .venv\Scripts\python.exe -m http.server --directory public
 ```
 
-347 tests, all passing.
+313 tests, all passing.

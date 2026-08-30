@@ -249,6 +249,14 @@ a { color: inherit; }
   flex-wrap: wrap;
 }
 
+.masthead__views {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-top: 0.5rem;
+  width: 100%;
+}
+
 .wordmark {
   font-family: var(--display);
   font-variation-settings: "wdth" 125;
@@ -922,6 +930,77 @@ table.standings .muted { color: var(--ink-muted); }
 .compare-line--b { stroke: #e0682a; }
 .compare-legend__a { color: #2a78d6; font-weight: 600; margin-right: 0.75rem; }
 .compare-legend__b { color: #e0682a; font-weight: 600; }
+
+/* ---------- played results ------------------------------------------ */
+
+.played-results { display: grid; gap: 1px; background: var(--rule); }
+
+.played-result {
+  display: grid;
+  grid-template-columns: 5.5rem 1fr auto minmax(80px, 120px) 1fr;
+  gap: 0.75rem 1rem;
+  align-items: center;
+  padding: 0.6rem 1.25rem;
+  background: var(--panel);
+}
+
+.played-result:hover { background: var(--panel-sunk); }
+
+.played-result__when { font-size: 0.75rem; color: var(--ink-muted); }
+
+.played-result__teams { font-weight: 600; font-size: 0.875rem; }
+
+.played-result__teams em { font-style: normal; color: var(--ink-faint); font-weight: 400; padding-inline: 0.4rem; }
+
+.played-result__side { display: inline-flex; align-items: baseline; gap: 0.4rem; }
+
+.played-result__side .team-logo {
+  width: 18px;
+  height: 18px;
+  align-self: center;
+}
+
+.played-result__score {
+  font-size: 0.875rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--ink);
+  text-align: center;
+  white-space: nowrap;
+}
+
+.played-result__rating-change {
+  font-size: 0.6875rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  padding: 0.15rem 0.4rem;
+  border-radius: 999px;
+}
+
+.played-result__rating-change--up {
+  background: color-mix(in srgb, var(--outcome-good) 18%, transparent);
+  color: var(--outcome-good);
+}
+
+.played-result__rating-change--down {
+  background: color-mix(in srgb, var(--outcome-bad) 18%, transparent);
+  color: var(--outcome-bad);
+}
+
+.played-result__rating-change--neutral {
+  background: var(--panel-sunk);
+  color: var(--ink-muted);
+}
+
+@media (max-width: 760px) {
+  .played-result {
+    grid-template-columns: 1fr;
+    gap: 0.4rem;
+  }
+  .played-result__when { order: -1; }
+  .played-result__teams { text-align: center; }
+}
 
 /* ---------- model card -------------------------------------------- */
 
