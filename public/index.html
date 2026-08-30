@@ -30,6 +30,19 @@
       <button type="button" data-theme-choice="dark" aria-pressed="false">Dark</button>
     </div>
   </div>
+
+  <div class="shell masthead__views">
+    <div class="switch" role="group" aria-label="Choose a view">
+      <button type="button" data-view="table" aria-pressed="true">Table</button>
+      <button type="button" data-view="grid" aria-pressed="false">Finish Grid</button>
+      <button type="button" data-view="shape" aria-pressed="false">Season Shape</button>
+      <button type="button" data-view="ladder" aria-pressed="false">Ladder</button>
+      <button type="button" data-view="next-up" aria-pressed="false">Next Up</button>
+      <button type="button" data-view="compare" aria-pressed="false">Compare Clubs</button>
+      <button type="button" data-view="played" aria-pressed="false">Played Results</button>
+      <button type="button" data-view="model" aria-pressed="false">Model Card</button>
+    </div>
+  </div>
 </header>
 
 <main class="shell" id="app">
@@ -59,14 +72,13 @@
           <div class="timeline__scale" id="timeline-scale" aria-hidden="true"></div>
         </div>
         <p class="timeline__note">
-          Everything below — the grid, the table, the ratings and the fixtures — is rebuilt
-          from only the results known on the day you pick.
+          Everything below is rebuilt from only the results known on the day you pick.
         </p>
       </div>
     </section>
 
     <!-- Signature: the finishing-position probability matrix. -->
-    <section>
+    <section data-section="table grid">
       <div class="panel">
         <div class="panel__head">
           <div>
@@ -86,7 +98,7 @@
       </div>
     </section>
 
-    <section id="table">
+    <section id="table" data-section="table">
       <div class="panel">
         <div class="panel__head">
           <div>
@@ -152,7 +164,7 @@
       </div>
     </section>
 
-    <section>
+    <section data-section="shape">
       <div class="panel">
         <div class="panel__head">
           <div>
@@ -178,7 +190,7 @@
       </div>
     </section>
 
-    <section>
+    <section data-section="ladder">
       <div class="panel">
         <div class="panel__head">
           <div>
@@ -194,7 +206,7 @@
       </div>
     </section>
 
-    <section>
+    <section data-section="next-up">
       <div class="panel">
         <div class="panel__head">
           <div>
@@ -208,7 +220,19 @@
       </div>
     </section>
 
-    <section>
+    <section data-section="played">
+      <div class="panel">
+        <div class="panel__head">
+          <div>
+            <h2>Played results</h2>
+            <p>Completed matches with scores and the rating change each side took. Sorted most recent first.</p>
+          </div>
+        </div>
+        <div class="played-results" id="played-results"></div>
+      </div>
+    </section>
+
+    <section data-section="compare">
       <div class="panel">
         <div class="panel__head">
           <div>
@@ -224,7 +248,7 @@
       </div>
     </section>
 
-    <section>
+    <section data-section="model">
       <div class="panel">
         <div class="panel__head">
           <div>

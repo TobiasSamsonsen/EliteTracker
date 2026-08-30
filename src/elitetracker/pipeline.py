@@ -519,6 +519,8 @@ def _results_payload(matches: list[Match]) -> list[dict[str, Any]]:
             "round": match.round,
             "home": match.home,
             "away": match.away,
+            "home_id": match.home_id,
+            "away_id": match.away_id,
             "home_goals": match.home_goals,
             "away_goals": match.away_goals,
         }
