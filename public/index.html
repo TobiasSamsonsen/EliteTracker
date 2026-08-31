@@ -2,13 +2,13 @@
 <html lang="en" data-theme="">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>EliteTracker — Norwegian football, 2026</title>
 <meta name="description" content="ELO ratings and simulated finishing positions for Eliteserien and OBOS-ligaen, 2026.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Archivo:ital,wdth,wght@0,62..125,400..800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="/styles.css?v=4">
+<link rel="stylesheet" href="/styles.css?v=12">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'><rect width='16' height='16' rx='3' fill='%232a78d6'/><rect x='3' y='9' width='2.5' height='4' fill='white'/><rect x='6.75' y='6' width='2.5' height='7' fill='white'/><rect x='10.5' y='3' width='2.5' height='10' fill='white'/></svg>">
 </head>
 <body>
@@ -17,7 +17,7 @@
   <div class="shell masthead__inner">
     <div class="wordmark">EliteTracker <span id="model-badge"></span></div>
 
-    <div class="switch" role="group" aria-label="Choose a division">
+    <div class="switch switch--league" role="group" aria-label="Choose a division">
       <button type="button" data-league="eliteserien" aria-pressed="true">Eliteserien</button>
       <button type="button" data-league="obosligaen" aria-pressed="false">OBOS-ligaen</button>
     </div>
@@ -25,7 +25,7 @@
     <label class="visually-hidden" for="season-select">Season</label>
     <select id="season-select" class="season-select"></select>
 
-    <div class="switch" role="group" aria-label="Colour theme">
+    <div class="switch switch--theme" role="group" aria-label="Colour theme">
       <button type="button" data-theme-choice="light" aria-pressed="false">Light</button>
       <button type="button" data-theme-choice="dark" aria-pressed="false">Dark</button>
     </div>
@@ -44,6 +44,28 @@
     </div>
   </div>
 </header>
+
+<!-- Phone navigation. The same data-view attribute the top strip uses, so the
+     existing click wiring, ?view= deep links and active marking all apply. -->
+<nav class="mobilebar" id="mobilebar" aria-label="Choose a view">
+    <button type="button" class="mobilebar__item" data-view="table" aria-pressed="false"><svg class="mobilebar__icon" viewBox="0 0 16 16" aria-hidden="true" focusable="false" fill="currentColor"><rect x="1.5" y="2.5" width="13" height="2.2" rx=".6"/><rect x="1.5" y="6.9" width="13" height="2.2" rx=".6"/><rect x="1.5" y="11.3" width="13" height="2.2" rx=".6"/></svg><span>Table</span></button>
+    <button type="button" class="mobilebar__item" data-view="grid" aria-pressed="false"><svg class="mobilebar__icon" viewBox="0 0 16 16" aria-hidden="true" focusable="false" fill="currentColor"><rect x="1.5" y="1.5" width="3.6" height="3.6" rx=".5"/><rect x="6.2" y="1.5" width="3.6" height="3.6" rx=".5"/><rect x="10.9" y="1.5" width="3.6" height="3.6" rx=".5"/><rect x="1.5" y="6.2" width="3.6" height="3.6" rx=".5"/><rect x="6.2" y="6.2" width="3.6" height="3.6" rx=".5"/><rect x="10.9" y="6.2" width="3.6" height="3.6" rx=".5"/><rect x="1.5" y="10.9" width="3.6" height="3.6" rx=".5"/><rect x="6.2" y="10.9" width="3.6" height="3.6" rx=".5"/><rect x="10.9" y="10.9" width="3.6" height="3.6" rx=".5"/></svg><span>Grid</span></button>
+    <button type="button" class="mobilebar__item" data-view="next-up" aria-pressed="false"><svg class="mobilebar__icon" viewBox="0 0 16 16" aria-hidden="true" focusable="false" fill="currentColor"><rect x="1.8" y="3" width="12.4" height="11.2" rx="1.6" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M1.8 6.6h12.4" stroke="currentColor" stroke-width="1.6"/><path d="M5.2 1.6v2.6M10.8 1.6v2.6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg><span>Next up</span></button>
+    <button type="button" class="mobilebar__item" data-view="played" aria-pressed="false"><svg class="mobilebar__icon" viewBox="0 0 16 16" aria-hidden="true" focusable="false" fill="currentColor"><path d="M2 8.4l3.6 3.6L14 3.6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg><span>Results</span></button>
+    <button type="button" class="mobilebar__item mobilebar__more" id="more-button"
+            aria-expanded="false" aria-controls="more-sheet"><svg class="mobilebar__icon" viewBox="0 0 16 16" aria-hidden="true" focusable="false" fill="currentColor"><circle cx="3" cy="8" r="1.6"/><circle cx="8" cy="8" r="1.6"/><circle cx="13" cy="8" r="1.6"/></svg><span>More</span></button>
+</nav>
+
+<div class="sheet" id="more-sheet" hidden>
+  <div class="sheet__scrim" data-close-sheet></div>
+  <div class="sheet__panel" role="dialog" aria-modal="true" aria-label="More views">
+    <div class="sheet__grip" aria-hidden="true"></div>
+      <button type="button" class="sheet__item" data-view="ladder" aria-pressed="false">Ladder</button>
+      <button type="button" class="sheet__item" data-view="shape" aria-pressed="false">Season shape</button>
+      <button type="button" class="sheet__item" data-view="compare" aria-pressed="false">Compare clubs</button>
+      <button type="button" class="sheet__item" data-view="model" aria-pressed="false">Model card</button>
+  </div>
+</div>
 
 <main class="shell" id="app">
   <div class="status" id="status">Loading the season…</div>
@@ -68,7 +90,9 @@
         </div>
         <div class="timeline__control">
           <label class="visually-hidden" for="timeline-range">Matchday to view the season as of</label>
+          <button type="button" class="timeline__step" id="timeline-back" aria-label="One matchday earlier">&minus;</button>
           <input type="range" id="timeline-range" min="0" max="0" value="0" step="1">
+          <button type="button" class="timeline__step" id="timeline-forward" aria-label="One matchday later">+</button>
           <div class="timeline__scale" id="timeline-scale" aria-hidden="true"></div>
         </div>
         <p class="timeline__note">
@@ -116,7 +140,7 @@
                 <th class="club" scope="col" aria-sort="none" data-sort-col="team">
                   <button type="button" class="sort-btn" data-sort-key="team"><span class="sort-btn__label">Club</span><span class="visually-hidden">, club name</span><span class="sort-btn__caret" aria-hidden="true"></span></button>
                 </th>
-                <th class="num" scope="col" aria-sort="none" data-sort-col="played">
+                <th class="num col--extra" scope="col" aria-sort="none" data-sort-col="played">
                   <button type="button" class="sort-btn" data-sort-key="played"><span class="sort-btn__label">Pl</span><span class="visually-hidden">, matches played</span><span class="sort-btn__caret" aria-hidden="true"></span></button>
                 </th>
                 <th class="num col--extra" scope="col" aria-sort="none" data-sort-col="wins">
@@ -134,7 +158,7 @@
                 <th class="num col--extra" scope="col" aria-sort="none" data-sort-col="goals_against">
                   <button type="button" class="sort-btn" data-sort-key="goals_against"><span class="sort-btn__label">GA</span><span class="visually-hidden">, goals against</span><span class="sort-btn__caret" aria-hidden="true"></span></button>
                 </th>
-                <th class="num" scope="col" aria-sort="none" data-sort-col="goal_difference">
+                <th class="num col--extra" scope="col" aria-sort="none" data-sort-col="goal_difference">
                   <button type="button" class="sort-btn" data-sort-key="goal_difference"><span class="sort-btn__label">GD</span><span class="visually-hidden">, goal difference</span><span class="sort-btn__caret" aria-hidden="true"></span></button>
                 </th>
                 <th class="num" scope="col" aria-sort="none" data-sort-col="points">
@@ -315,6 +339,6 @@
   </div>
 </div>
 
-<script src="/app.js?v=4"></script>
+<script src="/app.js?v=12"></script>
 </body>
 </html>

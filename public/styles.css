@@ -408,6 +408,22 @@ section { margin-block: clamp(1.5rem, 3vw, 2.25rem); }
    so they are clipped here instead of escaping to widen the page. */
 .scroller { position: relative; overflow-x: auto; }
 
+/* Fade the trailing edge while there is more table to the right, so the scroll
+   is discoverable. scroll-timeline drives it off the scroller's own position,
+   so it clears as you reach the end; browsers without it get the plain fade. */
+@supports (animation-timeline: scroll(self inline)) {
+  .scroller {
+    scroll-timeline: --edge inline;
+    animation: scroller-fade linear both;
+    animation-timeline: --edge;
+  }
+
+  @keyframes scroller-fade {
+    from { mask-image: linear-gradient(90deg, #000 88%, transparent 100%); }
+    to { mask-image: linear-gradient(90deg, #000 100%, #000 100%); }
+  }
+}
+
 /* ---------- the finish grid (signature) --------------------------- */
 
 .grid-wrap { padding: 1.25rem; }
@@ -439,6 +455,11 @@ table.grid tbody th {
   color: var(--ink);
   font-weight: 500;
   font-size: 0.8125rem;
+  /* Pinned so the club stays readable while the positions scroll past it. */
+  position: sticky;
+  left: 0;
+  z-index: 1;
+  background: var(--panel);
 }
 
 table.grid tbody th .pos {
@@ -826,11 +847,6 @@ table.standings .muted { color: var(--ink-muted); }
 
 .ladder__team[data-tier="1"] img { border: 2px solid var(--tier-1); }
 .ladder__team[data-tier="2"] img { border: 2px solid var(--tier-2); }
-
-@media (max-width: 760px) {
-  .ladder__track { height: 10rem; }
-}
-
 
 /* ---------- fixtures ---------------------------------------------- */
 
@@ -1221,6 +1237,189 @@ footer {
   .cell:hover { transform: none; }
 }
 
+/* ---------- phone navigation -------------------------------------- */
+
+/* Eight views in a strip that showed three of them was the worst part of the
+   phone layout: the rest had to be discovered by swiping a control that gave
+   no sign it could scroll. Under 760px they move to a fixed bar in the thumb
+   zone, four of them plus a sheet holding the rest. The buttons carry the same
+   data-view attribute as the top strip, so nothing in the JS has to know which
+   control was tapped. */
+
+.mobilebar { display: none; }
+.sheet { display: none; }
+
+@media (max-width: 760px) {
+  .mobilebar {
+    position: fixed;
+    inset: auto 0 0 0;
+    z-index: 40;
+    display: grid;
+    grid-auto-flow: column;
+    grid-auto-columns: 1fr;
+    background: color-mix(in srgb, var(--panel) 94%, transparent);
+    backdrop-filter: blur(12px);
+    border-top: 1px solid var(--rule);
+    /* Clear of the home indicator on a notched phone. */
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+
+  .mobilebar__item {
+    appearance: none;
+    border: 0;
+    background: none;
+    color: var(--ink-faint);
+    font: inherit;
+    font-size: 0.625rem;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.2rem;
+    /* 44px is the smallest reliable touch target on either platform. */
+    min-height: 52px;
+    padding: 0.4rem 0.2rem;
+    cursor: pointer;
+  }
+
+  .mobilebar__icon { width: 17px; height: 17px; }
+
+  .mobilebar__item[aria-pressed="true"] { color: var(--outcome-good); }
+
+  /* The active view is named twice -- colour and a rule against the bar's own
+     edge -- so it does not rest on colour alone. */
+  .mobilebar__item[aria-pressed="true"]::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    width: 1.75rem;
+    height: 2px;
+    border-radius: 0 0 2px 2px;
+    background: var(--outcome-good);
+  }
+
+  .mobilebar__item { position: relative; }
+
+  /* The bar floats over the page, so the last panel needs room to clear it. */
+  body { padding-bottom: calc(52px + env(safe-area-inset-bottom, 0px)); }
+
+  /* The top strip is now redundant. */
+  .masthead__views { display: none; }
+
+  /* ---- the More sheet ---- */
+  .sheet { display: block; position: fixed; inset: 0; z-index: 50; }
+  .sheet[hidden] { display: none; }
+
+  .sheet__scrim {
+    position: absolute;
+    inset: 0;
+    background: rgb(0 0 0 / 0.45);
+  }
+
+  .sheet__panel {
+    position: absolute;
+    inset: auto 0 0 0;
+    background: var(--panel);
+    border-top: 1px solid var(--rule);
+    border-radius: 14px 14px 0 0;
+    padding: 0.5rem 0.75rem calc(0.75rem + 52px + env(safe-area-inset-bottom, 0px));
+    display: grid;
+    gap: 2px;
+    animation: sheet-up 0.18s var(--ease);
+  }
+
+  .sheet__grip {
+    width: 2.25rem;
+    height: 4px;
+    border-radius: 2px;
+    background: var(--rule-strong);
+    margin: 0.25rem auto 0.6rem;
+  }
+
+  .sheet__item {
+    appearance: none;
+    border: 0;
+    background: none;
+    color: var(--ink);
+    font: inherit;
+    font-size: 0.9375rem;
+    font-weight: 600;
+    text-align: left;
+    min-height: 48px;
+    padding: 0 0.75rem;
+    border-radius: var(--radius);
+    cursor: pointer;
+  }
+
+  .sheet__item[aria-pressed="true"] { color: var(--outcome-good); background: var(--panel-sunk); }
+}
+
+@keyframes sheet-up {
+  from { transform: translateY(100%); }
+  to { transform: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sheet__panel { animation: none; }
+}
+
+/* ---------- touch ergonomics -------------------------------------- */
+
+/* Keyed to the input device first -- a tablet with a finger needs the room
+   whatever its width -- and to narrow screens as well, since a viewport this
+   small is a phone in all but the rarest case. */
+@media (pointer: coarse), (max-width: 760px) {
+  .switch button { min-height: 44px; padding-inline: 1rem; }
+  .season-select { min-height: 44px; }
+  .standings .sort-btn { min-height: 44px; }
+  .modal__close { min-width: 44px; min-height: 44px; }
+  .timeline__now { min-height: 44px; }
+
+  /* A 47-step slider is about 7px per matchday; a bigger thumb and the step
+     buttons beside it make single matchdays reachable. Scoped through
+     .timeline .timeline__control so these outrank the base slider rules
+     further down the file rather than tying with them on source order. */
+  .timeline .timeline__control input[type="range"] { height: 2.75rem; }
+  .timeline .timeline__control input[type="range"]::-webkit-slider-thumb { width: 28px; height: 28px; margin-top: -11px; }
+  .timeline .timeline__control input[type="range"]::-moz-range-thumb { width: 28px; height: 28px; }
+
+  /* The default blue flash on tap reads as a rendering fault on a dark panel. */
+  * { -webkit-tap-highlight-color: transparent; }
+}
+
+/* ---------- the step buttons beside the rewind slider -------------- */
+
+.timeline__step { display: none; }
+
+@media (pointer: coarse), (max-width: 760px) {
+  .timeline__control { display: flex; align-items: center; gap: 0.5rem; }
+  .timeline__control input[type="range"] { flex: 1; }
+
+  .timeline__step {
+    display: grid;
+    place-items: center;
+    flex: none;
+    width: 44px;
+    height: 44px;
+    appearance: none;
+    background: var(--panel-sunk);
+    border: 1px solid var(--rule);
+    border-radius: var(--radius);
+    color: var(--ink);
+    font: inherit;
+    font-size: 1.125rem;
+    font-weight: 700;
+    cursor: pointer;
+  }
+
+  .timeline__step:disabled { opacity: 0.4; cursor: default; }
+
+  /* The scale sits under the slider, which is now one item in a flex row. */
+  .timeline__scale { display: none; }
+}
+
 /* ---------- responsive -------------------------------------------- */
 
 @media (max-width: 760px) {
@@ -1252,8 +1451,9 @@ footer {
   /* Swap in the short heading: "Relegation" is wider than any number under it. */
   .standings .sort-btn__label:has(+ .sort-btn__short) { display: none; }
   .standings .sort-btn__short { display: inline; font-size: 0.625rem; letter-spacing: 0.06em; }
-  /* Club names wrap rather than truncate: "Hamarkameratene" should stay whole. */
-  .standings .club-btn { white-space: normal; text-align: left; }
+  /* One line per club. Left to wrap, "Bodø/Glimt" breaks at the slash, which
+     drops the column's min-content width and stacks the name under the crest. */
+  .standings .club-btn { white-space: nowrap; text-align: left; }
   /* The odds keep their number; the bar goes, since the percentage beside it
      already carries the value. */
   .meter__track { display: none; }
@@ -1262,6 +1462,49 @@ footer {
   /* Left-aligned so the first view is the one you actually start on. */
   .masthead__views { justify-content: flex-start; }
   .timeline__note { display: none; }
+
+  /* Two rows, placed rather than wrapped: flex wrapping put each control on a
+     line of its own. The wordmark and theme share the first row, the division
+     and season the second. */
+  .masthead__inner {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 0.45rem 0.75rem;
+    min-height: 0;
+  }
+  .wordmark { grid-area: 1 / 1; margin-right: 0; }
+  .switch--theme { grid-area: 1 / 2; }
+  .switch--league { grid-area: 2 / 1; }
+  .season-select { grid-area: 2 / 2; }
+
+  /* How the model was built belongs in the Model Card, not above the table.
+     Needs to outrank `.hero__meta div`, which sets these to flex. */
+  .hero__meta .hero__meta-provenance { display: none; }
+
+  /* The finish grid's explanation runs six lines on a phone -- more screen
+     than the grid it introduces. Clamped to two, faded so there is visibly
+     more, and expanded by tapping it. */
+  .panel__head p {
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    overflow: hidden;
+    cursor: pointer;
+    mask-image: linear-gradient(180deg, #000 55%, rgb(0 0 0 / 0.35) 100%);
+  }
+
+  .panel__head p.is-expanded {
+    -webkit-line-clamp: unset;
+    mask-image: none;
+  }
+
+  /* Data before controls. The rewind slider is something you reach for, so on
+     a phone it sits under the season's content instead of in front of it --
+     unless you are actually rewound, when its state matters more than the
+     scroll it saves. */
+  #content { display: flex; flex-direction: column; }
+  .timeline-section { order: 99; }
+  #content:has(.timeline.is-past) .timeline-section { order: -1; }
 
   /* A tighter masthead: smaller wordmark, less gap, so the controls wrap
      onto fewer, neater rows instead of a tall three-row stack. */
@@ -1274,9 +1517,16 @@ footer {
 }
 
 @media (max-width: 480px) {
+  /* A phone has no width to spare on margins: the page gutter costs 32px of a
+     375px screen, which is most of a table column. */
+  :root { --gutter: 0.75rem; }
+
   /* Less generous panel padding so the wide tables and controls get the
      maximum usable width on small phones. */
   .panel__head, .timeline { padding: 0.9rem 1rem; }
+
+  .standings .club-btn--crest .team-logo { width: 16px; height: 16px; margin-right: 0.3rem; }
+  .standings .band-mark { margin-right: 0.2rem; }
   .grid-wrap, .shape { padding: 1rem; }
   .legend { padding: 0.8rem 1rem; }
   .fixture { padding: 0.65rem 1rem; }
