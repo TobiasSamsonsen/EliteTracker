@@ -20,6 +20,42 @@ const state = {
   playedWeek: 0,
 };
 
+/* fotmob stores clubs under their registered names. These are what people
+   actually call them -- HamKam brands itself that way, and "Odds Ballklubb"
+   is the formal form of a club everyone calls Odd. Applied once to the
+   payload rather than at each render, so the table, ladder, results, compare
+   tool and career panel can never disagree about a club's name. Ratings and
+   fixtures join on team_id, so this touches nothing but the labels. */
+const SHORT_NAMES = {
+  'Hamarkameratene': 'HamKam',
+  'Odds Ballklubb': 'Odd',
+  'Arendal Fotball': 'Arendal',
+  'Stjørdals Blink': 'Blink',
+  'FK Haugesund': 'Haugesund',
+  'Øygarden FK': 'Øygarden',
+};
+
+const shortName = (name) => SHORT_NAMES[name] || name;
+
+function applyShortNames(reports) {
+  for (const report of Object.values(reports || {})) {
+    for (const row of report.table || []) row.team = shortName(row.team);
+    for (const list of [report.fixtures, report.results]) {
+      for (const match of list || []) {
+        match.home = shortName(match.home);
+        match.away = shortName(match.away);
+      }
+    }
+    for (const team of report.history?.teams || []) team.team = shortName(team.team);
+  }
+  return reports;
+}
+
+function applyShortNamesToCareers(careers) {
+  for (const team of careers?.teams || []) team.team = shortName(team.team);
+  return careers;
+}
+
 /* One URL scheme for both hosts. Firebase serves these as files built by
    build_site; the local server computes the same names on request, so nothing
    here has to know which one is answering.
@@ -1429,7 +1465,7 @@ async function rewindTo(asof) {
   try {
     const response = await fetch(reportUrl(state.season, asof));
     if (!response.ok) throw new Error(`server returned ${response.status}`);
-    state.reports = await response.json();
+    state.reports = applyShortNames(await response.json());
     state.asof = asof;
     render();
   } catch (error) {
@@ -1660,7 +1696,7 @@ async function loadSeason(season) {
   try {
     const response = await fetch(reportUrl(season));
     if (!response.ok) throw new Error(`server returned ${response.status}`);
-    state.reports = await response.json();
+    state.reports = applyShortNames(await response.json());
     state.season = season;
     render();
   } catch (error) {
@@ -2098,8 +2134,8 @@ async function boot() {
       }),
       fetch('/data/careers.json').then((r) => (r.ok ? r.json() : null)),
     ]);
-    state.reports = reports;
-    state.careers = careers;
+    state.reports = applyShortNames(reports);
+    state.careers = applyShortNamesToCareers(careers);
     state.season = reports[state.league].league.season;
     $('#status').hidden = true;
     $('#content').hidden = false;
