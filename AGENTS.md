@@ -52,8 +52,8 @@ Scoreline model -> Monte Carlo simulation -> JSON reports -> Frontend (static or
 ### Backend
 - `api/server.py` — `http.server`. Rating replay runs once at start-up; season reports
   built on first request and cached
-- Routes: `/`, `/api/health`, `/api/seasons`, `/api/careers`, `/api/report`,
-  `/api/report/<league>[/<season>]`
+- It answers the same `/data/*.json` names `build_site` writes, so the frontend has one
+  URL scheme and no idea which host is behind it. Everything else comes from `public/`
 - `build_site.py` — prebuilds every season's reports as JSON under `public/data/`
   for static hosting; `--only-season` for fast partial rebuilds
 
@@ -67,12 +67,33 @@ No framework, no build step. Tabbed views defaulting to Finish Grid:
 - **Played Results** — completed-match feed navigated by ISO week, large rating+delta,
   gold gradient for winner
 - **Season Shape** — per-club stacked area of position probability
-- **Compare Clubs** — pick any two clubs for a fictional match
+- **Compare Clubs** — pick any two clubs for a fictional match. The odds are worked out
+  in the browser from the two ratings plus the ~3 kB scoreline model carried in
+  `report.model`, rather than shipping a precomputed matrix of every pairing
 - **Model Card** — states known limits
 
 ### Deploy
-- GitHub Action: refresh daily, build site, deploy to Firebase Hosting on push to `main`
+- GitHub Action: refresh daily, then on push to `main` build **only the current season**
+  and deploy to Firebase Hosting
+- Past seasons are simulated on the developer's machine and uploaded once as a release
+  asset; CI downloads it. Re-running a decade of Monte Carlo on every push was most of
+  that job's runtime and none of it ever changed
 - Deployed at `elitetrackerno.web.app`
+
+#### Publishing past seasons
+
+Only after a model change or a past-season backfill -- never for ordinary results, which
+touch the current season alone:
+
+```bash
+python -m elitetracker.build_site          # every season, on your machine
+CURRENT=$(python -c 'from elitetracker.pipeline import current_season; print(current_season())')
+tar -czf past-seasons.tar.gz -C public/data $(cd public/data && ls report-*.json | grep -v "^report-$CURRENT")
+gh release upload past-seasons past-seasons.tar.gz --clobber
+```
+
+The deploy job untars that into `public/data/`, then builds the current season over it.
+With no such release it still deploys -- only the current season is browsable.
 
 ## What's left
 
@@ -93,9 +114,11 @@ No framework, no build step. Tabbed views defaulting to Finish Grid:
 
 ```bat
 .venv\Scripts\python.exe -m pytest
+node --test tests\frontend.test.js
 ```
 
-313 tests. Required coverage:
+303 Python tests, plus a small Node suite over the pure frontend logic (form chips, the
+compare tool's odds port). Required coverage:
 * ELO initialization, expected result, actual score, update
 * Draw probability logic
 * Home advantage handling

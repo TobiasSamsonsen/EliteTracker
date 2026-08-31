@@ -460,7 +460,6 @@ table.grid tbody th .team-logo {
 /* Crosshair: hovering a cell dims everything outside its row and column. */
 .grid:has(.cell:hover) .cell:not(:hover) { opacity: 0.45; }
 .grid:has(.cell:hover) tbody tr:hover .cell { opacity: 1; }
-.grid.is-column-lit .cell.is-lit { opacity: 1; }
 
 .cell:hover {
   transform: scale(1.18);
@@ -1303,7 +1302,6 @@ footer {
 .chart .season-split { stroke: var(--rule); stroke-width: 1; }
 .chart .season-label { fill: var(--ink-faint); font-size: 9px; }
 .chart .career-dot { fill: var(--seq-5); stroke: var(--panel); stroke-width: 2; }
-.chart .tier-band { fill: var(--outcome-good); opacity: 0.06; }
 
 .career-table { min-width: 640px; margin-top: 1rem; }
 .career-table .up { color: var(--outcome-good); font-weight: 700; }

@@ -12,9 +12,7 @@ standings and fixtures join reliably even when a club is written differently
 
 from __future__ import annotations
 
-import argparse
 from datetime import datetime, timezone
-from pathlib import Path
 from typing import Any
 from zoneinfo import ZoneInfo
 
@@ -24,10 +22,9 @@ from elitetracker.normalize.matches import (
     clean_text,
     dump,
     finalize,
-    load_json,
     parse_score,
 )
-from elitetracker.normalize.standings import Standing, dump_standings
+from elitetracker.normalize.standings import Standing
 
 LEAGUE_TIMEZONE = ZoneInfo("Europe/Oslo")
 
@@ -155,30 +152,3 @@ def normalize_standing(raw: dict[str, Any]) -> Standing:
 
 def normalize_standings(raw_rows: list[dict[str, Any]]) -> list[Standing]:
     return sorted((normalize_standing(row) for row in raw_rows), key=lambda s: s.position)
-
-
-def main(argv: list[str] | None = None) -> int:
-    parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    parser.add_argument("kind", choices=["matches", "standings"])
-    parser.add_argument("input", type=Path, help="raw fotmob JSON from data/raw/")
-    parser.add_argument("output", type=Path, help="destination for normalized JSON")
-    args = parser.parse_args(argv)
-
-    raw = load_json(args.input)
-    if args.kind == "matches":
-        matches = normalize_matches(raw)
-        dump(matches, args.output)
-        played = sum(1 for match in matches if match.played)
-        print(
-            f"{args.input} -> {args.output}: {len(matches)} matches "
-            f"({played} played, {len(matches) - played} upcoming)"
-        )
-    else:
-        standings = normalize_standings(raw)
-        dump_standings(standings, args.output)
-        print(f"{args.input} -> {args.output}: {len(standings)} teams")
-    return 0
-
-
-if __name__ == "__main__":
-    raise SystemExit(main())

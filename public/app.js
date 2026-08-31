@@ -7,9 +7,6 @@ const state = {
   league: 'eliteserien',
   season: null,
   careers: null,
-  // 'api' when the Python server is running; 'static' on Firebase Hosting,
-  // where /api/* does not exist and the prebuilt JSON under /data/ is served.
-  dataMode: null,
   // Default view is the league table as it actually stands.
   sort: { key: 'position', dir: 1 },
   // ISO date the whole page is rewound to; null means live.
@@ -23,38 +20,16 @@ const state = {
   playedWeek: 0,
 };
 
-/* One probe decides the data source for the whole session. A static host
-   answers nothing under /api/*, so a missing /api/health means: read the
-   prebuilt files instead. */
-async function detectDataMode() {
-  try {
-    const response = await fetch('/api/health', { cache: 'no-store' });
-    return response.ok ? 'api' : 'static';
-  } catch {
-    return 'static';
-  }
-}
-
-/* Map a (season, asof) view onto either the live API or a static file:
-     /data/report.json                    current season, live
+/* One URL scheme for both hosts. Firebase serves these as files built by
+   build_site; the local server computes the same names on request, so nothing
+   here has to know which one is answering.
+     /data/report.json                    current season
      /data/report-<season>.json           that season, live
-     /data/report-<season>-<asof>.json    rewound to that date
-   The API equivalents keep their current query strings. */
+     /data/report-<season>-<asof>.json    rewound to that date */
 function reportUrl(season, asof = null) {
-  if (state.dataMode === 'static') {
-    if (asof) return `/data/report-${season}-${asof}.json`;
-    if (season) return `/data/report-${season}.json`;
-    return '/data/report.json';
-  }
-  const query = new URLSearchParams();
-  if (season) query.set('season', String(season));
-  if (asof) query.set('asof', asof);
-  const qs = query.toString();
-  return qs ? `/api/report?${qs}` : '/api/report';
-}
-
-function careersUrl() {
-  return state.dataMode === 'static' ? '/data/careers.json' : '/api/careers';
+  if (asof) return `/data/report-${season}-${asof}.json`;
+  if (season) return `/data/report-${season}.json`;
+  return '/data/report.json';
 }
 
 const $ = (selector) => document.querySelector(selector);
@@ -517,6 +492,10 @@ function meterCell(value, kind) {
 function positionColor(position, count) {
   return seqColor(count > 1 ? (count - position) / (count - 1) : 1);
 }
+
+/* Career points are dated by matchday, not by clock time. Midday UTC keeps a
+   point on its own day in every timezone the page is read in. */
+const pointTime = (point) => Date.parse(`${point[0]}T12:00:00Z`);
 
 const SVG_NS = 'http://www.w3.org/2000/svg';
 const svgEl = (tag, attrs = {}) => {
@@ -1237,7 +1216,7 @@ function drawCareer(career) {
   chart.setAttribute('viewBox', `0 0 ${width} ${height}`);
   chart.replaceChildren();
 
-  const times = points.map(([date]) => Date.parse(`${date}T12:00:00Z`));
+  const times = points.map(pointTime);
   const first = times[0];
   const span = (times[times.length - 1] - first) || 1;
   const ratings = points.map(([, rating]) => rating);
@@ -1514,10 +1493,8 @@ function render() {
       renderOddsLegend();
       break;
     case 'compare':
-      if (report.pairwise) {
-        populateCompare(report);
-        renderCompare(report);
-      }
+      populateCompare(report);
+      renderCompare(report);
       break;
     case 'played':
       state.playedWeek = 0;
@@ -1722,10 +1699,62 @@ function careerById(id) {
   return (state.careers?.teams || []).find((team) => team.team_id === id);
 }
 
-function careerRating(report, id) {
-  const career = careerById(id);
-  if (career) return career.current_rating;
+function ratingById(id) {
   return allTeams().find((team) => team.team_id === id)?.rating ?? 0;
+}
+
+/* Three-way odds for a fictional match, ported from model/probabilities.py.
+   Both divisions share one rating scale, so any two clubs can meet. Working it
+   out here costs a few lines and saves shipping a 32x31 matrix of every
+   possible pairing in every report file. */
+function matchOdds(model, homeRating, awayRating) {
+  const gap = homeRating + model.home_advantage - awayRating;
+  if (model.probability_model === 'ordered_logit') {
+    const logistic = (z) => 1 / (1 + Math.exp(-z));
+    const upper = logistic(model.logit_cutpoint - model.logit_slope * gap);
+    const lower = logistic(-model.logit_cutpoint - model.logit_slope * gap);
+    return { gap, home_win: 1 - upper, draw: upper - lower, away_win: lower };
+  }
+  // The ELO expectation of that gap against an even 1500 baseline. Half the
+  // draw mass comes off each side, so home_win + 0.5*draw reproduces it exactly.
+  const expected = 1 / (1 + 10 ** (-gap / 400));
+  const draw = Math.min(
+    model.draw_base * Math.exp(-((gap / model.draw_scale) ** 2)),
+    2 * Math.min(expected, 1 - expected)
+  );
+  return { gap, home_win: expected - draw / 2, draw, away_win: 1 - expected - draw / 2 };
+}
+
+/* Most likely scorelines, ported from display/fixtures.py: each outcome's
+   empirical frequencies for the gap's bin, weighted by that outcome's odds. */
+function topScorelines(model, odds, n = 5) {
+  const table = model.scorelines;
+  let bin = 0;
+  for (const edge of table.bin_edges) {
+    if (odds.gap > edge) bin += 1;
+    else break;
+  }
+  bin = Math.min(bin, table.bins - 1);
+
+  const combined = new Map();
+  for (const outcome of ['home_win', 'draw', 'away_win']) {
+    const probability = odds[outcome];
+    if (probability <= 0) continue;
+    // An empty bin cell falls back to the outcome's global distribution.
+    const cell = table.bins_data[outcome][bin]?.length ? table.bins_data[outcome][bin] : table.global[outcome];
+    const total = cell.reduce((sum, entry) => sum + entry[2], 0);
+    for (const [homeGoals, awayGoals, weight] of cell) {
+      const key = `${homeGoals}-${awayGoals}`;
+      combined.set(key, (combined.get(key) || 0) + probability * (weight / total));
+    }
+  }
+  return [...combined]
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, n)
+    .map(([key, probability]) => {
+      const [homeGoals, awayGoals] = key.split('-').map(Number);
+      return { home_goals: homeGoals, away_goals: awayGoals, probability };
+    });
 }
 
 function compareTeamBlock(id, name, rating, crest, side) {
@@ -1855,11 +1884,6 @@ function renderCompare(report) {
   const holder = $('#compare-output');
   holder.replaceChildren();
 
-  if (!report.pairwise) {
-    holder.appendChild(el('p', 'muted', 'Comparison odds are not available for this season.'));
-    return;
-  }
-
   const aId = $('#compare-a').value;
   const bId = $('#compare-b').value;
   const homeId = aId;
@@ -1867,15 +1891,18 @@ function renderCompare(report) {
   const homeName = teamNameById(report, homeId);
   const awayName = teamNameById(report, awayId);
 
-  const entry = report.pairwise[homeId]?.[awayId];
+  const homeRating = ratingById(homeId);
+  const awayRating = ratingById(awayId);
+  const odds = matchOdds(report.model, homeRating, awayRating);
+  const entry = { ...odds, scorelines: topScorelines(report.model, odds) };
 
   // Fictional match: the two clubs, who hosts, and the model's odds + scorelines.
   const matchBlock = el('div', 'compare__block');
   matchBlock.appendChild(el('h3', 'compare__subhead', 'Fictional match'));
 
   const teamsRow = el('div', 'compare__teams');
-  const homeBlock = compareTeamBlock(homeId, homeName, careerRating(report, homeId), teamLogo(homeId, homeName), 'Home');
-  const awayBlock = compareTeamBlock(awayId, awayName, careerRating(report, awayId), teamLogo(awayId, awayName), 'Away');
+  const homeBlock = compareTeamBlock(homeId, homeName, homeRating, teamLogo(homeId, homeName), 'Home');
+  const awayBlock = compareTeamBlock(awayId, awayName, awayRating, teamLogo(awayId, awayName), 'Away');
   const swapBtn = el('button', 'compare__swap-center', '⇄');
   swapBtn.type = 'button';
   swapBtn.setAttribute('aria-label', 'Swap the two clubs');
@@ -1915,25 +1942,19 @@ function renderCompare(report) {
   matchBlock.appendChild(teamsRow);
   matchBlock.appendChild(el('p', 'compare__note', `${homeName} host this fixture · home advantage is included.`));
 
-  if (entry) {
-    matchBlock.appendChild(oddsBar(homeName, awayName, entry));
-    if (entry.scorelines && entry.scorelines.length) {
-      const linesWrap = el('div', 'compare__scorelines');
-      linesWrap.appendChild(el('div', 'compare__scorelines-label', 'Most likely scorelines'));
-      const lines = el('div', 'compare__scorelines-chips');
-      for (const line of entry.scorelines.slice(0, 4)) {
-        const chip = el('span', 'compare__scoreline');
-        chip.textContent = `${line.home_goals}–${line.away_goals}`;
-        chip.appendChild(el('span', 'compare__scoreline-prob', pct(line.probability, 0)));
-        chip.setAttribute('aria-label', `${line.home_goals}-${line.away_goals} about ${pct(line.probability, 1)}`);
-        lines.appendChild(chip);
-      }
-      linesWrap.appendChild(lines);
-      matchBlock.appendChild(linesWrap);
-    }
-  } else {
-    matchBlock.appendChild(el('p', 'muted', 'No odds available for this pairing.'));
+  matchBlock.appendChild(oddsBar(homeName, awayName, entry));
+  const linesWrap = el('div', 'compare__scorelines');
+  linesWrap.appendChild(el('div', 'compare__scorelines-label', 'Most likely scorelines'));
+  const lines = el('div', 'compare__scorelines-chips');
+  for (const line of entry.scorelines.slice(0, 4)) {
+    const chip = el('span', 'compare__scoreline');
+    chip.textContent = `${line.home_goals}–${line.away_goals}`;
+    chip.appendChild(el('span', 'compare__scoreline-prob', pct(line.probability, 0)));
+    chip.setAttribute('aria-label', `${line.home_goals}-${line.away_goals} about ${pct(line.probability, 1)}`);
+    lines.appendChild(chip);
   }
+  linesWrap.appendChild(lines);
+  matchBlock.appendChild(linesWrap);
   holder.appendChild(matchBlock);
 
   // Rating history: both clubs overlaid on one time axis.
@@ -1961,10 +1982,10 @@ function drawCompareHistory(svg, careerA, careerB, labelA, labelB) {
   svg.setAttribute('viewBox', `0 0 ${width} ${height}`);
   svg.replaceChildren();
 
-  const series = [careerA.points, careerB.points].filter(Boolean);
-  if (!series.length) return;
+  const series = [careerA.points || [], careerB.points || []];
   const all = series.flat();
-  const times = all.map((point) => new Date(point[0]).getTime());
+  if (!all.length) return;
+  const times = all.map(pointTime);
   const ratings = all.map((point) => point[1]);
   const tMin = Math.min(...times);
   const tMax = Math.max(...times);
@@ -2004,14 +2025,12 @@ function drawCompareHistory(svg, careerA, careerB, labelA, labelB) {
   }
 
   const colors = ['#2a78d6', '#e0682a'];
-  [careerA, careerB].forEach((career, index) => {
-    if (!career.points || !career.points.length) return;
-    const points = career.points
-      .map((point) => `${x(new Date(point[0]).getTime())},${y(point[1])}`)
-      .join(' ');
-    svg.appendChild(svgEl('polyline', { class: `compare-line compare-line--${index === 0 ? 'a' : 'b'}`, points, stroke: colors[index] }));
-    const last = career.points[career.points.length - 1];
-    svg.appendChild(svgEl('circle', { cx: x(new Date(last[0]).getTime()), cy: y(last[1]), r: 3, fill: colors[index] }));
+  series.forEach((points, index) => {
+    if (!points.length) return;
+    const line = points.map((point) => `${x(pointTime(point))},${y(point[1])}`).join(' ');
+    svg.appendChild(svgEl('polyline', { class: `compare-line compare-line--${index === 0 ? 'a' : 'b'}`, points: line, stroke: colors[index] }));
+    const last = points[points.length - 1];
+    svg.appendChild(svgEl('circle', { cx: x(pointTime(last)), cy: y(last[1]), r: 3, fill: colors[index] }));
   });
 
   const xTitle = svgEl('text', { class: 'axis-title', x: pad.left + plotW / 2, y: height - 4, 'text-anchor': 'middle' });
@@ -2025,25 +2044,29 @@ function drawCompareHistory(svg, careerA, careerB, labelA, labelB) {
   const line = svgEl('line', { class: 'crosshair', y1: pad.top, y2: height - pad.bottom, x1: -10, x2: -10 });
   line.style.opacity = '0';
   svg.appendChild(line);
-  const pointsOf = (career) => career.points || [];
-  const nearest = (points, localX) => {
+  // Parsed once per series: this runs on every pointermove.
+  const seriesTimes = series.map((points) => points.map(pointTime));
+  const nearest = (index, localX) => {
+    const times = seriesTimes[index];
     let best = 0;
-    for (let i = 1; i < points.length; i += 1) {
-      if (Math.abs(x(new Date(points[i][0]).getTime()) - localX) < Math.abs(x(new Date(points[best][0]).getTime()) - localX)) best = i;
+    for (let i = 1; i < times.length; i += 1) {
+      if (Math.abs(x(times[i]) - localX) < Math.abs(x(times[best]) - localX)) best = i;
     }
-    return points[best];
+    return best;
   };
   const surface = svgEl('rect', { x: pad.left, y: pad.top, width: plotW, height: plotH, fill: 'transparent' });
   surface.addEventListener('pointermove', (event) => {
     const box = svg.getBoundingClientRect();
     const localX = (event.clientX - box.left) * (width / box.width);
-    const pa = nearest(pointsOf(careerA), localX);
-    const pb = nearest(pointsOf(careerB), localX);
-    const px = (x(new Date(pa[0]).getTime()) + x(new Date(pb[0]).getTime())) / 2;
+    const ia = nearest(0, localX);
+    const ib = nearest(1, localX);
+    const pa = series[0][ia];
+    const pb = series[1][ib];
+    const px = (x(seriesTimes[0][ia]) + x(seriesTimes[1][ib])) / 2;
     line.setAttribute('x1', px);
     line.setAttribute('x2', px);
     line.style.opacity = '1';
-    const when = new Date(`${pa[0]}T12:00:00Z`).toLocaleDateString('en-GB', { month: 'short', year: 'numeric' });
+    const when = new Date(pointTime(pa)).toLocaleDateString('en-GB', { month: 'short', year: 'numeric' });
     showTooltip(event, `<b>${labelA}</b> ${Math.round(pa[1])} · <b>${labelB}</b> ${Math.round(pb[1])}<br>${when}`);
   });
   surface.addEventListener('pointerleave', () => {
@@ -2057,13 +2080,12 @@ async function boot() {
   resolveTheme();
   wire();
   try {
-    state.dataMode = await detectDataMode();
     const [reports, careers] = await Promise.all([
       fetch(reportUrl(null)).then((r) => {
         if (!r.ok) throw new Error(`server returned ${r.status}`);
         return r.json();
       }),
-      fetch(careersUrl()).then((r) => (r.ok ? r.json() : null)),
+      fetch('/data/careers.json').then((r) => (r.ok ? r.json() : null)),
     ]);
     state.reports = reports;
     state.careers = careers;
@@ -2089,11 +2111,8 @@ async function boot() {
       document.querySelector(window.location.hash)?.scrollIntoView();
     }
   } catch (error) {
-    const hint =
-      state.dataMode === 'static'
-        ? 'Are the prebuilt data files deployed?'
-        : 'Is the server running?';
-    $('#status').textContent = `Could not load the season: ${error.message}. ${hint}`;
+    $('#status').textContent =
+      `Could not load the season: ${error.message}. Are the data files deployed?`;
   }
 }
 
