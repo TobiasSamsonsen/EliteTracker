@@ -89,24 +89,25 @@ REM run the test suite
     Every column sorts on click (`aria-sort`, keyboard-operable); the good and bad
     probability columns carry blue and red bars. Picking a club opens its rating history.
   - **Season shape** — per-club stacked area of position probability over the season.
-  - **The ladder** — both divisions on one line, sharing the rating scale.
+   - **The ladder** — both divisions on one horizontal track, sharing the rating scale.
+     Logos are positioned by rating along the x-axis with stacked rows for overlapping
+     teams; border colour marks division. Hover shows rank, name and exact rating via a
+     CSS tooltip.
   - **Career modal** — a club's rating across every season, plus a season-by-season table.
    - **Next up** — three-way odds per fixture, with each side's rating beside its name and
      the most likely scorelines beneath the odds (e.g. `2-1 28% · 1-1 19%`), drawn from the
      same gap-conditioned scoreline model that feeds the Monte Carlo.
    - **Model card** stating the known limits.
    - **Tabbed views** — the single long scroll is split into eight view tabs (`?view=`
-      makes each linkable): Table, Finish Grid, Season Shape, Ladder, Next Up, Compare
-      Clubs, Played Results, Model Card. Each tab shows only its own sections; the
-      hero, season options and rewind timeline stay on every view. The rewind slider
-      still filters each view (the `results` payload is rebuilt per `asof=`).
-   - **Played results** — a completed-match feed (most recent first) with date + round,
-      both sides and crests, the final score, and the rating change each side took
-      (computed client-side from the `careers` rating replay: the delta between the
-      rating after a match and the entry before it). The `results` payload carries each
-      side's `home_id`/`away_id` so the change lookup keys on stable ids. Part of the
-      tabbed views.
-- **Static build for Firebase Hosting** — `build_site.py` prebuilds every season's live
+      makes each linkable): Finish Grid, Table, Ladder, Next Up, Played Results, Season
+      Shape, Compare Clubs, Model Card. Each tab shows only its own sections; the hero
+      and season options stay on every view. The rewind timeline is hidden on all tabs
+      except the default view.
+   - **Played results** — a completed-match feed with date + round, both sides and crests,
+      the final score, and each side's rating (large, outside edges) with delta. Logos sit
+      between name and score. Navigated by ISO week (Prev/Next at top). Winning side gets
+      a gold gradient; no bold/muted distinction. Part of the tabbed views.
+   - **Static build for Firebase Hosting** — `build_site.py` prebuilds every season's live
   and rewound reports plus careers as plain JSON under `public/data/`, so the same frontend
   works on a static host with no Python runtime. The browser probes `/api/health` once; on
   a static host that answers 404 and everything falls back to `/data/*.json`. Reports use
@@ -114,7 +115,7 @@ REM run the test suite
   The ~1,100 rewound dates are farmed across worker processes. A `--only-season
   <year>` flag rebuilds a single season, which the CI uses to refresh the current
   season without redoing every past one (see the deploy cache below).
-- **Deployed at `elitetrackerno.web.app`.** A GitHub Action installs the package, runs
+- **Default view** is the Finish Grid. Deployed at `elitetrackerno.web.app.` A GitHub Action installs the package, runs
   `build_site`, and deploys `public/` on every push to `main` — no manual deploy needed.
   HTML and `app.js` are served `no-cache` and the script tag is versioned, so a new deploy
   is picked up without a hard refresh.
@@ -388,8 +389,9 @@ list is a scratchpad, not a commitment — each is picked up only when wanted.
 - [x] **Played-results feed** — a scrollable list of completed matches with scores
       and the rating swing each side took. Shipped as part of the tabbed views: a
       `Played results` tab showing date + round, crests, score, and each side's
-      rating change (read from the `careers` replay). The `results` payload already
-      carried everything else; rating swings are computed client-side from `careers`.
+      rating and delta (read from the `careers` replay). Navigated by ISO week.
+      The `results` payload already carried everything else; rating swings are
+      computed client-side from `careers`.
 - [ ] **Team focus page** — fold the career modal, a club's finish-grid row, and its
       recent + upcoming fixtures into one dedicated view (deep-linkable, like
       `?team=`).
