@@ -86,11 +86,18 @@ Only after a model change or a past-season backfill -- never for ordinary result
 touch the current season alone:
 
 ```bash
-python -m elitetracker.build_site          # every season, on your machine
+python -m elitetracker.build_site          # every season, on your machine (~270 MB)
 CURRENT=$(python -c 'from elitetracker.pipeline import current_season; print(current_season())')
-tar -czf past-seasons.tar.gz -C public/data $(cd public/data && ls report-*.json | grep -v "^report-$CURRENT")
-gh release upload past-seasons past-seasons.tar.gz --clobber
+# tar picks the members itself -- do not build the list with `ls`, whose output
+# an interactive alias (eza, ls -l) can reshape into columns tar cannot stat.
+tar -czf past-seasons.tar.gz -C public/data \
+    --exclude="report-$CURRENT*" --exclude=report.json --exclude=careers.json .
+gh release create past-seasons past-seasons.tar.gz   # first time
+gh release upload past-seasons past-seasons.tar.gz --clobber   # afterwards
 ```
+
+The current season, `report.json` and `careers.json` are excluded because CI rebuilds
+them every deploy. About 1,078 files, ~36 MB gzipped.
 
 The deploy job untars that into `public/data/`, then builds the current season over it.
 With no such release it still deploys -- only the current season is browsable.
