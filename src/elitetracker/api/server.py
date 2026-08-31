@@ -41,7 +41,7 @@ from elitetracker.display import combined_pairwise
 from elitetracker.simulation.history import HistoryConfig
 from elitetracker.simulation.season import SimulationConfig
 
-WEB_DIR = Path(__file__).resolve().parents[3] / "web"
+WEB_DIR = Path(__file__).resolve().parents[3] / "public"
 
 
 class ReportStore:
