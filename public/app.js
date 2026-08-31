@@ -1090,21 +1090,16 @@ function formByTeam(results) {
     if (r.home_goals == null || r.away_goals == null) continue;
     const draw = r.home_goals === r.away_goals;
     (map[r.home] ||= []).push(draw ? 'D' : r.home_goals > r.away_goals ? 'W' : 'L');
-    (map[r.away] ||= []).push(draw ? 'D' : r.home_goals > r.away_goals ? 'W' : 'L');
+    (map[r.away] ||= []).push(draw ? 'D' : r.home_goals > r.away_goals ? 'L' : 'W');
   }
   for (const name in map) map[name] = map[name].slice(-15);
-  // TEMP DEBUG — remove after confirming form data
-  if (window.__formDebug === undefined) { window.__formDebug = map; console.log('[formByTeam]', JSON.stringify(Object.fromEntries(Object.entries(map).map(([k,v]) => [k, v.map(c => c === 'W' ? 3 : c === 'D' ? 1 : 0)])))); }
   return map;
 }
 
 function formBlocks(form) {
-  if (!form || !form.length) return [];
   const blocks = [];
-  for (let i = 0; i < form.length; i += 3) {
-    const chunk = form.slice(i, i + 3);
-    const pts = chunk.reduce((t, l) => t + (l === 'W' ? 3 : l === 'D' ? 1 : 0), 0);
-    blocks.push(pts);
+  for (let i = (form || []).length; i > 0; i -= 3) {
+    blocks.unshift(formPoints(form.slice(Math.max(0, i - 3), i)));
   }
   return blocks;
 }
@@ -1121,7 +1116,7 @@ function formChipsEl(form) {
   for (const pts of blocks) {
     const chip = el('span', 'form__chip', String(pts));
     const t = pts / 9;
-    chip.style.background = `color-mix(in oklch, var(--away) ${Math.round(t * 100)}%, var(--home))`;
+    chip.style.background = `color-mix(in oklch, var(--outcome-good) ${Math.round(t * 100)}%, var(--outcome-bad))`;
     chip.title = `${pts} pts`;
     holder.appendChild(chip);
   }
