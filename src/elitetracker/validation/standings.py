@@ -1,16 +1,14 @@
 """Consistency checks over a normalized final league table.
 
-Run as a script it exits non-zero when any check fails, so it can gate the
-pipeline before the table is used to seed ELO ratings.
+Any failed check is an error, so `refresh` stops before a bad table is used to
+seed ELO ratings.
 """
 
 from __future__ import annotations
 
-import argparse
 from collections import Counter
-from pathlib import Path
 
-from elitetracker.normalize.standings import Standing, load_standings
+from elitetracker.normalize.standings import Standing
 from elitetracker.validation.matches import Report
 
 DEFAULT_TEAM_COUNT = 16
@@ -107,27 +105,3 @@ def validate(standings: list[Standing], *, expected_teams: int = DEFAULT_TEAM_CO
     _check_totals(standings, report)
     _check_order(standings, report)
     return report
-
-
-def main(argv: list[str] | None = None) -> int:
-    parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    parser.add_argument("input", type=Path, help="normalized standings JSON")
-    parser.add_argument("--teams", type=int, default=DEFAULT_TEAM_COUNT)
-    args = parser.parse_args(argv)
-
-    standings = load_standings(args.input)
-    report = validate(standings, expected_teams=args.teams)
-
-    for warning in report.warnings:
-        print(f"WARN  {warning}")
-    for error in report.errors:
-        print(f"ERROR {error}")
-
-    status = "OK" if report.ok else "FAILED"
-    champion = standings[0].team if standings else "?"
-    print(f"{status}: {len(standings)} teams, won by {champion} ({args.input})")
-    return 0 if report.ok else 1
-
-
-if __name__ == "__main__":
-    raise SystemExit(main())

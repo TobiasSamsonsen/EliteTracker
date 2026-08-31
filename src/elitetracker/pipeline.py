@@ -10,8 +10,6 @@ shown in 2026 are on the same scale and connected by its results in between.
 
 from __future__ import annotations
 
-import argparse
-import hashlib
 import json
 import re
 from dataclasses import dataclass
@@ -22,8 +20,9 @@ from elitetracker.model.career import SeasonSlice, TeamCareer, build_careers
 from elitetracker.model.elo import MODEL_VERSION, EloConfig
 from elitetracker.model.initial_ratings import SECOND_TIER, TOP_TIER, SeedingConfig, TeamRating, initial_ratings
 from elitetracker.model.ratings import build_rating_table
+from elitetracker.model.scorelines import DEFAULT_SCORELINE_MODEL
 from elitetracker.model.table import table_from_matches
-from elitetracker.display import build_fixtures_payload, build_pairwise_payload
+from elitetracker.display import build_fixtures_payload
 from elitetracker.normalize.matches import Match
 from elitetracker.normalize.standings import load_standings
 from elitetracker.simulation.history import HistoryConfig, as_of_date, build_history
@@ -216,88 +215,6 @@ def current_season(root: Path = NORMALIZED_DIR) -> int:
     return seasons[-1]
 
 
-def _source_paths(root: Path) -> list[Path]:
-    """Source modules that influence a report's simulation-derived fields.
-
-    The live API server under ``api/`` is excluded (it is not used by the
-    static site), as is the ``display`` package: display code turns already
-    computed ratings and odds into the "Next up" view and never feeds the
-    Monte Carlo, so editing it cannot change a simulation-derived byte. A
-    completed past season has no upcoming fixtures anyway, and the current
-    season is rebuilt on every deploy regardless.
-    """
-    excluded = {"api", "display"}
-    src_root = Path(__file__).resolve().parent
-    return [path for path in sorted(src_root.rglob("*.py")) if not excluded.intersection(path.parts)]
-
-
-def simulation_signature(root: Path = NORMALIZED_DIR) -> str:
-    """Stable hash that changes iff the simulation output would change.
-
-    Used by the deploy workflow as the cache key for past-season reports. Two
-    builds from the same signature produce byte-identical simulation-derived
-    fields, so cached files are safe to reuse.
-
-    The signature covers everything that influences a report's computed fields:
-
-    * every source module that participates in the static build (pipeline,
-      simulation, model, normalize -- the live API server under ``api/`` and
-      the ``display`` package are excluded, for the reasons in ``_source_paths``);
-    * the scoreline model file (a retrained distribution changes outcomes);
-    * the normalized match data for every season *except the current one*.
-
-    The current season's data is deliberately excluded: an ordinary results
-    refresh only adds played matches there, which never alters a past season's
-    finished outcome, so it must not force past seasons to rebuild. A code
-    change (model tweak or report-field change) or a past-season backfill
-    changes the hash and triggers a full rebuild.
-    """
-    hasher = hashlib.sha256()
-
-    for path in _source_paths(Path(__file__).resolve().parent):
-        hasher.update(path.read_bytes())
-
-    scoreline_path = root.parent / "scoreline_model.json"
-    if scoreline_path.exists():
-        hasher.update(b"scoreline:")
-        hasher.update(scoreline_path.read_bytes())
-    else:
-        hasher.update(b"scoreline:missing")
-
-    seasons = available_seasons(root)
-    current = seasons[-1] if seasons else None
-    for path in sorted(root.glob("*_matches.json")):
-        found = _MATCH_FILE.match(path.name)
-        if not found:
-            continue
-        if current is not None and int(found["season"]) == current:
-            continue
-        hasher.update(b"data:")
-        hasher.update(path.read_bytes())
-
-    return hasher.hexdigest()
-
-
-def current_data_signature(root: Path = NORMALIZED_DIR) -> str:
-    """Hash of the current season's match files, for change detection.
-
-    Unlike `simulation_signature`, this reflects results arriving in the
-    current season. The deploy workflow uses it to tell whether the current
-    season needs rebuilding even when the simulation code is unchanged -- an
-    ordinary matchday refresh changes this but not `simulation_signature`.
-    """
-    hasher = hashlib.sha256()
-    try:
-        current = current_season(root)
-    except FileNotFoundError:
-        return ""
-    for slug in LEAGUE_SPECS:
-        path = root / f"{slug}_{current}_matches.json"
-        if path.exists():
-            hasher.update(path.read_bytes())
-    return hasher.hexdigest()
-
-
 def seed_ratings(root: Path = NORMALIZED_DIR, *, seeding: SeedingConfig | None = None):
     """Starting ratings, from the final tables of the season before the replay."""
     return initial_ratings(
@@ -386,9 +303,9 @@ def build_report(
         all_matches = as_of_date(all_matches, asof)
         matches = as_of_date(matches, asof)
 
-    rating_table = build_rating_table(seeds, all_matches, config=elo_config)
+    ratings = build_rating_table(seeds, all_matches, config=elo_config)
     projection = simulate_season(
-        matches, rating_table.ratings, config=simulation, elo_config=elo_config
+        matches, ratings, config=simulation, elo_config=elo_config
     )
 
     return {
@@ -417,10 +334,16 @@ def build_report(
             "seed": projection.seed,
             "matches_played": projection.matches_played,
             "matches_remaining": projection.matches_remaining,
+            # The compare tool works out a fictional match in the browser, so it
+            # needs the same two ingredients the server uses: the draw model's
+            # parameters and the gap-binned scoreline table (~3 kB).
+            "probability_model": elo_config.probability_model,
+            "logit_slope": elo_config.logit_slope,
+            "logit_cutpoint": elo_config.logit_cutpoint,
+            "scorelines": DEFAULT_SCORELINE_MODEL.to_constants(),
         },
-        "table": _table_payload(matches, rating_table.ratings, projection, seeds),
-        "fixtures": build_fixtures_payload(matches, rating_table.ratings, elo_config),
-        "pairwise": build_pairwise_payload(rating_table.ratings, elo_config),
+        "table": _table_payload(matches, ratings, projection, seeds),
+        "fixtures": build_fixtures_payload(matches, ratings, elo_config),
         "results": _results_payload(matches),
         "history": _history_payload(
             build_history(matches, all_matches, seeds, elo_config=elo_config, config=history),
@@ -571,57 +494,3 @@ def careers_payload(careers: dict[str, TeamCareer], *, max_points: int = 400) ->
     return {"seed_season": SEED_SEASON, "model": MODEL_VERSION, "teams": teams}
 
 
-def build_all(root: Path = NORMALIZED_DIR, **kwargs: Any) -> dict[str, Any]:
-    """Every league for the current season."""
-    careers = kwargs.pop("careers", None) or build_all_careers(root)
-    return {
-        slug: build_report(slug, current_season(root), root=root, careers=careers, **kwargs)
-        for slug in LEAGUE_SPECS
-    }
-
-
-def main(argv: list[str] | None = None) -> int:
-    parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    parser.add_argument("--root", type=Path, default=NORMALIZED_DIR)
-    parser.add_argument("--season", type=int, help="default: the latest season with data")
-    parser.add_argument("--simulations", type=int, default=SimulationConfig.simulations)
-    parser.add_argument("--seed", type=int, default=SimulationConfig.seed)
-    parser.add_argument("--history-simulations", type=int, default=HistoryConfig.simulations)
-    parser.add_argument("--output", type=Path, help="write the full report as JSON")
-    args = parser.parse_args(argv)
-
-    careers = build_all_careers(args.root)
-    season = args.season or current_season(args.root)
-    print(f"seasons: {available_seasons(args.root)}  |  clubs tracked: {len(careers)}")
-
-    reports = {
-        slug: build_report(
-            slug,
-            season,
-            root=args.root,
-            careers=careers,
-            simulation=SimulationConfig(simulations=args.simulations, seed=args.seed),
-            history=HistoryConfig(simulations=args.history_simulations, seed=args.seed),
-        )
-        for slug in LEAGUE_SPECS
-    }
-
-    for report in reports.values():
-        leader = report["table"][0]
-        favourite = max(report["table"], key=lambda row: row["position_probabilities"][0])
-        print(
-            f"{report['league']['name']} {season}: leader {leader['team']} "
-            f"({leader['points']} pts), top pick {favourite['team']} "
-            f"({favourite['position_probabilities'][0]:.1%})"
-        )
-
-    if args.output:
-        args.output.parent.mkdir(parents=True, exist_ok=True)
-        with args.output.open("w", encoding="utf-8") as handle:
-            json.dump(reports, handle, indent=2, ensure_ascii=False)
-        print(f"wrote {args.output}")
-    return 0
-
-
-if __name__ == "__main__":
-    raise SystemExit(main())

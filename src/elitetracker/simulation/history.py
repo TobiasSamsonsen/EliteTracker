@@ -130,7 +130,7 @@ def build_history(
         ratings = build_rating_table(seeds, rewound_all, config=elo_config)
         projection = simulate_season(
             rewound_league,
-            ratings.ratings,
+            ratings,
             config=SimulationConfig(simulations=config.simulations, seed=config.seed),
             elo_config=elo_config,
         )
@@ -140,7 +140,7 @@ def build_history(
                 matches_played=projection.matches_played,
                 latest_round=_latest_round(league_matches, on),
                 positions={team.team_id: team.position_probabilities for team in projection.teams},
-                ratings={team.team_id: ratings.ratings[team.team_id] for team in projection.teams},
+                ratings={team.team_id: ratings[team.team_id] for team in projection.teams},
             )
         )
     return snapshots

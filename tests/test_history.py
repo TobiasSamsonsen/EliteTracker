@@ -172,7 +172,7 @@ class TestBuildHistory:
 
         ratings = build_rating_table(SEEDS, games)
         direct = simulate_season(
-            games, ratings.ratings, config=SimulationConfig(simulations=FAST.simulations, seed=FAST.seed)
+            games, ratings, config=SimulationConfig(simulations=FAST.simulations, seed=FAST.seed)
         )
         for team in direct.teams:
             assert history[-1].positions[team.team_id] == pytest.approx(team.position_probabilities)

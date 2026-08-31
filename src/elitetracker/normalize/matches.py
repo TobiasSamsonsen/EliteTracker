@@ -68,16 +68,6 @@ def clean_text(value: Any) -> str | None:
     return text
 
 
-def parse_time(raw: Any) -> str | None:
-    """Return a ``HH:MM`` string, or None when no kickoff time is published."""
-    text = clean_text(raw)
-    if text is None:
-        return None
-    if not _TIME_PATTERN.match(text):
-        raise NormalizationError(f"unparseable time {text!r}")
-    return text
-
-
 def parse_score(raw: Any) -> tuple[int | None, int | None]:
     """Split ``"2 - 1"`` into ``(2, 1)``; an unplayed match yields ``(None, None)``."""
     text = clean_text(raw)

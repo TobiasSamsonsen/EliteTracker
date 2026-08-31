@@ -139,36 +139,34 @@ class TestRatingTable:
     def test_seeds_are_used_when_no_matches_are_played(self):
         seeds = {"A": TeamRating("A", "A", 1600, "seed"), "B": TeamRating("B", "B", 1400, "seed")}
         table = build_rating_table(seeds, [match(1, "A", "B")])
-        assert table.get("A") == pytest.approx(1600)
-        assert table.matches_applied == 0
+        assert table["A"] == pytest.approx(1600)
 
     def test_a_win_raises_the_winner_and_lowers_the_loser(self):
         seeds = {"A": TeamRating("A", "A", 1500, "s"), "B": TeamRating("B", "B", 1500, "s")}
         table = build_rating_table(seeds, [match(1, "A", "B", score=(2, 0))])
-        assert table.get("A") > 1500 > table.get("B")
-        assert table.matches_applied == 1
+        assert table["A"] > 1500 > table["B"]
 
     def test_total_rating_is_conserved(self):
         seeds = {"A": TeamRating("A", "A", 1500, "s"), "B": TeamRating("B", "B", 1500, "s")}
         table = build_rating_table(seeds, [match(1, "A", "B", score=(2, 0)), match(2, "B", "A", day=2, score=(1, 1))])
-        assert sum(table.ratings.values()) == pytest.approx(3000)
+        assert sum(table.values()) == pytest.approx(3000)
 
     def test_unseeded_team_starts_at_the_floor(self):
         table = build_rating_table({}, [match(1, "New", "Other")])
-        assert table.get("New") == pytest.approx(1330)
-        assert table.unseeded == {"New", "Other"}
+        assert table["New"] == pytest.approx(1330)
+        assert table["Other"] == pytest.approx(1330)
 
     def test_replay_is_chronological_not_input_order(self):
         seeds = {t: TeamRating(t, t, 1500, "s") for t in "ABC"}
         games = [match(1, "A", "B", day=1, score=(1, 0)), match(2, "A", "C", day=2, score=(0, 1))]
         forward = build_rating_table(seeds, games)
         backward = build_rating_table(seeds, list(reversed(games)))
-        assert forward.ratings == pytest.approx(backward.ratings)
+        assert forward == pytest.approx(backward)
 
     def test_unplayed_matches_do_not_move_ratings(self):
         seeds = {"A": TeamRating("A", "A", 1500, "s"), "B": TeamRating("B", "B", 1500, "s")}
         table = build_rating_table(seeds, [match(1, "A", "B")])
-        assert table.ratings == pytest.approx({"A": 1500, "B": 1500})
+        assert table == pytest.approx({"A": 1500, "B": 1500})
 
     def test_matches_without_team_ids_are_rejected(self):
         bad = Match("1", "2026-03-01", "18:00", "A", "B", None, None, None, played=False)

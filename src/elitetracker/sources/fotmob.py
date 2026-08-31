@@ -8,15 +8,11 @@ keeps the stored artifacts small and readable.
 This replaces the parse.bot scraper used for the first Eliteserien fetch; that
 scraper was deleted upstream and now 404s for every tournament.
 
-Usage::
-
-    python -m elitetracker.sources.fotmob matches eliteserien 2026
-    python -m elitetracker.sources.fotmob standings obosligaen 2025 --force
+Driven by `refresh`, which fetches both divisions in one command.
 """
 
 from __future__ import annotations
 
-import argparse
 import json
 import re
 import urllib.error
@@ -180,25 +176,3 @@ def fetch_standings(
         force=force,
         validate=lambda payload: _validate_standings(payload, lg),
     )
-
-
-def main(argv: list[str] | None = None) -> int:
-    parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    parser.add_argument("kind", choices=["matches", "standings"])
-    parser.add_argument("league", choices=sorted(LEAGUES))
-    parser.add_argument("season", type=int)
-    parser.add_argument("--force", action="store_true", help="ignore a fresh cache entry")
-    parser.add_argument("--cache-dir", type=Path, default=RAW_DIR)
-    args = parser.parse_args(argv)
-
-    fetch = fetch_matches if args.kind == "matches" else fetch_standings
-    payload, from_cache = fetch(args.league, args.season, force=args.force, cache_dir=args.cache_dir)
-
-    source = "cache" if from_cache else "fotmob"
-    path = Cache(args.cache_dir).path_for(cache_key(league(args.league), args.season, args.kind))
-    print(f"{args.league} {args.season} {args.kind}: {len(payload)} rows from {source} -> {path}")
-    return 0
-
-
-if __name__ == "__main__":
-    raise SystemExit(main())

@@ -1,14 +1,13 @@
 """Consistency checks over a normalized match file.
 
-Run as a script it exits non-zero when any check fails, so it can gate the
-pipeline. Problems are split into errors (the data is wrong and downstream code
+`refresh` stops on any error, so bad data never reaches the model. Problems are
+split into errors (the data is wrong and downstream code
 would silently misbehave) and warnings (suspicious, but legitimately possible
 for a mid-season snapshot).
 """
 
 from __future__ import annotations
 
-import argparse
 import json
 from collections import Counter
 from dataclasses import dataclass, field
@@ -149,32 +148,3 @@ def validate(matches: list[Match], *, expected_teams: int = ELITESERIEN_TEAM_COU
     _check_order(dated, report)
     _check_against_today(dated, report, today or date.today())
     return report
-
-
-def main(argv: list[str] | None = None) -> int:
-    parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    parser.add_argument("input", type=Path, help="normalized match JSON")
-    parser.add_argument(
-        "--teams",
-        type=int,
-        default=ELITESERIEN_TEAM_COUNT,
-        help="number of teams in the division (default: %(default)s)",
-    )
-    args = parser.parse_args(argv)
-
-    matches = load_normalized(args.input)
-    report = validate(matches, expected_teams=args.teams)
-
-    for warning in report.warnings:
-        print(f"WARN  {warning}")
-    for error in report.errors:
-        print(f"ERROR {error}")
-
-    played = sum(1 for m in matches if m.played)
-    status = "OK" if report.ok else "FAILED"
-    print(f"{status}: {len(matches)} matches, {played} played, {len(matches) - played} upcoming ({args.input})")
-    return 0 if report.ok else 1
-
-
-if __name__ == "__main__":
-    raise SystemExit(main())

@@ -7,11 +7,9 @@ editing the model.
 
     python -m elitetracker.api.server --port 8000
 
-Routes:
-    GET /                      the site
-    GET /api/health            build status
-    GET /api/report            every league
-    GET /api/report/<slug>     one league
+It answers the same ``/data/*.json`` names ``build_site`` writes for Firebase,
+so the frontend has one URL scheme and no idea which host is behind it. Anything
+else is served from ``public/``.
 """
 
 from __future__ import annotations
@@ -19,11 +17,10 @@ from __future__ import annotations
 import argparse
 import json
 import mimetypes
+import re
 import threading
 from functools import partial
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
-from datetime import date
-from urllib.parse import parse_qs
 from pathlib import Path
 from typing import Any
 
@@ -37,11 +34,14 @@ from elitetracker.pipeline import (
     careers_payload,
     current_season,
 )
-from elitetracker.display import combined_pairwise
 from elitetracker.simulation.history import HistoryConfig
 from elitetracker.simulation.season import SimulationConfig
 
 WEB_DIR = Path(__file__).resolve().parents[3] / "public"
+
+# The filenames build_site writes: report.json, report-<season>.json and
+# report-<season>-<date>.json.
+_REPORT_NAME = re.compile(r"report(?:-(\d{4})(?:-(\d{4}-\d{2}-\d{2}))?)?\.json")
 
 
 class ReportStore:
@@ -113,13 +113,7 @@ class ReportStore:
 
     def reports(self, season: int | None = None, asof: str | None = None) -> dict[str, Any]:
         target = season or current_season(self.root)
-        reports = {slug: self.report(slug, target, asof) for slug in LEAGUE_SPECS}
-        # One rating scale spans both divisions, so a combined pairwise lets the
-        # compare tool pit an Eliteserien club against an OBOS-ligaen one.
-        combined = combined_pairwise(reports, self.elo_config)
-        for report in reports.values():
-            report["pairwise"] = combined
-        return reports
+        return {slug: self.report(slug, target, asof) for slug in LEAGUE_SPECS}
 
 
 class Handler(BaseHTTPRequestHandler):
@@ -133,29 +127,14 @@ class Handler(BaseHTTPRequestHandler):
 
     # Quieter than the default one-line-per-asset logging.
     def log_message(self, format: str, *args: Any) -> None:
-        if self.path.startswith("/api/"):
+        if self.path.startswith("/data/"):
             super().log_message(format, *args)
 
     def do_GET(self) -> None:  # noqa: N802 - name fixed by BaseHTTPRequestHandler
         path = self.path.split("?", 1)[0]
         try:
-            if path == "/api/health":
-                self._json({"status": "ok", "model": MODEL_VERSION, "leagues": sorted(LEAGUE_SPECS)})
-            elif path == "/api/seasons":
-                self._json(
-                    {
-                        "seasons": self.store.seasons(),
-                        "current": current_season(self.store.root),
-                    }
-                )
-            elif path == "/api/careers":
-                self._json(careers_payload(self.store.careers()))
-            elif path == "/api/report":
-                self._json(self.store.reports(self._season_param(), self._asof_param()))
-            elif path.startswith("/api/report/"):
-                self._report_route(path.removeprefix("/api/report/"))
-            elif path.startswith("/api/"):
-                self._json({"error": "no such endpoint"}, status=404)
+            if path.startswith("/data/"):
+                self._data_route(path.removeprefix("/data/"))
             else:
                 self._static(path)
         except BrokenPipeError:
@@ -164,54 +143,20 @@ class Handler(BaseHTTPRequestHandler):
             self.log_error("%s", exc)
             self._json({"error": str(exc)}, status=500)
 
-    def _season_param(self) -> int | None:
-        """?season=2019 on any report route."""
-        if "?" not in self.path:
-            return None
-        query = parse_qs(self.path.split("?", 1)[1])
-        values = query.get("season")
-        if not values:
-            return None
-        try:
-            return int(values[0])
-        except ValueError:
-            return None
-
-    def _asof_param(self) -> str | None:
-        """?asof=2026-05-01 rewinds the whole report to that evening."""
-        if "?" not in self.path:
-            return None
-        values = parse_qs(self.path.split("?", 1)[1]).get("asof")
-        if not values:
-            return None
-        candidate = values[0].strip()
-        try:
-            date.fromisoformat(candidate)
-        except ValueError:
-            return None
-        return candidate
-
-    def _report_route(self, rest: str) -> None:
-        """/api/report/<league> or /api/report/<league>/<season>."""
-        parts = [part for part in rest.split("/") if part]
-        if not parts or parts[0] not in LEAGUE_SPECS:
-            self._json({"error": f"unknown league {parts[0] if parts else ''!r}"}, status=404)
+    def _data_route(self, name: str) -> None:
+        """Compute what the static build would have written under /data/."""
+        if name == "careers.json":
+            self._json(careers_payload(self.store.careers()))
             return
-
-        slug = parts[0]
-        season = self._season_param()
-        if len(parts) > 1:
-            try:
-                season = int(parts[1])
-            except ValueError:
-                self._json({"error": f"bad season {parts[1]!r}"}, status=400)
-                return
-
-        season = season or current_season(self.store.root)
+        match = _REPORT_NAME.fullmatch(name)
+        if match is None:
+            self._json({"error": "not found"}, status=404)
+            return
+        season = int(match.group(1)) if match.group(1) else current_season(self.store.root)
         if season not in self.store.seasons():
             self._json({"error": f"no data for season {season}"}, status=404)
             return
-        self._json(self.store.report(slug, season, self._asof_param()))
+        self._json(self.store.reports(season, match.group(2)))
 
     def _json(self, payload: Any, status: int = 200) -> None:
         body = json.dumps(payload, ensure_ascii=False).encode("utf-8")
