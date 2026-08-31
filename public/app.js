@@ -15,7 +15,10 @@ const state = {
   // Key of the league+season the compare pickers were last populated for.
   compareKey: '',
   // Active view tab: 'grid', 'table', 'ladder', 'next-up', 'played', 'shape', 'compare', 'model'
-  activeView: 'grid',
+  // The finish grid is 16 columns wide and cannot be read on a phone without
+  // scrolling it sideways; the table now fits, so that is where a phone lands.
+  // ?view= still wins -- see applyViewParameter.
+  activeView: window.matchMedia('(max-width: 760px)').matches ? 'table' : 'grid',
   // Pagination for played results.
   playedWeek: 0,
 };
@@ -166,9 +169,20 @@ function showTooltip(event, html) {
   moveTooltip(event);
 }
 
+const coarsePointer = window.matchMedia('(pointer: coarse)');
+
 function moveTooltip(event) {
-  const pad = 14;
   const box = tooltip.getBoundingClientRect();
+
+  // A finger covers the thing it is pointing at, so on touch the readout is
+  // parked above the navigation bar instead of chasing the contact point.
+  if (coarsePointer.matches) {
+    tooltip.style.left = `${Math.max(8, (window.innerWidth - box.width) / 2)}px`;
+    tooltip.style.top = `${window.innerHeight - box.height - 68}px`;
+    return;
+  }
+
+  const pad = 14;
   let x = event.clientX + pad;
   let y = event.clientY + pad;
   if (x + box.width > window.innerWidth - 8) x = event.clientX - box.width - pad;
@@ -473,12 +487,12 @@ function renderStandings(report) {
     tr.appendChild(club);
     // 'extra' marks the tallies a phone drops -- see .col--extra in the CSS.
     for (const [key, extra] of [
-      ['played', false], ['wins', true], ['draws', true],
+      ['played', true], ['wins', true], ['draws', true],
       ['losses', true], ['goals_for', true], ['goals_against', true],
     ]) {
       tr.appendChild(el('td', `num muted${extra ? ' col--extra' : ''}`, String(row[key])));
     }
-    tr.appendChild(el('td', 'num', row.goal_difference > 0 ? `+${row.goal_difference}` : String(row.goal_difference)));
+    tr.appendChild(el('td', 'num col--extra', row.goal_difference > 0 ? `+${row.goal_difference}` : String(row.goal_difference)));
     const points = el('td', 'num', String(row.points));
     points.style.fontWeight = '700';
     tr.appendChild(points);
@@ -801,8 +815,13 @@ function renderLadder(reports) {
     return 2 + ((rating - low) / (high - low)) * 96; // 2%–98% keeps logos inside clip
   }
 
-  // Stack overlapping teams into rows (top-down)
-  const OVERLAP_PCT = 3; // % of track width that counts as overlapping
+  // Two crests overlap when they are closer than one crest apart. That is a
+  // pixel fact, so the threshold is measured off the real track rather than
+  // fixed at a percentage: 3% of a 1150px desktop track clears a 24px crest,
+  // 3% of a 390px phone track is 12px and the logos pile up.
+  const trackWidth = $('#ladder-lanes').clientWidth || 1000;
+  const crestPx = parseFloat(getComputedStyle(document.documentElement).fontSize) * 1.5;
+  const OVERLAP_PCT = Math.min(50, ((crestPx + 2) / trackWidth) * 100);
   teams.sort((a, b) => a.rating - b.rating || a.team.localeCompare(b.team));
 
   // Rank: highest rating = 1
@@ -843,6 +862,9 @@ function renderLadder(reports) {
 
   // Teams
   const rowHeight = rows.length === 1 ? 0 : 2.2; // rem spacing between rows
+  // A narrow track stacks into more rows than a wide one, so the track is
+  // sized to the rows it actually produced rather than to a fixed height.
+  track.style.height = `${4 + Math.max(0, rows.length - 1) * rowHeight}rem`;
   for (const team of teams) {
     const wrap = el('div', 'ladder__team');
     wrap.dataset.tier = String(team.tier);
@@ -1173,14 +1195,17 @@ function renderHero(report) {
 
   const meta = $('#hero-meta');
   meta.replaceChildren();
-  for (const [name, value] of [
-    ['Played', `${model.matches_played}`],
-    ['Remaining', `${model.matches_remaining}`],
-    ['Seasons simulated', model.simulations.toLocaleString()],
-    ['Model', model.version],
-    ['Ratings from', `${model.seed_season} onward`],
+  // The last three describe how the model was built rather than where the
+  // season stands. They are the Model Card's job, and on a phone they cost
+  // three lines above the table, so they are marked to drop there.
+  for (const [name, value, provenance] of [
+    ['Played', `${model.matches_played}`, false],
+    ['Remaining', `${model.matches_remaining}`, false],
+    ['Seasons simulated', model.simulations.toLocaleString(), true],
+    ['Model', model.version, true],
+    ['Ratings from', `${model.seed_season} onward`, true],
   ]) {
-    const cell = el('div');
+    const cell = el('div', provenance ? 'hero__meta-provenance' : '');
     cell.appendChild(el('span', '', name));
     cell.appendChild(el('b', '', value));
     meta.appendChild(cell);
@@ -1429,6 +1454,9 @@ function renderTimeline(report) {
     ? `Live — ${day.matches_played} matches played`
     : `As of ${when} — ${day.matches_played} of ${report.model.matches_played + report.model.matches_remaining} played`;
 
+  $('#timeline-back').disabled = index <= 0;
+  $('#timeline-forward').disabled = index >= days.length - 1;
+
   const scale = $('#timeline-scale');
   scale.replaceChildren();
   const first = new Date(`${days[0].date}T12:00:00Z`);
@@ -1581,10 +1609,35 @@ function wire() {
     button.addEventListener('click', () => {
       state.activeView = button.dataset.view;
       markActiveView();
+      closeSheet();
       render();
       hideTooltip();
+      window.scrollTo({ top: 0, behavior: 'instant' });
     });
   }
+
+  // Panel descriptions are clamped to two lines on a phone; a tap opens one.
+  // Delegated, because every view rebuilds its own panel content.
+  document.addEventListener('click', (event) => {
+    const description = event.target.closest('.panel__head p');
+    if (description) description.classList.toggle('is-expanded');
+  });
+
+  $('#more-button').addEventListener('click', () => {
+    if ($('#more-sheet').hidden) openSheet();
+    else closeSheet();
+  });
+  for (const closer of document.querySelectorAll('[data-close-sheet]')) {
+    closer.addEventListener('click', closeSheet);
+  }
+
+  const stepMatchday = (delta) => {
+    const range = $('#timeline-range');
+    range.value = String(Number(range.value) + delta);
+    range.dispatchEvent(new Event('input', { bubbles: true }));
+  };
+  $('#timeline-back').addEventListener('click', () => stepMatchday(-1));
+  $('#timeline-forward').addEventListener('click', () => stepMatchday(1));
 
   $('#shape-team').addEventListener('change', (event) => {
     drawShape(state.reports[state.league], event.target.value);
@@ -1609,7 +1662,9 @@ function wire() {
     closer.addEventListener('click', closeCareer);
   }
   document.addEventListener('keydown', (event) => {
-    if (event.key === 'Escape' && !$('#career-modal').hidden) closeCareer();
+    if (event.key !== 'Escape') return;
+    if (!$('#career-modal').hidden) closeCareer();
+    else if (!$('#more-sheet').hidden) closeSheet();
   });
 
   window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => {
@@ -1665,14 +1720,34 @@ function applyTeamParameter() {
   }
 }
 
-/* The view strip scrolls sideways once it outgrows the screen, so the active
-   tab is pulled back into sight rather than left off the edge. */
+/* Three controls can name the current view -- the desktop strip, the phone bar
+   and the More sheet -- and every one of them carries the same data-view, so
+   they are all marked from here. The strip scrolls sideways once it outgrows
+   its container, so its active tab is pulled back into sight; scrolling the
+   fixed bar or the sheet would only jog the page. */
 function markActiveView() {
   for (const button of document.querySelectorAll('[data-view]')) {
     const active = button.dataset.view === state.activeView;
     button.setAttribute('aria-pressed', String(active));
-    if (active) button.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+    if (active && button.closest('.masthead__views')) {
+      button.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+    }
   }
+  // The bar shows four views; when the current one lives in the sheet, More
+  // carries the mark so the bar is never blank.
+  const inBar = [...document.querySelectorAll('.mobilebar__item[data-view]')]
+    .some((button) => button.dataset.view === state.activeView);
+  $('#more-button').setAttribute('aria-pressed', String(!inBar));
+}
+
+function openSheet() {
+  $('#more-sheet').hidden = false;
+  $('#more-button').setAttribute('aria-expanded', 'true');
+}
+
+function closeSheet() {
+  $('#more-sheet').hidden = true;
+  $('#more-button').setAttribute('aria-expanded', 'false');
 }
 
 /* ?view=grid makes any view linkable. Applied early so the first render
