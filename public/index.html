@@ -8,7 +8,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Archivo:ital,wdth,wght@0,62..125,400..800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="/styles.css?v=3">
+<link rel="stylesheet" href="/styles.css?v=4">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'><rect width='16' height='16' rx='3' fill='%232a78d6'/><rect x='3' y='9' width='2.5' height='4' fill='white'/><rect x='6.75' y='6' width='2.5' height='7' fill='white'/><rect x='10.5' y='3' width='2.5' height='10' fill='white'/></svg>">
 </head>
 <body>
@@ -119,19 +119,19 @@
                 <th class="num" scope="col" aria-sort="none" data-sort-col="played">
                   <button type="button" class="sort-btn" data-sort-key="played"><span class="sort-btn__label">Pl</span><span class="visually-hidden">, matches played</span><span class="sort-btn__caret" aria-hidden="true"></span></button>
                 </th>
-                <th class="num" scope="col" aria-sort="none" data-sort-col="wins">
+                <th class="num col--extra" scope="col" aria-sort="none" data-sort-col="wins">
                   <button type="button" class="sort-btn" data-sort-key="wins"><span class="sort-btn__label">W</span><span class="visually-hidden">, wins</span><span class="sort-btn__caret" aria-hidden="true"></span></button>
                 </th>
-                <th class="num" scope="col" aria-sort="none" data-sort-col="draws">
+                <th class="num col--extra" scope="col" aria-sort="none" data-sort-col="draws">
                   <button type="button" class="sort-btn" data-sort-key="draws"><span class="sort-btn__label">D</span><span class="visually-hidden">, draws</span><span class="sort-btn__caret" aria-hidden="true"></span></button>
                 </th>
-                <th class="num" scope="col" aria-sort="none" data-sort-col="losses">
+                <th class="num col--extra" scope="col" aria-sort="none" data-sort-col="losses">
                   <button type="button" class="sort-btn" data-sort-key="losses"><span class="sort-btn__label">L</span><span class="visually-hidden">, losses</span><span class="sort-btn__caret" aria-hidden="true"></span></button>
                 </th>
-                <th class="num" scope="col" aria-sort="none" data-sort-col="goals_for">
+                <th class="num col--extra" scope="col" aria-sort="none" data-sort-col="goals_for">
                   <button type="button" class="sort-btn" data-sort-key="goals_for"><span class="sort-btn__label">GF</span><span class="visually-hidden">, goals for</span><span class="sort-btn__caret" aria-hidden="true"></span></button>
                 </th>
-                <th class="num" scope="col" aria-sort="none" data-sort-col="goals_against">
+                <th class="num col--extra" scope="col" aria-sort="none" data-sort-col="goals_against">
                   <button type="button" class="sort-btn" data-sort-key="goals_against"><span class="sort-btn__label">GA</span><span class="visually-hidden">, goals against</span><span class="sort-btn__caret" aria-hidden="true"></span></button>
                 </th>
                 <th class="num" scope="col" aria-sort="none" data-sort-col="goal_difference">
@@ -141,19 +141,19 @@
                   <button type="button" class="sort-btn" data-sort-key="points"><span class="sort-btn__label">Pts</span><span class="visually-hidden">, points</span><span class="sort-btn__caret" aria-hidden="true"></span></button>
                 </th>
                 <th class="num sep" scope="col" aria-sort="none" data-sort-col="rating">
-                  <button type="button" class="sort-btn" data-sort-key="rating"><span class="sort-btn__label">Rating</span><span class="visually-hidden">, ELO rating</span><span class="sort-btn__caret" aria-hidden="true"></span></button>
+                  <button type="button" class="sort-btn" data-sort-key="rating"><span class="sort-btn__label">Rating</span><span class="sort-btn__short" aria-hidden="true">Elo</span><span class="visually-hidden">, ELO rating</span><span class="sort-btn__caret" aria-hidden="true"></span></button>
                 </th>
-                <th class="num" scope="col" aria-sort="none" data-sort-col="expected_points">
+                <th class="num col--extra" scope="col" aria-sort="none" data-sort-col="expected_points">
                   <button type="button" class="sort-btn" data-sort-key="expected_points"><span class="sort-btn__label">xPts</span><span class="visually-hidden">, expected final points</span><span class="sort-btn__caret" aria-hidden="true"></span></button>
                 </th>
-                <th class="num form" scope="col" aria-sort="none" data-sort-col="form">
+                <th class="num form col--extra" scope="col" aria-sort="none" data-sort-col="form">
                   <button type="button" class="sort-btn" data-sort-key="form"><span class="sort-btn__label">Form</span><span class="visually-hidden">, recent results</span><span class="sort-btn__caret" aria-hidden="true"></span></button>
                 </th>
                 <th class="num" scope="col" aria-sort="none" data-sort-col="up">
-                  <button type="button" class="sort-btn" data-sort-key="up"><span class="sort-btn__label" id="head-first">Champion</span><span class="visually-hidden" id="head-first-desc">, chance of winning the title</span><span class="sort-btn__caret" aria-hidden="true"></span></button>
+                  <button type="button" class="sort-btn" data-sort-key="up"><span class="sort-btn__label" id="head-first">Champion</span><span class="sort-btn__short" id="head-first-short" aria-hidden="true">Title</span><span class="visually-hidden" id="head-first-desc">, chance of winning the title</span><span class="sort-btn__caret" aria-hidden="true"></span></button>
                 </th>
                 <th class="num" scope="col" aria-sort="none" data-sort-col="down">
-                  <button type="button" class="sort-btn" data-sort-key="down"><span class="sort-btn__label" id="head-last">Relegation</span><span class="visually-hidden" id="head-last-desc">, chance of relegation</span><span class="sort-btn__caret" aria-hidden="true"></span></button>
+                  <button type="button" class="sort-btn" data-sort-key="down"><span class="sort-btn__label" id="head-last">Relegation</span><span class="sort-btn__short" id="head-last-short" aria-hidden="true">Drop</span><span class="visually-hidden" id="head-last-desc">, chance of relegation</span><span class="sort-btn__caret" aria-hidden="true"></span></button>
                 </th>
               </tr>
             </thead>
@@ -315,6 +315,6 @@
   </div>
 </div>
 
-<script src="/app.js?v=2"></script>
+<script src="/app.js?v=3"></script>
 </body>
 </html>
