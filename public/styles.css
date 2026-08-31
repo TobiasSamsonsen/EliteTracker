@@ -252,6 +252,7 @@ a { color: inherit; }
 .masthead__views {
   display: flex;
   align-items: center;
+  justify-content: flex-end;
   gap: 0.75rem;
   margin-top: 0.5rem;
   width: 100%;
@@ -702,82 +703,98 @@ table.standings .muted { color: var(--ink-muted); }
 
 /* ---------- rating ladder ----------------------------------------- */
 
-/* Dot geometry lives here and is read by both the track height and the JS that
-   places each dot, so the box can never be shorter than what it has to hold.
-   An earlier stale copy of these rules set the track to 2.1rem while the script
-   was still stacking dots 30px up, which is how they ended up outside the box. */
+/* ---------- ladder -------------------------------------------------- */
+
 .ladder {
-  padding: 1.4rem 1.25rem 2.1rem;
-  --ladder-dot: 11px;
-  --ladder-row-gap: 12px;
-  --ladder-rows: 3; /* replaced at run time by the real row count */
-  --ladder-floor: 7px;
+  padding: 1.25rem;
+  overflow: hidden;
+}
+
+.ladder__track {
+  position: relative;
+  height: 12rem;
+  width: 100%;
 }
 
 .ladder__axis {
-  position: relative;
-  height: 2px;
-  background: var(--rule-strong);
-  /* Just enough to clear the dots; the axis belongs with the track, not adrift
-     below it. */
-  margin: 0.9rem 0 0;
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 1.5rem;
+  overflow: hidden;
 }
 
 .ladder__tick {
   position: absolute;
-  top: -0.4rem;
-  width: 2px;
-  height: 0.9rem;
+  bottom: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.15rem;
+  transform: translateX(-50%);
+}
+
+.ladder__tick::before {
+  content: '';
+  width: 1px;
+  height: 0.4rem;
   background: var(--ink-faint);
-  transform: translateX(-1px);
+  flex-shrink: 0;
 }
 
 .ladder__tick span {
-  position: absolute;
-  top: 1.1rem;
-  left: 50%;
-  transform: translateX(-50%);
   font-size: 0.6875rem;
   color: var(--ink-faint);
   white-space: nowrap;
 }
 
-/* One shared line. The divisions overlap on the rating scale, and that overlap
-   is the whole point of the section, so they are separated by colour and
-   marker shape rather than by being put on different rows. */
-.ladder__track {
-  position: relative;
-  /* floor + (rows - 1) gaps + one dot + the same headroom as the floor */
-  height: calc(
-    var(--ladder-floor) * 2 + (var(--ladder-rows) - 1) * var(--ladder-row-gap) + var(--ladder-dot)
-  );
-  border-radius: 3px;
-  background: var(--panel-sunk);
-}
-
 .ladder__team {
   position: absolute;
-  bottom: calc(var(--ladder-floor) + var(--ladder-row, 0) * var(--ladder-row-gap));
-  width: var(--ladder-dot);
-  height: var(--ladder-dot);
-  border-radius: 50%;
-  transform: translateX(calc(var(--ladder-dot) / -2));
+  width: 1.5rem;
+  height: 1.5rem;
   cursor: default;
-  transition: transform 0.12s var(--ease);
+  z-index: 1;
+  transform: translate(-50%, 0);
 }
 
-.ladder__team:hover { transform: translateX(calc(var(--ladder-dot) / -2)) scale(1.7); z-index: 3; }
-
-/* Filled for the top flight, hollow for the second: colour alone should not
-   be carrying the division. */
-.ladder__team[data-tier="1"] {
-  background: var(--tier-1);
-  border: 2px solid var(--panel);
-}
-
-.ladder__team[data-tier="2"] {
+.ladder__team img {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  object-fit: contain;
   background: var(--panel);
-  border: 2.5px solid var(--tier-2);
+  transition: transform 0.06s ease-out;
+}
+
+.ladder__team:hover img { transform: scale(1.5); z-index: 3; }
+
+.ladder__team::after {
+  content: attr(data-tip);
+  position: absolute;
+  bottom: calc(100% + 0.4rem);
+  left: 50%;
+  transform: translateX(-50%);
+  white-space: nowrap;
+  font-size: 0.75rem;
+  font-weight: 600;
+  line-height: 1;
+  padding: 0.3rem 0.5rem;
+  background: var(--ink);
+  color: var(--panel);
+  border-radius: 3px;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.08s ease-out;
+}
+
+.ladder__team:hover::after { opacity: 1; }
+
+.ladder__team[data-tier="1"] img { border: 2px solid var(--tier-1); }
+.ladder__team[data-tier="2"] img { border: 2px solid var(--tier-2); }
+
+@media (max-width: 760px) {
+  .ladder__track { height: 10rem; }
 }
 
 
@@ -850,16 +867,13 @@ table.standings .muted { color: var(--ink-muted); }
 .odds__seg[data-outcome="draw"] { background: var(--draw); color: #10171b; }
 .odds__seg[data-outcome="away"] { background: var(--away); }
 
-/* Recent-form chips in the table and under each fixture side. */
+/* Recent-form blocks in the table: 5 squares, each = 3 matches, gradient by points. */
 .form__chips { display: inline-flex; gap: 2px; justify-content: flex-end; }
 .form__chip {
   width: 1.05rem; height: 1.05rem; border-radius: 3px;
   display: grid; place-items: center;
   font-size: 0.625rem; font-weight: 700; line-height: 1; color: #fff;
 }
-.form__chip--w { background: var(--home); }
-.form__chip--d { background: var(--draw); color: #10171b; }
-.form__chip--l { background: var(--away); }
 
 /* Compare-clubs tool. The cards are the team pickers: the native <select>s are
    kept in the DOM but visually hidden, and a card click opens the browser's
@@ -933,73 +947,165 @@ table.standings .muted { color: var(--ink-muted); }
 
 /* ---------- played results ------------------------------------------ */
 
-.played-results { display: grid; gap: 1px; background: var(--rule); }
+.played-results {
+  display: flex;
+  flex-direction: column;
+}
 
-.played-result {
-  display: grid;
-  grid-template-columns: 5.5rem 1fr auto minmax(80px, 120px) 1fr;
-  gap: 0.75rem 1rem;
+/* Week navigation */
+.played-nav {
+  display: flex;
   align-items: center;
-  padding: 0.6rem 1.25rem;
+  justify-content: center;
+  gap: 1rem;
+  padding: 0.85rem 1.25rem;
+  border-bottom: 1px solid var(--rule);
+}
+
+.played-nav__btn {
+  appearance: none;
+  border: 1px solid var(--rule);
   background: var(--panel);
+  color: var(--ink);
+  font: inherit;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  padding: 0.4rem 1rem;
+  border-radius: var(--radius);
+  cursor: pointer;
+  transition: background 0.12s var(--ease), border-color 0.12s var(--ease);
 }
 
-.played-result:hover { background: var(--panel-sunk); }
+.played-nav__btn:hover { background: var(--panel-sunk); border-color: var(--rule-strong); }
+.played-nav__btn:disabled { opacity: 0.35; cursor: default; }
+.played-nav__btn:disabled:hover { background: var(--panel); border-color: var(--rule); }
 
-.played-result__when { font-size: 0.75rem; color: var(--ink-muted); }
-
-.played-result__teams { font-weight: 600; font-size: 0.875rem; }
-
-.played-result__teams em { font-style: normal; color: var(--ink-faint); font-weight: 400; padding-inline: 0.4rem; }
-
-.played-result__side { display: inline-flex; align-items: baseline; gap: 0.4rem; }
-
-.played-result__side .team-logo {
-  width: 18px;
-  height: 18px;
-  align-self: center;
+.played-nav__label {
+  font-family: var(--display);
+  font-weight: 700;
+  font-size: 1rem;
+  color: var(--ink);
+  min-width: 10rem;
+  text-align: center;
 }
 
-.played-result__score {
-  font-size: 0.875rem;
+/* Card */
+.played-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  padding: 1rem 1.5rem 0.85rem;
+  border-bottom: 1px solid var(--rule);
+}
+
+.played-card:last-child { border-bottom: none; }
+
+/* Gradient: gold on winning side, distinct from blue delta text */
+.played-card--home-win {
+  background: linear-gradient(
+    to right,
+    color-mix(in srgb, var(--band-champion) 12%, var(--panel)) 0%,
+    var(--panel) 50%
+  );
+}
+
+.played-card--away-win {
+  background: linear-gradient(
+    to left,
+    color-mix(in srgb, var(--band-champion) 12%, var(--panel)) 0%,
+    var(--panel) 50%
+  );
+}
+
+
+/* Matchup row */
+.played-card__matchup {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.played-card__side {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  flex: 1;
+}
+
+.played-card__side--home { justify-content: flex-end; }
+.played-card__side--away { justify-content: flex-start; }
+
+.played-card__team {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  font-weight: 600;
+  font-size: 1rem;
+  line-height: 1.2;
+  white-space: nowrap;
+  min-width: 0;
+}
+
+.played-card__side .team-logo {
+  width: 22px;
+  height: 22px;
+  flex-shrink: 0;
+}
+
+/* Rating block on the outside */
+.played-card__rating {
+  display: flex;
+  align-items: baseline;
+  gap: 0.3rem;
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
+.played-card__rating-value {
+  font-family: var(--display);
+  font-size: 1.125rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--ink);
+}
+
+.played-card__delta {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.played-card__delta--up { color: var(--outcome-good); }
+.played-card__delta--down { color: var(--outcome-bad); }
+
+/* Score */
+.played-card__score {
+  font-family: var(--display);
+  font-size: 1.375rem;
   font-weight: 700;
   font-variant-numeric: tabular-nums;
   color: var(--ink);
   text-align: center;
   white-space: nowrap;
+  flex-shrink: 0;
+  padding: 0 0.25rem;
+  line-height: 1;
 }
 
-.played-result__rating-change {
-  font-size: 0.6875rem;
-  font-weight: 600;
-  font-variant-numeric: tabular-nums;
-  white-space: nowrap;
-  padding: 0.15rem 0.4rem;
-  border-radius: 999px;
-}
-
-.played-result__rating-change--up {
-  background: color-mix(in srgb, var(--outcome-good) 18%, transparent);
-  color: var(--outcome-good);
-}
-
-.played-result__rating-change--down {
-  background: color-mix(in srgb, var(--outcome-bad) 18%, transparent);
-  color: var(--outcome-bad);
-}
-
-.played-result__rating-change--neutral {
-  background: var(--panel-sunk);
+/* Date centered below matchup */
+.played-card__date {
+  text-align: center;
+  font-size: 0.8125rem;
   color: var(--ink-muted);
 }
 
 @media (max-width: 760px) {
-  .played-result {
-    grid-template-columns: 1fr;
-    gap: 0.4rem;
-  }
-  .played-result__when { order: -1; }
-  .played-result__teams { text-align: center; }
+  .played-card { padding: 0.75rem 1rem; }
+  .played-card__team { font-size: 0.875rem; }
+  .played-card__score { font-size: 1.125rem; }
+  .played-card__rating-value { font-size: 0.9375rem; }
+  .played-card__delta { font-size: 0.75rem; }
 }
 
 /* ---------- model card -------------------------------------------- */
@@ -1102,8 +1208,7 @@ footer {
   /* Less generous panel padding so the wide tables and controls get the
      maximum usable width on small phones. */
   .panel__head, .timeline { padding: 0.9rem 1rem; }
-  .grid-wrap, .shape, .ladder { padding: 1rem; }
-  .ladder { padding-bottom: 2rem; }
+  .grid-wrap, .shape { padding: 1rem; }
   .legend { padding: 0.8rem 1rem; }
   .fixture { padding: 0.65rem 1rem; }
 }

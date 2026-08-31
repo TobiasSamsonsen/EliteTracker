@@ -33,13 +33,13 @@
 
   <div class="shell masthead__views">
     <div class="switch" role="group" aria-label="Choose a view">
-      <button type="button" data-view="table" aria-pressed="true">Table</button>
-      <button type="button" data-view="grid" aria-pressed="false">Finish Grid</button>
-      <button type="button" data-view="shape" aria-pressed="false">Season Shape</button>
+      <button type="button" data-view="grid" aria-pressed="true">Finish Grid</button>
+      <button type="button" data-view="table" aria-pressed="false">Table</button>
       <button type="button" data-view="ladder" aria-pressed="false">Ladder</button>
       <button type="button" data-view="next-up" aria-pressed="false">Next Up</button>
-      <button type="button" data-view="compare" aria-pressed="false">Compare Clubs</button>
       <button type="button" data-view="played" aria-pressed="false">Played Results</button>
+      <button type="button" data-view="shape" aria-pressed="false">Season Shape</button>
+      <button type="button" data-view="compare" aria-pressed="false">Compare Clubs</button>
       <button type="button" data-view="model" aria-pressed="false">Model Card</button>
     </div>
   </div>
@@ -78,7 +78,7 @@
     </section>
 
     <!-- Signature: the finishing-position probability matrix. -->
-    <section data-section="table grid">
+    <section data-section="grid">
       <div class="panel">
         <div class="panel__head">
           <div>
@@ -199,8 +199,7 @@
           </div>
         </div>
         <div class="ladder">
-          <div id="ladder-lanes"></div>
-          <div class="ladder__axis" id="ladder-axis"></div>
+          <div id="ladder-lanes" class="ladder__track"></div>
         </div>
         <div class="legend" id="ladder-legend"></div>
       </div>

@@ -17,8 +17,10 @@ const state = {
   rewindTimer: null,
   // Key of the league+season the compare pickers were last populated for.
   compareKey: '',
-  // Active view tab: 'table', 'grid', 'shape', 'ladder', 'next-up', 'compare', 'played', 'model'
-  activeView: 'table',
+  // Active view tab: 'grid', 'table', 'ladder', 'next-up', 'played', 'shape', 'compare', 'model'
+  activeView: 'grid',
+  // Pagination for played results.
+  playedWeek: 0,
 };
 
 /* One probe decides the data source for the whole session. A static host
@@ -761,70 +763,89 @@ function renderLadder(reports) {
   const teams = [];
   for (const [slug, report] of Object.entries(reports)) {
     for (const row of report.table) {
-      teams.push({ team: row.team, rating: row.rating, tier: slug === 'eliteserien' ? 1 : 2, league: report.league.name });
+      teams.push({
+        team: row.team,
+        teamId: row.team_id,
+        rating: row.rating,
+        tier: slug === 'eliteserien' ? 1 : 2,
+      });
     }
   }
 
   const ratings = teams.map((t) => t.rating);
-  const low = Math.floor(Math.min(...ratings) / 50) * 50;
-  const high = Math.ceil(Math.max(...ratings) / 50) * 50;
-  const position = (rating) => ((rating - low) / (high - low)) * 100;
+  const low = Math.min(...ratings);
+  const high = Math.max(...ratings);
 
-  const axis = $('#ladder-axis');
-  axis.replaceChildren();
-  for (let value = low; value <= high; value += 50) {
-    const tick = el('span', 'ladder__tick');
-    tick.style.left = `${position(value)}%`;
-    tick.appendChild(el('span', '', String(value)));
+  function xPos(rating) {
+    if (high === low) return 50;
+    return 2 + ((rating - low) / (high - low)) * 96; // 2%–98% keeps logos inside clip
+  }
+
+  // Stack overlapping teams into rows (top-down)
+  const OVERLAP_PCT = 3; // % of track width that counts as overlapping
+  teams.sort((a, b) => a.rating - b.rating || a.team.localeCompare(b.team));
+
+  // Rank: highest rating = 1
+  teams.forEach((t, i) => { t._rank = teams.length - i; });
+
+  const rows = [];
+  for (const team of teams) {
+    let placed = false;
+    for (let r = 0; r < rows.length; r++) {
+      const last = rows[r][rows[r].length - 1];
+      if (Math.abs(xPos(last.rating) - xPos(team.rating)) > OVERLAP_PCT) {
+        rows[r].push(team);
+        team._row = r;
+        placed = true;
+        break;
+      }
+    }
+    if (!placed) {
+      team._row = rows.length;
+      rows.push([team]);
+    }
+  }
+
+  const track = $('#ladder-lanes');
+  track.replaceChildren();
+
+  // Axis
+  const axis = el('div', 'ladder__axis');
+  const tickStep = 50;
+  const firstTick = Math.ceil(low / tickStep) * tickStep;
+  for (let r = firstTick; r <= high; r += tickStep) {
+    const tick = el('div', 'ladder__tick');
+    tick.style.left = `${xPos(r)}%`;
+    tick.appendChild(el('span', '', String(Math.round(r))));
     axis.appendChild(tick);
   }
+  track.appendChild(axis);
 
-  const holder = $('#ladder-lanes');
-  holder.replaceChildren();
+  // Teams
+  const rowHeight = rows.length === 1 ? 0 : 2.2; // rem spacing between rows
+  for (const team of teams) {
+    const wrap = el('div', 'ladder__team');
+    wrap.dataset.tier = String(team.tier);
+    wrap.dataset.tip = `#${team._rank}  ${team.team}  ${Math.round(team.rating)}`;
+    wrap.style.left = `${xPos(team.rating)}%`;
+    wrap.style.top = `${0.5 + team._row * rowHeight}rem`;
 
-  // One shared line: the whole point is that the two divisions overlap, and
-  // splitting them into rows hid exactly that. Division stays legible through
-  // colour and marker shape rather than through position.
-  const track = el('div', 'ladder__track');
-  // One entry per stacked row, holding the right-most x placed on it.
-  const rows = [];
-  for (const team of [...teams].sort((a, b) => a.rating - b.rating)) {
-    const x = position(team.rating);
-    // Stack only where clubs would otherwise sit on top of each other.
-    let row = rows.findIndex((lastX) => x - lastX > 2.4);
-    if (row === -1) { rows.push(x); row = rows.length - 1; } else { rows[row] = x; }
+    const img = el('img');
+    img.src = `logos/${team.teamId}.png`;
+    img.alt = team.team;
+    wrap.appendChild(img);
 
-    const dot = el('span', 'ladder__team');
-    dot.dataset.tier = String(team.tier);
-    dot.style.left = `${x}%`;
-    // The row offset and the track height are both derived from --ladder-*
-    // in the stylesheet, so a dot cannot be placed outside its box.
-    dot.style.setProperty('--ladder-row', String(row));
-    dot.addEventListener('pointerenter', (event) =>
-      showTooltip(event, `<b>${team.team}</b><br>Rating ${team.rating.toFixed(0)} · ${team.league}`)
-    );
-    dot.addEventListener('pointermove', moveTooltip);
-    dot.addEventListener('pointerleave', hideTooltip);
-    track.appendChild(dot);
+    track.appendChild(wrap);
   }
-  // Tell the stylesheet how tall the track has to be. Wrapping the row index
-  // instead would silently stack two clubs on top of each other the first time
-  // a season needs a fourth row.
-  $('.ladder').style.setProperty('--ladder-rows', String(Math.max(1, rows.length)));
-  holder.appendChild(track);
 
+  // Legend
   const legend = $('#ladder-legend');
   legend.replaceChildren();
   for (const [tier, name] of [[1, 'Eliteserien'], [2, 'OBOS-ligaen']]) {
     const key = el('span', 'legend__key');
     const swatch = el('span', 'legend__swatch');
-    swatch.style.borderRadius = '50%';
-    if (tier === 1) {
-      swatch.style.background = 'var(--tier-1)';
-    } else {
-      swatch.style.background = 'var(--panel)';
-      swatch.style.border = '2.5px solid var(--tier-2)';
-    }
+    swatch.style.background = tier === 1 ? 'var(--tier-1)' : 'var(--tier-2)';
+    swatch.style.borderRadius = '2px';
     key.appendChild(swatch);
     key.appendChild(el('span', '', name));
     legend.appendChild(key);
@@ -911,9 +932,10 @@ function renderFixtures(report) {
 
 /* Build a map of rating changes per team per match date from careers data.
    career.points is an array of [date, rating] after each match.
-   The rating change for a match is rating_after - rating_before (previous entry). */
+   Returns a Map keyed "teamId|date" -> { change, rating } where rating is
+   the rating after the match and change is the delta from the previous match. */
 function buildRatingChanges(careers) {
-  const changes = new Map(); // key: "teamId|date" -> change
+  const changes = new Map();
   if (!careers?.teams) return changes;
 
   for (const career of careers.teams) {
@@ -923,11 +945,22 @@ function buildRatingChanges(careers) {
     for (let i = 1; i < points.length; i++) {
       const [date, ratingAfter] = points[i];
       const [, ratingBefore] = points[i - 1];
-      const change = Math.round(ratingAfter - ratingBefore);
-      changes.set(`${career.team_id}|${date}`, change);
+      changes.set(`${career.team_id}|${date}`, {
+        change: Math.round(ratingAfter - ratingBefore),
+        rating: Math.round(ratingAfter),
+      });
     }
   }
   return changes;
+}
+
+/* ISO week number from an ISO date string. */
+function isoWeek(dateStr) {
+  const d = new Date(`${dateStr}T12:00:00Z`);
+  const day = d.getUTCDay() || 7;
+  d.setUTCDate(d.getUTCDate() + 4 - day);
+  const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+  return Math.ceil(((d - yearStart) / 86400000 + 1) / 7);
 }
 
 function renderPlayedResults(report) {
@@ -940,61 +973,104 @@ function renderPlayedResults(report) {
     return;
   }
 
-  // Build rating changes map from careers
   const ratingChanges = buildRatingChanges(state.careers);
-
-  // Sort by date descending (most recent first)
   const sorted = [...results].sort((a, b) => b.date.localeCompare(a.date));
 
-  for (const match of sorted) {
-    const row = el('div', 'played-result');
+  // Group matches by ISO week (most recent week first)
+  const weeks = [];
+  const weekMap = new Map();
+  for (const m of sorted) {
+    const wk = isoWeek(m.date);
+    if (!weekMap.has(wk)) {
+      weekMap.set(wk, []);
+      weeks.push(wk);
+    }
+    weekMap.get(wk).push(m);
+  }
 
-    const when = el('div', 'played-result__when');
-    when.textContent = formatDate(match.date) + (match.round ? ` · R${match.round}` : '');
-    row.appendChild(when);
+  state.playedWeek = Math.min(state.playedWeek || 0, weeks.length - 1);
+  const currentWeek = weeks[state.playedWeek];
+  const weekMatches = weekMap.get(currentWeek);
 
-    const teams = el('div', 'played-result__teams');
+  // Week navigation (at top)
+  const nav = el('div', 'played-nav');
+  const prev = el('button', 'played-nav__btn', '\u2190 Prev');
+  prev.disabled = state.playedWeek >= weeks.length - 1;
+  prev.addEventListener('click', () => { state.playedWeek++; renderPlayedResults(report); });
 
-    const side = (name, teamId) => {
-      const holder = el('span', 'played-result__side');
-      const crest = teamLogo(teamId, name);
-      if (crest) holder.appendChild(crest);
-      holder.appendChild(el('span', '', name));
-      return holder;
-    };
+  const label = el('span', 'played-nav__label', `Week ${currentWeek}`);
 
-    // Rating-change badge: +N/-N if the side moved, em-dash if it did not.
-    const badge = (change, label) => {
-      const node = el('span', 'played-result__rating-change');
-      if (change !== 0) {
-        node.textContent = `${change > 0 ? '+' : ''}${change}`;
-        node.classList.add(change > 0 ? 'played-result__rating-change--up' : 'played-result__rating-change--down');
-      } else {
-        node.textContent = '—';
-        node.classList.add('played-result__rating-change--neutral');
+  const next = el('button', 'played-nav__btn', 'Next \u2192');
+  next.disabled = state.playedWeek === 0;
+  next.addEventListener('click', () => { state.playedWeek--; renderPlayedResults(report); });
+
+  nav.appendChild(prev);
+  nav.appendChild(label);
+  nav.appendChild(next);
+  holder.appendChild(nav);
+
+  // Cards
+  for (const match of weekMatches) {
+    const card = el('div', 'played-card');
+
+    const homeWin = match.home_goals > match.away_goals;
+    const awayWin = match.away_goals > match.home_goals;
+
+    if (homeWin) card.classList.add('played-card--home-win');
+    else if (awayWin) card.classList.add('played-card--away-win');
+
+    const homeInfo = ratingChanges.get(`${match.home_id}|${match.date}`) ?? { change: 0, rating: 0 };
+    const awayInfo = ratingChanges.get(`${match.away_id}|${match.date}`) ?? { change: 0, rating: 0 };
+
+    // Rating block: large rating + delta + arrow
+    const ratingBlock = (info) => {
+      const node = el('div', 'played-card__rating');
+      const rating = el('span', 'played-card__rating-value', String(info.rating));
+      node.appendChild(rating);
+      if (info.change !== 0) {
+        const arrow = info.change > 0 ? '\u25B2' : '\u25BC';
+        const delta = el('span', `played-card__delta played-card__delta--${info.change > 0 ? 'up' : 'down'}`);
+        delta.textContent = `${info.change > 0 ? '+' : ''}${info.change} ${arrow}`;
+        node.appendChild(delta);
       }
-      node.title = label;
       return node;
     };
 
-    teams.appendChild(side(match.home, match.home_id));
-    teams.appendChild(el('em', '', 'v'));
-    teams.appendChild(side(match.away, match.away_id));
-    row.appendChild(teams);
+    // Matchup row: [rating] [crest] Name   Score   Name [crest] [rating]
+    const matchup = el('div', 'played-card__matchup');
 
-    // Score
-    const score = el('div', 'played-result__score');
-    score.textContent = `${match.home_goals}–${match.away_goals}`;
-    row.appendChild(score);
+    // Home: rating on outside (left), then name + crest toward center
+    const homeSide = el('div', 'played-card__side played-card__side--home');
+    homeSide.appendChild(ratingBlock(homeInfo));
+    const homeTeam = el('span', 'played-card__team');
+    homeTeam.appendChild(el('span', '', match.home));
+    const homeCrest = teamLogo(match.home_id, match.home);
+    if (homeCrest) homeTeam.appendChild(homeCrest);
+    homeSide.appendChild(homeTeam);
 
-    // Rating changes
-    const homeChange = ratingChanges.get(`${match.home_id}|${match.date}`) ?? 0;
-    const awayChange = ratingChanges.get(`${match.away_id}|${match.date}`) ?? 0;
+    const score = el('div', 'played-card__score');
+    score.textContent = `${match.home_goals}\u2013${match.away_goals}`;
 
-    row.appendChild(badge(homeChange, 'Home team rating change'));
-    row.appendChild(badge(awayChange, 'Away team rating change'));
+    // Away: crest + name toward center, then rating on outside (right)
+    const awaySide = el('div', 'played-card__side played-card__side--away');
+    const awayTeam = el('span', 'played-card__team');
+    const awayCrest = teamLogo(match.away_id, match.away);
+    if (awayCrest) awayTeam.appendChild(awayCrest);
+    awayTeam.appendChild(el('span', '', match.away));
+    awaySide.appendChild(awayTeam);
+    awaySide.appendChild(ratingBlock(awayInfo));
 
-    holder.appendChild(row);
+    matchup.appendChild(homeSide);
+    matchup.appendChild(score);
+    matchup.appendChild(awaySide);
+    card.appendChild(matchup);
+
+    // Date centered below
+    const date = el('div', 'played-card__date');
+    date.textContent = formatDate(match.date) + (match.round ? ` \u00b7 R${match.round}` : '');
+    card.appendChild(date);
+
+    holder.appendChild(card);
   }
 }
 
@@ -1005,18 +1081,32 @@ function formatDate(iso) {
 
 /* Recent results per club, newest last. Built from the played-results list so
    it follows the rewind slider (that list is per-asof). */
-function formByTeam(results, n = 5) {
+function formByTeam(results) {
   const map = {};
   const sorted = [...(results || [])].sort((a, b) =>
     a.date < b.date ? -1 : a.date > b.date ? 1 : 0
   );
   for (const r of sorted) {
+    if (r.home_goals == null || r.away_goals == null) continue;
     const draw = r.home_goals === r.away_goals;
     (map[r.home] ||= []).push(draw ? 'D' : r.home_goals > r.away_goals ? 'W' : 'L');
-    (map[r.away] ||= []).push(draw ? 'D' : r.away_goals > r.home_goals ? 'W' : 'L');
+    (map[r.away] ||= []).push(draw ? 'D' : r.home_goals > r.away_goals ? 'W' : 'L');
   }
-  for (const name in map) map[name] = map[name].slice(-n);
+  for (const name in map) map[name] = map[name].slice(-15);
+  // TEMP DEBUG — remove after confirming form data
+  if (window.__formDebug === undefined) { window.__formDebug = map; console.log('[formByTeam]', JSON.stringify(Object.fromEntries(Object.entries(map).map(([k,v]) => [k, v.map(c => c === 'W' ? 3 : c === 'D' ? 1 : 0)])))); }
   return map;
+}
+
+function formBlocks(form) {
+  if (!form || !form.length) return [];
+  const blocks = [];
+  for (let i = 0; i < form.length; i += 3) {
+    const chunk = form.slice(i, i + 3);
+    const pts = chunk.reduce((t, l) => t + (l === 'W' ? 3 : l === 'D' ? 1 : 0), 0);
+    blocks.push(pts);
+  }
+  return blocks;
 }
 
 function formPoints(form) {
@@ -1026,10 +1116,13 @@ function formPoints(form) {
 
 function formChipsEl(form) {
   const holder = el('span', 'form__chips');
-  if (!form || !form.length) return holder;
-  for (const letter of form) {
-    const chip = el('span', `form__chip form__chip--${letter.toLowerCase()}`, letter);
-    chip.title = letter === 'W' ? 'Win' : letter === 'D' ? 'Draw' : 'Loss';
+  const blocks = formBlocks(form);
+  if (!blocks.length) return holder;
+  for (const pts of blocks) {
+    const chip = el('span', 'form__chip', String(pts));
+    const t = pts / 9;
+    chip.style.background = `color-mix(in oklch, var(--away) ${Math.round(t * 100)}%, var(--home))`;
+    chip.title = `${pts} pts`;
     holder.appendChild(chip);
   }
   return holder;
@@ -1400,11 +1493,14 @@ function render() {
     section.hidden = !views.includes(state.activeView);
   }
 
+  // Hide the rewind timeline on views where it isn't relevant
+  const noRewind = new Set(['shape', 'next-up', 'compare', 'played', 'model']);
+  const timelineSection = document.querySelector('.timeline-section');
+  if (timelineSection) timelineSection.hidden = noRewind.has(state.activeView);
+
   // View-specific renders
   switch (state.activeView) {
     case 'table':
-      renderGrid(report);
-      renderGridLegend();
       renderStandings(report);
       renderBandLegend(report);
       break;
@@ -1429,6 +1525,7 @@ function render() {
       }
       break;
     case 'played':
+      state.playedWeek = 0;
       renderPlayedResults(report);
       break;
     case 'model':
