@@ -256,7 +256,14 @@ a { color: inherit; }
   gap: 0.75rem;
   margin-top: 0.5rem;
   width: 100%;
+  /* Narrow screens cannot fit eight tabs. Scroll them rather than letting the
+     leading ones fall off the clipped edge, where nothing could reach them. */
+  overflow-x: auto;
+  scrollbar-width: none;
+  overscroll-behavior-x: contain;
 }
+
+.masthead__views::-webkit-scrollbar { display: none; }
 
 .wordmark {
   font-family: var(--display);
@@ -313,28 +320,53 @@ a { color: inherit; }
 
 /* ---------- hero -------------------------------------------------- */
 
-.hero { padding-block: clamp(2rem, 5vw, 3.5rem) 1.5rem; }
+/* The masthead already names the league and season, so the hero's job is to
+   say what the model thinks -- not to fill a screen before any data appears.
+   On a wide screen the vitals sit beside the headline instead of under it. */
+.hero {
+  padding-block: clamp(1.25rem, 3vw, 2rem) 1.25rem;
+  display: grid;
+  gap: 0.75rem 3rem;
+  align-items: end;
+  grid-template-columns: minmax(0, 1fr);
+}
+
+@media (min-width: 1000px) {
+  .hero { grid-template-columns: minmax(0, 1fr) auto; }
+  .hero__meta { grid-column: 2; grid-row: 1 / span 2; }
+}
 
 .hero h1 {
-  font-size: clamp(2rem, 6vw, 3.5rem);
+  font-size: clamp(1.75rem, 4vw, 2.5rem);
   font-variation-settings: "wdth" 125;
   max-width: 18ch;
 }
 
 .hero p {
-  margin: 1rem 0 0;
+  margin: 0;
   max-width: var(--measure);
   color: var(--ink-muted);
-  font-size: 1.0625rem;
+  font-size: 1rem;
 }
 
 .hero__meta {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.5rem 1.75rem;
-  margin-top: 1.5rem;
-  padding-top: 1rem;
+  align-content: end;
+  gap: 0.4rem 1.5rem;
+  padding-top: 0.75rem;
   border-top: 1px solid var(--rule);
+}
+
+@media (min-width: 1000px) {
+  .hero__meta {
+    flex-direction: column;
+    gap: 0.3rem;
+    padding-top: 0;
+    padding-left: 1.5rem;
+    border-top: 0;
+    border-left: 1px solid var(--rule);
+  }
 }
 
 .hero__meta div { display: flex; align-items: baseline; gap: 0.5rem; }
@@ -342,7 +374,7 @@ a { color: inherit; }
 
 /* ---------- panels ------------------------------------------------ */
 
-section { margin-block: clamp(2rem, 5vw, 3.25rem); }
+section { margin-block: clamp(1.5rem, 3vw, 2.25rem); }
 
 .panel {
   background: var(--panel);
@@ -499,6 +531,9 @@ table.grid tbody th .team-logo {
 
 .legend__ramp { display: inline-flex; gap: 2px; }
 .legend__ramp i { width: 1.1rem; height: 0.85rem; border-radius: 2px; }
+
+/* The phone-sized heading, hidden until the media query calls for it. */
+.sort-btn__short { display: none; }
 
 /* ---------- standings table --------------------------------------- */
 
@@ -1193,6 +1228,41 @@ footer {
   .fixture__when { order: -1; }
   .hero__meta { gap: 0.4rem 1.25rem; }
 
+  /* A phone has room for the story, not the ledger. The W/D/L/GF/GA tallies,
+     xPts and the form chips go; position, club, played, GD, points, rating and
+     the two odds stay. Tapping a row still opens the club's full history. */
+  .standings .col--extra { display: none; }
+  /* The 720px floor exists so the full desktop column set never crushes. With
+     seven of those columns gone it is what was keeping the table off-screen. */
+  table.standings { min-width: 0; font-size: 0.8125rem; }
+  .career-table { min-width: 0; }
+  .standings th, .standings td { padding-inline: 0.3rem; }
+  /* Chrome that carries no data goes before any column does. The sorted column
+     is still marked by its ink, and aria-sort still announces the direction. */
+  .standings .sort-btn { gap: 0.15rem; }
+  .standings .sort-btn__caret { display: none; }
+  .standings .pos { min-width: 0; }
+  .standings .band-mark { margin-right: 0.25rem; }
+  .standings .club-btn { gap: 0.35rem; }
+  .standings .team-logo { width: 17px; height: 17px; }
+  .standings .meter__value { min-width: 2rem; font-size: 0.75rem; }
+  .standings th:first-child, .standings td:first-child { padding-left: 0.5rem; }
+  .standings th:last-child, .standings td:last-child { padding-right: 0.5rem; }
+  .standings .sort-btn__label { font-size: 0.625rem; letter-spacing: 0.06em; }
+  /* Swap in the short heading: "Relegation" is wider than any number under it. */
+  .standings .sort-btn__label:has(+ .sort-btn__short) { display: none; }
+  .standings .sort-btn__short { display: inline; font-size: 0.625rem; letter-spacing: 0.06em; }
+  /* Club names wrap rather than truncate: "Hamarkameratene" should stay whole. */
+  .standings .club-btn { white-space: normal; text-align: left; }
+  /* The odds keep their number; the bar goes, since the percentage beside it
+     already carries the value. */
+  .meter__track { display: none; }
+  .meter { gap: 0; }
+
+  /* Left-aligned so the first view is the one you actually start on. */
+  .masthead__views { justify-content: flex-start; }
+  .timeline__note { display: none; }
+
   /* A tighter masthead: smaller wordmark, less gap, so the controls wrap
      onto fewer, neater rows instead of a tall three-row stack. */
   .masthead__inner { gap: 0.7rem 1rem; min-height: 0; padding-block: 0.7rem; }
@@ -1334,15 +1404,25 @@ footer {
 /* ---------- season rewind timeline -------------------------------- */
 
 .timeline-section { margin-block: clamp(1.5rem, 4vw, 2.5rem) 0; }
-.timeline { padding: 1.1rem 1.25rem 1rem; }
+.timeline { padding: 0.85rem 1.25rem 0.75rem; }
 
 .timeline__head {
   display: flex;
-  align-items: flex-start;
+  align-items: baseline;
   justify-content: space-between;
   gap: 1rem;
-  margin-bottom: 0.9rem;
+  margin-bottom: 0.4rem;
 }
+
+/* The eyebrow and the state read as one line rather than a stacked block. */
+.timeline__head > div:first-child {
+  display: flex;
+  align-items: baseline;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.timeline__head p { margin: 0; }
 
 .timeline__head p {
   margin: 0.25rem 0 0;

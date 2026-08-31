@@ -392,6 +392,7 @@ function renderStandings(report) {
 
   const promotion = report.league.slug === 'obosligaen';
   $('#head-first').textContent = promotion ? 'Promotion' : 'Champion';
+  $('#head-first-short').textContent = promotion ? 'Up' : 'Title';
   $('#head-first-desc').textContent = promotion
     ? ', chance of promotion'
     : ', chance of winning the title';
@@ -434,8 +435,12 @@ function renderStandings(report) {
     });
     club.appendChild(clubButton);
     tr.appendChild(club);
-    for (const key of ['played', 'wins', 'draws', 'losses', 'goals_for', 'goals_against']) {
-      tr.appendChild(el('td', 'num muted', String(row[key])));
+    // 'extra' marks the tallies a phone drops -- see .col--extra in the CSS.
+    for (const [key, extra] of [
+      ['played', false], ['wins', true], ['draws', true],
+      ['losses', true], ['goals_for', true], ['goals_against', true],
+    ]) {
+      tr.appendChild(el('td', `num muted${extra ? ' col--extra' : ''}`, String(row[key])));
     }
     tr.appendChild(el('td', 'num', row.goal_difference > 0 ? `+${row.goal_difference}` : String(row.goal_difference)));
     const points = el('td', 'num', String(row.points));
@@ -443,8 +448,8 @@ function renderStandings(report) {
     tr.appendChild(points);
 
     tr.appendChild(el('td', 'num sep', row.rating.toFixed(0)));
-    tr.appendChild(el('td', 'num muted', row.expected_points.toFixed(1)));
-    const formTd = el('td', 'num form');
+    tr.appendChild(el('td', 'num muted col--extra', row.expected_points.toFixed(1)));
+    const formTd = el('td', 'num form col--extra');
     formTd.appendChild(formChipsEl(formByTeamName[row.team]));
     tr.appendChild(formTd);
 
@@ -1539,9 +1544,7 @@ function wire() {
   for (const button of document.querySelectorAll('[data-view]')) {
     button.addEventListener('click', () => {
       state.activeView = button.dataset.view;
-      for (const other of document.querySelectorAll('[data-view]')) {
-        other.setAttribute('aria-pressed', String(other === button));
-      }
+      markActiveView();
       render();
       hideTooltip();
     });
@@ -1626,6 +1629,16 @@ function applyTeamParameter() {
   }
 }
 
+/* The view strip scrolls sideways once it outgrows the screen, so the active
+   tab is pulled back into sight rather than left off the edge. */
+function markActiveView() {
+  for (const button of document.querySelectorAll('[data-view]')) {
+    const active = button.dataset.view === state.activeView;
+    button.setAttribute('aria-pressed', String(active));
+    if (active) button.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+  }
+}
+
 /* ?view=grid makes any view linkable. Applied early so the first render
    shows the requested view instead of the default table. */
 function applyViewParameter() {
@@ -1633,9 +1646,7 @@ function applyViewParameter() {
   const validViews = new Set(['table', 'grid', 'shape', 'ladder', 'next-up', 'compare', 'played', 'model']);
   if (view && validViews.has(view)) {
     state.activeView = view;
-    for (const button of document.querySelectorAll('[data-view]')) {
-      button.setAttribute('aria-pressed', String(button.dataset.view === view));
-    }
+    markActiveView();
   }
 }
 
