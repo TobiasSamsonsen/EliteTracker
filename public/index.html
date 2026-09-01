@@ -127,7 +127,7 @@
         <div class="panel__head">
           <div>
             <h2>Table</h2>
-            <p>Live standings, the rating the model gives each club, and the points it expects them to end on. Pick any club for its full rating history.</p>
+            <p>Live standings, the rating the model gives each club, and the points it expects them to end on. Pick any club for its focus page.</p>
           </div>
         </div>
         <div class="scroller">
@@ -293,6 +293,12 @@
       </div>
     </section>
 
+    <section data-section="team">
+      <div class="panel">
+        <div id="team-content"></div>
+      </div>
+    </section>
+
   </div>
 </main>
 
@@ -301,43 +307,6 @@
 </footer>
 
 <div id="tooltip" role="tooltip" aria-hidden="true"></div>
-
-<!-- Career history, opened from a row in the table. -->
-<div class="modal" id="career-modal" hidden>
-  <div class="modal__scrim" data-close-modal></div>
-  <div class="modal__panel" role="dialog" aria-modal="true" aria-labelledby="career-title">
-    <div class="modal__head">
-      <div>
-        <h2 id="career-title"></h2>
-        <p id="career-sub"></p>
-      </div>
-      <button type="button" class="modal__close" data-close-modal aria-label="Close">&times;</button>
-    </div>
-    <div class="modal__body">
-      <svg class="chart" id="career-chart" role="img" aria-labelledby="career-desc"></svg>
-      <p class="visually-hidden" id="career-desc"></p>
-      <div class="legend" id="career-stats"></div>
-      <div class="scroller">
-        <table class="standings career-table" id="career-seasons">
-          <thead>
-            <tr>
-              <th class="pos" scope="col">Season</th>
-              <th class="club" scope="col">Division</th>
-              <th class="num" scope="col">Pos</th>
-              <th class="num" scope="col">Pl</th>
-              <th class="num" scope="col">Pts</th>
-              <th class="num" scope="col">GD</th>
-              <th class="num sep" scope="col">Rating start</th>
-              <th class="num" scope="col">Rating end</th>
-              <th class="num" scope="col">Change</th>
-            </tr>
-          </thead>
-          <tbody></tbody>
-        </table>
-      </div>
-    </div>
-  </div>
-</div>
 
 <script src="/app.js?v=12"></script>
 </body>
