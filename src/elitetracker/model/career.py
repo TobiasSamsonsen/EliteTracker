@@ -15,6 +15,7 @@ the third tier -- start at the ladder floor and are corrected by results.
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+from datetime import date, timedelta
 
 from elitetracker.model.elo import EloConfig, updated_pair
 from elitetracker.model.initial_ratings import TeamRating, rating_for_unseeded_team
@@ -134,6 +135,16 @@ def build_careers(
             (match for slice_ in in_season for match in slice_.matches if match.played),
             key=Match.sort_key,
         )
+
+        # Record the regressed (or carried) rating as a snapshot the day before
+        # the first match so that buildRatingChanges in the frontend sees the
+        # regression as its own event instead of folding it into the first
+        # match's delta.
+        if season != first_season and config.season_regression < 1.0 and played:
+            first_date = played[0].date
+            snapshot_date = str(date.fromisoformat(first_date) - timedelta(days=1))
+            for team_id in rating_start:
+                careers[team_id].points.append((snapshot_date, round(ratings[team_id], 1)))
         for match in played:
             home = match.home_id or match.home
             away = match.away_id or match.away

@@ -14,13 +14,18 @@ const state = {
   rewindTimer: null,
   // Key of the league+season the compare pickers were last populated for.
   compareKey: '',
-  // Active view tab: 'grid', 'table', 'ladder', 'next-up', 'played', 'shape', 'compare', 'model'
+  // Active view tab: 'grid', 'table', 'ladder', 'next-up', 'played', 'shape', 'compare', 'team', 'model'
   // The finish grid is 16 columns wide and cannot be read on a phone without
   // scrolling it sideways; the table now fits, so that is where a phone lands.
   // ?view= still wins -- see applyViewParameter.
   activeView: window.matchMedia('(max-width: 760px)').matches ? 'table' : 'grid',
+  // Team focus: team_id when viewing the team tab, null otherwise.
+  teamFocusId: null,
   // Pagination for played results.
   playedWeek: 0,
+  // Pagination for team focus view.
+  teamFixturesPage: 0,
+  teamResultsPage: 0,
 };
 
 /* fotmob stores clubs under their registered names. These are what people
@@ -274,7 +279,9 @@ function renderGrid(report) {
     label.appendChild(el('span', 'pos', String(row.position)));
     const crest = teamLogo(row.team_id, row.team);
     if (crest) label.appendChild(crest);
-    label.appendChild(document.createTextNode(row.team));
+    const nameBtn = el('button', 'grid__team-name', row.team);
+    nameBtn.addEventListener('click', () => openTeamView(row.team_id, row.team));
+    label.appendChild(nameBtn);
     tr.appendChild(label);
 
     row.position_probabilities.forEach((probability, index) => {
@@ -481,7 +488,7 @@ function renderStandings(report) {
     clubButton.appendChild(document.createTextNode(row.team));
     clubButton.addEventListener('click', (event) => {
       event.stopPropagation();
-      openCareer(row.team_id, row.team);
+      openTeamView(row.team_id, row.team);
     });
     club.appendChild(clubButton);
     tr.appendChild(club);
@@ -508,7 +515,7 @@ function renderStandings(report) {
 
     // Clicking anywhere on the row is a mouse convenience on top of that
     // button; it adds no keyboard or ARIA semantics of its own.
-    tr.addEventListener('click', () => openCareer(row.team_id, row.team));
+    tr.addEventListener('click', () => openTeamView(row.team_id, row.team));
     body.appendChild(tr);
   }
 }
@@ -897,6 +904,82 @@ function renderLadder(reports) {
 
 /* ---------- fixtures ---------------------------------------------- */
 
+function buildFixtureCard(fixture) {
+  const card = el('div', 'played-card');
+
+  const date = el('div', 'played-card__date');
+  date.textContent = formatDate(fixture.date) + (fixture.time ? ` \u00b7 ${fixture.time}` : '');
+  card.appendChild(date);
+
+  const matchup = el('div', 'played-card__matchup');
+
+  const homeSide = el('div', 'played-card__side played-card__side--home');
+  homeSide.appendChild(el('span', 'played-card__rating-value', fixture.home_rating.toFixed(0)));
+  const homeTeam = el('span', 'played-card__team');
+  const homeNameBtn = el('button', 'played-card__team-name', fixture.home);
+  homeNameBtn.addEventListener('click', () => openTeamView(fixture.home_id, fixture.home));
+  homeTeam.appendChild(homeNameBtn);
+  const homeCrest = teamLogo(fixture.home_id, fixture.home);
+  if (homeCrest) homeTeam.appendChild(homeCrest);
+  homeSide.appendChild(homeTeam);
+  matchup.appendChild(homeSide);
+
+  const oddsCol = el('div', 'fixture__odds-col');
+  const odds = el('div', 'odds');
+  odds.setAttribute('role', 'img');
+  odds.setAttribute(
+    'aria-label',
+    `${fixture.home} win ${pct(fixture.home_win)}, draw ${pct(fixture.draw)}, ${fixture.away} win ${pct(fixture.away_win)}`
+  );
+  for (const [outcome, value, who] of [
+    ['home', fixture.home_win, fixture.home],
+    ['draw', fixture.draw, 'Draw'],
+    ['away', fixture.away_win, fixture.away],
+  ]) {
+    const segment = el('div', 'odds__seg');
+    segment.dataset.outcome = outcome;
+    segment.style.flex = `${Math.max(value, 0.001)}`;
+    segment.textContent = value >= 0.12 ? `${Math.round(value * 100)}%` : '';
+    segment.addEventListener('pointerenter', (event) =>
+      showTooltip(event, `<b>${who}</b><br>${pct(value, 1)}`)
+    );
+    segment.addEventListener('pointermove', moveTooltip);
+    segment.addEventListener('pointerleave', hideTooltip);
+    odds.appendChild(segment);
+  }
+  oddsCol.appendChild(odds);
+  matchup.appendChild(oddsCol);
+
+  const awaySide = el('div', 'played-card__side played-card__side--away');
+  const awayTeam = el('span', 'played-card__team');
+  const awayCrest = teamLogo(fixture.away_id, fixture.away);
+  if (awayCrest) awayTeam.appendChild(awayCrest);
+  const awayNameBtn = el('button', 'played-card__team-name', fixture.away);
+  awayNameBtn.addEventListener('click', () => openTeamView(fixture.away_id, fixture.away));
+  awayTeam.appendChild(awayNameBtn);
+  awaySide.appendChild(awayTeam);
+  awaySide.appendChild(el('span', 'played-card__rating-value', fixture.away_rating.toFixed(0)));
+  matchup.appendChild(awaySide);
+
+  card.appendChild(matchup);
+
+  if (fixture.scorelines && fixture.scorelines.length) {
+    const lines = el('div', 'fixture__lines');
+    for (const line of fixture.scorelines.slice(0, 4)) {
+      const chip = el('span', 'fixture__line');
+      chip.textContent = `${line.home_goals}-${line.away_goals} ${pct(line.probability, 0)}`;
+      chip.setAttribute(
+        'aria-label',
+        `${line.home_goals}-${line.away_goals} about ${pct(line.probability, 1)}`
+      );
+      lines.appendChild(chip);
+    }
+    card.appendChild(lines);
+  }
+
+  return card;
+}
+
 function renderFixtures(report) {
   const holder = $('#fixtures');
   holder.replaceChildren();
@@ -905,68 +988,7 @@ function renderFixtures(report) {
   $('#fixture-count').textContent = `next ${next.length} of ${report.fixtures.length}`;
 
   for (const fixture of next) {
-    const row = el('div', 'fixture');
-
-    const when = el('div', 'fixture__when');
-    when.textContent = formatDate(fixture.date) + (fixture.time ? ` · ${fixture.time}` : '');
-    row.appendChild(when);
-
-    // The rating is what drives the odds beside it, so show the working.
-    const teams = el('div', 'fixture__teams');
-    const side = (name, teamId, rating) => {
-      const holder = el('span', 'fixture__side');
-      const crest = teamLogo(teamId, name);
-      if (crest) holder.appendChild(crest);
-      holder.appendChild(el('span', '', name));
-      holder.appendChild(el('span', 'fixture__rating', rating.toFixed(0)));
-      return holder;
-    };
-    teams.appendChild(side(fixture.home, fixture.home_id, fixture.home_rating));
-    teams.appendChild(el('em', '', 'v'));
-    teams.appendChild(side(fixture.away, fixture.away_id, fixture.away_rating));
-    row.appendChild(teams);
-
-    const oddsCol = el('div', 'fixture__odds-col');
-    const odds = el('div', 'odds');
-    odds.setAttribute('role', 'img');
-    odds.setAttribute(
-      'aria-label',
-      `${fixture.home} win ${pct(fixture.home_win)}, draw ${pct(fixture.draw)}, ${fixture.away} win ${pct(fixture.away_win)}`
-    );
-    for (const [outcome, value, who] of [
-      ['home', fixture.home_win, fixture.home],
-      ['draw', fixture.draw, 'Draw'],
-      ['away', fixture.away_win, fixture.away],
-    ]) {
-      const segment = el('div', 'odds__seg');
-      segment.dataset.outcome = outcome;
-      segment.style.flex = `${Math.max(value, 0.001)}`;
-      segment.textContent = value >= 0.12 ? `${Math.round(value * 100)}%` : '';
-      segment.addEventListener('pointerenter', (event) =>
-        showTooltip(event, `<b>${who}</b><br>${pct(value, 1)}`)
-      );
-      segment.addEventListener('pointermove', moveTooltip);
-      segment.addEventListener('pointerleave', hideTooltip);
-      odds.appendChild(segment);
-    }
-    oddsCol.appendChild(odds);
-
-    // The most likely scorelines read straight off the three-way odds above.
-    if (fixture.scorelines && fixture.scorelines.length) {
-      const lines = el('div', 'fixture__lines');
-      for (const line of fixture.scorelines.slice(0, 4)) {
-        const chip = el('span', 'fixture__line');
-        chip.textContent = `${line.home_goals}-${line.away_goals} ${pct(line.probability, 0)}`;
-        chip.setAttribute(
-          'aria-label',
-          `${line.home_goals}-${line.away_goals} about ${pct(line.probability, 1)}`
-        );
-        lines.appendChild(chip);
-      }
-      oddsCol.appendChild(lines);
-    }
-    row.appendChild(oddsCol);
-    holder.appendChild(row);
+    holder.appendChild(buildFixtureCard(fixture));
   }
 }
 
@@ -1061,6 +1083,11 @@ function renderPlayedResults(report) {
     if (homeWin) card.classList.add('played-card--home-win');
     else if (awayWin) card.classList.add('played-card--away-win');
 
+    // Date centered above matchup
+    const date = el('div', 'played-card__date');
+    date.textContent = formatDate(match.date) + (match.round ? ` \u00b7 R${match.round}` : '');
+    card.appendChild(date);
+
     const homeInfo = ratingChanges.get(`${match.home_id}|${match.date}`) ?? { change: 0, rating: 0 };
     const awayInfo = ratingChanges.get(`${match.away_id}|${match.date}`) ?? { change: 0, rating: 0 };
 
@@ -1085,7 +1112,9 @@ function renderPlayedResults(report) {
     const homeSide = el('div', 'played-card__side played-card__side--home');
     homeSide.appendChild(ratingBlock(homeInfo));
     const homeTeam = el('span', 'played-card__team');
-    homeTeam.appendChild(el('span', '', match.home));
+    const homeNameBtn = el('button', 'played-card__team-name', match.home);
+    homeNameBtn.addEventListener('click', () => openTeamView(match.home_id, match.home));
+    homeTeam.appendChild(homeNameBtn);
     const homeCrest = teamLogo(match.home_id, match.home);
     if (homeCrest) homeTeam.appendChild(homeCrest);
     homeSide.appendChild(homeTeam);
@@ -1098,7 +1127,9 @@ function renderPlayedResults(report) {
     const awayTeam = el('span', 'played-card__team');
     const awayCrest = teamLogo(match.away_id, match.away);
     if (awayCrest) awayTeam.appendChild(awayCrest);
-    awayTeam.appendChild(el('span', '', match.away));
+    const awayNameBtn = el('button', 'played-card__team-name', match.away);
+    awayNameBtn.addEventListener('click', () => openTeamView(match.away_id, match.away));
+    awayTeam.appendChild(awayNameBtn);
     awaySide.appendChild(awayTeam);
     awaySide.appendChild(ratingBlock(awayInfo));
 
@@ -1106,11 +1137,6 @@ function renderPlayedResults(report) {
     matchup.appendChild(score);
     matchup.appendChild(awaySide);
     card.appendChild(matchup);
-
-    // Date centered below
-    const date = el('div', 'played-card__date');
-    date.textContent = formatDate(match.date) + (match.round ? ` \u00b7 R${match.round}` : '');
-    card.appendChild(date);
 
     holder.appendChild(card);
   }
@@ -1233,48 +1259,264 @@ function renderModelCard(report) {
 }
 
 
-/* ---------- career: one club's rating across every season ---------- */
+/* ---------- team: one club's focus view ----------------------------- */
 
-function openCareer(teamId, fallbackName) {
-  const modal = $('#career-modal');
-  const career = (state.careers?.teams || []).find((team) => team.team_id === teamId);
+function openTeamView(teamId, fallbackName) {
+  state.teamFocusId = teamId;
+  state.teamFixturesPage = 0;
+  state.teamResultsPage = 0;
+  state.activeView = 'team';
+  markActiveView();
+  render();
+  window.scrollTo({ top: 0, behavior: 'instant' });
+}
 
-  $('#career-title').textContent = career ? career.team : fallbackName;
-  modal.hidden = false;
-  document.body.style.overflow = 'hidden';
-  $('.modal__close').focus();
+function renderTeamView(report) {
+  const teamId = state.teamFocusId;
+  const content = $('#team-content');
+  content.replaceChildren();
+  if (!teamId) return;
 
-  if (!career || career.points.length < 2) {
-    $('#career-sub').textContent = 'No rating history for this club yet.';
-    $('#career-chart').replaceChildren();
-    $('#career-stats').replaceChildren();
-    $('#career-seasons tbody').replaceChildren();
-    return;
+  const row = report.table.find((t) => t.team_id === teamId);
+  const career = careerById(teamId);
+  const teamName = row?.team || career?.team || fallbackNameById(teamId) || 'Unknown';
+
+  // 1. Summary card
+  renderTeamSummary(teamId, row, career, report, content);
+
+  // 2. Finish grid row
+  renderTeamGridRow(teamId, row, report, content);
+
+  // 3. Rating history chart
+  if (career && career.points.length >= 2) {
+    const chartSection = el('div', 'team-section');
+    chartSection.appendChild(el('div', 'label', 'Rating history'));
+    const chart = svgEl('svg', { class: 'chart', id: 'team-chart', role: 'img' });
+    chartSection.appendChild(chart);
+    const desc = el('p', 'visually-hidden');
+    desc.id = 'team-chart-desc';
+    chartSection.appendChild(desc);
+
+    // Peak and worst rating stats beneath the chart
+    const stats = el('div', 'team-chart-stats');
+    if (career.peak) {
+      const peakItem = el('span', 'team-chart-stat');
+      peakItem.appendChild(el('span', 'label', 'Peak'));
+      peakItem.appendChild(el('span', '', `${career.peak[1]} (${career.peak[0].slice(0, 4)})`));
+      stats.appendChild(peakItem);
+    }
+    if (career.trough) {
+      const troughItem = el('span', 'team-chart-stat');
+      troughItem.appendChild(el('span', 'label', 'Worst'));
+      troughItem.appendChild(el('span', '', `${career.trough[1]} (${career.trough[0].slice(0, 4)})`));
+      stats.appendChild(troughItem);
+    }
+    chartSection.appendChild(stats);
+
+    content.appendChild(chartSection);
+    drawTeamChart(career);
   }
 
-  const first = career.seasons[0];
-  const last = career.seasons[career.seasons.length - 1];
-  $('#career-sub').textContent =
-    `${career.seasons.length} seasons tracked, ${first.season} to ${last.season}. ` +
-    `Rating ${career.points[0][1]} then, ${career.current_rating} now.`;
+  // 4. Season stats table
+  if (career && career.seasons.length) {
+    const seasonSection = el('div', 'team-section');
+    seasonSection.appendChild(el('div', 'label', 'Season-by-season'));
+    const scroller = el('div', 'scroller');
+    const table = el('table', 'standings career-table');
+    const thead = el('thead');
+    const headRow = el('tr');
+    for (const label of ['Season', 'Division', 'Pos', 'Pl', 'Pts', 'GD', 'Rating start', 'Rating end', 'Change']) {
+      const th = el('th', label === 'Season' ? 'pos' : label === 'Division' ? 'club' : 'num', label);
+      if (label === 'Rating start') th.classList.add('sep');
+      th.scope = 'col';
+      headRow.appendChild(th);
+    }
+    thead.appendChild(headRow);
+    table.appendChild(thead);
+    const tbody = el('tbody');
+    for (const record of [...career.seasons].reverse()) {
+      const tr = el('tr');
+      tr.appendChild(el('td', 'pos', String(record.season)));
+      tr.appendChild(el('td', 'club', record.league_name));
+      tr.appendChild(el('td', 'num', String(record.position)));
+      tr.appendChild(el('td', 'num muted', String(record.played)));
+      tr.appendChild(el('td', 'num', String(record.points)));
+      tr.appendChild(el('td', 'num muted', record.goal_difference > 0 ? `+${record.goal_difference}` : String(record.goal_difference)));
+      tr.appendChild(el('td', 'num sep muted', String(record.rating_start)));
+      tr.appendChild(el('td', 'num', String(record.rating_end)));
+      const change = el('td', `num ${record.rating_change >= 0 ? 'up' : 'down'}`);
+      change.textContent = record.rating_change >= 0 ? `+${record.rating_change}` : String(record.rating_change);
+      tr.appendChild(change);
+      tbody.appendChild(tr);
+    }
+    table.appendChild(tbody);
+    scroller.appendChild(table);
+    seasonSection.appendChild(scroller);
+    content.appendChild(seasonSection);
+  }
 
-  drawCareer(career);
-  renderCareerStats(career);
-  renderCareerSeasons(career);
+  // 5. Upcoming fixtures for this team
+  renderTeamFixtures(teamId, teamName, report, content);
+
+  // 6. Recent results for this team
+  renderTeamResults(teamId, teamName, report, content);
 }
 
-function closeCareer() {
-  $('#career-modal').hidden = true;
-  document.body.style.overflow = '';
-  hideTooltip();
+function fallbackNameById(teamId) {
+  return allTeams().find((t) => t.team_id === teamId)?.team;
 }
 
-function drawCareer(career) {
-  const chart = $('#career-chart');
+function renderTeamSummary(teamId, row, career, report, container) {
+  const card = el('div', 'team-summary');
+
+  const header = el('div', 'team-summary__header');
+
+  // Crest
+  const crest = teamLogo(teamId, row?.team || career?.team || '');
+  if (crest) {
+    crest.classList.add('team-logo--large');
+    header.appendChild(crest);
+  }
+
+  // Name (pushes right side to the end)
+  const nameBlock = el('div', 'team-summary__name-block');
+  nameBlock.appendChild(el('h3', 'team-summary__name', row?.team || career?.team || 'Unknown'));
+  header.appendChild(nameBlock);
+
+  // Rating block: [arrow + rating] / position
+  const ratingBlock = el('div', 'team-summary__rating-block');
+  const ratingLine = el('div', 'team-summary__rating-line');
+  const trend = computeRatingTrend(row?.team || career?.team, report);
+  if (trend) {
+    const trendEl = el('span', `team-summary__trend team-summary__trend--${trend.direction}`);
+    trendEl.innerHTML = trend.svg;
+    trendEl.title = trend.detail;
+    ratingLine.appendChild(trendEl);
+  }
+  const rating = Math.round(row?.rating || career?.current_rating || 0);
+  ratingLine.appendChild(el('span', 'team-summary__rating', String(rating)));
+  ratingBlock.appendChild(ratingLine);
+  ratingBlock.appendChild(el('span', 'team-summary__rating-pos', `${ordinal(row?.position ?? 0)} of ${report.table.length}`));
+  header.appendChild(ratingBlock);
+
+  card.appendChild(header);
+
+  // Stats row
+  const stats = el('div', 'team-summary__stats');
+  if (row) {
+    stats.appendChild(summaryStat('Position', ordinal(row.position)));
+    stats.appendChild(summaryStat('Points', String(row.points)));
+    stats.appendChild(summaryStat('GD', row.goal_difference > 0 ? `+${row.goal_difference}` : String(row.goal_difference)));
+    stats.appendChild(summaryStat('Played', String(row.played)));
+  } else if (career) {
+    stats.appendChild(summaryStat('Matches', String(career.points.length)));
+  }
+  card.appendChild(stats);
+
+  // Form chips
+  const formByTeamName = formByTeam(state.reports[state.league].results);
+  const teamName = row?.team || career?.team;
+  if (teamName) {
+    const form = formByTeamName[teamName];
+    if (form && form.length) {
+      const formRow = el('div', 'team-summary__form');
+      formRow.appendChild(el('span', 'label', 'Form'));
+      formRow.appendChild(formChipsEl(form));
+      card.appendChild(formRow);
+    }
+  }
+
+  container.appendChild(card);
+}
+
+/* Rating trend: 5 degrees based on how much the rating changed since 5 matches ago. */
+function computeRatingTrend(teamName, report) {
+  if (!teamName) return null;
+  const results = [...(report.results || [])].sort((a, b) => a.date.localeCompare(b.date));
+  const ratingChanges = buildRatingChanges(state.careers);
+  const ratings = [];
+  for (const r of results) {
+    if (r.home_goals == null) continue;
+    const isHome = r.home === teamName;
+    const isAway = r.away === teamName;
+    if (!isHome && !isAway) continue;
+    const id = isHome ? r.home_id : r.away_id;
+    const info = ratingChanges.get(`${id}|${r.date}`);
+    if (info) ratings.push(info.rating);
+  }
+  if (ratings.length < 6) return null;
+
+  const current = ratings[ratings.length - 1];
+  const fiveAgo = ratings[ratings.length - 6];
+  const diff = current - fiveAgo;
+
+  // 5 degrees: strong rise, rise, steady, fall, strong fall
+  if (diff > 20) return { direction: 'strong-rise', svg: trendArrowSVG('strong-rise'), detail: `Strong rise (+${Math.round(diff)})` };
+  if (diff > 5) return { direction: 'rise', svg: trendArrowSVG('rise'), detail: `Rising (+${Math.round(diff)})` };
+  if (diff >= -5) return { direction: 'steady', svg: trendArrowSVG('steady'), detail: `Steady (${diff >= 0 ? '+' : ''}${Math.round(diff)})` };
+  if (diff >= -20) return { direction: 'fall', svg: trendArrowSVG('fall'), detail: `Falling (${Math.round(diff)})` };
+  return { direction: 'strong-fall', svg: trendArrowSVG('strong-fall'), detail: `Strong fall (${Math.round(diff)})` };
+}
+
+function trendArrowSVG(direction) {
+  const rotation = {
+    'strong-rise': '0',
+    'rise': '45',
+    'steady': '90',
+    'fall': '135',
+    'strong-fall': '180',
+  }[direction];
+
+  return `<svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="transform:rotate(${rotation}deg)"><path d="M12 19V5"/><polyline points="5 12 12 5 19 12"/></svg>`;
+}
+
+function summaryStat(label, value) {
+  const item = el('div', 'team-summary__stat');
+  item.appendChild(el('span', 'team-summary__stat-label', label));
+  item.appendChild(el('span', 'team-summary__stat-value', value));
+  return item;
+}
+
+function renderTeamGridRow(teamId, row, report, container) {
+  if (!row) return;
+  const section = el('div', 'team-section');
+  section.appendChild(el('div', 'label', 'Finish probabilities'));
+
+  const wrap = el('div', 'team-grid-row');
+  const bands = report.league.bands;
+  for (let i = 0; i < row.position_probabilities.length; i++) {
+    const prob = row.position_probabilities[i];
+    const position = i + 1;
+    const step = heatStep(prob);
+    const cell = el('div', `team-grid-row__cell ${heatTextClass(step)}`.trim());
+    cell.style.background = seqStepColor(step);
+    cell.textContent = pctShort(prob);
+    if (!cell.textContent) cell.classList.add('team-grid-row__cell--empty');
+
+    const band = bandFor(bands, position);
+    cell.addEventListener('pointerenter', (event) =>
+      showTooltip(event, `<b>${row.team}</b> finishes ${ordinal(position)}<br>${pct(prob, 2)}` + (band ? `<br>${band.label}` : ''))
+    );
+    cell.addEventListener('pointermove', moveTooltip);
+    cell.addEventListener('pointerleave', hideTooltip);
+
+    const posLabel = el('span', 'team-grid-row__pos', String(position));
+    const cellWrap = el('div', 'team-grid-row__cell-wrap');
+    cellWrap.appendChild(posLabel);
+    cellWrap.appendChild(cell);
+    wrap.appendChild(cellWrap);
+  }
+  section.appendChild(wrap);
+  container.appendChild(section);
+}
+
+function drawTeamChart(career) {
+  const chart = $('#team-chart');
+  if (!chart) return;
   const points = career.points;
 
   const width = 940;
-  const height = 300;
+  const height = 260;
   const pad = { top: 14, right: 16, bottom: 30, left: 46 };
   const plotWidth = width - pad.left - pad.right;
   const plotHeight = height - pad.top - pad.bottom;
@@ -1287,7 +1529,6 @@ function drawCareer(career) {
   const span = (times[times.length - 1] - first) || 1;
   const ratings = points.map(([, rating]) => rating);
 
-  // Round the domain outward so the axis lands on tidy rating numbers.
   const low = Math.floor(Math.min(...ratings) / 50) * 50;
   const high = Math.ceil(Math.max(...ratings) / 50) * 50;
   const x = (time) => pad.left + ((time - first) / span) * plotWidth;
@@ -1302,7 +1543,6 @@ function drawCareer(career) {
     chart.appendChild(label);
   }
 
-  // A tick where each season starts, so the line can be read against seasons.
   for (const record of career.seasons) {
     const start = Date.parse(`${record.season}-01-01T12:00:00Z`);
     if (start < first || start > times[times.length - 1]) continue;
@@ -1335,7 +1575,7 @@ function drawCareer(career) {
   axis.textContent = 'Rating after every match played';
   chart.appendChild(axis);
 
-  // Nearest-point readout.
+  // Crosshair readout
   const crosshair = svgEl('line', { class: 'crosshair', y1: pad.top, y2: pad.top + plotHeight, x1: -10, x2: -10 });
   crosshair.style.opacity = '0';
   chart.appendChild(crosshair);
@@ -1365,52 +1605,137 @@ function drawCareer(career) {
   chart.appendChild(surface);
 
   chart.setAttribute('aria-label', `${career.team} rating from ${points[0][0]} to ${points[points.length - 1][0]}`);
-  $('#career-desc').textContent =
+  const desc = $('#team-chart-desc');
+  if (desc) desc.textContent =
     `${career.team}: rating moved from ${points[0][1]} to ${career.current_rating} across ${career.seasons.length} seasons.`;
 }
 
-function renderCareerStats(career) {
-  const stats = $('#career-stats');
-  stats.replaceChildren();
-  const promotions = career.seasons.filter(
-    (record, index) => index > 0 && record.league !== career.seasons[index - 1].league
-  ).length;
+function renderTeamFixtures(teamId, teamName, report, container) {
+  const allFixtures = (report.fixtures || []).filter(
+    (f) => f.home_id === teamId || f.away_id === teamId
+  );
+  if (!allFixtures.length) return;
 
-  const entries = [
-    ['Now', String(career.current_rating)],
-    ['Peak', career.peak ? `${career.peak[1]} (${career.peak[0].slice(0, 4)})` : '—'],
-    ['Low', career.trough ? `${career.trough[1]} (${career.trough[0].slice(0, 4)})` : '—'],
-    ['Matches', String(career.points.length)],
-    ['Division changes', String(promotions)],
-  ];
-  for (const [name, value] of entries) {
-    const key = el('span', 'legend__key');
-    key.appendChild(el('span', 'label', name));
-    key.appendChild(el('span', '', value));
-    stats.appendChild(key);
+  const PAGE = 5;
+  const totalPages = Math.ceil(allFixtures.length / PAGE);
+  state.teamFixturesPage = Math.min(state.teamFixturesPage, totalPages - 1);
+  const page = state.teamFixturesPage;
+  const fixtures = allFixtures.slice(page * PAGE, (page + 1) * PAGE);
+
+  const section = el('div', 'team-section');
+  const header = el('div', 'team-section__header');
+  header.appendChild(el('div', 'label', `Upcoming fixtures — ${allFixtures.length}`));
+  if (totalPages > 1) {
+    const nav = el('div', 'team-pagination');
+    const prev = el('button', 'team-pagination__btn', '\u2190');
+    prev.disabled = page === 0;
+    prev.addEventListener('click', () => { state.teamFixturesPage--; renderTeamView(report); });
+    nav.appendChild(prev);
+    nav.appendChild(el('span', 'team-pagination__label', `${page + 1} / ${totalPages}`));
+    const next = el('button', 'team-pagination__btn', '\u2192');
+    next.disabled = page >= totalPages - 1;
+    next.addEventListener('click', () => { state.teamFixturesPage++; renderTeamView(report); });
+    nav.appendChild(next);
+    header.appendChild(nav);
   }
+  section.appendChild(header);
+
+  for (const fixture of fixtures) {
+    section.appendChild(buildFixtureCard(fixture));
+  }
+  container.appendChild(section);
 }
 
-function renderCareerSeasons(career) {
-  const body = $('#career-seasons tbody');
-  body.replaceChildren();
-  for (const record of [...career.seasons].reverse()) {
-    const tr = el('tr');
-    tr.appendChild(el('td', 'pos', String(record.season)));
-    tr.appendChild(el('td', 'club', record.league_name));
-    tr.appendChild(el('td', 'num', String(record.position)));
-    tr.appendChild(el('td', 'num muted', String(record.played)));
-    tr.appendChild(el('td', 'num', String(record.points)));
-    tr.appendChild(
-      el('td', 'num muted', record.goal_difference > 0 ? `+${record.goal_difference}` : String(record.goal_difference))
-    );
-    tr.appendChild(el('td', 'num sep muted', String(record.rating_start)));
-    tr.appendChild(el('td', 'num', String(record.rating_end)));
-    const change = el('td', `num ${record.rating_change >= 0 ? 'up' : 'down'}`);
-    change.textContent = record.rating_change >= 0 ? `+${record.rating_change}` : String(record.rating_change);
-    tr.appendChild(change);
-    body.appendChild(tr);
+function renderTeamResults(teamId, teamName, report, container) {
+  const allResults = (report.results || []).filter(
+    (r) => r.home_id === teamId || r.away_id === teamId
+  );
+  if (!allResults.length) return;
+
+  const ratingChanges = buildRatingChanges(state.careers);
+  const sorted = [...allResults].sort((a, b) => b.date.localeCompare(a.date));
+
+  const PAGE = 5;
+  const totalPages = Math.ceil(sorted.length / PAGE);
+  state.teamResultsPage = Math.min(state.teamResultsPage, totalPages - 1);
+  const page = state.teamResultsPage;
+  const matches = sorted.slice(page * PAGE, (page + 1) * PAGE);
+
+  const section = el('div', 'team-section');
+  const header = el('div', 'team-section__header');
+  header.appendChild(el('div', 'label', `Recent results — ${allResults.length} played`));
+  if (totalPages > 1) {
+    const nav = el('div', 'team-pagination');
+    const prev = el('button', 'team-pagination__btn', '\u2190');
+    prev.disabled = page >= totalPages - 1;
+    prev.addEventListener('click', () => { state.teamResultsPage++; renderTeamView(report); });
+    nav.appendChild(prev);
+    nav.appendChild(el('span', 'team-pagination__label', `${page + 1} / ${totalPages}`));
+    const next = el('button', 'team-pagination__btn', '\u2192');
+    next.disabled = page === 0;
+    next.addEventListener('click', () => { state.teamResultsPage--; renderTeamView(report); });
+    nav.appendChild(next);
+    header.appendChild(nav);
   }
+  section.appendChild(header);
+
+  for (const match of matches) {
+    const card = el('div', 'played-card');
+
+    const homeWin = match.home_goals > match.away_goals;
+    const awayWin = match.away_goals > match.home_goals;
+    if (homeWin) card.classList.add('played-card--home-win');
+    else if (awayWin) card.classList.add('played-card--away-win');
+
+    // Date centered above matchup
+    const date = el('div', 'played-card__date');
+    date.textContent = formatDate(match.date) + (match.round ? ` \u00b7 R${match.round}` : '');
+    card.appendChild(date);
+
+    const homeInfo = ratingChanges.get(`${match.home_id}|${match.date}`) ?? { change: 0, rating: 0 };
+    const awayInfo = ratingChanges.get(`${match.away_id}|${match.date}`) ?? { change: 0, rating: 0 };
+
+    const ratingBlock = (info) => {
+      const node = el('div', 'played-card__rating');
+      node.appendChild(el('span', 'played-card__rating-value', String(info.rating)));
+      if (info.change !== 0) {
+        const arrow = info.change > 0 ? '\u25B2' : '\u25BC';
+        const delta = el('span', `played-card__delta played-card__delta--${info.change > 0 ? 'up' : 'down'}`);
+        delta.textContent = `${info.change > 0 ? '+' : ''}${info.change} ${arrow}`;
+        node.appendChild(delta);
+      }
+      return node;
+    };
+
+    const matchup = el('div', 'played-card__matchup');
+
+    const homeSide = el('div', 'played-card__side played-card__side--home');
+    homeSide.appendChild(ratingBlock(homeInfo));
+    const homeTeam = el('span', 'played-card__team');
+    homeTeam.appendChild(el('span', '', match.home));
+    const homeCrest = teamLogo(match.home_id, match.home);
+    if (homeCrest) homeTeam.appendChild(homeCrest);
+    homeSide.appendChild(homeTeam);
+
+    const score = el('div', 'played-card__score');
+    score.textContent = `${match.home_goals}\u2013${match.away_goals}`;
+
+    const awaySide = el('div', 'played-card__side played-card__side--away');
+    const awayTeam = el('span', 'played-card__team');
+    const awayCrest = teamLogo(match.away_id, match.away);
+    if (awayCrest) awayTeam.appendChild(awayCrest);
+    awayTeam.appendChild(el('span', '', match.away));
+    awaySide.appendChild(awayTeam);
+    awaySide.appendChild(ratingBlock(awayInfo));
+
+    matchup.appendChild(homeSide);
+    matchup.appendChild(score);
+    matchup.appendChild(awaySide);
+    card.appendChild(matchup);
+
+    section.appendChild(card);
+  }
+  container.appendChild(section);
 }
 
 
@@ -1537,9 +1862,15 @@ function render() {
   }
 
   // Hide the rewind timeline on views where it isn't relevant
-  const noRewind = new Set(['shape', 'next-up', 'compare', 'played', 'model']);
+  const noRewind = new Set(['shape', 'next-up', 'compare', 'played', 'model', 'team']);
   const timelineSection = document.querySelector('.timeline-section');
   if (timelineSection) timelineSection.hidden = noRewind.has(state.activeView);
+
+  // Team view requires a selected team; fall back to table if none
+  if (state.activeView === 'team' && !state.teamFocusId) {
+    state.activeView = 'table';
+    markActiveView();
+  }
 
   // View-specific renders
   switch (state.activeView) {
@@ -1569,6 +1900,9 @@ function render() {
       state.playedWeek = 0;
       renderPlayedResults(report);
       break;
+    case 'team':
+      renderTeamView(report);
+      break;
     case 'model':
       renderModelCard(report);
       break;
@@ -1577,6 +1911,13 @@ function render() {
   // Persist active view to URL for linkability
   const params = new URLSearchParams(window.location.search);
   params.set('view', state.activeView);
+  if (state.activeView === 'team' && state.teamFocusId) {
+    const teamName = (state.reports[state.league].table.find((t) => t.team_id === state.teamFocusId) || {}).team;
+    if (teamName) params.set('team', teamName);
+    else params.delete('team');
+  } else {
+    params.delete('team');
+  }
   window.history.replaceState(null, '', `${window.location.pathname}?${params.toString()}${window.location.hash}`);
 
   document.title = `${report.league.name} ${report.league.season} — EliteTracker`;
@@ -1658,13 +1999,9 @@ function wire() {
   $('#compare-a').addEventListener('change', () => renderCompare(state.reports[state.league]));
   $('#compare-b').addEventListener('change', () => renderCompare(state.reports[state.league]));
 
-  for (const closer of document.querySelectorAll('[data-close-modal]')) {
-    closer.addEventListener('click', closeCareer);
-  }
   document.addEventListener('keydown', (event) => {
     if (event.key !== 'Escape') return;
-    if (!$('#career-modal').hidden) closeCareer();
-    else if (!$('#more-sheet').hidden) closeSheet();
+    if (!$('#more-sheet').hidden) closeSheet();
   });
 
   window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => {
@@ -1697,7 +2034,7 @@ function applyLeagueParameter() {
 }
 
 /* Team is matched on name so a shared link stays readable. Applied after the
-   first render, once the club list exists. */
+   first render, once the club list exists. ?career= redirects to ?view=team&team=X */
 function applyTeamParameter() {
   const params = new URLSearchParams(window.location.search);
 
@@ -1706,17 +2043,44 @@ function applyTeamParameter() {
     const club = (state.careers?.teams || []).find(
       (team) => team.team.toLowerCase() === career.toLowerCase()
     );
-    if (club) openCareer(club.team_id, club.team);
+    if (club) {
+      openTeamView(club.team_id, club.team);
+      return;
+    }
   }
 
   const wanted = params.get('team');
   if (!wanted) return;
-  const match = state.reports[state.league].history.teams.find(
+
+  // If ?view=team is set or ?team= is present, open the team focus view
+  const view = params.get('view');
+  if (view === 'team' || params.has('team')) {
+    const report = state.reports[state.league];
+    const match = (report.table || []).find(
+      (team) => team.team.toLowerCase() === wanted.toLowerCase()
+    );
+    if (match) {
+      openTeamView(match.team_id, match.team);
+      return;
+    }
+    // Also check careers for cross-season teams
+    const careerMatch = (state.careers?.teams || []).find(
+      (team) => team.team.toLowerCase() === wanted.toLowerCase()
+    );
+    if (careerMatch) {
+      openTeamView(careerMatch.team_id, careerMatch.team);
+      return;
+    }
+  }
+
+  // Fallback: set the shape dropdown (legacy behavior)
+  const report = state.reports[state.league];
+  const match = report.history.teams.find(
     (team) => team.team.toLowerCase() === wanted.toLowerCase()
   );
   if (match) {
     $('#shape-team').value = match.team_id;
-    drawShape(state.reports[state.league], match.team_id);
+    drawShape(report, match.team_id);
   }
 }
 
@@ -1754,7 +2118,7 @@ function closeSheet() {
    shows the requested view instead of the default table. */
 function applyViewParameter() {
   const view = new URLSearchParams(window.location.search).get('view');
-  const validViews = new Set(['table', 'grid', 'shape', 'ladder', 'next-up', 'compare', 'played', 'model']);
+  const validViews = new Set(['table', 'grid', 'shape', 'ladder', 'next-up', 'compare', 'played', 'team', 'model']);
   if (view && validViews.has(view)) {
     state.activeView = view;
     markActiveView();

@@ -471,6 +471,18 @@ table.grid tbody th .pos {
   font-size: 0.6875rem;
 }
 
+.grid__team-name {
+  background: none;
+  border: none;
+  padding: 0;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+  text-align: right;
+}
+
+.grid__team-name:hover { text-decoration: underline; }
+
 /* Club crests, loaded locally. White-heavy crests get the panel colour behind
    them so they stay visible through transparent PNGs in both themes. The
    base rule carries a text-sized default so a misplaced crest never renders
@@ -850,40 +862,28 @@ table.standings .muted { color: var(--ink-muted); }
 
 /* ---------- fixtures ---------------------------------------------- */
 
-.fixtures { display: grid; gap: 1px; background: var(--rule); }
+.fixtures { display: flex; flex-direction: column; }
 
-.fixture {
-  display: grid;
-  grid-template-columns: 5.5rem 1fr minmax(160px, 220px);
-  gap: 0.75rem 1rem;
-  align-items: center;
-  padding: 0.7rem 1.25rem;
-  background: var(--panel);
+/* Odds bar in fixture cards — reused in both Next Up and team view */
+.fixture__odds-col {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  min-width: 280px;
+  max-width: 380px;
+  flex: none;
 }
 
-.fixture:hover { background: var(--panel-sunk); }
-.fixture__when { font-size: 0.75rem; color: var(--ink-muted); }
-.fixture__teams { font-weight: 600; font-size: 0.9375rem; }
-.fixture__teams em { font-style: normal; color: var(--ink-faint); font-weight: 400; padding-inline: 0.4rem; }
-.fixture__side { display: inline-flex; align-items: baseline; gap: 0.4rem; }
-
-.fixture__side .team-logo {
-  width: 18px;
-  height: 18px;
-  align-self: center;
+.fixture__lines {
+  display: flex;
+  flex-wrap: nowrap;
+  gap: 0.3rem;
+  overflow: hidden;
+  justify-content: center;
+  margin: 0 auto;
+  min-width: 280px;
+  max-width: 380px;
 }
-
-.fixture__rating {
-  font-size: 0.75rem;
-  font-weight: 500;
-  color: var(--ink-faint);
-  font-variant-numeric: tabular-nums;
-}
-
-/* Odds cell: the three-way bar on top, likely scorelines beneath. */
-.fixture__odds-col { display: flex; flex-direction: column; gap: 0.35rem; min-width: 0; }
-
-.fixture__lines { display: flex; flex-wrap: nowrap; gap: 0.3rem; overflow: hidden; }
 
 .fixture__line {
   font-size: 0.625rem;
@@ -1096,6 +1096,17 @@ table.standings .muted { color: var(--ink-muted); }
   min-width: 0;
 }
 
+.played-card__team-name {
+  background: none;
+  border: none;
+  padding: 0;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+}
+
+.played-card__team-name:hover { text-decoration: underline; }
+
 .played-card__side .team-logo {
   width: 22px;
   height: 22px;
@@ -1143,7 +1154,7 @@ table.standings .muted { color: var(--ink-muted); }
   line-height: 1;
 }
 
-/* Date centered below matchup */
+/* Date centered above matchup */
 .played-card__date {
   text-align: center;
   font-size: 0.8125rem;
@@ -1187,8 +1198,6 @@ footer {
 
 #tooltip {
   position: fixed;
-  /* Above the career modal (60): the rating chart inside it has its own
-     hover readout, which was rendering behind the card. */
   z-index: 80;
   pointer-events: none;
   background: var(--ink);
@@ -1374,7 +1383,6 @@ footer {
   .switch button { min-height: 44px; padding-inline: 1rem; }
   .season-select { min-height: 44px; }
   .standings .sort-btn { min-height: 44px; }
-  .modal__close { min-width: 44px; min-height: 44px; }
   .timeline__now { min-height: 44px; }
 
   /* A 47-step slider is about 7px per matchday; a bigger thumb and the step
@@ -1423,8 +1431,6 @@ footer {
 /* ---------- responsive -------------------------------------------- */
 
 @media (max-width: 760px) {
-  .fixture { grid-template-columns: 1fr; gap: 0.5rem; }
-  .fixture__when { order: -1; }
   .hero__meta { gap: 0.4rem 1.25rem; }
 
   /* A phone has room for the story, not the ledger. The W/D/L/GF/GA tallies,
@@ -1458,6 +1464,16 @@ footer {
      already carries the value. */
   .meter__track { display: none; }
   .meter { gap: 0; }
+
+  /* Left-aligned so the first view is the one you actually start on. */
+  .masthead__views { justify-content: flex-start; }
+  .timeline__note { display: none; }
+
+  /* Team grid row: smaller cells on a phone */
+  .team-grid-row__cell { height: 1.5rem; font-size: 0.5625rem; }
+  .team-grid-row__pos { font-size: 0.5rem; }
+  .team-summary__name { font-size: 1.25rem; }
+  .team-summary__rating { font-size: 1.75rem; }
 
   /* Left-aligned so the first view is the one you actually start on. */
   .masthead__views { justify-content: flex-start; }
@@ -1552,80 +1568,234 @@ footer {
   background-repeat: no-repeat;
 }
 
-/* ---------- career modal ------------------------------------------ */
+/* ---------- team focus view ---------------------------------------- */
 
-.modal {
-  position: fixed;
-  inset: 0;
-  z-index: 60;
-  display: grid;
-  place-items: center;
-  padding: clamp(0.5rem, 3vw, 2rem);
-}
+.team-section { padding: 1.25rem; border-top: 1px solid var(--rule); }
+.team-section:first-child { border-top: 0; }
+.team-section > .label { margin-bottom: 0.6rem; }
 
-.modal[hidden] { display: none; }
-
-.modal__scrim {
-  position: absolute;
-  inset: 0;
-  background: color-mix(in srgb, var(--ink) 55%, transparent);
-  backdrop-filter: blur(3px);
-}
-
-.modal__panel {
-  position: relative;
-  width: min(1000px, 100%);
-  max-height: 90vh;
-  overflow-y: auto;
-  background: var(--panel);
-  border: 1px solid var(--rule);
-  border-radius: var(--radius);
-  box-shadow: 0 24px 64px -24px rgb(0 0 0 / 0.5);
-}
-
-.modal__head {
+.team-section__header {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   justify-content: space-between;
-  gap: 1rem;
-  padding: 1.1rem 1.25rem;
-  border-bottom: 1px solid var(--rule);
-  position: sticky;
-  top: 0;
-  background: var(--panel);
-  z-index: 1;
+  gap: 0.5rem;
+  margin-bottom: 0.6rem;
 }
 
-.modal__head h2 { font-size: 1.4rem; }
-.modal__head p { margin: 0.3rem 0 0; color: var(--ink-muted); font-size: 0.875rem; }
+.team-section__header > .label { margin-bottom: 0; }
 
-.modal__close {
-  appearance: none;
-  border: 1px solid var(--rule);
-  background: var(--panel-sunk);
-  color: var(--ink-muted);
-  font-size: 1.25rem;
-  line-height: 1;
-  width: 2rem;
-  height: 2rem;
-  border-radius: var(--radius);
-  cursor: pointer;
+.team-pagination {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
   flex: none;
 }
 
-.modal__close:hover { color: var(--ink); }
-.modal__body { padding: 1.25rem; }
+.team-pagination__btn {
+  background: none;
+  border: 1px solid var(--rule);
+  border-radius: var(--radius);
+  padding: 0.15rem 0.45rem;
+  cursor: pointer;
+  font-size: 0.8125rem;
+  color: var(--ink);
+}
 
-/* A club's rating line. One series, so no legend box: the title names it. */
+.team-pagination__btn:disabled { opacity: 0.35; cursor: default; }
+
+.team-pagination__label {
+  font-size: 0.75rem;
+  color: var(--ink-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.team-summary {
+  padding: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+}
+
+.team-summary__header {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+
+
+.team-logo--large {
+  width: 48px;
+  height: 48px;
+  border-radius: 6px;
+  flex: none;
+}
+
+.team-summary__name-block {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  min-width: 0;
+  flex: 1;
+}
+
+.team-summary__name {
+  font-size: 1.5rem;
+  margin: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.team-summary__rating-block {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  flex: none;
+  margin-left: auto;
+}
+
+.team-summary__rating-line {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.team-summary__rating {
+  font-family: var(--display);
+  font-size: 2.5rem;
+  font-weight: 800;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+
+.team-summary__rating-pos {
+  font-size: 0.8125rem;
+  color: var(--ink-muted);
+}
+
+.team-summary__trend {
+  font-size: 2.5rem;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+}
+
+.team-summary__trend--strong-rise { color: var(--outcome-good); }
+.team-summary__trend--rise { color: var(--outcome-good); }
+.team-summary__trend--steady { color: var(--ink-faint); }
+.team-summary__trend--fall { color: var(--outcome-bad); }
+.team-summary__trend--strong-fall { color: var(--outcome-bad); }
+
+.team-summary__stats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem 1.5rem;
+}
+
+.team-summary__stat {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+}
+
+.team-summary__stat-label {
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+}
+
+.team-summary__stat-value {
+  font-size: 1.0625rem;
+  font-weight: 700;
+}
+
+.team-summary__form {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+/* Rating chart stats (peak/worst) beneath the chart */
+.team-chart-stats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem 1.5rem;
+  margin-top: 0.9rem;
+  padding-top: 0.9rem;
+  border-top: 1px solid var(--rule);
+  font-size: 0.875rem;
+  color: var(--ink-muted);
+}
+
+.team-chart-stat {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+}
+
+.team-chart-stat b { color: var(--ink); font-weight: 700; }
+
+/* Finish grid row: one team's 16-position probability bar */
+.team-grid-row {
+  display: flex;
+  gap: 3px;
+  width: 100%;
+}
+
+.team-grid-row__cell-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  flex: 1;
+  min-width: 0;
+}
+
+.team-grid-row__pos {
+  font-size: 0.625rem;
+  color: var(--ink-faint);
+  font-variant-numeric: tabular-nums;
+}
+
+.team-grid-row__cell {
+  width: 100%;
+  height: 2rem;
+  display: grid;
+  place-items: center;
+  border-radius: 3px;
+  font-size: 0.6875rem;
+  color: var(--cell-ink);
+  font-variant-numeric: tabular-nums;
+  cursor: default;
+  transition: transform 0.12s var(--ease);
+}
+
+.team-grid-row__cell--empty { color: transparent; }
+
+.team-grid-row__cell.cell--invert { color: var(--cell-ink-invert); }
+
+.team-grid-row__cell:hover {
+  transform: scale(1.12);
+  box-shadow: 0 0 0 2px var(--panel), 0 0 0 3px var(--ink);
+  position: relative;
+  z-index: 2;
+}
+
+/* ---------- career table (now inline in team view) ------------------ */
+
+.career-table { min-width: 640px; }
+.career-table .up { color: var(--outcome-good); font-weight: 700; }
+.career-table .down { color: var(--outcome-bad); font-weight: 700; }
+
+/* Rating chart used in team view */
 .chart .career-line { fill: none; stroke: var(--seq-5); stroke-width: 2; }
 .chart .career-area { fill: var(--seq-5); opacity: 0.12; }
 .chart .season-split { stroke: var(--rule); stroke-width: 1; }
 .chart .season-label { fill: var(--ink-faint); font-size: 9px; }
 .chart .career-dot { fill: var(--seq-5); stroke: var(--panel); stroke-width: 2; }
-
-.career-table { min-width: 640px; margin-top: 1rem; }
-.career-table .up { color: var(--outcome-good); font-weight: 700; }
-.career-table .down { color: var(--outcome-bad); font-weight: 700; }
 
 #standings tbody tr { cursor: pointer; }
 
