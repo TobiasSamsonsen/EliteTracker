@@ -357,6 +357,10 @@ route if anything ever does.
 - [ ] Re-fit the draw model periodically as seasons accumulate.
 - [ ] Re-run `backtest_cli` after each new season to keep K / home advantage / regression
       fitted; regenerate `data/scoreline_model.json` with `build_scoreline_model.py`.
+- [ ] Full rebuild needed after `career.py` regression-snapshot change (commit 7a84b0c):
+      the extra snapshot points in `careers.json` are only consumed by the frontend, but
+      all past seasons need a local `build_site` + tarball re-upload so trend arrows and
+      career charts are consistent across every season.
 - [x] Cross-season mean reversion was over the *combined* two-division pool, not per
       division (`model/career.py:101`, `model/backtest.py:171`). **Shipped in elo-v6:**
       regression is now per division (each toward its own mean, over teams active that
