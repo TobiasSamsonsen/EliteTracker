@@ -4231,12 +4231,8 @@
       "id": "8422"
     },
     "status": {
-      "utcTime": "2026-08-30T12:30:00.000Z",
-      "halfs": {
-        "firstHalfStarted": "30.08.2026 14:32:07",
-        "secondHalfStarted": "30.08.2026 15:34:48"
-      },
-      "periodLength": 45,
+      "utcTime": "2026-08-30T12:30:00Z",
+      "timezone": "UTC",
       "finished": true,
       "started": true,
       "cancelled": false,
@@ -4266,12 +4262,8 @@
       "id": "8605"
     },
     "status": {
-      "utcTime": "2026-08-30T15:00:00.000Z",
-      "halfs": {
-        "firstHalfStarted": "30.08.2026 17:02:05",
-        "secondHalfStarted": "30.08.2026 18:05:23"
-      },
-      "periodLength": 45,
+      "utcTime": "2026-08-30T15:00:00Z",
+      "timezone": "UTC",
       "finished": true,
       "started": true,
       "cancelled": false,
@@ -4301,12 +4293,8 @@
       "id": "8468"
     },
     "status": {
-      "utcTime": "2026-08-30T15:00:00.000Z",
-      "halfs": {
-        "firstHalfStarted": "30.08.2026 17:01:42",
-        "secondHalfStarted": "30.08.2026 18:02:23"
-      },
-      "periodLength": 45,
+      "utcTime": "2026-08-30T15:00:00Z",
+      "timezone": "UTC",
       "finished": true,
       "started": true,
       "cancelled": false,
@@ -4336,13 +4324,8 @@
       "id": "2305"
     },
     "status": {
-      "utcTime": "2026-08-30T15:00:00.000Z",
-      "numberOfAwayRedCards": 1,
-      "halfs": {
-        "firstHalfStarted": "30.08.2026 17:02:20",
-        "secondHalfStarted": "30.08.2026 18:07:36"
-      },
-      "periodLength": 45,
+      "utcTime": "2026-08-30T15:00:00Z",
+      "timezone": "UTC",
       "finished": true,
       "started": true,
       "cancelled": false,
@@ -4372,12 +4355,8 @@
       "id": "8509"
     },
     "status": {
-      "utcTime": "2026-08-30T15:00:00.000Z",
-      "halfs": {
-        "firstHalfStarted": "30.08.2026 17:01:32",
-        "secondHalfStarted": "30.08.2026 18:03:32"
-      },
-      "periodLength": 45,
+      "utcTime": "2026-08-30T15:00:00Z",
+      "timezone": "UTC",
       "finished": true,
       "started": true,
       "cancelled": false,
@@ -4407,12 +4386,8 @@
       "id": "9917"
     },
     "status": {
-      "utcTime": "2026-08-30T15:00:00.000Z",
-      "halfs": {
-        "firstHalfStarted": "30.08.2026 17:01:53",
-        "secondHalfStarted": "30.08.2026 18:07:12"
-      },
-      "periodLength": 45,
+      "utcTime": "2026-08-30T15:00:00Z",
+      "timezone": "UTC",
       "finished": true,
       "started": true,
       "cancelled": false,
@@ -4442,12 +4417,8 @@
       "id": "8404"
     },
     "status": {
-      "utcTime": "2026-08-30T15:00:00.000Z",
-      "halfs": {
-        "firstHalfStarted": "30.08.2026 17:02:30",
-        "secondHalfStarted": "30.08.2026 18:06:51"
-      },
-      "periodLength": 45,
+      "utcTime": "2026-08-30T15:00:00Z",
+      "timezone": "UTC",
       "finished": true,
       "started": true,
       "cancelled": false,
@@ -4477,24 +4448,18 @@
       "id": "8417"
     },
     "status": {
-      "utcTime": "2026-08-30T17:15:00.000Z",
-      "halfs": {
-        "firstHalfStarted": "30.08.2026 19:16:45"
-      },
-      "periodLength": 45,
-      "finished": false,
+      "utcTime": "2026-08-30T17:15:00Z",
+      "timezone": "UTC",
+      "finished": true,
       "started": true,
       "cancelled": false,
-      "ongoing": true,
-      "scoreStr": "0 - 2",
-      "liveTime": {
-        "short": "20‎’‎",
-        "shortKey": "",
-        "long": "19:12",
-        "longKey": "",
-        "maxTime": 45,
-        "basePeriod": 45,
-        "addedTime": 0
+      "awarded": false,
+      "scoreStr": "1 - 4",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
       }
     }
   },
@@ -4514,11 +4479,23 @@
       "id": "9919"
     },
     "status": {
-      "utcTime": "2026-09-04T17:00:00Z",
-      "timezone": "UTC",
-      "started": false,
+      "utcTime": "2026-09-04T17:00:00.000Z",
+      "halfs": {
+        "firstHalfStarted": "04.09.2026 19:01:45",
+        "secondHalfStarted": "04.09.2026 20:02:46"
+      },
+      "periodLength": 45,
+      "finished": true,
+      "started": true,
       "cancelled": false,
-      "finished": false
+      "awarded": false,
+      "scoreStr": "2 - 0",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
     }
   },
   {
@@ -4537,11 +4514,23 @@
       "id": "8402"
     },
     "status": {
-      "utcTime": "2026-09-04T17:00:00Z",
-      "timezone": "UTC",
-      "started": false,
+      "utcTime": "2026-09-04T17:00:00.000Z",
+      "halfs": {
+        "firstHalfStarted": "04.09.2026 19:00:06",
+        "secondHalfStarted": "04.09.2026 20:02:12"
+      },
+      "periodLength": 45,
+      "finished": true,
+      "started": true,
       "cancelled": false,
-      "finished": false
+      "awarded": false,
+      "scoreStr": "1 - 2",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
     }
   },
   {
@@ -4560,11 +4549,24 @@
       "id": "8478"
     },
     "status": {
-      "utcTime": "2026-09-04T19:00:00Z",
-      "timezone": "UTC",
-      "started": false,
+      "utcTime": "2026-09-04T19:00:00.000Z",
+      "numberOfAwayRedCards": 1,
+      "halfs": {
+        "firstHalfStarted": "04.09.2026 21:00:35",
+        "secondHalfStarted": "04.09.2026 22:02:46"
+      },
+      "periodLength": 45,
+      "finished": true,
+      "started": true,
       "cancelled": false,
-      "finished": false
+      "awarded": false,
+      "scoreStr": "1 - 1",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
     }
   },
   {
@@ -4754,29 +4756,6 @@
   {
     "round": "21",
     "roundName": 21,
-    "pageUrl": "/matches/bodoglimt-vs-sandefjord/2e5igf#5105005",
-    "id": "5105005",
-    "home": {
-      "name": "Bodø/Glimt",
-      "shortName": "Bodø/Glimt",
-      "id": "8402"
-    },
-    "away": {
-      "name": "Sandefjord",
-      "shortName": "Sandefjord",
-      "id": "8609"
-    },
-    "status": {
-      "utcTime": "2026-09-13T15:00:00Z",
-      "timezone": "UTC",
-      "started": false,
-      "cancelled": false,
-      "finished": false
-    }
-  },
-  {
-    "round": "21",
-    "roundName": 21,
     "pageUrl": "/matches/hamarkameratene-vs-molde/2sevkw#5105006",
     "id": "5105006",
     "home": {
@@ -4860,6 +4839,29 @@
     },
     "status": {
       "utcTime": "2026-09-13T17:15:00Z",
+      "timezone": "UTC",
+      "started": false,
+      "cancelled": false,
+      "finished": false
+    }
+  },
+  {
+    "round": "21",
+    "roundName": 21,
+    "pageUrl": "/matches/bodoglimt-vs-sandefjord/2e5igf#5105005",
+    "id": "5105005",
+    "home": {
+      "name": "Bodø/Glimt",
+      "shortName": "Bodø/Glimt",
+      "id": "8402"
+    },
+    "away": {
+      "name": "Sandefjord",
+      "shortName": "Sandefjord",
+      "id": "8609"
+    },
+    "status": {
+      "utcTime": "2026-09-14T17:00:00Z",
       "timezone": "UTC",
       "started": false,
       "cancelled": false,
@@ -5053,20 +5055,20 @@
   {
     "round": "23",
     "roundName": 23,
-    "pageUrl": "/matches/aalesund-vs-sarpsborg-08/2d5vpy#5105022",
-    "id": "5105022",
+    "pageUrl": "/matches/brann-vs-viking/2dhus9#5105018",
+    "id": "5105018",
     "home": {
-      "name": "Aalesund",
-      "shortName": "Aalesund",
-      "id": "8404"
+      "name": "Brann",
+      "shortName": "Brann",
+      "id": "8468"
     },
     "away": {
-      "name": "Sarpsborg 08",
-      "shortName": "Sarpsborg 08",
-      "id": "8509"
+      "name": "Viking",
+      "shortName": "Viking",
+      "id": "8478"
     },
     "status": {
-      "utcTime": "2026-10-11T15:00:00Z",
+      "utcTime": "2026-10-09T17:00:00Z",
       "timezone": "UTC",
       "started": false,
       "cancelled": false,
@@ -5089,7 +5091,7 @@
       "id": "8605"
     },
     "status": {
-      "utcTime": "2026-10-11T15:00:00Z",
+      "utcTime": "2026-10-10T14:00:00Z",
       "timezone": "UTC",
       "started": false,
       "cancelled": false,
@@ -5099,20 +5101,20 @@
   {
     "round": "23",
     "roundName": 23,
-    "pageUrl": "/matches/brann-vs-viking/2dhus9#5105018",
-    "id": "5105018",
+    "pageUrl": "/matches/rosenborg-vs-sandefjord/2ect4t#5105020",
+    "id": "5105020",
     "home": {
-      "name": "Brann",
-      "shortName": "Brann",
-      "id": "8468"
+      "name": "Rosenborg",
+      "shortName": "Rosenborg",
+      "id": "8422"
     },
     "away": {
-      "name": "Viking",
-      "shortName": "Viking",
-      "id": "8478"
+      "name": "Sandefjord",
+      "shortName": "Sandefjord",
+      "id": "8609"
     },
     "status": {
-      "utcTime": "2026-10-11T15:00:00Z",
+      "utcTime": "2026-10-10T16:00:00Z",
       "timezone": "UTC",
       "started": false,
       "cancelled": false,
@@ -5135,7 +5137,7 @@
       "id": "8608"
     },
     "status": {
-      "utcTime": "2026-10-11T15:00:00Z",
+      "utcTime": "2026-10-11T12:30:00Z",
       "timezone": "UTC",
       "started": false,
       "cancelled": false,
@@ -5145,63 +5147,17 @@
   {
     "round": "23",
     "roundName": 23,
-    "pageUrl": "/matches/kfum-vs-valerenga/vnvd7#5105024",
-    "id": "5105024",
+    "pageUrl": "/matches/aalesund-vs-sarpsborg-08/2d5vpy#5105022",
+    "id": "5105022",
     "home": {
-      "name": "KFUM",
-      "shortName": "KFUM",
-      "id": "2305"
+      "name": "Aalesund",
+      "shortName": "Aalesund",
+      "id": "8404"
     },
     "away": {
-      "name": "Vålerenga",
-      "shortName": "Vålerenga",
-      "id": "8007"
-    },
-    "status": {
-      "utcTime": "2026-10-11T15:00:00Z",
-      "timezone": "UTC",
-      "started": false,
-      "cancelled": false,
-      "finished": false
-    }
-  },
-  {
-    "round": "23",
-    "roundName": 23,
-    "pageUrl": "/matches/lillestrom-vs-molde/2spwo2#5105023",
-    "id": "5105023",
-    "home": {
-      "name": "Lillestrøm",
-      "shortName": "Lillestrøm",
-      "id": "8476"
-    },
-    "away": {
-      "name": "Molde",
-      "shortName": "Molde",
-      "id": "9917"
-    },
-    "status": {
-      "utcTime": "2026-10-11T15:00:00Z",
-      "timezone": "UTC",
-      "started": false,
-      "cancelled": false,
-      "finished": false
-    }
-  },
-  {
-    "round": "23",
-    "roundName": 23,
-    "pageUrl": "/matches/rosenborg-vs-sandefjord/2ect4t#5105020",
-    "id": "5105020",
-    "home": {
-      "name": "Rosenborg",
-      "shortName": "Rosenborg",
-      "id": "8422"
-    },
-    "away": {
-      "name": "Sandefjord",
-      "shortName": "Sandefjord",
-      "id": "8609"
+      "name": "Sarpsborg 08",
+      "shortName": "Sarpsborg 08",
+      "id": "8509"
     },
     "status": {
       "utcTime": "2026-10-11T15:00:00Z",
@@ -5235,6 +5191,52 @@
     }
   },
   {
+    "round": "23",
+    "roundName": 23,
+    "pageUrl": "/matches/lillestrom-vs-molde/2spwo2#5105023",
+    "id": "5105023",
+    "home": {
+      "name": "Lillestrøm",
+      "shortName": "Lillestrøm",
+      "id": "8476"
+    },
+    "away": {
+      "name": "Molde",
+      "shortName": "Molde",
+      "id": "9917"
+    },
+    "status": {
+      "utcTime": "2026-10-11T17:15:00Z",
+      "timezone": "UTC",
+      "started": false,
+      "cancelled": false,
+      "finished": false
+    }
+  },
+  {
+    "round": "23",
+    "roundName": 23,
+    "pageUrl": "/matches/kfum-vs-valerenga/vnvd7#5105024",
+    "id": "5105024",
+    "home": {
+      "name": "KFUM",
+      "shortName": "KFUM",
+      "id": "2305"
+    },
+    "away": {
+      "name": "Vålerenga",
+      "shortName": "Vålerenga",
+      "id": "8007"
+    },
+    "status": {
+      "utcTime": "2026-10-12T17:00:00Z",
+      "timezone": "UTC",
+      "started": false,
+      "cancelled": false,
+      "finished": false
+    }
+  },
+  {
     "round": "24",
     "roundName": 24,
     "pageUrl": "/matches/bodoglimt-vs-hamarkameratene/2cj30r#5105025",
@@ -5250,7 +5252,7 @@
       "id": "8402"
     },
     "status": {
-      "utcTime": "2026-10-18T15:00:00Z",
+      "utcTime": "2026-10-17T12:00:00Z",
       "timezone": "UTC",
       "started": false,
       "cancelled": false,
@@ -5273,7 +5275,53 @@
       "id": "8404"
     },
     "status": {
-      "utcTime": "2026-10-18T15:00:00Z",
+      "utcTime": "2026-10-17T14:00:00Z",
+      "timezone": "UTC",
+      "started": false,
+      "cancelled": false,
+      "finished": false
+    }
+  },
+  {
+    "round": "24",
+    "roundName": 24,
+    "pageUrl": "/matches/fredrikstad-vs-viking/2czcwu#5105026",
+    "id": "5105026",
+    "home": {
+      "name": "Viking",
+      "shortName": "Viking",
+      "id": "8478"
+    },
+    "away": {
+      "name": "Fredrikstad",
+      "shortName": "Fredrikstad",
+      "id": "8417"
+    },
+    "status": {
+      "utcTime": "2026-10-17T16:00:00Z",
+      "timezone": "UTC",
+      "started": false,
+      "cancelled": false,
+      "finished": false
+    }
+  },
+  {
+    "round": "24",
+    "roundName": 24,
+    "pageUrl": "/matches/rosenborg-vs-sarpsborg-08/2dcer7#5105032",
+    "id": "5105032",
+    "home": {
+      "name": "Sarpsborg 08",
+      "shortName": "Sarpsborg 08",
+      "id": "8509"
+    },
+    "away": {
+      "name": "Rosenborg",
+      "shortName": "Rosenborg",
+      "id": "8422"
+    },
+    "status": {
+      "utcTime": "2026-10-18T12:30:00Z",
       "timezone": "UTC",
       "started": false,
       "cancelled": false,
@@ -5329,17 +5377,17 @@
   {
     "round": "24",
     "roundName": 24,
-    "pageUrl": "/matches/rosenborg-vs-sarpsborg-08/2dcer7#5105032",
-    "id": "5105032",
+    "pageUrl": "/matches/valerenga-vs-brann/28t5ke#5105027",
+    "id": "5105027",
     "home": {
-      "name": "Sarpsborg 08",
-      "shortName": "Sarpsborg 08",
-      "id": "8509"
+      "name": "Vålerenga",
+      "shortName": "Vålerenga",
+      "id": "8007"
     },
     "away": {
-      "name": "Rosenborg",
-      "shortName": "Rosenborg",
-      "id": "8422"
+      "name": "Brann",
+      "shortName": "Brann",
+      "id": "8468"
     },
     "status": {
       "utcTime": "2026-10-18T15:00:00Z",
@@ -5365,53 +5413,7 @@
       "id": "2305"
     },
     "status": {
-      "utcTime": "2026-10-18T15:00:00Z",
-      "timezone": "UTC",
-      "started": false,
-      "cancelled": false,
-      "finished": false
-    }
-  },
-  {
-    "round": "24",
-    "roundName": 24,
-    "pageUrl": "/matches/valerenga-vs-brann/28t5ke#5105027",
-    "id": "5105027",
-    "home": {
-      "name": "Vålerenga",
-      "shortName": "Vålerenga",
-      "id": "8007"
-    },
-    "away": {
-      "name": "Brann",
-      "shortName": "Brann",
-      "id": "8468"
-    },
-    "status": {
-      "utcTime": "2026-10-18T15:00:00Z",
-      "timezone": "UTC",
-      "started": false,
-      "cancelled": false,
-      "finished": false
-    }
-  },
-  {
-    "round": "24",
-    "roundName": 24,
-    "pageUrl": "/matches/fredrikstad-vs-viking/2czcwu#5105026",
-    "id": "5105026",
-    "home": {
-      "name": "Viking",
-      "shortName": "Viking",
-      "id": "8478"
-    },
-    "away": {
-      "name": "Fredrikstad",
-      "shortName": "Fredrikstad",
-      "id": "8417"
-    },
-    "status": {
-      "utcTime": "2026-10-18T15:00:00Z",
+      "utcTime": "2026-10-18T17:15:00Z",
       "timezone": "UTC",
       "started": false,
       "cancelled": false,
@@ -5434,7 +5436,7 @@
       "id": "8007"
     },
     "status": {
-      "utcTime": "2026-10-25T16:00:00Z",
+      "utcTime": "2026-10-24T14:00:00Z",
       "timezone": "UTC",
       "started": false,
       "cancelled": false,
@@ -5457,7 +5459,30 @@
       "id": "8422"
     },
     "status": {
-      "utcTime": "2026-10-25T16:00:00Z",
+      "utcTime": "2026-10-24T16:00:00Z",
+      "timezone": "UTC",
+      "started": false,
+      "cancelled": false,
+      "finished": false
+    }
+  },
+  {
+    "round": "12",
+    "roundName": 12,
+    "pageUrl": "/matches/viking-vs-tromso/2ewx35#5104930",
+    "id": "5104930",
+    "home": {
+      "name": "Viking",
+      "shortName": "Viking",
+      "id": "8478"
+    },
+    "away": {
+      "name": "Tromsø",
+      "shortName": "Tromsø",
+      "id": "8608"
+    },
+    "status": {
+      "utcTime": "2026-10-25T13:30:00Z",
       "timezone": "UTC",
       "started": false,
       "cancelled": false,
@@ -5501,29 +5526,6 @@
       "name": "Brann",
       "shortName": "Brann",
       "id": "8468"
-    },
-    "status": {
-      "utcTime": "2026-10-25T16:00:00Z",
-      "timezone": "UTC",
-      "started": false,
-      "cancelled": false,
-      "finished": false
-    }
-  },
-  {
-    "round": "12",
-    "roundName": 12,
-    "pageUrl": "/matches/fredrikstad-vs-molde/2s2oni#5104934",
-    "id": "5104934",
-    "home": {
-      "name": "Molde",
-      "shortName": "Molde",
-      "id": "9917"
-    },
-    "away": {
-      "name": "Fredrikstad",
-      "shortName": "Fredrikstad",
-      "id": "8417"
     },
     "status": {
       "utcTime": "2026-10-25T16:00:00Z",
@@ -5582,43 +5584,20 @@
   {
     "round": "12",
     "roundName": 12,
-    "pageUrl": "/matches/viking-vs-tromso/2ewx35#5104930",
-    "id": "5104930",
+    "pageUrl": "/matches/fredrikstad-vs-molde/2s2oni#5104934",
+    "id": "5104934",
     "home": {
-      "name": "Viking",
-      "shortName": "Viking",
-      "id": "8478"
+      "name": "Molde",
+      "shortName": "Molde",
+      "id": "9917"
     },
     "away": {
-      "name": "Tromsø",
-      "shortName": "Tromsø",
-      "id": "8608"
+      "name": "Fredrikstad",
+      "shortName": "Fredrikstad",
+      "id": "8417"
     },
     "status": {
-      "utcTime": "2026-10-25T16:00:00Z",
-      "timezone": "UTC",
-      "started": false,
-      "cancelled": false,
-      "finished": false
-    }
-  },
-  {
-    "round": "25",
-    "roundName": 25,
-    "pageUrl": "/matches/aalesund-vs-sandefjord/2e68pk#5105039",
-    "id": "5105039",
-    "home": {
-      "name": "Aalesund",
-      "shortName": "Aalesund",
-      "id": "8404"
-    },
-    "away": {
-      "name": "Sandefjord",
-      "shortName": "Sandefjord",
-      "id": "8609"
-    },
-    "status": {
-      "utcTime": "2026-11-01T16:00:00Z",
+      "utcTime": "2026-10-25T18:15:00Z",
       "timezone": "UTC",
       "started": false,
       "cancelled": false,
@@ -5641,30 +5620,7 @@
       "id": "8478"
     },
     "status": {
-      "utcTime": "2026-11-01T16:00:00Z",
-      "timezone": "UTC",
-      "started": false,
-      "cancelled": false,
-      "finished": false
-    }
-  },
-  {
-    "round": "25",
-    "roundName": 25,
-    "pageUrl": "/matches/brann-vs-molde/2smr5i#5105036",
-    "id": "5105036",
-    "home": {
-      "name": "Brann",
-      "shortName": "Brann",
-      "id": "8468"
-    },
-    "away": {
-      "name": "Molde",
-      "shortName": "Molde",
-      "id": "9917"
-    },
-    "status": {
-      "utcTime": "2026-11-01T16:00:00Z",
+      "utcTime": "2026-10-30T18:00:00Z",
       "timezone": "UTC",
       "started": false,
       "cancelled": false,
@@ -5687,7 +5643,53 @@
       "id": "8422"
     },
     "status": {
-      "utcTime": "2026-11-01T16:00:00Z",
+      "utcTime": "2026-10-31T15:00:00Z",
+      "timezone": "UTC",
+      "started": false,
+      "cancelled": false,
+      "finished": false
+    }
+  },
+  {
+    "round": "25",
+    "roundName": 25,
+    "pageUrl": "/matches/aalesund-vs-sandefjord/2e68pk#5105039",
+    "id": "5105039",
+    "home": {
+      "name": "Aalesund",
+      "shortName": "Aalesund",
+      "id": "8404"
+    },
+    "away": {
+      "name": "Sandefjord",
+      "shortName": "Sandefjord",
+      "id": "8609"
+    },
+    "status": {
+      "utcTime": "2026-10-31T17:00:00Z",
+      "timezone": "UTC",
+      "started": false,
+      "cancelled": false,
+      "finished": false
+    }
+  },
+  {
+    "round": "25",
+    "roundName": 25,
+    "pageUrl": "/matches/brann-vs-molde/2smr5i#5105036",
+    "id": "5105036",
+    "home": {
+      "name": "Brann",
+      "shortName": "Brann",
+      "id": "8468"
+    },
+    "away": {
+      "name": "Molde",
+      "shortName": "Molde",
+      "id": "9917"
+    },
+    "status": {
+      "utcTime": "2026-11-01T13:30:00Z",
       "timezone": "UTC",
       "started": false,
       "cancelled": false,
@@ -5779,53 +5781,7 @@
       "id": "8608"
     },
     "status": {
-      "utcTime": "2026-11-01T16:00:00Z",
-      "timezone": "UTC",
-      "started": false,
-      "cancelled": false,
-      "finished": false
-    }
-  },
-  {
-    "round": "26",
-    "roundName": 26,
-    "pageUrl": "/matches/fredrikstad-vs-brann/2cvqkr#5105043",
-    "id": "5105043",
-    "home": {
-      "name": "Fredrikstad",
-      "shortName": "Fredrikstad",
-      "id": "8417"
-    },
-    "away": {
-      "name": "Brann",
-      "shortName": "Brann",
-      "id": "8468"
-    },
-    "status": {
-      "utcTime": "2026-11-08T16:00:00Z",
-      "timezone": "UTC",
-      "started": false,
-      "cancelled": false,
-      "finished": false
-    }
-  },
-  {
-    "round": "26",
-    "roundName": 26,
-    "pageUrl": "/matches/hamarkameratene-vs-sarpsborg-08/2dluow#5105045",
-    "id": "5105045",
-    "home": {
-      "name": "Hamarkameratene",
-      "shortName": "HamKam",
-      "id": "8448"
-    },
-    "away": {
-      "name": "Sarpsborg 08",
-      "shortName": "Sarpsborg 08",
-      "id": "8509"
-    },
-    "status": {
-      "utcTime": "2026-11-08T16:00:00Z",
+      "utcTime": "2026-11-01T18:15:00Z",
       "timezone": "UTC",
       "started": false,
       "cancelled": false,
@@ -5846,6 +5802,75 @@
       "name": "Vålerenga",
       "shortName": "Vålerenga",
       "id": "8007"
+    },
+    "status": {
+      "utcTime": "2026-11-07T15:00:00Z",
+      "timezone": "UTC",
+      "started": false,
+      "cancelled": false,
+      "finished": false
+    }
+  },
+  {
+    "round": "26",
+    "roundName": 26,
+    "pageUrl": "/matches/rosenborg-vs-start/2s5fpa#5105048",
+    "id": "5105048",
+    "home": {
+      "name": "Rosenborg",
+      "shortName": "Rosenborg",
+      "id": "8422"
+    },
+    "away": {
+      "name": "Start",
+      "shortName": "Start",
+      "id": "9919"
+    },
+    "status": {
+      "utcTime": "2026-11-07T17:00:00Z",
+      "timezone": "UTC",
+      "started": false,
+      "cancelled": false,
+      "finished": false
+    }
+  },
+  {
+    "round": "26",
+    "roundName": 26,
+    "pageUrl": "/matches/bodoglimt-vs-tromso/2e55bv#5105041",
+    "id": "5105041",
+    "home": {
+      "name": "Tromsø",
+      "shortName": "Tromsø",
+      "id": "8608"
+    },
+    "away": {
+      "name": "Bodø/Glimt",
+      "shortName": "Bodø/Glimt",
+      "id": "8402"
+    },
+    "status": {
+      "utcTime": "2026-11-08T13:30:00Z",
+      "timezone": "UTC",
+      "started": false,
+      "cancelled": false,
+      "finished": false
+    }
+  },
+  {
+    "round": "26",
+    "roundName": 26,
+    "pageUrl": "/matches/hamarkameratene-vs-sarpsborg-08/2dluow#5105045",
+    "id": "5105045",
+    "home": {
+      "name": "Hamarkameratene",
+      "shortName": "HamKam",
+      "id": "8448"
+    },
+    "away": {
+      "name": "Sarpsborg 08",
+      "shortName": "Sarpsborg 08",
+      "id": "8509"
     },
     "status": {
       "utcTime": "2026-11-08T16:00:00Z",
@@ -5881,29 +5906,6 @@
   {
     "round": "26",
     "roundName": 26,
-    "pageUrl": "/matches/rosenborg-vs-start/2s5fpa#5105048",
-    "id": "5105048",
-    "home": {
-      "name": "Rosenborg",
-      "shortName": "Rosenborg",
-      "id": "8422"
-    },
-    "away": {
-      "name": "Start",
-      "shortName": "Start",
-      "id": "9919"
-    },
-    "status": {
-      "utcTime": "2026-11-08T16:00:00Z",
-      "timezone": "UTC",
-      "started": false,
-      "cancelled": false,
-      "finished": false
-    }
-  },
-  {
-    "round": "26",
-    "roundName": 26,
     "pageUrl": "/matches/sandefjord-vs-molde/2u6j3i#5105047",
     "id": "5105047",
     "home": {
@@ -5915,29 +5917,6 @@
       "name": "Molde",
       "shortName": "Molde",
       "id": "9917"
-    },
-    "status": {
-      "utcTime": "2026-11-08T16:00:00Z",
-      "timezone": "UTC",
-      "started": false,
-      "cancelled": false,
-      "finished": false
-    }
-  },
-  {
-    "round": "26",
-    "roundName": 26,
-    "pageUrl": "/matches/bodoglimt-vs-tromso/2e55bv#5105041",
-    "id": "5105041",
-    "home": {
-      "name": "Tromsø",
-      "shortName": "Tromsø",
-      "id": "8608"
-    },
-    "away": {
-      "name": "Bodø/Glimt",
-      "shortName": "Bodø/Glimt",
-      "id": "8402"
     },
     "status": {
       "utcTime": "2026-11-08T16:00:00Z",
@@ -5971,22 +5950,68 @@
     }
   },
   {
-    "round": "27",
-    "roundName": 27,
-    "pageUrl": "/matches/aalesund-vs-rosenborg/2caf6d#5105055",
-    "id": "5105055",
+    "round": "26",
+    "roundName": 26,
+    "pageUrl": "/matches/fredrikstad-vs-brann/2cvqkr#5105043",
+    "id": "5105043",
     "home": {
-      "name": "Aalesund",
-      "shortName": "Aalesund",
-      "id": "8404"
+      "name": "Fredrikstad",
+      "shortName": "Fredrikstad",
+      "id": "8417"
     },
     "away": {
-      "name": "Rosenborg",
-      "shortName": "Rosenborg",
-      "id": "8422"
+      "name": "Brann",
+      "shortName": "Brann",
+      "id": "8468"
     },
     "status": {
-      "utcTime": "2026-11-22T16:00:00Z",
+      "utcTime": "2026-11-08T18:15:00Z",
+      "timezone": "UTC",
+      "started": false,
+      "cancelled": false,
+      "finished": false
+    }
+  },
+  {
+    "round": "27",
+    "roundName": 27,
+    "pageUrl": "/matches/bodoglimt-vs-molde/2rwsj9#5105051",
+    "id": "5105051",
+    "home": {
+      "name": "Molde",
+      "shortName": "Molde",
+      "id": "9917"
+    },
+    "away": {
+      "name": "Bodø/Glimt",
+      "shortName": "Bodø/Glimt",
+      "id": "8402"
+    },
+    "status": {
+      "utcTime": "2026-11-20T18:00:00Z",
+      "timezone": "UTC",
+      "started": false,
+      "cancelled": false,
+      "finished": false
+    }
+  },
+  {
+    "round": "27",
+    "roundName": 27,
+    "pageUrl": "/matches/viking-vs-tromso/2ewx35#5105052",
+    "id": "5105052",
+    "home": {
+      "name": "Tromsø",
+      "shortName": "Tromsø",
+      "id": "8608"
+    },
+    "away": {
+      "name": "Viking",
+      "shortName": "Viking",
+      "id": "8478"
+    },
+    "status": {
+      "utcTime": "2026-11-21T13:00:00Z",
       "timezone": "UTC",
       "started": false,
       "cancelled": false,
@@ -6007,6 +6032,52 @@
       "name": "Fredrikstad",
       "shortName": "Fredrikstad",
       "id": "8417"
+    },
+    "status": {
+      "utcTime": "2026-11-21T15:00:00Z",
+      "timezone": "UTC",
+      "started": false,
+      "cancelled": false,
+      "finished": false
+    }
+  },
+  {
+    "round": "27",
+    "roundName": 27,
+    "pageUrl": "/matches/valerenga-vs-start/2no4wk#5105050",
+    "id": "5105050",
+    "home": {
+      "name": "Vålerenga",
+      "shortName": "Vålerenga",
+      "id": "8007"
+    },
+    "away": {
+      "name": "Start",
+      "shortName": "Start",
+      "id": "9919"
+    },
+    "status": {
+      "utcTime": "2026-11-21T17:00:00Z",
+      "timezone": "UTC",
+      "started": false,
+      "cancelled": false,
+      "finished": false
+    }
+  },
+  {
+    "round": "27",
+    "roundName": 27,
+    "pageUrl": "/matches/aalesund-vs-rosenborg/2caf6d#5105055",
+    "id": "5105055",
+    "home": {
+      "name": "Aalesund",
+      "shortName": "Aalesund",
+      "id": "8404"
+    },
+    "away": {
+      "name": "Rosenborg",
+      "shortName": "Rosenborg",
+      "id": "8422"
     },
     "status": {
       "utcTime": "2026-11-22T16:00:00Z",
@@ -6065,29 +6136,6 @@
   {
     "round": "27",
     "roundName": 27,
-    "pageUrl": "/matches/bodoglimt-vs-molde/2rwsj9#5105051",
-    "id": "5105051",
-    "home": {
-      "name": "Molde",
-      "shortName": "Molde",
-      "id": "9917"
-    },
-    "away": {
-      "name": "Bodø/Glimt",
-      "shortName": "Bodø/Glimt",
-      "id": "8402"
-    },
-    "status": {
-      "utcTime": "2026-11-22T16:00:00Z",
-      "timezone": "UTC",
-      "started": false,
-      "cancelled": false,
-      "finished": false
-    }
-  },
-  {
-    "round": "27",
-    "roundName": 27,
     "pageUrl": "/matches/lillestrom-vs-sarpsborg-08/2dw1cy#5105056",
     "id": "5105056",
     "home": {
@@ -6101,53 +6149,7 @@
       "id": "8476"
     },
     "status": {
-      "utcTime": "2026-11-22T16:00:00Z",
-      "timezone": "UTC",
-      "started": false,
-      "cancelled": false,
-      "finished": false
-    }
-  },
-  {
-    "round": "27",
-    "roundName": 27,
-    "pageUrl": "/matches/viking-vs-tromso/2ewx35#5105052",
-    "id": "5105052",
-    "home": {
-      "name": "Tromsø",
-      "shortName": "Tromsø",
-      "id": "8608"
-    },
-    "away": {
-      "name": "Viking",
-      "shortName": "Viking",
-      "id": "8478"
-    },
-    "status": {
-      "utcTime": "2026-11-22T16:00:00Z",
-      "timezone": "UTC",
-      "started": false,
-      "cancelled": false,
-      "finished": false
-    }
-  },
-  {
-    "round": "27",
-    "roundName": 27,
-    "pageUrl": "/matches/valerenga-vs-start/2no4wk#5105050",
-    "id": "5105050",
-    "home": {
-      "name": "Vålerenga",
-      "shortName": "Vålerenga",
-      "id": "8007"
-    },
-    "away": {
-      "name": "Start",
-      "shortName": "Start",
-      "id": "9919"
-    },
-    "status": {
-      "utcTime": "2026-11-22T16:00:00Z",
+      "utcTime": "2026-11-22T18:15:00Z",
       "timezone": "UTC",
       "started": false,
       "cancelled": false,
@@ -6170,7 +6172,7 @@
       "id": "2305"
     },
     "status": {
-      "utcTime": "2026-11-29T16:00:00Z",
+      "utcTime": "2026-11-28T15:00:00Z",
       "timezone": "UTC",
       "started": false,
       "cancelled": false,
@@ -6180,20 +6182,20 @@
   {
     "round": "28",
     "roundName": 28,
-    "pageUrl": "/matches/brann-vs-kristiansund/2es5ra#5105060",
-    "id": "5105060",
+    "pageUrl": "/matches/rosenborg-vs-molde/2s4neb#5105059",
+    "id": "5105059",
     "home": {
-      "name": "Brann",
-      "shortName": "Brann",
-      "id": "8468"
+      "name": "Rosenborg",
+      "shortName": "Rosenborg",
+      "id": "8422"
     },
     "away": {
-      "name": "Kristiansund",
-      "shortName": "Kristiansund",
-      "id": "8605"
+      "name": "Molde",
+      "shortName": "Molde",
+      "id": "9917"
     },
     "status": {
-      "utcTime": "2026-11-29T16:00:00Z",
+      "utcTime": "2026-11-28T17:00:00Z",
       "timezone": "UTC",
       "started": false,
       "cancelled": false,
@@ -6216,7 +6218,7 @@
       "id": "8404"
     },
     "status": {
-      "utcTime": "2026-11-29T16:00:00Z",
+      "utcTime": "2026-11-29T13:30:00Z",
       "timezone": "UTC",
       "started": false,
       "cancelled": false,
@@ -6226,40 +6228,17 @@
   {
     "round": "28",
     "roundName": 28,
-    "pageUrl": "/matches/hamarkameratene-vs-lillestrom/2d9vaq#5105064",
-    "id": "5105064",
+    "pageUrl": "/matches/brann-vs-kristiansund/2es5ra#5105060",
+    "id": "5105060",
     "home": {
-      "name": "Lillestrøm",
-      "shortName": "Lillestrøm",
-      "id": "8476"
+      "name": "Brann",
+      "shortName": "Brann",
+      "id": "8468"
     },
     "away": {
-      "name": "Hamarkameratene",
-      "shortName": "HamKam",
-      "id": "8448"
-    },
-    "status": {
-      "utcTime": "2026-11-29T16:00:00Z",
-      "timezone": "UTC",
-      "started": false,
-      "cancelled": false,
-      "finished": false
-    }
-  },
-  {
-    "round": "28",
-    "roundName": 28,
-    "pageUrl": "/matches/rosenborg-vs-molde/2s4neb#5105059",
-    "id": "5105059",
-    "home": {
-      "name": "Rosenborg",
-      "shortName": "Rosenborg",
-      "id": "8422"
-    },
-    "away": {
-      "name": "Molde",
-      "shortName": "Molde",
-      "id": "9917"
+      "name": "Kristiansund",
+      "shortName": "Kristiansund",
+      "id": "8605"
     },
     "status": {
       "utcTime": "2026-11-29T16:00:00Z",
@@ -6331,7 +6310,53 @@
       "id": "8007"
     },
     "status": {
-      "utcTime": "2026-11-29T16:00:00Z",
+      "utcTime": "2026-11-29T18:15:00Z",
+      "timezone": "UTC",
+      "started": false,
+      "cancelled": false,
+      "finished": false
+    }
+  },
+  {
+    "round": "28",
+    "roundName": 28,
+    "pageUrl": "/matches/hamarkameratene-vs-lillestrom/2d9vaq#5105064",
+    "id": "5105064",
+    "home": {
+      "name": "Lillestrøm",
+      "shortName": "Lillestrøm",
+      "id": "8476"
+    },
+    "away": {
+      "name": "Hamarkameratene",
+      "shortName": "HamKam",
+      "id": "8448"
+    },
+    "status": {
+      "utcTime": "2026-11-30T18:00:00Z",
+      "timezone": "UTC",
+      "started": false,
+      "cancelled": false,
+      "finished": false
+    }
+  },
+  {
+    "round": "29",
+    "roundName": 29,
+    "pageUrl": "/matches/viking-vs-molde/2sqp1z#5105067",
+    "id": "5105067",
+    "home": {
+      "name": "Molde",
+      "shortName": "Molde",
+      "id": "9917"
+    },
+    "away": {
+      "name": "Viking",
+      "shortName": "Viking",
+      "id": "8478"
+    },
+    "status": {
+      "utcTime": "2026-12-04T18:00:00Z",
       "timezone": "UTC",
       "started": false,
       "cancelled": false,
@@ -6354,7 +6379,7 @@
       "id": "8402"
     },
     "status": {
-      "utcTime": "2026-12-06T16:00:00Z",
+      "utcTime": "2026-12-05T15:00:00Z",
       "timezone": "UTC",
       "started": false,
       "cancelled": false,
@@ -6364,20 +6389,43 @@
   {
     "round": "29",
     "roundName": 29,
-    "pageUrl": "/matches/hamarkameratene-vs-sandefjord/2emb2q#5105070",
-    "id": "5105070",
+    "pageUrl": "/matches/valerenga-vs-rosenborg/28cxkh#5105068",
+    "id": "5105068",
     "home": {
-      "name": "Hamarkameratene",
-      "shortName": "HamKam",
-      "id": "8448"
+      "name": "Vålerenga",
+      "shortName": "Vålerenga",
+      "id": "8007"
     },
     "away": {
-      "name": "Sandefjord",
-      "shortName": "Sandefjord",
-      "id": "8609"
+      "name": "Rosenborg",
+      "shortName": "Rosenborg",
+      "id": "8422"
     },
     "status": {
-      "utcTime": "2026-12-06T16:00:00Z",
+      "utcTime": "2026-12-05T17:00:00Z",
+      "timezone": "UTC",
+      "started": false,
+      "cancelled": false,
+      "finished": false
+    }
+  },
+  {
+    "round": "29",
+    "roundName": 29,
+    "pageUrl": "/matches/brann-vs-sarpsborg-08/2dt4ja#5105069",
+    "id": "5105069",
+    "home": {
+      "name": "Sarpsborg 08",
+      "shortName": "Sarpsborg 08",
+      "id": "8509"
+    },
+    "away": {
+      "name": "Brann",
+      "shortName": "Brann",
+      "id": "8468"
+    },
+    "status": {
+      "utcTime": "2026-12-06T13:30:00Z",
       "timezone": "UTC",
       "started": false,
       "cancelled": false,
@@ -6433,52 +6481,6 @@
   {
     "round": "29",
     "roundName": 29,
-    "pageUrl": "/matches/viking-vs-molde/2sqp1z#5105067",
-    "id": "5105067",
-    "home": {
-      "name": "Molde",
-      "shortName": "Molde",
-      "id": "9917"
-    },
-    "away": {
-      "name": "Viking",
-      "shortName": "Viking",
-      "id": "8478"
-    },
-    "status": {
-      "utcTime": "2026-12-06T16:00:00Z",
-      "timezone": "UTC",
-      "started": false,
-      "cancelled": false,
-      "finished": false
-    }
-  },
-  {
-    "round": "29",
-    "roundName": 29,
-    "pageUrl": "/matches/brann-vs-sarpsborg-08/2dt4ja#5105069",
-    "id": "5105069",
-    "home": {
-      "name": "Sarpsborg 08",
-      "shortName": "Sarpsborg 08",
-      "id": "8509"
-    },
-    "away": {
-      "name": "Brann",
-      "shortName": "Brann",
-      "id": "8468"
-    },
-    "status": {
-      "utcTime": "2026-12-06T16:00:00Z",
-      "timezone": "UTC",
-      "started": false,
-      "cancelled": false,
-      "finished": false
-    }
-  },
-  {
-    "round": "29",
-    "roundName": 29,
     "pageUrl": "/matches/tromso-vs-start/2u6xe7#5105071",
     "id": "5105071",
     "home": {
@@ -6502,20 +6504,20 @@
   {
     "round": "29",
     "roundName": 29,
-    "pageUrl": "/matches/valerenga-vs-rosenborg/28cxkh#5105068",
-    "id": "5105068",
+    "pageUrl": "/matches/hamarkameratene-vs-sandefjord/2emb2q#5105070",
+    "id": "5105070",
     "home": {
-      "name": "Vålerenga",
-      "shortName": "Vålerenga",
-      "id": "8007"
+      "name": "Hamarkameratene",
+      "shortName": "HamKam",
+      "id": "8448"
     },
     "away": {
-      "name": "Rosenborg",
-      "shortName": "Rosenborg",
-      "id": "8422"
+      "name": "Sandefjord",
+      "shortName": "Sandefjord",
+      "id": "8609"
     },
     "status": {
-      "utcTime": "2026-12-06T16:00:00Z",
+      "utcTime": "2026-12-06T18:15:00Z",
       "timezone": "UTC",
       "started": false,
       "cancelled": false,
