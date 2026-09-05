@@ -8,7 +8,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Archivo:ital,wdth,wght@0,62..125,400..800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="/styles.css?v=12">
+<link rel="stylesheet" href="/styles.css?v=14">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'><rect width='16' height='16' rx='3' fill='%232a78d6'/><rect x='3' y='9' width='2.5' height='4' fill='white'/><rect x='6.75' y='6' width='2.5' height='7' fill='white'/><rect x='10.5' y='3' width='2.5' height='10' fill='white'/></svg>">
 </head>
 <body>
@@ -109,7 +109,10 @@
             <h2>The finish grid</h2>
             <p>Every team against every finishing position. The deeper the colour, the more likely that finish. Read a row for one club's range; read a column for who is competing for that place. Rows run in the order the model expects clubs to finish, not the current table, so the number beside a club is where it stands today.</p>
           </div>
-          <div class="label" id="grid-count"></div>
+          <div class="grid-controls">
+            <div class="label" id="grid-count"></div>
+            <button type="button" class="grid-anim-btn" id="grid-anim-play" title="Animate the season">▶</button>
+          </div>
         </div>
         <div class="scroller">
           <div class="grid-wrap">
@@ -117,6 +120,9 @@
               <caption class="visually-hidden">Probability that each team finishes in each position</caption>
             </table>
           </div>
+        </div>
+        <div class="grid-anim-bar" id="grid-anim-controls" hidden>
+          <button type="button" id="grid-anim-speed" class="grid-anim-speed" title="Change speed">1×</button>
         </div>
         <div class="legend" id="grid-legend"></div>
       </div>
@@ -127,7 +133,7 @@
         <div class="panel__head">
           <div>
             <h2>Table</h2>
-            <p>Live standings, the rating the model gives each club, and the points it expects them to end on. Pick any club for its focus page.</p>
+            <p>Live standings with form, ELO rating and season trend, expected final points, and title and relegation odds. Pick any club for its focus page.</p>
           </div>
         </div>
         <div class="scroller">
@@ -141,7 +147,7 @@
                   <button type="button" class="sort-btn" data-sort-key="team"><span class="sort-btn__label">Club</span><span class="visually-hidden">, club name</span><span class="sort-btn__caret" aria-hidden="true"></span></button>
                 </th>
                 <th class="num col--extra" scope="col" aria-sort="none" data-sort-col="played">
-                  <button type="button" class="sort-btn" data-sort-key="played"><span class="sort-btn__label">Pl</span><span class="visually-hidden">, matches played</span><span class="sort-btn__caret" aria-hidden="true"></span></button>
+                  <button type="button" class="sort-btn" data-sort-key="played"><span class="sort-btn__label">P</span><span class="visually-hidden">, played</span><span class="sort-btn__caret" aria-hidden="true"></span></button>
                 </th>
                 <th class="num col--extra" scope="col" aria-sort="none" data-sort-col="wins">
                   <button type="button" class="sort-btn" data-sort-key="wins"><span class="sort-btn__label">W</span><span class="visually-hidden">, wins</span><span class="sort-btn__caret" aria-hidden="true"></span></button>
@@ -221,9 +227,13 @@
             <h2>The ladder</h2>
             <p>Both divisions share one rating scale. That is how a promoted champion can start above a club that was just relegated — and it is the only place the two leagues are compared directly.</p>
           </div>
+          <button type="button" class="grid-anim-btn" id="ladder-anim-play" title="Animate the season">▶</button>
         </div>
         <div class="ladder">
           <div id="ladder-lanes" class="ladder__track"></div>
+        </div>
+        <div class="grid-anim-bar" id="ladder-anim-controls" hidden>
+          <button type="button" id="ladder-anim-speed" class="grid-anim-speed" title="Change speed">1×</button>
         </div>
         <div class="legend" id="ladder-legend"></div>
       </div>
@@ -308,6 +318,6 @@
 
 <div id="tooltip" role="tooltip" aria-hidden="true"></div>
 
-<script src="/app.js?v=12"></script>
+<script src="/app.js?v=14"></script>
 </body>
 </html>

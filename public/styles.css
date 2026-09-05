@@ -541,6 +541,64 @@ table.grid tbody th .team-logo {
   flex: none;
 }
 
+/* Grid animation controls */
+.grid-controls {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.grid-anim-btn {
+  background: var(--panel);
+  border: 1px solid var(--rule);
+  border-radius: 4px;
+  padding: 0.2rem 0.5rem;
+  font-size: 0.8125rem;
+  cursor: pointer;
+  color: var(--ink);
+  line-height: 1;
+}
+.grid-anim-btn:hover { background: var(--panel-sunk); }
+
+.grid-anim-bar {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1.25rem;
+  border-top: 1px solid var(--rule);
+  background: var(--panel-sunk);
+}
+
+.grid-anim-speed {
+  background: var(--panel);
+  border: 1px solid var(--rule);
+  border-radius: 4px;
+  padding: 0.2rem 0.6rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+}
+.grid-anim-speed:hover { background: var(--panel-sunk); }
+
+/* Loading overlay on the grid during prefetch */
+.grid-loading {
+  position: relative;
+}
+.grid-loading::after {
+  content: 'Loading matchdays\u2026';
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  background: color-mix(in oklab, var(--panel) 85%, transparent);
+  font-size: 0.875rem;
+  color: var(--ink-muted);
+  border-radius: 4px;
+  z-index: 3;
+}
+
 .legend {
   display: flex;
   flex-wrap: wrap;
@@ -637,7 +695,7 @@ table.standings tbody tr:hover { background: var(--panel-sunk); }
    land at 4.42:1 against the light panel. */
 .sort-btn__caret {
   display: inline-block;
-  min-width: 0.8em;
+  min-width: 0.5em;
   font-size: 0.9em;
   line-height: 1;
 }
@@ -1686,6 +1744,20 @@ footer {
 .team-summary__trend--steady { color: var(--ink-faint); }
 .team-summary__trend--fall { color: var(--outcome-bad); }
 .team-summary__trend--strong-fall { color: var(--outcome-bad); }
+
+/* Rating trend arrow in the standings table — same style, smaller */
+.rating-trend {
+  display: inline-flex;
+  vertical-align: middle;
+  margin-left: 0.25rem;
+  font-size: 0.8rem;
+  line-height: 1;
+}
+.rating-trend--strong-rise { color: var(--outcome-good); }
+.rating-trend--rise { color: var(--outcome-good); }
+.rating-trend--steady { color: var(--ink-faint); }
+.rating-trend--fall { color: var(--outcome-bad); }
+.rating-trend--strong-fall { color: var(--outcome-bad); }
 
 .team-summary__stats {
   display: flex;
