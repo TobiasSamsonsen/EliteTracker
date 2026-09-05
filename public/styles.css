@@ -839,6 +839,7 @@ table.standings .muted { color: var(--ink-muted); }
   position: relative;
   height: 12rem;
   width: 100%;
+  transition: height 0.3s ease;
 }
 
 .ladder__axis {
@@ -881,6 +882,7 @@ table.standings .muted { color: var(--ink-muted); }
   cursor: default;
   z-index: 1;
   transform: translate(-50%, 0);
+  transition: top 0.15s ease-out;
 }
 
 .ladder__team img {
@@ -975,10 +977,10 @@ table.standings .muted { color: var(--ink-muted); }
 .odds__seg[data-outcome="draw"] { background: var(--draw); color: #10171b; }
 .odds__seg[data-outcome="away"] { background: var(--away); }
 
-/* Recent-form blocks in the table: 5 squares, each = 3 matches, gradient by points. */
-.form__chips { display: inline-flex; gap: 2px; justify-content: flex-end; }
+/* Recent-form chip in the table: single rectangle, color by points (0–15). */
+.form__chips { display: inline-flex; }
 .form__chip {
-  width: 1.05rem; height: 1.05rem; border-radius: 3px;
+  width: auto; min-width: 1.05rem; padding: 0 0.25rem; height: 1.05rem; border-radius: 3px;
   display: grid; place-items: center;
   font-size: 0.625rem; font-weight: 700; line-height: 1; color: #fff;
 }
@@ -1250,7 +1252,9 @@ footer {
   font-size: 0.8125rem;
   border-top: 1px solid var(--rule);
   margin-top: 3rem;
+  text-align: center;
 }
+footer a { color: var(--ink); }
 
 /* ---------- tooltip ----------------------------------------------- */
 
@@ -1758,6 +1762,7 @@ footer {
 .rating-trend--steady { color: var(--ink-faint); }
 .rating-trend--fall { color: var(--outcome-bad); }
 .rating-trend--strong-fall { color: var(--outcome-bad); }
+.rating-trend--top { color: var(--band-champion); }
 
 .team-summary__stats {
   display: flex;
