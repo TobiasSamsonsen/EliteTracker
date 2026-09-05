@@ -12,7 +12,7 @@ const pick = (name) => {
   const start = src.indexOf(`function ${name}(`);
   return src.slice(start, src.indexOf('\n}', start) + 2);
 };
-eval(pick('formByTeam') + pick('formBlocks') + pick('formPoints'));
+eval(pick('formByTeam') + pick('formPoints'));
 
 const match = (date, home, away, hg, ag) =>
   ({ date, home, away, home_goals: hg, away_goals: ag });
@@ -25,13 +25,6 @@ test('the away side gets the mirror of the home result', () => {
   ]);
   assert.deepEqual(form.A, ['W', 'D', 'L']);
   assert.deepEqual(form.B, ['L', 'D', 'W']);
-});
-
-test('a short run puts the partial block on the oldest chip', () => {
-  // [W] [WWW] [DLW] -- the leftover single match lands on the oldest chip
-  assert.deepEqual(formBlocks(['W', 'W', 'W', 'W', 'D', 'L', 'W']), [3, 9, 4]);
-  assert.deepEqual(formBlocks([]), []);
-  assert.deepEqual(formBlocks(undefined), []);
 });
 
 /* The compare tool's odds moved from Python into the browser; these pin the

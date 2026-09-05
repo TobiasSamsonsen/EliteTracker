@@ -613,15 +613,18 @@ async function prefetchLadderAnimReports() {
 }
 
 /* Build the ladder DOM once for animation, storing references for in-place
-   updates. Team positions are updated via left% on each frame. */
-function initLadderAnimDOM(reports) {
+   updates. Team positions are updated via left% on each frame.
+   allReports is the full Map<dayIndex, {eliteserien, obosligaen}> so we can
+   precompute the maximum stacking rows across every matchday. */
+function initLadderAnimDOM(allReports) {
   const a = anim;
   const track = $('#ladder-lanes');
   track.replaceChildren();
 
-  // Collect teams from both divisions
+  // Collect teams from first matchday (used for initial DOM)
+  const firstReport = allReports.get(0);
   const teams = [];
-  for (const [slug, report] of Object.entries(reports)) {
+  for (const [slug, report] of Object.entries(firstReport)) {
     for (const row of report.table) {
       teams.push({
         team: row.team,
@@ -648,22 +651,48 @@ function initLadderAnimDOM(reports) {
   teams.sort((a, b) => a.rating - b.rating || a.team.localeCompare(b.team));
   teams.forEach((t, i) => { t._rank = teams.length - i; });
 
-  const rows = [];
-  for (const team of teams) {
-    let placed = false;
-    for (let r = 0; r < rows.length; r++) {
-      const last = rows[r][rows[r].length - 1];
-      if (Math.abs(xPos(last.rating) - xPos(team.rating)) > OVERLAP_PCT) {
-        rows[r].push(team);
-        team._row = r;
-        placed = true;
-        break;
+  /* Highest-rated first: they claim the top rows. A lower-rated team is always
+     placed below every higher-rated team it overlaps, so overtaking teams slide
+     down while the overtaken stay put. */
+  function stackRows(teamList, xFn, overlapPct) {
+    const sorted = [...teamList].sort((a, b) => b.rating - a.rating || a.team.localeCompare(b.team));
+    const placed = [];
+    for (const t of sorted) {
+      let minRow = 0;
+      for (const p of placed) {
+        if (Math.abs(xFn(p.rating) - xFn(t.rating)) <= overlapPct) {
+          minRow = Math.max(minRow, p._row + 1);
+        }
+      }
+      t._row = minRow;
+      placed.push(t);
+    }
+  }
+
+  stackRows(teams, xPos, OVERLAP_PCT);
+
+  // Precompute max rows across every matchday so the track height is fixed
+  let maxRows = 0;
+  for (const team of teams) maxRows = Math.max(maxRows, team._row);
+  maxRows += 1;
+  for (const [, dayReport] of allReports) {
+    const dayTeams = [];
+    for (const [slug, report] of Object.entries(dayReport)) {
+      for (const row of report.table) {
+        dayTeams.push({
+          team: row.team,
+          teamId: row.team_id,
+          rating: row.rating,
+          tier: slug === 'eliteserien' ? 1 : 2,
+        });
       }
     }
-    if (!placed) {
-      team._row = rows.length;
-      rows.push([team]);
-    }
+    const dayRatings = dayTeams.map((t) => t.rating);
+    const dayLow = Math.min(...dayRatings);
+    const dayHigh = Math.max(...dayRatings);
+    const dayXPos = (r) => dayHigh === dayLow ? 50 : 2 + ((r - dayLow) / (dayHigh - dayLow)) * 96;
+    stackRows(dayTeams, dayXPos, OVERLAP_PCT);
+    for (const t of dayTeams) maxRows = Math.max(maxRows, t._row + 1);
   }
 
   // Axis
@@ -678,9 +707,9 @@ function initLadderAnimDOM(reports) {
   }
   track.appendChild(axis);
 
-  // Team elements
-  const rowHeight = rows.length === 1 ? 0 : 2.2;
-  track.style.height = `${4 + Math.max(0, rows.length - 1) * rowHeight}rem`;
+  // Team elements — height uses maxRows so it never resizes during animation
+  const rowHeight = maxRows <= 1 ? 0 : 2.2;
+  track.style.height = `${4 + Math.max(0, maxRows - 1) * rowHeight}rem`;
   const teamMap = new Map();
   for (const team of teams) {
     const wrap = el('div', 'ladder__team');
@@ -739,27 +768,19 @@ function updateLadderAnimFrame(reports) {
   teams.sort((a, b) => a.rating - b.rating || a.team.localeCompare(b.team));
   teams.forEach((t, i) => { t._rank = teams.length - i; });
 
-  // Recompute stacking rows
-  const rows = [];
-  for (const team of teams) {
-    let placed = false;
-    for (let r = 0; r < rows.length; r++) {
-      const last = rows[r][rows[r].length - 1];
-      if (Math.abs(a.ladderXPos(last.rating) - a.ladderXPos(team.rating)) > a.ladderOverPct) {
-        rows[r].push(team);
-        team._row = r;
-        placed = true;
-        break;
+  // Recompute stacking rows — highest-rated first, overtaking goes below
+  const placed = [];
+  for (let i = teams.length - 1; i >= 0; i--) {
+    const team = teams[i];
+    let minRow = 0;
+    for (const p of placed) {
+      if (Math.abs(a.ladderXPos(p.rating) - a.ladderXPos(team.rating)) <= a.ladderOverPct) {
+        minRow = Math.max(minRow, p._row + 1);
       }
     }
-    if (!placed) {
-      team._row = rows.length;
-      rows.push([team]);
-    }
+    team._row = minRow;
+    placed.push(team);
   }
-
-  // Update track height
-  a.ladderTrack.style.height = `${4 + Math.max(0, rows.length - 1) * a.ladderRowHeight}rem`;
 
   // Update team positions
   for (const team of teams) {
@@ -808,7 +829,7 @@ async function ladderAnimStart() {
   const firstReport = anim.reports.get(0);
   if (!firstReport) return;
 
-  initLadderAnimDOM(firstReport);
+  initLadderAnimDOM(anim.reports);
   animUpdateTimeline(report, days);
 
   anim.playing = true;
@@ -984,6 +1005,17 @@ function renderStandings(report) {
     form: formPoints(formByTeamName[row.team]),
   }));
 
+  // Find the team with the highest rating rise for the champion-yellow arrow
+  const trends = new Map();
+  for (const row of rows) {
+    const t = computeRatingTrend(row.team, report);
+    if (t) trends.set(row.team, t);
+  }
+  let topRiser = null;
+  for (const [team, t] of trends) {
+    if (!topRiser || t.diff > topRiser.diff) topRiser = { team, diff: t.diff };
+  }
+
   for (const row of sortedStandings(rows)) {
     const tr = el('tr');
     const band = bandFor(bands, row.position);
@@ -1030,7 +1062,8 @@ function renderStandings(report) {
     ratingCell.appendChild(document.createTextNode(row.rating.toFixed(0)));
     const trend = computeRatingTrend(row.team, report);
     if (trend) {
-      const arrow = el('span', `rating-trend rating-trend--${trend.direction}`);
+      const isTop = topRiser && topRiser.team === row.team && topRiser.diff > 0;
+      const arrow = el('span', `rating-trend rating-trend--${trend.direction}${isTop ? ' rating-trend--top' : ''}`);
       arrow.innerHTML = trend.svg;
       ratingCell.appendChild(arrow);
     }
@@ -1364,22 +1397,18 @@ function renderLadder(reports) {
   // Rank: highest rating = 1
   teams.forEach((t, i) => { t._rank = teams.length - i; });
 
-  const rows = [];
-  for (const team of teams) {
-    let placed = false;
-    for (let r = 0; r < rows.length; r++) {
-      const last = rows[r][rows[r].length - 1];
-      if (Math.abs(xPos(last.rating) - xPos(team.rating)) > OVERLAP_PCT) {
-        rows[r].push(team);
-        team._row = r;
-        placed = true;
-        break;
+  // Highest-rated first: overtaking teams go below
+  const placed = [];
+  for (let i = teams.length - 1; i >= 0; i--) {
+    const team = teams[i];
+    let minRow = 0;
+    for (const p of placed) {
+      if (Math.abs(xPos(p.rating) - xPos(team.rating)) <= OVERLAP_PCT) {
+        minRow = Math.max(minRow, p._row + 1);
       }
     }
-    if (!placed) {
-      team._row = rows.length;
-      rows.push([team]);
-    }
+    team._row = minRow;
+    placed.push(team);
   }
 
   const track = $('#ladder-lanes');
@@ -1398,10 +1427,11 @@ function renderLadder(reports) {
   track.appendChild(axis);
 
   // Teams
-  const rowHeight = rows.length === 1 ? 0 : 2.2; // rem spacing between rows
-  // A narrow track stacks into more rows than a wide one, so the track is
-  // sized to the rows it actually produced rather than to a fixed height.
-  track.style.height = `${4 + Math.max(0, rows.length - 1) * rowHeight}rem`;
+  let maxRow = 0;
+  for (const team of teams) maxRow = Math.max(maxRow, team._row);
+  const numRows = maxRow + 1;
+  const rowHeight = numRows <= 1 ? 0 : 2.2; // rem spacing between rows
+  track.style.height = `${4 + Math.max(0, numRows - 1) * rowHeight}rem`;
   for (const team of teams) {
     const wrap = el('div', 'ladder__team');
     wrap.dataset.tier = String(team.tier);
@@ -1690,16 +1720,8 @@ function formByTeam(results) {
     (map[r.home] ||= []).push(draw ? 'D' : r.home_goals > r.away_goals ? 'W' : 'L');
     (map[r.away] ||= []).push(draw ? 'D' : r.home_goals > r.away_goals ? 'L' : 'W');
   }
-  for (const name in map) map[name] = map[name].slice(-15);
+  for (const name in map) map[name] = map[name].slice(-5);
   return map;
-}
-
-function formBlocks(form) {
-  const blocks = [];
-  for (let i = (form || []).length; i > 0; i -= 3) {
-    blocks.unshift(formPoints(form.slice(Math.max(0, i - 3), i)));
-  }
-  return blocks;
 }
 
 function formPoints(form) {
@@ -1709,15 +1731,17 @@ function formPoints(form) {
 
 function formChipsEl(form) {
   const holder = el('span', 'form__chips');
-  const blocks = formBlocks(form);
-  if (!blocks.length) return holder;
-  for (const pts of blocks) {
-    const chip = el('span', 'form__chip', String(pts));
-    const t = pts / 9;
-    chip.style.background = `color-mix(in oklch, var(--outcome-good) ${Math.round(t * 100)}%, var(--outcome-bad))`;
-    chip.title = `${pts} pts`;
-    holder.appendChild(chip);
-  }
+  const last5 = (form || []).slice(-5);
+  if (!last5.length) return holder;
+  const pts = formPoints(last5);
+  const chip = el('span', 'form__chip', `${pts}/15`);
+  const t = pts / 15;
+  chip.style.background = `color-mix(in oklch, var(--outcome-good) ${Math.round(t * 100)}%, var(--outcome-bad))`;
+  const w = last5.filter((r) => r === 'W').length;
+  const d = last5.filter((r) => r === 'D').length;
+  const l = last5.filter((r) => r === 'L').length;
+  chip.title = `${w}W ${d}D ${l}L`;
+  holder.appendChild(chip);
   return holder;
 }
 
@@ -1981,11 +2005,11 @@ function computeRatingTrend(teamName, report) {
   const diff = current - fiveAgo;
 
   // 5 degrees: strong rise, rise, steady, fall, strong fall
-  if (diff > 20) return { direction: 'strong-rise', svg: trendArrowSVG('strong-rise'), detail: `Strong rise (+${Math.round(diff)})` };
-  if (diff > 5) return { direction: 'rise', svg: trendArrowSVG('rise'), detail: `Rising (+${Math.round(diff)})` };
-  if (diff >= -5) return { direction: 'steady', svg: trendArrowSVG('steady'), detail: `Steady (${diff >= 0 ? '+' : ''}${Math.round(diff)})` };
-  if (diff >= -20) return { direction: 'fall', svg: trendArrowSVG('fall'), detail: `Falling (${Math.round(diff)})` };
-  return { direction: 'strong-fall', svg: trendArrowSVG('strong-fall'), detail: `Strong fall (${Math.round(diff)})` };
+  if (diff > 20) return { direction: 'strong-rise', svg: trendArrowSVG('strong-rise'), detail: `Strong rise (+${Math.round(diff)})`, diff };
+  if (diff > 5) return { direction: 'rise', svg: trendArrowSVG('rise'), detail: `Rising (+${Math.round(diff)})`, diff };
+  if (diff >= -5) return { direction: 'steady', svg: trendArrowSVG('steady'), detail: `Steady (${diff >= 0 ? '+' : ''}${Math.round(diff)})`, diff };
+  if (diff >= -20) return { direction: 'fall', svg: trendArrowSVG('fall'), detail: `Falling (${Math.round(diff)})`, diff };
+  return { direction: 'strong-fall', svg: trendArrowSVG('strong-fall'), detail: `Strong fall (${Math.round(diff)})`, diff };
 }
 
 function trendArrowSVG(direction) {
