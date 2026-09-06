@@ -26,6 +26,7 @@ const state = {
   // Pagination for team focus view.
   teamFixturesPage: 0,
   teamResultsPage: 0,
+  teamSeasonsPage: 0,
   // Finish-grid animation state.
   anim: {
     playing: false,
@@ -1815,12 +1816,14 @@ function renderModelCard(report) {
 
 /* ---------- team: one club's focus view ----------------------------- */
 
-function openTeamView(teamId, fallbackName) {
+function openTeamView(teamId, fallbackName, { push = true } = {}) {
   state.teamFocusId = teamId;
   state.teamFixturesPage = 0;
   state.teamResultsPage = 0;
+  state.teamSeasonsPage = 0;
   state.activeView = 'team';
   markActiveView();
+  if (push) history.pushState({ team: true }, '');
   render();
   window.scrollTo({ top: 0, behavior: 'instant' });
 }
@@ -1874,7 +1877,27 @@ function renderTeamView(report) {
   // 4. Season stats table
   if (career && career.seasons.length) {
     const seasonSection = el('div', 'team-section');
-    seasonSection.appendChild(el('div', 'label', 'Season-by-season'));
+    const header = el('div', 'team-section__header');
+    header.appendChild(el('div', 'label', `Season-by-season — ${career.seasons.length}`));
+    const seasonsDesc = [...career.seasons].reverse();
+    const PAGE = 5;
+    const totalPages = Math.ceil(seasonsDesc.length / PAGE);
+    state.teamSeasonsPage = Math.min(state.teamSeasonsPage, totalPages - 1);
+    const page = state.teamSeasonsPage;
+    if (totalPages > 1) {
+      const nav = el('div', 'team-pagination');
+      const prev = el('button', 'team-pagination__btn', '\u2190');
+      prev.disabled = page >= totalPages - 1;
+      prev.addEventListener('click', () => { state.teamSeasonsPage++; renderTeamView(report); });
+      nav.appendChild(prev);
+      nav.appendChild(el('span', 'team-pagination__label', `${page + 1} / ${totalPages}`));
+      const next = el('button', 'team-pagination__btn', '\u2192');
+      next.disabled = page === 0;
+      next.addEventListener('click', () => { state.teamSeasonsPage--; renderTeamView(report); });
+      nav.appendChild(next);
+      header.appendChild(nav);
+    }
+    seasonSection.appendChild(header);
     const scroller = el('div', 'scroller');
     const table = el('table', 'standings career-table');
     const thead = el('thead');
@@ -1888,7 +1911,7 @@ function renderTeamView(report) {
     thead.appendChild(headRow);
     table.appendChild(thead);
     const tbody = el('tbody');
-    for (const record of [...career.seasons].reverse()) {
+    for (const record of seasonsDesc.slice(page * PAGE, (page + 1) * PAGE)) {
       const tr = el('tr');
       tr.appendChild(el('td', 'pos', String(record.season)));
       tr.appendChild(el('td', 'club', record.league_name));
@@ -2591,6 +2614,13 @@ function wire() {
     resolveTheme();
     render();
   });
+
+  window.addEventListener('popstate', () => {
+    if (!state.teamFocusId) return;
+    state.teamFocusId = null;
+    applyViewParameter();
+    render();
+  });
 }
 
 /* ?league=obosligaen&team=Viking makes any view linkable. Team is matched on
@@ -2627,7 +2657,7 @@ function applyTeamParameter() {
       (team) => team.team.toLowerCase() === career.toLowerCase()
     );
     if (club) {
-      openTeamView(club.team_id, club.team);
+      openTeamView(club.team_id, club.team, { push: false });
       return;
     }
   }
@@ -2643,7 +2673,7 @@ function applyTeamParameter() {
       (team) => team.team.toLowerCase() === wanted.toLowerCase()
     );
     if (match) {
-      openTeamView(match.team_id, match.team);
+      openTeamView(match.team_id, match.team, { push: false });
       return;
     }
     // Also check careers for cross-season teams
@@ -2651,7 +2681,7 @@ function applyTeamParameter() {
       (team) => team.team.toLowerCase() === wanted.toLowerCase()
     );
     if (careerMatch) {
-      openTeamView(careerMatch.team_id, careerMatch.team);
+      openTeamView(careerMatch.team_id, careerMatch.team, { push: false });
       return;
     }
   }
@@ -3164,6 +3194,7 @@ async function boot() {
     applyLeagueParameter();
     applySortParameter();
     applyViewParameter();
+    applyTeamParameter();
     render();
 
     const params = new URLSearchParams(window.location.search);
@@ -3172,8 +3203,6 @@ async function boot() {
 
     const wantedAsof = params.get('asof');
     if (wantedAsof) await rewindTo(wantedAsof);
-
-    applyTeamParameter();
     // The browser resolved any #fragment while the content was still hidden,
     // so re-run it now that the sections exist.
     if (window.location.hash) {
