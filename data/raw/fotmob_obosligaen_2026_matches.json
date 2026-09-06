@@ -4975,12 +4975,8 @@
       "id": "7937"
     },
     "status": {
-      "utcTime": "2026-09-05T14:00:00.000Z",
-      "halfs": {
-        "firstHalfStarted": "05.09.2026 16:01:25",
-        "secondHalfStarted": "05.09.2026 17:03:13"
-      },
-      "periodLength": 45,
+      "utcTime": "2026-09-05T14:00:00Z",
+      "timezone": "UTC",
       "finished": true,
       "started": true,
       "cancelled": false,
@@ -5010,12 +5006,8 @@
       "id": "8616"
     },
     "status": {
-      "utcTime": "2026-09-05T14:00:00.000Z",
-      "halfs": {
-        "firstHalfStarted": "05.09.2026 16:02:09",
-        "secondHalfStarted": "05.09.2026 17:04:08"
-      },
-      "periodLength": 45,
+      "utcTime": "2026-09-05T14:00:00Z",
+      "timezone": "UTC",
       "finished": true,
       "started": true,
       "cancelled": false,
@@ -5045,12 +5037,8 @@
       "id": "9812"
     },
     "status": {
-      "utcTime": "2026-09-05T14:00:00.000Z",
-      "halfs": {
-        "firstHalfStarted": "05.09.2026 16:02:09",
-        "secondHalfStarted": "05.09.2026 17:04:02"
-      },
-      "periodLength": 45,
+      "utcTime": "2026-09-05T14:00:00Z",
+      "timezone": "UTC",
       "finished": true,
       "started": true,
       "cancelled": false,
@@ -5080,12 +5068,8 @@
       "id": "8180"
     },
     "status": {
-      "utcTime": "2026-09-05T14:00:00.000Z",
-      "halfs": {
-        "firstHalfStarted": "05.09.2026 16:02:09",
-        "secondHalfStarted": "05.09.2026 17:07:09"
-      },
-      "periodLength": 45,
+      "utcTime": "2026-09-05T14:00:00Z",
+      "timezone": "UTC",
       "finished": true,
       "started": true,
       "cancelled": false,
@@ -5115,12 +5099,8 @@
       "id": "6563"
     },
     "status": {
-      "utcTime": "2026-09-05T14:00:00.000Z",
-      "halfs": {
-        "firstHalfStarted": "05.09.2026 16:02:09",
-        "secondHalfStarted": "05.09.2026 17:03:53"
-      },
-      "periodLength": 45,
+      "utcTime": "2026-09-05T14:00:00Z",
+      "timezone": "UTC",
       "finished": true,
       "started": true,
       "cancelled": false,
@@ -5150,13 +5130,8 @@
       "id": "8531"
     },
     "status": {
-      "utcTime": "2026-09-05T14:00:00.000Z",
-      "numberOfAwayRedCards": 1,
-      "halfs": {
-        "firstHalfStarted": "05.09.2026 16:02:09",
-        "secondHalfStarted": "05.09.2026 17:06:59"
-      },
-      "periodLength": 45,
+      "utcTime": "2026-09-05T14:00:00Z",
+      "timezone": "UTC",
       "finished": true,
       "started": true,
       "cancelled": false,
@@ -5186,14 +5161,19 @@
       "id": "8405"
     },
     "status": {
-      "utcTime": "2026-09-05T18:00:00.000Z",
-      "halfs": {
-        "firstHalfStarted": "05.09.2026 20:00:00"
-      },
-      "periodLength": 45,
-      "started": false,
+      "utcTime": "2026-09-05T18:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
       "cancelled": false,
-      "finished": false
+      "awarded": false,
+      "scoreStr": "2 - 3",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
     }
   },
   {
@@ -5212,11 +5192,23 @@
       "id": "4722"
     },
     "status": {
-      "utcTime": "2026-09-06T15:00:00Z",
-      "timezone": "UTC",
-      "started": false,
+      "utcTime": "2026-09-06T15:00:00.000Z",
+      "halfs": {
+        "firstHalfStarted": "06.09.2026 17:01:13",
+        "secondHalfStarted": "06.09.2026 18:02:45"
+      },
+      "periodLength": 45,
+      "finished": true,
+      "started": true,
       "cancelled": false,
-      "finished": false
+      "awarded": false,
+      "scoreStr": "1 - 1",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
     }
   },
   {
