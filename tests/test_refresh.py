@@ -117,6 +117,7 @@ class TestRefreshMatches:
             tmp_path,
             fetch=lambda slug, season, *, force: raw_payload(),
             today=TODAY,
+            refresh_guard=False,
         )
         assert {result.season for result in results} == {2021}
         assert (tmp_path / "eliteserien_2021_matches.json").exists()
