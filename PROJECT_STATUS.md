@@ -401,6 +401,11 @@ list is a scratchpad, not a commitment — each is picked up only when wanted.
       rating and delta (read from the `careers` replay). Navigated by ISO week.
       The `results` payload already carried everything else; rating swings are
       computed client-side from `careers`.
+- [x] **Next Up mobile fix** — fixture cards now stack vertically on mobile (≤760px).
+      The odds column previously had a fixed `min-width: 280px` that pushed team names
+      off-screen on phone-sized viewports. Changed the breakpoint from 480px to 760px
+      to match the main mobile breakpoint used for navigation and tables, so odds flex
+      to fit and team names stay visible. Scoreline chips wrap naturally.
 - [ ] **Team focus page** — fold the career modal, a club's finish-grid row, and its
       recent + upcoming fixtures into one dedicated view (deep-linkable, like
       `?team=`).
