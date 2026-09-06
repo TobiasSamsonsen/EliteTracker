@@ -428,6 +428,19 @@ section { margin-block: clamp(1.5rem, 3vw, 2.25rem); }
 
 .grid-wrap { padding: 1.25rem; }
 
+/* The .scroller wrapper gets horizontal scroll + scroll-snap on mobile.
+   The sticky club column (tbody th) stays pinned on the left. */
+@media (max-width: 760px) {
+  .grid-wrap .scroller {
+    scroll-snap-type: x mandatory;
+    -webkit-overflow-scrolling: touch;
+  }
+  table.grid {
+    scroll-snap-align: start;
+  }
+  .cell { scroll-snap-align: start; }
+}
+
 table.grid {
   border-collapse: separate;
   border-spacing: 2px; /* the 2px surface gap between cells */
@@ -920,6 +933,25 @@ table.standings .muted { color: var(--ink-muted); }
 .ladder__team[data-tier="1"] img { border: 2px solid var(--tier-1); }
 .ladder__team[data-tier="2"] img { border: 2px solid var(--tier-2); }
 
+/* Touch support for ladder tooltips: tap to show/hide */
+@media (pointer: coarse) {
+  .ladder__team { cursor: pointer; }
+  .ladder__team::after { display: none; }
+  .ladder__team:focus-visible::after,
+  .ladder__team[data-tip-visible]::after {
+    display: block;
+    opacity: 1;
+  }
+  .ladder__team:focus-visible { z-index: 10; }
+}
+
+/* Mobile: prevent crest pileup by capping overlap and reducing crest size */
+@media (max-width: 500px) {
+  .ladder__track { min-height: 14rem; }
+  .ladder__team img { width: 1.25rem; height: 1.25rem; }
+  .ladder__team::after { font-size: 0.6875rem; padding: 0.25rem 0.4rem; }
+}
+
 /* ---------- fixtures ---------------------------------------------- */
 
 .fixtures { display: flex; flex-direction: column; }
@@ -977,6 +1009,14 @@ table.standings .muted { color: var(--ink-muted); }
 .odds__seg[data-outcome="draw"] { background: var(--draw); color: #10171b; }
 .odds__seg[data-outcome="away"] { background: var(--away); }
 
+/* Mobile: let fixture odds and lines stack instead of fixed min-width */
+@media (max-width: 480px) {
+  .fixture__odds-col { min-width: 0; max-width: none; flex: 1; }
+  .fixture__lines { min-width: 0; max-width: none; }
+  .played-card__matchup { flex-direction: column; gap: 0.5rem; }
+  .played-card__side { justify-content: center; }
+}
+
 /* Recent-form chip in the table: single rectangle, color by points (0–15). */
 .form__chips { display: inline-flex; }
 .form__chip {
@@ -1020,6 +1060,8 @@ table.standings .muted { color: var(--ink-muted); }
   z-index: 50;
   background: var(--panel); border: 1px solid var(--rule); border-radius: var(--radius);
   box-shadow: var(--shadow); padding: 0.4rem; max-height: 60vh; overflow-y: auto;
+  max-width: calc(100vw - 2rem);
+  left: max(1rem, min(var(--menu-left), calc(100vw - 1rem - var(--menu-width))));
 }
 .compare__option {
   display: flex; align-items: center; gap: 0.7rem; width: 100%;
@@ -2012,3 +2054,17 @@ footer a { color: var(--ink); }
 
 .timeline.is-past { border-color: var(--tier-1); }
 .timeline.is-past .timeline__head p { color: var(--tier-1); }
+
+/* Team focus: Season Shape responsiveness */
+@media (max-width: 480px) {
+  .team-section .chart .tick { font-size: 9px; }
+  .team-section .chart .axis-title { font-size: 9px; }
+  .team-section .chart .crosshair { stroke-width: 1.5; }
+}
+
+/* Prevent horizontal overflow on very narrow screens */
+@media (max-width: 360px) {
+  .grid-wrap { padding: 0.75rem; }
+  .panel__head { padding: 0.75rem 0.875rem; }
+  .hero { padding-inline: 0.75rem; }
+}

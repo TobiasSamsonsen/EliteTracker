@@ -14,11 +14,11 @@ const state = {
   rewindTimer: null,
   // Key of the league+season the compare pickers were last populated for.
   compareKey: '',
-  // Active view tab: 'grid', 'table', 'ladder', 'next-up', 'played', 'shape', 'compare', 'team', 'model'
+  // Active view tab: 'grid', 'table', 'ladder', 'next-up', 'played', 'compare', 'team', 'model'
   // The finish grid is 16 columns wide and cannot be read on a phone without
   // scrolling it sideways; the table now fits, so that is where a phone lands.
   // ?view= still wins -- see applyViewParameter.
-  activeView: window.matchMedia('(max-width: 760px)').matches ? 'table' : 'grid',
+  activeView: window.matchMedia('(max-width: 760px)').matches ? 'grid' : 'grid',
   // Team focus: team_id when viewing the team tab, null otherwise.
   teamFocusId: null,
   // Pagination for played results.
@@ -1448,6 +1448,23 @@ function renderLadder(reports) {
     track.appendChild(wrap);
   }
 
+  // Touch/click support for ladder tooltips on mobile (event delegation on track)
+  if (coarsePointer.matches) {
+    track.addEventListener('click', (e) => {
+      const wrap = e.target.closest('.ladder__team');
+      if (!wrap) return;
+      e.stopPropagation();
+      track.querySelectorAll('.ladder__team[data-tip-visible]').forEach((other) => {
+        if (other !== wrap) other.removeAttribute('data-tip-visible');
+      });
+      wrap.toggleAttribute('data-tip-visible');
+    });
+    // Click outside to close
+    document.addEventListener('click', () => {
+      track.querySelectorAll('.ladder__team[data-tip-visible]').forEach((w) => w.removeAttribute('data-tip-visible'));
+    }, { passive: true });
+  }
+
   // Legend
   const legend = $('#ladder-legend');
   legend.replaceChildren();
@@ -1874,7 +1891,12 @@ function renderTeamView(report) {
     drawTeamChart(career);
   }
 
-  // 4. Season stats table
+  // 4. Season shape for this team
+  if (report.history) {
+    renderTeamShape(teamId, report, content);
+  }
+
+  // 5. Season stats table
   if (career && career.seasons.length) {
     const seasonSection = el('div', 'team-section');
     const header = el('div', 'team-section__header');
@@ -2315,6 +2337,167 @@ function renderTeamResults(teamId, teamName, report, container) {
   container.appendChild(section);
 }
 
+/* ---------- team focus: season shape -------------------------------- */
+
+function renderTeamShape(teamId, report, container) {
+  const history = report.history;
+  if (!history) return;
+
+  const team = history.teams.find((t) => t.team_id === teamId);
+  if (!team) return;
+
+  const section = el('div', 'team-section');
+  section.appendChild(el('div', 'label', 'Season shape'));
+
+  const chart = svgEl('svg', { class: 'chart', role: 'img' });
+  chart.setAttribute('aria-label', `Stacked area chart: ${team.team}'s probability of each finishing position`);
+  section.appendChild(chart);
+
+  container.appendChild(section);
+  drawTeamShape(report, team, chart);
+}
+
+function drawTeamShape(report, team, chart) {
+  const history = report.history;
+  const count = report.table.length;
+  const snapshots = history.dates.length;
+
+  const width = 900;
+  const height = 280;
+  const pad = { top: 10, right: 12, bottom: 30, left: 40 };
+  const plotWidth = width - pad.left - pad.right;
+  const plotHeight = height - pad.top - pad.bottom;
+
+  chart.setAttribute('viewBox', `0 0 ${width} ${height}`);
+  chart.replaceChildren();
+
+  const times = history.dates.map((iso) => Date.parse(`${iso}T12:00:00Z`));
+  const firstTime = times[0];
+  const lastTime = times[times.length - 1];
+  const span = lastTime - firstTime || 1;
+  const x = (index) => pad.left + ((times[index] - firstTime) / span) * plotWidth;
+  const y = (cumulative) => pad.top + cumulative * plotHeight;
+
+  const cumulative = history.dates.map((_, index) => {
+    const running = [0];
+    for (let position = 0; position < count; position += 1) {
+      running.push(running[position] + team.positions[index][position]);
+    }
+    return running;
+  });
+
+  for (let gridline = 0; gridline <= 4; gridline += 1) {
+    const value = gridline / 4;
+    chart.appendChild(
+      svgEl('line', { class: 'grid-line', x1: pad.left, x2: width - pad.right, y1: y(value), y2: y(value) })
+    );
+    const label = svgEl('text', { class: 'tick', x: pad.left - 6, y: y(value) + 3, 'text-anchor': 'end' });
+    label.textContent = `${100 - gridline * 100 / 4}%`;
+    chart.appendChild(label);
+  }
+
+  for (let position = 1; position <= count; position += 1) {
+    const upper = [];
+    const lower = [];
+    for (let index = 0; index < snapshots; index += 1) {
+      upper.push(`${x(index)},${y(cumulative[index][position - 1])}`);
+      lower.push(`${x(index)},${y(cumulative[index][position])}`);
+    }
+    const band = svgEl('polygon', {
+      class: 'band',
+      points: [...upper, ...lower.reverse()].join(' '),
+      fill: positionColor(position, count),
+    });
+
+    const bandLabel = bandFor(report.league.bands, position);
+    band.addEventListener('pointerenter', (event) => {
+      const latest = team.positions[snapshots - 1][position - 1];
+      showTooltip(
+        event,
+        `<b>${ordinal(position)}</b>${bandLabel ? ` · ${bandLabel.label}` : ''}<br>` +
+          `now ${pct(latest, 1)}`
+      );
+    });
+    band.addEventListener('pointermove', moveTooltip);
+    band.addEventListener('pointerleave', hideTooltip);
+    chart.appendChild(band);
+  }
+
+  chart.appendChild(
+    svgEl('line', { class: 'axis-line', x1: pad.left, x2: width - pad.right, y1: y(1), y2: y(1) })
+  );
+
+  let lastMonth = null;
+  history.dates.forEach((iso, index) => {
+    const month = iso.slice(0, 7);
+    if (month === lastMonth) return;
+    lastMonth = month;
+    const label = svgEl('text', { class: 'tick', x: x(index), y: height - pad.bottom + 12, 'text-anchor': 'middle' });
+    label.textContent = new Date(`${iso}T12:00:00Z`).toLocaleDateString('en-GB', { month: 'short' });
+    chart.appendChild(label);
+    chart.appendChild(
+      svgEl('line', { class: 'grid-line', x1: x(index), x2: x(index), y1: pad.top, y2: y(1) })
+    );
+  });
+
+  const axisTitle = svgEl('text', { class: 'axis-title', x: pad.left, y: height - 4 });
+  axisTitle.textContent = `${history.dates[0].slice(0, 4)} season`;
+  chart.appendChild(axisTitle);
+
+  attachTeamShapeCrosshair(chart, report, team, { x, pad, plotWidth, plotHeight, width, height, snapshots, count });
+}
+
+function attachTeamShapeCrosshair(chart, report, team, geometry) {
+  const { x, pad, plotWidth, plotHeight, width, snapshots, count } = geometry;
+  const history = report.history;
+  const line = svgEl('line', { class: 'crosshair', y1: pad.top, y2: pad.top + plotHeight, x1: -10, x2: -10 });
+  line.style.opacity = '0';
+  chart.appendChild(line);
+
+  const relegation = report.league.bands.find((band) => band.tone === 'relegation');
+  const top = report.league.bands.find((band) => band.tone === 'top');
+  const totalMatches = report.model.matches_played + report.model.matches_remaining;
+
+  const surface = svgEl('rect', {
+    x: pad.left, y: pad.top, width: plotWidth, height: plotHeight, fill: 'transparent',
+  });
+  surface.addEventListener('pointermove', (event) => {
+    const box = chart.getBoundingClientRect();
+    const scale = width / box.width;
+    const localX = (event.clientX - box.left) * scale;
+    let index = 0;
+    for (let candidate = 1; candidate < snapshots; candidate += 1) {
+      if (Math.abs(x(candidate) - localX) < Math.abs(x(index) - localX)) index = candidate;
+    }
+
+    line.setAttribute('x1', x(index));
+    line.setAttribute('x2', x(index));
+    line.style.opacity = '1';
+
+    const probabilities = team.positions[index];
+    const best = mostLikely(probabilities);
+    const sum = (band) => (band ? probabilities.slice(band.first - 1, band.last).reduce((a, b) => a + b, 0) : 0);
+    const when = new Date(`${history.dates[index]}T12:00:00Z`).toLocaleDateString('en-GB', {
+      day: 'numeric', month: 'short', year: 'numeric',
+    });
+    const played = history.matches_played[index];
+
+    showTooltip(
+      event,
+      `<b>${team.team}</b> · ${played === 0 ? 'pre-season' : when}<br>` +
+        `${played} of ${totalMatches} matches played<br>` +
+        `Rating ${team.ratings[index]}<br>` +
+        `Most likely ${ordinal(best + 1)} (${pct(probabilities[best])})<br>` +
+        `${top ? `Top ${top.last}: ${pct(sum(top))} · ` : ''}Bottom ${count - (relegation ? relegation.first - 1 : count)}: ${pct(sum(relegation))}`
+    );
+  });
+  surface.addEventListener('pointerleave', () => {
+    line.style.opacity = '0';
+    hideTooltip();
+  });
+  chart.appendChild(surface);
+}
+
 
 /* ---------- season rewind ------------------------------------------
    The slider moves the entire page, not just one panel: the server rebuilds
@@ -2453,7 +2636,7 @@ function render() {
   }
 
   // Hide the rewind timeline on views where it isn't relevant
-  const noRewind = new Set(['shape', 'next-up', 'compare', 'played', 'model', 'team']);
+  const noRewind = new Set(['next-up', 'compare', 'played', 'model', 'team']);
   const timelineSection = document.querySelector('.timeline-section');
   if (timelineSection) timelineSection.hidden = noRewind.has(state.activeView);
 
@@ -2474,9 +2657,6 @@ function render() {
         renderGrid(report);
         renderGridLegend();
       }
-      break;
-    case 'shape':
-      renderShape(report);
       break;
     case 'ladder':
       if (!anim.playing) renderLadder(state.reports);
@@ -2585,10 +2765,6 @@ function wire() {
   const ladderAnimSpeed = $('#ladder-anim-speed');
   if (ladderAnimSpeed) ladderAnimSpeed.addEventListener('click', ladderAnimToggleSpeed);
 
-  $('#shape-team').addEventListener('change', (event) => {
-    drawShape(state.reports[state.league], event.target.value);
-  });
-
   for (const button of document.querySelectorAll('#standings .sort-btn')) {
     button.addEventListener('click', () => toggleSort(button.dataset.sortKey));
   }
@@ -2686,17 +2862,6 @@ function applyTeamParameter() {
     }
   }
 
-  // Fallback: set the shape dropdown (legacy behavior)
-  const report = state.reports[state.league];
-  const match = report.history.teams.find(
-    (team) => team.team.toLowerCase() === wanted.toLowerCase()
-  );
-  if (match) {
-    $('#shape-team').value = match.team_id;
-    drawShape(report, match.team_id);
-  }
-}
-
 /* Three controls can name the current view -- the desktop strip, the phone bar
    and the More sheet -- and every one of them carries the same data-view, so
    they are all marked from here. The strip scrolls sideways once it outgrows
@@ -2731,7 +2896,7 @@ function closeSheet() {
    shows the requested view instead of the default table. */
 function applyViewParameter() {
   const view = new URLSearchParams(window.location.search).get('view');
-  const validViews = new Set(['table', 'grid', 'shape', 'ladder', 'next-up', 'compare', 'played', 'team', 'model']);
+  const validViews = new Set(['table', 'grid', 'ladder', 'next-up', 'compare', 'played', 'team', 'model']);
   if (view && validViews.has(view)) {
     state.activeView = view;
     markActiveView();
@@ -2969,6 +3134,8 @@ function openCompareMenu(box, side, report) {
   menu.style.top = `${rect.bottom + 6}px`;
   menu.style.left = `${rect.left}px`;
   menu.style.width = `${rect.width}px`;
+  menu.style.setProperty('--menu-left', `${rect.left}px`);
+  menu.style.setProperty('--menu-width', `${rect.width}px`);
   document.body.appendChild(menu);
   compareMenuEl = menu;
   // Defer so the click that opened the menu doesn't immediately close it.
