@@ -38,7 +38,6 @@
       <button type="button" data-view="ladder" aria-pressed="false">Ladder</button>
       <button type="button" data-view="next-up" aria-pressed="false">Next Up</button>
       <button type="button" data-view="played" aria-pressed="false">Played Results</button>
-      <button type="button" data-view="shape" aria-pressed="false">Season Shape</button>
       <button type="button" data-view="compare" aria-pressed="false">Compare Clubs</button>
       <button type="button" data-view="model" aria-pressed="false">Model Card</button>
     </div>
@@ -48,8 +47,8 @@
 <!-- Phone navigation. The same data-view attribute the top strip uses, so the
      existing click wiring, ?view= deep links and active marking all apply. -->
 <nav class="mobilebar" id="mobilebar" aria-label="Choose a view">
+    <button type="button" class="mobilebar__item" data-view="grid" aria-pressed="true"><svg class="mobilebar__icon" viewBox="0 0 16 16" aria-hidden="true" focusable="false" fill="currentColor"><rect x="1.5" y="1.5" width="3.6" height="3.6" rx=".5"/><rect x="6.2" y="1.5" width="3.6" height="3.6" rx=".5"/><rect x="10.9" y="1.5" width="3.6" height="3.6" rx=".5"/><rect x="1.5" y="6.2" width="3.6" height="3.6" rx=".5"/><rect x="6.2" y="6.2" width="3.6" height="3.6" rx=".5"/><rect x="10.9" y="6.2" width="3.6" height="3.6" rx=".5"/><rect x="1.5" y="10.9" width="3.6" height="3.6" rx=".5"/><rect x="6.2" y="10.9" width="3.6" height="3.6" rx=".5"/><rect x="10.9" y="10.9" width="3.6" height="3.6" rx=".5"/></svg><span>Grid</span></button>
     <button type="button" class="mobilebar__item" data-view="table" aria-pressed="false"><svg class="mobilebar__icon" viewBox="0 0 16 16" aria-hidden="true" focusable="false" fill="currentColor"><rect x="1.5" y="2.5" width="13" height="2.2" rx=".6"/><rect x="1.5" y="6.9" width="13" height="2.2" rx=".6"/><rect x="1.5" y="11.3" width="13" height="2.2" rx=".6"/></svg><span>Table</span></button>
-    <button type="button" class="mobilebar__item" data-view="grid" aria-pressed="false"><svg class="mobilebar__icon" viewBox="0 0 16 16" aria-hidden="true" focusable="false" fill="currentColor"><rect x="1.5" y="1.5" width="3.6" height="3.6" rx=".5"/><rect x="6.2" y="1.5" width="3.6" height="3.6" rx=".5"/><rect x="10.9" y="1.5" width="3.6" height="3.6" rx=".5"/><rect x="1.5" y="6.2" width="3.6" height="3.6" rx=".5"/><rect x="6.2" y="6.2" width="3.6" height="3.6" rx=".5"/><rect x="10.9" y="6.2" width="3.6" height="3.6" rx=".5"/><rect x="1.5" y="10.9" width="3.6" height="3.6" rx=".5"/><rect x="6.2" y="10.9" width="3.6" height="3.6" rx=".5"/><rect x="10.9" y="10.9" width="3.6" height="3.6" rx=".5"/></svg><span>Grid</span></button>
     <button type="button" class="mobilebar__item" data-view="next-up" aria-pressed="false"><svg class="mobilebar__icon" viewBox="0 0 16 16" aria-hidden="true" focusable="false" fill="currentColor"><rect x="1.8" y="3" width="12.4" height="11.2" rx="1.6" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M1.8 6.6h12.4" stroke="currentColor" stroke-width="1.6"/><path d="M5.2 1.6v2.6M10.8 1.6v2.6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg><span>Next up</span></button>
     <button type="button" class="mobilebar__item" data-view="played" aria-pressed="false"><svg class="mobilebar__icon" viewBox="0 0 16 16" aria-hidden="true" focusable="false" fill="currentColor"><path d="M2 8.4l3.6 3.6L14 3.6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg><span>Results</span></button>
     <button type="button" class="mobilebar__item mobilebar__more" id="more-button"
@@ -61,7 +60,6 @@
   <div class="sheet__panel" role="dialog" aria-modal="true" aria-label="More views">
     <div class="sheet__grip" aria-hidden="true"></div>
       <button type="button" class="sheet__item" data-view="ladder" aria-pressed="false">Ladder</button>
-      <button type="button" class="sheet__item" data-view="shape" aria-pressed="false">Season shape</button>
       <button type="button" class="sheet__item" data-view="compare" aria-pressed="false">Compare clubs</button>
       <button type="button" class="sheet__item" data-view="model" aria-pressed="false">Model card</button>
   </div>
@@ -194,31 +192,7 @@
       </div>
     </section>
 
-    <section data-section="shape">
-      <div class="panel">
-        <div class="panel__head">
-          <div>
-            <h2>Season shape</h2>
-            <p>One club's whole range of outcomes across the season. Each band is a finishing position — deepest for first, palest for last — and its thickness is how likely that place looked on the day. The season is re-simulated from scratch at each date, using only results known by then. The axis is the calendar, not the round number — rounds are not played in order.</p>
-          </div>
-          <div class="label" id="shape-rounds"></div>
-        </div>
-        <div class="shape">
-          <div class="shape__controls">
-            <label class="label" for="shape-team">Club</label>
-            <select id="shape-team"></select>
-            <span class="ramp-legend">
-              <span class="label">1st</span>
-              <span class="ramp-legend__bar" role="img" aria-label="Colour ramp from first place to last place"></span>
-              <span class="label" id="ramp-last">16th</span>
-            </span>
-          </div>
-          <svg class="chart" id="shape-chart" role="img" aria-labelledby="shape-desc"></svg>
-          <p class="visually-hidden" id="shape-desc"></p>
-          <div class="shape__summary" id="shape-summary"></div>
-        </div>
-      </div>
-    </section>
+    
 
     <section data-section="ladder">
       <div class="panel">
