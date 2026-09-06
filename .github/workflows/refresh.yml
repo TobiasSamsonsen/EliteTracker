@@ -1,18 +1,20 @@
 # Scheduled refresh of the current-season match data, off the developer's machine.
 #
-# Runs daily; fetches the latest results from fotmob (no API key), normalizes and
-# validates them, and -- if anything changed -- commits the updated
-# data/normalized files and pushes with REFRESH_PAT. That push re-triggers the
-# existing firebase-hosting-merge.yml, which rebuilds (only the current season on
-# a cache hit) and deploys to Firebase. Days with no new results produce no diff,
-# so no commit and no deploy happen.
+# Runs every 30 minutes; the refresh guard in elitetracker.refresh skips leagues
+# whose normalized file already has no unplayed matches with a past kickoff, so
+# fotmob is only hit when there are results to pick up. Days with no new results
+# produce no diff, so no commit and no deploy happen.
+#
+# Note: GitHub Actions schedule triggers are best-effort and routinely delayed
+# by 1–2+ hours.  The guard means the delay only affects freshness, not
+# correctness — it reads the existing data and checks kickoff times, not the
+# clock.
 
 name: Scheduled data refresh
 
 on:
   schedule:
-    # 21:30 UTC == 23:30 CEST / 22:30 CET: every Norwegian matchday is done by then.
-    - cron: "30 21 * * *"
+    - cron: "0,30 * * * *"
   workflow_dispatch:
 
 permissions:
