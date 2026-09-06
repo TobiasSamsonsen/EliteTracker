@@ -1009,8 +1009,9 @@ table.standings .muted { color: var(--ink-muted); }
 .odds__seg[data-outcome="draw"] { background: var(--draw); color: #10171b; }
 .odds__seg[data-outcome="away"] { background: var(--away); }
 
-/* Mobile: let fixture odds and lines stack instead of fixed min-width */
-@media (max-width: 480px) {
+/* Mobile: let fixture odds and lines stack instead of fixed min-width.
+   Uses 760px to match the main mobile breakpoint (navigation, tables, etc.). */
+@media (max-width: 760px) {
   .fixture__odds-col { min-width: 0; max-width: none; flex: 1; }
   .fixture__lines { min-width: 0; max-width: none; }
   .played-card__matchup { flex-direction: column; gap: 0.5rem; }
