@@ -2861,6 +2861,7 @@ function applyTeamParameter() {
       return;
     }
   }
+}
 
 /* Three controls can name the current view -- the desktop strip, the phone bar
    and the More sheet -- and every one of them carries the same data-view, so
