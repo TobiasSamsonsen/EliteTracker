@@ -297,7 +297,11 @@ function renderGrid(report) {
     label.scope = 'row';
     label.appendChild(el('span', 'pos', String(row.position)));
     const crest = teamLogo(row.team_id, row.team);
-    if (crest) label.appendChild(crest);
+    if (crest) {
+      crest.addEventListener('click', () => openTeamView(row.team_id, row.team));
+      crest.style.cursor = 'pointer';
+      label.appendChild(crest);
+    }
     const nameBtn = el('button', 'grid__team-name', row.team);
     nameBtn.addEventListener('click', () => openTeamView(row.team_id, row.team));
     label.appendChild(nameBtn);
@@ -641,100 +645,188 @@ function initLadderAnimDOM(allReports) {
   const low = Math.min(...ratings);
   const high = Math.max(...ratings);
 
-  function xPos(rating) {
-    if (high === low) return 50;
-    return 2 + ((rating - low) / (high - low)) * 96;
-  }
-
   const trackWidth = track.clientWidth || 1000;
-  const crestPx = parseFloat(getComputedStyle(document.documentElement).fontSize) * 1.5;
-  const OVERLAP_PCT = Math.min(50, ((crestPx + 2) / trackWidth) * 100);
+  const vertical = trackWidth < 500;
   teams.sort((a, b) => a.rating - b.rating || a.team.localeCompare(b.team));
   teams.forEach((t, i) => { t._rank = teams.length - i; });
 
-  /* Highest-rated first: they claim the top rows. A lower-rated team is always
-     placed below every higher-rated team it overlaps, so overtaking teams slide
-     down while the overtaken stay put. */
-  function stackRows(teamList, xFn, overlapPct) {
-    const sorted = [...teamList].sort((a, b) => b.rating - a.rating || a.team.localeCompare(b.team));
-    const placed = [];
-    for (const t of sorted) {
-      let minRow = 0;
-      for (const p of placed) {
-        if (Math.abs(xFn(p.rating) - xFn(t.rating)) <= overlapPct) {
-          minRow = Math.max(minRow, p._row + 1);
+  // --- Vertical (mobile) layout ---
+  if (vertical) {
+    const AXIS_WIDTH = 2.5;
+    const ICON_SIZE = 1.5;
+    const COL_WIDTH = 1.8;
+    const VERT_PAD = 1;
+    const TRACK_CONTENT = Math.max(20, (high - low) / 50 * 6);
+    const OVERLAP_REM = ICON_SIZE + 0.2;
+
+    function yPos(rating) {
+      if (high === low) return VERT_PAD + TRACK_CONTENT / 2;
+      return VERT_PAD + TRACK_CONTENT - ((rating - low) / (high - low)) * TRACK_CONTENT;
+    }
+
+    function stackCols(teamList) {
+      const sorted = [...teamList].sort((a, b) => b.rating - a.rating || a.team.localeCompare(b.team));
+      const placed = [];
+      for (const t of sorted) {
+        let minCol = 0;
+        for (const p of placed) {
+          if (Math.abs(yPos(p.rating) - yPos(t.rating)) <= OVERLAP_REM) {
+            minCol = Math.max(minCol, p._col + 1);
+          }
+        }
+        t._col = minCol;
+        placed.push(t);
+      }
+    }
+
+    stackCols(teams);
+
+    // Precompute max columns across every matchday
+    let maxCols = 0;
+    for (const team of teams) maxCols = Math.max(maxCols, team._col);
+    for (const [, dayReport] of allReports) {
+      const dayTeams = [];
+      for (const [slug, report] of Object.entries(dayReport)) {
+        for (const row of report.table) {
+          dayTeams.push({
+            team: row.team, teamId: row.team_id,
+            rating: row.rating, tier: slug === 'eliteserien' ? 1 : 2,
+          });
         }
       }
-      t._row = minRow;
-      placed.push(t);
+      stackCols(dayTeams);
+      for (const t of dayTeams) maxCols = Math.max(maxCols, t._col);
     }
-  }
 
-  stackRows(teams, xPos, OVERLAP_PCT);
+    // Track sizing
+    track.style.height = `${VERT_PAD * 2 + TRACK_CONTENT}rem`;
+    track.style.width = `${AXIS_WIDTH + (maxCols + 1) * COL_WIDTH + 0.5}rem`;
 
-  // Precompute max rows across every matchday so the track height is fixed
-  let maxRows = 0;
-  for (const team of teams) maxRows = Math.max(maxRows, team._row);
-  maxRows += 1;
-  for (const [, dayReport] of allReports) {
-    const dayTeams = [];
-    for (const [slug, report] of Object.entries(dayReport)) {
-      for (const row of report.table) {
-        dayTeams.push({
-          team: row.team,
-          teamId: row.team_id,
-          rating: row.rating,
-          tier: slug === 'eliteserien' ? 1 : 2,
-        });
+    // Axis ticks on the left
+    const axis = el('div', 'ladder__axis');
+    const tickStep = 50;
+    const firstTick = Math.ceil(low / tickStep) * tickStep;
+    for (let r = firstTick; r <= high; r += tickStep) {
+      const tick = el('div', 'ladder__tick');
+      tick.style.top = `${yPos(r)}rem`;
+      tick.appendChild(el('span', '', String(Math.round(r))));
+      axis.appendChild(tick);
+    }
+    track.appendChild(axis);
+
+    // Teams
+    const teamMap = new Map();
+    for (const team of teams) {
+      const wrap = el('div', 'ladder__team');
+      wrap.dataset.tier = String(team.tier);
+      wrap.dataset.tip = `#${team._rank}  ${team.team}  ${Math.round(team.rating)}`;
+      wrap.style.top = `${yPos(team.rating)}rem`;
+      wrap.style.left = `${AXIS_WIDTH + team._col * COL_WIDTH}rem`;
+      const img = el('img');
+      img.src = `logos/${team.teamId}.png`;
+      img.alt = team.team;
+      wrap.appendChild(img);
+      track.appendChild(wrap);
+      teamMap.set(team.teamId, wrap);
+    }
+
+    a.ladderTeams = teamMap;
+    a.ladderData = teams;
+    a.ladderTrack = track;
+    a.ladderLow = low;
+    a.ladderHigh = high;
+    a.ladderVertical = true;
+    a.ladderAxisWidth = AXIS_WIDTH;
+    a.ladderColWidth = COL_WIDTH;
+    a.ladderOverlapRem = OVERLAP_REM;
+    a.ladderVertPad = VERT_PAD;
+    a.ladderTrackContent = TRACK_CONTENT;
+
+  // --- Horizontal (desktop) layout ---
+  } else {
+    function xPos(rating) {
+      if (high === low) return 50;
+      return 2 + ((rating - low) / (high - low)) * 96;
+    }
+
+    const crestPx = parseFloat(getComputedStyle(document.documentElement).fontSize) * 1.5;
+    const OVERLAP_PCT = Math.min(50, ((crestPx + 2) / trackWidth) * 100);
+
+    function stackRows(teamList) {
+      const sorted = [...teamList].sort((a, b) => b.rating - a.rating || a.team.localeCompare(b.team));
+      const placed = [];
+      for (const t of sorted) {
+        let minRow = 0;
+        for (const p of placed) {
+          if (Math.abs(xPos(p.rating) - xPos(t.rating)) <= OVERLAP_PCT) {
+            minRow = Math.max(minRow, p._row + 1);
+          }
+        }
+        t._row = minRow;
+        placed.push(t);
       }
     }
-    const dayRatings = dayTeams.map((t) => t.rating);
-    const dayLow = Math.min(...dayRatings);
-    const dayHigh = Math.max(...dayRatings);
-    const dayXPos = (r) => dayHigh === dayLow ? 50 : 2 + ((r - dayLow) / (dayHigh - dayLow)) * 96;
-    stackRows(dayTeams, dayXPos, OVERLAP_PCT);
-    for (const t of dayTeams) maxRows = Math.max(maxRows, t._row + 1);
-  }
 
-  // Axis
-  const axis = el('div', 'ladder__axis');
-  const tickStep = 50;
-  const firstTick = Math.ceil(low / tickStep) * tickStep;
-  for (let r = firstTick; r <= high; r += tickStep) {
-    const tick = el('div', 'ladder__tick');
-    tick.style.left = `${xPos(r)}%`;
-    tick.appendChild(el('span', '', String(Math.round(r))));
-    axis.appendChild(tick);
-  }
-  track.appendChild(axis);
+    stackRows(teams);
 
-  // Team elements — height uses maxRows so it never resizes during animation
-  const rowHeight = maxRows <= 1 ? 0 : 2.2;
-  track.style.height = `${4 + Math.max(0, maxRows - 1) * rowHeight}rem`;
-  const teamMap = new Map();
-  for (const team of teams) {
-    const wrap = el('div', 'ladder__team');
-    wrap.dataset.tier = String(team.tier);
-    wrap.dataset.tip = `#${team._rank}  ${team.team}  ${Math.round(team.rating)}`;
-    wrap.style.left = `${xPos(team.rating)}%`;
-    wrap.style.top = `${0.5 + team._row * rowHeight}rem`;
-    const img = el('img');
-    img.src = `logos/${team.teamId}.png`;
-    img.alt = team.team;
-    wrap.appendChild(img);
-    track.appendChild(wrap);
-    teamMap.set(team.teamId, wrap);
-  }
+    // Precompute max rows across every matchday
+    let maxRows = 0;
+    for (const team of teams) maxRows = Math.max(maxRows, team._row);
+    for (const [, dayReport] of allReports) {
+      const dayTeams = [];
+      for (const [slug, report] of Object.entries(dayReport)) {
+        for (const row of report.table) {
+          dayTeams.push({
+            team: row.team, teamId: row.team_id,
+            rating: row.rating, tier: slug === 'eliteserien' ? 1 : 2,
+          });
+        }
+      }
+      stackRows(dayTeams);
+      for (const t of dayTeams) maxRows = Math.max(maxRows, t._row + 1);
+    }
 
-  a.ladderTeams = teamMap;
-  a.ladderData = teams;
-  a.ladderXPos = xPos;
-  a.ladderTrackWidth = trackWidth;
-  a.ladderRowHeight = rowHeight;
-  a.ladderTrack = track;
-  a.ladderLow = low;
-  a.ladderHigh = high;
-  a.ladderOverPct = OVERLAP_PCT;
+    // Axis
+    const axis = el('div', 'ladder__axis');
+    const tickStep = 50;
+    const firstTick = Math.ceil(low / tickStep) * tickStep;
+    for (let r = firstTick; r <= high; r += tickStep) {
+      const tick = el('div', 'ladder__tick');
+      tick.style.left = `${xPos(r)}%`;
+      tick.appendChild(el('span', '', String(Math.round(r))));
+      axis.appendChild(tick);
+    }
+    track.appendChild(axis);
+
+    // Teams
+    const rowHeight = maxRows <= 1 ? 0 : 2.2;
+    track.style.height = `${4 + Math.max(0, maxRows - 1) * rowHeight}rem`;
+    const teamMap = new Map();
+    for (const team of teams) {
+      const wrap = el('div', 'ladder__team');
+      wrap.dataset.tier = String(team.tier);
+      wrap.dataset.tip = `#${team._rank}  ${team.team}  ${Math.round(team.rating)}`;
+      wrap.style.left = `${xPos(team.rating)}%`;
+      wrap.style.top = `${0.5 + team._row * rowHeight}rem`;
+      const img = el('img');
+      img.src = `logos/${team.teamId}.png`;
+      img.alt = team.team;
+      wrap.appendChild(img);
+      track.appendChild(wrap);
+      teamMap.set(team.teamId, wrap);
+    }
+
+    a.ladderTeams = teamMap;
+    a.ladderData = teams;
+    a.ladderXPos = xPos;
+    a.ladderTrackWidth = trackWidth;
+    a.ladderRowHeight = rowHeight;
+    a.ladderTrack = track;
+    a.ladderLow = low;
+    a.ladderHigh = high;
+    a.ladderOverPct = OVERLAP_PCT;
+    a.ladderVertical = false;
+  }
 }
 
 /* Update team positions in place based on interpolated ratings. */
@@ -750,16 +842,12 @@ function updateLadderAnimFrame(reports) {
     }
   }
 
-  // Recompute x range from interpolated ratings
+  // Recompute range from interpolated ratings
   const allRatings = [...ratings.values()];
   const low = Math.min(...allRatings);
   const high = Math.max(...allRatings);
   a.ladderLow = low;
   a.ladderHigh = high;
-  a.ladderXPos = (rating) => {
-    if (high === low) return 50;
-    return 2 + ((rating - low) / (high - low)) * 96;
-  };
 
   // Update data and sort for stacking
   const teams = a.ladderData;
@@ -769,43 +857,97 @@ function updateLadderAnimFrame(reports) {
   teams.sort((a, b) => a.rating - b.rating || a.team.localeCompare(b.team));
   teams.forEach((t, i) => { t._rank = teams.length - i; });
 
-  // Recompute stacking rows — highest-rated first, overtaking goes below
-  const placed = [];
-  for (let i = teams.length - 1; i >= 0; i--) {
-    const team = teams[i];
-    let minRow = 0;
-    for (const p of placed) {
-      if (Math.abs(a.ladderXPos(p.rating) - a.ladderXPos(team.rating)) <= a.ladderOverPct) {
-        minRow = Math.max(minRow, p._row + 1);
-      }
+  if (a.ladderVertical) {
+    // --- Vertical (mobile) ---
+    function yPos(rating) {
+      if (high === low) return a.ladderVertPad + a.ladderTrackContent / 2;
+      return a.ladderVertPad + a.ladderTrackContent - ((rating - low) / (high - low)) * a.ladderTrackContent;
     }
-    team._row = minRow;
-    placed.push(team);
-  }
 
-  // Update team positions
-  for (const team of teams) {
-    const wrap = a.ladderTeams.get(team.teamId);
-    if (!wrap) continue;
-    wrap.style.left = `${a.ladderXPos(team.rating)}%`;
-    wrap.style.top = `${0.5 + team._row * a.ladderRowHeight}rem`;
-    wrap.dataset.tip = `#${team._rank}  ${team.team}  ${Math.round(team.rating)}`;
-  }
+    // Recompute stacking columns
+    const placed = [];
+    for (let i = teams.length - 1; i >= 0; i--) {
+      const team = teams[i];
+      let minCol = 0;
+      for (const p of placed) {
+        if (Math.abs(yPos(p.rating) - yPos(team.rating)) <= a.ladderOverlapRem) {
+          minCol = Math.max(minCol, p._col + 1);
+        }
+      }
+      team._col = minCol;
+      placed.push(team);
+    }
 
-  // Rebuild axis
-  const track = a.ladderTrack;
-  const oldAxis = track.querySelector('.ladder__axis');
-  if (oldAxis) oldAxis.remove();
-  const axis = el('div', 'ladder__axis');
-  const tickStep = 50;
-  const firstTick = Math.ceil(low / tickStep) * tickStep;
-  for (let r = firstTick; r <= high; r += tickStep) {
-    const tick = el('div', 'ladder__tick');
-    tick.style.left = `${a.ladderXPos(r)}%`;
-    tick.appendChild(el('span', '', String(Math.round(r))));
-    axis.appendChild(tick);
+    // Update team positions
+    for (const team of teams) {
+      const wrap = a.ladderTeams.get(team.teamId);
+      if (!wrap) continue;
+      wrap.style.top = `${yPos(team.rating)}rem`;
+      wrap.style.left = `${a.ladderAxisWidth + team._col * a.ladderColWidth}rem`;
+      wrap.dataset.tip = `#${team._rank}  ${team.team}  ${Math.round(team.rating)}`;
+    }
+
+    // Rebuild axis ticks
+    const track = a.ladderTrack;
+    const oldAxis = track.querySelector('.ladder__axis');
+    if (oldAxis) oldAxis.remove();
+    const axis = el('div', 'ladder__axis');
+    const tickStep = 50;
+    const firstTick = Math.ceil(low / tickStep) * tickStep;
+    for (let r = firstTick; r <= high; r += tickStep) {
+      const tick = el('div', 'ladder__tick');
+      tick.style.top = `${yPos(r)}rem`;
+      tick.appendChild(el('span', '', String(Math.round(r))));
+      axis.appendChild(tick);
+    }
+    track.appendChild(axis);
+
+  } else {
+    // --- Horizontal (desktop) ---
+    const xPosFn = (rating) => {
+      if (high === low) return 50;
+      return 2 + ((rating - low) / (high - low)) * 96;
+    };
+    a.ladderXPos = xPosFn;
+
+    // Recompute stacking rows
+    const placed = [];
+    for (let i = teams.length - 1; i >= 0; i--) {
+      const team = teams[i];
+      let minRow = 0;
+      for (const p of placed) {
+        if (Math.abs(xPosFn(p.rating) - xPosFn(team.rating)) <= a.ladderOverPct) {
+          minRow = Math.max(minRow, p._row + 1);
+        }
+      }
+      team._row = minRow;
+      placed.push(team);
+    }
+
+    // Update team positions
+    for (const team of teams) {
+      const wrap = a.ladderTeams.get(team.teamId);
+      if (!wrap) continue;
+      wrap.style.left = `${xPosFn(team.rating)}%`;
+      wrap.style.top = `${0.5 + team._row * a.ladderRowHeight}rem`;
+      wrap.dataset.tip = `#${team._rank}  ${team.team}  ${Math.round(team.rating)}`;
+    }
+
+    // Rebuild axis ticks
+    const track = a.ladderTrack;
+    const oldAxis = track.querySelector('.ladder__axis');
+    if (oldAxis) oldAxis.remove();
+    const axis = el('div', 'ladder__axis');
+    const tickStep = 50;
+    const firstTick = Math.ceil(low / tickStep) * tickStep;
+    for (let r = firstTick; r <= high; r += tickStep) {
+      const tick = el('div', 'ladder__tick');
+      tick.style.left = `${xPosFn(r)}%`;
+      tick.appendChild(el('span', '', String(Math.round(r))));
+      axis.appendChild(tick);
+    }
+    track.appendChild(axis);
   }
-  track.appendChild(axis);
 }
 
 async function ladderAnimStart() {
@@ -1381,71 +1523,130 @@ function renderLadder(reports) {
   const low = Math.min(...ratings);
   const high = Math.max(...ratings);
 
-  function xPos(rating) {
-    if (high === low) return 50;
-    return 2 + ((rating - low) / (high - low)) * 96; // 2%–98% keeps logos inside clip
-  }
-
-  // Two crests overlap when they are closer than one crest apart. That is a
-  // pixel fact, so the threshold is measured off the real track rather than
-  // fixed at a percentage: 3% of a 1150px desktop track clears a 24px crest,
-  // 3% of a 390px phone track is 12px and the logos pile up.
   const trackWidth = $('#ladder-lanes').clientWidth || 1000;
-  const crestPx = parseFloat(getComputedStyle(document.documentElement).fontSize) * 1.5;
-  const OVERLAP_PCT = Math.min(50, ((crestPx + 2) / trackWidth) * 100);
+  const vertical = trackWidth < 500;
   teams.sort((a, b) => a.rating - b.rating || a.team.localeCompare(b.team));
 
   // Rank: highest rating = 1
   teams.forEach((t, i) => { t._rank = teams.length - i; });
 
-  // Highest-rated first: overtaking teams go below
-  const placed = [];
-  for (let i = teams.length - 1; i >= 0; i--) {
-    const team = teams[i];
-    let minRow = 0;
-    for (const p of placed) {
-      if (Math.abs(xPos(p.rating) - xPos(team.rating)) <= OVERLAP_PCT) {
-        minRow = Math.max(minRow, p._row + 1);
-      }
+  // --- Vertical (mobile) layout ---
+  if (vertical) {
+    const AXIS_WIDTH = 2.5;
+    const ICON_SIZE = 1.5;
+    const COL_WIDTH = 1.8;
+    const VERT_PAD = 1;
+    const TRACK_CONTENT = Math.max(20, (high - low) / 50 * 6);
+    const OVERLAP_REM = ICON_SIZE + 0.2;
+
+    function yPos(rating) {
+      if (high === low) return VERT_PAD + TRACK_CONTENT / 2;
+      return VERT_PAD + TRACK_CONTENT - ((rating - low) / (high - low)) * TRACK_CONTENT;
     }
-    team._row = minRow;
-    placed.push(team);
-  }
 
-  const track = $('#ladder-lanes');
-  track.replaceChildren();
+    // Stack: highest-rated first, overlapping teams go to the right
+    const placed = [];
+    for (let i = teams.length - 1; i >= 0; i--) {
+      const team = teams[i];
+      let minCol = 0;
+      for (const p of placed) {
+        if (Math.abs(yPos(p.rating) - yPos(team.rating)) <= OVERLAP_REM) {
+          minCol = Math.max(minCol, p._col + 1);
+        }
+      }
+      team._col = minCol;
+      placed.push(team);
+    }
 
-  // Axis
-  const axis = el('div', 'ladder__axis');
-  const tickStep = 50;
-  const firstTick = Math.ceil(low / tickStep) * tickStep;
-  for (let r = firstTick; r <= high; r += tickStep) {
-    const tick = el('div', 'ladder__tick');
-    tick.style.left = `${xPos(r)}%`;
-    tick.appendChild(el('span', '', String(Math.round(r))));
-    axis.appendChild(tick);
-  }
-  track.appendChild(axis);
+    const track = $('#ladder-lanes');
+    track.replaceChildren();
 
-  // Teams
-  let maxRow = 0;
-  for (const team of teams) maxRow = Math.max(maxRow, team._row);
-  const numRows = maxRow + 1;
-  const rowHeight = numRows <= 1 ? 0 : 2.2; // rem spacing between rows
-  track.style.height = `${4 + Math.max(0, numRows - 1) * rowHeight}rem`;
-  for (const team of teams) {
-    const wrap = el('div', 'ladder__team');
-    wrap.dataset.tier = String(team.tier);
-    wrap.dataset.tip = `#${team._rank}  ${team.team}  ${Math.round(team.rating)}`;
-    wrap.style.left = `${xPos(team.rating)}%`;
-    wrap.style.top = `${0.5 + team._row * rowHeight}rem`;
+    let maxCol = 0;
+    for (const team of teams) maxCol = Math.max(maxCol, team._col);
+    track.style.height = `${VERT_PAD * 2 + TRACK_CONTENT}rem`;
+    track.style.width = `${AXIS_WIDTH + (maxCol + 1) * COL_WIDTH + 0.5}rem`;
 
-    const img = el('img');
-    img.src = `logos/${team.teamId}.png`;
-    img.alt = team.team;
-    wrap.appendChild(img);
+    // Axis ticks on the left side
+    const axis = el('div', 'ladder__axis');
+    const tickStep = 50;
+    const firstTick = Math.ceil(low / tickStep) * tickStep;
+    for (let r = firstTick; r <= high; r += tickStep) {
+      const tick = el('div', 'ladder__tick');
+      tick.style.top = `${yPos(r)}rem`;
+      tick.appendChild(el('span', '', String(Math.round(r))));
+      axis.appendChild(tick);
+    }
+    track.appendChild(axis);
 
-    track.appendChild(wrap);
+    // Teams
+    for (const team of teams) {
+      const wrap = el('div', 'ladder__team');
+      wrap.dataset.tier = String(team.tier);
+      wrap.dataset.tip = `#${team._rank}  ${team.team}  ${Math.round(team.rating)}`;
+      wrap.style.top = `${yPos(team.rating)}rem`;
+      wrap.style.left = `${AXIS_WIDTH + team._col * COL_WIDTH}rem`;
+      const img = el('img');
+      img.src = `logos/${team.teamId}.png`;
+      img.alt = team.team;
+      wrap.appendChild(img);
+      track.appendChild(wrap);
+    }
+
+  // --- Horizontal (desktop) layout ---
+  } else {
+    function xPos(rating) {
+      if (high === low) return 50;
+      return 2 + ((rating - low) / (high - low)) * 96;
+    }
+
+    const crestPx = parseFloat(getComputedStyle(document.documentElement).fontSize) * 1.5;
+    const OVERLAP_PCT = Math.min(50, ((crestPx + 2) / trackWidth) * 100);
+
+    // Highest-rated first: overtaking teams go below
+    const placed = [];
+    for (let i = teams.length - 1; i >= 0; i--) {
+      const team = teams[i];
+      let minRow = 0;
+      for (const p of placed) {
+        if (Math.abs(xPos(p.rating) - xPos(team.rating)) <= OVERLAP_PCT) {
+          minRow = Math.max(minRow, p._row + 1);
+        }
+      }
+      team._row = minRow;
+      placed.push(team);
+    }
+
+    const track = $('#ladder-lanes');
+    track.replaceChildren();
+
+    const axis = el('div', 'ladder__axis');
+    const tickStep = 50;
+    const firstTick = Math.ceil(low / tickStep) * tickStep;
+    for (let r = firstTick; r <= high; r += tickStep) {
+      const tick = el('div', 'ladder__tick');
+      tick.style.left = `${xPos(r)}%`;
+      tick.appendChild(el('span', '', String(Math.round(r))));
+      axis.appendChild(tick);
+    }
+    track.appendChild(axis);
+
+    let maxRow = 0;
+    for (const team of teams) maxRow = Math.max(maxRow, team._row);
+    const numRows = maxRow + 1;
+    const rowHeight = numRows <= 1 ? 0 : 2.2;
+    track.style.height = `${4 + Math.max(0, numRows - 1) * rowHeight}rem`;
+    for (const team of teams) {
+      const wrap = el('div', 'ladder__team');
+      wrap.dataset.tier = String(team.tier);
+      wrap.dataset.tip = `#${team._rank}  ${team.team}  ${Math.round(team.rating)}`;
+      wrap.style.left = `${xPos(team.rating)}%`;
+      wrap.style.top = `${0.5 + team._row * rowHeight}rem`;
+      const img = el('img');
+      img.src = `logos/${team.teamId}.png`;
+      img.alt = team.team;
+      wrap.appendChild(img);
+      track.appendChild(wrap);
+    }
   }
 
   // Touch/click support for ladder tooltips on mobile (event delegation on track)
@@ -1498,7 +1699,11 @@ function buildFixtureCard(fixture) {
   homeNameBtn.addEventListener('click', () => openTeamView(fixture.home_id, fixture.home));
   homeTeam.appendChild(homeNameBtn);
   const homeCrest = teamLogo(fixture.home_id, fixture.home);
-  if (homeCrest) homeTeam.appendChild(homeCrest);
+  if (homeCrest) {
+    homeCrest.addEventListener('click', () => openTeamView(fixture.home_id, fixture.home));
+    homeCrest.style.cursor = 'pointer';
+    homeTeam.appendChild(homeCrest);
+  }
   homeSide.appendChild(homeTeam);
   matchup.appendChild(homeSide);
 
@@ -1531,7 +1736,11 @@ function buildFixtureCard(fixture) {
   const awaySide = el('div', 'played-card__side played-card__side--away');
   const awayTeam = el('span', 'played-card__team');
   const awayCrest = teamLogo(fixture.away_id, fixture.away);
-  if (awayCrest) awayTeam.appendChild(awayCrest);
+  if (awayCrest) {
+    awayCrest.addEventListener('click', () => openTeamView(fixture.away_id, fixture.away));
+    awayCrest.style.cursor = 'pointer';
+    awayTeam.appendChild(awayCrest);
+  }
   const awayNameBtn = el('button', 'played-card__team-name', fixture.away);
   awayNameBtn.addEventListener('click', () => openTeamView(fixture.away_id, fixture.away));
   awayTeam.appendChild(awayNameBtn);
@@ -1694,7 +1903,11 @@ function renderPlayedResults(report) {
     homeNameBtn.addEventListener('click', () => openTeamView(match.home_id, match.home));
     homeTeam.appendChild(homeNameBtn);
     const homeCrest = teamLogo(match.home_id, match.home);
-    if (homeCrest) homeTeam.appendChild(homeCrest);
+    if (homeCrest) {
+      homeCrest.addEventListener('click', () => openTeamView(match.home_id, match.home));
+      homeCrest.style.cursor = 'pointer';
+      homeTeam.appendChild(homeCrest);
+    }
     homeSide.appendChild(homeTeam);
 
     const score = el('div', 'played-card__score');
@@ -1704,7 +1917,11 @@ function renderPlayedResults(report) {
     const awaySide = el('div', 'played-card__side played-card__side--away');
     const awayTeam = el('span', 'played-card__team');
     const awayCrest = teamLogo(match.away_id, match.away);
-    if (awayCrest) awayTeam.appendChild(awayCrest);
+    if (awayCrest) {
+      awayCrest.addEventListener('click', () => openTeamView(match.away_id, match.away));
+      awayCrest.style.cursor = 'pointer';
+      awayTeam.appendChild(awayCrest);
+    }
     const awayNameBtn = el('button', 'played-card__team-name', match.away);
     awayNameBtn.addEventListener('click', () => openTeamView(match.away_id, match.away));
     awayTeam.appendChild(awayNameBtn);
