@@ -1284,6 +1284,16 @@ table.standings .muted { color: var(--ink-muted); }
   .played-card__score { font-size: 1.125rem; }
   .played-card__rating-value { font-size: 0.9375rem; }
   .played-card__delta { font-size: 0.75rem; }
+
+  .compare__team { padding: 0.6rem 0.7rem; gap: 0.4rem; }
+  .compare__team .team-logo { width: 36px; height: 36px; }
+  .compare__team-side { font-size: 0.6rem; }
+  .compare__team-name { font-size: 0.95rem; }
+  .compare__team-rating { font-size: 1.3rem; }
+  .compare__swap-center { width: 2rem; height: 2rem; font-size: 1.1rem; }
+  .compare__pick-hint { font-size: 0.6rem; padding-top: 0.4rem; }
+  .compare__scoreline { font-size: 0.85rem; padding: 0.25rem 0.6rem; min-width: 4rem; gap: 0.3rem; }
+  .compare__scoreline-prob { font-size: 0.7rem; }
 }
 
 /* ---------- model card -------------------------------------------- */
@@ -1603,12 +1613,13 @@ footer a { color: var(--ink); }
      and season the second. */
   .masthead__inner {
     display: grid;
-    grid-template-columns: 1fr auto;
+    grid-template-columns: 1fr auto auto;
     gap: 0.45rem 0.75rem;
     min-height: 0;
   }
   .wordmark { grid-area: 1 / 1; margin-right: 0; }
   .switch--theme { grid-area: 1 / 2; }
+  .switch--lang { grid-area: 1 / 3; }
   .switch--league { grid-area: 2 / 1; justify-self: start; }
   .season-select { grid-area: 2 / 2; }
 
@@ -1692,6 +1703,7 @@ footer a { color: var(--ink); }
 .team-section { padding: 1.25rem; border-top: 1px solid var(--rule); }
 .team-section:first-child { border-top: 0; }
 .team-section > .label { margin-bottom: 0.6rem; }
+.team-shape--loading { height: 280px; display: flex; align-items: center; justify-content: center; color: var(--ink-muted); }
 
 .team-section__header {
   display: flex;

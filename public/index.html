@@ -29,17 +29,22 @@
       <button type="button" data-theme-choice="light" aria-pressed="false">Light</button>
       <button type="button" data-theme-choice="dark" aria-pressed="false">Dark</button>
     </div>
+
+    <div class="switch switch--lang" role="group" aria-label="Language">
+      <button type="button" data-lang="no" aria-pressed="true">NO</button>
+      <button type="button" data-lang="en" aria-pressed="false">EN</button>
+    </div>
   </div>
 
   <div class="shell masthead__views">
     <div class="switch" role="group" aria-label="Choose a view">
-      <button type="button" data-view="grid" aria-pressed="true">Finish Grid</button>
-      <button type="button" data-view="table" aria-pressed="false">Table</button>
-      <button type="button" data-view="ladder" aria-pressed="false">Ladder</button>
-      <button type="button" data-view="next-up" aria-pressed="false">Next Up</button>
-      <button type="button" data-view="played" aria-pressed="false">Played Results</button>
-      <button type="button" data-view="compare" aria-pressed="false">Compare Clubs</button>
-      <button type="button" data-view="model" aria-pressed="false">Model Card</button>
+      <button type="button" data-view="grid" aria-pressed="true"><span data-i18n="tab.grid">Finish Grid</span></button>
+      <button type="button" data-view="table" aria-pressed="false"><span data-i18n="tab.table">Table</span></button>
+      <button type="button" data-view="ladder" aria-pressed="false"><span data-i18n="tab.ladder">Ladder</span></button>
+      <button type="button" data-view="next-up" aria-pressed="false"><span data-i18n="tab.next">Next Up</span></button>
+      <button type="button" data-view="played" aria-pressed="false"><span data-i18n="tab.played">Played Results</span></button>
+      <button type="button" data-view="compare" aria-pressed="false"><span data-i18n="tab.compare">Compare Clubs</span></button>
+      <button type="button" data-view="model" aria-pressed="false"><span data-i18n="tab.model">Model Card</span></button>
     </div>
   </div>
 </header>
@@ -47,21 +52,21 @@
 <!-- Phone navigation. The same data-view attribute the top strip uses, so the
      existing click wiring, ?view= deep links and active marking all apply. -->
 <nav class="mobilebar" id="mobilebar" aria-label="Choose a view">
-    <button type="button" class="mobilebar__item" data-view="grid" aria-pressed="true"><svg class="mobilebar__icon" viewBox="0 0 16 16" aria-hidden="true" focusable="false" fill="currentColor"><rect x="1.5" y="1.5" width="3.6" height="3.6" rx=".5"/><rect x="6.2" y="1.5" width="3.6" height="3.6" rx=".5"/><rect x="10.9" y="1.5" width="3.6" height="3.6" rx=".5"/><rect x="1.5" y="6.2" width="3.6" height="3.6" rx=".5"/><rect x="6.2" y="6.2" width="3.6" height="3.6" rx=".5"/><rect x="10.9" y="6.2" width="3.6" height="3.6" rx=".5"/><rect x="1.5" y="10.9" width="3.6" height="3.6" rx=".5"/><rect x="6.2" y="10.9" width="3.6" height="3.6" rx=".5"/><rect x="10.9" y="10.9" width="3.6" height="3.6" rx=".5"/></svg><span>Grid</span></button>
-    <button type="button" class="mobilebar__item" data-view="table" aria-pressed="false"><svg class="mobilebar__icon" viewBox="0 0 16 16" aria-hidden="true" focusable="false" fill="currentColor"><rect x="1.5" y="2.5" width="13" height="2.2" rx=".6"/><rect x="1.5" y="6.9" width="13" height="2.2" rx=".6"/><rect x="1.5" y="11.3" width="13" height="2.2" rx=".6"/></svg><span>Table</span></button>
-    <button type="button" class="mobilebar__item" data-view="next-up" aria-pressed="false"><svg class="mobilebar__icon" viewBox="0 0 16 16" aria-hidden="true" focusable="false" fill="currentColor"><rect x="1.8" y="3" width="12.4" height="11.2" rx="1.6" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M1.8 6.6h12.4" stroke="currentColor" stroke-width="1.6"/><path d="M5.2 1.6v2.6M10.8 1.6v2.6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg><span>Next up</span></button>
-    <button type="button" class="mobilebar__item" data-view="played" aria-pressed="false"><svg class="mobilebar__icon" viewBox="0 0 16 16" aria-hidden="true" focusable="false" fill="currentColor"><path d="M2 8.4l3.6 3.6L14 3.6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg><span>Results</span></button>
+    <button type="button" class="mobilebar__item" data-view="grid" aria-pressed="true"><svg class="mobilebar__icon" viewBox="0 0 16 16" aria-hidden="true" focusable="false" fill="currentColor"><rect x="1.5" y="1.5" width="3.6" height="3.6" rx=".5"/><rect x="6.2" y="1.5" width="3.6" height="3.6" rx=".5"/><rect x="10.9" y="1.5" width="3.6" height="3.6" rx=".5"/><rect x="1.5" y="6.2" width="3.6" height="3.6" rx=".5"/><rect x="6.2" y="6.2" width="3.6" height="3.6" rx=".5"/><rect x="10.9" y="6.2" width="3.6" height="3.6" rx=".5"/><rect x="1.5" y="10.9" width="3.6" height="3.6" rx=".5"/><rect x="6.2" y="10.9" width="3.6" height="3.6" rx=".5"/><rect x="10.9" y="10.9" width="3.6" height="3.6" rx=".5"/></svg><span data-i18n="mob.grid">Grid</span></button>
+    <button type="button" class="mobilebar__item" data-view="table" aria-pressed="false"><svg class="mobilebar__icon" viewBox="0 0 16 16" aria-hidden="true" focusable="false" fill="currentColor"><rect x="1.5" y="2.5" width="13" height="2.2" rx=".6"/><rect x="1.5" y="6.9" width="13" height="2.2" rx=".6"/><rect x="1.5" y="11.3" width="13" height="2.2" rx=".6"/></svg><span data-i18n="mob.table">Table</span></button>
+    <button type="button" class="mobilebar__item" data-view="next-up" aria-pressed="false"><svg class="mobilebar__icon" viewBox="0 0 16 16" aria-hidden="true" focusable="false" fill="currentColor"><rect x="1.8" y="3" width="12.4" height="11.2" rx="1.6" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M1.8 6.6h12.4" stroke="currentColor" stroke-width="1.6"/><path d="M5.2 1.6v2.6M10.8 1.6v2.6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg><span data-i18n="mob.next">Next up</span></button>
+    <button type="button" class="mobilebar__item" data-view="played" aria-pressed="false"><svg class="mobilebar__icon" viewBox="0 0 16 16" aria-hidden="true" focusable="false" fill="currentColor"><path d="M2 8.4l3.6 3.6L14 3.6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg><span data-i18n="mob.results">Results</span></button>
     <button type="button" class="mobilebar__item mobilebar__more" id="more-button"
-            aria-expanded="false" aria-controls="more-sheet"><svg class="mobilebar__icon" viewBox="0 0 16 16" aria-hidden="true" focusable="false" fill="currentColor"><circle cx="3" cy="8" r="1.6"/><circle cx="8" cy="8" r="1.6"/><circle cx="13" cy="8" r="1.6"/></svg><span>More</span></button>
+            aria-expanded="false" aria-controls="more-sheet"><svg class="mobilebar__icon" viewBox="0 0 16 16" aria-hidden="true" focusable="false" fill="currentColor"><circle cx="3" cy="8" r="1.6"/><circle cx="8" cy="8" r="1.6"/><circle cx="13" cy="8" r="1.6"/></svg><span data-i18n="mob.more">More</span></button>
 </nav>
 
 <div class="sheet" id="more-sheet" hidden>
   <div class="sheet__scrim" data-close-sheet></div>
   <div class="sheet__panel" role="dialog" aria-modal="true" aria-label="More views">
     <div class="sheet__grip" aria-hidden="true"></div>
-      <button type="button" class="sheet__item" data-view="ladder" aria-pressed="false">Ladder</button>
-      <button type="button" class="sheet__item" data-view="compare" aria-pressed="false">Compare clubs</button>
-      <button type="button" class="sheet__item" data-view="model" aria-pressed="false">Model card</button>
+      <button type="button" class="sheet__item" data-view="ladder" aria-pressed="false"><span data-i18n="mob.ladder">Ladder</span></button>
+      <button type="button" class="sheet__item" data-view="compare" aria-pressed="false"><span data-i18n="mob.compare">Compare clubs</span></button>
+      <button type="button" class="sheet__item" data-view="model" aria-pressed="false"><span data-i18n="mob.model">Model card</span></button>
   </div>
 </div>
 
@@ -71,7 +76,7 @@
   <div id="content" hidden>
 
     <section class="hero">
-      <h1 id="hero-title">Where everyone finishes</h1>
+      <h1 id="hero-title" data-i18n="hero.title">Where everyone finishes</h1>
       <p id="hero-lede"></p>
       <div class="hero__meta label" id="hero-meta"></div>
     </section>
@@ -81,10 +86,10 @@
       <div class="panel timeline" id="timeline" hidden>
         <div class="timeline__head">
           <div>
-            <div class="label">Rewind the season</div>
-            <p id="timeline-when">Live — everything played so far</p>
+            <div class="label" data-i18n="timeline.rewind">Rewind the season</div>
+            <p id="timeline-when" data-i18n="timeline.live">Live — everything played so far</p>
           </div>
-          <button type="button" class="timeline__now" id="timeline-now" hidden>Back to live</button>
+          <button type="button" class="timeline__now" id="timeline-now" hidden data-i18n="timeline.backToLive">Back to live</button>
         </div>
         <div class="timeline__control">
           <label class="visually-hidden" for="timeline-range">Matchday to view the season as of</label>
@@ -93,7 +98,7 @@
           <button type="button" class="timeline__step" id="timeline-forward" aria-label="One matchday later">+</button>
           <div class="timeline__scale" id="timeline-scale" aria-hidden="true"></div>
         </div>
-        <p class="timeline__note">
+        <p class="timeline__note" data-i18n="timeline.note">
           Everything below is rebuilt from only the results known on the day you pick.
         </p>
       </div>
@@ -104,8 +109,8 @@
       <div class="panel">
         <div class="panel__head">
           <div>
-            <h2>The finish grid</h2>
-            <p>Every team against every finishing position. The deeper the colour, the more likely that finish. Read a row for one club's range; read a column for who is competing for that place. Rows run in the order the model expects clubs to finish, not the current table, so the number beside a club is where it stands today.</p>
+            <h2 data-i18n="grid.title">The finish grid</h2>
+            <p data-i18n="grid.desc">Each team's probability of finishing in every position, ranked by most likely outcome.</p>
           </div>
           <div class="grid-controls">
             <div class="label" id="grid-count"></div>
@@ -130,8 +135,8 @@
       <div class="panel">
         <div class="panel__head">
           <div>
-            <h2>Table</h2>
-            <p>Live standings with form, ELO rating and season trend, expected final points, and title and relegation odds. Pick any club for its focus page.</p>
+            <h2 data-i18n="table.title">Table</h2>
+            <p data-i18n="table.desc">Pick any club for its focus page.</p>
           </div>
         </div>
         <div class="scroller">
@@ -142,7 +147,7 @@
                   <button type="button" class="sort-btn" data-sort-key="position"><span class="sort-btn__label">#</span><span class="visually-hidden">, position</span><span class="sort-btn__caret" aria-hidden="true"></span></button>
                 </th>
                 <th class="club" scope="col" aria-sort="none" data-sort-col="team">
-                  <button type="button" class="sort-btn" data-sort-key="team"><span class="sort-btn__label">Club</span><span class="visually-hidden">, club name</span><span class="sort-btn__caret" aria-hidden="true"></span></button>
+                  <button type="button" class="sort-btn" data-sort-key="team"><span class="sort-btn__label" data-i18n="table.col.club">Club</span><span class="visually-hidden">, club name</span><span class="sort-btn__caret" aria-hidden="true"></span></button>
                 </th>
                 <th class="num col--extra" scope="col" aria-sort="none" data-sort-col="played">
                   <button type="button" class="sort-btn" data-sort-key="played"><span class="sort-btn__label">P</span><span class="visually-hidden">, played</span><span class="sort-btn__caret" aria-hidden="true"></span></button>
@@ -169,19 +174,19 @@
                   <button type="button" class="sort-btn" data-sort-key="points"><span class="sort-btn__label">Pts</span><span class="visually-hidden">, points</span><span class="sort-btn__caret" aria-hidden="true"></span></button>
                 </th>
                 <th class="num sep" scope="col" aria-sort="none" data-sort-col="rating">
-                  <button type="button" class="sort-btn" data-sort-key="rating"><span class="sort-btn__label">Rating</span><span class="sort-btn__short" aria-hidden="true">Elo</span><span class="visually-hidden">, ELO rating</span><span class="sort-btn__caret" aria-hidden="true"></span></button>
+                  <button type="button" class="sort-btn" data-sort-key="rating"><span class="sort-btn__label" data-i18n="table.col.rating">Rating</span><span class="sort-btn__short" aria-hidden="true" data-i18n="table.col.ratingShort">Elo</span><span class="visually-hidden">, ELO rating</span><span class="sort-btn__caret" aria-hidden="true"></span></button>
                 </th>
                 <th class="num col--extra" scope="col" aria-sort="none" data-sort-col="expected_points">
                   <button type="button" class="sort-btn" data-sort-key="expected_points"><span class="sort-btn__label">xPts</span><span class="visually-hidden">, expected final points</span><span class="sort-btn__caret" aria-hidden="true"></span></button>
                 </th>
                 <th class="num form col--extra" scope="col" aria-sort="none" data-sort-col="form">
-                  <button type="button" class="sort-btn" data-sort-key="form"><span class="sort-btn__label">Form</span><span class="visually-hidden">, recent results</span><span class="sort-btn__caret" aria-hidden="true"></span></button>
+                  <button type="button" class="sort-btn" data-sort-key="form"><span class="sort-btn__label" data-i18n="table.col.form">Form</span><span class="visually-hidden">, recent results</span><span class="sort-btn__caret" aria-hidden="true"></span></button>
                 </th>
                 <th class="num" scope="col" aria-sort="none" data-sort-col="up">
-                  <button type="button" class="sort-btn" data-sort-key="up"><span class="sort-btn__label" id="head-first">Champion</span><span class="sort-btn__short" id="head-first-short" aria-hidden="true">Title</span><span class="visually-hidden" id="head-first-desc">, chance of winning the title</span><span class="sort-btn__caret" aria-hidden="true"></span></button>
+                  <button type="button" class="sort-btn" data-sort-key="up"><span class="sort-btn__label" id="head-first" data-i18n="table.col.champion">Champion</span><span class="sort-btn__short" id="head-first-short" aria-hidden="true" data-i18n="table.col.championShort">Title</span><span class="visually-hidden" id="head-first-desc">, chance of winning the title</span><span class="sort-btn__caret" aria-hidden="true"></span></button>
                 </th>
                 <th class="num" scope="col" aria-sort="none" data-sort-col="down">
-                  <button type="button" class="sort-btn" data-sort-key="down"><span class="sort-btn__label" id="head-last">Relegation</span><span class="sort-btn__short" id="head-last-short" aria-hidden="true">Drop</span><span class="visually-hidden" id="head-last-desc">, chance of relegation</span><span class="sort-btn__caret" aria-hidden="true"></span></button>
+                  <button type="button" class="sort-btn" data-sort-key="down"><span class="sort-btn__label" id="head-last" data-i18n="table.col.relegation">Relegation</span><span class="sort-btn__short" id="head-last-short" aria-hidden="true" data-i18n="table.col.relegationShort">Rel</span><span class="visually-hidden" id="head-last-desc">, chance of relegation</span><span class="sort-btn__caret" aria-hidden="true"></span></button>
                 </th>
               </tr>
             </thead>
@@ -198,8 +203,8 @@
       <div class="panel">
         <div class="panel__head">
           <div>
-            <h2>The ladder</h2>
-            <p>Both divisions share one rating scale. That is how a promoted champion can start above a club that was just relegated — and it is the only place the two leagues are compared directly.</p>
+            <h2 data-i18n="ladder.title">The ladder</h2>
+            <p data-i18n="ladder.desc">All teams in both divisions compared on one rating scale.</p>
           </div>
           <button type="button" class="grid-anim-btn" id="ladder-anim-play" title="Animate the season">▶</button>
         </div>
@@ -217,8 +222,8 @@
       <div class="panel">
         <div class="panel__head">
           <div>
-            <h2>Next up</h2>
-            <p>The model's three-way odds for the coming fixtures, with the most likely scorelines beneath each.</p>
+            <h2 data-i18n="next.title">Next up</h2>
+            <p data-i18n="next.desc">The model's three-way odds for the coming fixtures, with the most likely scorelines beneath each.</p>
           </div>
           <div class="label" id="fixture-count"></div>
         </div>
@@ -231,8 +236,8 @@
       <div class="panel">
         <div class="panel__head">
           <div>
-            <h2>Played results</h2>
-            <p>Completed matches with scores and the rating change each side took. Sorted most recent first.</p>
+            <h2 data-i18n="played.title">Played results</h2>
+            <p data-i18n="played.desc">Recently played matches with scores and rating changes.</p>
           </div>
         </div>
         <div class="played-results" id="played-results"></div>
@@ -243,8 +248,8 @@
       <div class="panel">
         <div class="panel__head">
           <div>
-            <h2>Compare clubs</h2>
-            <p>Pick any two clubs for a fictional match — from either division. The club on the left hosts; swap them to flip home advantage. The model's three-way odds and most likely scorelines appear, alongside each club's current rating and how their ratings have tracked across every season on one shared line.</p>
+            <h2 data-i18n="compare.title">Compare clubs</h2>
+            <p data-i18n="compare.desc">Predictions for a fictional match between any two clubs. Compare each team's rating history.</p>
           </div>
         </div>
         <div class="compare__pickers">
@@ -259,19 +264,18 @@
       <div class="panel">
         <div class="panel__head">
           <div>
-            <h2>Model card</h2>
-            <p>Every number above comes from these settings and this data. Nothing is fetched while you read.</p>
+            <h2 data-i18n="model.title">Model card</h2>
+            <p data-i18n="model.desc">Every number above comes from these settings and this data.</p>
           </div>
         </div>
         <dl class="model-grid" id="model-grid"></dl>
         <div class="caveats">
-          <div class="label">Known limits</div>
+          <div class="label" data-i18n="model.howItWorks">How it works</div>
           <ul>
-            <li>Ratings are held fixed for the rest of the season. A team does not get stronger inside a simulation by winning simulated matches.</li>
-            <li>Simulated matches draw a scoreline from real results, conditioned on the win/draw/loss outcome <em>and</em> the pre-match rating gap, so goal difference moves within a simulation and ties break on simulated goal difference — not today's. The rating-implied probabilities still decide who wins.</li>
-            <li>Each close season every rating mean-reverts 5% toward the pool average, so one freak year does not carry. Starting ratings still come only from where each club finished in 2025; transfers, injuries and European commitments are not modelled.</li>
-            <li>Two OBOS-ligaen clubs were promoted from the third tier, which is outside this project's data. They start at the bottom of the ladder and are corrected only by results.</li>
-            <li>Season shape is sampled by date, not by round. Rounds run out of order — Eliteserien 2026 plays round 12 after rounds 13 to 16 — so a round axis would show results before they happened.</li>
+            <li data-i18n="model.how1">Each club carries one ELO rating. After every match, the winner gains points and the loser loses them — more if the result was unexpected. The gap between two clubs' ratings decides the win/draw/loss probabilities.</li>
+            <li data-i18n="model.how2">Cross-season regression pulls every rating 12 % toward the division average during the off-season. This prevents one strong or weak year from carrying over unchanged, while still letting form carry momentum.</li>
+            <li data-i18n="model.how3">Simulations replay the remaining fixtures thousands of times. Each simulated match first picks an outcome (win, draw, or loss) from the pre-match probabilities, then draws a scoreline from real results conditioned on that outcome and the rating gap.</li>
+            <li data-i18n="model.how4">Two OBOS-ligaen clubs were promoted from the third tier, which is outside this project's data. They start at the bottom of the ladder and are corrected only by results.</li>
           </ul>
         </div>
       </div>
@@ -287,11 +291,12 @@
 </main>
 
 <footer class="shell">
-  <div>EliteTracker — Eliteserien and OBOS-ligaen, seasons 2015–2026. Elo-v6 model. Match data from FotMob. Built by <a href="mailto:tobias.samsonsen@gmail.com">Tobias Samsonsen</a>.</div>
+  <div id="footer-text">EliteTracker — Eliteserien and OBOS-ligaen, seasons 2015–2026. Match data from FotMob. Built by <a href="mailto:tobias.samsonsen@gmail.com">Tobias Samsonsen</a>.</div>
 </footer>
 
 <div id="tooltip" role="tooltip" aria-hidden="true"></div>
 
+<script src="/i18n.js"></script>
 <script src="/app.js?v=14"></script>
 </body>
 </html>
