@@ -19,6 +19,7 @@ const state = {
   // scrolling it sideways; the table now fits, so that is where a phone lands.
   // ?view= still wins -- see applyViewParameter.
   activeView: window.matchMedia('(max-width: 760px)').matches ? 'grid' : 'grid',
+  _prevActiveView: null,
   // Team focus: team_id when viewing the team tab, null otherwise.
   teamFocusId: null,
   // Pagination for played results.
@@ -1272,234 +1273,12 @@ const svgEl = (tag, attrs = {}) => {
   return node;
 };
 
-function renderShape(report) {
-  const history = report.history;
-  const select = $('#shape-team');
-  const teams = history.teams;
-
-  // Keep the chosen club when switching leagues if it plays in both (it will
-  // not), otherwise fall back to the league leader.
-  const previous = select.value;
-  select.replaceChildren();
-  for (const team of [...teams].sort((a, b) => a.team.localeCompare(b.team, 'nb'))) {
-    const option = el('option', '', team.team);
-    option.value = team.team_id;
-    select.appendChild(option);
-  }
-  const fallback = report.table[0].team_id;
-  select.value = teams.some((t) => t.team_id === previous) ? previous : fallback;
-
-  $('#shape-rounds').textContent = `${history.dates.length} snapshots`;
-  $('#ramp-last').textContent = `${ordinal(report.table.length)}`;
-
-  drawShape(report, select.value);
-}
-
-function drawShape(report, teamId) {
-  const history = report.history;
-  const team = history.teams.find((t) => t.team_id === teamId);
-  const chart = $('#shape-chart');
-  if (!team) return;
-
-  const count = report.table.length;
-  const snapshots = history.dates.length;
-
-  const width = 900;
-  const height = 340;
-  const pad = { top: 12, right: 16, bottom: 34, left: 44 };
-  const plotWidth = width - pad.left - pad.right;
-  const plotHeight = height - pad.top - pad.bottom;
-
-  chart.setAttribute('viewBox', `0 0 ${width} ${height}`);
-  chart.replaceChildren();
-
-  /* A real time axis. Rounds are not played in chronological order and the
-     calendar has gaps (breaks, rescheduled rounds), so spacing snapshots
-     evenly would distort how fast the picture actually changed. */
-  const times = history.dates.map((iso) => Date.parse(`${iso}T12:00:00Z`));
-  const firstTime = times[0];
-  const lastTime = times[times.length - 1];
-  const span = lastTime - firstTime || 1;
-  const x = (index) => pad.left + ((times[index] - firstTime) / span) * plotWidth;
-  const y = (cumulative) => pad.top + cumulative * plotHeight;
-
-  // Cumulative sums per snapshot, so band p spans [cum(p-1), cum(p)].
-  const cumulative = history.dates.map((_, index) => {
-    const running = [0];
-    for (let position = 0; position < count; position += 1) {
-      running.push(running[position] + team.positions[index][position]);
-    }
-    return running;
-  });
-
-  for (let gridline = 0; gridline <= 4; gridline += 1) {
-    const value = gridline / 4;
-    chart.appendChild(
-      svgEl('line', { class: 'grid-line', x1: pad.left, x2: width - pad.right, y1: y(value), y2: y(value) })
-    );
-    const label = svgEl('text', { class: 'tick', x: pad.left - 8, y: y(value) + 3.5, 'text-anchor': 'end' });
-    label.textContent = `${100 - gridline * 100 / 4}%`;
-    chart.appendChild(label);
-  }
-
-  // Position 1 sits at the top of the stack so the chart reads like a table.
-  for (let position = 1; position <= count; position += 1) {
-    const upper = [];
-    const lower = [];
-    for (let index = 0; index < snapshots; index += 1) {
-      upper.push(`${x(index)},${y(cumulative[index][position - 1])}`);
-      lower.push(`${x(index)},${y(cumulative[index][position])}`);
-    }
-    const band = svgEl('polygon', {
-      class: 'band',
-      points: [...upper, ...lower.reverse()].join(' '),
-      fill: positionColor(position, count),
-    });
-
-    const bandLabel = bandFor(report.league.bands, position);
-    band.addEventListener('pointerenter', (event) => {
-      const latest = team.positions[snapshots - 1][position - 1];
-      showTooltip(
-        event,
-        `<b>${ordinal(position)}</b>${bandLabel ? ` · ${bandLabel.label}` : ''}<br>` +
-          `now ${pct(latest, 1)}`
-      );
-    });
-    band.addEventListener('pointermove', moveTooltip);
-    band.addEventListener('pointerleave', hideTooltip);
-    chart.appendChild(band);
-  }
-
-  chart.appendChild(
-    svgEl('line', { class: 'axis-line', x1: pad.left, x2: width - pad.right, y1: y(1), y2: y(1) })
-  );
-
-  // Tick the first of each month, so the axis reads as a calendar rather than
-  // as a list of snapshots.
-  let lastMonth = null;
-  history.dates.forEach((iso, index) => {
-    const month = iso.slice(0, 7);
-    if (month === lastMonth) return;
-    lastMonth = month;
-    const label = svgEl('text', { class: 'tick', x: x(index), y: height - pad.bottom + 15, 'text-anchor': 'middle' });
-    label.textContent = new Date(`${iso}T12:00:00Z`).toLocaleDateString('en-GB', { month: 'short' });
-    chart.appendChild(label);
-    chart.appendChild(
-      svgEl('line', { class: 'grid-line', x1: x(index), x2: x(index), y1: pad.top, y2: y(1) })
-    );
-  });
-
-  const axisTitle = svgEl('text', { class: 'axis-title', x: pad.left, y: height - 6 });
-  axisTitle.textContent = `${history.dates[0].slice(0, 4)} season`;
-  chart.appendChild(axisTitle);
-
-  const yTitle = svgEl('text', {
-    class: 'axis-title',
-    x: -(pad.top + plotHeight / 2),
-    y: 12,
-    transform: 'rotate(-90)',
-    'text-anchor': 'middle',
-  });
-  yTitle.textContent = 'Share of simulated seasons';
-  chart.appendChild(yTitle);
-
-  attachShapeCrosshair(chart, report, team, { x, pad, plotWidth, plotHeight, width, height, snapshots, count });
-  renderShapeSummary(report, team);
-
-  chart.setAttribute(
-    'aria-label',
-    `Stacked area chart: ${team.team}'s probability of each finishing position, ` +
-      `${snapshots} snapshots from ${history.dates[0]} to ${history.dates[snapshots - 1]}`
-  );
-  $('#shape-desc').textContent =
-    `${team.team}: as of ${history.dates[snapshots - 1]}, most likely finish ` +
-    `${ordinal(mostLikely(team.positions[snapshots - 1]) + 1)}.`;
-}
-
 function mostLikely(probabilities) {
   let best = 0;
   probabilities.forEach((value, index) => {
     if (value > probabilities[best]) best = index;
   });
   return best;
-}
-
-/* A crosshair reading out the round under the pointer. Sixteen bands is too
-   many to list, so the tooltip reports the most likely place plus the blocks
-   that actually matter. */
-function attachShapeCrosshair(chart, report, team, geometry) {
-  const { x, pad, plotWidth, plotHeight, width, snapshots, count } = geometry;
-  const history = report.history;
-  const line = svgEl('line', { class: 'crosshair', y1: pad.top, y2: pad.top + plotHeight, x1: -10, x2: -10 });
-  line.style.opacity = '0';
-  chart.appendChild(line);
-
-  const relegation = report.league.bands.find((band) => band.tone === 'relegation');
-  const top = report.league.bands.find((band) => band.tone === 'top');
-  const totalMatches = report.model.matches_played + report.model.matches_remaining;
-
-  const surface = svgEl('rect', {
-    x: pad.left, y: pad.top, width: plotWidth, height: plotHeight, fill: 'transparent',
-  });
-  surface.addEventListener('pointermove', (event) => {
-    const box = chart.getBoundingClientRect();
-    const scale = width / box.width;
-    const localX = (event.clientX - box.left) * scale;
-    // Snapshots are unevenly spaced in time, so pick the nearest one by pixel
-    // distance rather than by interpolating an index.
-    let index = 0;
-    for (let candidate = 1; candidate < snapshots; candidate += 1) {
-      if (Math.abs(x(candidate) - localX) < Math.abs(x(index) - localX)) index = candidate;
-    }
-
-    line.setAttribute('x1', x(index));
-    line.setAttribute('x2', x(index));
-    line.style.opacity = '1';
-
-    const probabilities = team.positions[index];
-    const best = mostLikely(probabilities);
-    const sum = (band) => (band ? probabilities.slice(band.first - 1, band.last).reduce((a, b) => a + b, 0) : 0);
-    const when = new Date(`${history.dates[index]}T12:00:00Z`).toLocaleDateString('en-GB', {
-      day: 'numeric', month: 'short', year: 'numeric',
-    });
-    const played = history.matches_played[index];
-
-    showTooltip(
-      event,
-      `<b>${team.team}</b> · ${played === 0 ? 'pre-season' : when}<br>` +
-        `${played} of ${totalMatches} matches played<br>` +
-        `Rating ${team.ratings[index]}<br>` +
-        `Most likely ${ordinal(best + 1)} (${pct(probabilities[best])})<br>` +
-        `${top ? `Top ${top.last}: ${pct(sum(top))} · ` : ''}Bottom ${count - (relegation ? relegation.first - 1 : count)}: ${pct(sum(relegation))}`
-    );
-  });
-  surface.addEventListener('pointerleave', () => {
-    line.style.opacity = '0';
-    hideTooltip();
-  });
-  chart.appendChild(surface);
-}
-
-function renderShapeSummary(report, team) {
-  const summary = $('#shape-summary');
-  summary.replaceChildren();
-
-  const latest = team.positions[team.positions.length - 1];
-  const first = team.positions[0];
-  const best = mostLikely(latest);
-
-  const parts = [
-    ['Most likely finish', ordinal(best + 1)],
-    ['Chance of that finish', pct(latest[best])],
-    ['Rating now', String(team.ratings[team.ratings.length - 1])],
-    ['Pre-season pick', ordinal(mostLikely(first) + 1)],
-  ];
-  for (const [name, value] of parts) {
-    const item = el('div');
-    item.appendChild(el('span', '', `${name} `));
-    item.appendChild(el('b', '', value));
-    summary.appendChild(item);
-  }
 }
 
 /* ---------- rating ladder ----------------------------------------- */
@@ -1660,10 +1439,12 @@ function renderLadder(reports) {
       });
       wrap.toggleAttribute('data-tip-visible');
     });
-    // Click outside to close
-    document.addEventListener('click', () => {
+    // Click outside to close — named handler so we don't leak listeners on re-render
+    if (state._ladderOutsideHandler) document.removeEventListener('click', state._ladderOutsideHandler);
+    state._ladderOutsideHandler = () => {
       track.querySelectorAll('.ladder__team[data-tip-visible]').forEach((w) => w.removeAttribute('data-tip-visible'));
-    }, { passive: true });
+    };
+    document.addEventListener('click', state._ladderOutsideHandler, { passive: true });
   }
 
   // Legend
@@ -2528,9 +2309,15 @@ function renderTeamResults(teamId, teamName, report, container) {
     const homeSide = el('div', 'played-card__side played-card__side--home');
     homeSide.appendChild(ratingBlock(homeInfo));
     const homeTeam = el('span', 'played-card__team');
-    homeTeam.appendChild(el('span', '', match.home));
+    const homeNameBtn = el('button', 'played-card__team-name', match.home);
+    homeNameBtn.addEventListener('click', () => openTeamView(match.home_id, match.home));
+    homeTeam.appendChild(homeNameBtn);
     const homeCrest = teamLogo(match.home_id, match.home);
-    if (homeCrest) homeTeam.appendChild(homeCrest);
+    if (homeCrest) {
+      homeCrest.addEventListener('click', () => openTeamView(match.home_id, match.home));
+      homeCrest.style.cursor = 'pointer';
+      homeTeam.appendChild(homeCrest);
+    }
     homeSide.appendChild(homeTeam);
 
     const score = el('div', 'played-card__score');
@@ -2539,8 +2326,14 @@ function renderTeamResults(teamId, teamName, report, container) {
     const awaySide = el('div', 'played-card__side played-card__side--away');
     const awayTeam = el('span', 'played-card__team');
     const awayCrest = teamLogo(match.away_id, match.away);
-    if (awayCrest) awayTeam.appendChild(awayCrest);
-    awayTeam.appendChild(el('span', '', match.away));
+    if (awayCrest) {
+      awayCrest.addEventListener('click', () => openTeamView(match.away_id, match.away));
+      awayCrest.style.cursor = 'pointer';
+      awayTeam.appendChild(awayCrest);
+    }
+    const awayNameBtn = el('button', 'played-card__team-name', match.away);
+    awayNameBtn.addEventListener('click', () => openTeamView(match.away_id, match.away));
+    awayTeam.appendChild(awayNameBtn);
     awaySide.appendChild(awayTeam);
     awaySide.appendChild(ratingBlock(awayInfo));
 
@@ -2887,7 +2680,7 @@ function render() {
       renderCompare(report);
       break;
     case 'played':
-      state.playedWeek = 0;
+      if (state._prevActiveView !== 'played') state.playedWeek = 0;
       renderPlayedResults(report);
       break;
     case 'team':
@@ -2911,6 +2704,7 @@ function render() {
   window.history.replaceState(null, '', `${window.location.pathname}?${params.toString()}${window.location.hash}`);
 
   document.title = `${report.league.name} ${report.league.season} — EliteTracker`;
+  state._prevActiveView = state.activeView;
 }
 
 function wire() {

@@ -124,6 +124,8 @@
   }
 }
 
+/* Explicit dark theme (user chose dark, not auto) — same variables, outside
+   the media query so it applies regardless of system preference. */
 :root[data-theme="dark"] {
   color-scheme: dark;
 

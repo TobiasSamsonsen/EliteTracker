@@ -103,11 +103,12 @@ REM run the test suite
      the most likely scorelines beneath the odds (e.g. `2-1 28% · 1-1 19%`), drawn from the
      same gap-conditioned scoreline model that feeds the Monte Carlo.
    - **Model card** stating the known limits.
-   - **Tabbed views** — the single long scroll is split into eight view tabs (`?view=`
-      makes each linkable): Finish Grid, Table, Ladder, Next Up, Played Results, Season
-      Shape, Compare Clubs, Model Card. Each tab shows only its own sections; the hero
-      and season options stay on every view. The rewind timeline is hidden on all tabs
-      except the default view.
+   - **Tabbed views** — the single long scroll is split into seven view tabs (`?view=`
+       makes each linkable): Finish Grid, Table, Ladder, Next Up, Played Results,
+       Compare Clubs, Model Card. Each tab shows only its own sections; the hero
+       and season options stay on every view. The rewind timeline is hidden on all tabs
+       except the default view. Season Shape is accessed through the team focus view,
+       not as a standalone tab.
    - **Played results** — a completed-match feed with date + round, both sides and crests,
       the final score, and each side's rating (large, outside edges) with delta. Logos sit
       between name and score. Navigated by ISO week (Prev/Next at top). Winning side gets
@@ -124,6 +125,13 @@ REM run the test suite
   `build_site`, and deploys `public/` on every push to `main` — no manual deploy needed.
   HTML and `app.js` are served `no-cache` and the script tag is versioned, so a new deploy
   is picked up without a hard refresh.
+- **Mobile responsiveness** — Next Up and Played Results cards keep the side-by-side
+  desktop layout on mobile, with team names hidden and larger logos (tap to open team view).
+  The three-way odds bar gets `flex: 2` to fill available space. The finish grid hides
+  team names on mobile, showing only position number and clickable logo. The ladder
+  rotates 90° on phones (<500px): rating axis becomes vertical (top = best, scroll down
+  for worse teams), overlap pushes teams into columns to the right, icons at 1.5rem, all
+  rem-based positioning. The division picker uses `justify-self: start` to avoid dead space.
 
 ### Colour
 - **Sequential ramp** for all quantitative colour (grid probability, season shape).
@@ -406,6 +414,31 @@ list is a scratchpad, not a commitment — each is picked up only when wanted.
       off-screen on phone-sized viewports. Changed the breakpoint from 480px to 760px
       to match the main mobile breakpoint used for navigation and tables, so odds flex
       to fit and team names stay visible. Scoreline chips wrap naturally.
+- [x] **Mobile side-by-side cards** — Next Up and Played Results keep the desktop
+      side-by-side layout on mobile. Team names hidden, logos enlarged (1.5rem) and
+      clickable. Odds bar uses `flex: 2` for more width. Finish grid hides team names,
+      showing position + clickable logo only.
+- [x] **Vertical ladder on mobile** — ladder rotates 90° on phones (<500px). Rating axis
+      is vertical (top = best, scroll down for worse teams). Overlap pushes teams into
+      horizontal columns. All rem-based positioning, no percentage tricks. Track is
+      scrollable vertically.
+- [ ] **Event listener leak in renderLadder** — every call to `renderLadder()` adds a
+      new `document.addEventListener('click', ...)` for touch tooltip dismissal. After
+      switching views N times, N document-level handlers fire on every click. Move to
+      `wire()` or use a guard flag.
+- [ ] **playedWeek resets on every render** — switching away from "Played Results" and
+      back (or dragging the rewind slider) always jumps to week 0. Should only reset on
+      an explicit league/season change or initial view switch, not on every render.
+- [ ] **Team view results missing clickable names** — in `renderTeamResults`, opponent
+      team names are plain `<span>` elements. Everywhere else (Played Results, Next Up,
+      finish grid) they are `<button>` with `openTeamView` handlers. Add the same pattern.
+- [ ] **Dead standalone season shape code** — `renderShape()`, `drawShape()`,
+      `attachShapeCrosshair()`, `renderShapeSummary()` (~230 lines JS) plus orphaned CSS
+      (~40 lines). The standalone view was removed from navigation; the team-focus version
+      (`renderTeamShape` etc.) is the live code. Delete the dead functions and CSS.
+- [ ] **Dark theme CSS duplicated** — `@media (prefers-color-scheme: dark)` and
+      `:root[data-theme="dark"]` contain identical variable blocks (28 properties × 2).
+      Merge into one selector to avoid maintenance drift.
 - [ ] **Team focus page** — fold the career modal, a club's finish-grid row, and its
       recent + upcoming fixtures into one dedicated view (deep-linkable, like
       `?team=`).
@@ -424,6 +457,7 @@ list is a scratchpad, not a commitment — each is picked up only when wanted.
       stacking rows across all matchdays during `ladderAnimStart`, then set the track
       height to that maximum at init time so it stays constant while only team
       positions move. This prevents the card from jumping as the animation plays.
+      On mobile (vertical mode), the same principle applies to track width.
 
 ## Commands
 
