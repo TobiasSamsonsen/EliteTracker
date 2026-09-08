@@ -113,6 +113,16 @@ REM run the test suite
       the final score, and each side's rating (large, outside edges) with delta. Logos sit
       between name and score. Navigated by ISO week (Prev/Next at top). Winning side gets
       a gold gradient; no bold/muted distinction. Part of the tabbed views.
+   - **Pre-season vs live prediction** — a full-width comparison box on the team focus page
+      showing the model's pre-season predicted finishing position alongside the current
+      prediction, with rating delta between them. Uses `history.teams[i].positions[0]`
+      (pre-season snapshot) against the live `position_probabilities`.
+   - **Cross-division team focus** — clicking a team from the ladder, compare view, or any
+      cross-division link now correctly switches leagues before rendering the team focus
+      page. Previously OBOS-ligaen teams showed empty stats when opened from the
+      Eliteserien view.
+   - **Localized ordinals** — positions render as `1st place` in English and `1. plass` in
+      Norwegian throughout the UI (tooltips, grid, table, prediction box, compare).
    - **Static build for Firebase Hosting** — `build_site.py` prebuilds every season's live
   and rewound reports plus careers as plain JSON under `public/data/`, so the same frontend
   works on a static host with no Python runtime. The browser probes `/api/health` once; on
@@ -439,9 +449,10 @@ list is a scratchpad, not a commitment — each is picked up only when wanted.
 - [ ] **Dark theme CSS duplicated** — `@media (prefers-color-scheme: dark)` and
       `:root[data-theme="dark"]` contain identical variable blocks (28 properties × 2).
       Merge into one selector to avoid maintenance drift.
-- [ ] **Team focus page** — fold the career modal, a club's finish-grid row, and its
+- [x] **Team focus page** — fold the career modal, a club's finish-grid row, and its
       recent + upcoming fixtures into one dedicated view (deep-linkable, like
-      `?team=`).
+      `?team=`). Includes pre-season vs live prediction comparison and cross-division
+      league switching.
 - [ ] **Head-to-head tool** — the same odds as Compare but framed as a rivalry: the
       two clubs' record against *each other* from the results, plus the model's
       current match odds.
@@ -521,4 +532,4 @@ committed input is just the normalized fixture files. To test the static site lo
 .venv\Scripts\python.exe -m http.server --directory public
 ```
 
-304 Python tests + 5 frontend tests, all passing.
+304 Python tests + 4 frontend tests, all passing.

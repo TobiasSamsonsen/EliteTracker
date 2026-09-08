@@ -17,27 +17,27 @@
   <div class="shell masthead__inner">
     <div class="wordmark">EliteTracker <span id="model-badge"></span></div>
 
-    <div class="switch switch--league" role="group" aria-label="Choose a division">
+    <div class="switch switch--league" role="group" data-i18n="aria.chooseDivision" data-i18n-attr="aria-label" aria-label="Choose a division">
       <button type="button" data-league="eliteserien" aria-pressed="true">Eliteserien</button>
       <button type="button" data-league="obosligaen" aria-pressed="false">OBOS-ligaen</button>
     </div>
 
-    <label class="visually-hidden" for="season-select">Season</label>
+    <label class="visually-hidden" for="season-select" data-i18n="season.label">Season</label>
     <select id="season-select" class="season-select"></select>
 
-    <div class="switch switch--theme" role="group" aria-label="Colour theme">
-      <button type="button" data-theme-choice="light" aria-pressed="false">Light</button>
-      <button type="button" data-theme-choice="dark" aria-pressed="false">Dark</button>
+    <div class="switch switch--theme" role="group" data-i18n="aria.colourTheme" data-i18n-attr="aria-label" aria-label="Colour theme">
+      <button type="button" data-theme-choice="light" aria-pressed="false" data-i18n="theme.light">Light</button>
+      <button type="button" data-theme-choice="dark" aria-pressed="false" data-i18n="theme.dark">Dark</button>
     </div>
 
-    <div class="switch switch--lang" role="group" aria-label="Language">
+    <div class="switch switch--lang" role="group" data-i18n="aria.language" data-i18n-attr="aria-label" aria-label="Language">
       <button type="button" data-lang="no" aria-pressed="true">NO</button>
       <button type="button" data-lang="en" aria-pressed="false">EN</button>
     </div>
   </div>
 
   <div class="shell masthead__views">
-    <div class="switch" role="group" aria-label="Choose a view">
+    <div class="switch" role="group" data-i18n="aria.chooseView" data-i18n-attr="aria-label" aria-label="Choose a view">
       <button type="button" data-view="grid" aria-pressed="true"><span data-i18n="tab.grid">Finish Grid</span></button>
       <button type="button" data-view="table" aria-pressed="false"><span data-i18n="tab.table">Table</span></button>
       <button type="button" data-view="ladder" aria-pressed="false"><span data-i18n="tab.ladder">Ladder</span></button>
@@ -51,7 +51,7 @@
 
 <!-- Phone navigation. The same data-view attribute the top strip uses, so the
      existing click wiring, ?view= deep links and active marking all apply. -->
-<nav class="mobilebar" id="mobilebar" aria-label="Choose a view">
+<nav class="mobilebar" id="mobilebar" data-i18n="aria.chooseView" data-i18n-attr="aria-label" aria-label="Choose a view">
     <button type="button" class="mobilebar__item" data-view="grid" aria-pressed="true"><svg class="mobilebar__icon" viewBox="0 0 16 16" aria-hidden="true" focusable="false" fill="currentColor"><rect x="1.5" y="1.5" width="3.6" height="3.6" rx=".5"/><rect x="6.2" y="1.5" width="3.6" height="3.6" rx=".5"/><rect x="10.9" y="1.5" width="3.6" height="3.6" rx=".5"/><rect x="1.5" y="6.2" width="3.6" height="3.6" rx=".5"/><rect x="6.2" y="6.2" width="3.6" height="3.6" rx=".5"/><rect x="10.9" y="6.2" width="3.6" height="3.6" rx=".5"/><rect x="1.5" y="10.9" width="3.6" height="3.6" rx=".5"/><rect x="6.2" y="10.9" width="3.6" height="3.6" rx=".5"/><rect x="10.9" y="10.9" width="3.6" height="3.6" rx=".5"/></svg><span data-i18n="mob.grid">Grid</span></button>
     <button type="button" class="mobilebar__item" data-view="table" aria-pressed="false"><svg class="mobilebar__icon" viewBox="0 0 16 16" aria-hidden="true" focusable="false" fill="currentColor"><rect x="1.5" y="2.5" width="13" height="2.2" rx=".6"/><rect x="1.5" y="6.9" width="13" height="2.2" rx=".6"/><rect x="1.5" y="11.3" width="13" height="2.2" rx=".6"/></svg><span data-i18n="mob.table">Table</span></button>
     <button type="button" class="mobilebar__item" data-view="next-up" aria-pressed="false"><svg class="mobilebar__icon" viewBox="0 0 16 16" aria-hidden="true" focusable="false" fill="currentColor"><rect x="1.8" y="3" width="12.4" height="11.2" rx="1.6" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M1.8 6.6h12.4" stroke="currentColor" stroke-width="1.6"/><path d="M5.2 1.6v2.6M10.8 1.6v2.6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg><span data-i18n="mob.next">Next up</span></button>
@@ -62,7 +62,7 @@
 
 <div class="sheet" id="more-sheet" hidden>
   <div class="sheet__scrim" data-close-sheet></div>
-  <div class="sheet__panel" role="dialog" aria-modal="true" aria-label="More views">
+  <div class="sheet__panel" role="dialog" aria-modal="true" data-i18n="aria.moreViews" data-i18n-attr="aria-label" aria-label="More views">
     <div class="sheet__grip" aria-hidden="true"></div>
       <button type="button" class="sheet__item" data-view="ladder" aria-pressed="false"><span data-i18n="mob.ladder">Ladder</span></button>
       <button type="button" class="sheet__item" data-view="compare" aria-pressed="false"><span data-i18n="mob.compare">Compare clubs</span></button>
@@ -71,7 +71,7 @@
 </div>
 
 <main class="shell" id="app">
-  <div class="status" id="status">Loading the season…</div>
+  <div class="status" id="status" data-i18n="status.loading">Loading the season…</div>
 
   <div id="content" hidden>
 
@@ -92,10 +92,10 @@
           <button type="button" class="timeline__now" id="timeline-now" hidden data-i18n="timeline.backToLive">Back to live</button>
         </div>
         <div class="timeline__control">
-          <label class="visually-hidden" for="timeline-range">Matchday to view the season as of</label>
-          <button type="button" class="timeline__step" id="timeline-back" aria-label="One matchday earlier">&minus;</button>
+          <label class="visually-hidden" for="timeline-range" data-i18n="aria.matchdaySlider">Matchday to view the season as of</label>
+          <button type="button" class="timeline__step" id="timeline-back" data-i18n="aria.oneEarlier" data-i18n-attr="aria-label" aria-label="One matchday earlier">&minus;</button>
           <input type="range" id="timeline-range" min="0" max="0" value="0" step="1">
-          <button type="button" class="timeline__step" id="timeline-forward" aria-label="One matchday later">+</button>
+          <button type="button" class="timeline__step" id="timeline-forward" data-i18n="aria.oneLater" data-i18n-attr="aria-label" aria-label="One matchday later">+</button>
           <div class="timeline__scale" id="timeline-scale" aria-hidden="true"></div>
         </div>
         <p class="timeline__note" data-i18n="timeline.note">
@@ -114,18 +114,18 @@
           </div>
           <div class="grid-controls">
             <div class="label" id="grid-count"></div>
-            <button type="button" class="grid-anim-btn" id="grid-anim-play" title="Animate the season">▶</button>
+            <button type="button" class="grid-anim-btn" id="grid-anim-play" data-i18n="title.animateSeason" data-i18n-attr="title" title="Animate the season">▶</button>
           </div>
         </div>
         <div class="scroller">
           <div class="grid-wrap">
             <table class="grid" id="grid">
-              <caption class="visually-hidden">Probability that each team finishes in each position</caption>
+              <caption class="visually-hidden" data-i18n="aria.gridCaption">Probability that each team finishes in each position</caption>
             </table>
           </div>
         </div>
         <div class="grid-anim-bar" id="grid-anim-controls" hidden>
-          <button type="button" id="grid-anim-speed" class="grid-anim-speed" title="Change speed">1×</button>
+          <button type="button" id="grid-anim-speed" class="grid-anim-speed" data-i18n="title.changeSpeed" data-i18n-attr="title" title="Change speed">1×</button>
         </div>
         <div class="legend" id="grid-legend"></div>
       </div>
@@ -206,13 +206,13 @@
             <h2 data-i18n="ladder.title">The ladder</h2>
             <p data-i18n="ladder.desc">All teams in both divisions compared on one rating scale.</p>
           </div>
-          <button type="button" class="grid-anim-btn" id="ladder-anim-play" title="Animate the season">▶</button>
+          <button type="button" class="grid-anim-btn" id="ladder-anim-play" data-i18n="title.animateSeason" data-i18n-attr="title" title="Animate the season">▶</button>
         </div>
         <div class="ladder">
           <div id="ladder-lanes" class="ladder__track"></div>
         </div>
         <div class="grid-anim-bar" id="ladder-anim-controls" hidden>
-          <button type="button" id="ladder-anim-speed" class="grid-anim-speed" title="Change speed">1×</button>
+          <button type="button" id="ladder-anim-speed" class="grid-anim-speed" data-i18n="title.changeSpeed" data-i18n-attr="title" title="Change speed">1×</button>
         </div>
         <div class="legend" id="ladder-legend"></div>
       </div>

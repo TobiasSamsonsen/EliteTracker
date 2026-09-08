@@ -31,6 +31,17 @@ const translations = {
     'hero.model': 'Model',
     'hero.ratingsFrom': 'Ratings from',
     'hero.onward': 'onward',
+    'hero.lede.finished': '{team} finished top on {points} points. All {matches} matches played; ratings shown are where each club ended the season.',
+    'hero.lede.agrees': '{team} lead on {points} points and the model agrees: {pct} to finish top.',
+    'hero.lede.disagrees': '{team} lead on {points} points, but the model makes {favourite} favourite at {pct}.',
+    'hero.lede.remaining': '{lede} {remaining} matches left, each one played {simulations} times over.',
+
+    // Theme
+    'theme.light': 'Light',
+    'theme.dark': 'Dark',
+
+    // Season
+    'season.label': 'Season',
 
     // Timeline
     'timeline.rewind': 'Rewind the season',
@@ -142,6 +153,9 @@ const translations = {
     'team.played': 'Played',
     'team.matches': 'Matches',
     'team.form': 'Form',
+    'team.prediction': 'Prediction',
+    'team.predPreSeason': 'Pre-season',
+    'team.predCurrent': 'Current',
     'team.ratingHistory': 'Rating history',
     'team.peak': 'Peak',
     'team.worst': 'Worst',
@@ -170,6 +184,40 @@ const translations = {
     'shape.mostLikely': 'Most likely {n}',
     'shape.topN': 'Top {n}: {pct}',
     'shape.bottomN': 'Bottom {n}: {pct}',
+    'shape.stackedArea': 'Stacked area chart: {team}\'s probability of each finishing position',
+
+    // Grid tooltip
+    'grid.tooltip': '{team} finishes {position}',
+
+    // Chart
+    'chart.rating': 'Rating {n}',
+    'chart.ratingFrom': '{team} rating from {from} to {to}',
+    'chart.ratingMoved': '{team}: rating moved from {from} to {to} across {seasons} seasons.',
+    'chart.ratingHistoryFor': 'Rating history for {home} and {away}',
+
+    // Form
+    'form.tooltip': '{w}W {d}D {l}L',
+
+    // Season select
+    'season.live': '{season} (live)',
+
+    // Status / errors
+    'status.loading': 'Loading the season\u2026',
+    'status.couldNotLoad': 'Could not load {season}: {error}',
+    'status.couldNotLoadSeason': 'Could not load the season: {error}. Are the data files deployed?',
+    'status.couldNotRewind': 'Could not rewind: {error}',
+
+    // Table dynamic headers
+    'table.champion': 'Champion',
+    'table.championShort': 'Title',
+    'table.championDesc': ', chance of winning the title',
+    'table.promotion': 'Promotion',
+    'table.promotionShort': 'Up',
+    'table.promotionDesc': ', chance of promotion',
+    'table.relegation': 'Relegation',
+
+    // Compare
+    'compare.chooseClub': 'Choose a club',
 
     // Rating trend
     'trend.strongRise': 'Strong rise (+{n})',
@@ -187,11 +235,24 @@ const translations = {
 
     // Footer
     'footer.text': 'EliteTracker — Eliteserien and OBOS-ligaen, seasons 2015\u20132026. Match data from FotMob. Built by <a href="mailto:tobias.samsonsen@gmail.com">Tobias Samsonsen</a>.',
+
+    // Aria / title attributes
+    'aria.chooseDivision': 'Choose a division',
+    'aria.colourTheme': 'Colour theme',
+    'aria.language': 'Language',
+    'aria.chooseView': 'Choose a view',
+    'aria.moreViews': 'More views',
+    'aria.matchdaySlider': 'Matchday to view the season as of',
+    'aria.oneEarlier': 'One matchday earlier',
+    'aria.oneLater': 'One matchday later',
+    'aria.gridCaption': 'Probability that each team finishes in each position',
+    'title.animateSeason': 'Animate the season',
+    'title.changeSpeed': 'Change speed',
   },
 
   no: {
     // Tabs
-    'tab.grid': 'Slutttabell',
+    'tab.grid': 'Sluttabell',
     'tab.table': 'Tabell',
     'tab.ladder': 'Stige',
     'tab.next': 'Neste runde',
@@ -219,6 +280,17 @@ const translations = {
     'hero.model': 'Modell',
     'hero.ratingsFrom': 'Ratinger fra',
     'hero.onward': 'og utover',
+    'hero.lede.finished': '{team} vant med {points} poeng. Alle {matches} kamper spilt; ratingene viser hvor hvert lag endte sesongen.',
+    'hero.lede.agrees': '{team} leder med {points} poeng og modellen er enig: {pct} sjanse for å ende på topp.',
+    'hero.lede.disagrees': '{team} leder med {points} poeng, men modellen gjør {favourite} til favoritt med {pct}.',
+    'hero.lede.remaining': '{lede} {remaining} kamper igjen, hver spilt {simulations} ganger.',
+
+    // Theme
+    'theme.light': 'Lys',
+    'theme.dark': 'Mørk',
+
+    // Season
+    'season.label': 'Sesong',
 
     // Timeline
     'timeline.rewind': 'Spol tilbake sesongen',
@@ -234,7 +306,7 @@ const translations = {
     'timeline.scrubAsOf': 'Per {when}',
 
     // Finish grid
-    'grid.title': 'Slutttabellen',
+    'grid.title': 'Sluttabellen',
     'grid.desc': 'Hvert lags sannsynlighet for å ende på hver plass, rangert etter mest sannsynlig utfall.',
     'grid.anim': 'Animér sesongen',
     'grid.legend.label': 'Sannsynlighet',
@@ -275,7 +347,7 @@ const translations = {
 
     // Fixtures / Next Up
     'next.title': 'Neste runde',
-    'next.desc': 'Modellens treveisodds for kommende kamper, med mest sannsynlige sluttresultater under hver.',
+    'next.desc': 'Modellens treveisodds for kommende kamper, med de mest sannsynlige sluttresultatene under hver.',
     'next.draw': 'Uavgjort',
     'next.result': 'Resultat',
     'next.homeWin': 'Hjemmeseier',
@@ -292,13 +364,13 @@ const translations = {
 
     // Compare clubs
     'compare.title': 'Sammenlign klubber',
-    'compare.desc': 'Spådommer for en fiktiv kamp mellom to klubber. Sammenlign hvert lags-rating over tid.',
+    'compare.desc': 'Spådommer for en fiktiv kamp mellom to klubber. Sammenlign hvert lags rating over tid.',
     'compare.home': 'Hjemme',
     'compare.away': 'Borte',
     'compare.hint': 'Klikk for å endre',
     'compare.swap': 'Bytt de to klubbene',
     'compare.match': 'Fiktiv kamp',
-    'compare.note': '{team} er vertskap · hjemmefordel er inkludert.',
+    'compare.note': '{team} spiller hjemme · hjemmefordel er inkludert.',
     'compare.scorelines': 'Mest sannsynlige resultater',
     'compare.ratingHistory': 'Rating over tid',
     'compare.season': 'Sesong',
@@ -310,7 +382,7 @@ const translations = {
     'model.howItWorks': 'Slik fungerer det',
     'model.how1': 'Hvert lag har én ELO-rating. Etter hver kamp får vinneren poeng og taperen taper — mer hvis resultatet var overraskende. Avstanden mellom to lags ratinger avgjør sannsynligheten for seier, uavgjort og tap.',
     'model.how2': 'Kryssesongsregresjon drar hver rating 12 % mot divisjonsgjennomsnittet i pausen mellom sesonger. Dette forhindrer at ett sterkt eller svakt år videreføres uendret, samtidig som formen beholder momentum.',
-    'model.how3': 'Simuleringer spiller gjennom de gjenværende kampene tusenvis av ganger. Hvert simulert kamp velger først et utfall (seier, uavgjort eller tap) fra førkampssannsynlighetene, og trekker deretter et sluttresultat fra ekte kamper betinget av utfallet og ratingforskjellen.',
+    'model.how3': 'Simuleringer spiller gjennom de gjenværende kampene tusenvis av ganger. Hver simulert kamp velger først et utfall (seier, uavgjort eller tap) fra førkampssannsynlighetene, og trekker deretter et sluttresultat fra ekte kamper betinget av utfallet og ratingforskjellen.',
     'model.how4': 'To OBOS-ligaen-klubber rykket opp fra tredje nivå, som er utenfor dette prosjekts data. De starter på bunnen av stigen og korrigeres kun av resultater.',
     'model.version': 'Versjon',
     'model.kfactor': 'K-faktor',
@@ -318,7 +390,7 @@ const translations = {
     'model.pts': 'po',
     'model.crossRegression': 'Kryssesongsregresjon',
     'model.towardMean': 'mot gjennomsnitt',
-    'model.peakDraw': 'Topp uavgjort-rate',
+    'model.peakDraw': 'Høyeste uavgjortrate',
     'model.simulations': 'Simuleringer',
     'model.seed': 'Tilfeldig frø',
 
@@ -330,10 +402,13 @@ const translations = {
     'team.played': 'Spilt',
     'team.matches': 'Kamper',
     'team.form': 'Form',
+    'team.prediction': 'Prediksjon',
+    'team.predPreSeason': 'Før sesong',
+    'team.predCurrent': 'Nå',
     'team.ratingHistory': 'Rating over tid',
-    'team.peak': 'Topp',
-    'team.worst': 'Bunn',
-    'team.finishProbs': 'Sluttssannsynligheter',
+    'team.peak': 'Høyeste',
+    'team.worst': 'Laveste',
+    'team.finishProbs': 'Sluttsannsynligheter',
     'team.seasonBySeason': 'Sesong for sesong — {n}',
     'team.season': 'Sesong',
     'team.division': 'Divisjon',
@@ -358,6 +433,40 @@ const translations = {
     'shape.mostLikely': 'Mest sannsynlig {n}',
     'shape.topN': 'Topp {n}: {pct}',
     'shape.bottomN': 'Bunn {n}: {pct}',
+    'shape.stackedArea': 'Stablet arealdiagram: sannsynlighet for hver sluttplassering til {team}',
+
+    // Grid tooltip
+    'grid.tooltip': '{team} ender på {position}',
+
+    // Chart
+    'chart.rating': 'Rating {n}',
+    'chart.ratingFrom': '{team} rating fra {from} til {to}',
+    'chart.ratingMoved': '{team}: rating gikk fra {from} til {to} over {seasons} sesonger.',
+    'chart.ratingHistoryFor': 'Rating-historikk for {home} og {away}',
+
+    // Form
+    'form.tooltip': '{w}S {d}U {l}T',
+
+    // Season select
+    'season.live': '{season} (live)',
+
+    // Status / errors
+    'status.loading': 'Laster sesongen\u2026',
+    'status.couldNotLoad': 'Kunne ikke laste {season}: {error}',
+    'status.couldNotLoadSeason': 'Kunne ikke laste sesongen: {error}. Er datafilene deployet?',
+    'status.couldNotRewind': 'Kunne ikke spole tilbake: {error}',
+
+    // Table dynamic headers
+    'table.champion': 'Mester',
+    'table.championShort': 'Titt',
+    'table.championDesc': ', sjanse for å vinne tittelen',
+    'table.promotion': 'Opprykk',
+    'table.promotionShort': 'Opp',
+    'table.promotionDesc': ', sjanse for opprykk',
+    'table.relegation': 'Nedrykk',
+
+    // Compare
+    'compare.chooseClub': 'Velg et lag',
 
     // Rating trend
     'trend.strongRise': 'Sterk oppgang (+{n})',
@@ -371,9 +480,23 @@ const translations = {
     'band.el': 'Europa League',
     'band.conf': 'Conference League',
     'band.relegation': 'Nedrykk',
+    'season.shape.axis': 'Rating etter hver kamp spilt',
 
     // Footer
     'footer.text': 'EliteTracker — Eliteserien og OBOS-ligaen, sesongene 2015\u20132026. Kampdata fra FotMob. Utviklet av <a href="mailto:tobias.samsonsen@gmail.com">Tobias Samsonsen</a>.',
+
+    // Aria / title attributes
+    'aria.chooseDivision': 'Velg divisjon',
+    'aria.colourTheme': 'Fargetema',
+    'aria.language': 'Språk',
+    'aria.chooseView': 'Velg visning',
+    'aria.moreViews': 'Flere visninger',
+    'aria.matchdaySlider': 'Spillerunde å vise sesongen fra',
+    'aria.oneEarlier': 'En spillerunde tidligere',
+    'aria.oneLater': 'En spillerunde senere',
+    'aria.gridCaption': 'Sannsynlighet for at hvert lag ender på hver plass',
+    'title.animateSeason': 'Animér sesongen',
+    'title.changeSpeed': 'Endre hastighet',
   },
 };
 
@@ -393,11 +516,19 @@ function setLang(lang) {
   applyTranslations();
 }
 
-/* Walk every element with data-i18n and set its text content. */
+/* Walk every element with data-i18n and set its text content.
+   Elements with data-i18n-attr get the translation set as that attribute
+   instead (skipping textContent so child nodes are preserved). */
 function applyTranslations() {
   document.querySelectorAll('[data-i18n]').forEach((node) => {
+    if (node.hasAttribute('data-i18n-attr')) return;
     const key = node.getAttribute('data-i18n');
     node.textContent = t(key);
+  });
+  document.querySelectorAll('[data-i18n-attr]').forEach((node) => {
+    const key = node.getAttribute('data-i18n');
+    const attr = node.getAttribute('data-i18n-attr');
+    if (key && attr) node.setAttribute(attr, t(key));
   });
   /* Footer contains an <a> — textContent would strip it. */
   const footer = document.getElementById('footer-text');

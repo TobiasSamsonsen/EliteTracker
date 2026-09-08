@@ -1833,6 +1833,65 @@ footer a { color: var(--ink); }
 .rating-trend--strong-fall { color: var(--outcome-bad); }
 .rating-trend--top { color: var(--band-champion); }
 
+.pred-box {
+  display: flex;
+  align-items: stretch;
+  gap: 0;
+  border-radius: 10px;
+  overflow: hidden;
+  border: 1px solid var(--rule);
+}
+.pred-box__from,
+.pred-box__to {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 1.25rem 1rem;
+  background: var(--cell-bg);
+}
+.pred-box__from {
+  background: linear-gradient(135deg, var(--band-europa) 0%, var(--cell-bg) 100%);
+}
+.pred-box__to {
+  background: linear-gradient(135deg, var(--cell-bg) 0%, var(--accent) 100%);
+}
+.pred-box__sub {
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ink-muted);
+  margin-bottom: 0.3rem;
+}
+.pred-box__pos {
+  font-size: 2.25rem;
+  font-weight: 800;
+  line-height: 1;
+  color: var(--ink);
+}
+.pred-box__mid {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 0.75rem 1rem;
+  background: var(--rule);
+  gap: 0.25rem;
+}
+.pred-box__arrow {
+  font-size: 1.75rem;
+  color: var(--ink);
+}
+.pred-box__delta {
+  font-size: 1.125rem;
+  font-weight: 700;
+  line-height: 1;
+}
+.pred-box__delta.up { color: var(--accent); }
+.pred-box__delta.down { color: var(--outcome-bad); }
+
 .team-summary__stats {
   display: flex;
   flex-wrap: wrap;

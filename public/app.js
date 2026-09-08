@@ -48,6 +48,8 @@ const state = {
   },
 };
 
+function localeDate() { return currentLang === 'no' ? 'nb-NO' : 'en-GB'; }
+
 /* fotmob stores clubs under their registered names. These are what people
    actually call them -- HamKam brands itself that way, and "Odds Ballklubb"
    is the formal form of a club everyone calls Odd. Applied once to the
@@ -441,7 +443,7 @@ function initGridAnimDOM(report, tableData) {
       cell.addEventListener('pointerenter', (event) => {
         const liveRow = anim.gridTableData?.find((r) => r.team_id === row.team_id);
         const prob = liveRow ? liveRow.position_probabilities[index] : row.position_probabilities[index];
-        showTooltip(event, `<b>${row.team}</b> finishes ${ordinal(position)}<br>${pct(prob, 2)}` + (band ? `<br>${band.label}` : ''));
+        showTooltip(event, `<b>${row.team}</b> ${ordinal(position)}<br>${pct(prob, 2)}` + (band ? `<br>${band.label}` : ''));
       });
       cell.addEventListener('pointermove', moveTooltip);
       cell.addEventListener('pointerleave', hideTooltip);
@@ -532,10 +534,10 @@ function animUpdateTimeline(report, days) {
   range.value = String(anim.matchdayIndex);
   const day = days[anim.matchdayIndex];
   if (day) {
-    const when = new Date(`${day.date}T12:00:00Z`).toLocaleDateString('en-GB', {
+    const when = new Date(`${day.date}T12:00:00Z`).toLocaleDateString(localeDate(), {
       weekday: 'short', day: 'numeric', month: 'long', year: 'numeric',
     });
-    $('#timeline-when').textContent = `Animating — as of ${when}`;
+    $('#timeline-when').textContent = t('timeline.animating', { when });
   }
 }
 
@@ -1019,8 +1021,9 @@ function bandColor(band, count) {
 }
 
 function ordinal(n) {
+  if (currentLang === 'no') return `${n}. plass`;
   const suffix = ['th', 'st', 'nd', 'rd'][(n % 100 - 20) % 10] || ['th', 'st', 'nd', 'rd'][n % 100] || 'th';
-  return `${n}${suffix}`;
+  return `${n}${suffix} place`;
 }
 
 /* ---------- legends ----------------------------------------------- */
@@ -1135,12 +1138,12 @@ function renderStandings(report) {
   const count = report.table.length;
 
   const promotion = report.league.slug === 'obosligaen';
-  $('#head-first').textContent = promotion ? 'Promotion' : 'Champion';
-  $('#head-first-short').textContent = promotion ? 'Up' : 'Title';
+  $('#head-first').textContent = promotion ? t('table.promotion') : t('table.champion');
+  $('#head-first-short').textContent = promotion ? t('table.promotionShort') : t('table.championShort');
   $('#head-first-desc').textContent = promotion
-    ? ', chance of promotion'
-    : ', chance of winning the title';
-  $('#head-last').textContent = 'Relegation';
+    ? t('table.promotionDesc')
+    : t('table.championDesc');
+  $('#head-last').textContent = t('table.relegation');
   renderSortHeaders();
 
   const formByTeamName = formByTeam(report.results);
@@ -1496,7 +1499,7 @@ function buildFixtureCard(fixture) {
   );
   for (const [outcome, value, who] of [
     ['home', fixture.home_win, fixture.home],
-    ['draw', fixture.draw, 'Draw'],
+    ['draw', fixture.draw, t('next.draw')],
     ['away', fixture.away_win, fixture.away],
   ]) {
     const segment = el('div', 'odds__seg');
@@ -1552,7 +1555,7 @@ function renderFixtures(report) {
   holder.replaceChildren();
 
   const next = report.fixtures.slice(0, 12);
-  $('#fixture-count').textContent = `next ${next.length} of ${report.fixtures.length}`;
+  $('#fixture-count').textContent = t('next.count', { n: next.length, total: report.fixtures.length });
 
   for (const fixture of next) {
     holder.appendChild(buildFixtureCard(fixture));
@@ -1719,7 +1722,7 @@ function renderPlayedResults(report) {
 
 function formatDate(iso) {
   const date = new Date(`${iso}T12:00:00Z`);
-  return date.toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' });
+  return date.toLocaleDateString(localeDate(), { weekday: 'short', day: 'numeric', month: 'short' });
 }
 
 /* Recent results per club, newest last. Built from the played-results list so
@@ -1750,12 +1753,12 @@ function formChipsEl(form) {
   if (!last5.length) return holder;
   const pts = formPoints(last5);
   const chip = el('span', 'form__chip', `${pts}/15`);
-  const t = pts / 15;
-  chip.style.background = `color-mix(in oklch, var(--outcome-good) ${Math.round(t * 100)}%, var(--outcome-bad))`;
+  const ratio = pts / 15;
+  chip.style.background = `color-mix(in oklch, var(--outcome-good) ${Math.round(ratio * 100)}%, var(--outcome-bad))`;
   const w = last5.filter((r) => r === 'W').length;
   const d = last5.filter((r) => r === 'D').length;
   const l = last5.filter((r) => r === 'L').length;
-  chip.title = `${w}W ${d}D ${l}L`;
+  chip.title = t('form.tooltip', { w, d, l });
   holder.appendChild(chip);
   return holder;
 }
@@ -1775,17 +1778,31 @@ function renderHero(report) {
   // A finished season has nothing left to simulate, so it gets told as history.
   if (model.matches_remaining === 0) {
     $('#hero-lede').textContent =
-      `${leader.team} finished top on ${leader.points} points. ` +
-      `All ${model.matches_played} matches played; ratings shown are where each club ended the season.`;
+      t('hero.lede.finished', {
+        team: leader.team,
+        points: leader.points,
+        matches: model.matches_played,
+      });
   } else {
     const lede =
       favourite.team === leader.team
-        ? `${leader.team} lead on ${leader.points} points and the model agrees: ` +
-          `${pct(favourite.position_probabilities[0])} to finish top.`
-        : `${leader.team} lead on ${leader.points} points, but the model makes ${favourite.team} ` +
-          `favourite at ${pct(favourite.position_probabilities[0])}.`;
+        ? t('hero.lede.agrees', {
+            team: leader.team,
+            points: leader.points,
+            pct: pct(favourite.position_probabilities[0]),
+          })
+        : t('hero.lede.disagrees', {
+            team: leader.team,
+            points: leader.points,
+            favourite: favourite.team,
+            pct: pct(favourite.position_probabilities[0]),
+          });
     $('#hero-lede').textContent =
-      `${lede} ${model.matches_remaining} matches left, each one played ${model.simulations.toLocaleString()} times over.`;
+      t('hero.lede.remaining', {
+        lede,
+        remaining: model.matches_remaining,
+        simulations: model.simulations.toLocaleString(),
+      });
   }
 
   const meta = $('#hero-meta');
@@ -1831,6 +1848,19 @@ function renderModelCard(report) {
 /* ---------- team: one club's focus view ----------------------------- */
 
 function openTeamView(teamId, fallbackName, { push = true } = {}) {
+  // If the team isn't in the current league's report, find the right one
+  const currentReport = state.reports?.[state.league];
+  if (currentReport && !currentReport.table.some((t) => t.team_id === teamId)) {
+    for (const [league, report] of Object.entries(state.reports)) {
+      if (report.table.some((t) => t.team_id === teamId)) {
+        state.league = league;
+        for (const button of document.querySelectorAll('[data-league]')) {
+          button.setAttribute('aria-pressed', String(button.dataset.league === league));
+        }
+        break;
+      }
+    }
+  }
   state.teamFocusId = teamId;
   state.teamFixturesPage = 0;
   state.teamResultsPage = 0;
@@ -1857,6 +1887,9 @@ function renderTeamView(report) {
 
   // 2. Finish grid row
   renderTeamGridRow(teamId, row, report, content);
+
+  // 2b. Pre-season vs live prediction
+  renderPreSeasonComparison(teamId, row, report, content);
 
   // 3. Rating history chart
   if (career && career.points.length >= 2) {
@@ -1947,25 +1980,25 @@ function renderTeamView(report) {
         const existing = content.querySelector('#team-shape-section');
         if (!existing) return;
         existing.classList.add('team-shape--loading');
-        existing.replaceChildren(el('div', '', `Loading ${record.season} shape\u2026`));
+        existing.replaceChildren(el('div', '', t('team.loadingShape', { year: record.season })));
         try {
           const res = await fetch(reportUrl(record.season));
           if (!res.ok) throw new Error(`HTTP ${res.status}`);
           const reports = applyShortNames(await res.json());
-          const report = reports[state.league];
+          const report = reports[record.league];
           const team = report.history?.teams?.find((t) => t.team_id === teamId);
           existing.classList.remove('team-shape--loading');
-          if (!team) { existing.replaceChildren(el('div', '', 'No shape data available.')); return; }
+          if (!team) { existing.replaceChildren(el('div', '', t('team.noShape'))); return; }
           const chart = svgEl('svg', { class: 'chart', role: 'img' });
-          chart.setAttribute('aria-label', `${teamName} season shape ${record.season}`);
+          chart.setAttribute('aria-label', t('team.seasonShapeYear', { year: record.season }));
           drawTeamShape(report, team, chart);
           const frag = document.createDocumentFragment();
-          frag.appendChild(el('div', 'label', `${record.season} season shape`));
+          frag.appendChild(el('div', 'label', t('team.seasonShapeYear', { year: record.season })));
           frag.appendChild(chart);
           existing.replaceChildren(frag);
         } catch (err) {
           existing.classList.remove('team-shape--loading');
-          existing.replaceChildren(el('div', '', `Could not load: ${err.message}`));
+          existing.replaceChildren(el('div', '', t('team.loadError', { error: err.message })));
         }
       });
       tr.appendChild(el('td', 'pos', String(record.season)));
@@ -2028,7 +2061,14 @@ function renderTeamSummary(teamId, row, career, report, container) {
   const rating = Math.round(row?.rating || career?.current_rating || 0);
   ratingLine.appendChild(el('span', 'team-summary__rating', String(rating)));
   ratingBlock.appendChild(ratingLine);
-  ratingBlock.appendChild(el('span', 'team-summary__rating-pos', `${ordinal(row?.position ?? 0)} of ${report.table.length}`));
+  // Rank by rating across both divisions, like the ladder
+  const allTeams = state.reports
+    ? Object.values(state.reports).flatMap((r) => r.table.map((t) => ({ team_id: t.team_id, rating: t.rating })))
+    : [];
+  allTeams.sort((a, b) => b.rating - a.rating);
+  const crossRank = allTeams.findIndex((t) => t.team_id === teamId);
+  const totalTeams = allTeams.length || report.table.length;
+  ratingBlock.appendChild(el('span', 'team-summary__rating-pos', `${ordinal(crossRank >= 0 ? crossRank + 1 : (row?.position ?? 0))} of ${totalTeams}`));
   header.appendChild(ratingBlock);
 
   card.appendChild(header);
@@ -2127,7 +2167,7 @@ function renderTeamGridRow(teamId, row, report, container) {
 
     const band = bandFor(bands, position);
     cell.addEventListener('pointerenter', (event) =>
-      showTooltip(event, `<b>${row.team}</b> finishes ${ordinal(position)}<br>${pct(prob, 2)}` + (band ? `<br>${band.label}` : ''))
+      showTooltip(event, `<b>${row.team}</b> ${ordinal(position)}<br>${pct(prob, 2)}` + (band ? `<br>${band.label}` : ''))
     );
     cell.addEventListener('pointermove', moveTooltip);
     cell.addEventListener('pointerleave', hideTooltip);
@@ -2139,6 +2179,39 @@ function renderTeamGridRow(teamId, row, report, container) {
     wrap.appendChild(cellWrap);
   }
   section.appendChild(wrap);
+  container.appendChild(section);
+}
+
+function renderPreSeasonComparison(teamId, row, report, container) {
+  const historyTeam = report.history?.teams?.find((t) => t.team_id === teamId);
+  if (!historyTeam || historyTeam.positions.length < 2 || !row) return;
+
+  const prePositions = historyTeam.positions[0];
+  const preBest = prePositions.indexOf(Math.max(...prePositions));
+  const liveBest = row.position_probabilities.indexOf(Math.max(...row.position_probabilities));
+  const preRating = historyTeam.ratings[0];
+  const delta = preRating != null ? Math.round(row.rating - preRating) : null;
+
+  const section = el('div', 'team-section');
+  section.appendChild(el('div', 'label', t('team.prediction')));
+
+  const box = el('div', 'pred-box');
+  const from = el('div', 'pred-box__from');
+  from.appendChild(el('div', 'pred-box__sub', t('team.predPreSeason')));
+  from.appendChild(el('div', 'pred-box__pos', ordinal(preBest + 1)));
+  box.appendChild(from);
+  const mid = el('div', 'pred-box__mid');
+  if (delta != null) {
+    const cls = delta > 0 ? 'up' : delta < 0 ? 'down' : '';
+    mid.appendChild(el('span', `pred-box__delta ${cls}`, delta > 0 ? `+${delta}` : String(delta)));
+  }
+  mid.appendChild(el('div', 'pred-box__arrow', '\u2192'));
+  box.appendChild(mid);
+  const to = el('div', 'pred-box__to');
+  to.appendChild(el('div', 'pred-box__sub', t('team.predCurrent')));
+  to.appendChild(el('div', 'pred-box__pos', ordinal(liveBest + 1)));
+  box.appendChild(to);
+  section.appendChild(box);
   container.appendChild(section);
 }
 
@@ -2204,7 +2277,7 @@ function drawTeamChart(career) {
   );
 
   const axis = svgEl('text', { class: 'axis-title', x: pad.left, y: height - 6 });
-  axis.textContent = 'Rating after every match played';
+    axis.textContent = t('season.shape.axis');
   chart.appendChild(axis);
 
   // Crosshair readout
@@ -2225,10 +2298,10 @@ function drawTeamChart(career) {
     crosshair.setAttribute('x1', x(times[index]));
     crosshair.setAttribute('x2', x(times[index]));
     crosshair.style.opacity = '1';
-    const when = new Date(times[index]).toLocaleDateString('en-GB', {
+    const when = new Date(times[index]).toLocaleDateString(localeDate(), {
       day: 'numeric', month: 'short', year: 'numeric',
     });
-    showTooltip(event, `<b>${career.team}</b><br>${when}<br>Rating ${points[index][1]}`);
+    showTooltip(event, `<b>${career.team}</b><br>${when}<br>${t('chart.rating', { n: points[index][1] })}`);
   });
   surface.addEventListener('pointerleave', () => {
     crosshair.style.opacity = '0';
@@ -2236,10 +2309,10 @@ function drawTeamChart(career) {
   });
   chart.appendChild(surface);
 
-  chart.setAttribute('aria-label', `${career.team} rating from ${points[0][0]} to ${points[points.length - 1][0]}`);
+  chart.setAttribute('aria-label', t('chart.ratingFrom', { team: career.team, from: points[0][0], to: points[points.length - 1][0] }));
   const desc = $('#team-chart-desc');
   if (desc) desc.textContent =
-    `${career.team}: rating moved from ${points[0][1]} to ${career.current_rating} across ${career.seasons.length} seasons.`;
+    t('chart.ratingMoved', { team: career.team, from: points[0][1], to: career.current_rating, seasons: career.seasons.length });
 }
 
 function renderTeamFixtures(teamId, teamName, report, container) {
@@ -2396,7 +2469,7 @@ function renderTeamShape(teamId, report, container, { label = t('team.seasonShap
   section.appendChild(el('div', 'label', seasonLabel || label));
 
   const chart = svgEl('svg', { class: 'chart', role: 'img' });
-  chart.setAttribute('aria-label', `Stacked area chart: ${team.team}'s probability of each finishing position`);
+  chart.setAttribute('aria-label', t('shape.stackedArea', { team: team.team }));
   section.appendChild(chart);
 
   container.appendChild(section);
@@ -2486,7 +2559,7 @@ function drawTeamShape(report, team, chart) {
     const monthIdx = (firstMonthIdx + m) % 12;
     const year = firstMonthYear + Math.floor((firstMonthIdx + m) / 12);
     const monthName = new Date(Date.UTC(year, monthIdx, 1))
-      .toLocaleDateString('en-GB', { month: 'short' });
+      .toLocaleDateString(localeDate(), { month: 'short' });
 
     // 1st of this month as a timestamp
     const firstOfMonth = Date.UTC(year, monthIdx, 1);
@@ -2548,18 +2621,18 @@ function attachTeamShapeCrosshair(chart, report, team, geometry) {
     const probabilities = team.positions[index];
     const best = mostLikely(probabilities);
     const sum = (band) => (band ? probabilities.slice(band.first - 1, band.last).reduce((a, b) => a + b, 0) : 0);
-    const when = new Date(`${history.dates[index]}T12:00:00Z`).toLocaleDateString('en-GB', {
+    const when = new Date(`${history.dates[index]}T12:00:00Z`).toLocaleDateString(localeDate(), {
       day: 'numeric', month: 'short', year: 'numeric',
     });
     const played = history.matches_played[index];
 
     showTooltip(
       event,
-      `<b>${team.team}</b> · ${played === 0 ? 'pre-season' : when}<br>` +
-        `${played} of ${totalMatches} matches played<br>` +
-        `Rating ${team.ratings[index]}<br>` +
-        `Most likely ${ordinal(best + 1)} (${pct(probabilities[best])})<br>` +
-        `${top ? `Top ${top.last}: ${pct(sum(top))} · ` : ''}Bottom ${count - (relegation ? relegation.first - 1 : count)}: ${pct(sum(relegation))}`
+      `<b>${team.team}</b> · ${played === 0 ? t('shape.preseason') : when}<br>` +
+        `${t('shape.matchesPlayed', { n: played, total: totalMatches })}<br>` +
+        `${t('shape.rating', { n: team.ratings[index] })}<br>` +
+        `${t('shape.mostLikely', { n: ordinal(best + 1) })} (${pct(probabilities[best])})<br>` +
+        `${top ? `${t('shape.topN', { n: top.last, pct: pct(sum(top)) })} · ` : ''}${t('shape.bottomN', { n: count - (relegation ? relegation.first - 1 : count), pct: pct(sum(relegation)) })}`
     );
   });
   surface.addEventListener('pointerleave', () => {
@@ -2603,12 +2676,12 @@ function renderTimeline(report) {
   panel.classList.toggle('is-past', !live);
   $('#timeline-now').hidden = live;
 
-  const when = new Date(`${day.date}T12:00:00Z`).toLocaleDateString('en-GB', {
+  const when = new Date(`${day.date}T12:00:00Z`).toLocaleDateString(localeDate(), {
     weekday: 'short', day: 'numeric', month: 'long', year: 'numeric',
   });
   $('#timeline-when').textContent = live
-    ? `Live — ${day.matches_played} matches played`
-    : `As of ${when} — ${day.matches_played} of ${report.model.matches_played + report.model.matches_remaining} played`;
+    ? t('timeline.liveCount', { n: day.matches_played })
+    : t('timeline.asOf', { when, n: day.matches_played, total: report.model.matches_played + report.model.matches_remaining });
 
   $('#timeline-back').disabled = index <= 0;
   $('#timeline-forward').disabled = index >= days.length - 1;
@@ -2617,9 +2690,9 @@ function renderTimeline(report) {
   scale.replaceChildren();
   const first = new Date(`${days[0].date}T12:00:00Z`);
   const last = new Date(`${days[days.length - 1].date}T12:00:00Z`);
-  const month = (d) => d.toLocaleDateString('en-GB', { month: 'short', year: 'numeric' });
+  const month = (d) => d.toLocaleDateString(localeDate(), { month: 'short', year: 'numeric' });
   scale.appendChild(el('span', '', month(first)));
-  scale.appendChild(el('span', '', `${days.length} matchdays`));
+  scale.appendChild(el('span', '', t('timeline.matchdays', { n: days.length })));
   scale.appendChild(el('span', '', month(last)));
 }
 
@@ -2638,18 +2711,18 @@ function onTimelineInput(event) {
     const cur = anim.reports.get(index);
     const next = anim.reports.get(index + 1);
     if (cur && next) updateGridAnimFrame(lerpReport(cur, next, 0));
-    const when = new Date(`${day.date}T12:00:00Z`).toLocaleDateString('en-GB', {
+    const when = new Date(`${day.date}T12:00:00Z`).toLocaleDateString(localeDate(), {
       weekday: 'short', day: 'numeric', month: 'long', year: 'numeric',
     });
-    $('#timeline-when').textContent = `Paused — as of ${when}`;
+    $('#timeline-when').textContent = t('timeline.paused', { when });
     return;
   }
 
   const live = index === days.length - 1;
-  const when = new Date(`${day.date}T12:00:00Z`).toLocaleDateString('en-GB', {
+  const when = new Date(`${day.date}T12:00:00Z`).toLocaleDateString(localeDate(), {
     weekday: 'short', day: 'numeric', month: 'long', year: 'numeric',
   });
-  $('#timeline-when').textContent = live ? 'Live — latest results' : `As of ${when}`;
+  $('#timeline-when').textContent = live ? t('timeline.scrubLive') : t('timeline.scrubAsOf', { when });
   $('#timeline').classList.toggle('is-past', !live);
 
   clearTimeout(state.rewindTimer);
@@ -2667,7 +2740,7 @@ async function rewindTo(asof) {
     state.asof = asof;
     render();
   } catch (error) {
-    $('#timeline-when').textContent = `Could not rewind: ${error.message}`;
+    $('#timeline-when').textContent = t('status.couldNotRewind', { error: error.message });
   } finally {
     content.classList.remove('is-rewinding');
   }
@@ -3003,7 +3076,7 @@ async function loadSeason(season) {
   } catch (error) {
     select.value = String(previous);
     $('#status').hidden = false;
-    $('#status').textContent = `Could not load ${season}: ${error.message}`;
+    $('#status').textContent = t('status.couldNotLoad', { season, error: error.message });
   } finally {
     select.disabled = false;
   }
@@ -3015,7 +3088,7 @@ function renderSeasonOptions(report) {
   if (select.options.length !== seasons.length) {
     select.replaceChildren();
     for (const season of [...seasons].reverse()) {
-      const option = el('option', '', season === report.league.current_season ? `${season} (live)` : String(season));
+      const option = el('option', '', season === report.league.current_season ? t('season.live', { season }) : String(season));
       option.value = String(season);
       select.appendChild(option);
     }
@@ -3128,7 +3201,7 @@ function oddsBar(homeName, awayName, entry) {
   );
   for (const [outcome, value, who] of [
     ['home', entry.home_win, homeName],
-    ['draw', entry.draw, 'Draw'],
+    ['draw', entry.draw, t('next.draw')],
     ['away', entry.away_win, awayName],
   ]) {
     const segment = el('div', 'odds__seg');
@@ -3272,9 +3345,9 @@ function renderCompare(report) {
   const makePicker = (box, side) => {
     box.setAttribute('role', 'button');
     box.setAttribute('tabindex', '0');
-    box.setAttribute('aria-label', 'Choose a club');
+    box.setAttribute('aria-label', t('compare.chooseClub'));
     box.setAttribute('aria-haspopup', 'listbox');
-    box.title = 'Choose a club';
+    box.title = t('compare.chooseClub');
     const toggle = () => {
       if (compareMenuEl && compareMenuEl.dataset.side === side) closeCompareMenu();
       else openCompareMenu(box, side, report);
@@ -3314,7 +3387,7 @@ function renderCompare(report) {
     const histBlock = el('div', 'compare__block');
     histBlock.appendChild(el('h3', 'compare__subhead', t('compare.ratingHistory')));
     const svg = svgEl('svg', { class: 'chart', role: 'img' });
-    svg.setAttribute('aria-label', `Rating history for ${homeName} and ${awayName}`);
+    svg.setAttribute('aria-label', t('chart.ratingHistoryFor', { home: homeName, away: awayName }));
     drawCompareHistory(svg, careerA, careerB, teamNameById(report, aId), teamNameById(report, bId));
     histBlock.appendChild(svg);
     const legend = el('div', 'legend');
@@ -3416,7 +3489,7 @@ function drawCompareHistory(svg, careerA, careerB, labelA, labelB) {
     line.setAttribute('x1', px);
     line.setAttribute('x2', px);
     line.style.opacity = '1';
-    const when = new Date(pointTime(pa)).toLocaleDateString('en-GB', { month: 'short', year: 'numeric' });
+    const when = new Date(pointTime(pa)).toLocaleDateString(localeDate(), { month: 'short', year: 'numeric' });
     showTooltip(event, `<b>${labelA}</b> ${Math.round(pa[1])} · <b>${labelB}</b> ${Math.round(pb[1])}<br>${when}`);
   });
   surface.addEventListener('pointerleave', () => {
@@ -3466,7 +3539,7 @@ async function boot() {
     }
   } catch (error) {
     $('#status').textContent =
-      `Could not load the season: ${error.message}. Are the data files deployed?`;
+      t('status.couldNotLoadSeason', { error: error.message });
   }
 }
 
