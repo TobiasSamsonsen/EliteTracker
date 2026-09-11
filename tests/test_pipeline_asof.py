@@ -5,8 +5,7 @@ import json
 import pytest
 
 from elitetracker.normalize.matches import Match, dump
-from elitetracker.normalize.standings import Standing, dump_standings
-from elitetracker.pipeline import _matchdays, build_all_careers, build_report
+from elitetracker.pipeline import LEAGUE_SPECS, _matchdays, bands_for, build_all_careers, build_report
 from elitetracker.simulation.history import HistoryConfig
 from elitetracker.simulation.season import SimulationConfig
 
@@ -22,7 +21,6 @@ def match(match_id, home, away, date, played=True, score=(1, 0), round_number=1)
         time="18:00",
         home=home,
         away=away,
-        venue=None,
         home_goals=home_goals,
         away_goals=away_goals,
         played=played,
@@ -75,14 +73,11 @@ def tiny_league(tmp_path):
 
     for season in (2014,):
         for slug, pair in (("eliteserien", teams), ("obosligaen", others)):
-            dump_standings(
-                [
-                    Standing(position=i + 1, team=name, team_id=name, played=2, wins=1,
-                             draws=0, losses=1, goals_for=2, goals_against=2, points=3)
-                    for i, name in enumerate(pair)
-                ],
-                tmp_path / f"{slug}_{season}_standings.json",
-            )
+            (tmp_path / f"{slug}_{season}_standings.json").write_text(json.dumps([
+                dict(position=i + 1, team=name, team_id=name, played=2, wins=1,
+                     draws=0, losses=1, goals_for=2, goals_against=2, points=3)
+                for i, name in enumerate(pair)
+            ]), encoding="utf-8")
 
     for season in (2015, 2016):
         dump(
@@ -191,10 +186,17 @@ class TestFixtureRatings:
         assert fixture["away_rating"] == pytest.approx(ratings[fixture["away"]])
 
     def test_the_stronger_side_is_favoured(self, tiny_league):
+        from elitetracker.model.attack_defence import AttackDefence, outcome_probabilities
+
         fixture = build(tiny_league, asof="2016-03-01")["fixtures"][0]
-        # B hosts A having just lost to them, so A is away favourite.
+        # B hosts A having just lost to them, so A is the stronger side by rating.
         assert fixture["away_rating"] > fixture["home_rating"]
-        assert fixture["away_win"] > fixture["home_win"]
+        # The shipped odds blend Elo with the goals model; after a single match the
+        # goals model is still nearly neutral (home advantage only), so the test is
+        # that Elo's view pulls A's chance above what the neutral grid alone gives.
+        neutral = outcome_probabilities(AttackDefence().grid(fixture["home_id"], fixture["away_id"], "2016-03-01"))
+        assert fixture["away_win"] > neutral.away_win
+        assert fixture["home_win"] < neutral.home_win
 
 
 class TestFixtureScorelines:
@@ -226,3 +228,28 @@ class TestFixtureScorelines:
         first = build(tiny_league, asof="2016-03-01")["fixtures"][0]["scorelines"]
         second = build(tiny_league, asof="2016-03-01")["fixtures"][0]["scorelines"]
         assert first == second
+
+
+class TestBands:
+    def test_eliteserien_bands_per_season(self):
+        """Pins the per-season European allocation as it was hand-written."""
+        cl, el, conf = ("Champions League qualification", "Europa League qualification",
+                        "Conference League qualification")
+        europe = {
+            2015: [(cl, 1, 1), (el, 2, 3)], 2016: [(cl, 1, 1), (el, 2, 4)],
+            2017: [(cl, 1, 1), (el, 2, 3)], 2018: [(cl, 1, 1), (el, 2, 4)],
+            2019: [(cl, 1, 1), (el, 2, 3)], 2020: [(cl, 1, 1), (conf, 2, 4)],
+            2021: [(cl, 1, 1), (conf, 2, 3)], 2022: [(cl, 1, 1), (conf, 2, 3)],
+            2023: [(cl, 1, 1), (conf, 2, 3)], 2024: [(cl, 1, 2), (conf, 3, 4)],
+            2025: [(cl, 1, 2), (el, 3, 3), (conf, 4, 4)], 2026: [(cl, 1, 2), (conf, 3, 4)],
+        }
+        spec = LEAGUE_SPECS["eliteserien"]
+        for season, rows in europe.items():
+            expected = [("Champions", 1, 1, "champion")]
+            expected += [(label, first, last, "top" if label == cl else "europe") for label, first, last in rows]
+            expected += [("Relegation play-off", 14, 14, "playoff"), ("Relegation", 15, 16, "relegation")]
+            got = [(b.label, b.first, b.last, b.tone) for b in bands_for(spec, season)]
+            assert got == expected, season
+        assert bands_for(spec, 2030) == bands_for(spec, 2026)
+        assert [b.label for b in bands_for(LEAGUE_SPECS["obosligaen"], 2020)] == [
+            "Champions", "Promotion", "Promotion play-off", "Relegation play-off", "Relegation"]

@@ -1,22 +1,25 @@
-# Deploy on every push to main (including the scheduled data refresh's commit).
+# Deploy on every push to main (including the scheduled data refresh's commit);
+# a pull request from this repo gets a preview channel instead.
 #
 # CI only ever simulates the CURRENT season. Past seasons are simulated on the
 # developer's machine and uploaded once as the `past-seasons` release asset --
-# see AGENTS.md, "Publishing past seasons". Re-running a decade of Monte Carlo
-# on every push was the bulk of this job's runtime and none of it ever changed.
+# see AGENTS.md, "Publishing past seasons".
 
-name: Deploy to Firebase Hosting on merge
+name: Deploy to Firebase Hosting
 on:
   push:
-    branches:
-      - main
+    branches: [main]
+  pull_request:
   workflow_dispatch:
 
 permissions:
+  checks: write
   contents: read
+  pull-requests: write
 
 jobs:
   build_and_deploy:
+    if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -46,5 +49,6 @@ jobs:
         with:
           repoToken: ${{ secrets.GITHUB_TOKEN }}
           firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_ELITETRACKERNO }}
-          channelId: live
           projectId: elitetrackerno
+          # Empty on a pull request, which makes the action create a preview channel.
+          channelId: ${{ github.event_name != 'pull_request' && 'live' || '' }}

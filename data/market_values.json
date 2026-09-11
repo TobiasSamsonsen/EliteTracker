@@ -1,0 +1,1946 @@
+{
+ "2015": {
+  "6541": {
+   "name": "Mjøndalen",
+   "total": 2530000.0,
+   "league": "eliteserien"
+  },
+  "8478": {
+   "name": "Viking",
+   "total": 8900000.0,
+   "league": "eliteserien"
+  },
+  "8609": {
+   "name": "Sandefjord",
+   "total": 4100000.0,
+   "league": "eliteserien"
+  },
+  "8402": {
+   "name": "Bodø/Glimt",
+   "total": 6450000.0,
+   "league": "eliteserien"
+  },
+  "8608": {
+   "name": "Tromsø",
+   "total": 9650000.0,
+   "league": "eliteserien"
+  },
+  "8509": {
+   "name": "Sarpsborg 08",
+   "total": 9430000.0,
+   "league": "eliteserien"
+  },
+  "9918": {
+   "name": "Stabæk",
+   "total": 7950000.0,
+   "league": "eliteserien"
+  },
+  "8512": {
+   "name": "FK Haugesund",
+   "total": 11750000.0,
+   "league": "eliteserien"
+  },
+  "8422": {
+   "name": "Rosenborg",
+   "total": 24580000.0,
+   "league": "eliteserien"
+  },
+  "8404": {
+   "name": "Aalesund",
+   "total": 9780000.0,
+   "league": "eliteserien"
+  },
+  "8007": {
+   "name": "Vålerenga",
+   "total": 12680000.0,
+   "league": "eliteserien"
+  },
+  "8180": {
+   "name": "Strømsgodset",
+   "total": 15900000.0,
+   "league": "eliteserien"
+  },
+  "9917": {
+   "name": "Molde",
+   "total": 19050000.0,
+   "league": "eliteserien"
+  },
+  "7988": {
+   "name": "Odds Ballklubb",
+   "total": 8500000.0,
+   "league": "eliteserien"
+  },
+  "8476": {
+   "name": "Lillestrøm",
+   "total": 4880000.0,
+   "league": "eliteserien"
+  },
+  "9919": {
+   "name": "Start",
+   "total": 5450000.0,
+   "league": "eliteserien"
+  },
+  "8417": {
+   "name": "Fredrikstad",
+   "total": 3280000.0,
+   "league": "obosligaen"
+  },
+  "8468": {
+   "name": "Brann",
+   "total": 10950000.0,
+   "league": "obosligaen"
+  },
+  "7963": {
+   "name": "Follo",
+   "total": 700000.0,
+   "league": "obosligaen"
+  },
+  "8067": {
+   "name": "Hønefoss",
+   "total": 4150000.0,
+   "league": "obosligaen"
+  },
+  "4249": {
+   "name": "Strømmen",
+   "total": 1780000.0,
+   "league": "obosligaen"
+  },
+  "7937": {
+   "name": "Hødd",
+   "total": 2330000.0,
+   "league": "obosligaen"
+  },
+  "8531": {
+   "name": "Bryne",
+   "total": 2580000.0,
+   "league": "obosligaen"
+  },
+  "1706": {
+   "name": "Øygarden FK",
+   "total": 500000.0,
+   "league": "obosligaen"
+  },
+  "8605": {
+   "name": "Kristiansund",
+   "total": 2250000.0,
+   "league": "obosligaen"
+  },
+  "6563": {
+   "name": "Ranheim",
+   "total": 2050000.0,
+   "league": "obosligaen"
+  },
+  "8133": {
+   "name": "Sandnes Ulf",
+   "total": 6250000.0,
+   "league": "obosligaen"
+  },
+  "2303": {
+   "name": "Jerv",
+   "total": 900000.0,
+   "league": "obosligaen"
+  },
+  "8616": {
+   "name": "Sogndal",
+   "total": 5250000.0,
+   "league": "obosligaen"
+  },
+  "8137": {
+   "name": "Bærum",
+   "total": 1480000.0,
+   "league": "obosligaen"
+  },
+  "10021": {
+   "name": "Åsane",
+   "total": 700000.0,
+   "league": "obosligaen"
+  },
+  "6561": {
+   "name": "Levanger",
+   "total": 1370000.0,
+   "league": "obosligaen"
+  }
+ },
+ "2016": {
+  "8404": {
+   "name": "Aalesund",
+   "total": 8380000.0,
+   "league": "eliteserien"
+  },
+  "9918": {
+   "name": "Stabæk",
+   "total": 10030000.0,
+   "league": "eliteserien"
+  },
+  "7988": {
+   "name": "Odds Ballklubb",
+   "total": 12900000.0,
+   "league": "eliteserien"
+  },
+  "8422": {
+   "name": "Rosenborg",
+   "total": 24900000.0,
+   "league": "eliteserien"
+  },
+  "9917": {
+   "name": "Molde",
+   "total": 23250000.0,
+   "league": "eliteserien"
+  },
+  "8608": {
+   "name": "Tromsø",
+   "total": 5950000.0,
+   "league": "eliteserien"
+  },
+  "8402": {
+   "name": "Bodø/Glimt",
+   "total": 6350000.0,
+   "league": "eliteserien"
+  },
+  "8616": {
+   "name": "Sogndal",
+   "total": 4500000.0,
+   "league": "eliteserien"
+  },
+  "8509": {
+   "name": "Sarpsborg 08",
+   "total": 9800000.0,
+   "league": "eliteserien"
+  },
+  "8512": {
+   "name": "FK Haugesund",
+   "total": 7850000.0,
+   "league": "eliteserien"
+  },
+  "8180": {
+   "name": "Strømsgodset",
+   "total": 17750000.0,
+   "league": "eliteserien"
+  },
+  "8468": {
+   "name": "Brann",
+   "total": 11100000.0,
+   "league": "eliteserien"
+  },
+  "9919": {
+   "name": "Start",
+   "total": 3900000.0,
+   "league": "eliteserien"
+  },
+  "8476": {
+   "name": "Lillestrøm",
+   "total": 5750000.0,
+   "league": "eliteserien"
+  },
+  "8007": {
+   "name": "Vålerenga",
+   "total": 10180000.0,
+   "league": "eliteserien"
+  },
+  "8478": {
+   "name": "Viking",
+   "total": 5550000.0,
+   "league": "eliteserien"
+  },
+  "8417": {
+   "name": "Fredrikstad",
+   "total": 4200000.0,
+   "league": "obosligaen"
+  },
+  "6561": {
+   "name": "Levanger",
+   "total": 1570000.0,
+   "league": "obosligaen"
+  },
+  "9812": {
+   "name": "Raufoss",
+   "total": 1730000.0,
+   "league": "obosligaen"
+  },
+  "2305": {
+   "name": "KFUM",
+   "total": 1130000.0,
+   "league": "obosligaen"
+  },
+  "2303": {
+   "name": "Jerv",
+   "total": 1000000.0,
+   "league": "obosligaen"
+  },
+  "6563": {
+   "name": "Ranheim",
+   "total": 1380000.0,
+   "league": "obosligaen"
+  },
+  "10021": {
+   "name": "Åsane",
+   "total": 450000.0,
+   "league": "obosligaen"
+  },
+  "8179": {
+   "name": "Kongsvinger",
+   "total": 2280000.0,
+   "league": "obosligaen"
+  },
+  "7937": {
+   "name": "Hødd",
+   "total": 2580000.0,
+   "league": "obosligaen"
+  },
+  "8531": {
+   "name": "Bryne",
+   "total": 1800000.0,
+   "league": "obosligaen"
+  },
+  "8609": {
+   "name": "Sandefjord",
+   "total": 4700000.0,
+   "league": "obosligaen"
+  },
+  "4249": {
+   "name": "Strømmen",
+   "total": 2180000.0,
+   "league": "obosligaen"
+  },
+  "10232": {
+   "name": "Ull/Kisa",
+   "total": 2130000.0,
+   "league": "obosligaen"
+  },
+  "8133": {
+   "name": "Sandnes Ulf",
+   "total": 3930000.0,
+   "league": "obosligaen"
+  },
+  "6541": {
+   "name": "Mjøndalen",
+   "total": 3330000.0,
+   "league": "obosligaen"
+  },
+  "8605": {
+   "name": "Kristiansund",
+   "total": 2730000.0,
+   "league": "obosligaen"
+  }
+ },
+ "2017": {
+  "8605": {
+   "name": "Kristiansund",
+   "total": 3300000.0,
+   "league": "eliteserien"
+  },
+  "9917": {
+   "name": "Molde",
+   "total": 11350000.0,
+   "league": "eliteserien"
+  },
+  "8476": {
+   "name": "Lillestrøm",
+   "total": 5750000.0,
+   "league": "eliteserien"
+  },
+  "8609": {
+   "name": "Sandefjord",
+   "total": 3700000.0,
+   "league": "eliteserien"
+  },
+  "8180": {
+   "name": "Strømsgodset",
+   "total": 16100000.0,
+   "league": "eliteserien"
+  },
+  "8512": {
+   "name": "FK Haugesund",
+   "total": 7500000.0,
+   "league": "eliteserien"
+  },
+  "8509": {
+   "name": "Sarpsborg 08",
+   "total": 8250000.0,
+   "league": "eliteserien"
+  },
+  "8616": {
+   "name": "Sogndal",
+   "total": 8000000.0,
+   "league": "eliteserien"
+  },
+  "9918": {
+   "name": "Stabæk",
+   "total": 12550000.0,
+   "league": "eliteserien"
+  },
+  "8404": {
+   "name": "Aalesund",
+   "total": 7350000.0,
+   "league": "eliteserien"
+  },
+  "8608": {
+   "name": "Tromsø",
+   "total": 6880000.0,
+   "league": "eliteserien"
+  },
+  "8468": {
+   "name": "Brann",
+   "total": 8930000.0,
+   "league": "eliteserien"
+  },
+  "8422": {
+   "name": "Rosenborg",
+   "total": 26000000.0,
+   "league": "eliteserien"
+  },
+  "7988": {
+   "name": "Odds Ballklubb",
+   "total": 12450000.0,
+   "league": "eliteserien"
+  },
+  "8007": {
+   "name": "Vålerenga",
+   "total": 10530000.0,
+   "league": "eliteserien"
+  },
+  "8478": {
+   "name": "Viking",
+   "total": 7030000.0,
+   "league": "eliteserien"
+  },
+  "9919": {
+   "name": "Start",
+   "total": 6050000.0,
+   "league": "obosligaen"
+  },
+  "8417": {
+   "name": "Fredrikstad",
+   "total": 4550000.0,
+   "league": "obosligaen"
+  },
+  "8617": {
+   "name": "Tromsdalen",
+   "total": 1650000.0,
+   "league": "obosligaen"
+  },
+  "10021": {
+   "name": "Åsane",
+   "total": 1750000.0,
+   "league": "obosligaen"
+  },
+  "4319": {
+   "name": "Florø",
+   "total": 425000.0,
+   "league": "obosligaen"
+  },
+  "2303": {
+   "name": "Jerv",
+   "total": 2130000.0,
+   "league": "obosligaen"
+  },
+  "6541": {
+   "name": "Mjøndalen",
+   "total": 2600000.0,
+   "league": "obosligaen"
+  },
+  "257932": {
+   "name": "Arendal Fotball",
+   "total": 1650000.0,
+   "league": "obosligaen"
+  },
+  "6563": {
+   "name": "Ranheim",
+   "total": 1430000.0,
+   "league": "obosligaen"
+  },
+  "4249": {
+   "name": "Strømmen",
+   "total": 1630000.0,
+   "league": "obosligaen"
+  },
+  "8133": {
+   "name": "Sandnes Ulf",
+   "total": 3230000.0,
+   "league": "obosligaen"
+  },
+  "2292": {
+   "name": "Elverum",
+   "total": 1870000.0,
+   "league": "obosligaen"
+  },
+  "10232": {
+   "name": "Ull/Kisa",
+   "total": 1300000.0,
+   "league": "obosligaen"
+  },
+  "6561": {
+   "name": "Levanger",
+   "total": 1650000.0,
+   "league": "obosligaen"
+  },
+  "8402": {
+   "name": "Bodø/Glimt",
+   "total": 5680000.0,
+   "league": "obosligaen"
+  },
+  "8179": {
+   "name": "Kongsvinger",
+   "total": 2480000.0,
+   "league": "obosligaen"
+  }
+ },
+ "2018": {
+  "8402": {
+   "name": "Bodø/Glimt",
+   "total": 5180000.0,
+   "league": "eliteserien"
+  },
+  "8476": {
+   "name": "Lillestrøm",
+   "total": 4730000.0,
+   "league": "eliteserien"
+  },
+  "9917": {
+   "name": "Molde",
+   "total": 13430000.0,
+   "league": "eliteserien"
+  },
+  "8609": {
+   "name": "Sandefjord",
+   "total": 6180000.0,
+   "league": "eliteserien"
+  },
+  "7988": {
+   "name": "Odds Ballklubb",
+   "total": 10750000.0,
+   "league": "eliteserien"
+  },
+  "8512": {
+   "name": "FK Haugesund",
+   "total": 9150000.0,
+   "league": "eliteserien"
+  },
+  "9919": {
+   "name": "Start",
+   "total": 5200000.0,
+   "league": "eliteserien"
+  },
+  "8608": {
+   "name": "Tromsø",
+   "total": 6200000.0,
+   "league": "eliteserien"
+  },
+  "8180": {
+   "name": "Strømsgodset",
+   "total": 11100000.0,
+   "league": "eliteserien"
+  },
+  "9918": {
+   "name": "Stabæk",
+   "total": 6030000.0,
+   "league": "eliteserien"
+  },
+  "8509": {
+   "name": "Sarpsborg 08",
+   "total": 8730000.0,
+   "league": "eliteserien"
+  },
+  "8422": {
+   "name": "Rosenborg",
+   "total": 23350000.0,
+   "league": "eliteserien"
+  },
+  "8605": {
+   "name": "Kristiansund",
+   "total": 4930000.0,
+   "league": "eliteserien"
+  },
+  "8007": {
+   "name": "Vålerenga",
+   "total": 9200000.0,
+   "league": "eliteserien"
+  },
+  "8468": {
+   "name": "Brann",
+   "total": 13250000.0,
+   "league": "eliteserien"
+  },
+  "6563": {
+   "name": "Ranheim",
+   "total": 1880000.0,
+   "league": "eliteserien"
+  },
+  "10021": {
+   "name": "Åsane",
+   "total": 1650000.0,
+   "league": "obosligaen"
+  },
+  "1706": {
+   "name": "Øygarden FK",
+   "total": 1200000.0,
+   "league": "obosligaen"
+  },
+  "8179": {
+   "name": "Kongsvinger",
+   "total": 2180000.0,
+   "league": "obosligaen"
+  },
+  "8478": {
+   "name": "Viking",
+   "total": 4330000.0,
+   "league": "obosligaen"
+  },
+  "6541": {
+   "name": "Mjøndalen",
+   "total": 3030000.0,
+   "league": "obosligaen"
+  },
+  "4319": {
+   "name": "Florø",
+   "total": 800000.0,
+   "league": "obosligaen"
+  },
+  "9929": {
+   "name": "Notodden",
+   "total": 1550000.0,
+   "league": "obosligaen"
+  },
+  "6561": {
+   "name": "Levanger",
+   "total": 1430000.0,
+   "league": "obosligaen"
+  },
+  "8133": {
+   "name": "Sandnes Ulf",
+   "total": 3380000.0,
+   "league": "obosligaen"
+  },
+  "4249": {
+   "name": "Strømmen",
+   "total": 1650000.0,
+   "league": "obosligaen"
+  },
+  "10232": {
+   "name": "Ull/Kisa",
+   "total": 2400000.0,
+   "league": "obosligaen"
+  },
+  "8448": {
+   "name": "Hamarkameratene",
+   "total": 1950000.0,
+   "league": "obosligaen"
+  },
+  "8404": {
+   "name": "Aalesund",
+   "total": 5330000.0,
+   "league": "obosligaen"
+  },
+  "8616": {
+   "name": "Sogndal",
+   "total": 7030000.0,
+   "league": "obosligaen"
+  },
+  "2303": {
+   "name": "Jerv",
+   "total": 2580000.0,
+   "league": "obosligaen"
+  },
+  "8617": {
+   "name": "Tromsdalen",
+   "total": 750000.0,
+   "league": "obosligaen"
+  }
+ },
+ "2019": {
+  "7988": {
+   "name": "Odds Ballklubb",
+   "total": 6380000.0,
+   "league": "eliteserien"
+  },
+  "8468": {
+   "name": "Brann",
+   "total": 11050000.0,
+   "league": "eliteserien"
+  },
+  "8007": {
+   "name": "Vålerenga",
+   "total": 9650000.0,
+   "league": "eliteserien"
+  },
+  "6541": {
+   "name": "Mjøndalen",
+   "total": 3980000.0,
+   "league": "eliteserien"
+  },
+  "6563": {
+   "name": "Ranheim",
+   "total": 3450000.0,
+   "league": "eliteserien"
+  },
+  "8608": {
+   "name": "Tromsø",
+   "total": 5730000.0,
+   "league": "eliteserien"
+  },
+  "8509": {
+   "name": "Sarpsborg 08",
+   "total": 18130000.0,
+   "league": "eliteserien"
+  },
+  "9917": {
+   "name": "Molde",
+   "total": 15580000.0,
+   "league": "eliteserien"
+  },
+  "8180": {
+   "name": "Strømsgodset",
+   "total": 11330000.0,
+   "league": "eliteserien"
+  },
+  "8512": {
+   "name": "FK Haugesund",
+   "total": 5800000.0,
+   "league": "eliteserien"
+  },
+  "8478": {
+   "name": "Viking",
+   "total": 3350000.0,
+   "league": "eliteserien"
+  },
+  "8605": {
+   "name": "Kristiansund",
+   "total": 6230000.0,
+   "league": "eliteserien"
+  },
+  "8402": {
+   "name": "Bodø/Glimt",
+   "total": 4750000.0,
+   "league": "eliteserien"
+  },
+  "8422": {
+   "name": "Rosenborg",
+   "total": 21700000.0,
+   "league": "eliteserien"
+  },
+  "9918": {
+   "name": "Stabæk",
+   "total": 9580000.0,
+   "league": "eliteserien"
+  },
+  "8476": {
+   "name": "Lillestrøm",
+   "total": 7380000.0,
+   "league": "eliteserien"
+  },
+  "9919": {
+   "name": "Start",
+   "total": 4400000.0,
+   "league": "obosligaen"
+  },
+  "8404": {
+   "name": "Aalesund",
+   "total": 4900000.0,
+   "league": "obosligaen"
+  },
+  "4249": {
+   "name": "Strømmen",
+   "total": 1430000.0,
+   "league": "obosligaen"
+  },
+  "10232": {
+   "name": "Ull/Kisa",
+   "total": 1650000.0,
+   "league": "obosligaen"
+  },
+  "8421": {
+   "name": "Skeid",
+   "total": 650000.0,
+   "league": "obosligaen"
+  },
+  "8448": {
+   "name": "Hamarkameratene",
+   "total": 2350000.0,
+   "league": "obosligaen"
+  },
+  "1706": {
+   "name": "Øygarden FK",
+   "total": 2480000.0,
+   "league": "obosligaen"
+  },
+  "9812": {
+   "name": "Raufoss",
+   "total": 400000.0,
+   "league": "obosligaen"
+  },
+  "8616": {
+   "name": "Sogndal",
+   "total": 3950000.0,
+   "league": "obosligaen"
+  },
+  "8133": {
+   "name": "Sandnes Ulf",
+   "total": 2780000.0,
+   "league": "obosligaen"
+  },
+  "8179": {
+   "name": "Kongsvinger",
+   "total": 3730000.0,
+   "league": "obosligaen"
+  },
+  "9929": {
+   "name": "Notodden",
+   "total": 1900000.0,
+   "league": "obosligaen"
+  },
+  "8609": {
+   "name": "Sandefjord",
+   "total": 3650000.0,
+   "league": "obosligaen"
+  },
+  "2305": {
+   "name": "KFUM",
+   "total": 1350000.0,
+   "league": "obosligaen"
+  },
+  "2303": {
+   "name": "Jerv",
+   "total": 2330000.0,
+   "league": "obosligaen"
+  },
+  "8617": {
+   "name": "Tromsdalen",
+   "total": 1200000.0,
+   "league": "obosligaen"
+  }
+ },
+ "2020": {
+  "9918": {
+   "name": "Stabæk",
+   "total": 8030000.0,
+   "league": "eliteserien"
+  },
+  "6541": {
+   "name": "Mjøndalen",
+   "total": 5400000.0,
+   "league": "eliteserien"
+  },
+  "7988": {
+   "name": "Odds Ballklubb",
+   "total": 7300000.0,
+   "league": "eliteserien"
+  },
+  "8609": {
+   "name": "Sandefjord",
+   "total": 4730000.0,
+   "league": "eliteserien"
+  },
+  "8422": {
+   "name": "Rosenborg",
+   "total": 31450000.0,
+   "league": "eliteserien"
+  },
+  "8605": {
+   "name": "Kristiansund",
+   "total": 6600000.0,
+   "league": "eliteserien"
+  },
+  "8478": {
+   "name": "Viking",
+   "total": 5580000.0,
+   "league": "eliteserien"
+  },
+  "8402": {
+   "name": "Bodø/Glimt",
+   "total": 5200000.0,
+   "league": "eliteserien"
+  },
+  "8404": {
+   "name": "Aalesund",
+   "total": 5950000.0,
+   "league": "eliteserien"
+  },
+  "9917": {
+   "name": "Molde",
+   "total": 12650000.0,
+   "league": "eliteserien"
+  },
+  "8509": {
+   "name": "Sarpsborg 08",
+   "total": 9750000.0,
+   "league": "eliteserien"
+  },
+  "8007": {
+   "name": "Vålerenga",
+   "total": 9780000.0,
+   "league": "eliteserien"
+  },
+  "9919": {
+   "name": "Start",
+   "total": 6030000.0,
+   "league": "eliteserien"
+  },
+  "8180": {
+   "name": "Strømsgodset",
+   "total": 4880000.0,
+   "league": "eliteserien"
+  },
+  "8512": {
+   "name": "FK Haugesund",
+   "total": 7950000.0,
+   "league": "eliteserien"
+  },
+  "8468": {
+   "name": "Brann",
+   "total": 13450000.0,
+   "league": "eliteserien"
+  },
+  "8133": {
+   "name": "Sandnes Ulf",
+   "total": 2830000.0,
+   "league": "obosligaen"
+  },
+  "1706": {
+   "name": "Øygarden FK",
+   "total": 2000000.0,
+   "league": "obosligaen"
+  },
+  "8608": {
+   "name": "Tromsø",
+   "total": 5480000.0,
+   "league": "obosligaen"
+  },
+  "9812": {
+   "name": "Raufoss",
+   "total": 1080000.0,
+   "league": "obosligaen"
+  },
+  "10232": {
+   "name": "Ull/Kisa",
+   "total": 2350000.0,
+   "league": "obosligaen"
+  },
+  "4249": {
+   "name": "Strømmen",
+   "total": 1280000.0,
+   "league": "obosligaen"
+  },
+  "2305": {
+   "name": "KFUM",
+   "total": 2300000.0,
+   "league": "obosligaen"
+  },
+  "2303": {
+   "name": "Jerv",
+   "total": 2780000.0,
+   "league": "obosligaen"
+  },
+  "4393": {
+   "name": "Stjørdals Blink",
+   "total": 725000.0,
+   "league": "obosligaen"
+  },
+  "6563": {
+   "name": "Ranheim",
+   "total": 4300000.0,
+   "league": "obosligaen"
+  },
+  "4201": {
+   "name": "Grorud",
+   "total": 825000.0,
+   "league": "obosligaen"
+  },
+  "8476": {
+   "name": "Lillestrøm",
+   "total": 8680000.0,
+   "league": "obosligaen"
+  },
+  "10021": {
+   "name": "Åsane",
+   "total": 1180000.0,
+   "league": "obosligaen"
+  },
+  "8616": {
+   "name": "Sogndal",
+   "total": 1900000.0,
+   "league": "obosligaen"
+  },
+  "8448": {
+   "name": "Hamarkameratene",
+   "total": 3600000.0,
+   "league": "obosligaen"
+  },
+  "8179": {
+   "name": "Kongsvinger",
+   "total": 3530000.0,
+   "league": "obosligaen"
+  }
+ },
+ "2021": {
+  "8402": {
+   "name": "Bodø/Glimt",
+   "total": 12200000.0,
+   "league": "eliteserien"
+  },
+  "8608": {
+   "name": "Tromsø",
+   "total": 5300000.0,
+   "league": "eliteserien"
+  },
+  "8478": {
+   "name": "Viking",
+   "total": 9650000.0,
+   "league": "eliteserien"
+  },
+  "8468": {
+   "name": "Brann",
+   "total": 13000000.0,
+   "league": "eliteserien"
+  },
+  "9917": {
+   "name": "Molde",
+   "total": 20900000.0,
+   "league": "eliteserien"
+  },
+  "8605": {
+   "name": "Kristiansund",
+   "total": 7380000.0,
+   "league": "eliteserien"
+  },
+  "8007": {
+   "name": "Vålerenga",
+   "total": 9200000.0,
+   "league": "eliteserien"
+  },
+  "8422": {
+   "name": "Rosenborg",
+   "total": 27630000.0,
+   "league": "eliteserien"
+  },
+  "8509": {
+   "name": "Sarpsborg 08",
+   "total": 10200000.0,
+   "league": "eliteserien"
+  },
+  "8512": {
+   "name": "FK Haugesund",
+   "total": 7800000.0,
+   "league": "eliteserien"
+  },
+  "8180": {
+   "name": "Strømsgodset",
+   "total": 7530000.0,
+   "league": "eliteserien"
+  },
+  "8476": {
+   "name": "Lillestrøm",
+   "total": 8050000.0,
+   "league": "eliteserien"
+  },
+  "8609": {
+   "name": "Sandefjord",
+   "total": 4930000.0,
+   "league": "eliteserien"
+  },
+  "6541": {
+   "name": "Mjøndalen",
+   "total": 4830000.0,
+   "league": "eliteserien"
+  },
+  "9918": {
+   "name": "Stabæk",
+   "total": 9700000.0,
+   "league": "eliteserien"
+  },
+  "7988": {
+   "name": "Odds Ballklubb",
+   "total": 7200000.0,
+   "league": "eliteserien"
+  },
+  "8404": {
+   "name": "Aalesund",
+   "total": 6050000.0,
+   "league": "obosligaen"
+  },
+  "8531": {
+   "name": "Bryne",
+   "total": 1000000.0,
+   "league": "obosligaen"
+  },
+  "8448": {
+   "name": "Hamarkameratene",
+   "total": 2850000.0,
+   "league": "obosligaen"
+  },
+  "4393": {
+   "name": "Stjørdals Blink",
+   "total": 2050000.0,
+   "league": "obosligaen"
+  },
+  "2303": {
+   "name": "Jerv",
+   "total": 3000000.0,
+   "league": "obosligaen"
+  },
+  "2305": {
+   "name": "KFUM",
+   "total": 2200000.0,
+   "league": "obosligaen"
+  },
+  "6563": {
+   "name": "Ranheim",
+   "total": 3150000.0,
+   "league": "obosligaen"
+  },
+  "4201": {
+   "name": "Grorud",
+   "total": 1180000.0,
+   "league": "obosligaen"
+  },
+  "8616": {
+   "name": "Sogndal",
+   "total": 3250000.0,
+   "league": "obosligaen"
+  },
+  "10232": {
+   "name": "Ull/Kisa",
+   "total": 1800000.0,
+   "league": "obosligaen"
+  },
+  "4249": {
+   "name": "Strømmen",
+   "total": 1550000.0,
+   "league": "obosligaen"
+  },
+  "9812": {
+   "name": "Raufoss",
+   "total": 1680000.0,
+   "league": "obosligaen"
+  },
+  "10021": {
+   "name": "Åsane",
+   "total": 2530000.0,
+   "league": "obosligaen"
+  },
+  "8417": {
+   "name": "Fredrikstad",
+   "total": 2480000.0,
+   "league": "obosligaen"
+  },
+  "8133": {
+   "name": "Sandnes Ulf",
+   "total": 4150000.0,
+   "league": "obosligaen"
+  },
+  "9919": {
+   "name": "Start",
+   "total": 5050000.0,
+   "league": "obosligaen"
+  }
+ },
+ "2022": {
+  "8448": {
+   "name": "Hamarkameratene",
+   "total": 4700000.0,
+   "league": "eliteserien"
+  },
+  "8476": {
+   "name": "Lillestrøm",
+   "total": 11480000.0,
+   "league": "eliteserien"
+  },
+  "9917": {
+   "name": "Molde",
+   "total": 19000000.0,
+   "league": "eliteserien"
+  },
+  "8007": {
+   "name": "Vålerenga",
+   "total": 14380000.0,
+   "league": "eliteserien"
+  },
+  "8404": {
+   "name": "Aalesund",
+   "total": 8100000.0,
+   "league": "eliteserien"
+  },
+  "8605": {
+   "name": "Kristiansund",
+   "total": 6150000.0,
+   "league": "eliteserien"
+  },
+  "8512": {
+   "name": "FK Haugesund",
+   "total": 6730000.0,
+   "league": "eliteserien"
+  },
+  "8609": {
+   "name": "Sandefjord",
+   "total": 5750000.0,
+   "league": "eliteserien"
+  },
+  "2303": {
+   "name": "Jerv",
+   "total": 4380000.0,
+   "league": "eliteserien"
+  },
+  "8180": {
+   "name": "Strømsgodset",
+   "total": 5780000.0,
+   "league": "eliteserien"
+  },
+  "8509": {
+   "name": "Sarpsborg 08",
+   "total": 10030000.0,
+   "league": "eliteserien"
+  },
+  "8478": {
+   "name": "Viking",
+   "total": 9480000.0,
+   "league": "eliteserien"
+  },
+  "7988": {
+   "name": "Odds Ballklubb",
+   "total": 8950000.0,
+   "league": "eliteserien"
+  },
+  "8608": {
+   "name": "Tromsø",
+   "total": 4800000.0,
+   "league": "eliteserien"
+  },
+  "8402": {
+   "name": "Bodø/Glimt",
+   "total": 23500000.0,
+   "league": "eliteserien"
+  },
+  "8422": {
+   "name": "Rosenborg",
+   "total": 19230000.0,
+   "league": "eliteserien"
+  },
+  "8133": {
+   "name": "Sandnes Ulf",
+   "total": 2750000.0,
+   "league": "obosligaen"
+  },
+  "8531": {
+   "name": "Bryne",
+   "total": 2030000.0,
+   "league": "obosligaen"
+  },
+  "2305": {
+   "name": "KFUM",
+   "total": 2100000.0,
+   "league": "obosligaen"
+  },
+  "4201": {
+   "name": "Grorud",
+   "total": 2130000.0,
+   "league": "obosligaen"
+  },
+  "6563": {
+   "name": "Ranheim",
+   "total": 3400000.0,
+   "league": "obosligaen"
+  },
+  "8468": {
+   "name": "Brann",
+   "total": 7700000.0,
+   "league": "obosligaen"
+  },
+  "8421": {
+   "name": "Skeid",
+   "total": 1300000.0,
+   "league": "obosligaen"
+  },
+  "9918": {
+   "name": "Stabæk",
+   "total": 9650000.0,
+   "league": "obosligaen"
+  },
+  "8417": {
+   "name": "Fredrikstad",
+   "total": 2900000.0,
+   "league": "obosligaen"
+  },
+  "4393": {
+   "name": "Stjørdals Blink",
+   "total": 2400000.0,
+   "league": "obosligaen"
+  },
+  "6541": {
+   "name": "Mjøndalen",
+   "total": 3080000.0,
+   "league": "obosligaen"
+  },
+  "8179": {
+   "name": "Kongsvinger",
+   "total": 2930000.0,
+   "league": "obosligaen"
+  },
+  "8616": {
+   "name": "Sogndal",
+   "total": 4150000.0,
+   "league": "obosligaen"
+  },
+  "9812": {
+   "name": "Raufoss",
+   "total": 1380000.0,
+   "league": "obosligaen"
+  },
+  "10021": {
+   "name": "Åsane",
+   "total": 2350000.0,
+   "league": "obosligaen"
+  },
+  "9919": {
+   "name": "Start",
+   "total": 4230000.0,
+   "league": "obosligaen"
+  }
+ },
+ "2023": {
+  "8422": {
+   "name": "Rosenborg",
+   "total": 14550000.0,
+   "league": "eliteserien"
+  },
+  "8478": {
+   "name": "Viking",
+   "total": 12330000.0,
+   "league": "eliteserien"
+  },
+  "8404": {
+   "name": "Aalesund",
+   "total": 9200000.0,
+   "league": "eliteserien"
+  },
+  "8007": {
+   "name": "Vålerenga",
+   "total": 12350000.0,
+   "league": "eliteserien"
+  },
+  "8448": {
+   "name": "Hamarkameratene",
+   "total": 6180000.0,
+   "league": "eliteserien"
+  },
+  "8609": {
+   "name": "Sandefjord",
+   "total": 3830000.0,
+   "league": "eliteserien"
+  },
+  "8509": {
+   "name": "Sarpsborg 08",
+   "total": 9030000.0,
+   "league": "eliteserien"
+  },
+  "8402": {
+   "name": "Bodø/Glimt",
+   "total": 20200000.0,
+   "league": "eliteserien"
+  },
+  "9918": {
+   "name": "Stabæk",
+   "total": 7100000.0,
+   "league": "eliteserien"
+  },
+  "7988": {
+   "name": "Odds Ballklubb",
+   "total": 5880000.0,
+   "league": "eliteserien"
+  },
+  "8608": {
+   "name": "Tromsø",
+   "total": 3850000.0,
+   "league": "eliteserien"
+  },
+  "9917": {
+   "name": "Molde",
+   "total": 19850000.0,
+   "league": "eliteserien"
+  },
+  "8468": {
+   "name": "Brann",
+   "total": 7650000.0,
+   "league": "eliteserien"
+  },
+  "8512": {
+   "name": "FK Haugesund",
+   "total": 5700000.0,
+   "league": "eliteserien"
+  },
+  "8476": {
+   "name": "Lillestrøm",
+   "total": 10850000.0,
+   "league": "eliteserien"
+  },
+  "8180": {
+   "name": "Strømsgodset",
+   "total": 5380000.0,
+   "league": "eliteserien"
+  },
+  "8133": {
+   "name": "Sandnes Ulf",
+   "total": 2600000.0,
+   "league": "obosligaen"
+  },
+  "8421": {
+   "name": "Skeid",
+   "total": 1750000.0,
+   "league": "obosligaen"
+  },
+  "8405": {
+   "name": "Moss",
+   "total": 1200000.0,
+   "league": "obosligaen"
+  },
+  "9919": {
+   "name": "Start",
+   "total": 4250000.0,
+   "league": "obosligaen"
+  },
+  "6541": {
+   "name": "Mjøndalen",
+   "total": 2180000.0,
+   "league": "obosligaen"
+  },
+  "10021": {
+   "name": "Åsane",
+   "total": 2580000.0,
+   "league": "obosligaen"
+  },
+  "8605": {
+   "name": "Kristiansund",
+   "total": 4300000.0,
+   "league": "obosligaen"
+  },
+  "8417": {
+   "name": "Fredrikstad",
+   "total": 5180000.0,
+   "league": "obosligaen"
+  },
+  "2305": {
+   "name": "KFUM",
+   "total": 1980000.0,
+   "league": "obosligaen"
+  },
+  "8616": {
+   "name": "Sogndal",
+   "total": 2790000.0,
+   "league": "obosligaen"
+  },
+  "2303": {
+   "name": "Jerv",
+   "total": 4200000.0,
+   "league": "obosligaen"
+  },
+  "6563": {
+   "name": "Ranheim",
+   "total": 2880000.0,
+   "league": "obosligaen"
+  },
+  "7937": {
+   "name": "Hødd",
+   "total": 1500000.0,
+   "league": "obosligaen"
+  },
+  "9812": {
+   "name": "Raufoss",
+   "total": 1530000.0,
+   "league": "obosligaen"
+  },
+  "8531": {
+   "name": "Bryne",
+   "total": 1950000.0,
+   "league": "obosligaen"
+  },
+  "8179": {
+   "name": "Kongsvinger",
+   "total": 2500000.0,
+   "league": "obosligaen"
+  }
+ },
+ "2024": {
+  "7988": {
+   "name": "Odds Ballklubb",
+   "total": 10250000.0,
+   "league": "eliteserien"
+  },
+  "8512": {
+   "name": "FK Haugesund",
+   "total": 5400000.0,
+   "league": "eliteserien"
+  },
+  "8417": {
+   "name": "Fredrikstad",
+   "total": 7600000.0,
+   "league": "eliteserien"
+  },
+  "8402": {
+   "name": "Bodø/Glimt",
+   "total": 39130000.0,
+   "league": "eliteserien"
+  },
+  "8476": {
+   "name": "Lillestrøm",
+   "total": 12880000.0,
+   "league": "eliteserien"
+  },
+  "8605": {
+   "name": "Kristiansund",
+   "total": 5900000.0,
+   "league": "eliteserien"
+  },
+  "9917": {
+   "name": "Molde",
+   "total": 34000000.0,
+   "league": "eliteserien"
+  },
+  "8180": {
+   "name": "Strømsgodset",
+   "total": 5950000.0,
+   "league": "eliteserien"
+  },
+  "8422": {
+   "name": "Rosenborg",
+   "total": 27750000.0,
+   "league": "eliteserien"
+  },
+  "8609": {
+   "name": "Sandefjord",
+   "total": 4460000.0,
+   "league": "eliteserien"
+  },
+  "8608": {
+   "name": "Tromsø",
+   "total": 7530000.0,
+   "league": "eliteserien"
+  },
+  "8468": {
+   "name": "Brann",
+   "total": 11100000.0,
+   "league": "eliteserien"
+  },
+  "8478": {
+   "name": "Viking",
+   "total": 14450000.0,
+   "league": "eliteserien"
+  },
+  "8509": {
+   "name": "Sarpsborg 08",
+   "total": 12700000.0,
+   "league": "eliteserien"
+  },
+  "2305": {
+   "name": "KFUM",
+   "total": 4700000.0,
+   "league": "eliteserien"
+  },
+  "8448": {
+   "name": "Hamarkameratene",
+   "total": 8530000.0,
+   "league": "eliteserien"
+  },
+  "8531": {
+   "name": "Bryne",
+   "total": 2930000.0,
+   "league": "obosligaen"
+  },
+  "9919": {
+   "name": "Start",
+   "total": 5430000.0,
+   "league": "obosligaen"
+  },
+  "10021": {
+   "name": "Åsane",
+   "total": 2800000.0,
+   "league": "obosligaen"
+  },
+  "6561": {
+   "name": "Levanger",
+   "total": 675000.0,
+   "league": "obosligaen"
+  },
+  "8404": {
+   "name": "Aalesund",
+   "total": 7930000.0,
+   "league": "obosligaen"
+  },
+  "9918": {
+   "name": "Stabæk",
+   "total": 4550000.0,
+   "league": "obosligaen"
+  },
+  "8007": {
+   "name": "Vålerenga",
+   "total": 9580000.0,
+   "league": "obosligaen"
+  },
+  "8616": {
+   "name": "Sogndal",
+   "total": 2240000.0,
+   "league": "obosligaen"
+  },
+  "8133": {
+   "name": "Sandnes Ulf",
+   "total": 2950000.0,
+   "league": "obosligaen"
+  },
+  "4722": {
+   "name": "Egersund",
+   "total": 2400000.0,
+   "league": "obosligaen"
+  },
+  "8405": {
+   "name": "Moss",
+   "total": 1950000.0,
+   "league": "obosligaen"
+  },
+  "10224": {
+   "name": "Lyn",
+   "total": 850000.0,
+   "league": "obosligaen"
+  },
+  "6541": {
+   "name": "Mjøndalen",
+   "total": 3580000.0,
+   "league": "obosligaen"
+  },
+  "9812": {
+   "name": "Raufoss",
+   "total": 2080000.0,
+   "league": "obosligaen"
+  },
+  "8179": {
+   "name": "Kongsvinger",
+   "total": 4680000.0,
+   "league": "obosligaen"
+  },
+  "6563": {
+   "name": "Ranheim",
+   "total": 2530000.0,
+   "league": "obosligaen"
+  }
+ },
+ "2025": {
+  "8180": {
+   "name": "Strømsgodset",
+   "total": 9730000.0,
+   "league": "eliteserien"
+  },
+  "8422": {
+   "name": "Rosenborg",
+   "total": 24430000.0,
+   "league": "eliteserien"
+  },
+  "8417": {
+   "name": "Fredrikstad",
+   "total": 8950000.0,
+   "league": "eliteserien"
+  },
+  "8468": {
+   "name": "Brann",
+   "total": 22300000.0,
+   "league": "eliteserien"
+  },
+  "8007": {
+   "name": "Vålerenga",
+   "total": 12630000.0,
+   "league": "eliteserien"
+  },
+  "8478": {
+   "name": "Viking",
+   "total": 15800000.0,
+   "league": "eliteserien"
+  },
+  "8448": {
+   "name": "Hamarkameratene",
+   "total": 7180000.0,
+   "league": "eliteserien"
+  },
+  "8605": {
+   "name": "Kristiansund",
+   "total": 7580000.0,
+   "league": "eliteserien"
+  },
+  "2305": {
+   "name": "KFUM",
+   "total": 6630000.0,
+   "league": "eliteserien"
+  },
+  "8609": {
+   "name": "Sandefjord",
+   "total": 6250000.0,
+   "league": "eliteserien"
+  },
+  "9917": {
+   "name": "Molde",
+   "total": 35900000.0,
+   "league": "eliteserien"
+  },
+  "8509": {
+   "name": "Sarpsborg 08",
+   "total": 13780000.0,
+   "league": "eliteserien"
+  },
+  "8608": {
+   "name": "Tromsø",
+   "total": 13530000.0,
+   "league": "eliteserien"
+  },
+  "8512": {
+   "name": "FK Haugesund",
+   "total": 6730000.0,
+   "league": "eliteserien"
+  },
+  "8531": {
+   "name": "Bryne",
+   "total": 5430000.0,
+   "league": "eliteserien"
+  },
+  "8402": {
+   "name": "Bodø/Glimt",
+   "total": 42280000.0,
+   "league": "eliteserien"
+  },
+  "4722": {
+   "name": "Egersund",
+   "total": 4580000.0,
+   "league": "obosligaen"
+  },
+  "6541": {
+   "name": "Mjøndalen",
+   "total": 1340000.0,
+   "league": "obosligaen"
+  },
+  "8179": {
+   "name": "Kongsvinger",
+   "total": 4430000.0,
+   "league": "obosligaen"
+  },
+  "10021": {
+   "name": "Åsane",
+   "total": 3090000.0,
+   "league": "obosligaen"
+  },
+  "7988": {
+   "name": "Odds Ballklubb",
+   "total": 7800000.0,
+   "league": "obosligaen"
+  },
+  "8421": {
+   "name": "Skeid",
+   "total": 2600000.0,
+   "league": "obosligaen"
+  },
+  "6563": {
+   "name": "Ranheim",
+   "total": 3150000.0,
+   "league": "obosligaen"
+  },
+  "10224": {
+   "name": "Lyn",
+   "total": 1820000.0,
+   "league": "obosligaen"
+  },
+  "9918": {
+   "name": "Stabæk",
+   "total": 7750000.0,
+   "league": "obosligaen"
+  },
+  "7937": {
+   "name": "Hødd",
+   "total": 1880000.0,
+   "league": "obosligaen"
+  },
+  "9919": {
+   "name": "Start",
+   "total": 3830000.0,
+   "league": "obosligaen"
+  },
+  "8616": {
+   "name": "Sogndal",
+   "total": 3280000.0,
+   "league": "obosligaen"
+  },
+  "8404": {
+   "name": "Aalesund",
+   "total": 4900000.0,
+   "league": "obosligaen"
+  },
+  "8476": {
+   "name": "Lillestrøm",
+   "total": 10300000.0,
+   "league": "obosligaen"
+  },
+  "9812": {
+   "name": "Raufoss",
+   "total": 2150000.0,
+   "league": "obosligaen"
+  },
+  "8405": {
+   "name": "Moss",
+   "total": 2380000.0,
+   "league": "obosligaen"
+  }
+ },
+ "2026": {
+  "8448": {
+   "name": "Hamarkameratene",
+   "total": 11350000.0,
+   "league": "eliteserien"
+  },
+  "8478": {
+   "name": "Viking",
+   "total": 56600000.0,
+   "league": "eliteserien"
+  },
+  "9917": {
+   "name": "Molde",
+   "total": 45900000.0,
+   "league": "eliteserien"
+  },
+  "8422": {
+   "name": "Rosenborg",
+   "total": 30750000.0,
+   "league": "eliteserien"
+  },
+  "8605": {
+   "name": "Kristiansund",
+   "total": 14600000.0,
+   "league": "eliteserien"
+  },
+  "8468": {
+   "name": "Brann",
+   "total": 26100000.0,
+   "league": "eliteserien"
+  },
+  "2305": {
+   "name": "KFUM",
+   "total": 9650000.0,
+   "league": "eliteserien"
+  },
+  "9919": {
+   "name": "Start",
+   "total": 9430000.0,
+   "league": "eliteserien"
+  },
+  "8007": {
+   "name": "Vålerenga",
+   "total": 14530000.0,
+   "league": "eliteserien"
+  },
+  "8609": {
+   "name": "Sandefjord",
+   "total": 15400000.0,
+   "league": "eliteserien"
+  },
+  "8404": {
+   "name": "Aalesund",
+   "total": 13700000.0,
+   "league": "eliteserien"
+  },
+  "8476": {
+   "name": "Lillestrøm",
+   "total": 16180000.0,
+   "league": "eliteserien"
+  },
+  "8608": {
+   "name": "Tromsø",
+   "total": 21350000.0,
+   "league": "eliteserien"
+  },
+  "8417": {
+   "name": "Fredrikstad",
+   "total": 14400000.0,
+   "league": "eliteserien"
+  },
+  "8509": {
+   "name": "Sarpsborg 08",
+   "total": 17600000.0,
+   "league": "eliteserien"
+  },
+  "8402": {
+   "name": "Bodø/Glimt",
+   "total": 79180000.0,
+   "league": "eliteserien"
+  },
+  "8180": {
+   "name": "Strømsgodset",
+   "total": 7850000.0,
+   "league": "obosligaen"
+  },
+  "9918": {
+   "name": "Stabæk",
+   "total": 13580000.0,
+   "league": "obosligaen"
+  },
+  "10224": {
+   "name": "Lyn",
+   "total": 4250000.0,
+   "league": "obosligaen"
+  },
+  "8512": {
+   "name": "FK Haugesund",
+   "total": 13000000.0,
+   "league": "obosligaen"
+  },
+  "7988": {
+   "name": "Odds Ballklubb",
+   "total": 9630000.0,
+   "league": "obosligaen"
+  },
+  "8616": {
+   "name": "Sogndal",
+   "total": 4530000.0,
+   "league": "obosligaen"
+  },
+  "10021": {
+   "name": "Åsane",
+   "total": 3780000.0,
+   "league": "obosligaen"
+  },
+  "8405": {
+   "name": "Moss",
+   "total": 4630000.0,
+   "league": "obosligaen"
+  },
+  "8179": {
+   "name": "Kongsvinger",
+   "total": 7030000.0,
+   "league": "obosligaen"
+  },
+  "8531": {
+   "name": "Bryne",
+   "total": 5630000.0,
+   "league": "obosligaen"
+  },
+  "7937": {
+   "name": "Hødd",
+   "total": 4250000.0,
+   "league": "obosligaen"
+  },
+  "8133": {
+   "name": "Sandnes Ulf",
+   "total": 3500000.0,
+   "league": "obosligaen"
+  },
+  "4249": {
+   "name": "Strømmen",
+   "total": 1930000.0,
+   "league": "obosligaen"
+  },
+  "4722": {
+   "name": "Egersund",
+   "total": 5050000.0,
+   "league": "obosligaen"
+  },
+  "6563": {
+   "name": "Ranheim",
+   "total": 4950000.0,
+   "league": "obosligaen"
+  },
+  "9812": {
+   "name": "Raufoss",
+   "total": 2630000.0,
+   "league": "obosligaen"
+  }
+ }
+}

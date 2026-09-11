@@ -1,10 +1,7 @@
-import json
 from datetime import date
 
-import pytest
-
 from elitetracker.normalize.matches import Match
-from elitetracker.validation.matches import load_normalized, validate
+from elitetracker.validation.matches import validate
 
 TODAY = date(2026, 8, 9)
 
@@ -17,7 +14,6 @@ def make_match(match_id, home, away, day=1, time="18:00", score=None):
         time=time,
         home=home,
         away=away,
-        venue="Some Stadium",
         home_goals=home_goals,
         away_goals=away_goals,
         played=score is not None,
@@ -66,42 +62,36 @@ class TestIdentity:
 
 class TestFields:
     def test_played_match_without_score_is_an_error(self):
-        bad = Match("1", "2026-03-01", "18:00", "A", "B", "V", None, None, played=True)
+        bad = Match("1", "2026-03-01", "18:00", "A", "B", None, None, played=True)
         report = validate([bad], expected_teams=2, today=TODAY)
         assert any("missing a score" in e for e in report.errors)
 
     def test_unplayed_match_with_score_is_an_error(self):
-        bad = Match("1", "2026-03-01", "18:00", "A", "B", "V", 1, 0, played=False)
+        bad = Match("1", "2026-03-01", "18:00", "A", "B", 1, 0, played=False)
         report = validate([bad], expected_teams=2, today=TODAY)
         assert any("carries score" in e for e in report.errors)
 
     def test_negative_score_is_an_error(self):
-        bad = Match("1", "2026-03-01", "18:00", "A", "B", "V", -1, 0, played=True)
+        bad = Match("1", "2026-03-01", "18:00", "A", "B", -1, 0, played=True)
         report = validate([bad], expected_teams=2, today=TODAY)
         assert any("negative score" in e for e in report.errors)
 
     def test_goalless_draw_is_valid(self):
-        draw = Match("1", "2026-03-01", "18:00", "A", "B", "V", 0, 0, played=True)
+        draw = Match("1", "2026-03-01", "18:00", "A", "B", 0, 0, played=True)
         report = validate([draw], expected_teams=2, today=TODAY)
         assert not any("score" in e for e in report.errors)
 
     def test_non_iso_date_is_an_error(self):
-        bad = Match("1", "01.03.26", "18:00", "A", "B", "V", None, None, played=False)
+        bad = Match("1", "01.03.26", "18:00", "A", "B", None, None, played=False)
         report = validate([bad], expected_teams=2, today=TODAY)
         assert any("ISO" in e for e in report.errors)
 
     def test_epoch_millisecond_date_is_an_error(self):
         """Regression: the pandas pipeline emitted dates as integers."""
-        bad = Match("1", 1773446400000, "18:00", "A", "B", "V", None, None, played=False)
+        bad = Match("1", 1773446400000, "18:00", "A", "B", None, None, played=False)
         report = validate([bad], expected_teams=2, today=TODAY)
         assert any("ISO" in e for e in report.errors)
 
-    def test_missing_venue_is_only_a_warning(self):
-        matches = round_robin(4)
-        matches[0] = Match(**{**matches[0].__dict__, "venue": None})
-        report = validate(matches, expected_teams=4, today=TODAY)
-        assert report.ok
-        assert any("no venue" in w for w in report.warnings)
 
 
 class TestOrder:
@@ -114,7 +104,7 @@ class TestOrder:
     def test_lexical_date_comparison_catches_december_before_march(self):
         matches = [
             make_match("1", "A", "B", day=1),
-            Match("2", "2026-12-13", "18:00", "B", "A", "V", None, None, played=False),
+            Match("2", "2026-12-13", "18:00", "B", "A", None, None, played=False),
         ]
         assert not any("chronological" in e for e in validate(matches, expected_teams=2, today=TODAY).errors)
         assert any("chronological" in e for e in validate(list(reversed(matches)), expected_teams=2, today=TODAY).errors)
@@ -142,7 +132,7 @@ class TestSchedule:
 
 class TestCalendarAgreement:
     def test_future_match_with_a_result_is_an_error(self):
-        future = Match("1", "2026-12-13", "18:00", "A", "B", "V", 2, 1, played=True)
+        future = Match("1", "2026-12-13", "18:00", "A", "B", 2, 1, played=True)
         report = validate([future], expected_teams=2, today=TODAY)
         assert any("already carry a result" in e for e in report.errors)
 
@@ -153,18 +143,3 @@ class TestCalendarAgreement:
         assert report.ok
         assert any("no result" in w for w in report.warnings)
 
-
-class TestLoadNormalized:
-    def test_reads_a_normalized_file(self, tmp_path):
-        path = tmp_path / "matches.json"
-        path.write_text(
-            json.dumps([m.__dict__ for m in round_robin(4)], ensure_ascii=False),
-            encoding="utf-8",
-        )
-        assert len(load_normalized(path)) == 12
-
-    def test_rejects_non_list(self, tmp_path):
-        path = tmp_path / "matches.json"
-        path.write_text("{}", encoding="utf-8")
-        with pytest.raises(ValueError):
-            load_normalized(path)

@@ -1,4 +1,4 @@
-"""Adapter for fotmob payloads: matches and final league tables.
+"""Adapter for fotmob match payloads.
 
 fotmob timestamps kickoffs in UTC. The matchday a fixture belongs to is the
 *local* date, so we convert to Europe/Oslo before splitting into date and time
@@ -24,7 +24,6 @@ from elitetracker.normalize.matches import (
     finalize,
     parse_score,
 )
-from elitetracker.normalize.standings import Standing
 
 LEAGUE_TIMEZONE = ZoneInfo("Europe/Oslo")
 
@@ -87,7 +86,6 @@ def normalize_match(raw: dict[str, Any]) -> Match:
         time=local.strftime("%H:%M"),
         home=home,
         away=away,
-        venue=None,  # not present in the fotmob league payload
         home_goals=home_goals,
         away_goals=away_goals,
         played=home_goals is not None,
@@ -112,43 +110,3 @@ def is_cancelled(raw: dict[str, Any]) -> bool:
 def normalize_matches(raw_matches: list[dict[str, Any]]) -> list[Match]:
     return finalize(normalize_match(raw) for raw in raw_matches if not is_cancelled(raw))
 
-
-def normalize_standing(raw: dict[str, Any]) -> Standing:
-    team = clean_text(raw.get("name"))
-    team_id = clean_text(raw.get("id"))
-    if team is None or team_id is None:
-        raise NormalizationError(f"standings row missing team identity: {raw}")
-
-    scores = clean_text(raw.get("scoresStr"))
-    goals_for, goals_against = parse_score(scores)
-    if goals_for is None:
-        raise NormalizationError(f"{team}: unparseable goals {scores!r}")
-
-    try:
-        position = int(raw["idx"])
-        played = int(raw["played"])
-        wins = int(raw["wins"])
-        draws = int(raw["draws"])
-        losses = int(raw["losses"])
-        points = int(raw["pts"])
-    except (KeyError, TypeError, ValueError) as exc:
-        raise NormalizationError(f"{team}: malformed standings row ({exc})") from exc
-
-    return Standing(
-        position=position,
-        team=team,
-        team_id=team_id,
-        played=played,
-        wins=wins,
-        draws=draws,
-        losses=losses,
-        goals_for=goals_for,
-        goals_against=goals_against,
-        points=points,
-        # fotmob reports deductions as a negative number, or null for none.
-        deduction=int(raw.get("deduction") or 0),
-    )
-
-
-def normalize_standings(raw_rows: list[dict[str, Any]]) -> list[Standing]:
-    return sorted((normalize_standing(row) for row in raw_rows), key=lambda s: s.position)

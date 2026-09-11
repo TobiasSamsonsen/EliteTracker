@@ -15,15 +15,15 @@ const state = {
   // Key of the league+season the compare pickers were last populated for.
   compareKey: '',
   // Active view tab: 'grid', 'table', 'ladder', 'next-up', 'played', 'compare', 'team', 'model'
-  // The finish grid is 16 columns wide and cannot be read on a phone without
-  // scrolling it sideways; the table now fits, so that is where a phone lands.
   // ?view= still wins -- see applyViewParameter.
-  activeView: window.matchMedia('(max-width: 760px)').matches ? 'grid' : 'grid',
+  activeView: 'grid',
   _prevActiveView: null,
   // Team focus: team_id when viewing the team tab, null otherwise.
   teamFocusId: null,
   // Pagination for played results.
   playedWeek: 0,
+  // How many upcoming fixtures Next Up shows; "show more" adds a dozen.
+  fixturesShown: 12,
   // Pagination for team focus view.
   teamFixturesPage: 0,
   teamResultsPage: 0,
@@ -33,7 +33,7 @@ const state = {
     playing: false,
     matchdayIndex: 0,
     speed: 1,       // 1, 2, or 4
-    reports: null,   // Map<int, report> once prefetched
+    reports: null,   // Map<int, {eliteserien, obosligaen}> once prefetched
     raf: null,
     lastTick: 0,
     interval: 600,   // ms per matchday at 1x
@@ -42,9 +42,8 @@ const state = {
     gridCells: null, // Map<team_id, HTMLTableCellElement[]>
     gridTable: null,
     gridTableData: null,
-    // DOM references for in-place ladder updates
-    ladderTeams: null, // Map<team_id, HTMLElement>
-    ladderData: null,  // team objects for recomputing stacking
+    // In-place ladder updates: { teams, els: Map<team_id, HTMLElement>, track, maxStack }
+    ladder: null,
   },
 };
 
@@ -255,23 +254,36 @@ function expectedFinish(row) {
   );
 }
 
-function renderGrid(report) {
+function paintCell(cell, probability) {
+  const step = heatStep(probability);
+  const text = pctShort(probability);
+  cell.className = `cell ${heatTextClass(step)}${text ? '' : ' cell--empty'}`.trim();
+  cell.style.background = seqStepColor(step);
+  cell.textContent = text;
+  return cell;
+}
+
+/* The grid table, rebuilt from scratch. With `record` the row and cell
+   elements are collected per team so the animation can update them in place. */
+function buildGrid(report, tableData, record = null) {
   const table = $('#grid');
-  const rows = [...report.table].sort(
+  const rows = [...tableData].sort(
     (a, b) => expectedFinish(a) - expectedFinish(b) || a.position - b.position,
   );
   const count = rows.length;
+  const bands = report.league.bands;
 
   table.replaceChildren(table.querySelector('caption'));
 
   const head = el('thead');
-
   // The band strip lives inside the table so it inherits the column geometry
   // exactly; positioning it separately drifts as soon as the table is centred.
   const bandRow = el('tr', 'grid__bands');
   bandRow.appendChild(el('td', '', ''));
+  const headRow = el('tr');
+  headRow.appendChild(el('th', '', ''));
   for (let position = 1; position <= count; position += 1) {
-    const band = bandFor(report.league.bands, position);
+    const band = bandFor(bands, position);
     const cell = el('td');
     const bar = el('span', 'band-strip__seg');
     if (band) {
@@ -280,16 +292,11 @@ function renderGrid(report) {
     }
     cell.appendChild(bar);
     bandRow.appendChild(cell);
+    const th = el('th', '', String(position));
+    th.scope = 'col';
+    headRow.appendChild(th);
   }
   head.appendChild(bandRow);
-
-  const headRow = el('tr');
-  headRow.appendChild(el('th', '', ''));
-  for (let position = 1; position <= count; position += 1) {
-    const cell = el('th', '', String(position));
-    cell.scope = 'col';
-    headRow.appendChild(cell);
-  }
   head.appendChild(headRow);
   table.appendChild(head);
 
@@ -299,63 +306,56 @@ function renderGrid(report) {
     const label = el('th', 'grid__team');
     label.scope = 'row';
     label.appendChild(el('span', 'pos', String(row.position)));
-    const crest = teamLogo(row.team_id, row.team);
-    if (crest) {
-      crest.addEventListener('click', () => openTeamView(row.team_id, row.team));
-      crest.style.cursor = 'pointer';
-      label.appendChild(crest);
-    }
-    const nameBtn = el('button', 'grid__team-name', row.team);
-    nameBtn.addEventListener('click', () => openTeamView(row.team_id, row.team));
-    label.appendChild(nameBtn);
+    label.appendChild(sideBlock(row.team, row.team_id, true, 'grid__team-name'));
     tr.appendChild(label);
 
+    const cells = [];
     row.position_probabilities.forEach((probability, index) => {
-      const step = heatStep(probability);
-      const cell = el('td', `cell ${heatTextClass(step)}`.trim());
-      cell.style.background = seqStepColor(step);
+      const cell = paintCell(el('td'), probability);
       cell.style.setProperty('--col', String(index));
-      cell.textContent = pctShort(probability);
-      if (!cell.textContent) cell.classList.add('cell--empty');
-
       const position = index + 1;
-      const band = bandFor(report.league.bands, position);
-      cell.addEventListener('pointerenter', (event) =>
-        showTooltip(
-          event,
-          `<b>${row.team}</b> finishes ${ordinal(position)}<br>${pct(probability, 2)}` +
-            (band ? `<br>${band.label}` : '')
-        )
-      );
+      const band = bandFor(bands, position);
+      cell.addEventListener('pointerenter', (event) => {
+        // Mid-animation the readout follows the last frame, not the build.
+        const live = anim.gridTableData?.find((r) => r.team_id === row.team_id);
+        const prob = live ? live.position_probabilities[index] : probability;
+        showTooltip(event, `<b>${row.team}</b> ${ordinal(position)}<br>${pct(prob, 2)}` + (band ? `<br>${band.label}` : ''));
+      });
       cell.addEventListener('pointermove', moveTooltip);
       cell.addEventListener('pointerleave', hideTooltip);
+      cells.push(cell);
       tr.appendChild(cell);
     });
     body.appendChild(tr);
+    if (record) {
+      record.rows.set(row.team_id, tr);
+      record.cells.set(row.team_id, cells);
+    }
   }
   table.appendChild(body);
+  $('#grid-count').textContent = '';
+  return table;
+}
 
+function renderGrid(report) {
+  const table = buildGrid(report, report.table);
   // Restart the load animation whenever the grid is rebuilt.
   const wrap = table.parentElement;
   wrap.classList.remove('grid-animate');
   void wrap.offsetWidth;
   wrap.classList.add('grid-animate');
-
-    $('#grid-count').textContent = '';
 }
 
 /* ---------- finish-grid animation ---------------------------------- */
 
 async function prefetchAnimReports() {
-  const report = state.reports[state.league];
-  const days = matchdays(report);
+  const days = matchdays(state.reports[state.league]);
   if (days.length < 2) return null;
-  const urls = days.map((d) => reportUrl(state.season, d.date));
   const fetched = await Promise.all(
-    urls.map((u) => fetch(u).then((r) => (r.ok ? r.json() : null))),
+    days.map((d) => fetch(reportUrl(state.season, d.date)).then((r) => (r.ok ? r.json() : null))),
   );
   const map = new Map();
-  fetched.forEach((r, i) => { if (r) map.set(i, r[state.league]); });
+  fetched.forEach((r, i) => { if (r) map.set(i, r); });
   return map;
 }
 
@@ -378,119 +378,46 @@ function lerpReport(a, b, t) {
 /* Build the grid DOM once for animation, storing references for in-place
    updates. The cell background transitions are driven by CSS. */
 function initGridAnimDOM(report, tableData) {
-  const table = $('#grid');
-  const sorted = [...tableData].sort(
-    (a, b) => expectedFinish(a) - expectedFinish(b) || a.position - b.position,
-  );
-  const count = sorted.length;
   const a = anim;
-
-  a.gridTable = table;
   a.gridRows = new Map();
   a.gridCells = new Map();
-
-  table.classList.add('grid-anim');
-  table.parentElement.classList.remove('grid-animate');
-  table.replaceChildren(table.querySelector('caption'));
-
-  const head = el('thead');
-  const bandRow = el('tr', 'grid__bands');
-  bandRow.appendChild(el('td', '', ''));
-  for (let position = 1; position <= count; position += 1) {
-    const band = bandFor(report.league.bands, position);
-    const cell = el('td');
-    const bar = el('span', 'band-strip__seg');
-    if (band) { bar.style.background = bandColor(band, count); bar.title = band.label; }
-    cell.appendChild(bar);
-    bandRow.appendChild(cell);
-  }
-  head.appendChild(bandRow);
-
-  const headRow = el('tr');
-  headRow.appendChild(el('th', '', ''));
-  for (let position = 1; position <= count; position += 1) {
-    const cell = el('th', '', String(position));
-    cell.scope = 'col';
-    headRow.appendChild(cell);
-  }
-  head.appendChild(headRow);
-  table.appendChild(head);
-
-  const body = el('tbody');
-  for (const row of sorted) {
-    const tr = el('tr');
-    tr.dataset.teamId = row.team_id;
-
-    const label = el('th', 'grid__team');
-    label.scope = 'row';
-    label.appendChild(el('span', 'pos', String(row.position)));
-    const crest = teamLogo(row.team_id, row.team);
-    if (crest) label.appendChild(crest);
-    label.appendChild(el('span', 'grid__team-name', row.team));
-    tr.appendChild(label);
-
-    const cells = [];
-    row.position_probabilities.forEach((probability, index) => {
-      const step = heatStep(probability);
-      const cell = el('td', `cell ${heatTextClass(step)}`.trim());
-      cell.style.background = seqStepColor(step);
-      cell.style.setProperty('--col', String(index));
-      cell.textContent = pctShort(probability);
-      if (!cell.textContent) cell.classList.add('cell--empty');
-
-      const position = index + 1;
-      const band = bandFor(report.league.bands, position);
-      cell.addEventListener('pointerenter', (event) => {
-        const liveRow = anim.gridTableData?.find((r) => r.team_id === row.team_id);
-        const prob = liveRow ? liveRow.position_probabilities[index] : row.position_probabilities[index];
-        showTooltip(event, `<b>${row.team}</b> ${ordinal(position)}<br>${pct(prob, 2)}` + (band ? `<br>${band.label}` : ''));
-      });
-      cell.addEventListener('pointermove', moveTooltip);
-      cell.addEventListener('pointerleave', hideTooltip);
-      cells.push(cell);
-      tr.appendChild(cell);
-    });
-
-    body.appendChild(tr);
-    a.gridRows.set(row.team_id, tr);
-    a.gridCells.set(row.team_id, cells);
-  }
-  table.appendChild(body);
-
-    $('#grid-count').textContent = '';
+  a.gridTable = buildGrid(report, tableData, { rows: a.gridRows, cells: a.gridCells });
+  a.gridTable.classList.add('grid-anim');
+  a.gridTable.parentElement.classList.remove('grid-animate');
 }
 
 /* Update cell colours and text in place, then reorder rows to match sort. */
 function updateGridAnimFrame(tableData) {
   const a = anim;
   a.gridTableData = tableData;
-
   const sorted = [...tableData].sort(
     (x, b) => expectedFinish(x) - expectedFinish(b) || x.position - b.position,
   );
-
+  const body = a.gridTable.querySelector('tbody');
   for (const row of sorted) {
     const cells = a.gridCells.get(row.team_id);
     if (!cells) continue;
-    row.position_probabilities.forEach((probability, index) => {
-      const cell = cells[index];
-      const step = heatStep(probability);
-      cell.style.background = seqStepColor(step);
-      const text = pctShort(probability);
-      cell.textContent = text;
-      cell.classList.toggle('cell--empty', !text);
-      cell.className = `cell ${heatTextClass(step)}`.trim();
-    });
-  }
-
-  const body = a.gridTable.querySelector('tbody');
-  for (const row of sorted) {
-    const tr = a.gridRows.get(row.team_id);
-    if (tr) body.appendChild(tr);
+    row.position_probabilities.forEach((probability, index) => paintCell(cells[index], probability));
+    body.appendChild(a.gridRows.get(row.team_id));
   }
 }
 
 const anim = state.anim;
+
+/* One interpolated frame between the current matchday and the next. */
+function animFrame(frac) {
+  const cur = anim.reports.get(anim.matchdayIndex);
+  const next = anim.reports.get(anim.matchdayIndex + 1);
+  if (!cur || !next) return;
+  if (state.activeView === 'ladder') {
+    updateLadderAnimFrame({
+      eliteserien: { table: lerpReport(cur.eliteserien, next.eliteserien, frac) },
+      obosligaen: { table: lerpReport(cur.obosligaen, next.obosligaen, frac) },
+    });
+  } else {
+    updateGridAnimFrame(lerpReport(cur[state.league], next[state.league], frac));
+  }
+}
 
 function animTick(now) {
   if (!anim.playing) return;
@@ -502,30 +429,13 @@ function animTick(now) {
     anim.matchdayIndex++;
     anim.lastTick = now;
     if (anim.matchdayIndex >= days.length - 1) {
-      if (state.activeView === 'ladder') ladderAnimStop();
-      else animStop();
+      animStop();
       return;
     }
     animUpdateTimeline(report, days);
   }
 
-  // Interpolate between current and next matchday
-  const frac = Math.min((now - anim.lastTick) / msPerDay, 1);
-  const cur = anim.reports.get(anim.matchdayIndex);
-  const next = anim.reports.get(anim.matchdayIndex + 1);
-  if (cur && next) {
-    if (state.activeView === 'ladder') {
-      // Ladder needs both leagues interpolated; lerpReport returns an array
-      const lerped = {
-        eliteserien: { table: lerpReport(cur.eliteserien, next.eliteserien, frac) },
-        obosligaen: { table: lerpReport(cur.obosligaen, next.obosligaen, frac) },
-      };
-      updateLadderAnimFrame(lerped);
-    } else {
-      updateGridAnimFrame(lerpReport(cur, next, frac));
-    }
-  }
-
+  animFrame(Math.min((now - anim.lastTick) / msPerDay, 1));
   anim.raf = requestAnimationFrame(animTick);
 }
 
@@ -534,13 +444,12 @@ function animUpdateTimeline(report, days) {
   range.value = String(anim.matchdayIndex);
   const day = days[anim.matchdayIndex];
   if (day) {
-    const when = new Date(`${day.date}T12:00:00Z`).toLocaleDateString(localeDate(), {
-      weekday: 'short', day: 'numeric', month: 'long', year: 'numeric',
-    });
-    $('#timeline-when').textContent = t('timeline.animating', { when });
+    $('#timeline-when').textContent = t('timeline.animating', { when: longDate(day.date) });
   }
 }
 
+/* The grid and the ladder share one animation loop; the view decides which
+   DOM is built and updated. */
 async function animStart() {
   if (anim.playing) { animStop(); return; }
 
@@ -548,28 +457,27 @@ async function animStart() {
   const days = matchdays(report);
   if (days.length < 2) return;
 
-  const gridWrap = $('#grid').parentElement;
-  gridWrap.classList.add('grid-loading');
+  const ladder = state.activeView === 'ladder';
+  const holder = $(ladder ? '#ladder-lanes' : '#grid').parentElement;
+  holder.classList.add('grid-loading');
 
   anim.matchdayIndex = 0;
   anim.speed = 1;
   animUpdateSpeedButton();
 
   anim.reports = await prefetchAnimReports();
-  gridWrap.classList.remove('grid-loading');
+  holder.classList.remove('grid-loading');
 
-  if (!anim.reports || anim.reports.size < 2) return;
+  if (!anim.reports || anim.reports.size < 2 || !anim.reports.get(0)) return;
 
-  const firstReport = anim.reports.get(0);
-  if (!firstReport) return;
-
-  initGridAnimDOM(report, firstReport.table);
+  if (ladder) initLadderAnimDOM(anim.reports);
+  else initGridAnimDOM(report, anim.reports.get(0)[state.league].table);
   animUpdateTimeline(report, days);
 
   anim.playing = true;
   anim.lastTick = performance.now();
-  $('#grid-anim-play').textContent = '⏸';
-  $('#grid-anim-controls').hidden = false;
+  $(ladder ? '#ladder-anim-play' : '#grid-anim-play').textContent = '⏸';
+  $(ladder ? '#ladder-anim-controls' : '#grid-anim-controls').hidden = false;
   anim.raf = requestAnimationFrame(animTick);
 }
 
@@ -577,19 +485,12 @@ function animStop() {
   anim.playing = false;
   if (anim.raf) { cancelAnimationFrame(anim.raf); anim.raf = null; }
   if (anim.gridTable) anim.gridTable.classList.remove('grid-anim');
-  anim.gridRows = null;
-  anim.gridCells = null;
-  anim.gridTable = null;
-  anim.gridTableData = null;
-  anim.domOrder = [];
-  anim.ladderTeams = null;
-  anim.ladderData = null;
-  anim.ladderTrack = null;
-  anim.ladderXPos = null;
-  $('#grid-anim-play').textContent = '▶';
-  $('#grid-anim-controls').hidden = true;
-  $('#ladder-anim-play').textContent = '▶';
-  $('#ladder-anim-controls').hidden = true;
+  anim.gridRows = anim.gridCells = anim.gridTable = anim.gridTableData = null;
+  anim.ladder = null;
+  for (const view of ['grid', 'ladder']) {
+    $(`#${view}-anim-play`).textContent = '▶';
+    $(`#${view}-anim-controls`).hidden = true;
+  }
   setTimeout(() => render(), 0);
 }
 
@@ -599,412 +500,39 @@ function animToggleSpeed() {
 }
 
 function animUpdateSpeedButton() {
-  const btn = $('#grid-anim-speed');
-  if (btn) btn.textContent = `${anim.speed}×`;
+  for (const btn of document.querySelectorAll('.grid-anim-speed')) btn.textContent = `${anim.speed}×`;
 }
 
 /* ---------- ladder animation --------------------------------------- */
 
-async function prefetchLadderAnimReports() {
-  const report = state.reports[state.league];
-  const days = matchdays(report);
-  if (days.length < 2) return null;
-  const urls = days.map((d) => reportUrl(state.season, d.date));
-  const fetched = await Promise.all(
-    urls.map((u) => fetch(u).then((r) => (r.ok ? r.json() : null))),
-  );
-  const map = new Map();
-  fetched.forEach((r, i) => {
-    if (r) map.set(i, { eliteserien: r.eliteserien, obosligaen: r.obosligaen });
-  });
-  return map;
-}
-
-/* Build the ladder DOM once for animation, storing references for in-place
-   updates. Team positions are updated via left% on each frame.
-   allReports is the full Map<dayIndex, {eliteserien, obosligaen}> so we can
-   precompute the maximum stacking rows across every matchday. */
 function initLadderAnimDOM(allReports) {
-  const a = anim;
   const track = $('#ladder-lanes');
   track.replaceChildren();
-
-  // Collect teams from first matchday (used for initial DOM)
-  const firstReport = allReports.get(0);
-  const teams = [];
-  for (const [slug, report] of Object.entries(firstReport)) {
-    for (const row of report.table) {
-      teams.push({
-        team: row.team,
-        teamId: row.team_id,
-        rating: row.rating,
-        tier: slug === 'eliteserien' ? 1 : 2,
-      });
-    }
+  // Stack depth over every matchday, so the track never resizes mid-animation.
+  let maxStack = 0;
+  for (const [, day] of allReports) {
+    maxStack = Math.max(maxStack, layoutLadder(ladderTeams(day), track).depth - 1);
   }
-
-  // Compute initial positions
-  const ratings = teams.map((t) => t.rating);
-  const low = Math.min(...ratings);
-  const high = Math.max(...ratings);
-
-  const trackWidth = track.clientWidth || 1000;
-  const vertical = trackWidth < 500;
-  teams.sort((a, b) => a.rating - b.rating || a.team.localeCompare(b.team));
-  teams.forEach((t, i) => { t._rank = teams.length - i; });
-
-  // --- Vertical (mobile) layout ---
-  if (vertical) {
-    const AXIS_WIDTH = 2.5;
-    const ICON_SIZE = 1.5;
-    const COL_WIDTH = 1.8;
-    const VERT_PAD = 1;
-    const TRACK_CONTENT = Math.max(20, (high - low) / 50 * 6);
-    const OVERLAP_REM = ICON_SIZE + 0.2;
-
-    function yPos(rating) {
-      if (high === low) return VERT_PAD + TRACK_CONTENT / 2;
-      return VERT_PAD + TRACK_CONTENT - ((rating - low) / (high - low)) * TRACK_CONTENT;
-    }
-
-    function stackCols(teamList) {
-      const sorted = [...teamList].sort((a, b) => b.rating - a.rating || a.team.localeCompare(b.team));
-      const placed = [];
-      for (const t of sorted) {
-        let minCol = 0;
-        for (const p of placed) {
-          if (Math.abs(yPos(p.rating) - yPos(t.rating)) <= OVERLAP_REM) {
-            minCol = Math.max(minCol, p._col + 1);
-          }
-        }
-        t._col = minCol;
-        placed.push(t);
-      }
-    }
-
-    stackCols(teams);
-
-    // Precompute max columns across every matchday
-    let maxCols = 0;
-    for (const team of teams) maxCols = Math.max(maxCols, team._col);
-    for (const [, dayReport] of allReports) {
-      const dayTeams = [];
-      for (const [slug, report] of Object.entries(dayReport)) {
-        for (const row of report.table) {
-          dayTeams.push({
-            team: row.team, teamId: row.team_id,
-            rating: row.rating, tier: slug === 'eliteserien' ? 1 : 2,
-          });
-        }
-      }
-      stackCols(dayTeams);
-      for (const t of dayTeams) maxCols = Math.max(maxCols, t._col);
-    }
-
-    // Track sizing
-    track.style.height = `${VERT_PAD * 2 + TRACK_CONTENT}rem`;
-    track.style.width = `${AXIS_WIDTH + (maxCols + 1) * COL_WIDTH + 0.5}rem`;
-
-    // Axis ticks on the left
-    const axis = el('div', 'ladder__axis');
-    const tickStep = 50;
-    const firstTick = Math.ceil(low / tickStep) * tickStep;
-    for (let r = firstTick; r <= high; r += tickStep) {
-      const tick = el('div', 'ladder__tick');
-      tick.style.top = `${yPos(r)}rem`;
-      tick.appendChild(el('span', '', String(Math.round(r))));
-      axis.appendChild(tick);
-    }
-    track.appendChild(axis);
-
-    // Teams
-    const teamMap = new Map();
-    for (const team of teams) {
-      const wrap = el('div', 'ladder__team');
-      wrap.dataset.tier = String(team.tier);
-      wrap.dataset.tip = `#${team._rank}  ${team.team}  ${Math.round(team.rating)}`;
-      wrap.style.top = `${yPos(team.rating)}rem`;
-      wrap.style.left = `${AXIS_WIDTH + team._col * COL_WIDTH}rem`;
-      const img = el('img');
-      img.src = `logos/${team.teamId}.png`;
-      img.alt = team.team;
-      wrap.appendChild(img);
-      track.appendChild(wrap);
-      teamMap.set(team.teamId, wrap);
-    }
-
-    a.ladderTeams = teamMap;
-    a.ladderData = teams;
-    a.ladderTrack = track;
-    a.ladderLow = low;
-    a.ladderHigh = high;
-    a.ladderVertical = true;
-    a.ladderAxisWidth = AXIS_WIDTH;
-    a.ladderColWidth = COL_WIDTH;
-    a.ladderOverlapRem = OVERLAP_REM;
-    a.ladderVertPad = VERT_PAD;
-    a.ladderTrackContent = TRACK_CONTENT;
-
-  // --- Horizontal (desktop) layout ---
-  } else {
-    function xPos(rating) {
-      if (high === low) return 50;
-      return 2 + ((rating - low) / (high - low)) * 96;
-    }
-
-    const crestPx = parseFloat(getComputedStyle(document.documentElement).fontSize) * 1.5;
-    const OVERLAP_PCT = Math.min(50, ((crestPx + 2) / trackWidth) * 100);
-
-    function stackRows(teamList) {
-      const sorted = [...teamList].sort((a, b) => b.rating - a.rating || a.team.localeCompare(b.team));
-      const placed = [];
-      for (const t of sorted) {
-        let minRow = 0;
-        for (const p of placed) {
-          if (Math.abs(xPos(p.rating) - xPos(t.rating)) <= OVERLAP_PCT) {
-            minRow = Math.max(minRow, p._row + 1);
-          }
-        }
-        t._row = minRow;
-        placed.push(t);
-      }
-    }
-
-    stackRows(teams);
-
-    // Precompute max rows across every matchday
-    let maxRows = 0;
-    for (const team of teams) maxRows = Math.max(maxRows, team._row);
-    for (const [, dayReport] of allReports) {
-      const dayTeams = [];
-      for (const [slug, report] of Object.entries(dayReport)) {
-        for (const row of report.table) {
-          dayTeams.push({
-            team: row.team, teamId: row.team_id,
-            rating: row.rating, tier: slug === 'eliteserien' ? 1 : 2,
-          });
-        }
-      }
-      stackRows(dayTeams);
-      for (const t of dayTeams) maxRows = Math.max(maxRows, t._row + 1);
-    }
-
-    // Axis
-    const axis = el('div', 'ladder__axis');
-    const tickStep = 50;
-    const firstTick = Math.ceil(low / tickStep) * tickStep;
-    for (let r = firstTick; r <= high; r += tickStep) {
-      const tick = el('div', 'ladder__tick');
-      tick.style.left = `${xPos(r)}%`;
-      tick.appendChild(el('span', '', String(Math.round(r))));
-      axis.appendChild(tick);
-    }
-    track.appendChild(axis);
-
-    // Teams
-    const rowHeight = maxRows <= 1 ? 0 : 2.2;
-    track.style.height = `${4 + Math.max(0, maxRows - 1) * rowHeight}rem`;
-    const teamMap = new Map();
-    for (const team of teams) {
-      const wrap = el('div', 'ladder__team');
-      wrap.dataset.tier = String(team.tier);
-      wrap.dataset.tip = `#${team._rank}  ${team.team}  ${Math.round(team.rating)}`;
-      wrap.style.left = `${xPos(team.rating)}%`;
-      wrap.style.top = `${0.5 + team._row * rowHeight}rem`;
-      const img = el('img');
-      img.src = `logos/${team.teamId}.png`;
-      img.alt = team.team;
-      wrap.appendChild(img);
-      track.appendChild(wrap);
-      teamMap.set(team.teamId, wrap);
-    }
-
-    a.ladderTeams = teamMap;
-    a.ladderData = teams;
-    a.ladderXPos = xPos;
-    a.ladderTrackWidth = trackWidth;
-    a.ladderRowHeight = rowHeight;
-    a.ladderTrack = track;
-    a.ladderLow = low;
-    a.ladderHigh = high;
-    a.ladderOverPct = OVERLAP_PCT;
-    a.ladderVertical = false;
-  }
-}
-
-/* Update team positions in place based on interpolated ratings. */
-function updateLadderAnimFrame(reports) {
-  const a = anim;
-  if (!a.ladderTeams) return;
-
-  // Build a map of interpolated ratings
-  const ratings = new Map();
-  for (const [slug, report] of Object.entries(reports)) {
-    for (const row of report.table) {
-      ratings.set(row.team_id, row.rating);
-    }
-  }
-
-  // Recompute range from interpolated ratings
-  const allRatings = [...ratings.values()];
-  const low = Math.min(...allRatings);
-  const high = Math.max(...allRatings);
-  a.ladderLow = low;
-  a.ladderHigh = high;
-
-  // Update data and sort for stacking
-  const teams = a.ladderData;
+  const teams = ladderTeams(allReports.get(0));
+  ladderAxis(track, layoutLadder(teams, track, maxStack));
+  const els = new Map();
   for (const team of teams) {
-    team.rating = ratings.get(team.teamId) ?? team.rating;
+    const wrap = ladderTeamEl(team);
+    placeLadderTeam(wrap, team);
+    track.appendChild(wrap);
+    els.set(team.teamId, wrap);
   }
-  teams.sort((a, b) => a.rating - b.rating || a.team.localeCompare(b.team));
-  teams.forEach((t, i) => { t._rank = teams.length - i; });
-
-  if (a.ladderVertical) {
-    // --- Vertical (mobile) ---
-    function yPos(rating) {
-      if (high === low) return a.ladderVertPad + a.ladderTrackContent / 2;
-      return a.ladderVertPad + a.ladderTrackContent - ((rating - low) / (high - low)) * a.ladderTrackContent;
-    }
-
-    // Recompute stacking columns
-    const placed = [];
-    for (let i = teams.length - 1; i >= 0; i--) {
-      const team = teams[i];
-      let minCol = 0;
-      for (const p of placed) {
-        if (Math.abs(yPos(p.rating) - yPos(team.rating)) <= a.ladderOverlapRem) {
-          minCol = Math.max(minCol, p._col + 1);
-        }
-      }
-      team._col = minCol;
-      placed.push(team);
-    }
-
-    // Update team positions
-    for (const team of teams) {
-      const wrap = a.ladderTeams.get(team.teamId);
-      if (!wrap) continue;
-      wrap.style.top = `${yPos(team.rating)}rem`;
-      wrap.style.left = `${a.ladderAxisWidth + team._col * a.ladderColWidth}rem`;
-      wrap.dataset.tip = `#${team._rank}  ${team.team}  ${Math.round(team.rating)}`;
-    }
-
-    // Rebuild axis ticks
-    const track = a.ladderTrack;
-    const oldAxis = track.querySelector('.ladder__axis');
-    if (oldAxis) oldAxis.remove();
-    const axis = el('div', 'ladder__axis');
-    const tickStep = 50;
-    const firstTick = Math.ceil(low / tickStep) * tickStep;
-    for (let r = firstTick; r <= high; r += tickStep) {
-      const tick = el('div', 'ladder__tick');
-      tick.style.top = `${yPos(r)}rem`;
-      tick.appendChild(el('span', '', String(Math.round(r))));
-      axis.appendChild(tick);
-    }
-    track.appendChild(axis);
-
-  } else {
-    // --- Horizontal (desktop) ---
-    const xPosFn = (rating) => {
-      if (high === low) return 50;
-      return 2 + ((rating - low) / (high - low)) * 96;
-    };
-    a.ladderXPos = xPosFn;
-
-    // Recompute stacking rows
-    const placed = [];
-    for (let i = teams.length - 1; i >= 0; i--) {
-      const team = teams[i];
-      let minRow = 0;
-      for (const p of placed) {
-        if (Math.abs(xPosFn(p.rating) - xPosFn(team.rating)) <= a.ladderOverPct) {
-          minRow = Math.max(minRow, p._row + 1);
-        }
-      }
-      team._row = minRow;
-      placed.push(team);
-    }
-
-    // Update team positions
-    for (const team of teams) {
-      const wrap = a.ladderTeams.get(team.teamId);
-      if (!wrap) continue;
-      wrap.style.left = `${xPosFn(team.rating)}%`;
-      wrap.style.top = `${0.5 + team._row * a.ladderRowHeight}rem`;
-      wrap.dataset.tip = `#${team._rank}  ${team.team}  ${Math.round(team.rating)}`;
-    }
-
-    // Rebuild axis ticks
-    const track = a.ladderTrack;
-    const oldAxis = track.querySelector('.ladder__axis');
-    if (oldAxis) oldAxis.remove();
-    const axis = el('div', 'ladder__axis');
-    const tickStep = 50;
-    const firstTick = Math.ceil(low / tickStep) * tickStep;
-    for (let r = firstTick; r <= high; r += tickStep) {
-      const tick = el('div', 'ladder__tick');
-      tick.style.left = `${xPosFn(r)}%`;
-      tick.appendChild(el('span', '', String(Math.round(r))));
-      axis.appendChild(tick);
-    }
-    track.appendChild(axis);
-  }
+  anim.ladder = { teams, els, track, maxStack };
 }
 
-async function ladderAnimStart() {
-  if (anim.playing) { ladderAnimStop(); return; }
-
-  const report = state.reports[state.league];
-  const days = matchdays(report);
-  if (days.length < 2) return;
-
-  const track = $('#ladder-lanes');
-  track.parentElement.classList.add('grid-loading');
-
-  anim.matchdayIndex = 0;
-  anim.speed = 1;
-  ladderAnimUpdateSpeedButton();
-
-  anim.reports = await prefetchLadderAnimReports();
-  track.parentElement.classList.remove('grid-loading');
-
-  if (!anim.reports || anim.reports.size < 2) return;
-
-  const firstReport = anim.reports.get(0);
-  if (!firstReport) return;
-
-  initLadderAnimDOM(anim.reports);
-  animUpdateTimeline(report, days);
-
-  anim.playing = true;
-  anim.lastTick = performance.now();
-  $('#ladder-anim-play').textContent = '⏸';
-  $('#ladder-anim-controls').hidden = false;
-  anim.raf = requestAnimationFrame(animTick);
-}
-
-function ladderAnimStop() {
-  anim.playing = false;
-  if (anim.raf) { cancelAnimationFrame(anim.raf); anim.raf = null; }
-  anim.ladderTeams = null;
-  anim.ladderData = null;
-  anim.ladderTrack = null;
-  anim.ladderXPos = null;
-  $('#ladder-anim-play').textContent = '▶';
-  $('#ladder-anim-controls').hidden = true;
-  setTimeout(() => render(), 0);
-}
-
-function ladderAnimToggleSpeed() {
-  anim.speed = anim.speed >= 4 ? 1 : anim.speed * 2;
-  ladderAnimUpdateSpeedButton();
-}
-
-function ladderAnimUpdateSpeedButton() {
-  const btn = $('#ladder-anim-speed');
-  if (btn) btn.textContent = `${anim.speed}×`;
+/* Move every crest to its interpolated rating in place. */
+function updateLadderAnimFrame(reports) {
+  const l = anim.ladder;
+  if (!l) return;
+  const ratings = new Map(ladderTeams(reports).map((team) => [team.teamId, team.rating]));
+  for (const team of l.teams) team.rating = ratings.get(team.teamId) ?? team.rating;
+  ladderAxis(l.track, layoutLadder(l.teams, l.track, l.maxStack));
+  for (const team of l.teams) placeLadderTeam(l.els.get(team.teamId), team);
 }
 
 /* Marker colour for a qualification band.
@@ -1276,159 +804,114 @@ const svgEl = (tag, attrs = {}) => {
   return node;
 };
 
-function mostLikely(probabilities) {
-  let best = 0;
-  probabilities.forEach((value, index) => {
-    if (value > probabilities[best]) best = index;
-  });
-  return best;
-}
 
 /* ---------- rating ladder ----------------------------------------- */
 
-/* Both divisions on one axis, which is the only place the model compares
-   them directly. Domain is padded to the nearest 50 so ticks stay round. */
-function renderLadder(reports) {
-  const teams = [];
-  for (const [slug, report] of Object.entries(reports)) {
-    for (const row of report.table) {
-      teams.push({
-        team: row.team,
-        teamId: row.team_id,
-        rating: row.rating,
-        tier: slug === 'eliteserien' ? 1 : 2,
-      });
-    }
-  }
+function ladderTeams(reports) {
+  return Object.entries(reports).flatMap(([slug, report]) =>
+    report.table.map((row) => ({
+      team: row.team, teamId: row.team_id, rating: row.rating, tier: slug === 'eliteserien' ? 1 : 2,
+    })));
+}
 
+/* Both divisions on one axis, which is the only place the model compares
+   them directly. A narrow track runs vertically (rem down the track, crests
+   stacking into columns); otherwise horizontally (percent across it, crests
+   stacking into rows). Ranks and placement are written onto the team objects;
+   the ticks (every 50 points) and track size come back. `maxStack` reserves
+   extra stacking depth so an animated track keeps one size. */
+function layoutLadder(teams, track, maxStack = 0) {
   const ratings = teams.map((t) => t.rating);
   const low = Math.min(...ratings);
   const high = Math.max(...ratings);
-
-  const trackWidth = $('#ladder-lanes').clientWidth || 1000;
+  const trackWidth = track.clientWidth || 1000;
   const vertical = trackWidth < 500;
   teams.sort((a, b) => a.rating - b.rating || a.team.localeCompare(b.team));
-
-  // Rank: highest rating = 1
   teams.forEach((t, i) => { t._rank = teams.length - i; });
 
-  // --- Vertical (mobile) layout ---
-  if (vertical) {
-    const AXIS_WIDTH = 2.5;
-    const ICON_SIZE = 1.5;
-    const COL_WIDTH = 1.8;
-    const VERT_PAD = 1;
-    const TRACK_CONTENT = Math.max(20, (high - low) / 50 * 6);
-    const OVERLAP_REM = ICON_SIZE + 0.2;
+  const AXIS_WIDTH = 2.5;
+  const COL_WIDTH = 1.8;
+  const VERT_PAD = 1;
+  const TRACK_CONTENT = Math.max(20, (high - low) / 50 * 6);
+  const crestPx = parseFloat(getComputedStyle(document.documentElement).fontSize) * 1.5;
+  const overlap = vertical ? 1.7 : Math.min(50, ((crestPx + 2) / trackWidth) * 100);
+  const pos = (rating) => {
+    if (high === low) return vertical ? VERT_PAD + TRACK_CONTENT / 2 : 50;
+    const f = (rating - low) / (high - low);
+    return vertical ? VERT_PAD + TRACK_CONTENT - f * TRACK_CONTENT : 2 + f * 96;
+  };
 
-    function yPos(rating) {
-      if (high === low) return VERT_PAD + TRACK_CONTENT / 2;
-      return VERT_PAD + TRACK_CONTENT - ((rating - low) / (high - low)) * TRACK_CONTENT;
+  // Highest-rated first; a crest overlapping one already placed steps out one stack level.
+  const placed = [];
+  for (let i = teams.length - 1; i >= 0; i--) {
+    const team = teams[i];
+    let stack = 0;
+    for (const p of placed) {
+      if (Math.abs(pos(p.rating) - pos(team.rating)) <= overlap) stack = Math.max(stack, p._stack + 1);
     }
+    team._stack = stack;
+    placed.push(team);
+  }
+  const depth = Math.max(maxStack, ...teams.map((t) => t._stack)) + 1;
+  const rowHeight = depth <= 1 ? 0 : 2.2;
 
-    // Stack: highest-rated first, overlapping teams go to the right
-    const placed = [];
-    for (let i = teams.length - 1; i >= 0; i--) {
-      const team = teams[i];
-      let minCol = 0;
-      for (const p of placed) {
-        if (Math.abs(yPos(p.rating) - yPos(team.rating)) <= OVERLAP_REM) {
-          minCol = Math.max(minCol, p._col + 1);
-        }
-      }
-      team._col = minCol;
-      placed.push(team);
-    }
+  for (const team of teams) {
+    team._tip = `#${team._rank}  ${team.team}  ${Math.round(team.rating)}`;
+    team._top = vertical ? `${pos(team.rating)}rem` : `${0.5 + team._stack * rowHeight}rem`;
+    team._left = vertical ? `${AXIS_WIDTH + team._stack * COL_WIDTH}rem` : `${pos(team.rating)}%`;
+  }
+  const ticks = [];
+  for (let r = Math.ceil(low / 50) * 50; r <= high; r += 50) {
+    ticks.push({ label: String(r), [vertical ? 'top' : 'left']: vertical ? `${pos(r)}rem` : `${pos(r)}%` });
+  }
+  return {
+    ticks,
+    depth,
+    height: vertical ? `${VERT_PAD * 2 + TRACK_CONTENT}rem` : `${4 + (depth - 1) * rowHeight}rem`,
+    width: vertical ? `${AXIS_WIDTH + depth * COL_WIDTH + 0.5}rem` : '',
+  };
+}
 
-    const track = $('#ladder-lanes');
-    track.replaceChildren();
+function ladderAxis(track, layout) {
+  track.querySelector('.ladder__axis')?.remove();
+  const axis = el('div', 'ladder__axis');
+  for (const tick of layout.ticks) {
+    const node = el('div', 'ladder__tick');
+    if (tick.top) node.style.top = tick.top;
+    else node.style.left = tick.left;
+    node.appendChild(el('span', '', tick.label));
+    axis.appendChild(node);
+  }
+  track.appendChild(axis);
+  track.style.height = layout.height;
+  track.style.width = layout.width;
+}
 
-    let maxCol = 0;
-    for (const team of teams) maxCol = Math.max(maxCol, team._col);
-    track.style.height = `${VERT_PAD * 2 + TRACK_CONTENT}rem`;
-    track.style.width = `${AXIS_WIDTH + (maxCol + 1) * COL_WIDTH + 0.5}rem`;
+function ladderTeamEl(team) {
+  const wrap = el('div', 'ladder__team');
+  wrap.dataset.tier = String(team.tier);
+  const img = el('img');
+  img.src = `logos/${team.teamId}.png`;
+  img.alt = team.team;
+  wrap.appendChild(img);
+  return wrap;
+}
 
-    // Axis ticks on the left side
-    const axis = el('div', 'ladder__axis');
-    const tickStep = 50;
-    const firstTick = Math.ceil(low / tickStep) * tickStep;
-    for (let r = firstTick; r <= high; r += tickStep) {
-      const tick = el('div', 'ladder__tick');
-      tick.style.top = `${yPos(r)}rem`;
-      tick.appendChild(el('span', '', String(Math.round(r))));
-      axis.appendChild(tick);
-    }
-    track.appendChild(axis);
+function placeLadderTeam(wrap, team) {
+  wrap.style.top = team._top;
+  wrap.style.left = team._left;
+  wrap.dataset.tip = team._tip;
+}
 
-    // Teams
-    for (const team of teams) {
-      const wrap = el('div', 'ladder__team');
-      wrap.dataset.tier = String(team.tier);
-      wrap.dataset.tip = `#${team._rank}  ${team.team}  ${Math.round(team.rating)}`;
-      wrap.style.top = `${yPos(team.rating)}rem`;
-      wrap.style.left = `${AXIS_WIDTH + team._col * COL_WIDTH}rem`;
-      const img = el('img');
-      img.src = `logos/${team.teamId}.png`;
-      img.alt = team.team;
-      wrap.appendChild(img);
-      track.appendChild(wrap);
-    }
-
-  // --- Horizontal (desktop) layout ---
-  } else {
-    function xPos(rating) {
-      if (high === low) return 50;
-      return 2 + ((rating - low) / (high - low)) * 96;
-    }
-
-    const crestPx = parseFloat(getComputedStyle(document.documentElement).fontSize) * 1.5;
-    const OVERLAP_PCT = Math.min(50, ((crestPx + 2) / trackWidth) * 100);
-
-    // Highest-rated first: overtaking teams go below
-    const placed = [];
-    for (let i = teams.length - 1; i >= 0; i--) {
-      const team = teams[i];
-      let minRow = 0;
-      for (const p of placed) {
-        if (Math.abs(xPos(p.rating) - xPos(team.rating)) <= OVERLAP_PCT) {
-          minRow = Math.max(minRow, p._row + 1);
-        }
-      }
-      team._row = minRow;
-      placed.push(team);
-    }
-
-    const track = $('#ladder-lanes');
-    track.replaceChildren();
-
-    const axis = el('div', 'ladder__axis');
-    const tickStep = 50;
-    const firstTick = Math.ceil(low / tickStep) * tickStep;
-    for (let r = firstTick; r <= high; r += tickStep) {
-      const tick = el('div', 'ladder__tick');
-      tick.style.left = `${xPos(r)}%`;
-      tick.appendChild(el('span', '', String(Math.round(r))));
-      axis.appendChild(tick);
-    }
-    track.appendChild(axis);
-
-    let maxRow = 0;
-    for (const team of teams) maxRow = Math.max(maxRow, team._row);
-    const numRows = maxRow + 1;
-    const rowHeight = numRows <= 1 ? 0 : 2.2;
-    track.style.height = `${4 + Math.max(0, numRows - 1) * rowHeight}rem`;
-    for (const team of teams) {
-      const wrap = el('div', 'ladder__team');
-      wrap.dataset.tier = String(team.tier);
-      wrap.dataset.tip = `#${team._rank}  ${team.team}  ${Math.round(team.rating)}`;
-      wrap.style.left = `${xPos(team.rating)}%`;
-      wrap.style.top = `${0.5 + team._row * rowHeight}rem`;
-      const img = el('img');
-      img.src = `logos/${team.teamId}.png`;
-      img.alt = team.team;
-      wrap.appendChild(img);
-      track.appendChild(wrap);
-    }
+function renderLadder(reports) {
+  const track = $('#ladder-lanes');
+  track.replaceChildren();
+  const teams = ladderTeams(reports);
+  ladderAxis(track, layoutLadder(teams, track));
+  for (const team of teams) {
+    const wrap = ladderTeamEl(team);
+    placeLadderTeam(wrap, team);
+    track.appendChild(wrap);
   }
 
   // Touch/click support for ladder tooltips on mobile (event delegation on track)
@@ -1466,71 +949,39 @@ function renderLadder(reports) {
 
 /* ---------- fixtures ---------------------------------------------- */
 
+/* One half of a matchup: name button and crest, both opening the club's focus
+   view. The crest sits toward the centre of the card, so away flips the order. */
+function sideBlock(name, id, away, nameClass = 'played-card__team-name') {
+  const team = el('span', 'played-card__team');
+  const nameBtn = el('button', nameClass, name);
+  nameBtn.addEventListener('click', () => openTeamView(id, name));
+  const crest = teamLogo(id, name);
+  if (crest) {
+    crest.addEventListener('click', () => openTeamView(id, name));
+    crest.style.cursor = 'pointer';
+  }
+  for (const node of away ? [crest, nameBtn] : [nameBtn, crest]) if (node) team.appendChild(node);
+  return team;
+}
+
 function buildFixtureCard(fixture) {
   const card = el('div', 'played-card');
-
-  const date = el('div', 'played-card__date');
-  date.textContent = formatDate(fixture.date) + (fixture.time ? ` \u00b7 ${fixture.time}` : '');
-  card.appendChild(date);
+  card.appendChild(el('div', 'played-card__date', formatDate(fixture.date) + (fixture.time ? ` \u00b7 ${fixture.time}` : '')));
 
   const matchup = el('div', 'played-card__matchup');
-
   const homeSide = el('div', 'played-card__side played-card__side--home');
   homeSide.appendChild(el('span', 'played-card__rating-value', fixture.home_rating.toFixed(0)));
-  const homeTeam = el('span', 'played-card__team');
-  const homeNameBtn = el('button', 'played-card__team-name', fixture.home);
-  homeNameBtn.addEventListener('click', () => openTeamView(fixture.home_id, fixture.home));
-  homeTeam.appendChild(homeNameBtn);
-  const homeCrest = teamLogo(fixture.home_id, fixture.home);
-  if (homeCrest) {
-    homeCrest.addEventListener('click', () => openTeamView(fixture.home_id, fixture.home));
-    homeCrest.style.cursor = 'pointer';
-    homeTeam.appendChild(homeCrest);
-  }
-  homeSide.appendChild(homeTeam);
+  homeSide.appendChild(sideBlock(fixture.home, fixture.home_id, false));
   matchup.appendChild(homeSide);
 
   const oddsCol = el('div', 'fixture__odds-col');
-  const odds = el('div', 'odds');
-  odds.setAttribute('role', 'img');
-  odds.setAttribute(
-    'aria-label',
-    `${fixture.home} win ${pct(fixture.home_win)}, draw ${pct(fixture.draw)}, ${fixture.away} win ${pct(fixture.away_win)}`
-  );
-  for (const [outcome, value, who] of [
-    ['home', fixture.home_win, fixture.home],
-    ['draw', fixture.draw, t('next.draw')],
-    ['away', fixture.away_win, fixture.away],
-  ]) {
-    const segment = el('div', 'odds__seg');
-    segment.dataset.outcome = outcome;
-    segment.style.flex = `${Math.max(value, 0.001)}`;
-    segment.textContent = value >= 0.12 ? `${Math.round(value * 100)}%` : '';
-    segment.addEventListener('pointerenter', (event) =>
-      showTooltip(event, `<b>${who}</b><br>${pct(value, 1)}`)
-    );
-    segment.addEventListener('pointermove', moveTooltip);
-    segment.addEventListener('pointerleave', hideTooltip);
-    odds.appendChild(segment);
-  }
-  oddsCol.appendChild(odds);
+  oddsCol.appendChild(oddsBar(fixture.home, fixture.away, fixture));
   matchup.appendChild(oddsCol);
 
   const awaySide = el('div', 'played-card__side played-card__side--away');
-  const awayTeam = el('span', 'played-card__team');
-  const awayCrest = teamLogo(fixture.away_id, fixture.away);
-  if (awayCrest) {
-    awayCrest.addEventListener('click', () => openTeamView(fixture.away_id, fixture.away));
-    awayCrest.style.cursor = 'pointer';
-    awayTeam.appendChild(awayCrest);
-  }
-  const awayNameBtn = el('button', 'played-card__team-name', fixture.away);
-  awayNameBtn.addEventListener('click', () => openTeamView(fixture.away_id, fixture.away));
-  awayTeam.appendChild(awayNameBtn);
-  awaySide.appendChild(awayTeam);
+  awaySide.appendChild(sideBlock(fixture.away, fixture.away_id, true));
   awaySide.appendChild(el('span', 'played-card__rating-value', fixture.away_rating.toFixed(0)));
   matchup.appendChild(awaySide);
-
   card.appendChild(matchup);
 
   if (fixture.scorelines && fixture.scorelines.length) {
@@ -1540,7 +991,7 @@ function buildFixtureCard(fixture) {
       chip.textContent = `${line.home_goals}-${line.away_goals} ${pct(line.probability, 0)}`;
       chip.setAttribute(
         'aria-label',
-        `${line.home_goals}-${line.away_goals} about ${pct(line.probability, 1)}`
+        t('aria.scoreline', { score: `${line.home_goals}-${line.away_goals}`, pct: pct(line.probability, 1) })
       );
       lines.appendChild(chip);
     }
@@ -1550,15 +1001,55 @@ function buildFixtureCard(fixture) {
   return card;
 }
 
+/* A completed match: score in the middle, each side's rating after the match
+   with the delta the result produced on the outside. */
+function playedCard(match, ratingChanges) {
+  const card = el('div', 'played-card');
+  if (match.home_goals > match.away_goals) card.classList.add('played-card--home-win');
+  else if (match.away_goals > match.home_goals) card.classList.add('played-card--away-win');
+  card.appendChild(el('div', 'played-card__date', formatDate(match.date) + (match.round ? ` \u00b7 R${match.round}` : '')));
+
+  const ratingBlock = (id) => {
+    const info = ratingChanges.get(`${id}|${match.date}`) ?? { change: 0, rating: 0 };
+    const node = el('div', 'played-card__rating');
+    node.appendChild(el('span', 'played-card__rating-value', String(info.rating)));
+    if (info.change !== 0) {
+      const up = info.change > 0;
+      node.appendChild(el('span', `played-card__delta played-card__delta--${up ? 'up' : 'down'}`,
+        `${up ? '+' : ''}${info.change} ${up ? '\u25B2' : '\u25BC'}`));
+    }
+    return node;
+  };
+
+  const matchup = el('div', 'played-card__matchup');
+  const homeSide = el('div', 'played-card__side played-card__side--home');
+  homeSide.appendChild(ratingBlock(match.home_id));
+  homeSide.appendChild(sideBlock(match.home, match.home_id, false));
+  const awaySide = el('div', 'played-card__side played-card__side--away');
+  awaySide.appendChild(sideBlock(match.away, match.away_id, true));
+  awaySide.appendChild(ratingBlock(match.away_id));
+  matchup.appendChild(homeSide);
+  matchup.appendChild(el('div', 'played-card__score', `${match.home_goals}\u2013${match.away_goals}`));
+  matchup.appendChild(awaySide);
+  card.appendChild(matchup);
+  return card;
+}
+
 function renderFixtures(report) {
   const holder = $('#fixtures');
   holder.replaceChildren();
 
-  const next = report.fixtures.slice(0, 12);
+  const next = report.fixtures.slice(0, state.fixturesShown);
   $('#fixture-count').textContent = t('next.count', { n: next.length, total: report.fixtures.length });
 
   for (const fixture of next) {
     holder.appendChild(buildFixtureCard(fixture));
+  }
+  if (next.length < report.fixtures.length) {
+    const more = el('button', 'played-nav__btn fixtures__more', t('next.showMore', { n: Math.min(12, report.fixtures.length - next.length) }));
+    more.type = 'button';
+    more.addEventListener('click', () => { state.fixturesShown += 12; renderFixtures(report); });
+    holder.appendChild(more);
   }
 }
 
@@ -1643,86 +1134,18 @@ function renderPlayedResults(report) {
   nav.appendChild(next);
   holder.appendChild(nav);
 
-  // Cards
-  for (const match of weekMatches) {
-    const card = el('div', 'played-card');
-
-    const homeWin = match.home_goals > match.away_goals;
-    const awayWin = match.away_goals > match.home_goals;
-
-    if (homeWin) card.classList.add('played-card--home-win');
-    else if (awayWin) card.classList.add('played-card--away-win');
-
-    // Date centered above matchup
-    const date = el('div', 'played-card__date');
-    date.textContent = formatDate(match.date) + (match.round ? ` \u00b7 R${match.round}` : '');
-    card.appendChild(date);
-
-    const homeInfo = ratingChanges.get(`${match.home_id}|${match.date}`) ?? { change: 0, rating: 0 };
-    const awayInfo = ratingChanges.get(`${match.away_id}|${match.date}`) ?? { change: 0, rating: 0 };
-
-    // Rating block: large rating + delta + arrow
-    const ratingBlock = (info) => {
-      const node = el('div', 'played-card__rating');
-      const rating = el('span', 'played-card__rating-value', String(info.rating));
-      node.appendChild(rating);
-      if (info.change !== 0) {
-        const arrow = info.change > 0 ? '\u25B2' : '\u25BC';
-        const delta = el('span', `played-card__delta played-card__delta--${info.change > 0 ? 'up' : 'down'}`);
-        delta.textContent = `${info.change > 0 ? '+' : ''}${info.change} ${arrow}`;
-        node.appendChild(delta);
-      }
-      return node;
-    };
-
-    // Matchup row: [rating] [crest] Name   Score   Name [crest] [rating]
-    const matchup = el('div', 'played-card__matchup');
-
-    // Home: rating on outside (left), then name + crest toward center
-    const homeSide = el('div', 'played-card__side played-card__side--home');
-    homeSide.appendChild(ratingBlock(homeInfo));
-    const homeTeam = el('span', 'played-card__team');
-    const homeNameBtn = el('button', 'played-card__team-name', match.home);
-    homeNameBtn.addEventListener('click', () => openTeamView(match.home_id, match.home));
-    homeTeam.appendChild(homeNameBtn);
-    const homeCrest = teamLogo(match.home_id, match.home);
-    if (homeCrest) {
-      homeCrest.addEventListener('click', () => openTeamView(match.home_id, match.home));
-      homeCrest.style.cursor = 'pointer';
-      homeTeam.appendChild(homeCrest);
-    }
-    homeSide.appendChild(homeTeam);
-
-    const score = el('div', 'played-card__score');
-    score.textContent = `${match.home_goals}\u2013${match.away_goals}`;
-
-    // Away: crest + name toward center, then rating on outside (right)
-    const awaySide = el('div', 'played-card__side played-card__side--away');
-    const awayTeam = el('span', 'played-card__team');
-    const awayCrest = teamLogo(match.away_id, match.away);
-    if (awayCrest) {
-      awayCrest.addEventListener('click', () => openTeamView(match.away_id, match.away));
-      awayCrest.style.cursor = 'pointer';
-      awayTeam.appendChild(awayCrest);
-    }
-    const awayNameBtn = el('button', 'played-card__team-name', match.away);
-    awayNameBtn.addEventListener('click', () => openTeamView(match.away_id, match.away));
-    awayTeam.appendChild(awayNameBtn);
-    awaySide.appendChild(awayTeam);
-    awaySide.appendChild(ratingBlock(awayInfo));
-
-    matchup.appendChild(homeSide);
-    matchup.appendChild(score);
-    matchup.appendChild(awaySide);
-    card.appendChild(matchup);
-
-    holder.appendChild(card);
-  }
+  for (const match of weekMatches) holder.appendChild(playedCard(match, ratingChanges));
 }
 
 function formatDate(iso) {
   const date = new Date(`${iso}T12:00:00Z`);
   return date.toLocaleDateString(localeDate(), { weekday: 'short', day: 'numeric', month: 'short' });
+}
+
+function longDate(iso) {
+  return new Date(`${iso}T12:00:00Z`).toLocaleDateString(localeDate(), {
+    weekday: 'short', day: 'numeric', month: 'long', year: 'numeric',
+  });
 }
 
 /* Recent results per club, newest last. Built from the played-results list so
@@ -1834,6 +1257,8 @@ function renderModelCard(report) {
     [t('model.homeAdvantage'), `${model.home_advantage} ${t('model.pts')}`],
     [t('model.crossRegression'), `${Math.round((1 - model.season_regression) * 100)}% ${t('model.towardMean')}`],
     [t('model.peakDraw'), pct(model.draw_base, 0)],
+    [t('model.outcomeOdds'), t('model.outcomeOddsValue')],
+    [t('model.scorelines'), t('model.scorelinesValue')],
     [t('model.simulations'), model.simulations.toLocaleString()],
     [t('model.seed'), model.seed],
   ]) {
@@ -1848,6 +1273,7 @@ function renderModelCard(report) {
 /* ---------- team: one club's focus view ----------------------------- */
 
 function openTeamView(teamId, fallbackName, { push = true } = {}) {
+  if (anim.playing) animStop();
   // If the team isn't in the current league's report, find the right one
   const currentReport = state.reports?.[state.league];
   if (currentReport && !currentReport.table.some((t) => t.team_id === teamId)) {
@@ -1937,17 +1363,7 @@ function renderTeamView(report) {
     state.teamSeasonsPage = Math.min(state.teamSeasonsPage, totalPages - 1);
     const page = state.teamSeasonsPage;
     if (totalPages > 1) {
-      const nav = el('div', 'team-pagination');
-      const prev = el('button', 'team-pagination__btn', '\u2190');
-      prev.disabled = page >= totalPages - 1;
-      prev.addEventListener('click', () => { state.teamSeasonsPage++; renderTeamView(report); });
-      nav.appendChild(prev);
-      nav.appendChild(el('span', 'team-pagination__label', `${page + 1} / ${totalPages}`));
-      const next = el('button', 'team-pagination__btn', '\u2192');
-      next.disabled = page === 0;
-      next.addEventListener('click', () => { state.teamSeasonsPage--; renderTeamView(report); });
-      nav.appendChild(next);
-      header.appendChild(nav);
+      header.appendChild(paginator(page, totalPages, (p) => { state.teamSeasonsPage = p; renderTeamView(report); }, true));
     }
     seasonSection.appendChild(header);
     const scroller = el('div', 'scroller');
@@ -2031,6 +1447,22 @@ function fallbackNameById(teamId) {
   return allTeams().find((t) => t.team_id === teamId)?.team;
 }
 
+/* Arrows step through pages; `reversed` lists (newest first) page the other way. */
+function paginator(page, totalPages, go, reversed = false) {
+  const nav = el('div', 'team-pagination');
+  const step = reversed ? -1 : 1;
+  const prev = el('button', 'team-pagination__btn', '\u2190');
+  prev.disabled = reversed ? page >= totalPages - 1 : page === 0;
+  prev.addEventListener('click', () => go(page - step));
+  nav.appendChild(prev);
+  nav.appendChild(el('span', 'team-pagination__label', `${page + 1} / ${totalPages}`));
+  const next = el('button', 'team-pagination__btn', '\u2192');
+  next.disabled = reversed ? page === 0 : page >= totalPages - 1;
+  next.addEventListener('click', () => go(page + step));
+  nav.appendChild(next);
+  return nav;
+}
+
 function renderTeamSummary(teamId, row, career, report, container) {
   const card = el('div', 'team-summary');
 
@@ -2068,7 +1500,7 @@ function renderTeamSummary(teamId, row, career, report, container) {
   allTeams.sort((a, b) => b.rating - a.rating);
   const crossRank = allTeams.findIndex((t) => t.team_id === teamId);
   const totalTeams = allTeams.length || report.table.length;
-  ratingBlock.appendChild(el('span', 'team-summary__rating-pos', `${ordinal(crossRank >= 0 ? crossRank + 1 : (row?.position ?? 0))} of ${totalTeams}`));
+  ratingBlock.appendChild(el('span', 'team-summary__rating-pos', t('team.rankOf', { rank: ordinal(crossRank >= 0 ? crossRank + 1 : (row?.position ?? 0)), total: totalTeams })));
   header.appendChild(ratingBlock);
 
   card.appendChild(header);
@@ -2080,6 +1512,8 @@ function renderTeamSummary(teamId, row, career, report, container) {
     stats.appendChild(summaryStat(t('team.points'), String(row.points)));
     stats.appendChild(summaryStat(t('team.gd'), row.goal_difference > 0 ? `+${row.goal_difference}` : String(row.goal_difference)));
     stats.appendChild(summaryStat(t('team.played'), String(row.played)));
+    stats.appendChild(summaryStat(t('team.attack'), row.attack.toFixed(2), t('team.ratesHint')));
+    stats.appendChild(summaryStat(t('team.defence'), row.defence.toFixed(2), t('team.ratesHint')));
   } else if (career) {
     stats.appendChild(summaryStat(t('team.matches'), String(career.points.length)));
   }
@@ -2123,11 +1557,10 @@ function computeRatingTrend(teamName, report) {
   const diff = current - fiveAgo;
 
   // 5 degrees: strong rise, rise, steady, fall, strong fall
-  if (diff > 20) return { direction: 'strong-rise', svg: trendArrowSVG('strong-rise'), detail: `Strong rise (+${Math.round(diff)})`, diff };
-  if (diff > 5) return { direction: 'rise', svg: trendArrowSVG('rise'), detail: `Rising (+${Math.round(diff)})`, diff };
-  if (diff >= -5) return { direction: 'steady', svg: trendArrowSVG('steady'), detail: `Steady (${diff >= 0 ? '+' : ''}${Math.round(diff)})`, diff };
-  if (diff >= -20) return { direction: 'fall', svg: trendArrowSVG('fall'), detail: `Falling (${Math.round(diff)})`, diff };
-  return { direction: 'strong-fall', svg: trendArrowSVG('strong-fall'), detail: `Strong fall (${Math.round(diff)})`, diff };
+  const key = diff > 20 ? 'strongRise' : diff > 5 ? 'rise' : diff >= -5 ? 'steady' : diff >= -20 ? 'fall' : 'strongFall';
+  const direction = key.replace('strongR', 'strong-r').replace('strongF', 'strong-f');
+  const n = Math.round(key === 'steady' ? Math.abs(diff) : diff);
+  return { direction, svg: trendArrowSVG(direction), detail: t(`trend.${key}`, { n }), diff };
 }
 
 function trendArrowSVG(direction) {
@@ -2142,8 +1575,9 @@ function trendArrowSVG(direction) {
   return `<svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="transform:rotate(${rotation}deg)"><path d="M12 19V5"/><polyline points="5 12 12 5 19 12"/></svg>`;
 }
 
-function summaryStat(label, value) {
+function summaryStat(label, value, title) {
   const item = el('div', 'team-summary__stat');
+  if (title) item.title = title;
   item.appendChild(el('span', 'team-summary__stat-label', label));
   item.appendChild(el('span', 'team-summary__stat-value', value));
   return item;
@@ -2331,17 +1765,7 @@ function renderTeamFixtures(teamId, teamName, report, container) {
   const header = el('div', 'team-section__header');
   header.appendChild(el('div', 'label', t('team.upcomingFixtures', { n: allFixtures.length })));
   if (totalPages > 1) {
-    const nav = el('div', 'team-pagination');
-    const prev = el('button', 'team-pagination__btn', '\u2190');
-    prev.disabled = page === 0;
-    prev.addEventListener('click', () => { state.teamFixturesPage--; renderTeamView(report); });
-    nav.appendChild(prev);
-    nav.appendChild(el('span', 'team-pagination__label', `${page + 1} / ${totalPages}`));
-    const next = el('button', 'team-pagination__btn', '\u2192');
-    next.disabled = page >= totalPages - 1;
-    next.addEventListener('click', () => { state.teamFixturesPage++; renderTeamView(report); });
-    nav.appendChild(next);
-    header.appendChild(nav);
+    header.appendChild(paginator(page, totalPages, (p) => { state.teamFixturesPage = p; renderTeamView(report); }));
   }
   section.appendChild(header);
 
@@ -2370,94 +1794,17 @@ function renderTeamResults(teamId, teamName, report, container) {
   const header = el('div', 'team-section__header');
   header.appendChild(el('div', 'label', t('team.recentResults', { n: allResults.length })));
   if (totalPages > 1) {
-    const nav = el('div', 'team-pagination');
-    const prev = el('button', 'team-pagination__btn', '\u2190');
-    prev.disabled = page >= totalPages - 1;
-    prev.addEventListener('click', () => { state.teamResultsPage++; renderTeamView(report); });
-    nav.appendChild(prev);
-    nav.appendChild(el('span', 'team-pagination__label', `${page + 1} / ${totalPages}`));
-    const next = el('button', 'team-pagination__btn', '\u2192');
-    next.disabled = page === 0;
-    next.addEventListener('click', () => { state.teamResultsPage--; renderTeamView(report); });
-    nav.appendChild(next);
-    header.appendChild(nav);
+    header.appendChild(paginator(page, totalPages, (p) => { state.teamResultsPage = p; renderTeamView(report); }, true));
   }
   section.appendChild(header);
 
-  for (const match of matches) {
-    const card = el('div', 'played-card');
-
-    const homeWin = match.home_goals > match.away_goals;
-    const awayWin = match.away_goals > match.home_goals;
-    if (homeWin) card.classList.add('played-card--home-win');
-    else if (awayWin) card.classList.add('played-card--away-win');
-
-    // Date centered above matchup
-    const date = el('div', 'played-card__date');
-    date.textContent = formatDate(match.date) + (match.round ? ` \u00b7 R${match.round}` : '');
-    card.appendChild(date);
-
-    const homeInfo = ratingChanges.get(`${match.home_id}|${match.date}`) ?? { change: 0, rating: 0 };
-    const awayInfo = ratingChanges.get(`${match.away_id}|${match.date}`) ?? { change: 0, rating: 0 };
-
-    const ratingBlock = (info) => {
-      const node = el('div', 'played-card__rating');
-      node.appendChild(el('span', 'played-card__rating-value', String(info.rating)));
-      if (info.change !== 0) {
-        const arrow = info.change > 0 ? '\u25B2' : '\u25BC';
-        const delta = el('span', `played-card__delta played-card__delta--${info.change > 0 ? 'up' : 'down'}`);
-        delta.textContent = `${info.change > 0 ? '+' : ''}${info.change} ${arrow}`;
-        node.appendChild(delta);
-      }
-      return node;
-    };
-
-    const matchup = el('div', 'played-card__matchup');
-
-    const homeSide = el('div', 'played-card__side played-card__side--home');
-    homeSide.appendChild(ratingBlock(homeInfo));
-    const homeTeam = el('span', 'played-card__team');
-    const homeNameBtn = el('button', 'played-card__team-name', match.home);
-    homeNameBtn.addEventListener('click', () => openTeamView(match.home_id, match.home));
-    homeTeam.appendChild(homeNameBtn);
-    const homeCrest = teamLogo(match.home_id, match.home);
-    if (homeCrest) {
-      homeCrest.addEventListener('click', () => openTeamView(match.home_id, match.home));
-      homeCrest.style.cursor = 'pointer';
-      homeTeam.appendChild(homeCrest);
-    }
-    homeSide.appendChild(homeTeam);
-
-    const score = el('div', 'played-card__score');
-    score.textContent = `${match.home_goals}\u2013${match.away_goals}`;
-
-    const awaySide = el('div', 'played-card__side played-card__side--away');
-    const awayTeam = el('span', 'played-card__team');
-    const awayCrest = teamLogo(match.away_id, match.away);
-    if (awayCrest) {
-      awayCrest.addEventListener('click', () => openTeamView(match.away_id, match.away));
-      awayCrest.style.cursor = 'pointer';
-      awayTeam.appendChild(awayCrest);
-    }
-    const awayNameBtn = el('button', 'played-card__team-name', match.away);
-    awayNameBtn.addEventListener('click', () => openTeamView(match.away_id, match.away));
-    awayTeam.appendChild(awayNameBtn);
-    awaySide.appendChild(awayTeam);
-    awaySide.appendChild(ratingBlock(awayInfo));
-
-    matchup.appendChild(homeSide);
-    matchup.appendChild(score);
-    matchup.appendChild(awaySide);
-    card.appendChild(matchup);
-
-    section.appendChild(card);
-  }
+  for (const match of matches) section.appendChild(playedCard(match, ratingChanges));
   container.appendChild(section);
 }
 
 /* ---------- team focus: season shape -------------------------------- */
 
-function renderTeamShape(teamId, report, container, { label = t('team.seasonShape'), seasonLabel = null } = {}) {
+function renderTeamShape(teamId, report, container) {
   const history = report.history;
   if (!history) return;
 
@@ -2466,7 +1813,7 @@ function renderTeamShape(teamId, report, container, { label = t('team.seasonShap
 
   const section = el('div', 'team-section');
   section.id = 'team-shape-section';
-  section.appendChild(el('div', 'label', seasonLabel || label));
+  section.appendChild(el('div', 'label', t('team.seasonShape')));
 
   const chart = svgEl('svg', { class: 'chart', role: 'img' });
   chart.setAttribute('aria-label', t('shape.stackedArea', { team: team.team }));
@@ -2530,7 +1877,7 @@ function drawTeamShape(report, team, chart) {
       showTooltip(
         event,
         `<b>${ordinal(position)}</b>${bandLabel ? ` · ${bandLabel.label}` : ''}<br>` +
-          `now ${pct(latest, 1)}`
+          t('shape.now', { pct: pct(latest, 1) })
       );
     });
     band.addEventListener('pointermove', moveTooltip);
@@ -2585,7 +1932,7 @@ function drawTeamShape(report, team, chart) {
   }
 
   const axisTitle = svgEl('text', { class: 'axis-title', x: pad.left, y: height - 4 });
-  axisTitle.textContent = `${history.dates[0].slice(0, 4)} season`;
+  axisTitle.textContent = t('shape.seasonAxis', { year: history.dates[0].slice(0, 4) });
   chart.appendChild(axisTitle);
 
   attachTeamShapeCrosshair(chart, report, team, { x, pad, plotWidth, plotHeight, width, height, snapshots, count });
@@ -2619,7 +1966,7 @@ function attachTeamShapeCrosshair(chart, report, team, geometry) {
     line.style.opacity = '1';
 
     const probabilities = team.positions[index];
-    const best = mostLikely(probabilities);
+    const best = probabilities.indexOf(Math.max(...probabilities));
     const sum = (band) => (band ? probabilities.slice(band.first - 1, band.last).reduce((a, b) => a + b, 0) : 0);
     const when = new Date(`${history.dates[index]}T12:00:00Z`).toLocaleDateString(localeDate(), {
       day: 'numeric', month: 'short', year: 'numeric',
@@ -2676,9 +2023,7 @@ function renderTimeline(report) {
   panel.classList.toggle('is-past', !live);
   $('#timeline-now').hidden = live;
 
-  const when = new Date(`${day.date}T12:00:00Z`).toLocaleDateString(localeDate(), {
-    weekday: 'short', day: 'numeric', month: 'long', year: 'numeric',
-  });
+  const when = longDate(day.date);
   $('#timeline-when').textContent = live
     ? t('timeline.liveCount', { n: day.matches_played })
     : t('timeline.asOf', { when, n: day.matches_played, total: report.model.matches_played + report.model.matches_remaining });
@@ -2708,21 +2053,13 @@ function onTimelineInput(event) {
   if (anim.playing) {
     anim.matchdayIndex = index;
     anim.lastTick = performance.now();
-    const cur = anim.reports.get(index);
-    const next = anim.reports.get(index + 1);
-    if (cur && next) updateGridAnimFrame(lerpReport(cur, next, 0));
-    const when = new Date(`${day.date}T12:00:00Z`).toLocaleDateString(localeDate(), {
-      weekday: 'short', day: 'numeric', month: 'long', year: 'numeric',
-    });
-    $('#timeline-when').textContent = t('timeline.paused', { when });
+    animFrame(0);
+    $('#timeline-when').textContent = t('timeline.paused', { when: longDate(day.date) });
     return;
   }
 
   const live = index === days.length - 1;
-  const when = new Date(`${day.date}T12:00:00Z`).toLocaleDateString(localeDate(), {
-    weekday: 'short', day: 'numeric', month: 'long', year: 'numeric',
-  });
-  $('#timeline-when').textContent = live ? t('timeline.scrubLive') : t('timeline.scrubAsOf', { when });
+  $('#timeline-when').textContent = live ? t('timeline.scrubLive') : t('timeline.scrubAsOf', { when: longDate(day.date) });
   $('#timeline').classList.toggle('is-past', !live);
 
   clearTimeout(state.rewindTimer);
@@ -2750,14 +2087,8 @@ async function rewindTo(asof) {
 
 function resolveTheme() {
   const chosen = localStorage.getItem('elitetracker-theme');
-  const root = document.documentElement;
-  if (chosen === 'light' || chosen === 'dark') {
-    root.dataset.theme = chosen;
-    root.dataset.resolvedTheme = chosen;
-  } else {
-    root.dataset.theme = '';
-    root.dataset.resolvedTheme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
-  }
+  document.documentElement.dataset.resolvedTheme = chosen === 'light' || chosen === 'dark' ? chosen
+    : window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
   for (const button of document.querySelectorAll('[data-theme-choice]')) {
     button.setAttribute('aria-pressed', String(button.dataset.themeChoice === chosen));
   }
@@ -2878,7 +2209,7 @@ function wire() {
 
   for (const button of document.querySelectorAll('[data-view]')) {
     button.addEventListener('click', () => {
-      if (anim.playing && button.dataset.view !== 'grid' && button.dataset.view !== 'ladder') animStop();
+      if (anim.playing && button.dataset.view !== state.activeView) animStop();
       state.activeView = button.dataset.view;
       markActiveView();
       closeSheet();
@@ -2911,15 +2242,11 @@ function wire() {
   $('#timeline-back').addEventListener('click', () => stepMatchday(-1));
   $('#timeline-forward').addEventListener('click', () => stepMatchday(1));
 
-  const gridAnimPlay = $('#grid-anim-play');
-  if (gridAnimPlay) gridAnimPlay.addEventListener('click', animStart);
-  const gridAnimSpeed = $('#grid-anim-speed');
-  if (gridAnimSpeed) gridAnimSpeed.addEventListener('click', animToggleSpeed);
+  $('#grid-anim-play').addEventListener('click', animStart);
+  $('#grid-anim-speed').addEventListener('click', animToggleSpeed);
 
-  const ladderAnimPlay = $('#ladder-anim-play');
-  if (ladderAnimPlay) ladderAnimPlay.addEventListener('click', ladderAnimStart);
-  const ladderAnimSpeed = $('#ladder-anim-speed');
-  if (ladderAnimSpeed) ladderAnimSpeed.addEventListener('click', ladderAnimToggleSpeed);
+  $('#ladder-anim-play').addEventListener('click', animStart);
+  $('#ladder-anim-speed').addEventListener('click', animToggleSpeed);
 
   for (const button of document.querySelectorAll('#standings .sort-btn')) {
     button.addEventListener('click', () => toggleSort(button.dataset.sortKey));
@@ -2979,44 +2306,13 @@ function applyLeagueParameter() {
 }
 
 /* Team is matched on name so a shared link stays readable. Applied after the
-   first render, once the club list exists. ?career= redirects to ?view=team&team=X */
+   first render, once the club list exists. */
 function applyTeamParameter() {
-  const params = new URLSearchParams(window.location.search);
-
-  const career = params.get('career');
-  if (career) {
-    const club = (state.careers?.teams || []).find(
-      (team) => team.team.toLowerCase() === career.toLowerCase()
-    );
-    if (club) {
-      openTeamView(club.team_id, club.team, { push: false });
-      return;
-    }
-  }
-
-  const wanted = params.get('team');
+  const wanted = new URLSearchParams(window.location.search).get('team');
   if (!wanted) return;
-
-  // If ?view=team is set or ?team= is present, open the team focus view
-  const view = params.get('view');
-  if (view === 'team' || params.has('team')) {
-    const report = state.reports[state.league];
-    const match = (report.table || []).find(
-      (team) => team.team.toLowerCase() === wanted.toLowerCase()
-    );
-    if (match) {
-      openTeamView(match.team_id, match.team, { push: false });
-      return;
-    }
-    // Also check careers for cross-season teams
-    const careerMatch = (state.careers?.teams || []).find(
-      (team) => team.team.toLowerCase() === wanted.toLowerCase()
-    );
-    if (careerMatch) {
-      openTeamView(careerMatch.team_id, careerMatch.team, { push: false });
-      return;
-    }
-  }
+  const pool = state.careers?.teams || state.reports[state.league].table || [];
+  const club = pool.find((team) => team.team.toLowerCase() === wanted.toLowerCase());
+  if (club) openTeamView(club.team_id, club.team, { push: false });
 }
 
 /* Three controls can name the current view -- the desktop strip, the phone bar
@@ -3112,7 +2408,7 @@ function allTeams() {
   return teams;
 }
 
-function teamNameById(report, id) {
+function teamNameById(id) {
   return allTeams().find((team) => team.team_id === id)?.team || id;
 }
 
@@ -3130,12 +2426,6 @@ function ratingById(id) {
    possible pairing in every report file. */
 function matchOdds(model, homeRating, awayRating) {
   const gap = homeRating + model.home_advantage - awayRating;
-  if (model.probability_model === 'ordered_logit') {
-    const logistic = (z) => 1 / (1 + Math.exp(-z));
-    const upper = logistic(model.logit_cutpoint - model.logit_slope * gap);
-    const lower = logistic(-model.logit_cutpoint - model.logit_slope * gap);
-    return { gap, home_win: 1 - upper, draw: upper - lower, away_win: lower };
-  }
   // The ELO expectation of that gap against an even 1500 baseline. Half the
   // draw mass comes off each side, so home_win + 0.5*draw reproduces it exactly.
   const expected = 1 / (1 + 10 ** (-gap / 400));
@@ -3148,34 +2438,52 @@ function matchOdds(model, homeRating, awayRating) {
 
 /* Most likely scorelines, ported from display/fixtures.py: each outcome's
    empirical frequencies for the gap's bin, weighted by that outcome's odds. */
-function topScorelines(model, odds, n = 5) {
-  const table = model.scorelines;
-  let bin = 0;
-  for (const edge of table.bin_edges) {
-    if (odds.gap > edge) bin += 1;
-    else break;
-  }
-  bin = Math.min(bin, table.bins - 1);
+/* Scoreline grid ported from model/attack_defence.py: Poisson goals at each
+   side's expected rate with the Dixon-Coles low-score correction, 0-8 goals
+   each way, renormalised. */
+function scoreGrid(model, homeId, awayId) {
+  const ad = model.attack_defence;
+  const [homeAttack, homeDefence] = ad.teams[homeId] || [0, 0];
+  const [awayAttack, awayDefence] = ad.teams[awayId] || [0, 0];
+  const lam = Math.exp(ad.base + ad.home + homeAttack - awayDefence);
+  const mu = Math.exp(ad.base + awayAttack - homeDefence);
+  const fact = [1, 1, 2, 6, 24, 120, 720, 5040, 40320];
+  const pois = (k, rate) => Math.exp(-rate) * rate ** k / fact[k];
+  const tau = (i, j) => (i === 0 && j === 0 ? 1 - lam * mu * ad.rho
+    : i === 0 && j === 1 ? 1 + lam * ad.rho
+    : i === 1 && j === 0 ? 1 + mu * ad.rho
+    : i === 1 && j === 1 ? 1 - ad.rho : 1);
+  const grid = fact.map((_, i) => fact.map((__, j) => pois(i, lam) * pois(j, mu) * Math.max(tau(i, j), 0)));
+  const total = grid.reduce((sum, row) => sum + row.reduce((s, v) => s + v, 0), 0);
+  return grid.map((row) => row.map((v) => v / total));
+}
 
-  const combined = new Map();
-  for (const outcome of ['home_win', 'draw', 'away_win']) {
-    const probability = odds[outcome];
-    if (probability <= 0) continue;
-    // An empty bin cell falls back to the outcome's global distribution.
-    const cell = table.bins_data[outcome][bin]?.length ? table.bins_data[outcome][bin] : table.global[outcome];
-    const total = cell.reduce((sum, entry) => sum + entry[2], 0);
-    for (const [homeGoals, awayGoals, weight] of cell) {
-      const key = `${homeGoals}-${awayGoals}`;
-      combined.set(key, (combined.get(key) || 0) + probability * (weight / total));
-    }
-  }
-  return [...combined]
-    .sort((a, b) => b[1] - a[1])
-    .slice(0, n)
-    .map(([key, probability]) => {
-      const [homeGoals, awayGoals] = key.split('-').map(Number);
-      return { home_goals: homeGoals, away_goals: awayGoals, probability };
-    });
+/* The shipped outcome odds: a geometric blend of the Elo odds and the grid's
+   own win/draw/loss sums, weight on Elo from the report. Ported from
+   model/attack_defence.py blend_outcomes. */
+function blendOdds(model, odds, homeId, awayId) {
+  const grid = scoreGrid(model, homeId, awayId);
+  const own = { home_win: 0, draw: 0, away_win: 0 };
+  grid.forEach((row, i) => row.forEach((p, j) => { own[i > j ? 'home_win' : i === j ? 'draw' : 'away_win'] += p; }));
+  const w = model.attack_defence.outcome_blend;
+  const raw = ['home_win', 'draw', 'away_win'].map((o) => odds[o] ** w * own[o] ** (1 - w));
+  const total = raw[0] + raw[1] + raw[2];
+  return { gap: odds.gap, home_win: raw[0] / total, draw: raw[1] / total, away_win: raw[2] / total };
+}
+
+/* Most likely scorelines: who wins comes from the blended odds, how many goals
+   from the grid -- each outcome's cells are rescaled to that outcome's odds. */
+function topScorelines(model, odds, homeId, awayId, n = 5) {
+  const grid = scoreGrid(model, homeId, awayId);
+  const outcome = (i, j) => (i > j ? 'home_win' : i === j ? 'draw' : 'away_win');
+  const own = { home_win: 0, draw: 0, away_win: 0 };
+  grid.forEach((row, i) => row.forEach((p, j) => { own[outcome(i, j)] += p; }));
+  const cells = [];
+  grid.forEach((row, i) => row.forEach((p, j) => {
+    const o = outcome(i, j);
+    cells.push({ home_goals: i, away_goals: j, probability: own[o] > 0 ? p * (odds[o] / own[o]) : 0 });
+  }));
+  return cells.sort((a, b) => b.probability - a.probability).slice(0, n);
 }
 
 function compareTeamBlock(id, name, rating, crest, side) {
@@ -3188,7 +2496,6 @@ function compareTeamBlock(id, name, rating, crest, side) {
   text.appendChild(el('div', 'compare__team-rating', String(Math.round(rating))));
   main.appendChild(text);
   block.appendChild(main);
-  block.appendChild(el('div', 'compare__pick-hint', t('compare.hint')));
   return block;
 }
 
@@ -3197,7 +2504,7 @@ function oddsBar(homeName, awayName, entry) {
   odds.setAttribute('role', 'img');
   odds.setAttribute(
     'aria-label',
-    `${homeName} win ${pct(entry.home_win)}, draw ${pct(entry.draw)}, ${awayName} win ${pct(entry.away_win)}`
+    t('aria.odds', { home: homeName, hw: pct(entry.home_win), d: pct(entry.draw), away: awayName, aw: pct(entry.away_win) })
   );
   for (const [outcome, value, who] of [
     ['home', entry.home_win, homeName],
@@ -3235,73 +2542,6 @@ function populateCompare(report) {
   a.value = byRating[0].team_id;
   b.value = byRating[1]?.team_id || byRating[0].team_id;
 }
-let compareMenuEl = null;
-
-function closeCompareMenu() {
-  if (compareMenuEl) {
-    compareMenuEl.remove();
-    compareMenuEl = null;
-  }
-  document.removeEventListener('pointerdown', compareMenuOutside, true);
-  document.removeEventListener('keydown', compareMenuKey);
-  window.removeEventListener('scroll', compareMenuScroll, true);
-}
-
-function compareMenuOutside(event) {
-  if (compareMenuEl && !compareMenuEl.contains(event.target)) closeCompareMenu();
-}
-
-function compareMenuKey(event) {
-  if (event.key === 'Escape') closeCompareMenu();
-}
-
-function compareMenuScroll(event) {
-  // Scrolling inside the menu (its own scrollbar) must not dismiss it.
-  if (compareMenuEl && compareMenuEl.contains(event.target)) return;
-  closeCompareMenu();
-}
-
-/* A custom picker: the native <select> can't show crests or be positioned, so
-   the cards open this popover under themselves, listing every club with its
-   logo. Selecting one sets the hidden select's value and fires its change. */
-function openCompareMenu(box, side, report) {
-  closeCompareMenu();
-  const menu = el('div', 'compare__menu');
-  menu.setAttribute('role', 'listbox');
-  menu.dataset.side = side;
-  const select = side === 'home' ? $('#compare-a') : $('#compare-b');
-  const otherId = side === 'home' ? $('#compare-b').value : $('#compare-a').value;
-  for (const team of allTeams()) {
-    const option = el('button', 'compare__option');
-    option.type = 'button';
-    option.setAttribute('role', 'option');
-    if (team.team_id === otherId) option.disabled = true;
-    const crest = teamLogo(team.team_id, team.team);
-    if (crest) option.appendChild(crest);
-    option.appendChild(el('span', 'compare__option-name', team.team));
-    option.addEventListener('click', () => {
-      select.value = team.team_id;
-      select.dispatchEvent(new Event('change'));
-      closeCompareMenu();
-    });
-    menu.appendChild(option);
-  }
-  const rect = box.getBoundingClientRect();
-  menu.style.position = 'fixed';
-  menu.style.top = `${rect.bottom + 6}px`;
-  menu.style.left = `${rect.left}px`;
-  menu.style.width = `${rect.width}px`;
-  menu.style.setProperty('--menu-left', `${rect.left}px`);
-  menu.style.setProperty('--menu-width', `${rect.width}px`);
-  document.body.appendChild(menu);
-  compareMenuEl = menu;
-  // Defer so the click that opened the menu doesn't immediately close it.
-  setTimeout(() => {
-    document.addEventListener('pointerdown', compareMenuOutside, true);
-    document.addEventListener('keydown', compareMenuKey);
-    window.addEventListener('scroll', compareMenuScroll, true);
-  }, 0);
-}
 
 function renderCompare(report) {
   const holder = $('#compare-output');
@@ -3309,15 +2549,18 @@ function renderCompare(report) {
 
   const aId = $('#compare-a').value;
   const bId = $('#compare-b').value;
+  // A club cannot play itself.
+  for (const option of $('#compare-a').options) option.disabled = option.value === bId;
+  for (const option of $('#compare-b').options) option.disabled = option.value === aId;
   const homeId = aId;
   const awayId = bId;
-  const homeName = teamNameById(report, homeId);
-  const awayName = teamNameById(report, awayId);
+  const homeName = teamNameById(homeId);
+  const awayName = teamNameById(awayId);
 
   const homeRating = ratingById(homeId);
   const awayRating = ratingById(awayId);
-  const odds = matchOdds(report.model, homeRating, awayRating);
-  const entry = { ...odds, scorelines: topScorelines(report.model, odds) };
+  const odds = blendOdds(report.model, matchOdds(report.model, homeRating, awayRating), homeId, awayId);
+  const entry = { ...odds, scorelines: topScorelines(report.model, odds, homeId, awayId) };
 
   // Fictional match: the two clubs, who hosts, and the model's odds + scorelines.
   const matchBlock = el('div', 'compare__block');
@@ -3341,27 +2584,6 @@ function renderCompare(report) {
   teamsRow.appendChild(swapBtn);
   teamsRow.appendChild(awayBlock);
 
-  // Clicking a card opens the custom team picker for that side.
-  const makePicker = (box, side) => {
-    box.setAttribute('role', 'button');
-    box.setAttribute('tabindex', '0');
-    box.setAttribute('aria-label', t('compare.chooseClub'));
-    box.setAttribute('aria-haspopup', 'listbox');
-    box.title = t('compare.chooseClub');
-    const toggle = () => {
-      if (compareMenuEl && compareMenuEl.dataset.side === side) closeCompareMenu();
-      else openCompareMenu(box, side, report);
-    };
-    box.addEventListener('click', toggle);
-    box.addEventListener('keydown', (event) => {
-      if (event.key === 'Enter' || event.key === ' ') {
-        event.preventDefault();
-        toggle();
-      }
-    });
-  };
-  makePicker(homeBlock, 'home');
-  makePicker(awayBlock, 'away');
   matchBlock.appendChild(teamsRow);
   matchBlock.appendChild(el('p', 'compare__note', t('compare.note', { team: homeName })));
 
@@ -3373,7 +2595,7 @@ function renderCompare(report) {
     const chip = el('span', 'compare__scoreline');
     chip.textContent = `${line.home_goals}–${line.away_goals}`;
     chip.appendChild(el('span', 'compare__scoreline-prob', pct(line.probability, 0)));
-    chip.setAttribute('aria-label', `${line.home_goals}-${line.away_goals} about ${pct(line.probability, 1)}`);
+    chip.setAttribute('aria-label', t('aria.scoreline', { score: `${line.home_goals}-${line.away_goals}`, pct: pct(line.probability, 1) }));
     lines.appendChild(chip);
   }
   linesWrap.appendChild(lines);
@@ -3388,11 +2610,11 @@ function renderCompare(report) {
     histBlock.appendChild(el('h3', 'compare__subhead', t('compare.ratingHistory')));
     const svg = svgEl('svg', { class: 'chart', role: 'img' });
     svg.setAttribute('aria-label', t('chart.ratingHistoryFor', { home: homeName, away: awayName }));
-    drawCompareHistory(svg, careerA, careerB, teamNameById(report, aId), teamNameById(report, bId));
+    drawCompareHistory(svg, careerA, careerB, teamNameById(aId), teamNameById(bId));
     histBlock.appendChild(svg);
     const legend = el('div', 'legend');
-    legend.appendChild(el('span', 'compare-legend__a', teamNameById(report, aId)));
-    legend.appendChild(el('span', 'compare-legend__b', teamNameById(report, bId)));
+    legend.appendChild(el('span', 'compare-legend__a', teamNameById(aId)));
+    legend.appendChild(el('span', 'compare-legend__b', teamNameById(bId)));
     histBlock.appendChild(legend);
     holder.appendChild(histBlock);
   }

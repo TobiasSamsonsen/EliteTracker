@@ -50,7 +50,15 @@ from dataclasses import dataclass
 # (spread + division offset) and the regression factor were jointly re-fit by
 # walk-forward backtest on the per-division scheme. Ratings and therefore every
 # probability change.
-MODEL_VERSION = "elo-v6"
+#
+# elo-v7: an online attack/defence goals model (model/attack_defence.py) joins
+# the Elo replay. It updates on xG where fotmob has it (Eliteserien from 2020),
+# with a faster step for those matches. Outcome odds are a 50/50 geometric blend
+# of the Elo odds and the goals model's own; scorelines come from its Poisson
+# grid conditioned on those odds, replacing the gap-binned empirical table.
+# Ratings and careers (the displayed ladder) are unchanged; odds, scorelines and
+# the finishing-position matrix are not.
+MODEL_VERSION = "elo-v7"
 
 # A 400-point rating gap means the stronger side is expected to score 10 times
 # as often as the weaker one; this is the constant that defines the ELO scale.
@@ -80,36 +88,6 @@ class EloConfig:
     # mean-revert. Applied per division now, so the inter-division gap is
     # preserved. Re-fit by walk-forward backtest on the per-division scheme.
     season_regression: float = 0.88
-    # Which map turns the effective rating gap into a win/draw/loss triple.
-    # "draw" is the historical bell-curve draw model (elo-v2..v6); it preserves
-    # the ELO expectation exactly. "ordered_logit" models the three outcomes as
-    # an ordered latent variable (see model.probabilities); it fits the
-    # discrimination jointly with the draw threshold and so is more accurate, but
-    # its P(win) + 0.5*P(draw) no longer equals the ELO expected_score.
-    probability_model: str = "draw"
-    # Ordered-logit parameters (used only when probability_model == "ordered_logit").
-    # `logit_slope` scales the effective gap; `logit_cutpoint` is the (symmetric)
-    # threshold around an even match. Fitted by walk-forward backtest.
-    logit_slope: float = 1.0
-    logit_cutpoint: float = 1.0
-
-    def __post_init__(self) -> None:
-        if self.k_factor <= 0:
-            raise ValueError(f"k_factor must be positive, got {self.k_factor}")
-        if not 0.0 <= self.draw_base <= 1.0:
-            raise ValueError(f"draw_base must be a probability, got {self.draw_base}")
-        if self.draw_scale <= 0:
-            raise ValueError(f"draw_scale must be positive, got {self.draw_scale}")
-        if not 0.0 < self.season_regression <= 1.0:
-            raise ValueError(f"season_regression must be in (0, 1], got {self.season_regression}")
-        if self.probability_model not in ("draw", "ordered_logit"):
-            raise ValueError(
-                f"probability_model must be 'draw' or 'ordered_logit', got {self.probability_model!r}"
-            )
-        if self.logit_slope <= 0:
-            raise ValueError(f"logit_slope must be positive, got {self.logit_slope}")
-        if self.logit_cutpoint <= 0:
-            raise ValueError(f"logit_cutpoint must be positive, got {self.logit_cutpoint}")
 
 
 def expected_score(rating: float, opponent_rating: float) -> float:

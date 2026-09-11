@@ -38,7 +38,6 @@ class Match:
     time: str | None  # HH:MM local, or None when no kickoff time is published
     home: str
     away: str
-    venue: str | None
     home_goals: int | None
     away_goals: int | None
     played: bool
@@ -102,18 +101,6 @@ def deduplicate(matches: Iterable[Match]) -> list[Match]:
 def finalize(matches: Iterable[Match]) -> list[Match]:
     """Deduplicate and chronologically sort adapter output."""
     return sorted(deduplicate(matches), key=Match.sort_key)
-
-
-def load_json(path: Path) -> list[dict[str, Any]]:
-    with path.open(encoding="utf-8") as handle:
-        data = json.load(handle)
-    if data is None:
-        raise NormalizationError(f"{path} contains null -- the fetch never succeeded")
-    if not isinstance(data, list):
-        raise NormalizationError(
-            f"{path} should contain a list of matches, got {type(data).__name__}"
-        )
-    return data
 
 
 def dump(matches: list[Match], path: Path) -> None:

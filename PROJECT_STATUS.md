@@ -1,160 +1,8 @@
 # Project Status
 
-Norwegian top-two-division prediction and history, 2015–2026. ELO ratings, Monte Carlo
-season simulation, and a website on Firebase Hosting — all standard library, no runtime
-dependencies. The same frontend runs two ways: against the live Python API server, or as
-pure static files on Firebase Hosting.
-
-```bat
-REM one-time setup (Python 3.12)
-python -m venv .venv
-.venv\Scripts\pip install -e .
-
-REM local, live API server  ->  http://127.0.0.1:8000
-.venv\Scripts\python.exe -m elitetracker.api.server --port 8000
-
-REM build the static site and preview it  ->  http://127.0.0.1:8000
-.venv\Scripts\python.exe -m elitetracker.build_site
-.venv\Scripts\python.exe -m http.server --directory public 8000
-
-REM fast path: rebuild only the current season (what CI runs between model changes)
-.venv\Scripts\python.exe -m elitetracker.build_site --only-season <year>
-
-REM pull the latest results for the current season
-.venv\Scripts\python.exe -m elitetracker.refresh
-
-REM run the test suite
-.venv\Scripts\python.exe -m pytest
-```
-
-## ✅ Done
-
-### Data (Phases 1–3)
-- `sources/fotmob.py` — parameterized by league and season, no API key. `sources/cache.py`
-  is a read-through disk cache that validates payloads **on read as well as on write**,
-  so a stale or foreign-schema entry can never be served.
-- `refresh.py` — **one command to pull finished matches into the model.** Fetches both
-  divisions, normalizes, validates and rewrites the match files atomically
-  (`python -m elitetracker.refresh`). A bad fetch or a payload that fails validation
-  leaves the previous normalized data untouched.
-- `normalize/` — canonical `Match` and `Standing` schemas with per-source adapters
-  (`fotmob`, `parse_bot`), so dedupe, ordering and validation are written once.
-- `validation/` — errors vs. warnings, non-zero exit on error.
-- **24 season-league match files (2015–2026) plus 2014 seed tables, all validating clean.**
-
-### Model (elo-v5 → elo-v6)
-- **elo-v6** — offseason regression is now applied **per division** (each team pulled
-  toward its own division's mean, not the combined pool mean), which stops the
-  Eliteserien/OBOS gap being compressed every close season; the seed ladder
-  (spread + division offset) and the regression factor were **jointly re-fit** by
-  walk-forward backtest — `season_regression` 0.95 → **0.88**, seed spread 400 → **340**
-  (1670/1330), `division_offset` 10 → **14**. Marginal −0.0004 log loss on the 2016+
-  window with better calibration (0.0106 → 0.0099). Ratings and therefore every
-  probability change; `MODEL_VERSION` bumped accordingly.
-- `model/elo.py` — `expected_score` / `actual_score` / `update` kept separate. K-factor 20
-  (flat across 18-24, so left at 20); **home advantage refit 75 → 60** by full-season
-  walk-forward backtest (the 0.61 marginal rate implies ~75, but prediction prefers 60);
-  **cross-season regression 0.88** — each close season pulls every rating 12% toward the
-  division mean, so a freak year does not carry. Both fitted by backtest, not eyeballed.
-- `model/career.py` — **one continuous rating replay.** Seeded once from the 2014 final
-  tables, then every played match from 2015 to now applied in kickoff order. Ratings
-  carry across seasons and across divisions; at each offseason they mean-revert by 0.88.
-- `model/probabilities.py` — three-way odds where `P(win) + 0.5·P(draw)` reproduces the
-  rating-implied expectation exactly.
-- `model/scorelines.py` — scorelines sampled from the empirical result distribution,
-  **conditioned on outcome *and* the pre-match rating gap** (5 equal-count gap bins; empty
-  cells fall back to the outcome's global distribution). `build_scoreline_model.py` replays
-  the corpus with the production config to label each match with its true gap and emits
-  `data/scoreline_model.json`. So goal difference moves inside the simulation, a heavy
-  favourite draws bigger scorelines, and ties resolve on simulated GD.
-- `simulation/season.py` — seeded Monte Carlo, 50,000 runs, drawing a scoreline per
-  fixture from `model/scorelines.py`.
-- `model/backtest.py` — walk-forward harness. Every match is predicted from prior
-  information only, then revealed. This is what elo-v3 was fitted with.
-- `simulation/history.py` — the projection re-run at ~20 points **by date, not by round.**
-
-### Site
-- `api/server.py` — `http.server`. The rating replay runs once at start-up; individual
-  season reports are built on first request and cached, so start-up stays quick.
-  Routes: `/`, `/api/health`, `/api/seasons`, `/api/careers`, `/api/report`,
-  `/api/report/<league>[/<season>]`.
-- `public/` — no framework, no build step. Light/dark themes, keyboard focus, reduced
-  motion, mobile layout. `?league=`, `?season=`, `?team=`, `?career=` make any view linkable.
-  - **Rewind the season** — a slider over every matchday played. Moving it rebuilds the
-    *whole page* from only the results known that evening, via `?asof=` on the API.
-  - **The finish grid** — 16×16 heat matrix of finishing-position probability, rows
-    ordered by expected finish so the mass sits on the diagonal at any point in the season.
-   - **Table** — standings, rating, expected points, title and relegation odds.
-     Every column sorts on click (`aria-sort`, keyboard-operable); the good and bad
-     probability columns carry blue and red bars. Picking a club opens its rating history.
-     Rating trend arrow uses rolling 5-match form (same as team focus).
-  - **Season shape** — per-club stacked area of position probability over the season.
-   - **The ladder** — both divisions on one horizontal track, sharing the rating scale.
-      Logos are positioned by rating along the x-axis with stacked rows for overlapping
-      teams; border colour marks division. Hover shows rank, name and exact rating via a
-      CSS tooltip.
-   - **Ladder animation** — play/pause button + speed control (1×/2×/4×), same pattern as
-      the finish grid. Prefetches rewound reports for both leagues, interpolates ratings
-      between matchdays, and repositions team logos along the track with smooth overlap
-      recomputation. Uses the shared animation state machine (`animTick`) with
-      view-aware dispatch.
-  - **Career modal** — a club's rating across every season, plus a season-by-season table.
-   - **Next up** — three-way odds per fixture, with each side's rating beside its name and
-     the most likely scorelines beneath the odds (e.g. `2-1 28% · 1-1 19%`), drawn from the
-     same gap-conditioned scoreline model that feeds the Monte Carlo.
-   - **Model card** stating the known limits.
-   - **Tabbed views** — the single long scroll is split into seven view tabs (`?view=`
-       makes each linkable): Finish Grid, Table, Ladder, Next Up, Played Results,
-       Compare Clubs, Model Card. Each tab shows only its own sections; the hero
-       and season options stay on every view. The rewind timeline is hidden on all tabs
-       except the default view. Season Shape is accessed through the team focus view,
-       not as a standalone tab.
-   - **Played results** — a completed-match feed with date + round, both sides and crests,
-      the final score, and each side's rating (large, outside edges) with delta. Logos sit
-      between name and score. Navigated by ISO week (Prev/Next at top). Winning side gets
-      a gold gradient; no bold/muted distinction. Part of the tabbed views.
-   - **Pre-season vs live prediction** — a full-width comparison box on the team focus page
-      showing the model's pre-season predicted finishing position alongside the current
-      prediction, with rating delta between them. Uses `history.teams[i].positions[0]`
-      (pre-season snapshot) against the live `position_probabilities`.
-   - **Cross-division team focus** — clicking a team from the ladder, compare view, or any
-      cross-division link now correctly switches leagues before rendering the team focus
-      page. Previously OBOS-ligaen teams showed empty stats when opened from the
-      Eliteserien view.
-   - **Localized ordinals** — positions render as `1st place` in English and `1. plass` in
-      Norwegian throughout the UI (tooltips, grid, table, prediction box, compare).
-   - **Static build for Firebase Hosting** — `build_site.py` prebuilds every season's live
-  and rewound reports plus careers as plain JSON under `public/data/`, so the same frontend
-  works on a static host with no Python runtime. The browser probes `/api/health` once; on
-  a static host that answers 404 and everything falls back to `/data/*.json`. Reports use
-  the same configuration as the API's `?asof=` rewind, so static and live numbers match.
-  The ~1,100 rewound dates are farmed across worker processes. A `--only-season
-  <year>` flag rebuilds a single season, which the CI uses to refresh the current
-  season without redoing every past one (see the deploy cache below).
-- **Default view** is the Finish Grid. Deployed at `elitetrackerno.web.app.` A GitHub Action installs the package, runs
-  `build_site`, and deploys `public/` on every push to `main` — no manual deploy needed.
-  HTML and `app.js` are served `no-cache` and the script tag is versioned, so a new deploy
-  is picked up without a hard refresh.
-- **Mobile responsiveness** — Next Up and Played Results cards keep the side-by-side
-  desktop layout on mobile, with team names hidden and larger logos (tap to open team view).
-  The three-way odds bar gets `flex: 2` to fill available space. The finish grid hides
-  team names on mobile, showing only position number and clickable logo. The ladder
-  rotates 90° on phones (<500px): rating axis becomes vertical (top = best, scroll down
-  for worse teams), overlap pushes teams into columns to the right, icons at 1.5rem, all
-  rem-based positioning. The division picker uses `justify-self: start` to avoid dead space.
-
-### Colour
-- **Sequential ramp** for all quantitative colour (grid probability, season shape).
-  Multi-hue by necessity — sixteen stacked bands are not tellable apart in one hue — so
-  it travels pale green → teal → blue → deep navy, resampled at uniform OKLab lightness.
-  Lightness stays monotone and the worst adjacent pair is ΔE 10.5 light / 11.3 dark.
-- Qualification markers and the division colours on the ladder are separate, labelled
-  categorical marks, not part of the quantitative encoding.
-- **Table meters** reuse the qualification-marker colours — blue for the good column, red
-  for the bad — so a row's leading stripe and its "Win it" bar mean the same thing in the
-  same colour. Blue against red also holds CVD ΔE 21.6 light / 19.2 dark, well clear of
-  green against red (12.4). Bars are drawn solid: diluted into washes any such pair
-  collapses to ΔE ~3 and the two columns become indistinguishable.
+Decision log and research notes. What the code does and how to run it lives in
+`AGENTS.md`; this file records *why* the numbers are what they are and what was tried
+and rejected, so nobody re-runs a dead experiment.
 
 ## ⚠️ Decisions worth knowing
 
@@ -179,15 +27,6 @@ would show results before they happened.
 **Abandoned fixtures are dropped.** Eliteserien 2024 lists both the abandoned Rosenborg v
 Lillestrøm of 21 July and its replay on 21 August, so the raw feed has 241 rows for a
 240-match season.
-
-**Display code is excluded from the rebuild cache.** `simulation_signature` hashes every
-source module that influences simulation output, but the `elitetracker/display` package
-(fixture odds + predicted scorelines) only turns already-computed ratings into the "Next up"
-view and never feeds the Monte Carlo. It is skipped, so editing `display` — chips, copy,
-scoreline count — leaves the cache key unchanged and does not trigger a past-season rebuild.
-A model or simulation-setting change still flips the key and forces a full rebuild. The
-rewound grid was thinned to 10,000 runs for the same reason (see "How many simulations a
-season needs"): it is a display/trend view, not the live table.
 
 ## 🔬 elo-v3: what the backtest found
 
@@ -283,7 +122,9 @@ Rewound views (the `?asof=` slider and the static rewind reports) use a **10,000
 plus a 2,500 x 8 history, not the live 50,000. At 10,000 the worst grid cell is ~1.31pp --
 still under the model's 1.54pp calibration error -- so dragging back loses no visible
 fidelity, while the ~2,266 rewound reports build roughly 5x faster. The live view keeps
-50,000 for full precision. (See `build_site.REWOUND_SIM` and `api.server.ReportStore._configs`.)
+50,000 for full precision. (See `pipeline.rewound_configs`.)
+
+## 🩹 elo-v4: squad strength — investigated and rejected
 
 The proposal: rate a club lower for a match when its best players are injured, suspended
 or sold. Investigated properly — a full lineup corpus was fetched (**5,542 of 5,544
@@ -337,6 +178,147 @@ returns the same content as the match page at 313 kB against 1.19 MB — roughly
 the bytes, and far less gzipped. Nothing currently fetches match detail, but that is the
 route if anything ever does.
 
+## 🧪 2026-09 model research: goals models, ensembles, xG
+
+Question: can more data beat elo-v6? Harness: `python -m elitetracker.research run`
+(walk-forward, predict-then-reveal, per-match log loss so two models are compared
+on exactly the same matches with a paired t-test; `|t| >= 2` is the bar).
+Benchmark: Pinnacle/average closing odds from football-data.co.uk, overround-
+normalised, joined to all 2,792 Eliteserien matches 2015–2026 (`data/odds_closing.json`).
+
+| model (scored 2016+, n=5,120) | log loss | vs elo-v6 | t |
+|---|---|---|---|
+| elo-v6 | 1.00774 | — | — |
+| closing odds (Eliteserien only, n=2,552) | 0.98468 | −0.0186 | −5.5 |
+| Dixon-Coles, literature defaults (ξ=0.0065, 3-season window, ridge 0.05, weekly refit) | 1.01758 | +0.0098 | +3.9 |
+| Dixon-Coles, tuned (ξ=0.01, 5-season window, ridge 1, refit every 3 days) | 1.01361 | +0.0059 | +2.5 |
+| pi-ratings (λ=0.035, γ=0.7, draw model on the expected goal difference) | 1.02119 | +0.0135 | +5.2 |
+| blend(elo-v6, tuned DC), weight refit per season from prior seasons | 1.00688 | −0.0009 | −2.6 |
+
+On 2019+ (n=3,680): tuned DC +0.0037 (t +1.4, not distinguishable), blend −0.0012
+(t −2.6), market gap +0.0189.
+
+**Dixon-Coles — rejected as a replacement.** Every axis was swept (decay 0.002–0.025,
+window 550–1800 days, ridge 0–4, refit cadence 3–14 days, promoted-club priors); the
+best setting is still 0.6 pp of log loss behind elo-v6 on 2016+ and only level on the
+recent window. Longer windows and heavier shrinkage helped, which says the goals
+signal is noisy here — the same conclusion the margin-of-victory Elo tests reached:
+Norwegian scorelines are mostly one-goal games and draws. `model/dixoncoles.py` was
+deleted with this note; it is in git history if a later season warrants a re-test.
+
+**pi-ratings — rejected.** Worse than DC at every learning rate (0.02–0.08) and
+propagation (0.5–0.9); hit rate under 0.50. Deleted.
+
+**Ensemble — measured, not shipped.** A geometric blend puts 75–95 % of the weight on
+Elo (drifting toward DC over the years) and gains 0.09–0.12 pp with t ≈ −2.6 in
+both windows and both halves. Real, but a tenth of what the elo-v3 draw refit was
+worth, for the cost of a second live model (per-view Poisson fits in `build_site`,
+a Poisson port in the browser for Compare Clubs, a second set of model-card
+parameters). Not worth carrying.
+
+**xG-informed Elo — measured, not shipped.** fotmob has per-shot xG for Eliteserien
+from 2020 (nothing for OBOS-ligaen or earlier years); `python -m elitetracker.research xg`
+scraped all 1,592 matches into `data/xg.json` (kept: 60 kB, and a re-scrape is 30
+minutes of requests). The variant replaces the Elo result with
+`(1−α)·result + α·xG-implied score` (P(win)+P(draw)/2 under Poisson goals at the two
+xG values); α=0 reproduces elo-v6 to the bit. Pre-declared bar: −0.011 log loss
+(the smallest effect n≈1,350 Eliteserien matches can detect at t=2).
+
+| scored 2021+ | Eliteserien (n=1,352) | both divisions (n=2,720) |
+|---|---|---|
+| α=0.25, K=20 | −0.0013 (t −1.2) | — |
+| α=0.5, K=20 | −0.0011 (t −0.5) | −0.0008 (t −0.7) |
+| α=1.0, K=20 | +0.0036 (t +0.9) | — |
+| K=28 alone | — | −0.0004 (t −0.4) |
+| α=0.25, K=28 vs K=28 alone | — | −0.0018 (t −2.7) |
+| α=0.5, K=28 vs elo-v6 | — | −0.0029 (t −2.5) |
+
+xG on its own is worth about a tenth of a percentage point; with a faster K it reaches
+0.3 pp, but K=28 is flat-to-worse on the long window (K 20–28 are within 0.001 on
+2016+), so that combination is a post-hoc pairing chosen after seeing the numbers.
+Below the bar, and it would add a fetch of match details to every refresh. Recorded,
+not shipped; the model code is in git history.
+
+**Squad market value — measured, not shipped.** Transfermarkt's season pages
+(`/eliteserien/startseite/wettbewerb/NO1/saison_id/<season−1>`, likewise `NO2`; robots.txt
+allows generic crawlers) list every club's total squad value *as it stood that season* —
+checked on the 2017 Rosenborg squad, whose retired players show their 2017 values. All
+24 league-seasons 2015–2026 joined to our team ids (`data/market_values.json`, 384
+club-seasons, three name aliases). Within a division, log value correlates 0.51 with final
+points over 20 league-seasons (0.48 using the previous season's page, so the same-season
+values carry little end-of-season hindsight), so it looked like the missing prior for promoted clubs and for the
+offseason pull. Walk-forward, three uses were tried on top of elo-v6:
+
+| variant (scored 2016+, n=5,120) | vs elo-v6 | t |
+|---|---|---|
+| offseason pull toward `mean + β·z(log value)` instead of the flat mean, β=25–100 | −0.0002 to −0.0004 | −0.3 to −1.7 |
+| same, using the previous season's values (leak-free) | −0.0004 to −0.0005 | −0.6 to −1.5 |
+| promoted third-tier clubs seeded from value instead of the ladder floor | +0.0018 | +1.6 |
+| in-season gap term γ·Δz(log value), γ=10 / 20 / 40 | −0.0001 / +0.0018 / +0.0112 | −0.2 / +1.4 / +4.4 |
+| β=100 with a stronger pull (regression 0.8 / 0.7) | −0.0003 / +0.0001 | −0.3 / +0.1 |
+
+Same picture on 2019+ (best −0.0007, t −0.8). The value signal is real but already
+inside the carried rating: by the time a club's value has moved, its results have moved
+its Elo. The one place it should have helped, clubs arriving from the third tier, it hurt
+— the floor is the better prior. Recorded, not shipped; the experiment loop is
+30 lines over `career.replay`'s logic and is described here well enough to redo.
+
+**Attack/defence ratings — shipped for scorelines (elo-v7), not for outcomes.**
+Two numbers per club on the log-goals scale, updated online after every match by
+the goals scored above or below expectation (`model/attack_defence.py`: expected
+goals `exp(base + home + attack − defence)`, Poisson grid with the Dixon-Coles
+low-score correction). The step size is the only knob that matters; everything
+else is flat within noise around home 0.22, cap 4, regression 0.88, ρ −0.05.
+
+| scored 2016+ (n=5,120) | outcome log loss vs elo-v6 | exact scoreline −log p vs the empirical table |
+|---|---|---|
+| k=0.010 | +0.0059 (t +3.2) | −0.073 (t −9) |
+| **k=0.015** | +0.0023 (t +1.5) | **−0.079 (t −10)**; total goals −0.019 (t −5), goal difference −0.024 (t −6) |
+| k=0.020 | +0.0009 (t +0.6) | −0.077 (t −10) |
+| k=0.025 | +0.0005 (t +0.3) | −0.075 (t −9) |
+| k=0.06 (a typical Elo-like step) | +0.0109 (t +3.7) | −0.047 |
+
+On 2019+ the hybrid's scoreline gain is −0.045 (t −6.7), in both halves and in both
+divisions; top-4 coverage (the four scorelines the site shows) 37 % against 35 %.
+The empirical table was rebuilt walk-forward from prior seasons only, so the comparison
+is fair to it. A 50/50 geometric blend of the two outcome models is worth −0.001 to
+−0.002 (t −1.4 to −2.0): real but a tenth of the elo-v3 refit, so Elo keeps the
+outcome and the goals model keeps the goals. What ships is the hybrid: P(scoreline)
+= P_elo(outcome) × P_ad(scoreline | outcome), in "Next up", in Compare Clubs
+(computed in the browser from `report.model.attack_defence`) and in the Monte Carlo's
+goal-difference tiebreaks. The table carries each club's expected goals for and
+against per match versus an average side of its division.
+
+**…and with xG, for outcomes too.** With fotmob's expected goals blended into the
+observed goals (`alpha` 0.75; xG on target measured worse at every setting) and a
+faster step for those matches (`k_shots` 0.05 against 0.015 for goals-only matches,
+because the cleaner signal earns a bigger move), the attack/defence model on its own
+beats elo-v6 on Eliteserien, and its 50/50 geometric blend with the Elo odds is the
+robust form. The scoreline model gains nothing from xG (−0.002, within noise); the
+outcome model does:
+
+| Eliteserien, outcome log loss vs elo-v6 | attack/defence alone | 50/50 blend with Elo |
+|---|---|---|
+| scored 2021+ (n=1,352) | −0.0088 (t −2.1) | **−0.0075 (t −3.6)**, both halves negative |
+| scored 2022+ (n=1,112, one xG season of burn-in) | −0.0114 (t −2.5) | **−0.0087 (t −3.8)**, both halves negative |
+| OBOS-ligaen 2021+ (no xG, goals-only step) | +0.0021 (t +0.7) | −0.0007 (t −0.5) |
+
+Blend weight: 0.3 on Elo gives more log loss (−0.0105 on 2022+) with worse calibration,
+0.7 less (−0.0059) with better; 0.5 was chosen before the sweep and stays. As shipped
+(`python -m elitetracker.research run`): both divisions 2021+ −0.0041 vs Elo (t −3.2),
+2019+ −0.0032 (t −3.0); on Eliteserien the gap to the closing line falls from +0.0189
+to +0.0114 (2021+) and +0.0117 (2019+). The research CLI prints the shipped blend
+beside Elo and the market. The refresh job tops up
+`data/xg.json` for newly played Eliteserien matches (one request per match,
+non-fatal), so the ratings keep moving on xG.
+
+**Where the remaining gap is.** The closing line beats elo-v6 by 1.9 pp on both
+windows, and the gap widens in the second half of each window (3 pp on 2024–2026).
+Everything tried here uses only public results and shot data; the market's edge is
+team news, motivation and money, none of which is in a results feed. A model that
+consumes odds would close it, but only for matches that already have a market,
+which is not the season-long simulation the site is for.
+
 ## ❗ Known limits (also stated on the site)
 - Ratings are held fixed for the rest of the season inside a simulation.
 - Simulated matches draw a scoreline from the empirical distribution of real results
@@ -347,189 +329,45 @@ route if anything ever does.
   driver of who wins.
 - Clubs promoted from the third tier start at the ladder floor.
 
-## 🔧 Next steps
-- [x] One-command refresh after each matchday: `python -m elitetracker.refresh` (fetches,
-      normalizes, validates, writes; `--no-force` to reuse a fresh cache entry).
-- [x] Refresh on a schedule — no local machine needed. `.github/workflows/refresh.yml` runs
-      `elitetracker.refresh` daily (21:30 UTC) and, only if `data/normalized` changed, commits
-      and pushes via the `REFRESH_PAT` secret; the push re-triggers the existing deploy workflow
-      (current season rebuilt on a cache hit). Off-season days with no new results are no-ops.
-- [x] Static build + CI deploy: `build_site` feeds Firebase Hosting, triggered by every
-      push to `main` (`.github/workflows/firebase-hosting-merge.yml`).
-- [x] Home advantage refit and cross-season regression by walk-forward backtest
-      (`backtest_cli`); scoreline margins now conditioned on the rating gap
-      (`model/scorelines.py`, generated by `build_scoreline_model.py`).
-- [x] Predicted scorelines on upcoming fixtures. For each unplayed match, the top few likely
-       scorelines with their probabilities (e.g. 2-1 28%, 1-1 19%, 2-0 14%) are shown beneath
-       the three-way odds in "Next up". The prediction draws from `model/scorelines.py`
-       conditioned on the win/draw/loss outcome and the pre-match rating gap — the same model
-       that feeds the Monte Carlo — so it reads straight off the existing three-way odds.
-       Computed in the `elitetracker/display` package, which is excluded from
-       `simulation_signature` (see decisions), so tweaking the display never rebuilds past
-       seasons.
-- [ ] Ordered-logit probability mapping. **Measured and set aside.** Implemented and
-      selectable (`EloConfig.probability_model = "ordered_logit"`, with `logit_slope` /
-      `logit_cutpoint` fit by walk-forward backtest via `backtest_cli --probability-model
-      ordered_logit`). Coarse, fine, and all-match (score-from 2015) sweeps all converge on
-      the same optimum (slope ≈ 0.0057, cut ≈ 0.55) with a marginal gain of only **−0.00036**
-      (2016 window) / **−0.00027** (2015→, n = 5,560) log loss — about a quarter of the
-      ~0.0013 once projected, and inside the sampling noise (SE of a log-loss difference at
-      n ≈ 5,000 is ~0.01). It also breaks the `expected = P(win) + 0.5·P(draw)` identity. Not
-      worth shipping: it does not beat the baseline it would replace, and carries a real cost.
-      Left behind as a switch, not a default, so a later season's data can re-test it cheaply.
+## 🔧 Open items
+
 - [ ] Re-fit the draw model periodically as seasons accumulate.
+- [ ] Re-run `python -m elitetracker.research run` after each season; the shipped blend's gap
+      to the closing line is the number to watch. Re-sweep `k_shots`/`alpha` once OBOS-ligaen
+      gets xG (`data/xg.json` is topped up by every refresh).
 - [ ] Re-run `backtest_cli` after each new season to keep K / home advantage / regression
-      fitted; regenerate `data/scoreline_model.json` with `build_scoreline_model.py`.
-- [ ] Full rebuild needed after `career.py` regression-snapshot change (commit 7a84b0c):
-      the extra snapshot points in `careers.json` are only consumed by the frontend, but
-      all past seasons need a local `build_site` + tarball re-upload so trend arrows and
-      career charts are consistent across every season.
-- [x] Cross-season mean reversion was over the *combined* two-division pool, not per
-      division (`model/career.py:101`, `model/backtest.py:171`). **Shipped in elo-v6:**
-      regression is now per division (each toward its own mean, over teams active that
-      season; dormant clubs are left untouched). The regression step is total-conserving
-      within each division, so the inter-division gap is preserved instead of being
-      compressed. `season_regression` was re-fit by walk-forward backtest on the per-division
-      scheme (0.95 → 0.88).
-- [x] Fit the *starting* ratings by walk-forward backtest instead of taking them from the
-      2014 final tables. **Shipped in elo-v6:** the seed ladder was jointly fit with
-      `season_regression` by `model/fit_params.py` — `spread` 400 → **340** (1670/1330) and
-      `division_offset` 10 → **14**, midpoint fixed at 1500. The open lever for early-season
-      accuracy, now measured marginally alongside the re-fit regression factor. Remaining
-      note: with `season_regression = 0.88` the seed's influence decays each close season, so
-      the gain shows up mainly in the early seasons — don't expect much movement in 2026's
-      carried ratings.
+      fitted; regenerate `model/scoreline_model.json` with `build_scoreline_model.py` (bump `MODEL_VERSION`).
+- [ ] Ordered-logit probability mapping. **Measured and removed.** Coarse, fine and
+      all-match sweeps converged on slope ≈ 0.0057, cut ≈ 0.55 with a marginal gain of only
+      −0.00036 (2016 window) / −0.00027 (2015→, n = 5,560) log loss — inside sampling noise
+      (SE ≈ 0.01) — and it breaks the `expected = P(win) + 0.5·P(draw)` identity. The switch
+      was deleted in the 2026-09 audit; it lives in git history if a later season justifies
+      re-testing.
+- [ ] **Head-to-head tool** — the same odds as Compare but framed as a rivalry: the two
+      clubs' record against *each other* from the results, plus the model's current odds.
+- [ ] **"What-if" simulator** — nudge a club's rating and see the grid/table update. Needs
+      on-demand simulation, so it does not fit the static host until that story is settled.
 
-## 💡 Website feature backlog
+## 📜 Shipped, in order
 
-Ideas that build on the data already in the report payload (no new modelling). The
-list is a scratchpad, not a commitment — each is picked up only when wanted.
-
-- [x] **Form (W/D/L, last 5)** — added to the standings table and under each side
-      in "Next up". Computed client-side from the `results` payload, so it follows
-      the rewind slider. Not sortable beyond the numeric points total.
-- [x] **Compare clubs** — pick any two clubs for a fictional match: choose the host,
-      see the model's three-way odds and most likely scorelines (precomputed in the
-      `pairwise` report field, one ordered pair per club), both current ratings, and
-      their rating histories overlaid on one line. Implemented in `public/app.js` +
-      a `Compare clubs` section in `index.html`.
-- [x] **Played-results feed** — a scrollable list of completed matches with scores
-      and the rating swing each side took. Shipped as part of the tabbed views: a
-      `Played results` tab showing date + round, crests, score, and each side's
-      rating and delta (read from the `careers` replay). Navigated by ISO week.
-      The `results` payload already carried everything else; rating swings are
-      computed client-side from `careers`.
-- [x] **Next Up mobile fix** — fixture cards now stack vertically on mobile (≤760px).
-      The odds column previously had a fixed `min-width: 280px` that pushed team names
-      off-screen on phone-sized viewports. Changed the breakpoint from 480px to 760px
-      to match the main mobile breakpoint used for navigation and tables, so odds flex
-      to fit and team names stay visible. Scoreline chips wrap naturally.
-- [x] **Mobile side-by-side cards** — Next Up and Played Results keep the desktop
-      side-by-side layout on mobile. Team names hidden, logos enlarged (1.5rem) and
-      clickable. Odds bar uses `flex: 2` for more width. Finish grid hides team names,
-      showing position + clickable logo only.
-- [x] **Vertical ladder on mobile** — ladder rotates 90° on phones (<500px). Rating axis
-      is vertical (top = best, scroll down for worse teams). Overlap pushes teams into
-      horizontal columns. All rem-based positioning, no percentage tricks. Track is
-      scrollable vertically.
-- [ ] **Event listener leak in renderLadder** — every call to `renderLadder()` adds a
-      new `document.addEventListener('click', ...)` for touch tooltip dismissal. After
-      switching views N times, N document-level handlers fire on every click. Move to
-      `wire()` or use a guard flag.
-- [ ] **playedWeek resets on every render** — switching away from "Played Results" and
-      back (or dragging the rewind slider) always jumps to week 0. Should only reset on
-      an explicit league/season change or initial view switch, not on every render.
-- [ ] **Team view results missing clickable names** — in `renderTeamResults`, opponent
-      team names are plain `<span>` elements. Everywhere else (Played Results, Next Up,
-      finish grid) they are `<button>` with `openTeamView` handlers. Add the same pattern.
-- [ ] **Dead standalone season shape code** — `renderShape()`, `drawShape()`,
-      `attachShapeCrosshair()`, `renderShapeSummary()` (~230 lines JS) plus orphaned CSS
-      (~40 lines). The standalone view was removed from navigation; the team-focus version
-      (`renderTeamShape` etc.) is the live code. Delete the dead functions and CSS.
-- [ ] **Dark theme CSS duplicated** — `@media (prefers-color-scheme: dark)` and
-      `:root[data-theme="dark"]` contain identical variable blocks (28 properties × 2).
-      Merge into one selector to avoid maintenance drift.
-- [x] **Team focus page** — fold the career modal, a club's finish-grid row, and its
-      recent + upcoming fixtures into one dedicated view (deep-linkable, like
-      `?team=`). Includes pre-season vs live prediction comparison and cross-division
-      league switching.
-- [ ] **Head-to-head tool** — the same odds as Compare but framed as a rivalry: the
-      two clubs' record against *each other* from the results, plus the model's
-      current match odds.
-- [ ] **"What-if" simulator** — let the visitor nudge a club's rating and instantly
-      see the grid/table update. Needs a backend addition (re-simulate on demand),
-      so it is the only item here that is not pure-frontend; lower priority until the
-      static-host story for on-demand simulation is settled.
-
-## 🔧 Ladder animation — remaining work
-
-- [ ] **Fixed track height** — the ladder track currently resizes dynamically as teams
-      overlap differently each matchday. Need to precompute the maximum number of
-      stacking rows across all matchdays during `ladderAnimStart`, then set the track
-      height to that maximum at init time so it stays constant while only team
-      positions move. This prevents the card from jumping as the animation plays.
-      On mobile (vertical mode), the same principle applies to track width.
-
-## Commands
-
-```bat
-REM fetch raw data from fotmob (cached; --force to refresh)
-.venv\Scripts\python.exe -m elitetracker.sources.fotmob {matches|standings} {eliteserien|obosligaen} <season>
-
-REM one-command refresh of the current season's results
-.venv\Scripts\python.exe -m elitetracker.refresh [--season <year>] [--no-force]
-
-REM normalize / validate
-.venv\Scripts\python.exe -m elitetracker.normalize.fotmob {matches|standings} <raw.json> <out.json>
-.venv\Scripts\python.exe -m elitetracker.validation.matches <normalized.json> [--teams 16]
-.venv\Scripts\python.exe -m elitetracker.validation.standings <normalized.json> [--teams 16]
-
-REM model + site
-.venv\Scripts\python.exe -m elitetracker.pipeline [--season 2019] [--output data\reports.json]
-.venv\Scripts\python.exe -m elitetracker.api.server --port 8000
-.venv\Scripts\python.exe -m elitetracker.build_site [--out public\data] [--jobs <n>] [--only-season <year>]
-.venv\Scripts\python.exe -m pytest
-
-REM show the deploy cache key (changes -> past seasons are rebuilt)
-.venv\Scripts\python.exe -c "from elitetracker.pipeline import simulation_signature; print(simulation_signature())"
-```
-
-### Updating the stats
-
-Run this whenever a round has finished — it pulls both divisions from fotmob, normalizes,
-validates, and rewrites the 2026 (or `--season`) match files. Nothing else is needed for
-the numbers to update.
-
-```bat
-.venv\Scripts\python.exe -m elitetracker.refresh
-```
-
-### Deploying to the website
-
-1. Commit the refreshed `data/normalized/` files and push to `main`.
-2. The GitHub Action (`firebase-hosting-merge.yml`) builds the site and deploys `public/`
-   to Firebase Hosting live. Past-season reports are cached between runs and only rebuilt
-   when the model code, simulation settings, scoreline model, or a past season's data
-   change (tracked by `pipeline.simulation_signature`). An ordinary results refresh or a
-   frontend fix rebuilds only the current season (or skips the build entirely), so routine
-   deploys take minutes, not the full ~20-minute rebuild. Pass `workflow_dispatch` input
-   `full_rebuild` to force a complete rebuild.
-3. The site updates within a couple of minutes at `https://elitetrackerno.web.app`.
-
-Worked example:
-
-```bash
-git add data/normalized
-git commit -m "Refresh 2026 matchday results"
-git push
-```
-
-The prebuilt `public/data/` is gitignored — the Action rebuilds it on the server, so the
-committed input is just the normalized fixture files. To test the static site locally first:
-
-```bat
-.venv\Scripts\python.exe -m elitetracker.build_site
-.venv\Scripts\python.exe -m http.server --directory public
-```
-
-304 Python tests + 4 frontend tests, all passing.
+- elo-v2: one continuous rating replay from the 2014 tables instead of per-season re-seeding.
+- elo-v3: draw model refit (0.22/250 → 0.26/375); ratings unchanged.
+- elo-v5: home advantage 75 → 60, cross-season regression added (fit by walk-forward backtest).
+- elo-v6: regression per division; seed ladder (340 spread, offset 14) and regression
+  factor 0.88 jointly re-fit by `model/fit_params.py`.
+- Scorelines conditioned on outcome and pre-match rating gap (`model/scorelines.py`),
+  so goal difference moves inside a simulation and "Next up" shows likely scorelines.
+- Site: rewind slider, finish grid, sortable table, ladder (horizontal, vertical on phones),
+  grid and ladder animation, played results by ISO week, compare clubs (odds computed in
+  the browser from `report.model`), team focus page with pre-season vs live prediction,
+  NO/EN localisation, static build + Firebase Hosting deploy, scheduled data refresh.
+- 2026-09 research: Dixon-Coles, pi-ratings, an Elo/DC blend and xG-informed Elo were
+  measured walk-forward against elo-v6 and the closing line; none cleared the bar,
+  nor did Transfermarkt squad values as an offseason prior. Kept: the paired-scoring
+  harness, the odds benchmark, the xG corpus, the value table.
+- elo-v7: online attack/defence goals model, updated on xG where fotmob has it. Its odds
+  are blended 50/50 with Elo's; its Poisson grid replaces the empirical scoreline table.
+- 2026-09 audit: removed the standings fetch path, the raw-fetch cache, the ordered-logit
+  switch, the config validators, the build progress bar, the custom compare picker and a
+  set of duplicated frontend renderers; one rating replay serves careers, the backtest and
+  the scoreline corpus.

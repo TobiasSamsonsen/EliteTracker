@@ -19,7 +19,6 @@ def match(match_id, home, away, date, score=None):
         time="18:00",
         home=home,
         away=away,
-        venue=None,
         home_goals=home_goals,
         away_goals=away_goals,
         played=score is not None,
@@ -37,8 +36,8 @@ def second(season, matches):
 
 
 SEEDS = {
-    "A": TeamRating("A", "A", 1600, "seed"),
-    "B": TeamRating("B", "B", 1400, "seed"),
+    "A": TeamRating("A", "A", 1600),
+    "B": TeamRating("B", "B", 1400),
 }
 
 
@@ -197,10 +196,10 @@ class TestPerDivisionRegression:
         inter-division gap is not compressed the way the old combined-pool
         pull did."""
         seeds = {
-            "A": TeamRating("A", "A", 1800, "seed"),
-            "B": TeamRating("B", "B", 1600, "seed"),
-            "C": TeamRating("C", "C", 1400, "seed"),
-            "D": TeamRating("D", "D", 1200, "seed"),
+            "A": TeamRating("A", "A", 1800),
+            "B": TeamRating("B", "B", 1600),
+            "C": TeamRating("C", "C", 1400),
+            "D": TeamRating("D", "D", 1200),
         }
         slices = [
             top(2020, [match(1, "A", "B", "2020-04-01", score=(1, 0))]),
@@ -224,10 +223,10 @@ class TestPerDivisionRegression:
         """A stronger top division keeps its lead; the combined pool mean would
         have dragged it down toward the weaker second tier."""
         seeds = {
-            "A": TeamRating("A", "A", 1800, "seed"),
-            "B": TeamRating("B", "B", 1600, "seed"),
-            "C": TeamRating("C", "C", 1400, "seed"),
-            "D": TeamRating("D", "D", 1200, "seed"),
+            "A": TeamRating("A", "A", 1800),
+            "B": TeamRating("B", "B", 1600),
+            "C": TeamRating("C", "C", 1400),
+            "D": TeamRating("D", "D", 1200),
         }
         slices = [
             top(2020, [match(1, "A", "B", "2020-04-01", score=(1, 0))]),

@@ -8,18 +8,15 @@ for a mid-season snapshot).
 
 from __future__ import annotations
 
-import json
 from collections import Counter
 from dataclasses import dataclass, field
 from datetime import date, datetime
-from pathlib import Path
 
 from elitetracker.normalize.matches import Match
 
 # A double round-robin: every team meets every other team home and away.
 # 16 teams -> 30 matchdays -> 240 matches, 15 home + 15 away per team.
 ELITESERIEN_TEAM_COUNT = 16
-OBOSLIGAEN_TEAM_COUNT = 16
 
 
 @dataclass
@@ -36,14 +33,6 @@ class Report:
 
     def warn(self, message: str) -> None:
         self.warnings.append(message)
-
-
-def load_normalized(path: Path) -> list[Match]:
-    with path.open(encoding="utf-8") as handle:
-        records = json.load(handle)
-    if not isinstance(records, list):
-        raise ValueError(f"{path} should contain a list of matches")
-    return [Match(**record) for record in records]
 
 
 def _check_identity(matches: list[Match], report: Report) -> None:
@@ -80,12 +69,6 @@ def _check_fields(matches: list[Match], report: Report) -> None:
                 report.error(f"match {match.match_id}: negative score {goals}")
         elif goals != (None, None):
             report.error(f"match {match.match_id}: marked unplayed but carries score {goals}")
-
-    # Venue is optional and absent for whole sources, so report it once rather
-    # than once per match.
-    missing_venue = sum(1 for match in matches if match.venue is None)
-    if missing_venue:
-        report.warn(f"{missing_venue} of {len(matches)} matches have no venue")
 
 
 def _check_order(matches: list[Match], report: Report) -> None:

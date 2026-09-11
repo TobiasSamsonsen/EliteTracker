@@ -23,6 +23,7 @@ from __future__ import annotations
 from dataclasses import dataclass, replace
 from datetime import date, timedelta
 
+from elitetracker.model.attack_defence import AttackDefence
 from elitetracker.model.elo import EloConfig
 from elitetracker.model.initial_ratings import TeamRating
 from elitetracker.model.ratings import build_rating_table
@@ -40,12 +41,6 @@ class HistoryConfig:
     seed: int = DEFAULT_SEED
     # Cap the number of snapshots so a long season cannot blow up start-up time.
     max_snapshots: int = 20
-
-    def __post_init__(self) -> None:
-        if self.simulations < 1:
-            raise ValueError(f"simulations must be at least 1, got {self.simulations}")
-        if self.max_snapshots < 2:
-            raise ValueError(f"max_snapshots must be at least 2, got {self.max_snapshots}")
 
 
 @dataclass
@@ -111,16 +106,20 @@ def build_history(
     all_matches: list[Match],
     seeds: dict[str, TeamRating],
     *,
+    prior: AttackDefence | None = None,
     elo_config: EloConfig | None = None,
     config: HistoryConfig | None = None,
 ) -> list[HistorySnapshot]:
     """One snapshot per sampled date, oldest first.
 
     `all_matches` spans both divisions so ratings stay on one scale; only
-    `league_matches` is simulated.
+    `league_matches` is simulated. `prior` is the attack/defence state at the
+    end of the previous season; each snapshot replays the rewound season on a
+    copy of it.
     """
     elo_config = elo_config or EloConfig()
     config = config or HistoryConfig()
+    prior = prior or AttackDefence()
 
     snapshots = []
     for on in snapshot_dates(league_matches, config.max_snapshots):
@@ -131,6 +130,7 @@ def build_history(
         projection = simulate_season(
             rewound_league,
             ratings,
+            ad=prior.copy().replay(rewound_all),
             config=SimulationConfig(simulations=config.simulations, seed=config.seed),
             elo_config=elo_config,
         )

@@ -1,8 +1,8 @@
-"""Fetch match schedules and final league tables from fotmob.
+"""Fetch match schedules from fotmob.
 
 fotmob is a Next.js app: the page HTML embeds the fully-rendered page data in a
 ``<script id="__NEXT_DATA__">`` tag, so no browser or API key is needed. We
-extract only the slice we care about and cache that in ``data/raw/``, which
+extract only the slice we care about and keep a copy in ``data/raw/``, which
 keeps the stored artifacts small and readable.
 
 This replaces the parse.bot scraper used for the first Eliteserien fetch; that
@@ -14,17 +14,17 @@ Driven by `refresh`, which fetches both divisions in one command.
 from __future__ import annotations
 
 import json
+import os
 import re
+import time
 import urllib.error
 import urllib.request
 from dataclasses import dataclass
-from datetime import timedelta
 from pathlib import Path
 from typing import Any
 
-from elitetracker.sources.cache import DEFAULT_MAX_AGE, Cache
-
 RAW_DIR = Path("data/raw")
+XG_PATH = Path("data/xg.json")
 
 # fotmob serves the SPA shell to unknown clients; a browser UA gets the real page.
 _USER_AGENT = "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36"
@@ -60,16 +60,6 @@ def league(slug: str) -> League:
         return LEAGUES[slug]
     except KeyError:
         raise FetchError(f"unknown league {slug!r}; known: {sorted(LEAGUES)}") from None
-
-
-def cache_key(lg: League, season: int, kind: str) -> str:
-    """Cache keys are namespaced by source.
-
-    Different sources describe the same fixtures with incompatible schemas, so
-    a fotmob payload must never land in the slot holding an archived parse.bot
-    payload for the same league and season.
-    """
-    return f"fotmob_{lg.slug}_{season}_{kind}"
 
 
 def _url(lg: League, tab: str, season: int) -> str:
@@ -114,21 +104,6 @@ def fetch_matches_payload(lg: League, season: int) -> list[dict[str, Any]]:
     return matches
 
 
-def fetch_standings_payload(lg: League, season: int) -> list[dict[str, Any]]:
-    url = _url(lg, "table", season)
-    props = _page_props(_download(url), url)
-    _assert_season(props, season, url)
-    tables = props.get("table") or []
-    if not tables:
-        raise FetchError(f"{url}: no table in payload")
-    # A league can expose several tables (overall / home / away / by stage);
-    # "all" is the overall standings we want.
-    rows = tables[0].get("data", {}).get("table", {}).get("all")
-    if not rows:
-        raise FetchError(f"{url}: table payload has no overall standings")
-    return rows
-
-
 def _validate_matches(payload: Any, lg: League) -> None:
     expected = lg.team_count * (lg.team_count - 1)
     if not isinstance(payload, list):
@@ -143,36 +118,83 @@ def _validate_matches(payload: Any, lg: League) -> None:
         )
 
 
-def _validate_standings(payload: Any, lg: League) -> None:
-    if not isinstance(payload, list):
-        raise FetchError("standings payload is not a list")
-    if len(payload) != lg.team_count:
-        raise FetchError(f"expected {lg.team_count} rows for {lg.name}, got {len(payload)}")
-
-
-def fetch_matches(
-    slug: str, season: int, *, force: bool = False, cache_dir: Path = RAW_DIR,
-    max_age: timedelta = DEFAULT_MAX_AGE,
-) -> tuple[list[dict[str, Any]], bool]:
+def fetch_matches(slug: str, season: int, *, cache_dir: Path = RAW_DIR) -> list[dict[str, Any]]:
+    """Download, validate and archive one league season's fixture list."""
     lg = league(slug)
-    cache = Cache(cache_dir, max_age)
-    return cache.get_or_fetch(
-        cache_key(lg, season, "matches"),
-        lambda: fetch_matches_payload(lg, season),
-        force=force,
-        validate=lambda payload: _validate_matches(payload, lg),
+    payload = fetch_matches_payload(lg, season)
+    _validate_matches(payload, lg)
+    path = cache_dir / f"fotmob_{lg.slug}_{season}_matches.json"
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(payload, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
+    return payload
+
+
+def fetch_match_xg(match_id: str) -> tuple[float, float, float, float] | None:
+    """(home_xg, away_xg, home_xgot, away_xgot) from the match-details endpoint,
+    or None without shot data.
+
+    fotmob carries per-shot xG and xG-on-target for Eliteserien from 2020;
+    OBOS-ligaen and earlier seasons have no shotmap and return None.
+    """
+    url = f"https://www.fotmob.com/api/data/matchDetails?matchId={match_id}"
+    try:
+        data = json.loads(_download(url))
+    except json.JSONDecodeError as exc:
+        raise FetchError(f"{url}: not JSON ({exc})") from exc
+    content = data.get("content") or {}
+    shots = (content.get("shotmap") or {}).get("shots") or []
+    if not shots:
+        return None
+    home_team = str((data.get("general") or {}).get("homeTeam", {}).get("id"))
+
+    def is_home(shot: dict[str, Any]) -> bool:
+        return bool(shot["isHome"]) if "isHome" in shot else str(shot.get("teamId")) == home_team
+
+    def total(key: str, home: bool) -> float:
+        return round(sum(shot.get(key) or 0.0 for shot in shots if is_home(shot) == home), 3)
+
+    return (
+        total("expectedGoals", True), total("expectedGoals", False),
+        total("expectedGoalsOnTarget", True), total("expectedGoalsOnTarget", False),
     )
 
 
-def fetch_standings(
-    slug: str, season: int, *, force: bool = False, cache_dir: Path = RAW_DIR,
-    max_age: timedelta = DEFAULT_MAX_AGE,
-) -> tuple[list[dict[str, Any]], bool]:
-    lg = league(slug)
-    cache = Cache(cache_dir, max_age)
-    return cache.get_or_fetch(
-        cache_key(lg, season, "standings"),
-        lambda: fetch_standings_payload(lg, season),
-        force=force,
-        validate=lambda payload: _validate_standings(payload, lg),
-    )
+def load_xg(path: Path = XG_PATH) -> dict[str, Any]:
+    """{"matches": {match_id: [home_xg, away_xg, home_xgot, away_xgot]}, "none": [ids without shot data]}."""
+    if path.exists():
+        return json.loads(path.read_text(encoding="utf-8"))
+    return {"matches": {}, "none": []}
+
+
+def save_xg(data: dict[str, Any], path: Path = XG_PATH) -> None:
+    temp = path.with_suffix(".json.tmp")
+    temp.write_text(json.dumps(data, indent=0, sort_keys=True) + "\n", encoding="utf-8")
+    os.replace(temp, path)
+
+
+def update_xg(matches: list, *, path: Path = XG_PATH, fetch=fetch_match_xg, delay: float = 1.0) -> int:
+    """Add shot data for played matches the file does not have yet; returns how many.
+
+    Never raises: the model falls back to goals for a match without xG, so a
+    failed fetch is printed and skipped rather than allowed to block a refresh.
+    """
+    data = load_xg(path)
+    known = set(data["matches"]) | set(data["none"])
+    added = 0
+    for match in matches:
+        if not match.played or match.match_id in known:
+            continue
+        try:
+            shots = fetch(match.match_id)
+        except FetchError as exc:
+            print(f"  xG for {match.match_id} skipped: {exc}")
+            continue
+        if shots is None:
+            data["none"].append(match.match_id)
+        else:
+            data["matches"][match.match_id] = list(shots)
+        added += 1
+        time.sleep(delay)
+    if added:
+        save_xg(data, path)
+    return added

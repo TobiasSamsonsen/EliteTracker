@@ -12,10 +12,15 @@ probabilities can never disagree with the ratings they came from.
 
 from __future__ import annotations
 
-import math
 from dataclasses import dataclass
 
 from elitetracker.model.elo import EloConfig, draw_probability, expected_score
+
+
+# Outcome labels used as keys throughout the model and the simulation.
+HOME_WIN = "home_win"
+DRAW = "draw"
+AWAY_WIN = "away_win"
 
 
 @dataclass(frozen=True)
@@ -24,9 +29,16 @@ class MatchProbabilities:
     draw: float
     away_win: float
 
-    @property
-    def expected_home_score(self) -> float:
-        return self.home_win + 0.5 * self.draw
+    def of(self, outcome: str) -> float:
+        return {HOME_WIN: self.home_win, DRAW: self.draw, AWAY_WIN: self.away_win}[outcome]
+
+
+def outcome_of(match) -> str:
+    if match.home_goals > match.away_goals:
+        return HOME_WIN
+    if match.home_goals < match.away_goals:
+        return AWAY_WIN
+    return DRAW
 
 
 def match_probabilities(
@@ -35,8 +47,6 @@ def match_probabilities(
     """Three-way probabilities for a match at the home team's ground."""
     config = config or EloConfig()
     effective_gap = (home_rating + config.home_advantage) - away_rating
-    if config.probability_model == "ordered_logit":
-        return ordered_logit_probabilities(effective_gap, config)
     return _draw_model_probabilities(effective_gap, config)
 
 
@@ -56,30 +66,3 @@ def _draw_model_probabilities(rating_difference: float, config: EloConfig) -> Ma
     away_win = (1.0 - expected_home) - draw / 2.0
     return MatchProbabilities(home_win=home_win, draw=draw, away_win=away_win)
 
-
-def ordered_logit_probabilities(rating_difference: float, config: EloConfig) -> MatchProbabilities:
-    """Three-way probabilities from an ordered logistic on the rating gap.
-
-    The gap is a single linear predictor x; a logistic CDF F gives the
-    cumulative chances of falling at or below each outcome, with symmetric
-    thresholds +/- `logit_cutpoint`. Larger gaps push more mass onto the
-    favourite, and the cutpoint sets where the draw band sits.
-
-    Unlike the draw model this does *not* reproduce the ELO expected_score: its
-    P(win) + 0.5*P(draw) is 0.5 + 0.5*(F(c + b*x) - F(c - b*x)), a logistic of
-    its own scale (b, c), which is the whole point -- refitting the slope buys
-    calibration the fixed ELO scale cannot.
-    """
-    beta = config.logit_slope
-    cut = config.logit_cutpoint
-    x = rating_difference
-
-    def logist(z: float) -> float:
-        return 1.0 / (1.0 + math.exp(-z))
-
-    upper = logist(cut - beta * x)   # P(draw or loss)
-    lower = logist(-cut - beta * x)  # P(loss)
-    draw = upper - lower
-    away_win = lower
-    home_win = 1.0 - upper
-    return MatchProbabilities(home_win=home_win, draw=draw, away_win=away_win)

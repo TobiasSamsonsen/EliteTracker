@@ -20,7 +20,6 @@ def match(match_id, home, away, date, round_number=None, score=None):
         time="18:00",
         home=home,
         away=away,
-        venue=None,
         home_goals=home_goals,
         away_goals=away_goals,
         played=score is not None,
@@ -39,8 +38,8 @@ def two_team_season(played=2, total=4):
 
 
 SEEDS = {
-    "A": TeamRating("A", "A", 1500, "seed"),
-    "B": TeamRating("B", "B", 1500, "seed"),
+    "A": TeamRating("A", "A", 1500),
+    "B": TeamRating("B", "B", 1500),
 }
 
 
@@ -195,8 +194,3 @@ class TestBuildHistory:
     def test_no_played_matches_gives_no_history(self):
         games = two_team_season(played=0)
         assert build_history(games, games, SEEDS, config=FAST) == []
-
-    @pytest.mark.parametrize("kwargs", [{"simulations": 0}, {"max_snapshots": 1}])
-    def test_invalid_config_is_rejected(self, kwargs):
-        with pytest.raises(ValueError):
-            HistoryConfig(**kwargs)

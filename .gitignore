@@ -7,3 +7,6 @@ __pycache__/
 public/data/
 past-seasons.tar.gz
 .firebase/
+.agents/
+data/raw/football-data_*.csv
+build/

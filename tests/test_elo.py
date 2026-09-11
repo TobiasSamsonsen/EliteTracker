@@ -128,16 +128,8 @@ class TestConfig:
         assert (config.k_factor, config.home_advantage) == (20.0, 60.0)
         assert config.season_regression == pytest.approx(0.88)
 
-    @pytest.mark.parametrize(
-        "kwargs",
-        [{"k_factor": 0}, {"k_factor": -5}, {"draw_base": 1.5}, {"draw_base": -0.1}, {"draw_scale": 0}],
-    )
-    def test_invalid_parameters_are_rejected(self, kwargs):
-        with pytest.raises(ValueError):
-            EloConfig(**kwargs)
-
     def test_model_version_is_declared(self):
-        assert MODEL_VERSION == "elo-v6"
+        assert MODEL_VERSION == "elo-v7"
 
 
 class TestFittedDefaults:

@@ -11,23 +11,22 @@ Two deliberate simplifications, both documented rather than hidden:
 
 * Ratings are held fixed for the rest of the season. A team does not get
   stronger inside a simulation by winning simulated matches.
-* Simulated matches draw a scoreline from the empirical distribution of real
-  results (see `model.scorelines`), so goal difference moves within a season
-  and tied finishes resolve on simulated goal difference, not today's. The
-  margin is conditioned on both the win/draw/loss outcome and the pre-match
-  rating gap, so a heavy favourite draws bigger scorelines than a slight one
-  (real margins grow with the gap). The rating-implied probabilities remain the
-  sole driver of *who* wins.
+* Who wins comes from the Elo odds; how many goals from the two sides' attack
+  and defence ratings (`model.attack_defence`), conditioned on that outcome.
+  So goal difference moves within a simulation and tied finishes resolve on
+  simulated goal difference, not today's, and a fixture between two free-scoring
+  sides is simulated as one.
 """
 
 from __future__ import annotations
 
 import random
+from bisect import bisect_left
 from dataclasses import dataclass
 
+from elitetracker.model.attack_defence import AttackDefence, blend_outcomes, conditional_scorelines
 from elitetracker.model.elo import EloConfig
-from elitetracker.model.probabilities import match_probabilities
-from elitetracker.model.scorelines import DEFAULT_SCORELINE_MODEL, ScorelineModel
+from elitetracker.model.probabilities import AWAY_WIN, DRAW, HOME_WIN, match_probabilities
 from elitetracker.model.table import TableRow, ranking_key, table_from_matches
 from elitetracker.normalize.matches import Match
 from elitetracker.normalize.standings import POINTS_FOR_DRAW, POINTS_FOR_WIN
@@ -57,10 +56,6 @@ class SimulationConfig:
     simulations: int = DEFAULT_SIMULATIONS
     seed: int = DEFAULT_SEED
 
-    def __post_init__(self) -> None:
-        if self.simulations < 1:
-            raise ValueError(f"simulations must be at least 1, got {self.simulations}")
-
 
 @dataclass
 class TeamProjection:
@@ -85,50 +80,59 @@ class SeasonProjection:
     matches_played: int
 
 
-def _fixture_odds(
-    matches: list[Match],
-    ratings: dict[str, float],
-    config: EloConfig,
-    scoreline_model: ScorelineModel,
-) -> list[tuple[str, str, float, float, int]]:
-    """Precompute per unplayed match: (home, away, P(home), P(home)+P(draw), bin).
+# Per unplayed fixture: home index, away index, P(home), P(home)+P(draw), and
+# for each outcome (home win, draw, away win) the scorelines of that outcome
+# with their cumulative probability, ready for one bisect in the hot loop.
+Fixture = tuple[int, int, float, float, list[tuple[list[float], list[tuple[int, int]]]]]
 
-    The outcome probabilities are fixed, so they are computed once and reused;
-    only the sampling happens in the hot loop. The final field is the gap bin the
-    scoreline sampler will draw from, derived from the same effective rating gap
-    that drives the probabilities.
-    """
-    odds = []
+
+def _fixtures(
+    matches: list[Match], ratings: dict[str, float], index_of: dict[str, int], config: EloConfig,
+    ad: AttackDefence, blend: bool = True,
+) -> list[Fixture]:
+    """Everything the hot loop needs per fixture, computed once."""
+    fixtures: list[Fixture] = []
     for match in matches:
         if match.played:
             continue
         home_id = match.home_id or match.home
         away_id = match.away_id or match.away
+        grid = ad.grid(home_id, away_id, match.date)
         probabilities = match_probabilities(ratings[home_id], ratings[away_id], config)
-        effective_gap = (ratings[home_id] + config.home_advantage) - ratings[away_id]
-        odds.append(
-            (
-                home_id,
-                away_id,
-                probabilities.home_win,
-                probabilities.home_win + probabilities.draw,
-                scoreline_model.bin_for(effective_gap),
-            )
+        if blend:
+            probabilities = blend_outcomes(probabilities, grid)
+        cells = conditional_scorelines(grid, probabilities)
+        tables = []
+        for outcome, keep in ((HOME_WIN, lambda i, j: i > j), (DRAW, lambda i, j: i == j), (AWAY_WIN, lambda i, j: i < j)):
+            scores = [(i, j) for (i, j) in cells if keep(i, j)]
+            total = sum(cells[s] for s in scores) or 1.0
+            running, cumulative = 0.0, []
+            for s in scores:
+                running += cells[s] / total
+                cumulative.append(running)
+            cumulative[-1] = 1.0  # guard against float drift at the top end
+            tables.append((cumulative, scores))
+        fixtures.append(
+            (index_of[home_id], index_of[away_id], probabilities.home_win, probabilities.home_win + probabilities.draw, tables)
         )
-    return odds
+    return fixtures
 
 
 def simulate_season(
     matches: list[Match],
     ratings: dict[str, float],
     *,
+    ad: AttackDefence | None = None,
     config: SimulationConfig | None = None,
     elo_config: EloConfig | None = None,
-    scoreline_model: ScorelineModel | None = None,
 ) -> SeasonProjection:
+    """`ad` is the attack/defence state as of the matches given; the outcome odds
+    are its blend with the Elo odds. Without one every club is an average side,
+    the Elo odds stand alone and only shape the scorelines."""
     config = config or SimulationConfig()
     elo_config = elo_config or EloConfig()
-    scoreline_model = scoreline_model or DEFAULT_SCORELINE_MODEL
+    blend = ad is not None
+    ad = ad or AttackDefence()
 
     current: list[TableRow] = table_from_matches(matches)
     positions = {row.team_id: index + 1 for index, row in enumerate(current)}
@@ -147,19 +151,10 @@ def simulate_season(
     count = len(team_ids)
     index_of = {team_id: index for index, team_id in enumerate(team_ids)}
     rows = [by_id[team_id] for team_id in team_ids]
-
-    odds = [
-        (index_of[home], index_of[away], home_chance, home_or_draw_chance, bin_index)
-        for home, away, home_chance, home_or_draw_chance, bin_index
-        in _fixture_odds(matches, ratings, elo_config, scoreline_model)
-    ]
+    fixtures = _fixtures(matches, ratings, index_of, elo_config, ad, blend)
     base_points = [row.points for row in rows]
     base_goals_for = [row.goals_for for row in rows]
     base_goals_against = [row.goals_against for row in rows]
-
-    # Flat scoreline tables per outcome, each a list of bins indexed by the gap
-    # bin computed above, so the hot loop needs no per-match dict lookup.
-    score_tables = scoreline_model.flat_tables()
 
     # Clubs level on simulated points are separated on simulated goal
     # difference, then simulated goals scored. Both accrue from the scorelines
@@ -169,7 +164,7 @@ def simulate_season(
     # The sort key packs points | goal_difference | goals_for | index into one
     # integer, best first. Goal difference is signed, so it is shifted by a
     # fixed offset before packing; the constants below comfortably cover a full
-    # season (current GD plus at most 3 * remaining matches either way).
+    # season (current GD plus at most 8 * remaining matches either way).
     goals_width = 10  # 1024 slots: covers GD +/- ~500 and goals_for up to ~1000
     offset_gd = 1 << (goals_width - 1)  # 512, keeps signed GD inside [0, 1024)
     scale_gd = 1 << goals_width
@@ -182,13 +177,12 @@ def simulate_season(
 
     rng = random.Random(config.seed)
     random_value = rng.random  # bound once; this is the hot path
-    randrange = rng.randrange
 
     for _ in range(config.simulations):
         points = base_points[:]
         goals_for = base_goals_for[:]
         goals_against = base_goals_against[:]
-        for home, away, home_chance, home_or_draw_chance, bin_index in odds:
+        for home, away, home_chance, home_or_draw_chance, tables in fixtures:
             roll = random_value()
             if roll < home_chance:
                 outcome_code = 0
@@ -201,8 +195,8 @@ def simulate_season(
                 outcome_code = 2
                 points[away] += POINTS_FOR_WIN
 
-            table = score_tables[outcome_code][bin_index]
-            home_goals, away_goals = table[randrange(len(table))]
+            cumulative, scores = tables[outcome_code]
+            home_goals, away_goals = scores[bisect_left(cumulative, random_value())]
             goals_for[home] += home_goals
             goals_against[home] += away_goals
             goals_for[away] += away_goals
@@ -247,6 +241,6 @@ def simulate_season(
         teams=projections,
         simulations=simulations,
         seed=config.seed,
-        matches_remaining=len(odds),
+        matches_remaining=len(fixtures),
         matches_played=sum(1 for match in matches if match.played),
     )

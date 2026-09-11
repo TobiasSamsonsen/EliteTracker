@@ -51,11 +51,11 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          if git diff --quiet -- data/normalized; then
+          if git diff --quiet -- data/normalized data/xg.json; then
             echo "No match-data changes; nothing to commit."
             exit 0
           fi
-          git add data/normalized
+          git add data/normalized data/xg.json
           git commit -m "Scheduled refresh: update $(date -u +%Y-%m-%d) match results"
           git pull --rebase --autostash origin main
           git push https://x-access-token:${PAT}@github.com/${{ github.repository }}.git HEAD:main

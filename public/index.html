@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en" data-theme="">
+<html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
@@ -8,7 +8,13 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Archivo:ital,wdth,wght@0,62..125,400..800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="/styles.css?v=14">
+<script>
+  /* Resolve the theme before the stylesheet applies, so a dark choice never flashes light. */
+  var choice = localStorage.getItem('elitetracker-theme');
+  document.documentElement.dataset.resolvedTheme = choice === 'light' || choice === 'dark' ? choice
+    : matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+</script>
+<link rel="stylesheet" href="/styles.css">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'><rect width='16' height='16' rx='3' fill='%232a78d6'/><rect x='3' y='9' width='2.5' height='4' fill='white'/><rect x='6.75' y='6' width='2.5' height='7' fill='white'/><rect x='10.5' y='3' width='2.5' height='10' fill='white'/></svg>">
 </head>
 <body>
@@ -253,8 +259,10 @@
           </div>
         </div>
         <div class="compare__pickers">
-          <select id="compare-a" class="compare__select compare__select--hidden" aria-hidden="true" tabindex="-1"></select>
-          <select id="compare-b" class="compare__select compare__select--hidden" aria-hidden="true" tabindex="-1"></select>
+          <label class="visually-hidden" for="compare-a" data-i18n="compare.home">Home</label>
+          <select id="compare-a" class="compare__select"></select>
+          <label class="visually-hidden" for="compare-b" data-i18n="compare.away">Away</label>
+          <select id="compare-b" class="compare__select"></select>
         </div>
         <div id="compare-output"></div>
       </div>
@@ -272,9 +280,9 @@
         <div class="caveats">
           <div class="label" data-i18n="model.howItWorks">How it works</div>
           <ul>
-            <li data-i18n="model.how1">Each club carries one ELO rating. After every match, the winner gains points and the loser loses them — more if the result was unexpected. The gap between two clubs' ratings decides the win/draw/loss probabilities.</li>
+            <li data-i18n="model.how1">Each club carries one ELO rating. After every match, the winner gains points and the loser loses them — more if the result was unexpected. The gap between two clubs' ratings gives one set of win/draw/loss odds; a second set comes from each club's attack and defence ratings, which move on expected goals (xG) where FotMob has them, so a lucky win counts for less than a deserved one. The odds shown are the average of the two.</li>
             <li data-i18n="model.how2">Cross-season regression pulls every rating 12 % toward the division average during the off-season. This prevents one strong or weak year from carrying over unchanged, while still letting form carry momentum.</li>
-            <li data-i18n="model.how3">Simulations replay the remaining fixtures thousands of times. Each simulated match first picks an outcome (win, draw, or loss) from the pre-match probabilities, then draws a scoreline from real results conditioned on that outcome and the rating gap.</li>
+            <li data-i18n="model.how3">Simulations replay the remaining fixtures thousands of times. Each simulated match first picks an outcome (win, draw, or loss) from the pre-match probabilities, then draws a scoreline from the two clubs' attack and defence ratings — the goals each side is expected to score and concede.</li>
             <li data-i18n="model.how4">Two OBOS-ligaen clubs were promoted from the third tier, which is outside this project's data. They start at the bottom of the ladder and are corrected only by results.</li>
           </ul>
         </div>
@@ -297,6 +305,6 @@
 <div id="tooltip" role="tooltip" aria-hidden="true"></div>
 
 <script src="/i18n.js"></script>
-<script src="/app.js?v=14"></script>
+<script src="/app.js"></script>
 </body>
 </html>

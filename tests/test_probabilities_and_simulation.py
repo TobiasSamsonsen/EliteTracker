@@ -5,7 +5,7 @@ from elitetracker.model.elo import EloConfig, expected_score
 from elitetracker.model.initial_ratings import TeamRating
 from elitetracker.model.probabilities import match_probabilities
 from elitetracker.model.ratings import build_rating_table
-from elitetracker.model.scorelines import DEFAULT_SCORELINE_MODEL, ScorelineModel
+from elitetracker.model.attack_defence import ADConfig, AttackDefence
 from elitetracker.model.table import table_from_matches
 from elitetracker.normalize.matches import Match
 from elitetracker.simulation.season import SimulationConfig, simulate_season
@@ -21,7 +21,6 @@ def match(match_id, home, away, day=1, score=None, hour=18):
         time=f"{hour:02d}:00",
         home=home,
         away=away,
-        venue=None,
         home_goals=home_goals,
         away_goals=away_goals,
         played=score is not None,
@@ -48,7 +47,7 @@ class TestMatchProbabilities:
         for gap in (-500, -100, 0, 100, 500):
             probabilities = match_probabilities(1500 + gap, 1500, config)
             expected = expected_score(1500 + gap + config.home_advantage, 1500)
-            assert probabilities.expected_home_score == pytest.approx(expected)
+            assert probabilities.home_win + 0.5 * probabilities.draw == pytest.approx(expected)
 
     def test_equal_teams_on_neutral_ground_are_symmetric(self):
         probabilities = match_probabilities(1500, 1500, NEUTRAL)
@@ -86,68 +85,19 @@ class TestMatchProbabilities:
         assert 0.10 < average < 0.25
 
 
-class TestOrderedLogitProbabilities:
-    def _config(self, slope=0.0055, cut=0.55):
-        return EloConfig(probability_model="ordered_logit", logit_slope=slope,
-                         logit_cutpoint=cut)
-
-    def test_probabilities_sum_to_one(self):
-        config = self._config()
-        for gap in (-600, -200, 0, 150, 900):
-            p = match_probabilities(1500 + gap, 1500, config)
-            assert p.home_win + p.draw + p.away_win == pytest.approx(1.0)
-
-    def test_all_probabilities_are_non_negative(self):
-        config = self._config()
-        for gap in (-1200, -400, 0, 400, 1200):
-            p = match_probabilities(1500 + gap, 1500, config)
-            assert min(p.home_win, p.draw, p.away_win) >= 0.0
-
-    def test_draw_is_even_in_the_gap(self):
-        config = EloConfig(probability_model="ordered_logit", logit_slope=0.0055,
-                           logit_cutpoint=0.55, home_advantage=0)
-        for gap in (100, 300, 500):
-            forward = match_probabilities(1500 + gap, 1500, config).draw
-            reverse = match_probabilities(1500 - gap, 1500, config).draw
-            assert forward == pytest.approx(reverse)
-
-    def test_draw_at_even_match_is_tanh_of_half_the_cutpoint(self):
-        import math
-        config = EloConfig(probability_model="ordered_logit", logit_slope=0.0055,
-                           logit_cutpoint=0.55, home_advantage=0)
-        draw = match_probabilities(1500, 1500, config).draw
-        assert draw == pytest.approx(math.tanh(0.55 / 2.0), abs=1e-6)
-
-    def test_stronger_home_side_is_favoured_and_monotone(self):
-        config = self._config()
-        prev = -1.0
-        for gap in range(-600, 601, 100):
-            p = match_probabilities(1500 + gap, 1500, config)
-            assert p.home_win >= prev
-            prev = p.home_win
-
-    def test_expectation_does_not_equal_the_elo_score(self):
-        """Documented break: ordered logit refits the discrimination, so its
-        P(win) + 0.5*P(draw) is no longer the ELO expected_score."""
-        config = self._config()
-        p = match_probabilities(1700, 1400, config)
-        elo_expected = expected_score(1700 + config.home_advantage, 1400)
-        assert p.expected_home_score != pytest.approx(elo_expected, abs=1e-3)
-
-
 class TestRatingTable:
     def test_seeds_are_used_when_no_matches_are_played(self):
-        seeds = {"A": TeamRating("A", "A", 1600, "seed"), "B": TeamRating("B", "B", 1400, "seed")}
+        seeds = {"A": TeamRating("A", "A", 1600), "B": TeamRating("B", "B", 1400)}
         table = build_rating_table(seeds, [match(1, "A", "B")])
         assert table["A"] == pytest.approx(1600)
 
     def test_a_win_raises_the_winner_and_lowers_the_loser(self):
-        seeds = {"A": TeamRating("A", "A", 1500, "s"), "B": TeamRating("B", "B", 1500, "s")}
+        seeds = {"A": TeamRating("A", "A", 1500), "B": TeamRating("B", "B", 1500)}
         table = build_rating_table(seeds, [match(1, "A", "B", score=(2, 0))])
         assert table["A"] > 1500 > table["B"]
 
     def test_total_rating_is_conserved(self):
-        seeds = {"A": TeamRating("A", "A", 1500, "s"), "B": TeamRating("B", "B", 1500, "s")}
+        seeds = {"A": TeamRating("A", "A", 1500), "B": TeamRating("B", "B", 1500)}
         table = build_rating_table(seeds, [match(1, "A", "B", score=(2, 0)), match(2, "B", "A", day=2, score=(1, 1))])
         assert sum(table.values()) == pytest.approx(3000)
 
@@ -157,19 +107,19 @@ class TestRatingTable:
         assert table["Other"] == pytest.approx(1330)
 
     def test_replay_is_chronological_not_input_order(self):
-        seeds = {t: TeamRating(t, t, 1500, "s") for t in "ABC"}
+        seeds = {t: TeamRating(t, t, 1500) for t in "ABC"}
         games = [match(1, "A", "B", day=1, score=(1, 0)), match(2, "A", "C", day=2, score=(0, 1))]
         forward = build_rating_table(seeds, games)
         backward = build_rating_table(seeds, list(reversed(games)))
         assert forward == pytest.approx(backward)
 
     def test_unplayed_matches_do_not_move_ratings(self):
-        seeds = {"A": TeamRating("A", "A", 1500, "s"), "B": TeamRating("B", "B", 1500, "s")}
+        seeds = {"A": TeamRating("A", "A", 1500), "B": TeamRating("B", "B", 1500)}
         table = build_rating_table(seeds, [match(1, "A", "B")])
         assert table == pytest.approx({"A": 1500, "B": 1500})
 
     def test_matches_without_team_ids_are_rejected(self):
-        bad = Match("1", "2026-03-01", "18:00", "A", "B", None, None, None, played=False)
+        bad = Match("1", "2026-03-01", "18:00", "A", "B", None, None, played=False)
         with pytest.raises(ValueError, match="no team ids"):
             build_rating_table({}, [bad])
 
@@ -210,39 +160,6 @@ def two_team_season(played=None, remaining=2):
     games = list(played or [])
     games += [match(100 + i, "A", "B", day=10 + i) for i in range(remaining)]
     return games
-
-
-class TestScorelineModel:
-    def test_sample_respects_the_outcome(self):
-        """A home_win must never come back as a draw or an away_win, etc."""
-        rng = random.Random(1)
-        for outcome, sign in (("home_win", 1), ("draw", 0), ("away_win", -1)):
-            for _ in range(500):
-                home_goals, away_goals = DEFAULT_SCORELINE_MODEL.sample(outcome, rng)
-                assert (home_goals - away_goals) * sign > 0 or (
-                    outcome == "draw" and home_goals == away_goals
-                )
-
-    def test_sample_is_deterministic_for_a_seed(self):
-        first = [DEFAULT_SCORELINE_MODEL.sample(o, random.Random(42)) for o in ("home_win", "draw", "away_win")]
-        second = [DEFAULT_SCORELINE_MODEL.sample(o, random.Random(42)) for o in ("home_win", "draw", "away_win")]
-        assert first == second
-
-    def test_from_matches_builds_the_conditional_distribution(self):
-        matches = [
-            match(1, "A", "B", score=(2, 1)),
-            match(2, "A", "B", score=(1, 1)),
-            match(3, "A", "B", score=(0, 2)),
-            match(4, "A", "B", score=(2, 1)),
-        ]
-        model = ScorelineModel.from_matches(matches)
-        # (2,1) appears twice among three scored home/away wins plus a draw.
-        counts = {}
-        rng = random.Random(0)
-        for _ in range(3000):
-            hg, ag = model.sample("home_win", rng)
-            counts[(hg, ag)] = counts.get((hg, ag), 0) + 1
-        assert counts[(2, 1)] > counts.get((1, 0), 0)
 
 
 class TestSimulation:
@@ -322,10 +239,6 @@ class TestSimulation:
         with pytest.raises(KeyError, match="no rating"):
             simulate_season(two_team_season(), {"A": 1500}, config=SimulationConfig(simulations=10))
 
-    def test_zero_simulations_is_rejected(self):
-        with pytest.raises(ValueError, match="at least 1"):
-            SimulationConfig(simulations=0)
-
     def test_clubs_level_on_points_are_split_on_goal_difference(self):
         """Regression: the tiebreak must not be read off the current table.
 
@@ -378,16 +291,25 @@ class TestSimulation:
             first = by_team[team].position_probabilities[0]
             assert 0.3 < first < 0.7
 
-    def test_a_passed_scoreline_model_reproduces_the_run(self):
-        model = ScorelineModel.from_matches(
-            [match(i, "A", "B", score=(2, 1)) for i in range(1, 30)]
-        )
+    def test_attack_defence_state_shapes_the_scorelines(self):
+        """A free-scoring, leaky pair of clubs produces bigger simulated margins
+        than two average sides, and the same state reproduces the same run."""
         args = (two_team_season(remaining=8), {"A": 1500, "B": 1500})
-        first = simulate_season(*args, config=SimulationConfig(simulations=300, seed=11), scoreline_model=model)
-        second = simulate_season(*args, config=SimulationConfig(simulations=300, seed=11), scoreline_model=model)
-        assert [t.position_probabilities for t in first.teams] == [
-            t.position_probabilities for t in second.teams
-        ]
+        wild = AttackDefence(config=ADConfig(), attack={"A": 0.8, "B": 0.8}, defence={"A": -0.8, "B": -0.8}, season=2026)
+        first = simulate_season(*args, ad=wild, config=SimulationConfig(simulations=300, seed=11))
+        second = simulate_season(*args, ad=wild.copy(), config=SimulationConfig(simulations=300, seed=11))
+        assert [t.position_probabilities for t in first.teams] == [t.position_probabilities for t in second.teams]
+        # The outcome odds are Elo's either way, so the title split is level;
+        # what differs is the goals, which the projection does not expose --
+        # so check the fixture tables directly.
+        from elitetracker.simulation.season import _fixtures
+        calm = _fixtures(args[0], args[1], {"A": 0, "B": 1}, EloConfig(), AttackDefence())
+        loud = _fixtures(args[0], args[1], {"A": 0, "B": 1}, EloConfig(), wild)
+        expected_total = lambda tables: sum(
+            (cum[k] - (cum[k - 1] if k else 0.0)) * (hg + ag)
+            for cum, scores in tables for k, (hg, ag) in enumerate(scores)
+        ) / 3
+        assert expected_total(loud[0][4]) > expected_total(calm[0][4]) + 1.0
 
     def test_counts_of_played_and_remaining(self):
         projection = simulate_season(

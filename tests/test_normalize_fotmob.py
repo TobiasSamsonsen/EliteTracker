@@ -1,12 +1,7 @@
 import pytest
 
 from elitetracker.normalize.matches import NormalizationError
-from elitetracker.normalize.fotmob import (
-    normalize_match,
-    normalize_matches,
-    normalize_standing,
-    normalize_standings,
-)
+from elitetracker.normalize.fotmob import normalize_match, normalize_matches
 
 
 def raw_match(**overrides):
@@ -23,24 +18,6 @@ def raw_match(**overrides):
             "cancelled": False,
             "scoreStr": "2 - 1",
         },
-    }
-    record.update(overrides)
-    return record
-
-
-def raw_standing(**overrides):
-    record = {
-        "name": "Viking",
-        "id": 8478,
-        "played": 30,
-        "wins": 22,
-        "draws": 5,
-        "losses": 3,
-        "scoresStr": "77-36",
-        "goalConDiff": 41,
-        "pts": 71,
-        "idx": 1,
-        "deduction": None,
     }
     record.update(overrides)
     return record
@@ -130,48 +107,3 @@ class TestNormalizeMatches:
     def test_deduplicates(self):
         assert len(normalize_matches([raw_match(), raw_match()])) == 1
 
-
-class TestNormalizeStanding:
-    def test_full_row(self):
-        row = normalize_standing(raw_standing())
-        assert row.position == 1
-        assert row.team == "Viking"
-        assert row.team_id == "8478"
-        assert (row.goals_for, row.goals_against) == (77, 36)
-        assert row.goal_difference == 41
-        assert row.points == 71
-        assert row.deduction == 0
-
-    def test_null_deduction_becomes_zero(self):
-        assert normalize_standing(raw_standing(deduction=None)).deduction == 0
-
-    def test_negative_deduction_is_kept(self):
-        row = normalize_standing(raw_standing(name="Raufoss", wins=7, draws=9, losses=14, pts=29, deduction=-1))
-        assert row.deduction == -1
-        # 7*3 + 9 = 30, minus the docked point.
-        assert row.expected_points + row.deduction == row.points
-
-    def test_negative_goal_difference(self):
-        row = normalize_standing(raw_standing(scoresStr="22-80"))
-        assert row.goal_difference == -58
-
-    def test_team_id_is_stringified(self):
-        assert normalize_standing(raw_standing(id=8478)).team_id == "8478"
-
-    def test_missing_identity_is_rejected(self):
-        with pytest.raises(NormalizationError, match="team identity"):
-            normalize_standing(raw_standing(name=None))
-
-    def test_malformed_row_is_rejected(self):
-        with pytest.raises(NormalizationError, match="malformed"):
-            normalize_standing(raw_standing(pts="many"))
-
-    def test_unparseable_goals_are_rejected(self):
-        with pytest.raises(NormalizationError):
-            normalize_standing(raw_standing(scoresStr="lots"))
-
-
-class TestNormalizeStandings:
-    def test_sorted_by_position(self):
-        rows = [raw_standing(idx=3, name="C", id=3), raw_standing(idx=1, name="A", id=1)]
-        assert [r.position for r in normalize_standings(rows)] == [1, 3]

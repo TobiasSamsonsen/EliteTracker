@@ -10,21 +10,23 @@ shown in 2026 are on the same scale and connected by its results in between.
 
 from __future__ import annotations
 
+import functools
 import json
 import re
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
+from elitetracker.model.attack_defence import ADConfig, AttackDefence, blend_outcomes, top_scorelines
 from elitetracker.model.career import SeasonSlice, TeamCareer, build_careers
 from elitetracker.model.elo import MODEL_VERSION, EloConfig
-from elitetracker.model.initial_ratings import SECOND_TIER, TOP_TIER, SeedingConfig, TeamRating, initial_ratings
+from elitetracker.model.initial_ratings import SeedingConfig, TeamRating, initial_ratings
+from elitetracker.model.probabilities import match_probabilities
 from elitetracker.model.ratings import build_rating_table
-from elitetracker.model.scorelines import DEFAULT_SCORELINE_MODEL
 from elitetracker.model.table import table_from_matches
-from elitetracker.display import build_fixtures_payload
 from elitetracker.normalize.matches import Match
 from elitetracker.normalize.standings import load_standings
+from elitetracker.sources.fotmob import load_xg
 from elitetracker.simulation.history import HistoryConfig, as_of_date, build_history
 from elitetracker.simulation.season import SeasonProjection, SimulationConfig, simulate_season
 
@@ -49,120 +51,58 @@ class Band:
 class LeagueSpec:
     slug: str
     name: str
-    tier: int
     bands: tuple[Band, ...]
 
 
 # Position meanings follow the UEFA allocation for that season. Relegation has
-# been a 16-team constant since 2009; the European blocks have moved almost
-# every year, so Eliteserien has a per-season map. Cup-displaced spots (e.g.
-# 4th in 2018 or 5th in 2019) depend on who wins the cup, so they are not a
-# league position a club can plan for and are left out.
-ELITESERIEN_BANDS_BY_SEASON: dict[int, tuple[Band, ...]] = {
-    2015: (
-        Band("Champions", 1, 1, "champion"),
-        Band("Champions League qualification", 1, 1, "top"),
-        Band("Europa League qualification", 2, 3, "europe"),
-        Band("Relegation play-off", 14, 14, "playoff"),
-        Band("Relegation", 15, 16, "relegation"),
-    ),
-    2016: (
-        Band("Champions", 1, 1, "champion"),
-        Band("Champions League qualification", 1, 1, "top"),
-        Band("Europa League qualification", 2, 4, "europe"),
-        Band("Relegation play-off", 14, 14, "playoff"),
-        Band("Relegation", 15, 16, "relegation"),
-    ),
-    2017: (
-        Band("Champions", 1, 1, "champion"),
-        Band("Champions League qualification", 1, 1, "top"),
-        Band("Europa League qualification", 2, 3, "europe"),
-        Band("Relegation play-off", 14, 14, "playoff"),
-        Band("Relegation", 15, 16, "relegation"),
-    ),
-    2018: (
-        Band("Champions", 1, 1, "champion"),
-        Band("Champions League qualification", 1, 1, "top"),
-        Band("Europa League qualification", 2, 4, "europe"),
-        Band("Relegation play-off", 14, 14, "playoff"),
-        Band("Relegation", 15, 16, "relegation"),
-    ),
-    2019: (
-        Band("Champions", 1, 1, "champion"),
-        Band("Champions League qualification", 1, 1, "top"),
-        Band("Europa League qualification", 2, 3, "europe"),
-        Band("Relegation play-off", 14, 14, "playoff"),
-        Band("Relegation", 15, 16, "relegation"),
-    ),
-    2020: (
-        Band("Champions", 1, 1, "champion"),
-        Band("Champions League qualification", 1, 1, "top"),
-        Band("Conference League qualification", 2, 4, "europe"),
-        Band("Relegation play-off", 14, 14, "playoff"),
-        Band("Relegation", 15, 16, "relegation"),
-    ),
-    2021: (
-        Band("Champions", 1, 1, "champion"),
-        Band("Champions League qualification", 1, 1, "top"),
-        Band("Conference League qualification", 2, 3, "europe"),
-        Band("Relegation play-off", 14, 14, "playoff"),
-        Band("Relegation", 15, 16, "relegation"),
-    ),
-    2022: (
-        Band("Champions", 1, 1, "champion"),
-        Band("Champions League qualification", 1, 1, "top"),
-        Band("Conference League qualification", 2, 3, "europe"),
-        Band("Relegation play-off", 14, 14, "playoff"),
-        Band("Relegation", 15, 16, "relegation"),
-    ),
-    2023: (
-        Band("Champions", 1, 1, "champion"),
-        Band("Champions League qualification", 1, 1, "top"),
-        Band("Conference League qualification", 2, 3, "europe"),
-        Band("Relegation play-off", 14, 14, "playoff"),
-        Band("Relegation", 15, 16, "relegation"),
-    ),
-    2024: (
-        Band("Champions", 1, 1, "champion"),
-        Band("Champions League qualification", 1, 2, "top"),
-        Band("Conference League qualification", 3, 4, "europe"),
-        Band("Relegation play-off", 14, 14, "playoff"),
-        Band("Relegation", 15, 16, "relegation"),
-    ),
-    2025: (
-        Band("Champions", 1, 1, "champion"),
-        Band("Champions League qualification", 1, 2, "top"),
-        Band("Europa League qualification", 3, 3, "europe"),
-        Band("Conference League qualification", 4, 4, "europe"),
-        Band("Relegation play-off", 14, 14, "playoff"),
-        Band("Relegation", 15, 16, "relegation"),
-    ),
-    2026: (
-        Band("Champions", 1, 1, "champion"),
-        Band("Champions League qualification", 1, 2, "top"),
-        Band("Conference League qualification", 3, 4, "europe"),
-        Band("Relegation play-off", 14, 14, "playoff"),
-        Band("Relegation", 15, 16, "relegation"),
-    ),
+# been a 16-team constant since 2009; only the European blocks move, so they
+# are the only rows kept per season. Cup-displaced spots (e.g. 4th in 2018 or
+# 5th in 2019) depend on who wins the cup, so they are not a league position a
+# club can plan for and are left out.
+_CHAMPIONS = Band("Champions", 1, 1, "champion")
+_BOTTOM = (Band("Relegation play-off", 14, 14, "playoff"), Band("Relegation", 15, 16, "relegation"))
+_CL = "Champions League qualification"
+_EL = "Europa League qualification"
+_CONF = "Conference League qualification"
+_ELITESERIEN_EUROPE: dict[int, tuple[tuple[str, int, int], ...]] = {
+    2015: ((_CL, 1, 1), (_EL, 2, 3)),
+    2016: ((_CL, 1, 1), (_EL, 2, 4)),
+    2017: ((_CL, 1, 1), (_EL, 2, 3)),
+    2018: ((_CL, 1, 1), (_EL, 2, 4)),
+    2019: ((_CL, 1, 1), (_EL, 2, 3)),
+    2020: ((_CL, 1, 1), (_CONF, 2, 4)),
+    2021: ((_CL, 1, 1), (_CONF, 2, 3)),
+    2022: ((_CL, 1, 1), (_CONF, 2, 3)),
+    2023: ((_CL, 1, 1), (_CONF, 2, 3)),
+    2024: ((_CL, 1, 2), (_CONF, 3, 4)),
+    2025: ((_CL, 1, 2), (_EL, 3, 3), (_CONF, 4, 4)),
+    2026: ((_CL, 1, 2), (_CONF, 3, 4)),
 }
+
+
+def _eliteserien_bands(season: int) -> tuple[Band, ...]:
+    europe = _ELITESERIEN_EUROPE.get(season, _ELITESERIEN_EUROPE[max(_ELITESERIEN_EUROPE)])
+    return (
+        _CHAMPIONS,
+        *(Band(label, first, last, "top" if label == _CL else "europe") for label, first, last in europe),
+        *_BOTTOM,
+    )
+
 
 LEAGUE_SPECS: dict[str, LeagueSpec] = {
     "eliteserien": LeagueSpec(
         slug="eliteserien",
         name="Eliteserien",
-        tier=TOP_TIER,
-        bands=ELITESERIEN_BANDS_BY_SEASON[max(ELITESERIEN_BANDS_BY_SEASON)],
+        bands=_eliteserien_bands(max(_ELITESERIEN_EUROPE)),
     ),
     "obosligaen": LeagueSpec(
         slug="obosligaen",
         name="OBOS-ligaen",
-        tier=SECOND_TIER,
         bands=(
-            Band("Champions", 1, 1, "champion"),
+            _CHAMPIONS,
             Band("Promotion", 1, 2, "top"),
             Band("Promotion play-off", 3, 6, "playoff"),
-            Band("Relegation play-off", 14, 14, "playoff"),
-            Band("Relegation", 15, 16, "relegation"),
+            *_BOTTOM,
         ),
     ),
 }
@@ -177,11 +117,7 @@ def bands_for(spec: LeagueSpec, season: int) -> tuple[Band, ...]:
     static spec bands. Eliteserien's European allocation drifts year to year;
     unknown future seasons fall back to the newest known layout.
     """
-    if spec.slug != "eliteserien":
-        return spec.bands
-    return ELITESERIEN_BANDS_BY_SEASON.get(
-        season, ELITESERIEN_BANDS_BY_SEASON[max(ELITESERIEN_BANDS_BY_SEASON)]
-    )
+    return _eliteserien_bands(season) if spec.slug == "eliteserien" else spec.bands
 
 
 def _matches_path(slug: str, season: int, root: Path) -> Path:
@@ -246,18 +182,27 @@ def build_all_careers(
     return build_careers(load_slices(root), seed_ratings(root, seeding=seeding), config=elo_config)
 
 
+@functools.cache
+def prior_attack_defence(root: Path, season: int) -> AttackDefence:
+    """Attack/defence ratings at the end of the season before `season`.
+
+    Every season before it is replayed once and kept; callers `copy()` the
+    state before replaying the season they are reporting on.
+    """
+    slices = load_slices(root)
+    shots = {match_id: tuple(values) for match_id, values in load_xg()["matches"].items()}
+    return AttackDefence.from_slices(slices, ADConfig(), shots=shots).replay(
+        [match for slice_ in slices if slice_.season < season for match in slice_.matches]
+    )
+
+
 def _season_seeds(careers: dict[str, TeamCareer], season: int) -> dict[str, TeamRating]:
     """Every club's rating as that season kicked off."""
     seeds: dict[str, TeamRating] = {}
     for team_id, career in careers.items():
         for record in career.seasons:
             if record.season == season:
-                seeds[team_id] = TeamRating(
-                    team_id=team_id,
-                    team=career.team,
-                    rating=record.rating_start,
-                    source=f"carried into {season}",
-                )
+                seeds[team_id] = TeamRating(team_id, career.team, record.rating_start)
     return seeds
 
 
@@ -304,8 +249,11 @@ def build_report(
         matches = as_of_date(matches, asof)
 
     ratings = build_rating_table(seeds, all_matches, config=elo_config)
+    prior = prior_attack_defence(root, season)
+    ad = prior.copy().replay(all_matches)
+    ad.start_season(season)
     projection = simulate_season(
-        matches, ratings, config=simulation, elo_config=elo_config
+        matches, ratings, ad=ad, config=simulation, elo_config=elo_config
     )
 
     return {
@@ -335,21 +283,44 @@ def build_report(
             "matches_played": projection.matches_played,
             "matches_remaining": projection.matches_remaining,
             # The compare tool works out a fictional match in the browser, so it
-            # needs the same two ingredients the server uses: the draw model's
-            # parameters and the gap-binned scoreline table (~3 kB).
-            "probability_model": elo_config.probability_model,
-            "logit_slope": elo_config.logit_slope,
-            "logit_cutpoint": elo_config.logit_cutpoint,
-            "scorelines": DEFAULT_SCORELINE_MODEL.to_constants(),
+            # needs the same ingredients the server uses: the draw model's
+            # parameters above and both divisions' attack/defence ratings.
+            "attack_defence": {
+                "home": ad.config.home,
+                "base": ad.config.base,
+                "rho": ad.config.rho,
+                "k": ad.config.k,
+                "k_shots": ad.config.k_shots,
+                "alpha": ad.config.alpha,
+                "outcome_blend": blend_outcomes.__defaults__[0],
+                "teams": {
+                    team_id: [round(ad.attack[team_id], 4), round(ad.defence[team_id], 4)]
+                    for (year, team_id) in ad.divisions if year == season and team_id in ad.attack
+                },
+            },
         },
-        "table": _table_payload(matches, ratings, projection, seeds),
-        "fixtures": build_fixtures_payload(matches, ratings, elo_config),
+        "table": _table_payload(matches, ratings, projection, seeds, ad, spec.slug, season),
+        "fixtures": _fixtures_payload(matches, ratings, elo_config, ad),
         "results": _results_payload(matches),
         "history": _history_payload(
-            build_history(matches, all_matches, seeds, elo_config=elo_config, config=history),
+            build_history(matches, all_matches, seeds, prior=prior, elo_config=elo_config, config=history),
             {row.team_id: row.team for row in table_from_matches(matches)},
         ),
     }
+
+
+def rewound_configs(asof: str | None) -> tuple[SimulationConfig, HistoryConfig]:
+    """Simulation settings for a live view or a rewound one.
+
+    The rewound view thins both the grid (10,000) and the season-shape history
+    (2,500 x 8) against the live view (50,000 grid). At 10,000 the worst grid
+    cell is ~1.31 pp -- still below the model's 1.54 pp calibration error -- so
+    the small fidelity step as you drag back is invisible at whole-percent
+    display, while rewound reports build roughly 5x faster.
+    """
+    if not asof:
+        return SimulationConfig(), HistoryConfig()
+    return SimulationConfig(simulations=10_000), HistoryConfig(simulations=2_500, max_snapshots=8)
 
 
 def _matchdays(matches: list[Match]) -> list[dict[str, Any]]:
@@ -405,12 +376,16 @@ def _table_payload(
     ratings: dict[str, float],
     projection: SeasonProjection,
     seeds: dict[str, TeamRating],
+    ad: AttackDefence,
+    slug: str,
+    season: int,
 ) -> list[dict[str, Any]]:
     projections = {team.team_id: team for team in projection.teams}
     payload = []
     for position, row in enumerate(table_from_matches(matches), start=1):
         team = projections[row.team_id]
         started = seeds[row.team_id].rating if row.team_id in seeds else ratings[row.team_id]
+        scored, conceded = ad.rates_against_average(row.team_id, slug, season)
         payload.append(
             {
                 "position": position,
@@ -429,6 +404,47 @@ def _table_payload(
                 "rating_change": round(ratings[row.team_id] - started, 1),
                 "expected_points": round(team.expected_points, 1),
                 "position_probabilities": [round(value, 6) for value in team.position_probabilities],
+                # Expected goals for and against per match, against an average
+                # side of the division: the readable form of the attack/defence ratings.
+                "attack": round(scored, 2),
+                "defence": round(conceded, 2),
+            }
+        )
+    return payload
+
+
+def _fixtures_payload(
+    matches: list[Match], ratings: dict[str, float], elo_config: EloConfig, ad: AttackDefence
+) -> list[dict[str, Any]]:
+    """Upcoming fixtures with three-way odds and the most likely scorelines."""
+    payload = []
+    for match in matches:
+        if match.played:
+            continue
+        home_id = match.home_id or match.home
+        away_id = match.away_id or match.away
+        grid = ad.grid(home_id, away_id, match.date)
+        probabilities = blend_outcomes(match_probabilities(ratings[home_id], ratings[away_id], elo_config), grid)
+        scorelines = top_scorelines(grid, probabilities)
+        payload.append(
+            {
+                "match_id": match.match_id,
+                "date": match.date,
+                "time": match.time,
+                "round": match.round,
+                "home": match.home,
+                "away": match.away,
+                "home_id": home_id,
+                "away_id": away_id,
+                "home_rating": round(ratings[home_id], 1),
+                "away_rating": round(ratings[away_id], 1),
+                "home_win": round(probabilities.home_win, 4),
+                "draw": round(probabilities.draw, 4),
+                "away_win": round(probabilities.away_win, 4),
+                "scorelines": [
+                    {"home_goals": hg, "away_goals": ag, "probability": round(probability, 4)}
+                    for (hg, ag), probability in scorelines
+                ],
             }
         )
     return payload

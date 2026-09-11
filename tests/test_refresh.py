@@ -9,7 +9,7 @@ from datetime import date
 
 import pytest
 
-from elitetracker.refresh import RefreshError, refresh_matches
+from elitetracker.refresh import refresh_matches
 from elitetracker.sources.fotmob import FetchError
 
 TODAY = date(2026, 8, 9)
@@ -54,18 +54,13 @@ def raw_payload(played_ids=()):
 class TestRefreshMatches:
     def test_writes_a_valid_normalized_file(self, tmp_path):
         played = {"0001", "0033", "0155", "0240"}
-        results = refresh_matches(
+        refresh_matches(
             tmp_path,
             season=2026,
             leagues=["eliteserien"],
-            fetch=lambda slug, season, *, force: raw_payload(played),
+            fetch=lambda slug, season: raw_payload(played),
             today=TODAY,
         )
-        result = results[0]
-        assert result.played == len(played)
-        assert result.matches == 240
-        assert result.last_result == "2026-03-25"
-
         path = tmp_path / "eliteserien_2026_matches.json"
         records = json.loads(path.read_text(encoding="utf-8"))
         assert len(records) == 240
@@ -81,29 +76,17 @@ class TestRefreshMatches:
             tmp_path, season=2026, leagues=["eliteserien"],
             fetch=lambda *a, **k: first, today=TODAY,
         )
-        results = refresh_matches(
+        refresh_matches(
             tmp_path, season=2026, leagues=["eliteserien"],
             fetch=lambda *a, **k: second, today=TODAY,
         )
-        assert results[0].played == 2
         records = json.loads((tmp_path / "eliteserien_2026_matches.json").read_text(encoding="utf-8"))
         assert {m["match_id"] for m in records if m["played"]} == {"0001", "0002"}
-
-    def test_force_flag_is_forwarded(self, tmp_path):
-        calls = []
-
-        def fake(slug, season, *, force):
-            calls.append(force)
-            return raw_payload()
-
-        refresh_matches(tmp_path, season=2026, leagues=["eliteserien"], fetch=fake, today=TODAY)
-        refresh_matches(tmp_path, season=2026, leagues=["eliteserien"], fetch=fake, force=False, today=TODAY)
-        assert calls == [True, False]
 
     def test_refresh_defaults_to_both_leagues(self, tmp_path):
         refresh_matches(
             tmp_path, season=2026,
-            fetch=lambda slug, season, *, force: raw_payload(),
+            fetch=lambda slug, season: raw_payload(),
             today=TODAY,
         )
         assert (tmp_path / "eliteserien_2026_matches.json").exists()
@@ -113,13 +96,12 @@ class TestRefreshMatches:
         (tmp_path / "eliteserien_2021_matches.json").write_text("[]", encoding="utf-8")
         (tmp_path / "obosligaen_2021_matches.json").write_text("[]", encoding="utf-8")
 
-        results = refresh_matches(
+        refresh_matches(
             tmp_path,
-            fetch=lambda slug, season, *, force: raw_payload(),
+            fetch=lambda slug, season: raw_payload(),
             today=TODAY,
             refresh_guard=False,
         )
-        assert {result.season for result in results} == {2021}
         assert (tmp_path / "eliteserien_2021_matches.json").exists()
         assert (tmp_path / "obosligaen_2021_matches.json").exists()
 
@@ -137,7 +119,7 @@ class TestRefreshFailsafe:
         path.write_text("sentinel", encoding="utf-8")
 
         one_off = [raw_match_for("0001", "Team A", "Team B", 5, True)]
-        with pytest.raises(RefreshError, match="refusing to write"):
+        with pytest.raises(SystemExit, match="refusing to write"):
             refresh_matches(
                 tmp_path, season=2026, leagues=["eliteserien"],
                 fetch=lambda *a, **k: one_off, today=TODAY,
@@ -148,7 +130,7 @@ class TestRefreshFailsafe:
         path = tmp_path / "eliteserien_2026_matches.json"
         path.write_text("sentinel", encoding="utf-8")
 
-        def boom(slug, season, *, force):
+        def boom(slug, season):
             raise FetchError("unreachable")
 
         with pytest.raises(FetchError, match="unreachable"):
@@ -156,7 +138,7 @@ class TestRefreshFailsafe:
         assert path.read_text(encoding="utf-8") == "sentinel"
 
     def test_no_file_is_created_when_validation_fails(self, tmp_path):
-        with pytest.raises(RefreshError):
+        with pytest.raises(SystemExit):
             refresh_matches(
                 tmp_path, season=2026, leagues=["eliteserien"],
                 fetch=lambda *a, **k: [], today=TODAY,
