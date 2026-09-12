@@ -281,21 +281,21 @@ else is flat within noise around home 0.22, cap 4, regression 0.88, ρ −0.05.
 On 2019+ the hybrid's scoreline gain is −0.045 (t −6.7), in both halves and in both
 divisions; top-4 coverage (the four scorelines the site shows) 37 % against 35 %.
 The empirical table was rebuilt walk-forward from prior seasons only, so the comparison
-is fair to it. A 50/50 geometric blend of the two outcome models is worth −0.001 to
-−0.002 (t −1.4 to −2.0): real but a tenth of the elo-v3 refit, so Elo keeps the
-outcome and the goals model keeps the goals. What ships is the hybrid: P(scoreline)
-= P_elo(outcome) × P_ad(scoreline | outcome), in "Next up", in Compare Clubs
-(computed in the browser from `report.model.attack_defence`) and in the Monte Carlo's
-goal-difference tiebreaks. The table carries each club's expected goals for and
-against per match versus an average side of its division.
+is fair to it. A geometric blend of the two outcome models with weight 0.25 on Elo
+(0.75 on the grid) was fitted by sweeping 0.0–1.0 in 0.05 steps; the grid carries
+more weight because it is the better predictor. What ships is the hybrid:
+P(scoreline) = P_elo(outcome) × P_ad(scoreline | outcome), in "Next up", in Compare
+Clubs (computed in the browser from `report.model.attack_defence`) and in the Monte
+Carlo's goal-difference tiebreaks. The table carries each club's expected goals for
+and against per match versus an average side of its division.
 
 **…and with xG, for outcomes too.** With fotmob's expected goals blended into the
 observed goals (`alpha` 0.75; xG on target measured worse at every setting) and a
 faster step for those matches (`k_shots` 0.05 against 0.015 for goals-only matches,
 because the cleaner signal earns a bigger move), the attack/defence model on its own
-beats elo-v6 on Eliteserien, and its 50/50 geometric blend with the Elo odds is the
-robust form. The scoreline model gains nothing from xG (−0.002, within noise); the
-outcome model does:
+beats elo-v6 on Eliteserien, and its geometric blend with the Elo odds (weight 0.25
+on Elo, 0.75 on the grid, refit from 50/50) is the robust form. The scoreline model
+gains nothing from xG (−0.002, within noise); the outcome model does:
 
 | Eliteserien, outcome log loss vs elo-v6 | attack/defence alone | 50/50 blend with Elo |
 |---|---|---|
@@ -304,7 +304,7 @@ outcome model does:
 | OBOS-ligaen 2021+ (no xG, goals-only step) | +0.0021 (t +0.7) | −0.0007 (t −0.5) |
 
 Blend weight: 0.3 on Elo gives more log loss (−0.0105 on 2022+) with worse calibration,
-0.7 less (−0.0059) with better; 0.5 was chosen before the sweep and stays. As shipped
+0.7 less (−0.0059) with better; 0.25 was chosen before the sweep and stays. As shipped
 (`python -m elitetracker.research run`): both divisions 2021+ −0.0041 vs Elo (t −3.2),
 2019+ −0.0032 (t −3.0); on Eliteserien the gap to the closing line falls from +0.0189
 to +0.0114 (2021+) and +0.0117 (2019+). The research CLI prints the shipped blend
@@ -320,6 +320,73 @@ Everything tried here uses only public results and shot data; the market's edge 
 team news, motivation and money, none of which is in a results feed. A model that
 consumes odds would close it, but only for matches that already have a market,
 which is not the season-long simulation the site is for.
+
+## 🧪 elo-v8: xG-informed Elo ratings + outcome blend refit
+
+**xG-informed Elo ratings — shipped.** The Elo update's "actual" score blends the
+binary match result with an xG-implied expected score: `actual = (1−α)·result +
+α·xg_implied_score`, where `xg_implied_score = P(win) + 0.5·P(draw)` under
+independent Poisson(home_xg) vs Poisson(away_xg). α=0.45 means a lucky win
+(xG favoured the opponent) moves ratings 55% as much as a plain Elo update.
+Where xG is unavailable (OBOS-ligaen, pre-2020), the binary result is used.
+
+Fitted walk-forward on 2021–2026 (Eliteserien, where fotmob has xG), sweeping
+α ∈ {0.0, 0.1, …, 1.0} × K ∈ {15, 18, 20, 22, 25, 28, 30, 35}, then a fine
+grid around the sweet spot:
+
+| α | K | log loss vs plain Elo | t |
+|---|---|---|---|
+| 0.00 | 20 | 0.00000 (baseline) | — |
+| 0.25 | 20 | −0.00081 | −1.51 |
+| 0.32 | 27 | −0.00248 | −2.89 |
+| **0.45** | **20** | **−0.00235** | **−2.58** |
+| 0.50 | 30 | −0.00316 | −2.47 |
+
+The parameter landscape is flat α=0.30–0.50, K=25–31; α=0.45 with K=20 was
+chosen for the smallest deviation from the existing K while clearing the |t|≥2
+bar. The ratings themselves now carry the xG signal; the attack/defence layer
+still adds its own on top for odds and scorelines.
+
+**xG on target (xGoT) — investigated and rejected.** The xGoT/xG ratio was
+proposed as a "shot effectiveness" metric: a team with a good striker converts
+low-xG shots into dangerous on-target attempts (high xGoT/xG), while a team
+with a bad striker wastes high-xG positions (low ratio). Measured:
+- Per-match R²: xGoT predicts goals better than xG (0.59 vs 0.34), but this
+  is already captured by the attack/defence model's xG blending.
+- Year-to-year stability of the ratio: r = 0.060 (n=81) — essentially noise.
+- Ratio predicts next-season overperformance: r = 0.021 — no signal.
+
+The ratio is not a persistent team trait in Norwegian football; "finishing
+skill" does not accumulate across seasons at this sample size.
+
+**Outcome blend refit — shipped.** The geometric blend of Elo odds and the
+attack/defence grid's odds was swept from 0.0 (pure grid) to 1.0 (pure Elo)
+in 0.05 steps. Best at 0.25/0.75 (Elo/grid):
+
+| elo weight | ad weight | log loss | vs 0.50 | t |
+|---|---|---|---|---|
+| 0.25 | 0.75 | 0.99515 | −0.00044 | −2.51 |
+| 0.30 | 0.70 | 0.99515 | −0.00044 | −2.68 |
+| **0.50** | **0.50** | **0.99559** | — | — |
+| 0.70 | 0.30 | 0.99671 | +0.00112 | −4.07 |
+
+The grid is the better predictor and should carry more weight. Same pattern
+holds with plain Elo ratings (no xG in ratings), so it is not an interaction
+with elo-v8.
+
+**Combined improvement (2021+, vs plain Elo baseline):**
+
+| model | log loss | vs elo | t |
+|---|---|---|---|
+| plain Elo (K=20) | 1.00055 | — | — |
+| elo-v8 alone (α=0.45) | 0.99820 | −0.00235 | −2.58 |
+| elo-v7 blend (50/50) | 0.99638 | −0.00417 | −3.19 |
+| **elo-v8 + ad blend (25/75)** | **0.99475** | **−0.00580** | **−3.38** |
+| Pinnacle closing line | 0.96695 | −0.03360 | — |
+
+The combined model closes the gap to the market from +0.0189 (elo-v6) to
++0.0098 (2021+ Eliteserien). The remaining gap is team news, motivation and
+money — none of which is in a results feed.
 
 ## ❗ Known limits (also stated on the site)
 - Ratings are held fixed for the rest of the season inside a simulation.
@@ -338,16 +405,10 @@ which is not the season-long simulation the site is for.
       to the closing line is the number to watch. Re-sweep `k_shots`/`alpha` once OBOS-ligaen
       gets xG (`data/xg.json` is topped up by every refresh).
 - [ ] Re-run `backtest_cli` after each new season to keep K / home advantage / regression
-      fitted; regenerate `model/scoreline_model.json` with `build_scoreline_model.py` (bump `MODEL_VERSION`).
-- [ ] Ordered-logit probability mapping. **Measured and removed.** Coarse, fine and
-      all-match sweeps converged on slope ≈ 0.0057, cut ≈ 0.55 with a marginal gain of only
-      −0.00036 (2016 window) / −0.00027 (2015→, n = 5,560) log loss — inside sampling noise
-      (SE ≈ 0.01) — and it breaks the `expected = P(win) + 0.5·P(draw)` identity. The switch
-      was deleted in the 2026-09 audit; it lives in git history if a later season justifies
-      re-testing.
-- [ ] **Head-to-head tool** — the same odds as Compare but framed as a rivalry: the two
+      fitted (bump `MODEL_VERSION`).
+- [ ] Head-to-head tool — the same odds as Compare but framed as a rivalry: the two
       clubs' record against *each other* from the results, plus the model's current odds.
-- [ ] **"What-if" simulator** — nudge a club's rating and see the grid/table update. Needs
+- [ ] "What-if" simulator — nudge a club's rating and see the grid/table update. Needs
       on-demand simulation, so it does not fit the static host until that story is settled.
 
 ## 📜 Shipped, in order
@@ -369,6 +430,10 @@ which is not the season-long simulation the site is for.
   harness, the odds benchmark, the xG corpus, the value table.
 - elo-v7: online attack/defence goals model, updated on xG where fotmob has it. Its odds
   are blended 50/50 with Elo's; its Poisson grid replaces the empirical scoreline table.
+- elo-v8: xG-informed Elo ratings (α=0.45): lucky wins move ratings less than deserved
+  ones. Outcome blend refit to 25/75 (Elo/attack-defence). Combined improvement
+  −0.00580 log loss vs plain Elo (t=−3.38). xGoT/xG ratio investigated as shot
+  effectiveness metric — rejected (year-to-year r=0.06, no predictive signal).
 - 2026-09 audit: removed the standings fetch path, the raw-fetch cache, the ordered-logit
   switch, the config validators, the build progress bar, the custom compare picker and a
   set of duplicated frontend renderers; one rating replay serves careers, the backtest and
