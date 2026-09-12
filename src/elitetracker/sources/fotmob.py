@@ -172,17 +172,34 @@ def save_xg(data: dict[str, Any], path: Path = XG_PATH) -> None:
     os.replace(temp, path)
 
 
-def update_xg(matches: list, *, path: Path = XG_PATH, fetch=fetch_match_xg, delay: float = 1.0) -> int:
-    """Add shot data for played matches the file does not have yet; returns how many.
+def update_xg(
+    matches: list,
+    *,
+    path: Path = XG_PATH,
+    fetch=fetch_match_xg,
+    delay: float = 1.0,
+    stale_days: int = 2,
+) -> int:
+    """Add or refresh shot data for played matches; returns how many were fetched.
+
+    Matches older than *stale_days* that are already recorded are skipped.
+    Recent matches are re-fetched because FotMob refines xG values after the
+    initial post-match scrape.
 
     Never raises: the model falls back to goals for a match without xG, so a
     failed fetch is printed and skipped rather than allowed to block a refresh.
     """
+    from datetime import date, timedelta
+
     data = load_xg(path)
-    known = set(data["matches"]) | set(data["none"])
+    stale_cutoff = (date.today() - timedelta(days=stale_days)).isoformat()
     added = 0
     for match in matches:
-        if not match.played or match.match_id in known:
+        if not match.played:
+            continue
+        is_known = match.match_id in data["matches"] or match.match_id in data["none"]
+        is_recent = match.date > stale_cutoff
+        if is_known and not is_recent:
             continue
         try:
             shots = fetch(match.match_id)
@@ -190,9 +207,13 @@ def update_xg(matches: list, *, path: Path = XG_PATH, fetch=fetch_match_xg, dela
             print(f"  xG for {match.match_id} skipped: {exc}")
             continue
         if shots is None:
-            data["none"].append(match.match_id)
+            if not is_known:
+                data["none"].append(match.match_id)
         else:
             data["matches"][match.match_id] = list(shots)
+            # Remove from "none" if it was previously recorded there
+            if match.match_id in data["none"]:
+                data["none"].remove(match.match_id)
         added += 1
         time.sleep(delay)
     if added:

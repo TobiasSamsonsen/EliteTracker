@@ -126,3 +126,34 @@ def test_update_xg_records_new_matches_and_survives_a_failed_fetch(tmp_path):
     assert data["matches"]["a"] == [1.5, 0.5, 1.2, 0.4] and data["none"] == ["obos"] and "later" not in calls
     assert update_xg(games, path=path, fetch=fetch, delay=0) == 0   # only the failed one is retried
     assert calls.count("bad") == 2 and calls.count("a") == 1
+
+
+def test_update_xg_refetches_recent_matches(tmp_path):
+    from datetime import date, timedelta
+
+    from elitetracker.sources.fotmob import load_xg, update_xg
+    path = tmp_path / "xg.json"
+    calls = []
+
+    def fetch(match_id):
+        calls.append(match_id)
+        return (1.0, 0.5, 0.8, 0.3)
+
+    today = date.today().isoformat()
+    yesterday = (date.today() - timedelta(days=1)).isoformat()
+    old = (date.today() - timedelta(days=10)).isoformat()
+
+    games = [
+        match("recent1", today, "A", "B", 2, 0),
+        match("recent2", yesterday, "A", "B", 1, 1),
+        match("stale", old, "A", "B", 3, 1),
+    ]
+
+    # First fetch: records all three
+    assert update_xg(games, path=path, fetch=fetch, delay=0) == 3
+    assert set(calls) == {"recent1", "recent2", "stale"}
+
+    calls.clear()
+    # Second fetch: only recent matches are re-fetched (stale is skipped)
+    assert update_xg(games, path=path, fetch=fetch, delay=0) == 2
+    assert set(calls) == {"recent1", "recent2"}

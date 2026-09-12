@@ -14,7 +14,7 @@ name: Scheduled data refresh
 
 on:
   schedule:
-    - cron: "0,30 * * * *"
+    - cron: "0 * * * *"
   workflow_dispatch:
 
 permissions:
@@ -58,4 +58,4 @@ jobs:
           git add data/normalized data/xg.json
           git commit -m "Scheduled refresh: update $(date -u +%Y-%m-%d) match results"
           git pull --rebase --autostash origin main
-          git push https://x-access-token:${PAT}@github.com/${{ github.repository }}.git HEAD:main
+          git push https://${PAT}@github.com/${{ github.repository }}.git HEAD:main
