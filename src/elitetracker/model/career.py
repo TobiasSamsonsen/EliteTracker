@@ -83,6 +83,7 @@ def replay(
     slices: list[SeasonSlice],
     seeds: dict[str, float],
     config: EloConfig | None = None,
+    shots: dict[str, tuple[float, ...]] | None = None,
 ) -> Iterator[tuple[int, list[SeasonSlice], dict[str, float], Iterator[tuple[Match, tuple[float, float]]]]]:
     """Replay every season in order against one shared rating table.
 
@@ -91,8 +92,13 @@ def replay(
     ``matches`` applies that season's played matches in kickoff order, yielding
     ``(match, (home_before, away_before))`` after each update; ``ratings`` is
     the live table. A season is always completed before the next is yielded.
+
+    ``shots`` is an optional mapping of match_id to (home_xg, away_xg, ...)
+    from fotmob; when provided and config.xg_alpha > 0, the rating update
+    blends the binary result with the xG-implied score (elo-v8).
     """
     config = config or EloConfig()
+    shots = shots or {}
     ratings = dict(seeds)
     seasons = sorted({slice_.season for slice_ in slices})
     for season in seasons:
@@ -132,8 +138,12 @@ def replay(
             for match in played:
                 home, away = team_ids(match)
                 before = (ratings[home], ratings[away])
+                match_shots = shots.get(match.match_id)
+                home_xg = match_shots[0] if match_shots and len(match_shots) >= 2 else None
+                away_xg = match_shots[1] if match_shots and len(match_shots) >= 2 else None
                 ratings[home], ratings[away] = updated_pair(
-                    ratings[home], ratings[away], match.home_goals, match.away_goals, config
+                    ratings[home], ratings[away], match.home_goals, match.away_goals,
+                    config, home_xg, away_xg,
                 )
                 yield match, before
 
@@ -148,6 +158,7 @@ def build_careers(
     seeds: dict[str, TeamRating],
     *,
     config: EloConfig | None = None,
+    shots: dict[str, tuple[float, ...]] | None = None,
 ) -> dict[str, TeamCareer]:
     """Replay every season in order and record each club's rating over time."""
     config = config or EloConfig()
@@ -162,7 +173,7 @@ def build_careers(
         return careers[team_id]
 
     ratings_by_id = {team_id: seed.rating for team_id, seed in seeds.items()}
-    for season, in_season, ratings, matches in replay(slices, ratings_by_id, config):
+    for season, in_season, ratings, matches in replay(slices, ratings_by_id, config, shots=shots):
         rating_start: dict[str, float] = {}
         for slice_ in in_season:
             for match in slice_.matches:

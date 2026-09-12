@@ -107,15 +107,20 @@ def walk_forward(
     *,
     score_from_season: int,
     name: str = "",
+    shots: dict[str, tuple[float, ...]] | None = None,
 ) -> Scorecard:
     """Replay every season in order, scoring only from `score_from_season` on.
 
     Both divisions share one rating pool and the offseason regression is applied
     per division, exactly as in production (see `career.replay`).
+
+    ``shots`` is an optional mapping of match_id to (home_xg, away_xg, ...)
+    from fotmob; when provided and config.xg_alpha > 0, the rating update
+    blends the binary result with the xG-implied score (elo-v8).
     """
     config = config or EloConfig()
     card = Scorecard(name=name)
-    for season, _, _, matches in replay(slices, seeds, config):
+    for season, _, _, matches in replay(slices, seeds, config, shots=shots):
         for match, (home_before, away_before) in matches:
             if season >= score_from_season:
                 card.observe(

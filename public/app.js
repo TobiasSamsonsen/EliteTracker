@@ -1255,6 +1255,7 @@ function renderModelCard(report) {
     [t('model.version'), model.version],
     [t('model.kfactor'), model.k_factor],
     [t('model.homeAdvantage'), `${model.home_advantage} ${t('model.pts')}`],
+    [t('model.xgAlpha'), `${Math.round(model.xg_alpha * 100)}%`],
     [t('model.crossRegression'), `${Math.round((1 - model.season_regression) * 100)}% ${t('model.towardMean')}`],
     [t('model.peakDraw'), pct(model.draw_base, 0)],
     [t('model.outcomeOdds'), t('model.outcomeOddsValue')],

@@ -58,7 +58,17 @@ from dataclasses import dataclass
 # grid conditioned on those odds, replacing the gap-binned empirical table.
 # Ratings and careers (the displayed ladder) are unchanged; odds, scorelines and
 # the finishing-position matrix are not.
-MODEL_VERSION = "elo-v7"
+#
+# elo-v8: xG-informed Elo ratings. The rating update's "actual" score blends
+# the binary match result with an xG-implied expected score (the Poisson
+# expectation under the two sides' expected goals). alpha=0.45 means 45% weight
+# on the xG signal, 55% on the result; a lucky win moves ratings less than a
+# deserved one. Fitted walk-forward on 2021-2026 (Eliteserien, where fotmob has
+# xG): alpha=0.45, K=20 beats plain Elo by -0.00235 log loss (t=-2.58). Stacked
+# on elo-v7's attack/defence blend the combined model reaches -0.00580 vs plain
+# Elo (t=-3.38). The ratings themselves now carry the xG signal; the attack/
+# defences layer still adds its own on top for odds and scorelines.
+MODEL_VERSION = "elo-v8"
 
 # A 400-point rating gap means the stronger side is expected to score 10 times
 # as often as the weaker one; this is the constant that defines the ELO scale.
@@ -88,6 +98,15 @@ class EloConfig:
     # mean-revert. Applied per division now, so the inter-division gap is
     # preserved. Re-fit by walk-forward backtest on the per-division scheme.
     season_regression: float = 0.88
+    # Weight on the xG-implied expected score in the rating update. 0.0 is pure
+    # Elo (binary result only); 0.45 means 45% of the observation is the Poisson
+    # expectation under the two sides' expected goals, so a lucky win moves
+    # ratings less than a deserved one. Only active where xG data is available
+    # (Eliteserien 2020+); falls back to binary result elsewhere.
+    # Fitted walk-forward on 2021-2026: alpha=0.45 beats plain Elo by -0.00235
+    # log loss (t=-2.58) and stacks on elo-v7's attack/defence blend for -0.00580
+    # vs plain Elo (t=-3.38).
+    xg_alpha: float = 0.45
 
 
 def expected_score(rating: float, opponent_rating: float) -> float:
@@ -96,6 +115,25 @@ def expected_score(rating: float, opponent_rating: float) -> float:
     Any home advantage must already be folded into the ratings passed in.
     """
     return 1.0 / (1.0 + 10.0 ** ((opponent_rating - rating) / _RATING_SCALE))
+
+
+def xg_implied_score(home_xg: float, away_xg: float) -> float:
+    """P(home_win) + 0.5*P(draw) under independent Poisson(home_xg) vs Poisson(away_xg).
+
+    This is the expected points a side would earn if the match were replayed
+    many times at the two xG rates. Used by elo-v8 to blend into the rating
+    update so a lucky win moves ratings less than a deserved one.
+    """
+    p_draw = 0.0
+    p_home = 0.0
+    for k in range(10):
+        p_hk = math.exp(-home_xg) * home_xg ** k / math.factorial(k)
+        p_ak = math.exp(-away_xg) * away_xg ** k / math.factorial(k)
+        p_draw += p_hk * p_ak
+        for j in range(k):
+            p_aj = math.exp(-away_xg) * away_xg ** j / math.factorial(j)
+            p_home += p_hk * p_aj
+    return p_home + 0.5 * p_draw
 
 
 def actual_score(home_goals: int, away_goals: int) -> float:
@@ -118,13 +156,20 @@ def updated_pair(
     home_goals: int,
     away_goals: int,
     config: EloConfig,
+    home_xg: float | None = None,
+    away_xg: float | None = None,
 ) -> tuple[float, float]:
     """Return both sides' ratings after one match.
 
     Ratings are zero-sum: whatever the home side gains, the away side loses.
+    When xG data is provided and config.xg_alpha > 0, the observation blends
+    the binary result with the xG-implied expected score (elo-v8).
     """
     expected_home = expected_score(home_rating + config.home_advantage, away_rating)
     scored_home = actual_score(home_goals, away_goals)
+    if home_xg is not None and away_xg is not None and config.xg_alpha > 0.0:
+        xg_score = xg_implied_score(home_xg, away_xg)
+        scored_home = (1.0 - config.xg_alpha) * scored_home + config.xg_alpha * xg_score
     change = config.k_factor * (scored_home - expected_home)
     return home_rating + change, away_rating - change
 

@@ -179,7 +179,11 @@ def build_all_careers(
     elo_config: EloConfig | None = None,
     seeding: SeedingConfig | None = None,
 ) -> dict[str, TeamCareer]:
-    return build_careers(load_slices(root), seed_ratings(root, seeding=seeding), config=elo_config)
+    shots = {match_id: tuple(values) for match_id, values in load_xg()["matches"].items()}
+    return build_careers(
+        load_slices(root), seed_ratings(root, seeding=seeding),
+        config=elo_config, shots=shots,
+    )
 
 
 @functools.cache
@@ -274,6 +278,7 @@ def build_report(
             "version": MODEL_VERSION,
             "k_factor": elo_config.k_factor,
             "home_advantage": elo_config.home_advantage,
+            "xg_alpha": elo_config.xg_alpha,
             "draw_base": elo_config.draw_base,
             "draw_scale": elo_config.draw_scale,
             "season_regression": elo_config.season_regression,

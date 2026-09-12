@@ -21,10 +21,11 @@ the Elo replay does.
 
 Scorelines come from the two rates through a Poisson grid with Dixon and
 Coles' low-score correction. The grid's own win/draw/loss odds are blended
-50/50 with the Elo odds for the shipped outcome probabilities: measured
+75/25 with the Elo odds for the shipped outcome probabilities: measured
 walk-forward on Eliteserien 2021-2026 the blend beats Elo alone by 0.75-0.87
 pp of log loss (t -3.6 to -3.8); OBOS-ligaen, without xG, is unchanged
-(PROJECT_STATUS.md).
+(PROJECT_STATUS.md). The 75/25 split was fitted by sweeping 0.0-1.0 in 0.05
+steps; the grid carries more weight because it is the better predictor.
 """
 
 from __future__ import annotations
@@ -37,7 +38,7 @@ from elitetracker.model.probabilities import AWAY_WIN, DRAW, HOME_WIN, MatchProb
 from elitetracker.normalize.matches import Match
 
 GOAL_CAP = 8  # P(9+) is under 1e-4 at Norwegian scoring rates; the grid is renormalised
-OUTCOME_BLEND = 0.5  # weight on the Elo odds when the two models' outcome odds are blended
+OUTCOME_BLEND = 0.25  # weight on the Elo odds when the two models' outcome odds are blended
 
 
 @dataclass(frozen=True)

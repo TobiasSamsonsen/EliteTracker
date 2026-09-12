@@ -10,6 +10,7 @@ from elitetracker.model.elo import (
     expected_score,
     update,
     updated_pair,
+    xg_implied_score,
 )
 
 
@@ -129,7 +130,11 @@ class TestConfig:
         assert config.season_regression == pytest.approx(0.88)
 
     def test_model_version_is_declared(self):
-        assert MODEL_VERSION == "elo-v7"
+        assert MODEL_VERSION == "elo-v8"
+
+    def test_xg_alpha_default(self):
+        config = EloConfig()
+        assert config.xg_alpha == pytest.approx(0.45)
 
 
 class TestFittedDefaults:
@@ -169,3 +174,69 @@ class TestCalibration:
         config = EloConfig()
         assert config.season_regression == pytest.approx(0.88)
         assert 0.0 < config.season_regression < 1.0
+
+
+class TestXgImpliedScore:
+    def test_equal_xg_gives_half(self):
+        """Equal xG means an even match: P(win) + 0.5*P(draw) = 0.5."""
+        # Tolerance accounts for the Poisson summation capping at 10 goals.
+        assert xg_implied_score(1.5, 1.5) == pytest.approx(0.5, abs=1e-3)
+
+    def test_higher_home_xg_gives_advantage(self):
+        assert xg_implied_score(2.0, 1.0) > 0.5
+
+    def test_lower_home_xg_gives_disadvantage(self):
+        assert xg_implied_score(0.5, 2.0) < 0.5
+
+    def test_extreme_xg_near_one(self):
+        """With 5.0 xG vs 0.1 xG the home side almost surely wins."""
+        assert xg_implied_score(5.0, 0.1) > 0.95
+
+    def test_symmetric(self):
+        assert xg_implied_score(1.0, 2.0) == pytest.approx(1.0 - xg_implied_score(2.0, 1.0), abs=1e-3)
+
+    def test_bounded(self):
+        assert 0.0 < xg_implied_score(1.0, 1.0) < 1.0
+
+
+class TestUpdatedPairXg:
+    def test_xg_blends_lucky_win(self):
+        """A 1-0 win where xG favoured the loser should gain fewer points."""
+        config_no_xg = EloConfig(xg_alpha=0.0)
+        config_xg = EloConfig(xg_alpha=0.45)
+        # Home wins 1-0 but away had higher xG (lucky win)
+        home_no, away_no = updated_pair(1500, 1500, 1, 0, config_no_xg)
+        home_xg, away_xg = updated_pair(1500, 1500, 1, 0, config_xg, home_xg=0.5, away_xg=1.5)
+        # The lucky win should gain fewer points with xG
+        assert home_xg < home_no
+        assert away_xg > away_no
+
+    def test_xg_amplifies_deserved_win(self):
+        """A deserved win (high xG) loses fewer points than a lucky win (low xG)."""
+        config_xg = EloConfig(xg_alpha=0.45)
+        # Home wins 1-0 with high xG (deserved)
+        home_deserved, _ = updated_pair(1500, 1500, 1, 0, config_xg, home_xg=1.5, away_xg=0.5)
+        # Home wins 1-0 with low xG (lucky)
+        home_lucky, _ = updated_pair(1500, 1500, 1, 0, config_xg, home_xg=0.5, away_xg=1.5)
+        # Deserved win gains more than lucky win
+        assert home_deserved > home_lucky
+
+    def test_no_xg_falls_back_to_binary(self):
+        """Without xG data, the result is identical to plain Elo."""
+        config = EloConfig(xg_alpha=0.45)
+        home1, away1 = updated_pair(1500, 1500, 2, 1, config)
+        home2, away2 = updated_pair(1500, 1500, 2, 1, config, home_xg=None, away_xg=None)
+        assert (home1, away1) == pytest.approx((home2, away2))
+
+    def test_alpha_zero_ignores_xg(self):
+        """With alpha=0, xG data is ignored."""
+        config = EloConfig(xg_alpha=0.0)
+        home1, away1 = updated_pair(1500, 1500, 1, 0, config, home_xg=0.5, away_xg=1.5)
+        home2, away2 = updated_pair(1500, 1500, 1, 0, config)
+        assert (home1, away1) == pytest.approx((home2, away2))
+
+    def test_still_zero_sum(self):
+        """Ratings remain zero-sum even with xG blending."""
+        config = EloConfig(xg_alpha=0.45)
+        home, away = updated_pair(1500, 1500, 2, 1, config, home_xg=1.5, away_xg=0.8)
+        assert home + away == pytest.approx(3000)
