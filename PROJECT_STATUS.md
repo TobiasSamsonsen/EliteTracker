@@ -310,7 +310,9 @@ Blend weight: 0.3 on Elo gives more log loss (−0.0105 on 2022+) with worse cal
 to +0.0114 (2021+) and +0.0117 (2019+). The research CLI prints the shipped blend
 beside Elo and the market. The refresh job tops up
 `data/xg.json` for newly played Eliteserien matches (one request per match,
-non-fatal), so the ratings keep moving on xG.
+non-fatal), so the ratings keep moving on xG. Matches played within the last
+2 days are re-fetched on every run because FotMob refines xG values after the
+initial post-match scrape — older matches are cached permanently.
 
 **Where the remaining gap is.** The closing line beats elo-v6 by 1.9 pp on both
 windows, and the gap widens in the second half of each window (3 pp on 2024–2026).
@@ -371,3 +373,6 @@ which is not the season-long simulation the site is for.
   switch, the config validators, the build progress bar, the custom compare picker and a
   set of duplicated frontend renderers; one rating replay serves careers, the backtest and
   the scoreline corpus.
+- 2026-09 CI fix: PAT push URL used `x-access-token:` (GitHub App syntax) which prevented
+  the `on: push` trigger from firing the deploy workflow; switched to bare `${PAT}`.
+  Refresh cron reduced from every 30 min to hourly to avoid run bunching.
