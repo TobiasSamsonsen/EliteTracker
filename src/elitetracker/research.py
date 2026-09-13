@@ -99,9 +99,10 @@ def cmd_run(args: argparse.Namespace) -> int:
     slices = load_slices()
     seeds = {team_id: seed.rating for team_id, seed in seed_ratings().items()}
     dates = {m.match_id: m.date for s in slices for m in s.matches}
-    elo = walk_forward(slices, seeds, EloConfig(), score_from_season=args.score_from, name="elo")
+    shots = {k: tuple(v) for k, v in load_xg()["matches"].items()}
+    elo = walk_forward(slices, seeds, EloConfig(), score_from_season=args.score_from, name="elo", shots=shots)
     shipped = Scorecard(name="elo + attack/defence")
-    ad = AttackDefence.from_slices(slices, ADConfig(), shots={k: tuple(v) for k, v in load_xg()["matches"].items()})
+    ad = AttackDefence.from_slices(slices, ADConfig(), shots=shots)
     for match in sorted((m for s in slices for m in s.matches if m.played), key=Match.sort_key):
         home, away = team_ids(match)
         if match.match_id in elo.predictions:

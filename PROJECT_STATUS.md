@@ -400,6 +400,10 @@ money — none of which is in a results feed.
 
 ## 🔧 Open items
 
+- [ ] Scheduled refresh (`.github/workflows/refresh.yml`) commits new results but the
+      deploy workflow does not pick them up — the site stays stale until a manual push.
+      The deploy trigger fires on `push` to `main`, so the refresh commit should
+      trigger it, but something in the chain is not working. Investigate and fix.
 - [ ] Re-fit the draw model periodically as seasons accumulate.
 - [ ] Re-run `python -m elitetracker.research run` after each season; the shipped blend's gap
       to the closing line is the number to watch. Re-sweep `k_shots`/`alpha` once OBOS-ligaen
