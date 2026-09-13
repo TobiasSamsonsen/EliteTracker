@@ -10,3 +10,4 @@ past-seasons.tar.gz
 .agents/
 data/raw/football-data_*.csv
 build/
+scripts/
