@@ -4634,13 +4634,8 @@
       "id": "2305"
     },
     "status": {
-      "utcTime": "2026-09-06T15:00:00.000Z",
-      "numberOfAwayRedCards": 1,
-      "halfs": {
-        "firstHalfStarted": "06.09.2026 17:01:18",
-        "secondHalfStarted": "06.09.2026 18:03:22"
-      },
-      "periodLength": 45,
+      "utcTime": "2026-09-06T15:00:00Z",
+      "timezone": "UTC",
       "finished": true,
       "started": true,
       "cancelled": false,
@@ -4670,12 +4665,8 @@
       "id": "8007"
     },
     "status": {
-      "utcTime": "2026-09-06T15:00:00.000Z",
-      "halfs": {
-        "firstHalfStarted": "06.09.2026 17:01:42",
-        "secondHalfStarted": "06.09.2026 18:03:08"
-      },
-      "periodLength": 45,
+      "utcTime": "2026-09-06T15:00:00Z",
+      "timezone": "UTC",
       "finished": true,
       "started": true,
       "cancelled": false,
@@ -4705,12 +4696,8 @@
       "id": "8608"
     },
     "status": {
-      "utcTime": "2026-09-06T17:15:00.000Z",
-      "halfs": {
-        "firstHalfStarted": "06.09.2026 19:15:53",
-        "secondHalfStarted": "06.09.2026 20:22:31"
-      },
-      "periodLength": 45,
+      "utcTime": "2026-09-06T17:15:00Z",
+      "timezone": "UTC",
       "finished": true,
       "started": true,
       "cancelled": false,
@@ -4742,9 +4729,17 @@
     "status": {
       "utcTime": "2026-09-12T14:00:00Z",
       "timezone": "UTC",
-      "started": false,
+      "finished": true,
+      "started": true,
       "cancelled": false,
-      "finished": false
+      "awarded": false,
+      "scoreStr": "2 - 0",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
     }
   },
   {
@@ -4765,9 +4760,17 @@
     "status": {
       "utcTime": "2026-09-12T16:00:00Z",
       "timezone": "UTC",
-      "started": false,
+      "finished": true,
+      "started": true,
       "cancelled": false,
-      "finished": false
+      "awarded": false,
+      "scoreStr": "5 - 3",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
     }
   },
   {
@@ -4786,11 +4789,23 @@
       "id": "8605"
     },
     "status": {
-      "utcTime": "2026-09-13T12:30:00Z",
-      "timezone": "UTC",
-      "started": false,
+      "utcTime": "2026-09-13T12:30:00.000Z",
+      "halfs": {
+        "firstHalfStarted": "13.09.2026 14:30:34",
+        "secondHalfStarted": "13.09.2026 15:35:38"
+      },
+      "periodLength": 45,
+      "finished": true,
+      "started": true,
       "cancelled": false,
-      "finished": false
+      "awarded": false,
+      "scoreStr": "8 - 1",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
     }
   },
   {
@@ -4809,8 +4824,11 @@
       "id": "9917"
     },
     "status": {
-      "utcTime": "2026-09-13T15:00:00Z",
-      "timezone": "UTC",
+      "utcTime": "2026-09-13T15:00:00.000Z",
+      "halfs": {
+        "firstHalfStarted": "13.09.2026 17:00:00"
+      },
+      "periodLength": 45,
       "started": false,
       "cancelled": false,
       "finished": false
@@ -4832,8 +4850,11 @@
       "id": "8404"
     },
     "status": {
-      "utcTime": "2026-09-13T15:00:00Z",
-      "timezone": "UTC",
+      "utcTime": "2026-09-13T15:00:00.000Z",
+      "halfs": {
+        "firstHalfStarted": "13.09.2026 17:00:00"
+      },
+      "periodLength": 45,
       "started": false,
       "cancelled": false,
       "finished": false
@@ -4855,8 +4876,11 @@
       "id": "8468"
     },
     "status": {
-      "utcTime": "2026-09-13T15:00:00Z",
-      "timezone": "UTC",
+      "utcTime": "2026-09-13T15:00:00.000Z",
+      "halfs": {
+        "firstHalfStarted": "13.09.2026 17:00:00"
+      },
+      "periodLength": 45,
       "started": false,
       "cancelled": false,
       "finished": false
@@ -4878,8 +4902,11 @@
       "id": "8509"
     },
     "status": {
-      "utcTime": "2026-09-13T17:15:00Z",
-      "timezone": "UTC",
+      "utcTime": "2026-09-13T17:15:00.000Z",
+      "halfs": {
+        "firstHalfStarted": "13.09.2026 19:15:00"
+      },
+      "periodLength": 45,
       "started": false,
       "cancelled": false,
       "finished": false
