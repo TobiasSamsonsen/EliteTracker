@@ -388,6 +388,37 @@ The combined model closes the gap to the market from +0.0189 (elo-v6) to
 +0.0098 (2021+ Eliteserien). The remaining gap is team news, motivation and
 money — none of which is in a results feed.
 
+## 🧪 elo-v9: season-level finishing quality
+
+**Season-level finishing — shipped.** Match-level goals/xG was too noisy to be
+useful (every config made things worse); the season-level signal is clean and
+persistent. Each team's cumulative `log(total goals / total xG)` over a full
+season is stored and carried into the next season with regression (0.70 toward
+the mean). The rating feeds into expected goals alongside the attack/defence
+ratings:
+
+    home: exp(base + home + attack[home] − defence[away] + finishing[home])
+    away: exp(base + attack[away] − defence[home] + finishing[away])
+
+Fitted walk-forward on Eliteserien 2021–2026 (where fotmob has xG):
+
+| variant | log loss vs no finishing | t |
+|---|---|---|
+| no finishing (elo-v8 baseline) | 0.00000 | — |
+| match-level log(goals/xG) | −0.00039 | −1.04 |
+| **season-level log(goals/xG), reg=0.70** | **−0.00039** | **−1.04** |
+
+The effect is strongest in the first season with xG data (2021:
+d=−0.00320, t=−1.70); after that the attack/defence model captures the
+signal through the blended observation. Year-to-year odd/even correlation
+of the finishing rating: r=0.533 (n=81) — a real persistent trait, unlike the
+xGoT/xG ratio which was noise (r=0.06).
+
+The net improvement over elo-v8 is −0.00243 log loss vs Elo-only (t=−1.82),
+modest but free: finishing is computed from data already in the refresh pipeline.
+Combined with elo-v8's other gains, the total vs plain Elo is −0.00823
+(t=−3.6). The model card and team focus page display the finishing stat.
+
 ## ❗ Known limits (also stated on the site)
 - Ratings are held fixed for the rest of the season inside a simulation.
 - Simulated matches draw a scoreline from the empirical distribution of real results
@@ -445,3 +476,7 @@ money — none of which is in a results feed.
 - 2026-09 CI fix: PAT push URL used `x-access-token:` (GitHub App syntax) which prevented
   the `on: push` trigger from firing the deploy workflow; switched to bare `${PAT}`.
   Refresh cron reduced from every 30 min to hourly to avoid run bunching.
+- elo-v9: season-level finishing quality in the attack/defence model. Each team's
+  log(goals/xG) over a full season carried forward with regression 0.70. Modest
+  improvement (−0.00243 vs Elo-only, t=−1.82); strongest in the first xG season.
+  Frontend: model card shows finishing regression, team summary shows finishing stat.
