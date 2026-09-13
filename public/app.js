@@ -1257,6 +1257,7 @@ function renderModelCard(report) {
     [t('model.homeAdvantage'), `${model.home_advantage} ${t('model.pts')}`],
     [t('model.xgAlpha'), `${Math.round(model.xg_alpha * 100)}%`],
     [t('model.crossRegression'), `${Math.round((1 - model.season_regression) * 100)}% ${t('model.towardMean')}`],
+    [t('model.finishingRegression'), `${Math.round((1 - model.finishing_regression) * 100)}% ${t('model.towardMean')}`],
     [t('model.peakDraw'), pct(model.draw_base, 0)],
     [t('model.outcomeOdds'), t('model.outcomeOddsValue')],
     [t('model.scorelines'), t('model.scorelinesValue')],
@@ -1513,8 +1514,9 @@ function renderTeamSummary(teamId, row, career, report, container) {
     stats.appendChild(summaryStat(t('team.points'), String(row.points)));
     stats.appendChild(summaryStat(t('team.gd'), row.goal_difference > 0 ? `+${row.goal_difference}` : String(row.goal_difference)));
     stats.appendChild(summaryStat(t('team.played'), String(row.played)));
-    stats.appendChild(summaryStat(t('team.attack'), row.attack.toFixed(2), t('team.ratesHint')));
-    stats.appendChild(summaryStat(t('team.defence'), row.defence.toFixed(2), t('team.ratesHint')));
+    stats.appendChild(summaryStat(t('team.attack'), row.attack.toFixed(2), t('team.attackHint')));
+    stats.appendChild(summaryStat(t('team.defence'), row.defence.toFixed(2), t('team.defenceHint')));
+    stats.appendChild(summaryStat(t('team.finishing'), row.finishing > 0 ? `+${row.finishing.toFixed(2)}` : row.finishing.toFixed(2), t('team.finishingHint')));
   } else if (career) {
     stats.appendChild(summaryStat(t('team.matches'), String(career.points.length)));
   }
@@ -1815,6 +1817,9 @@ function renderTeamShape(teamId, report, container) {
   const section = el('div', 'team-section');
   section.id = 'team-shape-section';
   section.appendChild(el('div', 'label', t('team.seasonShape')));
+  const hint = el('p', 'team-section__hint');
+  hint.textContent = t('team.shapeHint');
+  section.appendChild(hint);
 
   const chart = svgEl('svg', { class: 'chart', role: 'img' });
   chart.setAttribute('aria-label', t('shape.stackedArea', { team: team.team }));
@@ -2444,10 +2449,10 @@ function matchOdds(model, homeRating, awayRating) {
    each way, renormalised. */
 function scoreGrid(model, homeId, awayId) {
   const ad = model.attack_defence;
-  const [homeAttack, homeDefence] = ad.teams[homeId] || [0, 0];
-  const [awayAttack, awayDefence] = ad.teams[awayId] || [0, 0];
-  const lam = Math.exp(ad.base + ad.home + homeAttack - awayDefence);
-  const mu = Math.exp(ad.base + awayAttack - homeDefence);
+  const [homeAttack, homeDefence, homeFinishing] = ad.teams[homeId] || [0, 0, 0];
+  const [awayAttack, awayDefence, awayFinishing] = ad.teams[awayId] || [0, 0, 0];
+  const lam = Math.exp(ad.base + ad.home + homeAttack - awayDefence + (homeFinishing || 0));
+  const mu = Math.exp(ad.base + awayAttack - homeDefence + (awayFinishing || 0));
   const fact = [1, 1, 2, 6, 24, 120, 720, 5040, 40320];
   const pois = (k, rate) => Math.exp(-rate) * rate ** k / fact[k];
   const tau = (i, j) => (i === 0 && j === 0 ? 1 - lam * mu * ad.rho

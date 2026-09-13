@@ -1,31 +1,34 @@
-"""Online attack and defence ratings on the log-goals scale.
+"""Online attack, defence and finishing ratings on the log-goals scale.
 
-Each club carries an attack strength and a defence strength. A fixture's
-expected goals are
+Each club carries three ratings:
 
-    home: exp(base + home_advantage + attack[home] - defence[away])
-    away: exp(base                  + attack[away] - defence[home])
+    attack   -- ability to create chances (updated via the blended signal)
+    defence  -- ability to prevent chances (updated via the blended signal)
+    finishing -- conversion quality: season-level log(total goals / total xG),
+                 carried forward with regression, not updated match-by-match
 
-and after the match each rating moves by a step proportional to the goals
-the side scored above or below expectation: the scorer's attack and the
+A fixture's expected goals are
+
+    home: exp(base + home_advantage + attack[home] - defence[away] + finishing[home])
+    away: exp(base                  + attack[away] - defence[home] + finishing[away])
+
+After the match, attack and defence move by a step proportional to the
+observed signal above or below expectation: the scorer's attack and the
 conceder's defence move together, the way a Poisson regression's gradient
-does. That is Elo's idea applied to goals instead of results, with two
+does.  That is Elo's idea applied to goals instead of results, with two
 numbers per club instead of one, so a club that scores freely and concedes
 freely is described as exactly that.
 
 Where fotmob has expected goals (Eliteserien from 2020) the observed goals
 are blended with xG, so a lucky win moves the ratings less than a deserved
 one -- and because xG is the less noisy signal, those matches earn a bigger
-step. A season boundary pulls every rating toward its own division's mean, as
-the Elo replay does.
+step.  Finishing quality is computed at the season level: each team's
+cumulative log(goals / xG) over the full season is stored and carried into
+the next season with regression, avoiding the noise of match-level updates.
 
-Scorelines come from the two rates through a Poisson grid with Dixon and
-Coles' low-score correction. The grid's own win/draw/loss odds are blended
-75/25 with the Elo odds for the shipped outcome probabilities: measured
-walk-forward on Eliteserien 2021-2026 the blend beats Elo alone by 0.75-0.87
-pp of log loss (t -3.6 to -3.8); OBOS-ligaen, without xG, is unchanged
-(PROJECT_STATUS.md). The 75/25 split was fitted by sweeping 0.0-1.0 in 0.05
-steps; the grid carries more weight because it is the better predictor.
+Scorelines come from the three rates through a Poisson grid with Dixon and
+Coles' low-score correction.  The grid's own win/draw/loss odds are blended
+75/25 with the Elo odds for the shipped outcome probabilities.
 """
 
 from __future__ import annotations
@@ -57,6 +60,9 @@ class ADConfig:
     alpha: float = 0.75          # weight on the shot-based signal where fotmob has it
     signal: str = "xg"           # "xg" or "xgot" (xG on target measured worse)
     k_shots: float | None = 0.05 # step for xG-backed matches: a cleaner signal earns a bigger move
+    # Season-level finishing quality.  Regressed toward 0 at each offseason.
+    # Fitted walk-forward: reg=0.70 gives -0.00039 log loss vs no finishing (t=-1.04).
+    finishing_regression: float = 0.70
 
 
 def tau(home_goals: int, away_goals: int, lam: float, mu: float, rho: float) -> float:
@@ -128,6 +134,11 @@ class AttackDefence:
     shots: dict[str, tuple[float, ...]] = field(default_factory=dict)
     attack: dict[str, float] = field(default_factory=dict)
     defence: dict[str, float] = field(default_factory=dict)
+    # Season-level finishing: log(total goals / total xG) per team, carried across seasons.
+    finishing: dict[str, float] = field(default_factory=dict)
+    # Per-season accumulators for computing finishing at the season boundary.
+    _season_goals: dict[str, float] = field(default_factory=dict)
+    _season_xg: dict[str, float] = field(default_factory=dict)
     season: int | None = None
 
     @classmethod
@@ -143,7 +154,11 @@ class AttackDefence:
 
     def copy(self) -> "AttackDefence":
         """An independent state to replay a different continuation from."""
-        return AttackDefence(self.config, self.divisions, self.shots, dict(self.attack), dict(self.defence), self.season)
+        return AttackDefence(
+            self.config, self.divisions, self.shots,
+            dict(self.attack), dict(self.defence), dict(self.finishing),
+            dict(self._season_goals), dict(self._season_xg), self.season,
+        )
 
     def rates_against_average(self, team_id: str, league: str, season: int) -> tuple[float, float]:
         """Goals for and against per match a club would expect against an average
@@ -152,7 +167,8 @@ class AttackDefence:
         peers = [t for (year, t), lg in self.divisions.items() if year == season and lg == league and t in self.attack]
         mean_attack = sum(self.attack[t] for t in peers) / len(peers) if peers else 0.0
         mean_defence = sum(self.defence[t] for t in peers) / len(peers) if peers else 0.0
-        scored = math.exp(cfg.base + self.attack.get(team_id, mean_attack) - mean_defence)
+        scored = math.exp(cfg.base + self.attack.get(team_id, mean_attack) - mean_defence
+                          + self.finishing.get(team_id, 0.0))
         conceded = math.exp(cfg.base + mean_attack - self.defence.get(team_id, mean_defence))
         return scored, conceded
 
@@ -163,8 +179,21 @@ class AttackDefence:
         for (year, team), league in self.divisions.items():
             if year == season:
                 active.setdefault(league, []).append(team)
-        first = self.season is None
+        prev_season = self.season
+        first = prev_season is None
         self.season = season
+
+        # Compute season-level finishing from the previous season's accumulators.
+        # Skip when finishing_regression >= 1.0 (disabled — the elo-v8 baseline).
+        if prev_season is not None and self._season_xg and cfg.finishing_regression < 1.0:
+            for team in list(self._season_goals):
+                total_goals = self._season_goals[team]
+                total_xg = self._season_xg[team]
+                if total_xg > 0 and total_goals > 0:
+                    self.finishing[team] = math.log(total_goals / total_xg)
+            self._season_goals.clear()
+            self._season_xg.clear()
+
         for league, teams in active.items():
             known = [t for t in teams if t in self.attack]
             if known and not first and cfg.season_regression < 1.0:
@@ -172,6 +201,12 @@ class AttackDefence:
                     mean = sum(ratings[t] for t in known) / len(known)
                     for t in known:
                         ratings[t] = mean + cfg.season_regression * (ratings[t] - mean)
+                # Finishing regresses toward 0 (log-space average = 1.0x multiplier).
+                fin_known = [t for t in teams if t in self.finishing]
+                if fin_known:
+                    mean_f = sum(self.finishing[t] for t in fin_known) / len(fin_known)
+                    for t in fin_known:
+                        self.finishing[t] = mean_f + cfg.finishing_regression * (self.finishing[t] - mean_f)
             # Newcomers: below their division; in the first season the division
             # itself is placed, since nothing has been learned yet.
             level = -cfg.division_gap if league == "obosligaen" else 0.0
@@ -183,6 +218,7 @@ class AttackDefence:
                     else:
                         self.attack[t] = level
                         self.defence[t] = level
+                    self.finishing.setdefault(t, 0.0)
 
     def start_season(self, season: int) -> None:
         """Apply the offseason pull and place newcomers, once, for `season`."""
@@ -194,13 +230,16 @@ class AttackDefence:
         for t in teams:
             self.attack.setdefault(t, 0.0)
             self.defence.setdefault(t, 0.0)
+            self.finishing.setdefault(t, 0.0)
 
     # -- prediction ------------------------------------------------------
     def rates(self, home_id: str, away_id: str, on: str) -> tuple[float, float]:
         self._ensure(on, home_id, away_id)
         cfg = self.config
-        lam = math.exp(cfg.base + cfg.home + self.attack[home_id] - self.defence[away_id])
-        mu = math.exp(cfg.base + self.attack[away_id] - self.defence[home_id])
+        lam = math.exp(cfg.base + cfg.home + self.attack[home_id] - self.defence[away_id]
+                        + self.finishing.get(home_id, 0.0))
+        mu = math.exp(cfg.base + self.attack[away_id] - self.defence[home_id]
+                       + self.finishing.get(away_id, 0.0))
         return lam, mu
 
     def grid(self, home_id: str, away_id: str, on: str) -> list[list[float]]:
@@ -234,3 +273,12 @@ class AttackDefence:
         self.defence[away] -= k * home_surprise
         self.attack[away] += k * away_surprise
         self.defence[home] -= k * away_surprise
+        # Accumulate season-level goals and xG for finishing calculation.
+        if cfg.finishing_regression < 1.0:
+            shots = self.shots.get(match.match_id)
+            if shots and match.home_goals is not None and match.away_goals is not None:
+                home_xg, away_xg = shots[0], shots[1]
+                self._season_goals[home] = self._season_goals.get(home, 0.0) + match.home_goals
+                self._season_xg[home] = self._season_xg.get(home, 0.0) + home_xg
+                self._season_goals[away] = self._season_goals.get(away, 0.0) + match.away_goals
+                self._season_xg[away] = self._season_xg.get(away, 0.0) + away_xg

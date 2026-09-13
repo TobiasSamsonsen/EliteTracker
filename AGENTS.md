@@ -4,7 +4,7 @@
 
 A Python-based website for predicting and ranking teams in the top two divisions of
 Norwegian men's football: Eliteserien and OBOS-ligaen. Uses an ELO rating system
-(elo-v7) to estimate team strength, match probabilities and season outcomes. The site
+(elo-v9) to estimate team strength, match probabilities and season outcomes. The site
 runs two ways: against a live Python API server, or as pure static files on Firebase
 Hosting. Data comes from FotMob (no API key needed). `PROJECT_STATUS.md` holds the
 decision log: why the constants are what they are and what was tried and rejected.
@@ -12,7 +12,7 @@ decision log: why the constants are what they are and what was tried and rejecte
 ## Core Constraints
 
 - All seasons 2015–2026 are in scope (historical data is already built)
-- The model version is **elo-v7**; changes to predictions must bump `MODEL_VERSION`
+- The model version is **elo-v9**; changes to predictions must bump `MODEL_VERSION`
 - No runtime dependencies — stdlib only (`tzdata` on Windows is the one exception)
 - No advanced prediction models: squad strength, ordered-logit, Dixon-Coles, pi-ratings,
   an Elo/DC blend, xG-informed Elo and a market-value prior were all measured and
@@ -41,7 +41,7 @@ Elo replay + attack/defence ratings (on xG where fotmob has it) -> blended odds,
   `data/market_values.json` (Transfermarkt squad totals) is a research input; `data/xg.json`
   (fotmob xG and xG on target per Eliteserien match, 2020→) feeds the shipped model
 
-### Model (elo-v7)
+### Model (elo-v9)
 - `model/elo.py` — `expected_score` / `actual_score` / `updated_pair`. K=20, home
   advantage 60, cross-season regression 0.88 per division
 - `model/career.py` — `replay()` is the single season-by-season rating loop (per-division
@@ -133,10 +133,12 @@ them every deploy. About 1,078 files, ~36 MB gzipped.
 
 ## ELO System Details
 
-- elo-v7 = elo-v6 ratings (K=20, home advantage=60, cross-season regression=0.88 per
-  division) + attack/defence goals model (k=0.015 on goals, k_shots=0.05 with alpha=0.75 xG,
-  home 0.22 in log goals, base 0.37, cap 4, regression 0.88, rho −0.05); outcome odds are
-  the 50/50 geometric blend of the two, scorelines the Poisson grid conditioned on them
+- elo-v9 = elo-v8 ratings (K=20, home advantage=60, cross-season regression=0.88 per
+  division, xG-informed Elo with alpha=0.45) + attack/defence goals model (k=0.015 on
+  goals, k_shots=0.05 with alpha=0.75 xG, home 0.22 in log goals, base 0.37, cap 4,
+  regression 0.88, rho −0.05) + season-level finishing quality (log(goals/xG) per team,
+  carried across seasons with regression 0.70); outcome odds are the 75/25 geometric blend
+  of the two, scorelines the Poisson grid conditioned on them
 - Seed ladder: 1670 (best) / 1330 (worst), division_offset=14, midpoint fixed at 1500
 - Draw model: `draw_base` 0.26, `draw_scale` 375 (refit in elo-v3)
 - `expected_score` uses the standard logistic curve; draw probability is a separate lookup
@@ -166,7 +168,7 @@ compare tool's odds port). Required coverage:
 ## Model Versioning
 
 ```text
-elo-v7
+elo-v9
 ```
 
 Changes impacting predictions must increment `MODEL_VERSION` in `model/elo.py`.

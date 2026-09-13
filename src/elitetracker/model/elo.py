@@ -68,7 +68,17 @@ from dataclasses import dataclass
 # on elo-v7's attack/defence blend the combined model reaches -0.00580 vs plain
 # Elo (t=-3.38). The ratings themselves now carry the xG signal; the attack/
 # defences layer still adds its own on top for odds and scorelines.
-MODEL_VERSION = "elo-v8"
+#
+# elo-v9: season-level finishing quality in the attack/defence model. Each
+# team's log(total goals / total xG) over a full season is stored and carried
+# into the next season with regression (0.70 toward the mean).  Match-level
+# goals/xG was too noisy to be useful (every config made things worse); the
+# season-level signal is clean and persistent (r=0.533 odd/even).  Improves
+# predictions modestly: -0.00039 log loss vs no finishing (t=-1.04) and
+# -0.00243 vs Elo-only (t=-1.82).  The effect is strongest in the first
+# season with xG data (2021: d=-0.00320, t=-1.70); after that the attack/
+# defence model captures the signal through the blended observation.
+MODEL_VERSION = "elo-v9"
 
 # A 400-point rating gap means the stronger side is expected to score 10 times
 # as often as the weaker one; this is the constant that defines the ELO scale.

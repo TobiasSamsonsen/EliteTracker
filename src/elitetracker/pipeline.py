@@ -282,6 +282,7 @@ def build_report(
             "draw_base": elo_config.draw_base,
             "draw_scale": elo_config.draw_scale,
             "season_regression": elo_config.season_regression,
+            "finishing_regression": ad.config.finishing_regression,
             "seed_season": SEED_SEASON,
             "simulations": projection.simulations,
             "seed": projection.seed,
@@ -289,7 +290,7 @@ def build_report(
             "matches_remaining": projection.matches_remaining,
             # The compare tool works out a fictional match in the browser, so it
             # needs the same ingredients the server uses: the draw model's
-            # parameters above and both divisions' attack/defence ratings.
+            # parameters above and both divisions' attack/defence/finishing ratings.
             "attack_defence": {
                 "home": ad.config.home,
                 "base": ad.config.base,
@@ -299,7 +300,8 @@ def build_report(
                 "alpha": ad.config.alpha,
                 "outcome_blend": blend_outcomes.__defaults__[0],
                 "teams": {
-                    team_id: [round(ad.attack[team_id], 4), round(ad.defence[team_id], 4)]
+                    team_id: [round(ad.attack[team_id], 4), round(ad.defence[team_id], 4),
+                              round(ad.finishing.get(team_id, 0.0), 4)]
                     for (year, team_id) in ad.divisions if year == season and team_id in ad.attack
                 },
             },
@@ -413,6 +415,7 @@ def _table_payload(
                 # side of the division: the readable form of the attack/defence ratings.
                 "attack": round(scored, 2),
                 "defence": round(conceded, 2),
+                "finishing": round(ad.finishing.get(row.team_id, 0.0), 4),
             }
         )
     return payload

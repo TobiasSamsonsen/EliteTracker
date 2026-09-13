@@ -1610,6 +1610,7 @@ footer a { color: var(--ink); }
 .team-section { padding: 1.25rem; border-top: 1px solid var(--rule); }
 .team-section:first-child { border-top: 0; }
 .team-section > .label { margin-bottom: 0.6rem; }
+.team-section__hint { font-size: 0.85rem; color: var(--ink-muted); margin: 0 0 0.5rem; }
 .team-shape--loading { height: 280px; display: flex; align-items: center; justify-content: center; color: var(--ink-muted); }
 
 .team-section__header {
