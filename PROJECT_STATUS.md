@@ -419,6 +419,27 @@ modest but free: finishing is computed from data already in the refresh pipeline
 Combined with elo-v8's other gains, the total vs plain Elo is −0.00823
 (t=−3.6). The model card and team focus page display the finishing stat.
 
+**Match-sliding window — rejected (09-2026).** The shipped stat uses the
+previous full season and never moves within it; a rolling window was proposed
+to make finishing update gradually. A 30-round season makes a 30-match window
+the season-level stat that slides match by match, blending last season's tail
+with the current one. Measured walk-forward (whole sample plus the Eliteserien
+xG matches 2021+ that the stat can actually move):
+
+| variant | focused xG logloss | vs shipped |
+|---|---|---|
+| no finishing | 0.97628 | +0.00166 |
+| **season-level reg=0.70 (shipped)** | **0.97462** | — |
+| rolling 20 | 0.98976 | +0.01514 |
+| rolling 30 | 0.98326 | +0.00864 |
+| rolling 45 | 0.98130 | +0.00668 |
+
+The window only ever approaches the season-level result as it grows
+(20→30→45), never beats it; shipped vs rolling-20 is t=−4.81 on the whole
+sample. A partial recent window (half last season, half this) is noisier than
+the clean prior full season, and the attack/defence model already absorbs
+in-season conversion changes through its blended xG observation.
+
 ## ❗ Known limits (also stated on the site)
 - Ratings are held fixed for the rest of the season inside a simulation.
 - Simulated matches draw a scoreline from the empirical distribution of real results
