@@ -31,6 +31,10 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
+          # Don't persist the GITHUB_TOKEN: checkout's Authorization extraheader
+          # overrides the PAT in the push URL, so the push would authenticate as
+          # GITHUB_TOKEN and GitHub would not fire the push event for deploy.yml.
+          persist-credentials: false
 
       - name: Set up Python
         uses: actions/setup-python@v5
