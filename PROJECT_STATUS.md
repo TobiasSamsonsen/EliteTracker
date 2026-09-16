@@ -450,16 +450,259 @@ in-season conversion changes through its blended xG observation.
   driver of who wins.
 - Clubs promoted from the third tier start at the ladder floor.
 
+## 🧪 OBOS-ligaen xG from Sofascore — in progress
+
+**Problem:** FotMob has no xG for OBOS-ligaen matches (`fetch_match_xg` returns
+None for every OBOS match). This means the attack/defence model's xG blending
+(alpha=0.75) and the xG-informed Elo ratings (alpha=0.45 for modern era) are
+both inactive for the 16 OBOS clubs. The model falls back to raw goals, which
+is a noisier signal.
+
+**Sofascore has xG for OBOS-ligaen.** Every finished match has `hasXg: true`.
+The xG lives at `GET /api/v1/event/{sofaEventId}/statistics` under
+`key: "expectedGoals"` with `homeValue`/`awayValue`. Season IDs for
+OBOS-ligaen (unique tournament 22): 2026=87867, 2025=70186, 2024=57356,
+2023=47820, 2022=40407, 2021=35404, 2020=26800.
+
+**Blocker: Sofascore blocks all server-side HTTP.** Python urllib, Node.js
+https, and curl all get 403. The `webfetch` tool (which routes through a
+browser-like proxy) works. This means fetching must be done through the
+agent's webfetch tool, not a Python script. Verified: TLS fingerprinting
+or IP-based blocking — headers alone don't help.
+
+### Cache-based workflow
+
+Fetching is a two-phase process because Sofascore's API is blocked from
+Python but works via the agent's `webfetch` tool:
+
+**Phase 1 — Fetch round data:**
+For each round N in the season, call webfetch on:
+`GET https://www.sofascore.com/api/v1/unique-tournament/22/season/{season_id}/events/round/{N}`
+Save the raw JSON response to `data/sofascore_cache/{season}/round_{N}.json`
+
+**Phase 2 — Fetch xG stats:**
+For each finished match with `hasXg: true`, call webfetch on:
+`GET https://www.sofascore.com/api/v1/event/{sofaEventId}/statistics`
+Save the raw JSON response to `data/sofascore_cache/{season}/stats_{eventId}.json`
+
+**Phase 3 — Merge:**
+Run `python scripts/sofascore_merge.py --seasons 2025 2026`
+This reads the cached round + stats files, matches events to our FotMob
+normalized matches by date+score, and appends `[home_xg, away_xg, 0.0, 0.0]`
+entries to `data/xg.json`. The merge script handles both raw API format and
+compact format (list of dicts with `home`, `away`, `homeGoals`, `awayGoals`,
+`ts` keys).
+
+### Cache state (as of 2026-09-16)
+
+**2026 (season 87867):**
+- 17 round files cached: rounds 1–10, 17–18, 25–29
+- 46 stats files cached (xG data for individual matches)
+- Missing: rounds 11–16, 19–24, 30 (need ~13 more round fetches + their stats)
+- Round files use compact format with FotMob-canonical team names already mapped
+
+**2025 (season 70186):**
+- 0 round files cached
+- 0 stats files cached
+- `data/sofascore_cache/2025/extract.py` exists (utility for processing raw API
+  responses into compact format — run per-round: `python extract.py <round_num> <json_file>`)
+- Need all 30 rounds + stats from scratch
+
+**Merge script** (`scripts/sofascore_merge.py`):
+- Fixed to handle both raw API format (dict with `events` key, nested
+  `homeTeam.name`/`homeScore.current`/`status.type`/`startTimestamp`) and
+  compact format (list of dicts with `home`/`away`/`homeGoals`/`awayGoals`/`ts`)
+- Matches by `date + home_goals + away_goals` with reverse-score fallback
+- Skips already-present entries (idempotent)
+- `--dry-run` flag to preview without writing
+
+### Team name mapping (Sofascore → FotMob canonical)
+
+Already applied in compact round files. For raw API format, the merge script
+applies this mapping:
+
+| Sofascore | FotMob canonical |
+|---|---|
+| Stabæk Fotball | Stabæk |
+| Lyn FK | Lyn |
+| Odds BK | Odds Ballklubb |
+| Sogndal IL | Sogndal |
+| Ranheim IL | Ranheim |
+| Strømmen IF | Strømmen |
+| Haugesund | FK Haugesund |
+| Hødd IL | Hødd |
+| Moss FK | Moss |
+| Bryne FK | Bryne |
+| Kongsvinger, Raufoss, Sandnes Ulf, Strømsgodset, Egersund, Åsane | match directly |
+
+### xG storage format
+
+`data/xg.json` stores `[home_xg, away_xg, home_xgot, away_xgot]` per
+FotMob match_id (string key). Sofascore has no xGoT, so OBOS entries use
+`[home_xg, away_xg, 0.0, 0.0]`. This is compatible with the existing code —
+`attack_defence.py` uses the `signal` config to pick xG vs xGoT, and the xG
+path is the default.
+
+Currently `data/xg.json` has ~1,600 Eliteserien entries (2020–2026).
+Adding OBOS 2025+2026 will roughly double the xG-backed match count.
+
+### Step-by-step to complete the xG data collection
+
+For each season (2026 then 2025):
+
+1. **Fetch remaining rounds via webfetch.** For each round N not yet cached:
+   - `webfetch("https://www.sofascore.com/api/v1/unique-tournament/22/season/{season_id}/events/round/{N}")`
+   - Save response to `data/sofascore_cache/{season}/round_{N}.json`
+   - Can batch 3-4 webfetch calls in parallel for speed
+
+2. **Extract event IDs from each round.** Each round JSON has an `events`
+   array. For each event with `status.type == "finished"` and `hasXg == true`:
+   - Note the `id` (Sofascore event ID)
+   - Note `homeTeam.name`, `awayTeam.name`, `homeScore.current`,
+     `awayScore.current`, `startTimestamp`
+
+3. **Fetch xG stats for each event.** For each event ID:
+   - `webfetch("https://www.sofascore.com/api/v1/event/{id}/statistics")`
+   - Save to `data/sofascore_cache/{season}/stats_{id}.json`
+   - Can batch 5-10 webfetch calls in parallel
+
+4. **Run merge.** `python scripts/sofascore_merge.py --seasons 2025 2026`
+   - Check output for unmatched events (date/score mismatch)
+   - Run with `--dry-run` first to verify
+
+5. **Verify.** Check that `data/xg.json` now has OBOS entries:
+   - `python -c "import json; d=json.load(open('data/xg.json')); print(len(d['matches']), 'total xG entries')"`
+
+### What changes in the code when OBOS gets xG
+
+Nothing breaks. The existing code already handles xG for Eliteserien and
+falls back to goals for OBOS. When OBOS xG appears in `data/xg.json`:
+
+- **`model/attack_defence.py`**: The `ADConfig.xg_alpha` (0.75) blend kicks
+  in for OBOS matches too — the observation becomes `0.75 * xG + 0.25 * goals`
+  instead of raw goals. The `k_shots` step (0.05) applies to xG-backed matches
+  regardless of division. The finishing quality stat (`log(goals/xG)`) also
+  becomes active for OBOS clubs.
+- **`model/elo.py`**: The `MODERN_XG_ALPHA` (0.45) blend in the Elo update
+  activates for OBOS matches in the modern era (2022+). Currently OBOS uses
+  plain binary results because `xg_alpha` has no data to work with.
+- **`model/probabilities.py`**: No change — it reads attack/defence ratings,
+  which now carry the xG signal.
+- **`simulation/season.py`**: No change — it reads blended odds from the
+  report, which now reflect xG-informed ratings for OBOS.
+
+### After xG data is collected: model refit plan
+
+With ~3,200 xG-backed matches (1,600 Eliteserien + ~1,600 OBOS), several
+parameters should be re-swept:
+
+**1. Attack/defence parameters (jointly):**
+- `k_shots` (currently 0.05): the step size for xG-backed updates. May
+  change with OBOS data included — OBOS matches may have different xG noise
+  characteristics.
+- `xg_alpha` in ADConfig (currently 0.75): the blend weight on xG vs goals
+  in the attack/defence observation. Could shift if OBOS xG is systematically
+  different from Eliteserien xG.
+- Sweep range: `k_shots` ∈ {0.03, 0.04, 0.05, 0.06, 0.07}, `xg_alpha` ∈
+  {0.60, 0.65, 0.70, 0.75, 0.80, 0.85}
+- Measure: walk-forward log loss on both divisions jointly (Eliteserien 2021+
+  where xG exists, OBOS 2025+ where xG now exists)
+
+**2. Elo xG-informed ratings (era-switched):**
+- `MODERN_XG_ALPHA` (currently 0.45): how much xG moves Elo ratings. The
+  original sweep was Eliteserien-only; with OBOS data the combined signal
+  may prefer a different α.
+- `MODERN_K` (currently 35): the K factor for modern-era Eliteserien. May
+  interact with the expanded xG corpus.
+- Sweep range: α ∈ {0.30, 0.35, 0.40, 0.45, 0.50, 0.55}, K ∈ {25, 30, 35, 40}
+- Measure: walk-forward log loss on both divisions jointly, 2022+
+
+**3. Home advantage (division-specific):**
+- Currently `home_advantage = 60` for both divisions. OBOS may have a
+  different home advantage — historically, second divisions in many countries
+  show stronger home advantage due to travel and pitch differences.
+- Sweep range: HA_eliteserien ∈ {50, 55, 60, 65, 70}, HA_obos ∈ {50, 55, 60, 65, 70, 75}
+- Measure: walk-forward log loss per division
+- This requires plumbing a division-specific home advantage into `EloConfig`
+  and `expected_score()`.
+
+**4. Cross-season regression (division-specific):**
+- Currently `season_regression = 0.88` for both divisions. OBOS has more
+  squad turnover (promotions/relegations, player movement) which could
+  justify a lower regression factor (more regression toward the mean).
+- Sweep range: reg_eliteserien ∈ {0.80, 0.85, 0.88, 0.90, 0.95},
+  reg_obos ∈ {0.75, 0.80, 0.85, 0.88, 0.90}
+- Measure: between-season prediction accuracy (predict season N from
+  season N-1 ratings)
+
+**5. Draw model refit:**
+- `draw_base` (0.26) and `draw_scale` (375) were fitted on Elo-only data.
+  With xG-informed ratings, the draw probability at each rating gap may
+  shift. Refit with the full xG-backed corpus.
+- Sweep range: draw_base ∈ {0.22, 0.24, 0.26, 0.28}, draw_scale ∈
+  {300, 350, 375, 400, 450}
+
+**6. Finishing quality regression:**
+- Currently `finishing_regression = 0.70`. With OBOS xG, the year-to-year
+  persistence of finishing skill can be measured across 32 clubs instead of
+  16 — a meaningful sample size increase.
+- Sweep range: ∈ {0.50, 0.60, 0.70, 0.80, 0.90}
+
+**7. Division offset:**
+- Currently `division_offset = 14` (OBOS ratings are 14 points lower on
+  average). With xG-backed ratings for both divisions, the offset can be
+  re-estimated from the data instead of being a fixed constant. This is
+  especially important because the current offset was estimated from
+  goals-only OBOS ratings, which are noisier.
+- Measure: the gap between the bottom of Eliteserien and top of OBOS at
+  season start, after regression.
+
+**Measurement approach:**
+- All sweeps use `model/backtest.py` walk-forward (train on prior seasons,
+  predict the next; no leakage)
+- Bar: |t| >= 2 on paired log loss across all scored matches
+- Split: report whole-sample + two halves (2022-2024 vs 2025-2026) to
+  check stability
+- Each parameter sweep varies one knob while holding others at shipped values,
+  then the best joint config is verified as a whole
+- If any sweep improves the model, bump `MODEL_VERSION` → elo-v11
+
+**8. Re-run research benchmark:**
+- After refit, run `python -m elitetracker.research run` to check the
+  gap to Pinnacle closing line with the expanded xG corpus
+- The market gap was +0.0098 log loss on 2021+ Eliteserien; with OBOS xG
+  the combined gap may shift
+
+**9. Re-run full backtest:**
+- `python -m elitetracker.backtest_cli` with the refitted parameters
+- Compare the new scorecard against elo-v10's baseline
+- If the improvement is real and |t| >= 2, ship as elo-v11
+
 ## 🔧 Open items
 
-- [ ] Scheduled refresh (`.github/workflows/refresh.yml`) commits new results but the
-      deploy workflow does not pick them up — the site stays stale until a manual push.
-      The deploy trigger fires on `push` to `main`, so the refresh commit should
-      trigger it, but something in the chain is not working. Investigate and fix.
+**Sofascore xG — active, partially cached:**
+- [ ] Fetch remaining 2026 rounds (11–16, 19–24, 30) via webfetch, save to
+      `data/sofascore_cache/2026/`
+- [ ] Fetch xG stats for all 2026 events not yet in cache (check by comparing
+      event IDs from round files against existing `stats_*.json` files)
+- [ ] Fetch ALL 2025 rounds (1–30) via webfetch, save to `data/sofascore_cache/2025/`
+- [ ] Fetch xG stats for all 2025 finished+hasXg events
+- [ ] Run `python scripts/sofascore_merge.py --seasons 2025 2026` to merge into xg.json
+- [ ] Verify: count xG entries, check for unmatched events
+
+**Model refit after xG data is collected:**
+- [ ] Re-sweep attack/defence params (k_shots, xg_alpha) on both divisions jointly
+- [ ] Re-sweep Elo xG params (MODERN_XG_ALPHA, MODERN_K) with expanded corpus
+- [ ] Sweep division-specific home advantage (currently 60 for both)
+- [ ] Sweep division-specific cross-season regression (currently 0.88 for both)
+- [ ] Refit draw model on xG-backed corpus
+- [ ] Re-estimate finishing quality regression with 32-club sample
+- [ ] Re-estimate division_offset from xG-backed OBOS ratings
+- [ ] Run full backtest, compare to elo-v10 baseline, bump MODEL_VERSION if |t|>=2
+- [ ] Re-run `python -m elitetracker.research run` to check gap to closing line
+
+**Ongoing:**
 - [ ] Re-fit the draw model periodically as seasons accumulate.
-- [ ] Re-run `python -m elitetracker.research run` after each season; the shipped blend's gap
-      to the closing line is the number to watch. Re-sweep `k_shots`/`alpha` once OBOS-ligaen
-      gets xG (`data/xg.json` is topped up by every refresh).
 - [ ] Re-run `backtest_cli` after each new season to keep K / home advantage / regression
       fitted (bump `MODEL_VERSION`).
 - [ ] Head-to-head tool — the same odds as Compare but framed as a rivalry: the two
@@ -501,3 +744,6 @@ in-season conversion changes through its blended xG observation.
   log(goals/xG) over a full season carried forward with regression 0.70. Modest
   improvement (−0.00243 vs Elo-only, t=−1.82); strongest in the first xG season.
   Frontend: model card shows finishing regression, team summary shows finishing stat.
+- elo-v10: era-switched Elo config. Legacy (K=20, xg_alpha=0.45) for warmup seasons
+  and OBOS; Modern (K=35, xg_alpha=0.50) for Eliteserien 2022+. home_advantage=60,
+  cross-season regression=0.88 per division. Committed 5d77044.
