@@ -33,7 +33,8 @@ def _evaluate(slices, reg: float, spread: float, offset: int, score_from: int):
         division_offset=offset,
     )
     seeds = {team_id: seed.rating for team_id, seed in seed_ratings(seeding=config).items()}
-    card = walk_forward(slices, seeds, EloConfig(season_regression=reg), score_from_season=score_from)
+    card = walk_forward(slices, seeds, EloConfig(season_regression=reg), score_from_season=score_from,
+                        league="eliteserien")
     return card.log_loss, card.calibration_error()
 
 
@@ -52,7 +53,7 @@ def _refine_grid(reg: float, spread: float, offset: int):
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    parser.add_argument("--score-from", type=int, default=2016,
+    parser.add_argument("--score-from", type=int, default=2022,
                         help="first season scored (earlier seasons warm up the ratings)")
     args = parser.parse_args(argv)
 

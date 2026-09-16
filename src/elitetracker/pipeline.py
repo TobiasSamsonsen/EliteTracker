@@ -19,7 +19,7 @@ from typing import Any
 
 from elitetracker.model.attack_defence import ADConfig, AttackDefence, blend_outcomes, top_scorelines
 from elitetracker.model.career import SeasonSlice, TeamCareer, build_careers
-from elitetracker.model.elo import MODEL_VERSION, EloConfig
+from elitetracker.model.elo import MODEL_VERSION, EloConfig, BOUNDARY_SEASON, BOUNDARY_LEAGUE, MODERN_CONFIG
 from elitetracker.model.initial_ratings import SeedingConfig, TeamRating, initial_ratings
 from elitetracker.model.probabilities import match_probabilities
 from elitetracker.model.ratings import build_rating_table
@@ -183,6 +183,8 @@ def build_all_careers(
     return build_careers(
         load_slices(root), seed_ratings(root, seeding=seeding),
         config=elo_config, shots=shots,
+        modern_config=MODERN_CONFIG, boundary_season=BOUNDARY_SEASON,
+        boundary_league=BOUNDARY_LEAGUE,
     )
 
 

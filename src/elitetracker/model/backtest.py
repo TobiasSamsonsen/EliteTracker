@@ -108,6 +108,10 @@ def walk_forward(
     score_from_season: int,
     name: str = "",
     shots: dict[str, tuple[float, ...]] | None = None,
+    league: str | None = None,
+    modern_config: EloConfig | None = None,
+    boundary_season: int | None = None,
+    boundary_league: str | None = None,
 ) -> Scorecard:
     """Replay every season in order, scoring only from `score_from_season` on.
 
@@ -117,12 +121,24 @@ def walk_forward(
     ``shots`` is an optional mapping of match_id to (home_xg, away_xg, ...)
     from fotmob; when provided and config.xg_alpha > 0, the rating update
     blends the binary result with the xG-implied score (elo-v8).
+
+    ``league`` restricts scoring to matches in that league slug (ratings still
+    warm on both divisions).
+
+    ``modern_config`` optionally overrides the Elo update config for a specific
+    era: when season >= ``boundary_season`` AND the slice's league matches
+    ``boundary_league``, the modern config is used for the rating update.
     """
     config = config or EloConfig()
     card = Scorecard(name=name)
-    for season, _, _, matches in replay(slices, seeds, config, shots=shots):
+    match_league = {m.match_id: s.league for s in slices for m in s.matches}
+    for season, _, _, matches in replay(
+        slices, seeds, config, shots=shots,
+        modern_config=modern_config, boundary_season=boundary_season,
+        boundary_league=boundary_league,
+    ):
         for match, (home_before, away_before) in matches:
-            if season >= score_from_season:
+            if season >= score_from_season and (league is None or match_league.get(match.match_id) == league):
                 card.observe(
                     match_probabilities(home_before, away_before, config), outcome_of(match), match.match_id
                 )

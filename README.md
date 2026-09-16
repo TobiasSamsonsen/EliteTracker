@@ -1,7 +1,7 @@
 # EliteTracker
 
 Predictive model for Norwegian men's football: **Eliteserien** (tier 1) and
-**OBOS-ligaen** (tier 2). Uses an ELO rating system (elo-v9) to estimate team
+**OBOS-ligaen** (tier 2). Uses an ELO rating system (elo-v10) to estimate team
 strength, match probabilities and season outcomes. Data comes from FotMob.
 
 Deployed at [elitetrackerno.web.app](https://elitetrackerno.web.app).
@@ -26,7 +26,9 @@ Or preview the static build:
 Each club carries one **ELO rating**. After a match, the winner gains points and
 the loser loses them -- more if the result was unexpected. The update uses xG
 (expected goals) to dampen lucky wins: a team that won but was outplayed gains
-less than one that dominated.
+less than one that dominated. Since Eliteserien 2022 the model uses a faster
+K-factor and higher xG weight (K=35, α=50 %); earlier seasons and OBOS-ligaen
+use the legacy config (K=20, α=45 %).
 
 Two sets of odds are blended for each fixture:
 
@@ -95,11 +97,10 @@ Every tunable parameter in the shipped model:
 
 | Parameter | Value | What it controls |
 |---|---|---|
-| K-factor | 20 | How much ratings move per match |
+| K-factor | 20 (legacy) / 35 (2022+) | How much ratings move per match |
 | Home advantage | 60 pts | Rating bonus for the home team |
-| xG weight | 45% | How much xG dampens lucky wins in rating updates |
+| xG weight | 45 % (legacy) / 50 % (2022+) | How much xG dampens lucky wins in rating updates |
 | Cross-season regression | 12% | How much ratings regress toward the mean each offseason |
-| Finishing regression | 30% | How much finishing quality regresses toward the mean |
 | Peak draw rate | 26% | Maximum draw probability from the draw model |
 | Outcome blend | 25/75 | ELO vs attack/defence weight for win/draw/loss odds |
 | Scorelines | attack/defence | Source of scoreline predictions (not ELO) |
@@ -109,7 +110,7 @@ Every tunable parameter in the shipped model:
 
 Click any club name or crest to open a detailed view:
 
-- **Summary** -- rating, rank, points, attack/defence/finishing stats, form
+- **Summary** -- rating, rank, points, attack/defence stats, form
 - **Finish row** -- single-row heat map of finishing position probabilities
 - **Pre-season vs live** -- how the prediction has changed since the season started
 - **Rating history** -- ELO trajectory across all seasons, with peak/trough
@@ -124,11 +125,6 @@ scored per match against an average side; defence is expected goals conceded.
 Higher attack is better, lower defence is better. A team with attack 0.30 and
 defence -0.10 scores roughly 1.35 goals per match against an average opponent
 and concedes about 0.90.
-
-**Finishing** is `log(goals / xG)` over the full season. Positive means the
-team converts chances better than expected; negative means wasteful. It
-regresses toward 0 each offseason at 30%, because finishing skill is partly
-noise and partly persistent (year-to-year correlation r=0.53).
 
 **Expected points (xPts)** is the model's forecast of total season points,
 computed from the remaining fixtures and each team's current rating.

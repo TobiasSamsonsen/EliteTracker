@@ -19,7 +19,7 @@ import time
 
 from elitetracker.model import benchmark
 from elitetracker.model.backtest import Scorecard, paired, walk_forward
-from elitetracker.model.elo import EloConfig
+from elitetracker.model.elo import EloConfig, MODERN_CONFIG, BOUNDARY_SEASON, BOUNDARY_LEAGUE
 from elitetracker.pipeline import load_matches, load_slices, seed_ratings
 from elitetracker.sources.fotmob import FetchError, fetch_match_xg, load_xg, save_xg
 
@@ -100,7 +100,9 @@ def cmd_run(args: argparse.Namespace) -> int:
     seeds = {team_id: seed.rating for team_id, seed in seed_ratings().items()}
     dates = {m.match_id: m.date for s in slices for m in s.matches}
     shots = {k: tuple(v) for k, v in load_xg()["matches"].items()}
-    elo = walk_forward(slices, seeds, EloConfig(), score_from_season=args.score_from, name="elo", shots=shots)
+    elo = walk_forward(slices, seeds, EloConfig(), score_from_season=args.score_from, name="elo",
+                        shots=shots, league="eliteserien", modern_config=MODERN_CONFIG,
+                        boundary_season=BOUNDARY_SEASON, boundary_league=BOUNDARY_LEAGUE)
     shipped = Scorecard(name="elo + attack/defence")
     ad = AttackDefence.from_slices(slices, ADConfig(), shots=shots)
     for match in sorted((m for s in slices for m in s.matches if m.played), key=Match.sort_key):
@@ -109,7 +111,8 @@ def cmd_run(args: argparse.Namespace) -> int:
             odds = blend_outcomes(elo.predictions[match.match_id][0], ad.grid(home, away, match.date))
             shipped.observe(odds, outcome_of(match), match.match_id)
         ad.observe(match)
-    matches = [m for s in slices for m in s.matches if int(m.date[:4]) >= args.score_from]
+    matches = [m for s in slices for m in s.matches
+               if s.league == "eliteserien" and int(m.date[:4]) >= args.score_from]
     pinnacle = benchmark.benchmark_card(benchmark.load_odds(), matches)
     print(f"Scored from season {args.score_from}\n\n{elo.summary()}\n{shipped.summary()}\n{pinnacle.summary()}\n")
     print("paired per-match log loss (negative = first is better; |t| >= 2 counts):")
@@ -131,7 +134,7 @@ def main(argv: list[str] | None = None) -> int:
     xg = sub.add_parser("xg"); xg.add_argument("--seasons", default="2020-2026"); xg.add_argument("--delay", type=float, default=1.0)
     xg.add_argument("--limit", type=int); xg.add_argument("--refresh", action="store_true", help="refetch matches already stored")
     xg.set_defaults(func=cmd_xg)
-    run = sub.add_parser("run"); run.add_argument("--score-from", type=int, default=2019); run.set_defaults(func=cmd_run)
+    run = sub.add_parser("run"); run.add_argument("--score-from", type=int, default=2022); run.set_defaults(func=cmd_run)
     args = parser.parse_args(argv)
     return args.func(args)
 

@@ -78,7 +78,15 @@ from dataclasses import dataclass
 # -0.00243 vs Elo-only (t=-1.82).  The effect is strongest in the first
 # season with xG data (2021: d=-0.00320, t=-1.70); after that the attack/
 # defence model captures the signal through the blended observation.
-MODEL_VERSION = "elo-v9"
+#
+# elo-v10: era-switched Elo.  Warmup years (all seasons before 2022, and all
+# OBOS seasons) use the legacy config (K=20, xg_alpha=0.45); Eliteserien
+# 2022+ uses a faster, more xG-responsive config (K=35, xg_alpha=0.50).
+# Fitted walk-forward on Eliteserien 2022+: era-switch K=35 a=0.50 beats
+# shipped K=20 a=0.45 by -0.00400 log loss (train t=-2.62); holdout
+# 2025-2026 delta=-0.00551 (t=-1.66, directionally right but not yet
+# significant at |t|>=2).  Regression, draw model, home advantage unchanged.
+MODEL_VERSION = "elo-v10"
 
 # A 400-point rating gap means the stronger side is expected to score 10 times
 # as often as the weaker one; this is the constant that defines the ELO scale.
@@ -117,6 +125,16 @@ class EloConfig:
     # log loss (t=-2.58) and stacks on elo-v7's attack/defence blend for -0.00580
     # vs plain Elo (t=-3.38).
     xg_alpha: float = 0.45
+
+
+# Era-switch constants.  The shipped model uses legacy config (above) for all
+# warmup seasons and OBOS; from Eliteserien 2022 onward the modern config
+# takes over.  Fitted walk-forward on Eliteserien 2022+ (scripts/sweep_era_switch.py).
+MODERN_K: float = 35.0
+MODERN_XG_ALPHA: float = 0.50
+MODERN_CONFIG = EloConfig(k_factor=MODERN_K, xg_alpha=MODERN_XG_ALPHA)
+BOUNDARY_SEASON: int = 2022
+BOUNDARY_LEAGUE: str = "eliteserien"
 
 
 def expected_score(rating: float, opponent_rating: float) -> float:

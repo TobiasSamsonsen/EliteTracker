@@ -1257,7 +1257,6 @@ function renderModelCard(report) {
     [t('model.homeAdvantage'), `${model.home_advantage} ${t('model.pts')}`],
     [t('model.xgAlpha'), `${Math.round(model.xg_alpha * 100)}%`],
     [t('model.crossRegression'), `${Math.round((1 - model.season_regression) * 100)}% ${t('model.towardMean')}`],
-    [t('model.finishingRegression'), `${Math.round((1 - model.finishing_regression) * 100)}% ${t('model.towardMean')}`],
     [t('model.peakDraw'), pct(model.draw_base, 0)],
     [t('model.outcomeOdds'), t('model.outcomeOddsValue')],
     [t('model.scorelines'), t('model.scorelinesValue')],
@@ -1516,7 +1515,6 @@ function renderTeamSummary(teamId, row, career, report, container) {
     stats.appendChild(summaryStat(t('team.played'), String(row.played)));
     stats.appendChild(summaryStat(t('team.attack'), row.attack.toFixed(2), t('team.attackHint')));
     stats.appendChild(summaryStat(t('team.defence'), row.defence.toFixed(2), t('team.defenceHint')));
-    stats.appendChild(summaryStat(t('team.finishing'), row.finishing > 0 ? `+${row.finishing.toFixed(2)}` : row.finishing.toFixed(2), t('team.finishingHint')));
   } else if (career) {
     stats.appendChild(summaryStat(t('team.matches'), String(career.points.length)));
   }

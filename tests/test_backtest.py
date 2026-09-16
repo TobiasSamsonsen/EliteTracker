@@ -58,6 +58,12 @@ class TestWalkForwardScoringWindow:
         # Level sides, no home edge: P(home win) = 0.5 - 0.26 / 2, whatever the score was.
         assert card.log_loss == pytest.approx(-math.log(0.5 - 0.13))
 
+    def test_league_filter_scores_only_that_league(self):
+        slices = _slices() + [SeasonSlice("second", "Second", 2020, [_match("m5", "E", "F", 1, 0)])]
+        seeds = {**_seeds(), "E": 1500.0, "F": 1500.0}
+        card = walk_forward(slices, seeds, EloConfig(), score_from_season=2020, league="top")
+        assert card.matches == 4  # only top-league matches scored
+
 
 def _season_starts(slices, seeds, config):
     """Ratings as each season kicks off."""
@@ -103,3 +109,66 @@ class TestOffseasonRegression:
     def test_a_season_is_completed_even_if_the_caller_skips_its_matches(self):
         starts = _season_starts(_slices(), _seeds(), EloConfig(season_regression=1.0, home_advantage=0))
         assert starts[2021]["A"] > 1600.0  # 2020's win was applied before 2021 started
+
+
+class TestEraSwitch:
+    def _slices_three_seasons(self):
+        return [
+            SeasonSlice("eliteserien", "Eliteserien", 2021, [
+                _match("m21", "A", "B", 2, 0, "2021-04-01"),
+            ]),
+            SeasonSlice("eliteserien", "Eliteserien", 2022, [
+                _match("m22", "B", "A", 1, 0, "2022-04-01"),
+            ]),
+            SeasonSlice("eliteserien", "Eliteserien", 2023, [
+                _match("m23", "A", "B", 0, 1, "2023-04-01"),
+            ]),
+        ]
+
+    def test_modern_config_used_when_boundary_matches(self):
+        slices = self._slices_three_seasons()
+        seeds = {"A": 1600.0, "B": 1400.0}
+        legacy = EloConfig(k_factor=10)
+        modern = EloConfig(k_factor=50)
+        card = walk_forward(
+            slices, seeds, legacy, score_from_season=2021,
+            modern_config=modern, boundary_season=2022, boundary_league="eliteserien",
+        )
+        card_no_switch = walk_forward(slices, seeds, legacy, score_from_season=2021)
+        # K=50 on 2022 moves ratings more than K=10, so 2023 predictions differ
+        assert card.log_loss != card_no_switch.log_loss
+
+    def test_legacy_config_used_when_boundary_season_misses(self):
+        slices = self._slices_three_seasons()
+        seeds = {"A": 1600.0, "B": 1400.0}
+        legacy = EloConfig(k_factor=10)
+        modern = EloConfig(k_factor=50)
+        card = walk_forward(
+            slices, seeds, legacy, score_from_season=2021,
+            modern_config=modern, boundary_season=2023, boundary_league="eliteserien",
+        )
+        card_no_switch = walk_forward(slices, seeds, legacy, score_from_season=2021)
+        assert card.log_loss == card_no_switch.log_loss
+
+    def test_legacy_config_used_when_boundary_league_misses(self):
+        slices = self._slices_three_seasons()
+        seeds = {"A": 1600.0, "B": 1400.0}
+        legacy = EloConfig(k_factor=10)
+        modern = EloConfig(k_factor=50)
+        card = walk_forward(
+            slices, seeds, legacy, score_from_season=2021,
+            modern_config=modern, boundary_season=2022, boundary_league="obosligaen",
+        )
+        card_no_switch = walk_forward(slices, seeds, legacy, score_from_season=2021)
+        assert card.log_loss == card_no_switch.log_loss
+
+    def test_no_modern_config_is_noop(self):
+        slices = self._slices_three_seasons()
+        seeds = {"A": 1600.0, "B": 1400.0}
+        config = EloConfig(k_factor=10)
+        card = walk_forward(slices, seeds, config, score_from_season=2021)
+        card_no_kwargs = walk_forward(
+            slices, seeds, config, score_from_season=2021,
+            modern_config=None, boundary_season=None, boundary_league=None,
+        )
+        assert card.log_loss == card_no_kwargs.log_loss

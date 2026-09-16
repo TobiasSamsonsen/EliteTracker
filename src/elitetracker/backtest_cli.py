@@ -19,7 +19,7 @@ from __future__ import annotations
 import argparse
 
 from elitetracker.model.backtest import compare, walk_forward
-from elitetracker.model.elo import EloConfig
+from elitetracker.model.elo import EloConfig, MODERN_CONFIG, BOUNDARY_SEASON, BOUNDARY_LEAGUE
 from elitetracker.pipeline import load_slices, seed_ratings
 
 
@@ -29,7 +29,7 @@ def _frange(start: float, stop: float, step: float) -> list[float]:
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    parser.add_argument("--score-from", type=int, default=2016,
+    parser.add_argument("--score-from", type=int, default=2022,
                         help="first season scored (earlier seasons warm up the ratings)")
     parser.add_argument("--k-min", type=float, default=16.0)
     parser.add_argument("--k-max", type=float, default=32.0)
@@ -45,13 +45,17 @@ def main(argv: list[str] | None = None) -> int:
     slices = load_slices()
     seeds = {team_id: seed.rating for team_id, seed in seed_ratings().items()}
 
-    cards = [walk_forward(slices, seeds, EloConfig(), score_from_season=args.score_from, name="base")]
+    cards = [walk_forward(slices, seeds, EloConfig(), score_from_season=args.score_from, name="base",
+                           league="eliteserien", modern_config=MODERN_CONFIG,
+                           boundary_season=BOUNDARY_SEASON, boundary_league=BOUNDARY_LEAGUE)]
     for k in _frange(args.k_min, args.k_max, args.k_step):
         for home in _frange(args.home_min, args.home_max, args.home_step):
             for reg in args.regression:
                 config = EloConfig(k_factor=k, home_advantage=home, season_regression=reg)
                 cards.append(walk_forward(slices, seeds, config, score_from_season=args.score_from,
-                                          name=f"k={k:.0f} ha={home:.0f} reg={reg:.2f}"))
+                                          name=f"k={k:.0f} ha={home:.0f} reg={reg:.2f}",
+                                          league="eliteserien", modern_config=MODERN_CONFIG,
+                                          boundary_season=BOUNDARY_SEASON, boundary_league=BOUNDARY_LEAGUE))
 
     shown = sorted(cards, key=lambda card: card.log_loss)[: max(1, args.top)]
     print(f"Scored from season {args.score_from}  |  {len(cards) - 1} configs + baseline\n")
