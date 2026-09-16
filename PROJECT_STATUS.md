@@ -635,3 +635,11 @@ falls back to goals for a match without xG, so it must never block a refresh.
   passed neither xG nor the era config (it sat a mean 12 Elo away), and the era switch
   is chosen per match by `era_config(league, season)`. Every other model constant was
   re-swept against the doubled corpus and none moved.
+- elo-v11.1: re-sweep with xG data loaded in the backtest (the elo-v11 sweep never
+  passed xG to walk_forward, so the xG-informed Elo update was never tested).
+  K=30 and xg_alpha=0.30 beat the shipped 35/0.50 by -0.00073 log loss on the xG
+  window (Elite 2020+, OBOS 2023+; t=-0.98, not yet significant at |t|>=2 but
+  consistent across divisions).  Also fixed backtest_cli.py to load shot_table()
+  so future sweeps test the actual shipped model.  Attack/defence k_shots and alpha
+  were swept but showed zero effect on outcome log loss (the AD grid's win/draw/loss
+  odds are flat when team ratings are close).

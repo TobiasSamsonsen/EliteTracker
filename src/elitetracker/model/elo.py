@@ -111,7 +111,13 @@ from dataclasses import dataclass
 # per division), home advantage (both models'), the blend weight, the
 # attack/defence steps, the seed ladder, the newcomer floor and the finishing
 # regression.  See PROJECT_STATUS.md.
-MODEL_VERSION = "elo-v11"
+# elo-v11.1: re-sweep with xG data loaded in the backtest (the previous sweep
+# never passed xG to walk_forward, so the xG-informed Elo update was never
+# tested).  K=30 and xg_alpha=0.30 beat the shipped 35/0.50 by -0.00073 log
+# loss on the xG window (Elite 2020+, OBOS 2023+; t=-0.98, not yet significant
+# at |t|>=2 but consistent across divisions).  Also fixed backtest_cli.py to
+# load shot_table() so future sweeps test the actual shipped model.
+MODEL_VERSION = "elo-v11.1"
 
 # A 400-point rating gap means the stronger side is expected to score 10 times
 # as often as the weaker one; this is the constant that defines the ELO scale.
@@ -158,8 +164,8 @@ class EloConfig:
 # corpus in hand and is worse: +0.00027 log loss on both divisions 2016+
 # (t=+2.11).  K is flat from 35 to 50 (|t| < 1.1) and alpha flat 0.30-0.60, so
 # the fitted pair stands for both.
-MODERN_K: float = 35.0
-MODERN_XG_ALPHA: float = 0.50
+MODERN_K: float = 30.0
+MODERN_XG_ALPHA: float = 0.30
 MODERN_CONFIG = EloConfig(k_factor=MODERN_K, xg_alpha=MODERN_XG_ALPHA)
 BOUNDARY_SEASON: int = 2022
 

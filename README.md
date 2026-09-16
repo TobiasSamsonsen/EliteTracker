@@ -1,7 +1,7 @@
 # EliteTracker
 
 Predictive model for Norwegian men's football: **Eliteserien** (tier 1) and
-**OBOS-ligaen** (tier 2). Uses an ELO rating system (elo-v11) to estimate team
+**OBOS-ligaen** (tier 2). Uses an ELO rating system (elo-v11.1) to estimate team
 strength, match probabilities and season outcomes. Data comes from FotMob.
 
 Deployed at [elitetrackerno.web.app](https://elitetrackerno.web.app).
@@ -27,7 +27,7 @@ Each club carries one **ELO rating**. After a match, the winner gains points and
 the loser loses them -- more if the result was unexpected. The update uses xG
 (expected goals) to dampen lucky wins: a team that won but was outplayed gains
 less than one that dominated. Since Eliteserien 2022 the model uses a faster
-K-factor and higher xG weight (K=35, α=50 %); earlier seasons and OBOS-ligaen
+K-factor and higher xG weight (K=30, α=30 %); earlier seasons and OBOS-ligaen
 use the legacy config (K=20, α=45 %).
 
 Two sets of odds are blended for each fixture:
@@ -97,9 +97,9 @@ Every tunable parameter in the shipped model:
 
 | Parameter | Value | What it controls |
 |---|---|---|
-| K-factor | 20 (legacy) / 35 (2022+) | How much ratings move per match |
+| K-factor | 20 (legacy) / 30 (2022+) | How much ratings move per match |
 | Home advantage | 60 pts | Rating bonus for the home team |
-| xG weight | 45 % (legacy) / 50 % (2022+) | How much xG dampens lucky wins in rating updates |
+| xG weight | 45 % (legacy) / 30 % (2022+) | How much xG dampens lucky wins in rating updates |
 | Cross-season regression | 12% | How much ratings regress toward the mean each offseason |
 | Peak draw rate | 26% | Maximum draw probability from the draw model |
 | Outcome blend | 25/75 | ELO vs attack/defence weight for win/draw/loss odds |

@@ -21,7 +21,7 @@ from dataclasses import replace
 
 from elitetracker.model.backtest import compare, walk_forward
 from elitetracker.model.elo import EloConfig, MODERN_CONFIG, era_config
-from elitetracker.pipeline import load_slices, seed_ratings
+from elitetracker.pipeline import load_slices, seed_ratings, shot_table
 
 
 def _frange(start: float, stop: float, step: float) -> list[float]:
@@ -45,9 +45,10 @@ def main(argv: list[str] | None = None) -> int:
 
     slices = load_slices()
     seeds = {team_id: seed.rating for team_id, seed in seed_ratings().items()}
+    shots = shot_table()
 
     cards = [walk_forward(slices, seeds, EloConfig(), score_from_season=args.score_from, name="base",
-                           league="eliteserien")]
+                           league="eliteserien", shots=shots)]
     for k in _frange(args.k_min, args.k_max, args.k_step):
         for home in _frange(args.home_min, args.home_max, args.home_step):
             for reg in args.regression:
@@ -58,7 +59,7 @@ def main(argv: list[str] | None = None) -> int:
                 modern = replace(MODERN_CONFIG, k_factor=k, home_advantage=home, season_regression=reg)
                 cards.append(walk_forward(slices, seeds, legacy, score_from_season=args.score_from,
                                           name=f"k={k:.0f} ha={home:.0f} reg={reg:.2f}",
-                                          league="eliteserien",
+                                          league="eliteserien", shots=shots,
                                           config_for=lambda lg, s, l=legacy, m=modern: era_config(lg, s, l, m)))
 
     shown = sorted(cards, key=lambda card: card.log_loss)[: max(1, args.top)]

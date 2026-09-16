@@ -4,7 +4,7 @@
 
 A Python-based website for predicting and ranking teams in the top two divisions of
 Norwegian men's football: Eliteserien and OBOS-ligaen. Uses an ELO rating system
-(elo-v11) to estimate team strength, match probabilities and season outcomes. The site
+(elo-v11.1.1) to estimate team strength, match probabilities and season outcomes. The site
 runs two ways: against a live Python API server, or as pure static files on Firebase
 Hosting. Results come from FotMob and expected goals from FotMob (Eliteserien) and
 Sofascore (OBOS-ligaen); no API key is needed for either. `PROJECT_STATUS.md` holds the
@@ -13,7 +13,7 @@ decision log: why the constants are what they are and what was tried and rejecte
 ## Core Constraints
 
 - All seasons 2015–2026 are in scope (historical data is already built)
-- The model version is **elo-v11**; changes to predictions must bump `MODEL_VERSION`
+- The model version is **elo-v11.1.1**; changes to predictions must bump `MODEL_VERSION`
 - No runtime dependencies — stdlib only (`tzdata` on Windows is the one exception)
 - No advanced prediction models: squad strength, ordered-logit, Dixon-Coles, pi-ratings,
   an Elo/DC blend and a market-value prior were all measured and rejected
@@ -46,9 +46,9 @@ Elo replay + attack/defence ratings (on xG in both divisions) -> blended odds, P
   (xG per match: fotmob's, with xG on target, for Eliteserien 2020→; Sofascore's for
   OBOS-ligaen 2023→) feeds the shipped model
 
-### Model (elo-v11)
+### Model (elo-v11.1.1)
 - `model/elo.py` — `expected_score` / `actual_score` / `updated_pair`, and `era_config`,
-  the `config_for(league, season)` every replay picks its config with. K=20 (35 from
+  the `config_for(league, season)` every replay picks its config with. K=20 (30 from
   2022), home advantage 60, cross-season regression 0.88 per division
 - `model/career.py` — `replay()` is the single season-by-season rating loop (per-division
   regression, ladder floor for unseeded clubs, chronological updates). `build_careers`,
@@ -141,9 +141,9 @@ them every deploy. About 1,078 files, ~36 MB gzipped.
 
 ## ELO System Details
 
-- elo-v11 = elo-v8 ratings with era-switched config (`elo.era_config`, passed to every
+- elo-v11.1.1 = elo-v8 ratings with era-switched config (`elo.era_config`, passed to every
   replay as `config_for(league, season)`): legacy (K=20, xg_alpha=0.45) for warmup
-  seasons, modern (K=35, xg_alpha=0.50) from 2022, in both divisions. Home
+  seasons, modern (K=30, xg_alpha=0.30) from 2022, in both divisions. Home
   advantage=60, cross-season regression=0.88 per division. + attack/defence goals model
   (k=0.015 on goals, k_shots=0.05 with alpha=0.75 xG, home 0.22 in log goals, base 0.37,
   cap 4, regression 0.88, rho −0.05) + season-level finishing quality (log(goals/xG) per
@@ -178,7 +178,7 @@ compare tool's odds port). Required coverage:
 ## Model Versioning
 
 ```text
-elo-v11
+elo-v11.1
 ```
 
 Changes impacting predictions must increment `MODEL_VERSION` in `model/elo.py`.
