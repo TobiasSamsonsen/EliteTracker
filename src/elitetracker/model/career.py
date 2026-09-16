@@ -19,9 +19,9 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from datetime import date, timedelta
-from typing import Iterator
+from typing import Callable, Iterator
 
-from elitetracker.model.elo import EloConfig, updated_pair
+from elitetracker.model.elo import EloConfig, era_config, updated_pair
 from elitetracker.model.initial_ratings import TeamRating, rating_for_unseeded_team
 from elitetracker.model.table import ranking_key, table_from_matches
 from elitetracker.normalize.matches import Match
@@ -85,9 +85,7 @@ def replay(
     config: EloConfig | None = None,
     shots: dict[str, tuple[float, ...]] | None = None,
     *,
-    modern_config: EloConfig | None = None,
-    boundary_season: int | None = None,
-    boundary_league: str | None = None,
+    config_for: Callable[[str, int], EloConfig] | None = None,
 ) -> Iterator[tuple[int, list[SeasonSlice], dict[str, float], Iterator[tuple[Match, tuple[float, float]]]]]:
     """Replay every season in order against one shared rating table.
 
@@ -101,12 +99,14 @@ def replay(
     from fotmob; when provided and config.xg_alpha > 0, the rating update
     blends the binary result with the xG-implied score (elo-v8).
 
-    ``modern_config`` optionally overrides the Elo update config for a specific
-    era: when season >= ``boundary_season`` AND the slice's league matches
-    ``boundary_league``, the modern config is used for the rating update while
-    everything else (regression, draw model) stays from the base ``config``.
+    ``config_for(league, season)`` picks the Elo config each match is rated
+    with -- the shipped era switch by default, a per-division sweep when one is
+    being fitted. The offseason pull is taken from the same config, per
+    division, so it can differ by era too; only the seeding comes from the base
+    ``config``.
     """
     config = config or EloConfig()
+    config_for = config_for or (lambda league, season: era_config(league, season, config))
     shots = shots or {}
     ratings = dict(seeds)
     seasons = sorted({slice_.season for slice_ in slices})
@@ -118,7 +118,7 @@ def replay(
         # division's own mean over the teams that will actually play. Pulling
         # per division preserves the inter-division gap and leaves dormant
         # clubs untouched.
-        if season != seasons[0] and config.season_regression < 1.0:
+        if season != seasons[0]:
             active: dict[str, str] = {}
             for slice_ in in_season:
                 for match in slice_.matches:
@@ -128,33 +128,26 @@ def replay(
             for team_id, league in active.items():
                 if team_id in ratings:
                     by_league.setdefault(league, []).append(team_id)
-            for ids in by_league.values():
+            for league, ids in by_league.items():
+                regression = config_for(league, season).season_regression
+                if regression >= 1.0:
+                    continue
                 mean = sum(ratings[team_id] for team_id in ids) / len(ids)
                 for team_id in ids:
-                    ratings[team_id] = mean + config.season_regression * (ratings[team_id] - mean)
+                    ratings[team_id] = mean + regression * (ratings[team_id] - mean)
 
         for slice_ in in_season:
             for match in slice_.matches:
                 for team_id in team_ids(match):
                     ratings.setdefault(team_id, rating_for_unseeded_team())
 
-        # Determine which Elo config to use for rating updates this season.
-        use_modern = (
-            modern_config is not None
-            and boundary_season is not None
-            and boundary_league is not None
-            and season >= boundary_season
-            and any(s.league == boundary_league for s in in_season)
-        )
-        update_config = modern_config if use_modern else config
-
         played = sorted(
-            (match for slice_ in in_season for match in slice_.matches if match.played),
-            key=Match.sort_key,
+            ((match, slice_.league) for slice_ in in_season for match in slice_.matches if match.played),
+            key=lambda pair: Match.sort_key(pair[0]),
         )
 
-        def apply(update_config: EloConfig = update_config) -> Iterator[tuple[Match, tuple[float, float]]]:
-            for match in played:
+        def apply(season: int = season) -> Iterator[tuple[Match, tuple[float, float]]]:
+            for match, league in played:
                 home, away = team_ids(match)
                 before = (ratings[home], ratings[away])
                 match_shots = shots.get(match.match_id)
@@ -162,7 +155,7 @@ def replay(
                 away_xg = match_shots[1] if match_shots and len(match_shots) >= 2 else None
                 ratings[home], ratings[away] = updated_pair(
                     ratings[home], ratings[away], match.home_goals, match.away_goals,
-                    update_config, home_xg, away_xg,
+                    config_for(league, season), home_xg, away_xg,
                 )
                 yield match, before
 
@@ -178,9 +171,7 @@ def build_careers(
     *,
     config: EloConfig | None = None,
     shots: dict[str, tuple[float, ...]] | None = None,
-    modern_config: EloConfig | None = None,
-    boundary_season: int | None = None,
-    boundary_league: str | None = None,
+    config_for: Callable[[str, int], EloConfig] | None = None,
 ) -> dict[str, TeamCareer]:
     """Replay every season in order and record each club's rating over time."""
     config = config or EloConfig()
@@ -196,9 +187,7 @@ def build_careers(
 
     ratings_by_id = {team_id: seed.rating for team_id, seed in seeds.items()}
     for season, in_season, ratings, matches in replay(
-        slices, ratings_by_id, config, shots=shots,
-        modern_config=modern_config, boundary_season=boundary_season,
-        boundary_league=boundary_league,
+        slices, ratings_by_id, config, shots=shots, config_for=config_for,
     ):
         rating_start: dict[str, float] = {}
         for slice_ in in_season:

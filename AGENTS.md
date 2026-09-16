@@ -4,26 +4,28 @@
 
 A Python-based website for predicting and ranking teams in the top two divisions of
 Norwegian men's football: Eliteserien and OBOS-ligaen. Uses an ELO rating system
-(elo-v10) to estimate team strength, match probabilities and season outcomes. The site
+(elo-v11) to estimate team strength, match probabilities and season outcomes. The site
 runs two ways: against a live Python API server, or as pure static files on Firebase
-Hosting. Data comes from FotMob (no API key needed). `PROJECT_STATUS.md` holds the
+Hosting. Results come from FotMob and expected goals from FotMob (Eliteserien) and
+Sofascore (OBOS-ligaen); no API key is needed for either. `PROJECT_STATUS.md` holds the
 decision log: why the constants are what they are and what was tried and rejected.
 
 ## Core Constraints
 
 - All seasons 2015–2026 are in scope (historical data is already built)
-- The model version is **elo-v10**; changes to predictions must bump `MODEL_VERSION`
+- The model version is **elo-v11**; changes to predictions must bump `MODEL_VERSION`
 - No runtime dependencies — stdlib only (`tzdata` on Windows is the one exception)
 - No advanced prediction models: squad strength, ordered-logit, Dixon-Coles, pi-ratings,
-  an Elo/DC blend, xG-informed Elo and a market-value prior were all measured and
-  rejected (PROJECT_STATUS.md)
+  an Elo/DC blend and a market-value prior were all measured and rejected
+  (PROJECT_STATUS.md). xG-informed Elo was rejected in that round and shipped later,
+  in elo-v8, once the corpus was big enough to clear the bar
 - Ponytail mode is active — shortest diff wins, YAGNI enforced
 
 ## Architectural Boundaries
 
 ```text
 FotMob page -> data/raw/ archive -> Normalize/Validate -> data/normalized/ ->
-Elo replay + attack/defence ratings (on xG where fotmob has it) -> blended odds, Poisson scorelines -> Monte Carlo -> JSON reports -> Frontend
+Elo replay + attack/defence ratings (on xG in both divisions) -> blended odds, Poisson scorelines -> Monte Carlo -> JSON reports -> Frontend
 ```
 
 ## Layout
@@ -32,39 +34,45 @@ Elo replay + attack/defence ratings (on xG where fotmob has it) -> blended odds,
 - `sources/fotmob.py` — downloads a league season's fixture list from the page's
   `__NEXT_DATA__`, validates the count, archives it under `data/raw/`, returns it
 - `refresh.py` — one command pulls both divisions, normalizes, validates, writes atomically,
-  then tops up `data/xg.json` for newly played Eliteserien matches (non-fatal). A guard
+  then tops up `data/xg.json` for newly played matches in both (non-fatal). A guard
   skips a league with no unplayed match whose kickoff has passed; `--force` overrides
+- `sources/sofascore.py` — expected goals for OBOS-ligaen, which fotmob has no shotmap
+  for. Events are joined to our fixtures by club name and checked against the score
 - `normalize/` — canonical `Match` schema (`matches.py`) and the fotmob adapter; `Standing`
   is only read, from the 2014 seed tables
 - `validation/matches.py` — errors vs warnings; `refresh` refuses to write on an error
 - 24 season-league match files (2015–2026) plus 2014 seed tables; `data/odds_closing.json`,
   `data/market_values.json` (Transfermarkt squad totals) is a research input; `data/xg.json`
-  (fotmob xG and xG on target per Eliteserien match, 2020→) feeds the shipped model
+  (xG per match: fotmob's, with xG on target, for Eliteserien 2020→; Sofascore's for
+  OBOS-ligaen 2023→) feeds the shipped model
 
-### Model (elo-v10)
-- `model/elo.py` — `expected_score` / `actual_score` / `updated_pair`. K=20, home
-  advantage 60, cross-season regression 0.88 per division
+### Model (elo-v11)
+- `model/elo.py` — `expected_score` / `actual_score` / `updated_pair`, and `era_config`,
+  the `config_for(league, season)` every replay picks its config with. K=20 (35 from
+  2022), home advantage 60, cross-season regression 0.88 per division
 - `model/career.py` — `replay()` is the single season-by-season rating loop (per-division
   regression, ladder floor for unseeded clubs, chronological updates). `build_careers`,
   the backtest and the scoreline corpus all read off it
 - `model/probabilities.py` — three-way odds where `P(win) + 0.5·P(draw)` reproduces the
   rating-implied expectation exactly
 - `model/attack_defence.py` — two ratings per club on the log-goals scale, updated
-  online by goals above/below expectation; where fotmob has xG (Eliteserien 2020→,
-  `data/xg.json`) the observation is 0.75 xG + 0.25 goals and the step is 0.05 instead
-  of 0.015. Each fixture gets a Poisson scoreline grid (Dixon-Coles corrected); the
+  online by goals above/below expectation; where there is xG (`data/xg.json`:
+  Eliteserien 2020→ from fotmob, OBOS-ligaen 2023→ from Sofascore) the observation is
+  0.75 xG + 0.25 goals and the step is 0.05 instead of 0.015. Each fixture gets a Poisson scoreline grid (Dixon-Coles corrected); the
   shipped outcome odds are `blend_outcomes`: a 50/50 geometric blend of the Elo odds
   and the grid's own, and scorelines are the grid conditioned on those odds. Feeds
   fixtures, Compare Clubs (ported to the browser: `blendOdds`, `scoreGrid`) and the
   Monte Carlo. `pipeline.prior_attack_defence` caches the state at the end of each
   previous season; a report copies it and replays its own season
+- `model/ratings.py` — the rating table a report serves: `career.replay` over one season
+  from its opening ratings, so the live table is the one the backtest measured
 - `model/backtest.py` — walk-forward scorecard with per-match losses; `paired(a, b)` is
   the test for "model a beats model b" (|t| >= 2). `backtest_cli.py` sweeps K / home
   advantage / regression, `model/fit_params.py` jointly fits regression + seed ladder
 - `model/benchmark.py` + `research.py` — the bookmaker closing line (football-data.co.uk,
   joined to every Eliteserien match in `data/odds_closing.json`) as the yardstick:
   `python -m elitetracker.research run` prints Elo, the shipped blend and the market.
-  `research xg` (re)scrapes `data/xg.json`; the refresh keeps it current
+  `research xg` and `research xg-obos` (re)scrape `data/xg.json`; the refresh keeps it current
 - `model/initial_ratings.py` — seed ladder 1670/1330, division_offset 14
 
 ### Simulation
@@ -133,8 +141,9 @@ them every deploy. About 1,078 files, ~36 MB gzipped.
 
 ## ELO System Details
 
-- elo-v10 = elo-v8 ratings with era-switched config: legacy (K=20, xg_alpha=0.45) for
-  warmup seasons and OBOS; modern (K=35, xg_alpha=0.50) for Eliteserien 2022+. Home
+- elo-v11 = elo-v8 ratings with era-switched config (`elo.era_config`, passed to every
+  replay as `config_for(league, season)`): legacy (K=20, xg_alpha=0.45) for warmup
+  seasons, modern (K=35, xg_alpha=0.50) from 2022, in both divisions. Home
   advantage=60, cross-season regression=0.88 per division. + attack/defence goals model
   (k=0.015 on goals, k_shots=0.05 with alpha=0.75 xG, home 0.22 in log goals, base 0.37,
   cap 4, regression 0.88, rho −0.05) + season-level finishing quality (log(goals/xG) per
@@ -169,7 +178,7 @@ compare tool's odds port). Required coverage:
 ## Model Versioning
 
 ```text
-elo-v10
+elo-v11
 ```
 
 Changes impacting predictions must increment `MODEL_VERSION` in `model/elo.py`.

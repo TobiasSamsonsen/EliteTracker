@@ -79,14 +79,39 @@ from dataclasses import dataclass
 # season with xG data (2021: d=-0.00320, t=-1.70); after that the attack/
 # defence model captures the signal through the blended observation.
 #
-# elo-v10: era-switched Elo.  Warmup years (all seasons before 2022, and all
-# OBOS seasons) use the legacy config (K=20, xg_alpha=0.45); Eliteserien
-# 2022+ uses a faster, more xG-responsive config (K=35, xg_alpha=0.50).
+# elo-v10: era-switched Elo.  Warmup years (all seasons before 2022) use the
+# legacy config (K=20, xg_alpha=0.45); from 2022 a faster, more xG-responsive
+# config (K=35, xg_alpha=0.50) takes over.  (This was written as an
+# Eliteserien-only switch, but the code has always switched both divisions
+# together, and elo-v11 measured that as the better of the two.)
 # Fitted walk-forward on Eliteserien 2022+: era-switch K=35 a=0.50 beats
 # shipped K=20 a=0.45 by -0.00400 log loss (train t=-2.62); holdout
 # 2025-2026 delta=-0.00551 (t=-1.66, directionally right but not yet
 # significant at |t|>=2).  Regression, draw model, home advantage unchanged.
-MODEL_VERSION = "elo-v10"
+# elo-v11: expected goals for OBOS-ligaen.  fotmob has no shotmap for the
+# second division, so every OBOS match was rated on goals alone; Sofascore has
+# xG for it from 2023, and 876 matches of it are now in data/xg.json.  Both
+# xG-driven parts of the model switch on for those matches: the attack/defence
+# observation (0.75 xG + 0.25 goals, the faster step) and the xG-informed Elo
+# update.  Worth -0.01325 log loss on OBOS matches from 2023 (t=-3.41,
+# negative in all four seasons) and -0.00247 across both divisions 2016+
+# (t=-3.53) -- five times the gain xG bought on Eliteserien.
+#
+# Shipped with it: the served ratings are now the model's own.  The report
+# built its current season with a second replay loop that passed neither xG nor
+# the era config, so the live table sat a mean 12 Elo (max 38) away from the
+# rating the backtest measured; `model/ratings.py` now delegates to
+# `career.replay`.  The era switch moved from a per-season test over the
+# league list to `era_config(league, season)`, applied per match -- the
+# per-division form it was documented as (OBOS on the slow K) was measured with
+# the new corpus and is worse.
+#
+# Everything else in the refit was swept against the doubled corpus and did not
+# move: K and alpha in both divisions, the era boundary, the draw model (also
+# per division), home advantage (both models'), the blend weight, the
+# attack/defence steps, the seed ladder, the newcomer floor and the finishing
+# regression.  See PROJECT_STATUS.md.
+MODEL_VERSION = "elo-v11"
 
 # A 400-point rating gap means the stronger side is expected to score 10 times
 # as often as the weaker one; this is the constant that defines the ELO scale.
@@ -127,14 +152,32 @@ class EloConfig:
     xg_alpha: float = 0.45
 
 
-# Era-switch constants.  The shipped model uses legacy config (above) for all
-# warmup seasons and OBOS; from Eliteserien 2022 onward the modern config
-# takes over.  Fitted walk-forward on Eliteserien 2022+ (scripts/sweep_era_switch.py).
+# Era-switch constants.  Warmup seasons use the legacy config above; from the
+# boundary season on, the modern one takes over -- in *both* divisions.  The
+# per-division variant (OBOS kept on the slow K) was measured with the OBOS xG
+# corpus in hand and is worse: +0.00027 log loss on both divisions 2016+
+# (t=+2.11).  K is flat from 35 to 50 (|t| < 1.1) and alpha flat 0.30-0.60, so
+# the fitted pair stands for both.
 MODERN_K: float = 35.0
 MODERN_XG_ALPHA: float = 0.50
 MODERN_CONFIG = EloConfig(k_factor=MODERN_K, xg_alpha=MODERN_XG_ALPHA)
 BOUNDARY_SEASON: int = 2022
-BOUNDARY_LEAGUE: str = "eliteserien"
+
+
+def era_config(
+    league: str, season: int, base: EloConfig | None = None, modern: EloConfig | None = None
+) -> EloConfig:
+    """The Elo config one match is rated with: modern from the boundary season
+    on, the legacy `base` before it.
+
+    Every replay takes a `config_for(league, season)` of this shape. The shipped
+    rule ignores `league` -- both divisions switch together, which is what the
+    backtest prefers -- but a sweep over one division is then a different
+    function of the same shape rather than a new flag.
+    """
+    if season >= BOUNDARY_SEASON:
+        return modern or MODERN_CONFIG
+    return base or EloConfig()
 
 
 def expected_score(rating: float, opponent_rating: float) -> float:

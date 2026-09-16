@@ -33,6 +33,7 @@ from elitetracker.normalize.fotmob import normalize_matches
 from elitetracker.normalize.matches import dump
 from elitetracker.pipeline import NORMALIZED_DIR, current_season, load_matches
 from elitetracker.sources.fotmob import LEAGUES, FetchError, fetch_matches, update_xg
+from elitetracker.sources.sofascore import update_obos_xg
 from elitetracker.validation.matches import validate
 
 
@@ -103,10 +104,16 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--force", action="store_true", help="fetch even if no matches appear to have finished")
     args = parser.parse_args(argv)
     refresh_matches(args.root, season=args.season, refresh_guard=not args.force)
-    # The attack/defence ratings update on xG where fotmob has it (Eliteserien);
-    # top up the shot file for anything newly played. Non-fatal by design.
+    # The attack/defence ratings and the Elo update both run on xG where there
+    # is any: fotmob for Eliteserien, Sofascore for OBOS (fotmob has no shotmap
+    # for the second division). Top up both for anything newly played.
+    # Non-fatal by design -- the model falls back to goals.
     season = args.season or current_season(args.root)
     added = update_xg(load_matches(args.root / f"eliteserien_{season}_matches.json"))
+    try:
+        added += update_obos_xg(load_matches(args.root / f"obosligaen_{season}_matches.json"), season)
+    except FetchError as exc:
+        print(f"OBOS xG skipped: {exc}")
     if added:
         print(f"xG: {added} new match(es) recorded")
     return 0

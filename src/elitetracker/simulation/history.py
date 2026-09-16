@@ -109,6 +109,7 @@ def build_history(
     prior: AttackDefence | None = None,
     elo_config: EloConfig | None = None,
     config: HistoryConfig | None = None,
+    shots: dict[str, tuple[float, ...]] | None = None,
 ) -> list[HistorySnapshot]:
     """One snapshot per sampled date, oldest first.
 
@@ -126,7 +127,7 @@ def build_history(
         rewound_all = as_of_date(all_matches, on)
         rewound_league = as_of_date(league_matches, on)
 
-        ratings = build_rating_table(seeds, rewound_all, config=elo_config)
+        ratings = build_rating_table(seeds, rewound_all, config=elo_config, shots=shots)
         projection = simulate_season(
             rewound_league,
             ratings,

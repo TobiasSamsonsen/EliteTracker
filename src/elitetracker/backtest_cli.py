@@ -17,9 +17,10 @@ The grid is exhaustive and deterministic; no randomness enters the scoring.
 from __future__ import annotations
 
 import argparse
+from dataclasses import replace
 
 from elitetracker.model.backtest import compare, walk_forward
-from elitetracker.model.elo import EloConfig, MODERN_CONFIG, BOUNDARY_SEASON, BOUNDARY_LEAGUE
+from elitetracker.model.elo import EloConfig, MODERN_CONFIG, era_config
 from elitetracker.pipeline import load_slices, seed_ratings
 
 
@@ -46,16 +47,19 @@ def main(argv: list[str] | None = None) -> int:
     seeds = {team_id: seed.rating for team_id, seed in seed_ratings().items()}
 
     cards = [walk_forward(slices, seeds, EloConfig(), score_from_season=args.score_from, name="base",
-                           league="eliteserien", modern_config=MODERN_CONFIG,
-                           boundary_season=BOUNDARY_SEASON, boundary_league=BOUNDARY_LEAGUE)]
+                           league="eliteserien")]
     for k in _frange(args.k_min, args.k_max, args.k_step):
         for home in _frange(args.home_min, args.home_max, args.home_step):
             for reg in args.regression:
-                config = EloConfig(k_factor=k, home_advantage=home, season_regression=reg)
-                cards.append(walk_forward(slices, seeds, config, score_from_season=args.score_from,
+                # The scored matches (Eliteserien from the boundary season) are
+                # rated with the modern config, so the sweep has to move that
+                # one; the legacy config still warms the ratings up to it.
+                legacy = EloConfig(home_advantage=home, season_regression=reg)
+                modern = replace(MODERN_CONFIG, k_factor=k, home_advantage=home, season_regression=reg)
+                cards.append(walk_forward(slices, seeds, legacy, score_from_season=args.score_from,
                                           name=f"k={k:.0f} ha={home:.0f} reg={reg:.2f}",
-                                          league="eliteserien", modern_config=MODERN_CONFIG,
-                                          boundary_season=BOUNDARY_SEASON, boundary_league=BOUNDARY_LEAGUE))
+                                          league="eliteserien",
+                                          config_for=lambda lg, s, l=legacy, m=modern: era_config(lg, s, l, m)))
 
     shown = sorted(cards, key=lambda card: card.log_loss)[: max(1, args.top)]
     print(f"Scored from season {args.score_from}  |  {len(cards) - 1} configs + baseline\n")

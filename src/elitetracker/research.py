@@ -3,6 +3,7 @@ pulls a candidate model would need (closing odds, fotmob xG).
 
     python -m elitetracker.research odds                     # closing odds -> data/odds_closing.json
     python -m elitetracker.research xg --seasons 2020-2026   # fotmob xG + xGoT -> data/xg.json (resumable)
+    python -m elitetracker.research xg-obos                  # sofascore xG for OBOS-ligaen (2023+)
     python -m elitetracker.research run --score-from 2019    # Elo, the shipped blend and the market, paired
 
 The 2026-09 candidates (Dixon-Coles, pi-ratings, an Elo/DC blend, xG-informed
@@ -19,8 +20,8 @@ import time
 
 from elitetracker.model import benchmark
 from elitetracker.model.backtest import Scorecard, paired, walk_forward
-from elitetracker.model.elo import EloConfig, MODERN_CONFIG, BOUNDARY_SEASON, BOUNDARY_LEAGUE
-from elitetracker.pipeline import load_matches, load_slices, seed_ratings
+from elitetracker.model.elo import EloConfig
+from elitetracker.pipeline import NORMALIZED_DIR, load_matches, load_slices, seed_ratings
 from elitetracker.sources.fotmob import FetchError, fetch_match_xg, load_xg, save_xg
 
 
@@ -76,6 +77,25 @@ def cmd_xg(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_xg_obos(args: argparse.Namespace) -> int:
+    """OBOS-ligaen xG from Sofascore; fotmob has no shotmap for the second division."""
+    from elitetracker.sources.sofascore import FIRST_XG_SEASON, SEASON_IDS, update_obos_xg
+
+    first, last = (int(part) for part in args.seasons.split("-"))
+    total = 0
+    for season in range(max(first, FIRST_XG_SEASON), last + 1):
+        if season not in SEASON_IDS:
+            print(f"OBOS {season}: no Sofascore season id, skipped")
+            continue
+        matches = load_matches(NORMALIZED_DIR / f"obosligaen_{season}_matches.json")
+        added = update_obos_xg(matches, season, delay=args.delay, verbose=True)
+        print(f"OBOS {season}: {added} match(es) recorded")
+        total += added
+    data = load_xg()
+    print(f"done: {len(data['matches'])} with xG, {len(data['none'])} without")
+    return 0
+
+
 # ---------- the comparison ---------------------------------------------
 
 def _halves(card: Scorecard, dates: dict[str, str]) -> tuple[Scorecard, Scorecard]:
@@ -101,8 +121,7 @@ def cmd_run(args: argparse.Namespace) -> int:
     dates = {m.match_id: m.date for s in slices for m in s.matches}
     shots = {k: tuple(v) for k, v in load_xg()["matches"].items()}
     elo = walk_forward(slices, seeds, EloConfig(), score_from_season=args.score_from, name="elo",
-                        shots=shots, league="eliteserien", modern_config=MODERN_CONFIG,
-                        boundary_season=BOUNDARY_SEASON, boundary_league=BOUNDARY_LEAGUE)
+                        shots=shots, league="eliteserien")
     shipped = Scorecard(name="elo + attack/defence")
     ad = AttackDefence.from_slices(slices, ADConfig(), shots=shots)
     for match in sorted((m for s in slices for m in s.matches if m.played), key=Match.sort_key):
@@ -134,6 +153,8 @@ def main(argv: list[str] | None = None) -> int:
     xg = sub.add_parser("xg"); xg.add_argument("--seasons", default="2020-2026"); xg.add_argument("--delay", type=float, default=1.0)
     xg.add_argument("--limit", type=int); xg.add_argument("--refresh", action="store_true", help="refetch matches already stored")
     xg.set_defaults(func=cmd_xg)
+    obos = sub.add_parser("xg-obos"); obos.add_argument("--seasons", default="2023-2026")
+    obos.add_argument("--delay", type=float, default=0.3); obos.set_defaults(func=cmd_xg_obos)
     run = sub.add_parser("run"); run.add_argument("--score-from", type=int, default=2022); run.set_defaults(func=cmd_run)
     args = parser.parse_args(argv)
     return args.func(args)

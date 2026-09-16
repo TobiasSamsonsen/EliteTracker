@@ -6,7 +6,7 @@ import pytest
 
 from elitetracker.model.backtest import walk_forward
 from elitetracker.model.career import SeasonSlice, replay
-from elitetracker.model.elo import EloConfig
+from elitetracker.model.elo import EloConfig, era_config
 from elitetracker.normalize.matches import Match
 
 
@@ -112,6 +112,8 @@ class TestOffseasonRegression:
 
 
 class TestEraSwitch:
+    """`config_for(league, season)` is how a match picks its Elo config."""
+
     def _slices_three_seasons(self):
         return [
             SeasonSlice("eliteserien", "Eliteserien", 2021, [
@@ -125,50 +127,55 @@ class TestEraSwitch:
             ]),
         ]
 
-    def test_modern_config_used_when_boundary_matches(self):
+    def _cards(self, boundary_season, boundary_league):
         slices = self._slices_three_seasons()
         seeds = {"A": 1600.0, "B": 1400.0}
-        legacy = EloConfig(k_factor=10)
-        modern = EloConfig(k_factor=50)
-        card = walk_forward(
-            slices, seeds, legacy, score_from_season=2021,
-            modern_config=modern, boundary_season=2022, boundary_league="eliteserien",
+        legacy, modern = EloConfig(k_factor=10), EloConfig(k_factor=50)
+
+        def config_for(league, season):
+            return modern if season >= boundary_season and league == boundary_league else legacy
+
+        return (
+            walk_forward(slices, seeds, legacy, score_from_season=2021, config_for=config_for),
+            walk_forward(slices, seeds, legacy, score_from_season=2021,
+                         config_for=lambda league, season: legacy),
         )
-        card_no_switch = walk_forward(slices, seeds, legacy, score_from_season=2021)
+
+    def test_modern_config_used_when_boundary_matches(self):
+        switched, legacy_only = self._cards(2022, "eliteserien")
         # K=50 on 2022 moves ratings more than K=10, so 2023 predictions differ
-        assert card.log_loss != card_no_switch.log_loss
+        assert switched.log_loss != legacy_only.log_loss
 
     def test_legacy_config_used_when_boundary_season_misses(self):
-        slices = self._slices_three_seasons()
-        seeds = {"A": 1600.0, "B": 1400.0}
-        legacy = EloConfig(k_factor=10)
-        modern = EloConfig(k_factor=50)
-        card = walk_forward(
-            slices, seeds, legacy, score_from_season=2021,
-            modern_config=modern, boundary_season=2023, boundary_league="eliteserien",
-        )
-        card_no_switch = walk_forward(slices, seeds, legacy, score_from_season=2021)
-        assert card.log_loss == card_no_switch.log_loss
+        switched, legacy_only = self._cards(2023, "eliteserien")
+        assert switched.log_loss == legacy_only.log_loss  # 2023 is scored on pre-match ratings
 
     def test_legacy_config_used_when_boundary_league_misses(self):
-        slices = self._slices_three_seasons()
-        seeds = {"A": 1600.0, "B": 1400.0}
-        legacy = EloConfig(k_factor=10)
-        modern = EloConfig(k_factor=50)
-        card = walk_forward(
-            slices, seeds, legacy, score_from_season=2021,
-            modern_config=modern, boundary_season=2022, boundary_league="obosligaen",
-        )
-        card_no_switch = walk_forward(slices, seeds, legacy, score_from_season=2021)
-        assert card.log_loss == card_no_switch.log_loss
+        switched, legacy_only = self._cards(2022, "obosligaen")
+        assert switched.log_loss == legacy_only.log_loss
 
-    def test_no_modern_config_is_noop(self):
+    def test_the_switch_is_per_match_not_per_season(self):
+        """A modern Eliteserien season must not drag its OBOS twin along."""
+        slices = [
+            SeasonSlice("eliteserien", "Eliteserien", 2022, [_match("e", "A", "B", 1, 0, "2022-04-01")]),
+            SeasonSlice("obosligaen", "OBOS-ligaen", 2022, [_match("o", "C", "D", 1, 0, "2022-04-02")]),
+            SeasonSlice("obosligaen", "OBOS-ligaen", 2023, [_match("o2", "D", "C", 1, 0, "2023-04-01")]),
+        ]
+        seeds = {"A": 1600.0, "B": 1400.0, "C": 1600.0, "D": 1400.0}
+        legacy, modern = EloConfig(k_factor=10), EloConfig(k_factor=50)
+        switched = walk_forward(
+            slices, seeds, legacy, score_from_season=2023,
+            config_for=lambda league, season: modern if league == "eliteserien" else legacy,
+        )
+        legacy_only = walk_forward(slices, seeds, legacy, score_from_season=2023,
+                                   config_for=lambda league, season: legacy)
+        assert switched.log_loss == legacy_only.log_loss
+
+    def test_default_is_the_shipped_era_switch(self):
         slices = self._slices_three_seasons()
         seeds = {"A": 1600.0, "B": 1400.0}
         config = EloConfig(k_factor=10)
-        card = walk_forward(slices, seeds, config, score_from_season=2021)
-        card_no_kwargs = walk_forward(
-            slices, seeds, config, score_from_season=2021,
-            modern_config=None, boundary_season=None, boundary_league=None,
-        )
-        assert card.log_loss == card_no_kwargs.log_loss
+        default = walk_forward(slices, seeds, config, score_from_season=2021)
+        explicit = walk_forward(slices, seeds, config, score_from_season=2021,
+                                config_for=lambda league, season: era_config(league, season, config))
+        assert default.log_loss == explicit.log_loss

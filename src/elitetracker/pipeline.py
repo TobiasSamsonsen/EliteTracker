@@ -19,7 +19,7 @@ from typing import Any
 
 from elitetracker.model.attack_defence import ADConfig, AttackDefence, blend_outcomes, top_scorelines
 from elitetracker.model.career import SeasonSlice, TeamCareer, build_careers
-from elitetracker.model.elo import MODEL_VERSION, EloConfig, BOUNDARY_SEASON, BOUNDARY_LEAGUE, MODERN_CONFIG
+from elitetracker.model.elo import MODEL_VERSION, EloConfig, era_config
 from elitetracker.model.initial_ratings import SeedingConfig, TeamRating, initial_ratings
 from elitetracker.model.probabilities import match_probabilities
 from elitetracker.model.ratings import build_rating_table
@@ -179,16 +179,23 @@ def build_all_careers(
     elo_config: EloConfig | None = None,
     seeding: SeedingConfig | None = None,
 ) -> dict[str, TeamCareer]:
-    shots = {match_id: tuple(values) for match_id, values in load_xg()["matches"].items()}
     return build_careers(
         load_slices(root), seed_ratings(root, seeding=seeding),
-        config=elo_config, shots=shots,
-        modern_config=MODERN_CONFIG, boundary_season=BOUNDARY_SEASON,
-        boundary_league=BOUNDARY_LEAGUE,
+        config=elo_config, shots=shot_table(),
     )
 
 
 @functools.cache
+@functools.cache
+def shot_table() -> dict[str, tuple[float, ...]]:
+    """match_id -> expected goals: fotmob for Eliteserien, Sofascore for OBOS.
+
+    Entries are (home_xg, away_xg) and, where the source has it, xG on target
+    after them; everything downstream reads the first two.
+    """
+    return {match_id: tuple(values) for match_id, values in load_xg()["matches"].items()}
+
+
 def prior_attack_defence(root: Path, season: int) -> AttackDefence:
     """Attack/defence ratings at the end of the season before `season`.
 
@@ -196,8 +203,7 @@ def prior_attack_defence(root: Path, season: int) -> AttackDefence:
     state before replaying the season they are reporting on.
     """
     slices = load_slices(root)
-    shots = {match_id: tuple(values) for match_id, values in load_xg()["matches"].items()}
-    return AttackDefence.from_slices(slices, ADConfig(), shots=shots).replay(
+    return AttackDefence.from_slices(slices, ADConfig(), shots=shot_table()).replay(
         [match for slice_ in slices if slice_.season < season for match in slice_.matches]
     )
 
@@ -254,7 +260,8 @@ def build_report(
         all_matches = as_of_date(all_matches, asof)
         matches = as_of_date(matches, asof)
 
-    ratings = build_rating_table(seeds, all_matches, config=elo_config)
+    era = era_config(slug, season, elo_config)
+    ratings = build_rating_table(seeds, all_matches, config=elo_config, shots=shot_table())
     prior = prior_attack_defence(root, season)
     ad = prior.copy().replay(all_matches)
     ad.start_season(season)
@@ -276,14 +283,16 @@ def build_report(
                 for band in bands_for(spec, season)
             ],
         },
+        # The card shows the config this season is actually rated with, which
+        # from the boundary season on is the modern one, not the base defaults.
         "model": {
             "version": MODEL_VERSION,
-            "k_factor": elo_config.k_factor,
-            "home_advantage": elo_config.home_advantage,
-            "xg_alpha": elo_config.xg_alpha,
-            "draw_base": elo_config.draw_base,
-            "draw_scale": elo_config.draw_scale,
-            "season_regression": elo_config.season_regression,
+            "k_factor": era.k_factor,
+            "home_advantage": era.home_advantage,
+            "xg_alpha": era.xg_alpha,
+            "draw_base": era.draw_base,
+            "draw_scale": era.draw_scale,
+            "season_regression": era.season_regression,
             "finishing_regression": ad.config.finishing_regression,
             "seed_season": SEED_SEASON,
             "simulations": projection.simulations,
@@ -312,7 +321,8 @@ def build_report(
         "fixtures": _fixtures_payload(matches, ratings, elo_config, ad),
         "results": _results_payload(matches),
         "history": _history_payload(
-            build_history(matches, all_matches, seeds, prior=prior, elo_config=elo_config, config=history),
+            build_history(matches, all_matches, seeds, prior=prior, elo_config=elo_config,
+                          config=history, shots=shot_table()),
             {row.team_id: row.team for row in table_from_matches(matches)},
         ),
     }
