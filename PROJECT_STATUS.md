@@ -571,6 +571,11 @@ falls back to goals for a match without xG, so it must never block a refresh.
 ## 🔧 Open items
 
 **Next, in rough order of expected value:**
+- [ ] Re-test per-era K/α with 2027 data as holdout. The candidate
+      (K=70–90, α=0.70–0.85) cleared |t|≥2 on the full xG window (log loss
+      0.9889 vs 0.9943 shipped) but not on the holdout splits (t=−0.75
+      forward, −1.99 reverse). One more season should tip it.
+      Written up under "Post-elo-v11.1 knob sweeps".
 - [ ] Check whether Sofascore backfills OBOS xG before 2023 (2020–2022 report
       `hasXg: false` today); it would add ~720 matches and is one re-run of
       `research xg-obos --seasons 2020-2026` if it ever appears.
@@ -643,3 +648,102 @@ falls back to goals for a match without xG, so it must never block a refresh.
   so future sweeps test the actual shipped model.  Attack/defence k_shots and alpha
   were swept but showed zero effect on outcome log loss (the AD grid's win/draw/loss
   odds are flat when team ratings are close).
+
+## 🧪 Post-elo-v11.1 knob sweeps (September 2026)
+
+Full walk-forward on the xG-availability window (Eliteserien 2020+, OBOS-ligaen
+2023+; n=2,640 scored, n=2,496 with xG). All sweeps use `backtest.paired()` with
+the shipped elo-v11.1 model as the baseline. |t|≥2 and the same sign in both
+halves is the bar.
+
+### Cross-season regression
+
+`season_regression` 0.80–1.00 by 0.02 (coarse) and 0.85–1.00 by 0.01 (fine)
+on three windows:
+
+| window | n | best | log loss | t |
+|---|---|---|---|---|
+| Eliteserien 2022+ | 1,120 | 0.88 or 1.00 | 0.9949 | −0.8 |
+| both divisions 2016+ | 5,136 | 0.88 or 0.90 | 1.0033 | −0.7 |
+| xG window (both divs) | 2,496 | 1.00 (no regression) | 0.9939 | −1.2 |
+
+The surface is flat across every window; 0.88 and 1.00 (no regression) are
+within 0.0001 of each other. 0.88 was kept because removing regression entirely
+(t=−2.04 on the full 2016+ window) showed a tiny but consistent benefit in
+the elo-v11 refit, and the current value sits in the flat basin. **No change.**
+
+### Per-era K / xg_alpha (corrected boundary)
+
+The era boundary was corrected from calendar-2022 to xG-availability:
+Eliteserien 2020+ (xG present), OBOS-ligaen 2023+ (xG present). The legacy era
+uses plain binary results; the modern era uses xG-informed Elo updates.
+
+Coarse grid (K=30–100, α=0.30–1.00) then fine grid (K=55–90, α=0.50–0.80)
+on n=2,640 (full xG window):
+
+| K | α | log loss | vs shipped (30/0.30) | t |
+|---|---|---|---|---|
+| 30 | 0.30 | 0.9943 | — (baseline) | — |
+| 70 | 0.70 | 0.9889 | −0.0054 | −2.2 |
+| 75 | 0.75 | 0.9889 | −0.0054 | −2.4 |
+| 80 | 0.75 | 0.9889 | −0.0054 | −2.6 |
+| 85 | 0.75 | 0.9889 | −0.0054 | −2.5 |
+| 90 | 0.75 | 0.9890 | −0.0053 | −2.3 |
+
+Winner region: K=70–90, α=0.70–0.80. Per-season: 9/11 better, but gains
+concentrate in Eliteserien 2022 (−0.025) and OBOS 2023/24 (−0.010/+0.005).
+Per-league: Eliteserien t=−1.45, OBOS t=−1.74.
+
+Holdout (split-half):
+- forward (fit 2020–2022, test 2023–2026): d=−0.0026, t=−0.75 — not significant
+- reverse (fit 2023–2026, test 2020–2022): d=−0.0021, t=−1.99 — borderline
+
+**Verdict: direction robust but not significant at |t|≥2 on holdout.** The
+legacy era (pre-xG) is fine: shipped K=20/α=0.45 vs best K=18/α=0.0 shows
+t=−1.63 and the split shows gain only pre-2020. **Not shipped — needs 2027
+holdout to confirm.**
+
+### Blend weight (OUTCOME_BLEND)
+
+Swept `OUTCOME_BLEND` 0.0–1.0 (weight on Elo odds; 1.0−w on the AD grid) for
+both the shipped config (K=30/0.30) and the candidate (K=80/0.75):
+
+| w (Elo) | AD (1−w) | log loss | vs w=0.25 | t |
+|---|---|---|---|---|
+| 0.00 | 1.00 | 0.9879 | −0.0010 | −1.1 |
+| 0.25 | 0.75 | 0.9889 | — (baseline) | — |
+| 0.50 | 0.50 | 0.9910 | +0.0021 | +2.3 |
+| 0.75 | 0.25 | 0.9932 | +0.0043 | +3.8 |
+| 1.00 | 0.00 | 0.9979 | +0.0090 | +5.2 |
+
+Grid alone (w=0) beats Elo alone (w=1) significantly in both leagues
+(Eliteserien t=−2.42, OBOS t=−2.11). Blend weight 0.25 sits on flat ground
+— any w=0–0.30 is within 0.0003, |t|<1.1. The same pattern holds for the
+candidate Elo config. **No change to OUTCOME_BLEND=0.25.**
+
+### Attack/defence model knobs
+
+Swept k, k_shots, alpha, home, rho, base, cap, season_regression,
+finishing_regression. Coarse grid: 16,464 configs (k 0.005–0.025,
+k_shots 0.03–0.07, alpha 0.50–1.00, home 0.14–0.30, rho −0.12–0.00).
+Fine grid: 17,745 configs around the winner.
+
+| parameter | shipped | best | surface |
+|---|---|---|---|
+| k (goals step) | 0.015 | 0.019 | flat 0.012–0.022 |
+| k_shots (xG step) | 0.05 | 0.055 | flat 0.04–0.06 |
+| alpha (xG weight) | 0.75 | 0.80 | flat 0.65–0.90 |
+| home (log goals) | 0.22 | 0.235 | flat 0.18–0.28 |
+| rho (Dixon-Coles) | −0.05 | −0.03 | flat −0.10–0.00 |
+| cap | 4.0 | 4.0 | flat 3–8 |
+| base | 0.37 | 0.37 | cancels out entirely |
+| season_regression | 0.88 | 0.88 | flat 0.85–0.95 |
+| finishing_regression | 0.70 | 0.70 | flat 0.50–0.95 |
+
+Winner: k=0.019, k_shots=0.055, alpha=0.80, home=0.235, rho=−0.03,
+logloss=0.98458 vs baseline 0.98495 (d=−0.00037, t=−0.78). Per-season:
+5/7 Eliteserien, 2/4 OBOS better (max |t|=1.67). The surface is extremely
+flat — every shipped value sits in the basin. **All AD values stay.**
+
+Secondary knobs (finishing_regression, cap, season_regression): all flat
+within 0.0001 across the tested ranges. No change warranted.
