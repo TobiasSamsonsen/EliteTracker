@@ -568,9 +568,111 @@ re-fetching anything played in the last two days because both sources revise xG
 after the final whistle. A Sofascore failure prints and is skipped — the model
 falls back to goals for a match without xG, so it must never block a refresh.
 
+## 🎯 2026-09: the shipped model vs the market, and what could close the gap
+
+How far the shipped elo-v11.1 (Elo + attack/defence blend, 25/75) is from the
+Pinnacle closing line and *where* it loses. Everything here is the answer to
+"can structure, not constants, close it?" — the constants are done (the sweeps
+above found nothing worth shipping).
+
+### The gap, current numbers
+
+`python -m elitetracker.research run`, both windows (Eliteserien, where odds
+exist):
+
+| scored 2019+ (n=1,832) | log loss | vs market | t |
+|---|---|---|---|
+| Elo alone | 0.98931 | +0.01751 | +4.56 |
+| **shipped Elo + AD** | **0.98039** | **+0.00880** | **+2.50** |
+| Pinnacle closing | 0.97266 | — | — |
+
+| scored 2022+ (n=1,112) | log loss | vs market | t |
+|---|---|---|---|
+| Elo alone | 0.97400 | +0.01640 | +3.31 |
+| **shipped Elo + AD** | **0.96449** | **+0.00724** | **+1.59** |
+| Pinnacle closing | 0.95889 | — | — |
+
+The shipped model clears the |t|≥2 bar on 2019+ but not the recent window
+overall; it clears on that window's late half (+0.0133, t +2.19). Elo alone is
+behind the market everywhere.
+
+### Where exactly the market wins
+
+Bucket analyses over 2019+ (Eliteserien, 1,832 matches): **the model leaks
+probability to the wrong side in three specific places.**
+
+**1. Home wins.** Mean home probability: model 0.451, market 0.464, base rate
+0.467. The model prices away wins at 0.312 against a 0.298 base; the market
+0.296. On matches that end in a home win the model is on average +0.040 log
+loss worse; on away wins it *beats* the market (−0.033). The home-away
+calibration is a genuine, stable gap — per season the model's home mean sits
+0.448–0.454 while the market runs 0.447–0.477 and tracks the actual rate.
+
+**2. Big favourites.** Where the model's favourite has p≥0.7 it actually wins
+83.5% of the time — an under-confidence of 7.9pp (market is also under-confident
+there, 5.8pp, but by less). The market's edge concentrates in the extreme
+buckets — model max-p in [0.6,0.7) costs +0.0158 vs the market, [0.7,1.0)
++0.0056, while the middle of the range runs +0.008 to +0.014. The market is
+sharper exactly where homes and favourites overlap.
+
+**3. Late-season matches.** The gap after midsummer (+0.0152/match) is more
+than double the early-season one (+0.0068). The market has team news, form and
+motivation; our ratings only move on goals and xG. The one season we beat the
+market outright is 2022 (−0.0095) — noise, or a COVID restart stumping the
+bookies; two-sided hindsight.
+
+### What could close it — structure, not constants
+
+All constants are at their measured optimum, so every idea below changes the
+*inputs* a prediction is built from. None is shipped; each is a candidate with
+its own honest test.
+
+1. **Home advantage shaped by the rating gap.** The model's home mean is pinned
+   at ~0.45 across every season while the market rides 0.447→0.477 and lands on
+   the base rate. A single ×0.465 is a constant (already swept — flat). The
+   untried version: the home term scales with how much better the favourite is,
+   i.e. `home_advantage × (1 + β·fav_gap)`. Zero new data, one new knob, and it
+   is exactly where the calibration gap concentrates.
+
+2. **Favourite sharpening.** Under-confident at the top of the confidence range
+   is a sharper-blend problem: currently one fixed blend weight (0.25) for every
+   match. A weight that changes with the rating gap (more grid when the favourite
+   is heavy) is the natural form. Risk: this is a tuned-at-the-margin parameter,
+   the same trap as the K/α candidate — a forward split is mandatory.
+
+3. **In-season team news through the calendar.** The late-season gap is money,
+   motivation and rotation. fotmob already returns every kickoff date, so
+   rest-days and congestion are computable now: days-since-last-match for both
+   sides, plus the Thursday→Sunday pattern of European weeks (Norway's European
+   sides are the big favourites this hypothesis applies to). Pure new data — the
+   model currently ignores the calendar entirely.
+
+4. **Populated from odds — closed and noted.** Consuming the closing line for
+   matches that have one would mechanically close the measured gap, but the
+   project's position is unchanged: that is not the season-long simulation the
+   site is for. Recorded so nobody re-derives it.
+
+**Bottom line.** The shipped model is within ~1pp of the closing line over the
+long window (t +2.5) and ~0.7pp over the recent (t +1.6), it matches or beats
+the market on away wins and near-even matches, and its remaining loss sits in
+three buckets — home wins, big favourites, late-season — all consistent with
+"the market prices information the model doesn't see". Three structural
+candidates (shaped home term, gap-dependent blend, calendar-derived rest days)
+are the honest shots at those buckets with data already in hand or one scrape
+away. Nothing ships until a walk-forward says it does.
+
 ## 🔧 Open items
 
 **Next, in rough order of expected value:**
+- [ ] Home advantage shaped by the rating gap (scales with favourite gap, not a
+      constant) — targets the +0.040 home-win calibration gap. See elo-v11.1
+      market gap, candidate 1.
+- [ ] Favourite sharpening: blend weight that changes with the rating gap —
+      targets the +7.9pp under-confidence on heavy favourites. Mandatory forward
+      split. See candidate 2.
+- [ ] Calendar-derived rest days and congested weeks from fotmob kickoff dates
+      (days since last, Thursday→Sunday) — targets the doubled late-season gap.
+      See candidate 3.
 - [ ] Re-test per-era K/α with 2027 data as holdout. The candidate
       (K=70–90, α=0.70–0.85) cleared |t|≥2 on the full xG window (log loss
       0.9889 vs 0.9943 shipped) but not on the holdout splits (t=−0.75
