@@ -691,8 +691,9 @@ away. Nothing ships until a walk-forward says it does.
 - [ ] Re-fit the draw model periodically as seasons accumulate.
 - [ ] Re-run `backtest_cli` after each new season to keep K / home advantage / regression
       fitted (bump `MODEL_VERSION`).
-- [ ] Head-to-head tool — the same odds as Compare but framed as a rivalry: the two
-      clubs' record against *each other* from the results, plus the model's current odds.
+- [ ] Head-to-head tool — current-season record between two clubs is now shown in Compare
+      Clubs (filters `report.results` client-side). Cross-season history would need a new
+      server-side payload from the normalized match files.
 - [ ] "What-if" simulator — nudge a club's rating and see the grid/table update. Needs
       on-demand simulation, so it does not fit the static host until that story is settled.
 
@@ -849,3 +850,11 @@ flat — every shipped value sits in the basin. **All AD values stay.**
 
 Secondary knobs (finishing_regression, cap, season_regression): all flat
 within 0.0001 across the tested ranges. No change warranted.
+
+- Frontend quick wins: CSS dedup (3 dead rules removed), pred-box gradient fix
+  (undefined --cell-bg/--accent/--band-europa replaced with --panel and
+  --outcome-good), season animation button hidden when <2 matchdays, careers.json
+  fetch errors propagated instead of silently swallowed, back button in team focus
+  view, head-to-head section in Compare Clubs (current-season record from
+  report.results), mobile header reworked — theme and language toggles moved into
+  the More sheet to free a row in the masthead grid (3 columns → 2).

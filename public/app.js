@@ -1305,6 +1305,10 @@ function renderTeamView(report) {
   content.replaceChildren();
   if (!teamId) return;
 
+  const back = el('button', 'team-back', '\u2190 ' + t('team.back'));
+  back.addEventListener('click', () => history.back());
+  content.appendChild(back);
+
   const row = report.table.find((t) => t.team_id === teamId);
   const career = careerById(teamId);
   const teamName = row?.team || career?.team || fallbackNameById(teamId) || 'Unknown';
@@ -2135,10 +2139,15 @@ function render() {
       if (!anim.playing) {
         renderGrid(report);
         renderGridLegend();
+        $('#grid-anim-play').hidden = matchdays(report).length < 2;
       }
       break;
     case 'ladder':
-      if (!anim.playing) renderLadder(state.reports);
+      if (!anim.playing) {
+        renderLadder(state.reports);
+        const hasHistory = Object.values(state.reports).some((r) => matchdays(r).length >= 2);
+        $('#ladder-anim-play').hidden = !hasHistory;
+      }
       break;
     case 'next-up':
       renderFixtures(report);
@@ -2606,6 +2615,50 @@ function renderCompare(report) {
   matchBlock.appendChild(linesWrap);
   holder.appendChild(matchBlock);
 
+  // Head-to-head: past results between the two clubs this season.
+  const h2h = (report.results || []).filter(
+    (r) => (r.home_id === aId && r.away_id === bId) || (r.home_id === bId && r.away_id === aId),
+  );
+  if (h2h.length) {
+    const h2hBlock = el('div', 'compare__block');
+    h2hBlock.appendChild(el('h3', 'compare__subhead', t('compare.h2h')));
+    let aWins = 0; let bWins = 0; let draws = 0; let aGoals = 0; let bGoals = 0;
+    for (const m of h2h) {
+      const aIsHome = m.home_id === aId;
+      const aG = aIsHome ? m.home_goals : m.away_goals;
+      const bG = aIsHome ? m.away_goals : m.home_goals;
+      aGoals += aG;
+      bGoals += bG;
+      if (aG > bG) aWins++;
+      else if (bG > aG) bWins++;
+      else draws++;
+    }
+    const record = el('div', 'compare__h2h-record');
+    record.appendChild(el('span', 'compare__h2h-team', homeName));
+    record.appendChild(el('span', 'compare__h2h-stat', `${aWins} \u2013 ${draws} \u2013 ${bWins}`));
+    record.appendChild(el('span', 'compare__h2h-team', awayName));
+    const goalsLine = el('p', 'compare__h2h-goals',
+      t('compare.h2h.goals', { home: homeName, away: awayName, hg: aGoals, ag: bGoals }));
+    h2hBlock.appendChild(record);
+    h2hBlock.appendChild(goalsLine);
+    const list = el('div', 'compare__h2h-list');
+    for (const m of h2h) {
+      const aIsHome = m.home_id === aId;
+      const card = el('div', 'played-card');
+      if ((aIsHome ? m.home_goals : m.away_goals) > (aIsHome ? m.away_goals : m.home_goals)) card.classList.add('played-card--home-win');
+      else if ((aIsHome ? m.away_goals : m.home_goals) > (aIsHome ? m.home_goals : m.away_goals)) card.classList.add('played-card--away-win');
+      card.appendChild(el('div', 'played-card__date', formatDate(m.date)));
+      const matchup = el('div', 'played-card__matchup');
+      matchup.appendChild(sideBlock(m.home, m.home_id, false));
+      matchup.appendChild(el('div', 'played-card__score', `${m.home_goals}\u2013${m.away_goals}`));
+      matchup.appendChild(sideBlock(m.away, m.away_id, true));
+      card.appendChild(matchup);
+      list.appendChild(card);
+    }
+    h2hBlock.appendChild(list);
+    holder.appendChild(h2hBlock);
+  }
+
   // Rating history: both clubs overlaid on one time axis.
   const careerA = careerById(aId);
   const careerB = careerById(bId);
@@ -2734,13 +2787,19 @@ async function boot() {
   applyTranslations();
   wire();
   try {
-    const [reports, careers] = await Promise.all([
-      fetch(reportUrl(null)).then((r) => {
-        if (!r.ok) throw new Error(`server returned ${r.status}`);
+    const reports = await fetch(reportUrl(null)).then((r) => {
+      if (!r.ok) throw new Error(`server returned ${r.status}`);
+      return r.json();
+    });
+    let careers = null;
+    try {
+      careers = await fetch('/data/careers.json').then((r) => {
+        if (!r.ok) throw new Error(`${r.status}`);
         return r.json();
-      }),
-      fetch('/data/careers.json').then((r) => (r.ok ? r.json() : null)),
-    ]);
+      });
+    } catch (_) {
+      console.warn('careers.json unavailable — rating history and career tables will be empty');
+    }
     state.reports = applyShortNames(reports);
     state.careers = applyShortNamesToCareers(careers);
     state.season = reports[state.league].league.season;

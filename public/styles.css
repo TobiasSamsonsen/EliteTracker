@@ -993,6 +993,21 @@ table.standings .muted { color: var(--ink-muted); }
 .compare-legend__a { color: #2a78d6; font-weight: 600; margin-right: 0.75rem; }
 .compare-legend__b { color: #e0682a; font-weight: 600; }
 
+.compare__h2h-record {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  margin: 0.75rem 0 0.35rem;
+  font-size: 1.5rem;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+.compare__h2h-team { font-size: 0.75rem; font-weight: 600; color: var(--ink-muted); text-transform: uppercase; letter-spacing: 0.05em; }
+.compare__h2h-stat { font-size: 1.5rem; font-weight: 800; }
+.compare__h2h-goals { font-size: 0.8rem; color: var(--ink-faint); text-align: center; margin: 0 0 0.75rem; }
+.compare__h2h-list { display: flex; flex-direction: column; gap: 0.5rem; }
+
 /* ---------- played results ------------------------------------------ */
 
 .played-results {
@@ -1374,6 +1389,29 @@ footer a { color: var(--ink); }
   }
 
   .sheet__item[aria-pressed="true"] { color: var(--outcome-good); background: var(--panel-sunk); }
+
+  .sheet__divider {
+    height: 1px;
+    background: var(--rule);
+    margin: 0.4rem 0.75rem;
+  }
+
+  .sheet__setting {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    min-height: 48px;
+    padding: 0 0.75rem;
+  }
+
+  .sheet__setting-label {
+    font-size: 0.9375rem;
+    font-weight: 600;
+    color: var(--ink);
+  }
+
+  .sheet__setting .switch { padding: 2px; }
+  .sheet__setting .switch button { padding: 0.3rem 0.65rem; font-size: 0.8125rem; }
 }
 
 @keyframes sheet-up {
@@ -1487,25 +1525,20 @@ footer a { color: var(--ink); }
   .team-summary__name { font-size: 1.25rem; }
   .team-summary__rating { font-size: 1.75rem; }
 
-  /* Left-aligned so the first view is the one you actually start on. */
-  .masthead__views { justify-content: flex-start; }
-  .timeline__note { display: none; }
-
-  /* Two rows, placed rather than wrapped: flex wrapping put each control on a
-     line of its own. The wordmark and theme share the first row, the division
-     and season the second. */
+  /* Two rows: wordmark and division switch on the first, season select on the
+     second. Theme and language move into the More sheet on phones. */
   .masthead__inner {
     display: grid;
-    grid-template-columns: minmax(0, 1fr) auto auto;
+    grid-template-columns: minmax(0, 1fr) auto;
     gap: 0.45rem 0.75rem;
     min-height: 0;
   }
   .wordmark { grid-area: 1 / 1; margin-right: 0; white-space: nowrap; }
   .wordmark span { display: none; }
-  .switch--theme { grid-area: 1 / 2; }
-  .switch--lang { grid-area: 1 / 3; }
-  .switch--league { grid-area: 2 / 1; justify-self: start; }
-  .season-select { grid-area: 2 / 2 / 3 / 4; }
+  .switch--theme { display: none; }
+  .switch--lang { display: none; }
+  .switch--league { grid-area: 1 / 2; justify-self: start; }
+  .season-select { grid-area: 2 / 1 / 3 / 3; }
   .switch--league button { white-space: nowrap; }
 
   /* How the model was built belongs in the Model Card, not above the table.
@@ -1565,23 +1598,14 @@ footer a { color: var(--ink); }
   .legend { padding: 0.8rem 1rem; }
   .fixture { padding: 0.65rem 1rem; }
 
-  /* A 375px row cannot hold the wordmark, "Light | Dark" and "NO | EN": the
-     theme switch becomes two glyphs (the words stay in the DOM for readers). */
-  .switch--theme button { font-size: 0; padding-inline: 0.75rem; }
-  .switch--theme button::before { font-size: 1rem; line-height: 1; }
-  .switch--theme button[data-theme-choice="light"]::before { content: "\2600"; }
-  .switch--theme button[data-theme-choice="dark"]::before { content: "\263E"; }
-
   /* Two model-card columns; the long Norwegian labels need the padding back. */
   .panel .model-grid div { padding: 0.8rem 0.9rem; }
 
-  /* Second masthead row: the division switch spans the first two columns and
-     the season select sits under the language switch, so neither row overflows
-     a 375px screen. Higher specificity than the 760px rules above. */
+  /* Tighter wordmark; the division switch stretches full width. */
   .wordmark { font-size: 0.8rem; letter-spacing: 0; }
-  .masthead .switch--league { grid-area: 2 / 1 / 3 / 3; display: flex; justify-self: stretch; }
+  .masthead .switch--league { grid-area: 1 / 2; display: flex; justify-self: stretch; }
   .switch--league button { flex: 1; padding-inline: 0.4rem; font-size: 0.8125rem; }
-  .masthead .season-select { grid-area: 2 / 3; padding-right: 1.6rem; min-height: 40px; }
+  .masthead .season-select { grid-area: 2 / 1 / 3 / 3; padding-right: 1.6rem; min-height: 40px; }
 }
 
 /* ---------- season selector --------------------------------------- */
@@ -1647,6 +1671,20 @@ footer a { color: var(--ink); }
   color: var(--ink-muted);
   font-variant-numeric: tabular-nums;
 }
+
+.team-back {
+  background: none;
+  border: none;
+  color: var(--ink-muted);
+  font: inherit;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 0.25rem 0;
+  margin-bottom: 0.25rem;
+  letter-spacing: 0.03em;
+}
+.team-back:hover { color: var(--ink); }
 
 .team-summary {
   padding: 1.25rem;
@@ -1757,13 +1795,13 @@ footer a { color: var(--ink); }
   align-items: center;
   justify-content: center;
   padding: 1.25rem 1rem;
-  background: var(--cell-bg);
+  background: var(--panel);
 }
 .pred-box__from {
-  background: linear-gradient(135deg, var(--band-europa) 0%, var(--cell-bg) 100%);
+  background: linear-gradient(135deg, color-mix(in srgb, var(--outcome-good) 12%, var(--panel)) 0%, var(--panel) 100%);
 }
 .pred-box__to {
-  background: linear-gradient(135deg, var(--cell-bg) 0%, var(--accent) 100%);
+  background: linear-gradient(135deg, var(--panel) 0%, color-mix(in srgb, var(--outcome-good) 12%, var(--panel)) 100%);
 }
 .pred-box__sub {
   font-size: 0.75rem;
@@ -1797,7 +1835,7 @@ footer a { color: var(--ink); }
   font-weight: 700;
   line-height: 1;
 }
-.pred-box__delta.up { color: var(--accent); }
+.pred-box__delta.up { color: var(--outcome-good); }
 .pred-box__delta.down { color: var(--outcome-bad); }
 
 .team-summary__stats {
@@ -1954,8 +1992,6 @@ footer a { color: var(--ink); }
   gap: 0.75rem;
   flex-wrap: wrap;
 }
-
-.timeline__head p { margin: 0; }
 
 .timeline__head p {
   margin: 0.25rem 0 0;

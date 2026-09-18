@@ -20,6 +20,8 @@ const translations = {
     'mob.compare': 'Compare',
     'mob.model': 'Model',
     'mob.more': 'More',
+    'sheet.theme': 'Theme',
+    'sheet.lang': 'Language',
 
     // Hero
     'hero.title': 'Where everyone finishes',
@@ -106,6 +108,8 @@ const translations = {
     'compare.note': '{team} host this fixture · home advantage is included.',
     'compare.scorelines': 'Most likely scorelines',
     'compare.ratingHistory': 'Rating history',
+    'compare.h2h': 'Head-to-head',
+    'compare.h2h.goals': '{home} {hg} – {ag} {away} on aggregate',
     'compare.season': 'Season',
     'compare.rating': 'ELO rating',
 
@@ -133,6 +137,7 @@ const translations = {
     'model.seed': 'Random seed',
 
     // Team focus
+    'team.back': 'Back',
     'team.position': 'Position',
     'team.points': 'Points',
     'team.gd': 'GD',
@@ -255,6 +260,8 @@ const translations = {
     'mob.compare': 'Sammenlign',
     'mob.model': 'Modell',
     'mob.more': 'Mer',
+    'sheet.theme': 'Tema',
+    'sheet.lang': 'Språk',
 
     // Hero
     'hero.title': 'Hvem ender hvor',
@@ -341,6 +348,8 @@ const translations = {
     'compare.note': '{team} spiller hjemme · hjemmefordel er inkludert.',
     'compare.scorelines': 'Mest sannsynlige resultater',
     'compare.ratingHistory': 'Rating over tid',
+    'compare.h2h': 'Innbyrdes',
+    'compare.h2h.goals': '{home} {hg} – {ag} {away} totalt',
     'compare.season': 'Sesong',
     'compare.rating': 'ELO-rating',
 
@@ -368,6 +377,7 @@ const translations = {
     'model.seed': 'Tilfeldig frø',
 
     // Team focus
+    'team.back': 'Tilbake',
     'team.position': 'Plassering',
     'team.points': 'Poeng',
     'team.gd': 'MM',
