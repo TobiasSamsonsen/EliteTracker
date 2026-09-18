@@ -58,7 +58,7 @@ def report(root: Path, slug: str, season: int, asof: str | None) -> Any:
 def data_payload(root: Path, name: str) -> tuple[Any, int]:
     """What the static build would have written under /data/<name>, plus a status."""
     if name == "careers.json":
-        return careers_payload(careers(root)), 200
+        return careers_payload(careers(root), root=root), 200
     match = _REPORT_NAME.fullmatch(name)
     if match is None:
         return {"error": "not found"}, 404

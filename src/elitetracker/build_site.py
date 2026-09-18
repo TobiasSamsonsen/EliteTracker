@@ -149,7 +149,7 @@ def build_site(
         for done, future in enumerate(as_completed(futures), 1):
             print(f"  {done}/{len(specs)} {future.result()}", flush=True)
 
-    write_payload(out_dir / "careers.json", careers_payload(build_all_careers(root)))
+    write_payload(out_dir / "careers.json", careers_payload(build_all_careers(root), root=root))
     print(f"built {len(specs)} views in {time.perf_counter() - started:.0f}s", flush=True)
 
 

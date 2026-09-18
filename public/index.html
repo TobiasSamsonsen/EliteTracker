@@ -22,74 +22,40 @@
 <header class="masthead">
   <div class="shell masthead__inner">
     <div class="wordmark">EliteTracker <span id="model-badge"></span></div>
-
-    <div class="switch switch--league" role="group" data-i18n="aria.chooseDivision" data-i18n-attr="aria-label" aria-label="Choose a division">
-      <button type="button" data-league="eliteserien" aria-pressed="true">Eliteserien</button>
-      <button type="button" data-league="obosligaen" aria-pressed="false">OBOS-ligaen</button>
+    <div class="masthead__views">
+      <div class="switch" role="group" data-i18n="aria.chooseView" data-i18n-attr="aria-label" aria-label="Choose a view">
+        <button type="button" data-view="grid" aria-pressed="true"><span data-i18n="tab.grid">Finish Grid</span></button>
+        <button type="button" data-view="table" aria-pressed="false"><span data-i18n="tab.table">Table</span></button>
+        <button type="button" data-view="ladder" aria-pressed="false"><span data-i18n="tab.ladder">Ladder</span></button>
+        <button type="button" data-view="next-up" aria-pressed="false"><span data-i18n="tab.next">Next Up</span></button>
+        <button type="button" data-view="played" aria-pressed="false"><span data-i18n="tab.played">Played Results</span></button>
+        <button type="button" data-view="compare" aria-pressed="false"><span data-i18n="tab.compare">Compare Clubs</span></button>
+        <button type="button" data-view="model" aria-pressed="false"><span data-i18n="tab.model">Model Card</span></button>
+      </div>
     </div>
+    <button type="button" id="settings-btn" class="settings-btn" aria-label="Settings" aria-expanded="false" aria-controls="settings-menu">
+      <svg viewBox="0 0 16 16" width="18" height="18" fill="currentColor" aria-hidden="true"><path d="M8 1a1 1 0 0 1 1 1v.7a5 5 0 0 1 2.1 1.2l.5-.5a1 1 0 1 1 1.4 1.4l-.5.5A5 5 0 0 1 13.3 7H14a1 1 0 1 1 0 2h-.7a5 5 0 0 1-1.2 2.1l.5.5a1 1 0 1 1-1.4 1.4l-.5-.5A5 5 0 0 1 9 13.3V14a1 1 0 1 1-2 0v-.7a5 5 0 0 1-2.1-1.2l-.5.5a1 1 0 0 1-1.4-1.4l.5-.5A5 5 0 0 1 2.7 9H2a1 1 0 1 1 0-2h.7a5 5 0 0 1 1.2-2.1L3.4 4.4a1 1 0 1 1 1.4-1.4l.5.5A5 5 0 0 1 7 2.7V2a1 1 0 0 1 1-1Zm0 4a3 3 0 1 0 0 6 3 3 0 0 0 0-6Z"/></svg>
+    </button>
+  </div>
+</header>
 
-    <label class="visually-hidden" for="season-select" data-i18n="season.label">Season</label>
-    <select id="season-select" class="season-select"></select>
-
-    <div class="switch switch--theme" role="group" data-i18n="aria.colourTheme" data-i18n-attr="aria-label" aria-label="Colour theme">
+<div id="settings-menu" class="popover-menu" role="menu" hidden>
+  <div class="popover-menu__item">
+    <span class="popover-menu__label" data-i18n="sheet.theme">Theme</span>
+    <div class="switch switch--theme" role="group" aria-label="Theme">
       <button type="button" data-theme-choice="light" aria-pressed="false" data-i18n="theme.light">Light</button>
       <button type="button" data-theme-choice="dark" aria-pressed="false" data-i18n="theme.dark">Dark</button>
     </div>
-
-    <div class="switch switch--lang" role="group" data-i18n="aria.language" data-i18n-attr="aria-label" aria-label="Language">
+  </div>
+  <div class="popover-menu__item">
+    <span class="popover-menu__label" data-i18n="sheet.lang">Language</span>
+    <div class="switch switch--lang" role="group" aria-label="Language">
       <button type="button" data-lang="no" aria-pressed="true">NO</button>
       <button type="button" data-lang="en" aria-pressed="false">EN</button>
     </div>
   </div>
-
-  <div class="shell masthead__views">
-    <div class="switch" role="group" data-i18n="aria.chooseView" data-i18n-attr="aria-label" aria-label="Choose a view">
-      <button type="button" data-view="grid" aria-pressed="true"><span data-i18n="tab.grid">Finish Grid</span></button>
-      <button type="button" data-view="table" aria-pressed="false"><span data-i18n="tab.table">Table</span></button>
-      <button type="button" data-view="ladder" aria-pressed="false"><span data-i18n="tab.ladder">Ladder</span></button>
-      <button type="button" data-view="next-up" aria-pressed="false"><span data-i18n="tab.next">Next Up</span></button>
-      <button type="button" data-view="played" aria-pressed="false"><span data-i18n="tab.played">Played Results</span></button>
-      <button type="button" data-view="compare" aria-pressed="false"><span data-i18n="tab.compare">Compare Clubs</span></button>
-      <button type="button" data-view="model" aria-pressed="false"><span data-i18n="tab.model">Model Card</span></button>
-    </div>
-  </div>
-</header>
-
-<!-- Phone navigation. The same data-view attribute the top strip uses, so the
-     existing click wiring, ?view= deep links and active marking all apply. -->
-<nav class="mobilebar" id="mobilebar" data-i18n="aria.chooseView" data-i18n-attr="aria-label" aria-label="Choose a view">
-    <button type="button" class="mobilebar__item" data-view="grid" aria-pressed="true"><svg class="mobilebar__icon" viewBox="0 0 16 16" aria-hidden="true" focusable="false" fill="currentColor"><rect x="1.5" y="1.5" width="3.6" height="3.6" rx=".5"/><rect x="6.2" y="1.5" width="3.6" height="3.6" rx=".5"/><rect x="10.9" y="1.5" width="3.6" height="3.6" rx=".5"/><rect x="1.5" y="6.2" width="3.6" height="3.6" rx=".5"/><rect x="6.2" y="6.2" width="3.6" height="3.6" rx=".5"/><rect x="10.9" y="6.2" width="3.6" height="3.6" rx=".5"/><rect x="1.5" y="10.9" width="3.6" height="3.6" rx=".5"/><rect x="6.2" y="10.9" width="3.6" height="3.6" rx=".5"/><rect x="10.9" y="10.9" width="3.6" height="3.6" rx=".5"/></svg><span data-i18n="mob.grid">Grid</span></button>
-    <button type="button" class="mobilebar__item" data-view="table" aria-pressed="false"><svg class="mobilebar__icon" viewBox="0 0 16 16" aria-hidden="true" focusable="false" fill="currentColor"><rect x="1.5" y="2.5" width="13" height="2.2" rx=".6"/><rect x="1.5" y="6.9" width="13" height="2.2" rx=".6"/><rect x="1.5" y="11.3" width="13" height="2.2" rx=".6"/></svg><span data-i18n="mob.table">Table</span></button>
-    <button type="button" class="mobilebar__item" data-view="next-up" aria-pressed="false"><svg class="mobilebar__icon" viewBox="0 0 16 16" aria-hidden="true" focusable="false" fill="currentColor"><rect x="1.8" y="3" width="12.4" height="11.2" rx="1.6" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M1.8 6.6h12.4" stroke="currentColor" stroke-width="1.6"/><path d="M5.2 1.6v2.6M10.8 1.6v2.6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg><span data-i18n="mob.next">Next up</span></button>
-    <button type="button" class="mobilebar__item" data-view="played" aria-pressed="false"><svg class="mobilebar__icon" viewBox="0 0 16 16" aria-hidden="true" focusable="false" fill="currentColor"><path d="M2 8.4l3.6 3.6L14 3.6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg><span data-i18n="mob.results">Results</span></button>
-    <button type="button" class="mobilebar__item mobilebar__more" id="more-button"
-            aria-expanded="false" aria-controls="more-sheet"><svg class="mobilebar__icon" viewBox="0 0 16 16" aria-hidden="true" focusable="false" fill="currentColor"><circle cx="3" cy="8" r="1.6"/><circle cx="8" cy="8" r="1.6"/><circle cx="13" cy="8" r="1.6"/></svg><span data-i18n="mob.more">More</span></button>
-</nav>
-
-<div class="sheet" id="more-sheet" hidden>
-  <div class="sheet__scrim" data-close-sheet></div>
-  <div class="sheet__panel" role="dialog" aria-modal="true" data-i18n="aria.moreViews" data-i18n-attr="aria-label" aria-label="More views">
-    <div class="sheet__grip" aria-hidden="true"></div>
-      <button type="button" class="sheet__item" data-view="ladder" aria-pressed="false"><span data-i18n="mob.ladder">Ladder</span></button>
-      <button type="button" class="sheet__item" data-view="compare" aria-pressed="false"><span data-i18n="mob.compare">Compare clubs</span></button>
-      <button type="button" class="sheet__item" data-view="model" aria-pressed="false"><span data-i18n="mob.model">Model card</span></button>
-      <div class="sheet__divider" aria-hidden="true"></div>
-      <div class="sheet__setting">
-        <span class="sheet__setting-label" data-i18n="sheet.theme">Theme</span>
-        <div class="switch switch--theme" role="group" aria-label="Theme">
-          <button type="button" data-theme-choice="light" aria-pressed="false" data-i18n="theme.light">Light</button>
-          <button type="button" data-theme-choice="dark" aria-pressed="false" data-i18n="theme.dark">Dark</button>
-        </div>
-      </div>
-      <div class="sheet__setting">
-        <span class="sheet__setting-label" data-i18n="sheet.lang">Language</span>
-        <div class="switch switch--lang" role="group" aria-label="Language">
-          <button type="button" data-lang="no" aria-pressed="true">NO</button>
-          <button type="button" data-lang="en" aria-pressed="false">EN</button>
-        </div>
-      </div>
-  </div>
 </div>
+
 
 <main class="shell" id="app">
   <div class="status" id="status" data-i18n="status.loading">Loading the season…</div>
@@ -101,6 +67,12 @@
       <p id="hero-lede"></p>
       <div class="hero__meta label" id="hero-meta"></div>
     </section>
+
+    <div id="hero-league-menu" class="popover-menu" role="menu" hidden>
+      <button type="button" class="popover-menu__btn" data-league="eliteserien" role="menuitem">Eliteserien</button>
+      <button type="button" class="popover-menu__btn" data-league="obosligaen" role="menuitem">OBOS-ligaen</button>
+    </div>
+    <div id="hero-season-menu" class="popover-menu popover-menu--scroll" role="menu" hidden></div>
 
     <!-- Rewind the whole page to any day the league has played. -->
     <section class="timeline-section">
@@ -274,10 +246,8 @@
           </div>
         </div>
         <div class="compare__pickers">
-          <label class="visually-hidden" for="compare-a" data-i18n="compare.home">Home</label>
-          <select id="compare-a" class="compare__select"></select>
-          <label class="visually-hidden" for="compare-b" data-i18n="compare.away">Away</label>
-          <select id="compare-b" class="compare__select"></select>
+          <select id="compare-a" class="compare__select--hidden" aria-hidden="true" tabindex="-1"></select>
+          <select id="compare-b" class="compare__select--hidden" aria-hidden="true" tabindex="-1"></select>
         </div>
         <div id="compare-output"></div>
       </div>
@@ -318,6 +288,16 @@
 </footer>
 
 <div id="tooltip" role="tooltip" aria-hidden="true"></div>
+
+<!-- Hidden state holders — the hero title's clickable spans drive these. -->
+<div class="visually-hidden" aria-hidden="true">
+  <div class="switch switch--league" role="group">
+    <button type="button" data-league="eliteserien" aria-pressed="true">Eliteserien</button>
+    <button type="button" data-league="obosligaen" aria-pressed="false">OBOS-ligaen</button>
+  </div>
+  <label for="season-select">Season</label>
+  <select id="season-select" class="season-select"></select>
+</div>
 
 <script src="/i18n.js"></script>
 <script src="/app.js"></script>

@@ -1195,7 +1195,81 @@ function renderHero(report) {
     row.position_probabilities[0] > best.position_probabilities[0] ? row : best
   );
 
-  $('#hero-title').textContent = `${report.league.name} ${report.league.season}`;
+  // Build interactive title: clickable division name + clickable season year.
+  const title = $('#hero-title');
+  title.replaceChildren();
+  const divSpan = el('span', 'hero-title-part', report.league.name);
+  divSpan.dataset.role = 'division';
+  divSpan.setAttribute('tabindex', '0');
+  divSpan.setAttribute('role', 'button');
+  divSpan.setAttribute('aria-label', 'Change division');
+  const space = document.createTextNode('\u00a0');
+  const seasonSpan = el('span', 'hero-title-part', String(report.league.season));
+  seasonSpan.dataset.role = 'season';
+  seasonSpan.setAttribute('tabindex', '0');
+  seasonSpan.setAttribute('role', 'button');
+  seasonSpan.setAttribute('aria-label', 'Change season');
+  title.appendChild(divSpan);
+  title.appendChild(space);
+  title.appendChild(seasonSpan);
+
+  // Division popover
+  divSpan.addEventListener('click', (event) => {
+    event.stopPropagation();
+    const menu = $('#hero-league-menu');
+    const open = !menu.hidden;
+    closeAllMenus();
+    if (open) return;
+    // Mark current league
+    for (const btn of menu.querySelectorAll('[data-league]')) {
+      btn.setAttribute('aria-pressed', String(btn.dataset.league === state.league));
+    }
+    menu.hidden = false;
+    const rect = divSpan.getBoundingClientRect();
+    menu.style.position = 'fixed';
+    menu.style.top = `${rect.bottom + 6}px`;
+    menu.style.left = `${rect.left}px`;
+    menu.style.width = `${rect.width}px`;
+  });
+  divSpan.addEventListener('keydown', (event) => {
+    if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); divSpan.click(); }
+  });
+
+  // Season popover
+  seasonSpan.addEventListener('click', (event) => {
+    event.stopPropagation();
+    const menu = $('#hero-season-menu');
+    const open = !menu.hidden;
+    closeAllMenus();
+    if (open) return;
+    const seasons = report.league.seasons || [report.league.season];
+    menu.replaceChildren();
+    for (const s of [...seasons].reverse()) {
+      const btn = el('button', 'popover-menu__btn', String(s));
+      btn.type = 'button';
+      btn.dataset.role = 'season-option';
+      btn.setAttribute('aria-pressed', String(s === report.league.season));
+      if (s === report.league.season) btn.setAttribute('aria-current', 'true');
+      btn.addEventListener('click', () => {
+        closeAllMenus();
+        if (s !== state.season) {
+          state.asof = null;
+          loadSeason(s);
+        }
+      });
+      menu.appendChild(btn);
+    }
+    menu.hidden = false;
+    const rect = seasonSpan.getBoundingClientRect();
+    menu.style.position = 'fixed';
+    menu.style.top = `${rect.bottom + 6}px`;
+    menu.style.left = `${rect.left}px`;
+    menu.style.width = `${rect.width}px`;
+  });
+  seasonSpan.addEventListener('keydown', (event) => {
+    if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); seasonSpan.click(); }
+  });
+
   $('#model-badge').textContent = model.version;
 
   // A finished season has nothing left to simulate, so it gets told as history.
@@ -2145,8 +2219,9 @@ function render() {
     case 'ladder':
       if (!anim.playing) {
         renderLadder(state.reports);
-        const hasHistory = Object.values(state.reports).some((r) => matchdays(r).length >= 2);
-        $('#ladder-anim-play').hidden = !hasHistory;
+        const days = matchdays(reports[state.league]);
+        $('#ladder-anim-play').hidden = days.length < 2;
+        $('#grid-anim-play').hidden = days.length < 2;
       }
       break;
     case 'next-up':
@@ -2188,6 +2263,7 @@ function render() {
 function wire() {
   for (const button of document.querySelectorAll('[data-league]')) {
     button.addEventListener('click', () => {
+      closeAllMenus();
       if (anim.playing) animStop();
       state.league = button.dataset.league;
       for (const other of document.querySelectorAll('[data-league]')) {
@@ -2225,7 +2301,6 @@ function wire() {
       if (anim.playing && button.dataset.view !== state.activeView) animStop();
       state.activeView = button.dataset.view;
       markActiveView();
-      closeSheet();
       render();
       hideTooltip();
       window.scrollTo({ top: 0, behavior: 'instant' });
@@ -2239,13 +2314,16 @@ function wire() {
     if (description) description.classList.toggle('is-expanded');
   });
 
-  $('#more-button').addEventListener('click', () => {
-    if ($('#more-sheet').hidden) openSheet();
-    else closeSheet();
+  // Settings gear: toggle settings popover.
+  const settingsBtn = $('#settings-btn');
+  const settingsMenu = $('#settings-menu');
+  settingsBtn.addEventListener('click', (event) => {
+    event.stopPropagation();
+    const open = !settingsMenu.hidden;
+    settingsMenu.hidden = open;
+    settingsBtn.setAttribute('aria-expanded', String(!open));
+    if (!open) positionPopover(settingsMenu, settingsBtn);
   });
-  for (const closer of document.querySelectorAll('[data-close-sheet]')) {
-    closer.addEventListener('click', closeSheet);
-  }
 
   const stepMatchday = (delta) => {
     const range = $('#timeline-range');
@@ -2279,7 +2357,25 @@ function wire() {
 
   document.addEventListener('keydown', (event) => {
     if (event.key !== 'Escape') return;
-    if (!$('#more-sheet').hidden) closeSheet();
+    closeAllMenus();
+  });
+
+  // Close menus when clicking outside.
+  document.addEventListener('pointerdown', (event) => {
+    const settingsMenu = $('#settings-menu');
+    const settingsBtn = $('#settings-btn');
+    const leagueMenu = $('#hero-league-menu');
+    const seasonMenu = $('#hero-season-menu');
+    if (!settingsMenu.hidden && !settingsMenu.contains(event.target) && event.target !== settingsBtn) {
+      settingsMenu.hidden = true;
+      settingsBtn.setAttribute('aria-expanded', 'false');
+    }
+    if (!leagueMenu.hidden && !leagueMenu.contains(event.target)) {
+      leagueMenu.hidden = true;
+    }
+    if (!seasonMenu.hidden && !seasonMenu.contains(event.target) && !event.target.closest('.hero-title-part[data-role="season"]')) {
+      seasonMenu.hidden = true;
+    }
   });
 
   window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => {
@@ -2328,11 +2424,9 @@ function applyTeamParameter() {
   if (club) openTeamView(club.team_id, club.team, { push: false });
 }
 
-/* Three controls can name the current view -- the desktop strip, the phone bar
-   and the More sheet -- and every one of them carries the same data-view, so
-   they are all marked from here. The strip scrolls sideways once it outgrows
-   its container, so its active tab is pulled back into sight; scrolling the
-   fixed bar or the sheet would only jog the page. */
+/* The tab strip and any other data-view buttons are marked from here. The strip
+   scrolls sideways once it outgrows its container, so its active tab is pulled
+   back into sight. */
 function markActiveView() {
   for (const button of document.querySelectorAll('[data-view]')) {
     const active = button.dataset.view === state.activeView;
@@ -2341,21 +2435,19 @@ function markActiveView() {
       button.scrollIntoView({ block: 'nearest', inline: 'nearest' });
     }
   }
-  // The bar shows four views; when the current one lives in the sheet, More
-  // carries the mark so the bar is never blank.
-  const inBar = [...document.querySelectorAll('.mobilebar__item[data-view]')]
-    .some((button) => button.dataset.view === state.activeView);
-  $('#more-button').setAttribute('aria-pressed', String(!inBar));
 }
 
-function openSheet() {
-  $('#more-sheet').hidden = false;
-  $('#more-button').setAttribute('aria-expanded', 'true');
+function closeAllMenus() {
+  for (const menu of document.querySelectorAll('.popover-menu')) menu.hidden = true;
+  const btn = $('#settings-btn');
+  if (btn) btn.setAttribute('aria-expanded', 'false');
 }
 
-function closeSheet() {
-  $('#more-sheet').hidden = true;
-  $('#more-button').setAttribute('aria-expanded', 'false');
+function positionPopover(menu, anchor) {
+  const rect = anchor.getBoundingClientRect();
+  menu.style.position = 'fixed';
+  menu.style.top = `${rect.bottom + 6}px`;
+  menu.style.right = `${window.innerWidth - rect.right}px`;
 }
 
 /* ?view=grid makes any view linkable. Applied early so the first render
@@ -2509,6 +2601,7 @@ function compareTeamBlock(id, name, rating, crest, side) {
   text.appendChild(el('div', 'compare__team-rating', String(Math.round(rating))));
   main.appendChild(text);
   block.appendChild(main);
+  block.appendChild(el('div', 'compare__pick-hint', t('compare.hint')));
   return block;
 }
 
@@ -2556,6 +2649,69 @@ function populateCompare(report) {
   b.value = byRating[1]?.team_id || byRating[0].team_id;
 }
 
+let compareMenuEl = null;
+
+function closeCompareMenu() {
+  if (compareMenuEl) {
+    compareMenuEl.remove();
+    compareMenuEl = null;
+  }
+  document.removeEventListener('pointerdown', compareMenuOutside, true);
+  document.removeEventListener('keydown', compareMenuKey);
+  window.removeEventListener('scroll', compareMenuScroll, true);
+}
+
+function compareMenuOutside(event) {
+  if (compareMenuEl && !compareMenuEl.contains(event.target)) closeCompareMenu();
+}
+
+function compareMenuKey(event) {
+  if (event.key === 'Escape') closeCompareMenu();
+}
+
+function compareMenuScroll(event) {
+  if (compareMenuEl && compareMenuEl.contains(event.target)) return;
+  closeCompareMenu();
+}
+
+function openCompareMenu(box, side, report) {
+  closeCompareMenu();
+  const menu = el('div', 'compare__menu');
+  menu.setAttribute('role', 'listbox');
+  menu.dataset.side = side;
+  const select = side === 'home' ? $('#compare-a') : $('#compare-b');
+  const otherId = side === 'home' ? $('#compare-b').value : $('#compare-a').value;
+  for (const team of allTeams()) {
+    const option = el('button', 'compare__option');
+    option.type = 'button';
+    option.setAttribute('role', 'option');
+    if (team.team_id === otherId) option.disabled = true;
+    const crest = teamLogo(team.team_id, team.team);
+    if (crest) option.appendChild(crest);
+    option.appendChild(el('span', 'compare__option-name', team.team));
+    option.addEventListener('click', () => {
+      select.value = team.team_id;
+      select.dispatchEvent(new Event('change'));
+      closeCompareMenu();
+    });
+    menu.appendChild(option);
+  }
+  const rect = box.getBoundingClientRect();
+  menu.style.position = 'fixed';
+  menu.style.top = `${rect.bottom + 6}px`;
+  menu.style.left = `${rect.left}px`;
+  menu.style.width = `${rect.width}px`;
+  menu.style.setProperty('--menu-left', `${rect.left}px`);
+  menu.style.setProperty('--menu-width', `${rect.width}px`);
+  document.body.appendChild(menu);
+  compareMenuEl = menu;
+  setTimeout(() => {
+    document.addEventListener('pointerdown', compareMenuOutside, true);
+    document.addEventListener('keydown', compareMenuKey);
+    window.addEventListener('scroll', compareMenuScroll, true);
+  }, 0);
+}
+
 function renderCompare(report) {
   const holder = $('#compare-output');
   holder.replaceChildren();
@@ -2597,6 +2753,26 @@ function renderCompare(report) {
   teamsRow.appendChild(swapBtn);
   teamsRow.appendChild(awayBlock);
 
+  const makePicker = (box, side) => {
+    box.setAttribute('role', 'button');
+    box.setAttribute('tabindex', '0');
+    box.setAttribute('aria-label', t('compare.chooseClub'));
+    box.setAttribute('aria-haspopup', 'listbox');
+    box.title = t('compare.chooseClub');
+    const toggle = () => {
+      if (compareMenuEl && compareMenuEl.dataset.side === side) closeCompareMenu();
+      else openCompareMenu(box, side, report);
+    };
+    box.addEventListener('click', toggle);
+    box.addEventListener('keydown', (event) => {
+      if (event.key === 'Enter' || event.key === ' ') {
+        event.preventDefault();
+        toggle();
+      }
+    });
+  };
+  makePicker(homeBlock, 'home');
+  makePicker(awayBlock, 'away');
   matchBlock.appendChild(teamsRow);
   matchBlock.appendChild(el('p', 'compare__note', t('compare.note', { team: homeName })));
 
@@ -2615,11 +2791,31 @@ function renderCompare(report) {
   matchBlock.appendChild(linesWrap);
   holder.appendChild(matchBlock);
 
-  // Head-to-head: past results between the two clubs this season.
-  const h2h = (report.results || []).filter(
+  // Rating history: both clubs overlaid on one time axis.
+  const careerA = careerById(aId);
+  const careerB = careerById(bId);
+  if (careerA && careerB) {
+    const histBlock = el('div', 'compare__block');
+    histBlock.appendChild(el('h3', 'compare__subhead', t('compare.ratingHistory')));
+    const svg = svgEl('svg', { class: 'chart', role: 'img' });
+    svg.setAttribute('aria-label', t('chart.ratingHistoryFor', { home: homeName, away: awayName }));
+    drawCompareHistory(svg, careerA, careerB, teamNameById(aId), teamNameById(bId));
+    histBlock.appendChild(svg);
+    const legend = el('div', 'legend');
+    legend.appendChild(el('span', 'compare-legend__a', teamNameById(aId)));
+    legend.appendChild(el('span', 'compare-legend__b', teamNameById(bId)));
+    histBlock.appendChild(legend);
+    holder.appendChild(histBlock);
+  }
+
+  // Head-to-head: all-time results between the two clubs from careers data.
+  const h2hKey = [aId, bId].sort().join('\t');
+  const h2hAll = (state.careers?.head_to_head || {})[h2hKey] || [];
+  const h2h = h2hAll.filter(
     (r) => (r.home_id === aId && r.away_id === bId) || (r.home_id === bId && r.away_id === aId),
   );
   if (h2h.length) {
+    h2h.sort((a, b) => b.date.localeCompare(a.date));
     const h2hBlock = el('div', 'compare__block');
     h2hBlock.appendChild(el('h3', 'compare__subhead', t('compare.h2h')));
     let aWins = 0; let bWins = 0; let draws = 0; let aGoals = 0; let bGoals = 0;
@@ -2637,43 +2833,51 @@ function renderCompare(report) {
     record.appendChild(el('span', 'compare__h2h-team', homeName));
     record.appendChild(el('span', 'compare__h2h-stat', `${aWins} \u2013 ${draws} \u2013 ${bWins}`));
     record.appendChild(el('span', 'compare__h2h-team', awayName));
-    const goalsLine = el('p', 'compare__h2h-goals',
-      t('compare.h2h.goals', { home: homeName, away: awayName, hg: aGoals, ag: bGoals }));
+    const goalsBlock = el('div', 'compare__h2h-goals');
+    goalsBlock.appendChild(el('span', 'compare__h2h-goals-label', t('compare.h2h.goalsLabel')));
+    goalsBlock.appendChild(el('span', 'compare__h2h-goals-stat', `${aGoals} – ${bGoals}`));
     h2hBlock.appendChild(record);
-    h2hBlock.appendChild(goalsLine);
+    h2hBlock.appendChild(goalsBlock);
+    const PAGE_SIZE = 5;
+    const totalPages = Math.ceil(h2h.length / PAGE_SIZE);
+    let h2hPage = 0;
     const list = el('div', 'compare__h2h-list');
-    for (const m of h2h) {
-      const aIsHome = m.home_id === aId;
-      const card = el('div', 'played-card');
-      if ((aIsHome ? m.home_goals : m.away_goals) > (aIsHome ? m.away_goals : m.home_goals)) card.classList.add('played-card--home-win');
-      else if ((aIsHome ? m.away_goals : m.home_goals) > (aIsHome ? m.home_goals : m.away_goals)) card.classList.add('played-card--away-win');
-      card.appendChild(el('div', 'played-card__date', formatDate(m.date)));
-      const matchup = el('div', 'played-card__matchup');
-      matchup.appendChild(sideBlock(m.home, m.home_id, false));
-      matchup.appendChild(el('div', 'played-card__score', `${m.home_goals}\u2013${m.away_goals}`));
-      matchup.appendChild(sideBlock(m.away, m.away_id, true));
-      card.appendChild(matchup);
-      list.appendChild(card);
-    }
     h2hBlock.appendChild(list);
+    const nav = el('div', 'played-nav');
+    const prevBtn = el('button', 'played-nav__btn', t('played.prev'));
+    const label = el('span', 'played-nav__label');
+    const nextBtn = el('button', 'played-nav__btn', t('played.next'));
+    nav.appendChild(prevBtn);
+    nav.appendChild(label);
+    nav.appendChild(nextBtn);
+    h2hBlock.appendChild(nav);
+    const renderH2hPage = () => {
+      list.replaceChildren();
+      const start = h2hPage * PAGE_SIZE;
+      for (const m of h2h.slice(start, start + PAGE_SIZE)) {
+        const card = el('div', 'played-card');
+        if (m.home_goals > m.away_goals) card.classList.add('played-card--home-win');
+        else if (m.away_goals > m.home_goals) card.classList.add('played-card--away-win');
+        card.appendChild(el('div', 'played-card__date', `${formatDate(m.date)} \u00b7 ${m.season}`));
+        const matchup = el('div', 'played-card__matchup');
+        const homeSide = el('div', 'played-card__side played-card__side--home');
+        homeSide.appendChild(sideBlock(m.home, m.home_id, false));
+        matchup.appendChild(homeSide);
+        matchup.appendChild(el('div', 'played-card__score', `${m.home_goals}\u2013${m.away_goals}`));
+        const awaySide = el('div', 'played-card__side played-card__side--away');
+        awaySide.appendChild(sideBlock(m.away, m.away_id, true));
+        matchup.appendChild(awaySide);
+        card.appendChild(matchup);
+        list.appendChild(card);
+      }
+      prevBtn.disabled = h2hPage >= totalPages - 1;
+      nextBtn.disabled = h2hPage === 0;
+      label.textContent = t('compare.h2h.page', { n: h2hPage + 1, total: totalPages });
+    };
+    prevBtn.addEventListener('click', () => { h2hPage++; renderH2hPage(); });
+    nextBtn.addEventListener('click', () => { h2hPage--; renderH2hPage(); });
+    renderH2hPage();
     holder.appendChild(h2hBlock);
-  }
-
-  // Rating history: both clubs overlaid on one time axis.
-  const careerA = careerById(aId);
-  const careerB = careerById(bId);
-  if (careerA && careerB) {
-    const histBlock = el('div', 'compare__block');
-    histBlock.appendChild(el('h3', 'compare__subhead', t('compare.ratingHistory')));
-    const svg = svgEl('svg', { class: 'chart', role: 'img' });
-    svg.setAttribute('aria-label', t('chart.ratingHistoryFor', { home: homeName, away: awayName }));
-    drawCompareHistory(svg, careerA, careerB, teamNameById(aId), teamNameById(bId));
-    histBlock.appendChild(svg);
-    const legend = el('div', 'legend');
-    legend.appendChild(el('span', 'compare-legend__a', teamNameById(aId)));
-    legend.appendChild(el('span', 'compare-legend__b', teamNameById(bId)));
-    histBlock.appendChild(legend);
-    holder.appendChild(histBlock);
   }
 }
 
@@ -2794,11 +2998,13 @@ async function boot() {
     let careers = null;
     try {
       careers = await fetch('/data/careers.json').then((r) => {
-        if (!r.ok) throw new Error(`${r.status}`);
+        if (!r.ok) throw new Error(`/data/careers.json ${r.status}`);
         return r.json();
       });
-    } catch (_) {
-      console.warn('careers.json unavailable — rating history and career tables will be empty');
+    } catch (error) {
+      console.warn('careers.json unavailable — rating history and career tables will be empty', error);
+      $('#status').hidden = false;
+      $('#status').textContent = t('status.couldNotLoad', { season: 'careers', error: error.message });
     }
     state.reports = applyShortNames(reports);
     state.careers = applyShortNamesToCareers(careers);

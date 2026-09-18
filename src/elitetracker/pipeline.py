@@ -488,7 +488,7 @@ def _results_payload(matches: list[Match]) -> list[dict[str, Any]]:
     ]
 
 
-def careers_payload(careers: dict[str, TeamCareer], *, max_points: int = 400) -> dict[str, Any]:
+def careers_payload(careers: dict[str, TeamCareer], *, root: Path = NORMALIZED_DIR, max_points: int = 400) -> dict[str, Any]:
     """Rating history per club, thinned so the payload stays small.
 
     The first and last points are always kept, so the line starts and ends
@@ -527,6 +527,32 @@ def careers_payload(careers: dict[str, TeamCareer], *, max_points: int = 400) ->
                 ],
             }
         )
-    return {"seed_season": SEED_SEASON, "model": MODEL_VERSION, "teams": teams}
+    return {"seed_season": SEED_SEASON, "model": MODEL_VERSION, "teams": teams, "head_to_head": _build_head_to_head(root)}
+
+
+def _build_head_to_head(root: Path = NORMALIZED_DIR) -> dict[str, list[dict[str, Any]]]:
+    """All-time head-to-head results keyed by the sorted pair of team ids."""
+    h2h: dict[str, list[dict[str, Any]]] = {}
+    for path in sorted(root.glob("*_matches.json")):
+        found = _MATCH_FILE.match(path.name)
+        if not found:
+            continue
+        season = int(found["season"])
+        for m in load_matches(path):
+            if not m.played:
+                continue
+            key = tuple(sorted((m.home_id, m.away_id)))
+            entry = {
+                "date": m.date,
+                "home": m.home,
+                "away": m.away,
+                "home_id": m.home_id,
+                "away_id": m.away_id,
+                "home_goals": m.home_goals,
+                "away_goals": m.away_goals,
+                "season": season,
+            }
+            h2h.setdefault(f"{key[0]}\t{key[1]}", []).append(entry)
+    return h2h
 
 
