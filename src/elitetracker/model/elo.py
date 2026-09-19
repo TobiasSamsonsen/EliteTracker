@@ -130,6 +130,11 @@ class EloConfig:
 
     k_factor: float = 20.0
     home_advantage: float = 60.0
+    # When > 0, home advantage scales with the rating gap: the home side
+    # gets more advantage when it is already favoured, less when the away
+    # side is.  effective_home = home_advantage * (1 + beta * gap) where
+    # gap = (home - away) / 400.  0.0 reproduces the constant.
+    home_advantage_beta: float = 0.0
     # Peak draw probability, reached when two sides are exactly level, and the
     # rating gap over which the chance of a draw decays.
     #
@@ -184,6 +189,19 @@ def era_config(
     if season >= BOUNDARY_SEASON:
         return modern or MODERN_CONFIG
     return base or EloConfig()
+
+
+def effective_home_advantage(config: EloConfig, home_rating: float, away_rating: float) -> float:
+    """Home advantage scaled by the rating gap.
+
+    When home_advantage_beta is 0.0 this returns the constant.  When positive,
+    a home favourite gets more advantage and an away favourite gets less,
+    which is where the model's home-win calibration gap concentrates.
+    """
+    if config.home_advantage_beta == 0.0:
+        return config.home_advantage
+    gap = (home_rating - away_rating) / _RATING_SCALE
+    return config.home_advantage * (1.0 + config.home_advantage_beta * gap)
 
 
 def expected_score(rating: float, opponent_rating: float) -> float:
@@ -242,7 +260,7 @@ def updated_pair(
     When xG data is provided and config.xg_alpha > 0, the observation blends
     the binary result with the xG-implied expected score (elo-v8).
     """
-    expected_home = expected_score(home_rating + config.home_advantage, away_rating)
+    expected_home = expected_score(home_rating + effective_home_advantage(config, home_rating, away_rating), away_rating)
     scored_home = actual_score(home_goals, away_goals)
     if home_xg is not None and away_xg is not None and config.xg_alpha > 0.0:
         xg_score = xg_implied_score(home_xg, away_xg)

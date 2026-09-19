@@ -1325,18 +1325,29 @@ function renderModelCard(report) {
   const model = report.model;
   const grid = $('#model-grid');
   grid.replaceChildren();
-  for (const [name, value] of [
+  const rows = [
     [t('model.version'), model.version],
     [t('model.kfactor'), model.k_factor],
     [t('model.homeAdvantage'), `${model.home_advantage} ${t('model.pts')}`],
+  ];
+  if (model.home_advantage_beta) {
+    rows.push([t('model.homeAdvantageBeta'), model.home_advantage_beta]);
+  }
+  rows.push(
     [t('model.xgAlpha'), `${Math.round(model.xg_alpha * 100)}%`],
     [t('model.crossRegression'), `${Math.round((1 - model.season_regression) * 100)}% ${t('model.towardMean')}`],
+  );
+  if (model.attack_defence.blend_gamma) {
+    rows.push([t('model.blendGamma'), model.attack_defence.blend_gamma]);
+  }
+  rows.push(
     [t('model.peakDraw'), pct(model.draw_base, 0)],
     [t('model.outcomeOdds'), t('model.outcomeOddsValue')],
     [t('model.scorelines'), t('model.scorelinesValue')],
     [t('model.simulations'), model.simulations.toLocaleString()],
     [t('model.seed'), model.seed],
-  ]) {
+  );
+  for (const [name, value] of rows) {
     const cell = el('div');
     cell.appendChild(el('dt', '', name));
     cell.appendChild(el('dd', '', String(value)));
@@ -2221,7 +2232,6 @@ function render() {
         renderLadder(state.reports);
         const days = matchdays(reports[state.league]);
         $('#ladder-anim-play').hidden = days.length < 2;
-        $('#grid-anim-play').hidden = days.length < 2;
       }
       break;
     case 'next-up':
@@ -2298,6 +2308,7 @@ function wire() {
 
   for (const button of document.querySelectorAll('[data-view]')) {
     button.addEventListener('click', () => {
+      closeSheet();
       if (anim.playing && button.dataset.view !== state.activeView) animStop();
       state.activeView = button.dataset.view;
       markActiveView();
@@ -2324,6 +2335,19 @@ function wire() {
     settingsBtn.setAttribute('aria-expanded', String(!open));
     if (!open) positionPopover(settingsMenu, settingsBtn);
   });
+
+  // Mobile More button: toggle the sheet.
+  const moreButton = $('#more-button');
+  const moreSheet = $('#more-sheet');
+  if (moreButton) {
+    moreButton.addEventListener('click', () => {
+      if (moreSheet.hidden) openSheet();
+      else closeSheet();
+    });
+  }
+  for (const closer of document.querySelectorAll('[data-close-sheet]')) {
+    closer.addEventListener('click', closeSheet);
+  }
 
   const stepMatchday = (delta) => {
     const range = $('#timeline-range');
@@ -2424,9 +2448,11 @@ function applyTeamParameter() {
   if (club) openTeamView(club.team_id, club.team, { push: false });
 }
 
-/* The tab strip and any other data-view buttons are marked from here. The strip
-   scrolls sideways once it outgrows its container, so its active tab is pulled
-   back into sight. */
+/* The tab strip, mobile bar, and any other data-view buttons are marked from
+   here. On desktop the strip scrolls sideways once it outgrows its container,
+   so its active tab is pulled back into sight. On mobile the fixed bar shows
+   four views; when the current one lives in the sheet, More carries the mark
+   so the bar is never blank. */
 function markActiveView() {
   for (const button of document.querySelectorAll('[data-view]')) {
     const active = button.dataset.view === state.activeView;
@@ -2435,12 +2461,19 @@ function markActiveView() {
       button.scrollIntoView({ block: 'nearest', inline: 'nearest' });
     }
   }
+  // The mobile bar shows four views; when the current one lives in the sheet,
+  // More carries the mark so the bar is never blank.
+  const inBar = [...document.querySelectorAll('.mobilebar__item[data-view]')]
+    .some((button) => button.dataset.view === state.activeView);
+  const moreBtn = $('#more-button');
+  if (moreBtn) moreBtn.setAttribute('aria-pressed', String(!inBar));
 }
 
 function closeAllMenus() {
   for (const menu of document.querySelectorAll('.popover-menu')) menu.hidden = true;
   const btn = $('#settings-btn');
   if (btn) btn.setAttribute('aria-expanded', 'false');
+  closeSheet();
 }
 
 function positionPopover(menu, anchor) {
@@ -2448,6 +2481,20 @@ function positionPopover(menu, anchor) {
   menu.style.position = 'fixed';
   menu.style.top = `${rect.bottom + 6}px`;
   menu.style.right = `${window.innerWidth - rect.right}px`;
+}
+
+function openSheet() {
+  const sheet = $('#more-sheet');
+  const btn = $('#more-button');
+  if (sheet) sheet.hidden = false;
+  if (btn) btn.setAttribute('aria-expanded', 'true');
+}
+
+function closeSheet() {
+  const sheet = $('#more-sheet');
+  const btn = $('#more-button');
+  if (sheet) sheet.hidden = true;
+  if (btn) btn.setAttribute('aria-expanded', 'false');
 }
 
 /* ?view=grid makes any view linkable. Applied early so the first render
@@ -2530,15 +2577,18 @@ function ratingById(id) {
    out here costs a few lines and saves shipping a 32x31 matrix of every
    possible pairing in every report file. */
 function matchOdds(model, homeRating, awayRating) {
-  const gap = homeRating + model.home_advantage - awayRating;
+  const gap = (homeRating - awayRating) / 400;
+  const beta = model.home_advantage_beta || 0;
+  const effective_ha = model.home_advantage * (1 + beta * gap);
+  const effectiveGap = homeRating + effective_ha - awayRating;
   // The ELO expectation of that gap against an even 1500 baseline. Half the
   // draw mass comes off each side, so home_win + 0.5*draw reproduces it exactly.
-  const expected = 1 / (1 + 10 ** (-gap / 400));
+  const expected = 1 / (1 + 10 ** (-effectiveGap / 400));
   const draw = Math.min(
-    model.draw_base * Math.exp(-((gap / model.draw_scale) ** 2)),
+    model.draw_base * Math.exp(-((effectiveGap / model.draw_scale) ** 2)),
     2 * Math.min(expected, 1 - expected)
   );
-  return { gap, home_win: expected - draw / 2, draw, away_win: 1 - expected - draw / 2 };
+  return { gap: effectiveGap, home_win: expected - draw / 2, draw, away_win: 1 - expected - draw / 2 };
 }
 
 /* Most likely scorelines, ported from display/fixtures.py: each outcome's
@@ -2546,11 +2596,13 @@ function matchOdds(model, homeRating, awayRating) {
 /* Scoreline grid ported from model/attack_defence.py: Poisson goals at each
    side's expected rate with the Dixon-Coles low-score correction, 0-8 goals
    each way, renormalised. */
-function scoreGrid(model, homeId, awayId) {
+function scoreGrid(model, homeId, awayId, eloGap) {
   const ad = model.attack_defence;
   const [homeAttack, homeDefence, homeFinishing] = ad.teams[homeId] || [0, 0, 0];
   const [awayAttack, awayDefence, awayFinishing] = ad.teams[awayId] || [0, 0, 0];
-  const lam = Math.exp(ad.base + ad.home + homeAttack - awayDefence + (homeFinishing || 0));
+  const gap = eloGap || 0;
+  const effective_home = ad.home * (1 + (ad.home_beta || 0) * gap);
+  const lam = Math.exp(ad.base + effective_home + homeAttack - awayDefence + (homeFinishing || 0));
   const mu = Math.exp(ad.base + awayAttack - homeDefence + (awayFinishing || 0));
   const fact = [1, 1, 2, 6, 24, 120, 720, 5040, 40320];
   const pois = (k, rate) => Math.exp(-rate) * rate ** k / fact[k];
@@ -2567,10 +2619,12 @@ function scoreGrid(model, homeId, awayId) {
    own win/draw/loss sums, weight on Elo from the report. Ported from
    model/attack_defence.py blend_outcomes. */
 function blendOdds(model, odds, homeId, awayId) {
-  const grid = scoreGrid(model, homeId, awayId);
+  const grid = scoreGrid(model, homeId, awayId, odds.gap / 400);
   const own = { home_win: 0, draw: 0, away_win: 0 };
   grid.forEach((row, i) => row.forEach((p, j) => { own[i > j ? 'home_win' : i === j ? 'draw' : 'away_win'] += p; }));
-  const w = model.attack_defence.outcome_blend;
+  const gamma = model.attack_defence.blend_gamma || 0;
+  const gap = Math.abs(odds.gap) / 400;
+  const w = gamma ? Math.max(0.05, Math.min(0.50, model.attack_defence.outcome_blend - gamma * gap)) : model.attack_defence.outcome_blend;
   const raw = ['home_win', 'draw', 'away_win'].map((o) => odds[o] ** w * own[o] ** (1 - w));
   const total = raw[0] + raw[1] + raw[2];
   return { gap: odds.gap, home_win: raw[0] / total, draw: raw[1] / total, away_win: raw[2] / total };
@@ -2579,7 +2633,7 @@ function blendOdds(model, odds, homeId, awayId) {
 /* Most likely scorelines: who wins comes from the blended odds, how many goals
    from the grid -- each outcome's cells are rescaled to that outcome's odds. */
 function topScorelines(model, odds, homeId, awayId, n = 5) {
-  const grid = scoreGrid(model, homeId, awayId);
+  const grid = scoreGrid(model, homeId, awayId, odds.gap / 400);
   const outcome = (i, j) => (i > j ? 'home_win' : i === j ? 'draw' : 'away_win');
   const own = { home_win: 0, draw: 0, away_win: 0 };
   grid.forEach((row, i) => row.forEach((p, j) => { own[outcome(i, j)] += p; }));

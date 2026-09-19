@@ -17,7 +17,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
-from elitetracker.model.attack_defence import ADConfig, AttackDefence, blend_outcomes, top_scorelines
+from elitetracker.model.attack_defence import ADConfig, AttackDefence, OUTCOME_BLEND, blend_outcomes, top_scorelines
 from elitetracker.model.career import SeasonSlice, TeamCareer, build_careers
 from elitetracker.model.elo import MODEL_VERSION, EloConfig, era_config
 from elitetracker.model.initial_ratings import SeedingConfig, TeamRating, initial_ratings
@@ -289,6 +289,7 @@ def build_report(
             "version": MODEL_VERSION,
             "k_factor": era.k_factor,
             "home_advantage": era.home_advantage,
+            "home_advantage_beta": era.home_advantage_beta,
             "xg_alpha": era.xg_alpha,
             "draw_base": era.draw_base,
             "draw_scale": era.draw_scale,
@@ -304,12 +305,14 @@ def build_report(
             # parameters above and both divisions' attack/defence/finishing ratings.
             "attack_defence": {
                 "home": ad.config.home,
+                "home_beta": ad.config.home_beta,
                 "base": ad.config.base,
                 "rho": ad.config.rho,
                 "k": ad.config.k,
                 "k_shots": ad.config.k_shots,
                 "alpha": ad.config.alpha,
-                "outcome_blend": blend_outcomes.__defaults__[0],
+                "outcome_blend": OUTCOME_BLEND,
+                "blend_gamma": ad.config.blend_gamma,
                 "teams": {
                     team_id: [round(ad.attack[team_id], 4), round(ad.defence[team_id], 4),
                               round(ad.finishing.get(team_id, 0.0), 4)]

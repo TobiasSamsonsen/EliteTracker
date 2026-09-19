@@ -24,8 +24,8 @@ import random
 from bisect import bisect_left
 from dataclasses import dataclass
 
-from elitetracker.model.attack_defence import AttackDefence, blend_outcomes, conditional_scorelines
-from elitetracker.model.elo import EloConfig
+from elitetracker.model.attack_defence import AttackDefence, blend_outcomes, conditional_scorelines, gap_blend_weight
+from elitetracker.model.elo import EloConfig, effective_home_advantage, _RATING_SCALE
 from elitetracker.model.probabilities import AWAY_WIN, DRAW, HOME_WIN, match_probabilities
 from elitetracker.model.table import TableRow, ranking_key, table_from_matches
 from elitetracker.normalize.matches import Match
@@ -97,10 +97,12 @@ def _fixtures(
             continue
         home_id = match.home_id or match.home
         away_id = match.away_id or match.away
-        grid = ad.grid(home_id, away_id, match.date)
+        gap = (ratings[home_id] + effective_home_advantage(config, ratings[home_id], ratings[away_id]) - ratings[away_id]) / _RATING_SCALE
+        grid = ad.grid(home_id, away_id, match.date, elo_gap=gap)
         probabilities = match_probabilities(ratings[home_id], ratings[away_id], config)
         if blend:
-            probabilities = blend_outcomes(probabilities, grid)
+            blend_weight = gap_blend_weight(gap, ad.config.blend_gamma)
+            probabilities = blend_outcomes(probabilities, grid, weight=blend_weight)
         cells = conditional_scorelines(grid, probabilities)
         tables = []
         for outcome, keep in ((HOME_WIN, lambda i, j: i > j), (DRAW, lambda i, j: i == j), (AWAY_WIN, lambda i, j: i < j)):

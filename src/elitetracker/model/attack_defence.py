@@ -51,6 +51,9 @@ class ADConfig:
     # these values.
     k: float = 0.015             # rating step per goal of surprise
     home: float = 0.22           # home advantage in log goals (exp(0.22) = 1.25x)
+    # When > 0, the AD home term scales with the Elo rating gap, matching
+    # the Elo home advantage's gap-scaling.  effective_home = home * (1 + home_beta * gap).
+    home_beta: float = 0.0       # 0.0 reproduces the constant
     base: float = 0.37           # log of the average goals per side (exp(0.37) = 1.45)
     cap: float = 4.0             # the largest surprise one match may carry, in goals
     season_regression: float = 0.88
@@ -63,6 +66,10 @@ class ADConfig:
     # Season-level finishing quality.  Regressed toward 0 at each offseason.
     # Fitted walk-forward: reg=0.70 gives -0.00039 log loss vs no finishing (t=-1.04).
     finishing_regression: float = 0.70
+    # Gap-dependent blend sharpening.  When > 0, the Elo weight in the
+    # outcome blend shrinks as the rating gap grows (more grid weight for
+    # heavy favourites).  weight = clamp(OUTCOME_BLEND - gamma * |gap|, 0.05, 0.50).
+    blend_gamma: float = 0.0      # 0.0 reproduces the constant
 
 
 def tau(home_goals: int, away_goals: int, lam: float, mu: float, rho: float) -> float:
@@ -92,10 +99,23 @@ def outcome_probabilities(grid: list[list[float]]) -> MatchProbabilities:
     return MatchProbabilities(home_win=home, draw=draw, away_win=1.0 - home - draw)
 
 
-def blend_outcomes(elo: MatchProbabilities, grid: list[list[float]], weight: float = OUTCOME_BLEND) -> MatchProbabilities:
+def gap_blend_weight(gap: float, gamma: float, base: float = OUTCOME_BLEND) -> float:
+    """Blend weight (on Elo odds) that shrinks toward the grid as the gap grows.
+
+    When gamma is 0.0 this returns the constant base weight.  When positive,
+    heavy-favourite matches get more grid weight, which is where the model's
+    under-confidence concentrates.
+    """
+    if gamma == 0.0:
+        return base
+    return max(0.05, min(0.50, base - gamma * abs(gap)))
+
+
+def blend_outcomes(elo: MatchProbabilities, grid: list[list[float]], weight: float | None = None) -> MatchProbabilities:
     """The shipped outcome odds: a geometric blend of the Elo odds and the grid's own."""
     own = outcome_probabilities(grid)
-    raw = [e ** weight * g ** (1.0 - weight) for e, g in zip((elo.home_win, elo.draw, elo.away_win), (own.home_win, own.draw, own.away_win))]
+    w = weight if weight is not None else OUTCOME_BLEND
+    raw = [e ** w * g ** (1.0 - w) for e, g in zip((elo.home_win, elo.draw, elo.away_win), (own.home_win, own.draw, own.away_win))]
     total = sum(raw)
     return MatchProbabilities(*(value / total for value in raw))
 
@@ -233,21 +253,22 @@ class AttackDefence:
             self.finishing.setdefault(t, 0.0)
 
     # -- prediction ------------------------------------------------------
-    def rates(self, home_id: str, away_id: str, on: str) -> tuple[float, float]:
+    def rates(self, home_id: str, away_id: str, on: str, elo_gap: float = 0.0) -> tuple[float, float]:
         self._ensure(on, home_id, away_id)
         cfg = self.config
-        lam = math.exp(cfg.base + cfg.home + self.attack[home_id] - self.defence[away_id]
+        effective_home = cfg.home * (1.0 + cfg.home_beta * elo_gap)
+        lam = math.exp(cfg.base + effective_home + self.attack[home_id] - self.defence[away_id]
                         + self.finishing.get(home_id, 0.0))
         mu = math.exp(cfg.base + self.attack[away_id] - self.defence[home_id]
                        + self.finishing.get(away_id, 0.0))
         return lam, mu
 
-    def grid(self, home_id: str, away_id: str, on: str) -> list[list[float]]:
-        lam, mu = self.rates(home_id, away_id, on)
+    def grid(self, home_id: str, away_id: str, on: str, elo_gap: float = 0.0) -> list[list[float]]:
+        lam, mu = self.rates(home_id, away_id, on, elo_gap=elo_gap)
         return score_grid(lam, mu, self.config.rho)
 
-    def predict(self, home_id: str, away_id: str, on: str) -> MatchProbabilities:
-        return outcome_probabilities(self.grid(home_id, away_id, on))
+    def predict(self, home_id: str, away_id: str, on: str, elo_gap: float = 0.0) -> MatchProbabilities:
+        return outcome_probabilities(self.grid(home_id, away_id, on, elo_gap=elo_gap))
 
     # -- learning --------------------------------------------------------
     def observed(self, match: Match) -> tuple[float, float, float]:

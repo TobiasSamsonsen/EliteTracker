@@ -14,7 +14,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from elitetracker.model.elo import EloConfig, draw_probability, expected_score
+from elitetracker.model.elo import EloConfig, draw_probability, effective_home_advantage, expected_score
 
 
 # Outcome labels used as keys throughout the model and the simulation.
@@ -28,6 +28,9 @@ class MatchProbabilities:
     home_win: float
     draw: float
     away_win: float
+    # (home + effective_ha - away) / 400 — carried so gap-dependent features
+    # (home-scaling, favourite sharpening) can read it without recomputing.
+    rating_gap: float = 0.0
 
     def of(self, outcome: str) -> float:
         return {HOME_WIN: self.home_win, DRAW: self.draw, AWAY_WIN: self.away_win}[outcome]
@@ -46,7 +49,8 @@ def match_probabilities(
 ) -> MatchProbabilities:
     """Three-way probabilities for a match at the home team's ground."""
     config = config or EloConfig()
-    effective_gap = (home_rating + config.home_advantage) - away_rating
+    eff_ha = effective_home_advantage(config, home_rating, away_rating)
+    effective_gap = (home_rating + eff_ha) - away_rating
     return _draw_model_probabilities(effective_gap, config)
 
 
@@ -64,5 +68,6 @@ def _draw_model_probabilities(rating_difference: float, config: EloConfig) -> Ma
 
     home_win = expected_home - draw / 2.0
     away_win = (1.0 - expected_home) - draw / 2.0
-    return MatchProbabilities(home_win=home_win, draw=draw, away_win=away_win)
+    return MatchProbabilities(home_win=home_win, draw=draw, away_win=away_win,
+                             rating_gap=rating_difference / 400.0)
 

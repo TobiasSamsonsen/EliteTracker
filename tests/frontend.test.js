@@ -33,9 +33,10 @@ eval(pick('matchOdds') + pick('scoreGrid') + pick('topScorelines') + pick('blend
 
 const MODEL = {
   home_advantage: 60,
+  home_advantage_beta: 0,
   draw_base: 0.26,
   draw_scale: 375,
-  attack_defence: { outcome_blend: 0.5, home: 0.22, base: 0.37, rho: -0.05, k: 0.015, teams: { A: [0.3, 0.15], B: [-0.2, -0.1] } },
+  attack_defence: { outcome_blend: 0.5, blend_gamma: 0, home: 0.22, home_beta: 0, base: 0.37, rho: -0.05, k: 0.015, teams: { A: [0.3, 0.15], B: [-0.2, -0.1] } },
 };
 
 test('odds match model/probabilities.py exactly', () => {
@@ -100,4 +101,59 @@ test('blended odds sit between the Elo odds and the grid, and reduce to each at 
   assert.ok(Math.abs(blendOdds(pure, elo, 'A', 'B').draw - elo.draw) < 1e-12);
   const goals = { ...MODEL, attack_defence: { ...MODEL.attack_defence, outcome_blend: 0 } };
   assert.ok(Math.abs(blendOdds(goals, elo, 'A', 'B').home_win - own.home_win) < 1e-12);
+});
+
+/* --- Feature 1: gap-dependent home advantage --- */
+test('beta=0 reproduces constant home advantage', () => {
+  const odds = matchOdds(MODEL, 1500, 1500);
+  const expected = 1 / (1 + 10 ** (-60 / 400));
+  assert.ok(Math.abs(odds.home_win - (expected - odds.draw / 2)) < 1e-12);
+});
+
+test('positive beta increases home advantage when home is favoured', () => {
+  const modelBeta = { ...MODEL, home_advantage_beta: 0.5 };
+  const oddsBase = matchOdds(MODEL, 1600, 1400);
+  const oddsBeta = matchOdds(modelBeta, 1600, 1400);
+  // Home is favoured (gap=200/400=0.5), so beta should increase home_win.
+  assert.ok(oddsBeta.home_win > oddsBase.home_win);
+});
+
+test('positive beta decreases home advantage when away is favoured', () => {
+  const modelBeta = { ...MODEL, home_advantage_beta: 0.5 };
+  const oddsBase = matchOdds(MODEL, 1400, 1600);
+  const oddsBeta = matchOdds(modelBeta, 1400, 1600);
+  // Away is favoured (gap=-200/400=-0.5), so beta should decrease home_win.
+  assert.ok(oddsBeta.home_win < oddsBase.home_win);
+});
+
+test('beta affects scoreGrid via eloGap parameter', () => {
+  const modelBeta = { ...MODEL, attack_defence: { ...MODEL.attack_defence, home_beta: 0.5 } };
+  const gridBase = scoreGrid(MODEL, 'A', 'B', 0);
+  const gridGap = scoreGrid(modelBeta, 'A', 'B', 0.5);
+  // Positive gap + positive home_beta should shift lam up, changing the grid.
+  assert.ok(gridBase[1][1] !== gridGap[1][1]);
+});
+
+/* --- Feature 2: gap-dependent blend weight --- */
+test('blendOdds with gamma=0 reproduces constant blend weight', () => {
+  const elo = matchOdds(MODEL, 1700, 1300);
+  const mid = blendOdds(MODEL, elo, 'A', 'B');
+  const gammaZero = { ...MODEL, attack_defence: { ...MODEL.attack_defence, blend_gamma: 0 } };
+  const midGamma = blendOdds(gammaZero, elo, 'A', 'B');
+  assert.ok(Math.abs(mid.home_win - midGamma.home_win) < 1e-12);
+});
+
+test('blendOdds with gamma shifts weight toward grid for large gaps', () => {
+  const elo = matchOdds(MODEL, 1800, 1200);
+  const midBase = blendOdds(MODEL, elo, 'A', 'B');
+  const modelGamma = { ...MODEL, attack_defence: { ...MODEL.attack_defence, blend_gamma: 1.0 } };
+  const midGamma = blendOdds(modelGamma, elo, 'A', 'B');
+  // Large gap + gamma should shift odds toward the grid's odds.
+  const grid = scoreGrid(MODEL, 'A', 'B');
+  const own = { home_win: 0, draw: 0, away_win: 0 };
+  grid.forEach((row, i) => row.forEach((p, j) => { own[i > j ? 'home_win' : i === j ? 'draw' : 'away_win'] += p; }));
+  // midGamma should be closer to own than midBase is.
+  const distBase = Math.abs(midBase.home_win - own.home_win);
+  const distGamma = Math.abs(midGamma.home_win - own.home_win);
+  assert.ok(distGamma < distBase);
 });

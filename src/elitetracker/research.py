@@ -111,7 +111,7 @@ def _halves(card: Scorecard, dates: dict[str, str]) -> tuple[Scorecard, Scorecar
 
 def cmd_run(args: argparse.Namespace) -> int:
     """Elo alone, the shipped Elo + attack/defence blend, and the closing line, match by match."""
-    from elitetracker.model.attack_defence import ADConfig, AttackDefence, blend_outcomes
+    from elitetracker.model.attack_defence import ADConfig, AttackDefence, blend_outcomes, gap_blend_weight
     from elitetracker.model.career import team_ids
     from elitetracker.model.probabilities import outcome_of
     from elitetracker.normalize.matches import Match
@@ -127,7 +127,10 @@ def cmd_run(args: argparse.Namespace) -> int:
     for match in sorted((m for s in slices for m in s.matches if m.played), key=Match.sort_key):
         home, away = team_ids(match)
         if match.match_id in elo.predictions:
-            odds = blend_outcomes(elo.predictions[match.match_id][0], ad.grid(home, away, match.date))
+            elo_odds = elo.predictions[match.match_id][0]
+            blend_weight = gap_blend_weight(elo_odds.rating_gap, ad.config.blend_gamma)
+            odds = blend_outcomes(elo_odds, ad.grid(home, away, match.date, elo_gap=elo_odds.rating_gap),
+                                  weight=blend_weight)
             shipped.observe(odds, outcome_of(match), match.match_id)
         ad.observe(match)
     matches = [m for s in slices for m in s.matches

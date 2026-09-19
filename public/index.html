@@ -21,7 +21,7 @@
 
 <header class="masthead">
   <div class="shell masthead__inner">
-    <div class="wordmark">EliteTracker <span id="model-badge"></span></div>
+    <a href="/" class="wordmark">EliteTracker <span id="model-badge"></span></a>
     <div class="masthead__views">
       <div class="switch" role="group" data-i18n="aria.chooseView" data-i18n-attr="aria-label" aria-label="Choose a view">
         <button type="button" data-view="grid" aria-pressed="true"><span data-i18n="tab.grid">Finish Grid</span></button>
@@ -38,6 +38,42 @@
     </button>
   </div>
 </header>
+
+<!-- Phone navigation. The same data-view attribute the top strip uses, so the
+     existing click wiring, ?view= deep links and active marking all apply. -->
+<nav class="mobilebar" id="mobilebar" data-i18n="aria.chooseView" data-i18n-attr="aria-label" aria-label="Choose a view">
+    <button type="button" class="mobilebar__item" data-view="grid" aria-pressed="true"><svg class="mobilebar__icon" viewBox="0 0 16 16" aria-hidden="true" focusable="false" fill="currentColor"><rect x="1.5" y="1.5" width="3.6" height="3.6" rx=".5"/><rect x="6.2" y="1.5" width="3.6" height="3.6" rx=".5"/><rect x="10.9" y="1.5" width="3.6" height="3.6" rx=".5"/><rect x="1.5" y="6.2" width="3.6" height="3.6" rx=".5"/><rect x="6.2" y="6.2" width="3.6" height="3.6" rx=".5"/><rect x="10.9" y="6.2" width="3.6" height="3.6" rx=".5"/><rect x="1.5" y="10.9" width="3.6" height="3.6" rx=".5"/><rect x="6.2" y="10.9" width="3.6" height="3.6" rx=".5"/><rect x="10.9" y="10.9" width="3.6" height="3.6" rx=".5"/></svg><span data-i18n="mob.grid">Grid</span></button>
+    <button type="button" class="mobilebar__item" data-view="table" aria-pressed="false"><svg class="mobilebar__icon" viewBox="0 0 16 16" aria-hidden="true" focusable="false" fill="currentColor"><rect x="1.5" y="2.5" width="13" height="2.2" rx=".6"/><rect x="1.5" y="6.9" width="13" height="2.2" rx=".6"/><rect x="1.5" y="11.3" width="13" height="2.2" rx=".6"/></svg><span data-i18n="mob.table">Table</span></button>
+    <button type="button" class="mobilebar__item" data-view="next-up" aria-pressed="false"><svg class="mobilebar__icon" viewBox="0 0 16 16" aria-hidden="true" focusable="false" fill="currentColor"><rect x="1.8" y="3" width="12.4" height="11.2" rx="1.6" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M1.8 6.6h12.4" stroke="currentColor" stroke-width="1.6"/><path d="M5.2 1.6v2.6M10.8 1.6v2.6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg><span data-i18n="mob.next">Next up</span></button>
+    <button type="button" class="mobilebar__item" data-view="played" aria-pressed="false"><svg class="mobilebar__icon" viewBox="0 0 16 16" aria-hidden="true" focusable="false" fill="currentColor"><path d="M2 8.4l3.6 3.6L14 3.6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg><span data-i18n="mob.results">Results</span></button>
+    <button type="button" class="mobilebar__item mobilebar__more" id="more-button"
+            aria-expanded="false" aria-controls="more-sheet"><svg class="mobilebar__icon" viewBox="0 0 16 16" aria-hidden="true" focusable="false" fill="currentColor"><circle cx="3" cy="8" r="1.6"/><circle cx="8" cy="8" r="1.6"/><circle cx="13" cy="8" r="1.6"/></svg><span data-i18n="mob.more">More</span></button>
+</nav>
+
+<div class="sheet" id="more-sheet" hidden>
+  <div class="sheet__scrim" data-close-sheet></div>
+  <div class="sheet__panel" role="dialog" aria-modal="true" data-i18n="aria.moreViews" data-i18n-attr="aria-label" aria-label="More views">
+    <div class="sheet__grip" aria-hidden="true"></div>
+      <button type="button" class="sheet__item" data-view="ladder" aria-pressed="false"><span data-i18n="mob.ladder">Ladder</span></button>
+      <button type="button" class="sheet__item" data-view="compare" aria-pressed="false"><span data-i18n="mob.compare">Compare clubs</span></button>
+      <button type="button" class="sheet__item" data-view="model" aria-pressed="false"><span data-i18n="mob.model">Model card</span></button>
+      <div class="sheet__divider" aria-hidden="true"></div>
+      <div class="sheet__setting">
+        <span class="sheet__setting-label" data-i18n="sheet.theme">Theme</span>
+        <div class="switch switch--theme" role="group" aria-label="Theme">
+          <button type="button" data-theme-choice="light" aria-pressed="false" data-i18n="theme.light">Light</button>
+          <button type="button" data-theme-choice="dark" aria-pressed="false" data-i18n="theme.dark">Dark</button>
+        </div>
+      </div>
+      <div class="sheet__setting">
+        <span class="sheet__setting-label" data-i18n="sheet.lang">Language</span>
+        <div class="switch switch--lang" role="group" aria-label="Language">
+          <button type="button" data-lang="no" aria-pressed="true">NO</button>
+          <button type="button" data-lang="en" aria-pressed="false">EN</button>
+        </div>
+      </div>
+  </div>
+</div>
 
 <div id="settings-menu" class="popover-menu" role="menu" hidden>
   <div class="popover-menu__item">

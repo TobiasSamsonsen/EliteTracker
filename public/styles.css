@@ -230,6 +230,7 @@ a { color: inherit; }
   font-size: 1.0625rem;
   letter-spacing: 0.02em;
   text-transform: uppercase;
+  text-decoration: none;
   margin-right: auto;
   display: flex;
   align-items: baseline;
@@ -1306,6 +1307,147 @@ footer a { color: var(--ink); }
 
 /* ---------- phone navigation -------------------------------------- */
 
+/* Eight views in a strip that showed three of them was the worst part of the
+   phone layout: the rest had to be discovered by swiping a control that gave
+   no sign it could scroll. Under 760px they move to a fixed bar in the thumb
+   zone, four of them plus a sheet holding the rest. The buttons carry the same
+   data-view attribute as the top strip, so nothing in the JS has to know which
+   control was tapped. */
+
+.mobilebar { display: none; }
+.sheet { display: none; }
+
+@media (max-width: 760px) {
+  .mobilebar {
+    position: fixed;
+    inset: auto 0 0 0;
+    z-index: 40;
+    display: grid;
+    grid-auto-flow: column;
+    grid-auto-columns: 1fr;
+    background: color-mix(in srgb, var(--panel) 94%, transparent);
+    backdrop-filter: blur(12px);
+    border-top: 1px solid var(--rule);
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+
+  .mobilebar__item {
+    appearance: none;
+    border: 0;
+    background: none;
+    color: var(--ink-faint);
+    font: inherit;
+    font-size: 0.625rem;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.2rem;
+    min-height: 52px;
+    padding: 0.4rem 0.2rem;
+    cursor: pointer;
+  }
+
+  .mobilebar__icon { width: 17px; height: 17px; }
+
+  .mobilebar__item[aria-pressed="true"] { color: var(--outcome-good); }
+
+  .mobilebar__item[aria-pressed="true"]::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    width: 1.75rem;
+    height: 2px;
+    border-radius: 0 0 2px 2px;
+    background: var(--outcome-good);
+  }
+
+  .mobilebar__item { position: relative; }
+
+  body { padding-bottom: calc(52px + env(safe-area-inset-bottom, 0px)); }
+
+  .masthead__views { display: none; }
+
+  .sheet { display: block; position: fixed; inset: 0; z-index: 50; }
+  .sheet[hidden] { display: none; }
+
+  .sheet__scrim {
+    position: absolute;
+    inset: 0;
+    background: rgb(0 0 0 / 0.45);
+  }
+
+  .sheet__panel {
+    position: absolute;
+    inset: auto 0 0 0;
+    background: var(--panel);
+    border-top: 1px solid var(--rule);
+    border-radius: 14px 14px 0 0;
+    padding: 0.5rem 0.75rem calc(0.75rem + 52px + env(safe-area-inset-bottom, 0px));
+    display: grid;
+    gap: 2px;
+    animation: sheet-up 0.18s var(--ease);
+  }
+
+  .sheet__grip {
+    width: 2.25rem;
+    height: 4px;
+    border-radius: 2px;
+    background: var(--rule-strong);
+    margin: 0.25rem auto 0.6rem;
+  }
+
+  .sheet__item {
+    appearance: none;
+    border: 0;
+    background: none;
+    color: var(--ink);
+    font: inherit;
+    font-size: 0.9375rem;
+    font-weight: 600;
+    text-align: left;
+    min-height: 48px;
+    padding: 0 0.75rem;
+    border-radius: var(--radius);
+    cursor: pointer;
+  }
+
+  .sheet__item[aria-pressed="true"] { color: var(--outcome-good); background: var(--panel-sunk); }
+
+  .sheet__divider {
+    height: 1px;
+    background: var(--rule);
+    margin: 0.4rem 0.75rem;
+  }
+
+  .sheet__setting {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    min-height: 48px;
+    padding: 0 0.75rem;
+  }
+
+  .sheet__setting-label {
+    font-size: 0.9375rem;
+    font-weight: 600;
+    color: var(--ink);
+  }
+
+  .sheet__setting .switch { padding: 2px; }
+  .sheet__setting .switch button { padding: 0.3rem 0.65rem; font-size: 0.8125rem; }
+}
+
+@keyframes sheet-up {
+  from { transform: translateY(100%); }
+  to { transform: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sheet__panel { animation: none; }
+}
 
 /* ---------- touch ergonomics -------------------------------------- */
 

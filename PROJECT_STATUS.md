@@ -664,15 +664,13 @@ away. Nothing ships until a walk-forward says it does.
 ## 🔧 Open items
 
 **Next, in rough order of expected value:**
-- [ ] Home advantage shaped by the rating gap (scales with favourite gap, not a
-      constant) — targets the +0.040 home-win calibration gap. See elo-v11.1
-      market gap, candidate 1.
-- [ ] Favourite sharpening: blend weight that changes with the rating gap —
-      targets the +7.9pp under-confidence on heavy favourites. Mandatory forward
-      split. See candidate 2.
+- [x] Home advantage shaped by the rating gap — coded, measured, rejected.
+       Flat surface (t=−0.24 at best β).  See "elo-v12 candidates" section.
+- [x] Favourite sharpening — coded, measured, rejected.  γ=0.0 is best;
+       every non-zero value is worse.  See "elo-v12 candidates" section.
 - [ ] Calendar-derived rest days and congested weeks from fotmob kickoff dates
-      (days since last, Thursday→Sunday) — targets the doubled late-season gap.
-      See candidate 3.
+       (days since last, Thursday→Sunday) — targets the doubled late-season gap.
+       See candidate 3.
 - [ ] Re-test per-era K/α with 2027 data as holdout. The candidate
       (K=70–90, α=0.70–0.85) cleared |t|≥2 on the full xG window (log loss
       0.9889 vs 0.9943 shipped) but not on the holdout splits (t=−0.75
@@ -751,6 +749,60 @@ away. Nothing ships until a walk-forward says it does.
   so future sweeps test the actual shipped model.  Attack/defence k_shots and alpha
   were swept but showed zero effect on outcome log loss (the AD grid's win/draw/loss
   odds are flat when team ratings are close).
+
+## 🧪 elo-v12 candidates: gap-dependent home advantage and favourite sharpening — measured, rejected
+
+Two structural candidates were coded up (defaults 0.0, backward-compatible) and
+swept walk-forward on 2022+ (Eliteserien, n=1,121 scored matches).  Both are
+flat across their parameter ranges and fail |t|≥2.
+
+### Gap-dependent home advantage (`home_advantage_beta`)
+
+`effective_home = base × (1 + β × gap)` where gap = (home − away)/400.  Both
+the Elo home_advantage (60 pts) and the AD home term (0.22 log goals) scale.
+
+| β | log loss | paired d vs β=0 | t |
+|---|---|---|---|
+| 0.0 | 0.97454 | — | — |
+| 0.1 | 0.97429 | −0.00002 | −0.31 |
+| 0.2 | 0.97429 | −0.00003 | −0.27 |
+| 0.3 | 0.97429 | −0.00005 | −0.24 |
+| 0.4 | 0.97430 | +0.00001 | +0.02 |
+| 0.5 | 0.97431 | +0.00002 | +0.03 |
+
+Surface flat within 0.00005 across β=−0.5…0.5.  The model's home-win
+calibration gap is real but appears to be structural to the Elo framework,
+not fixable by scaling the constant with the gap.
+
+### Favourite sharpening (`blend_gamma`)
+
+`weight = clamp(0.25 − γ × |gap|, 0.05, 0.50)` — more grid weight for heavy
+favourites.  Forward-split: fit on <2023, test on 2023+.
+
+| γ | train ll | test ll | vs γ=0 | t |
+|---|---|---|---|---|
+| 0.0 | 0.97477 | 0.97128 | — | — |
+| 0.3 | 0.97679 | 0.97167 | +0.00039 | +0.82 |
+| 0.6 | 0.97799 | 0.97217 | +0.00089 | +0.66 |
+| 1.0 | 0.97818 | 0.97248 | +0.00120 | +0.58 |
+
+γ=0.0 (constant blend) is the best; every non-zero value is worse.  The
+under-confidence on heavy favourites is a real gap to the market but is
+not addressable by shifting the blend weight with the rating gap.
+
+### Combined sweep
+
+| β | γ | log loss | vs elo | t |
+|---|---|---|---|---|
+| 0.0 | 0.0 | 0.97202 | −0.00252 | −0.72 |
+| 0.2 | 0.0 | 0.97147 | −0.00303 | −0.88 |
+| 0.4 | 0.0 | 0.97101 | −0.00348 | −1.02 |
+| 0.4 | 0.3 | 0.97152 | −0.00297 | −0.79 |
+
+No combination clears |t|≥2.  The code stays in the repo (defaults 0.0,
+backward-compatible) but is not shipped; the model version stays at
+elo-v11.1.  `MatchProbabilities.rating_gap` is kept as a useful carry
+field for future candidates.
 
 ## 🧪 Post-elo-v11.1 knob sweeps (September 2026)
 
