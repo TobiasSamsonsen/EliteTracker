@@ -5471,12 +5471,8 @@
       "id": "8531"
     },
     "status": {
-      "utcTime": "2026-09-19T14:00:00.000Z",
-      "halfs": {
-        "firstHalfStarted": "19.09.2026 16:02:21",
-        "secondHalfStarted": "19.09.2026 17:03:23"
-      },
-      "periodLength": 45,
+      "utcTime": "2026-09-19T14:00:00Z",
+      "timezone": "UTC",
       "finished": true,
       "started": true,
       "cancelled": false,
@@ -5506,11 +5502,23 @@
       "id": "4249"
     },
     "status": {
-      "utcTime": "2026-09-20T15:00:00Z",
-      "timezone": "UTC",
-      "started": false,
+      "utcTime": "2026-09-20T15:00:00.000Z",
+      "halfs": {
+        "firstHalfStarted": "20.09.2026 17:05:07",
+        "secondHalfStarted": "20.09.2026 18:04:24"
+      },
+      "periodLength": 45,
+      "finished": true,
+      "started": true,
       "cancelled": false,
-      "finished": false
+      "awarded": false,
+      "scoreStr": "4 - 2",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
     }
   },
   {
@@ -5529,11 +5537,23 @@
       "id": "7937"
     },
     "status": {
-      "utcTime": "2026-09-20T15:00:00Z",
-      "timezone": "UTC",
-      "started": false,
+      "utcTime": "2026-09-20T15:00:00.000Z",
+      "halfs": {
+        "firstHalfStarted": "20.09.2026 17:02:21",
+        "secondHalfStarted": "20.09.2026 18:03:45"
+      },
+      "periodLength": 45,
+      "finished": true,
+      "started": true,
       "cancelled": false,
-      "finished": false
+      "awarded": false,
+      "scoreStr": "5 - 1",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
     }
   },
   {
@@ -5552,11 +5572,23 @@
       "id": "6563"
     },
     "status": {
-      "utcTime": "2026-09-20T15:00:00Z",
-      "timezone": "UTC",
-      "started": false,
+      "utcTime": "2026-09-20T15:00:00.000Z",
+      "halfs": {
+        "firstHalfStarted": "20.09.2026 17:02:21",
+        "secondHalfStarted": "20.09.2026 18:03:09"
+      },
+      "periodLength": 45,
+      "finished": true,
+      "started": true,
       "cancelled": false,
-      "finished": false
+      "awarded": false,
+      "scoreStr": "1 - 4",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
     }
   },
   {
@@ -5575,11 +5607,23 @@
       "id": "4722"
     },
     "status": {
-      "utcTime": "2026-09-20T15:00:00Z",
-      "timezone": "UTC",
-      "started": false,
+      "utcTime": "2026-09-20T15:00:00.000Z",
+      "halfs": {
+        "firstHalfStarted": "20.09.2026 17:05:13",
+        "secondHalfStarted": "20.09.2026 18:04:24"
+      },
+      "periodLength": 45,
+      "finished": true,
+      "started": true,
       "cancelled": false,
-      "finished": false
+      "awarded": false,
+      "scoreStr": "5 - 1",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
     }
   },
   {
@@ -5598,11 +5642,24 @@
       "id": "8180"
     },
     "status": {
-      "utcTime": "2026-09-20T15:00:00Z",
-      "timezone": "UTC",
-      "started": false,
+      "utcTime": "2026-09-20T15:00:00.000Z",
+      "numberOfAwayRedCards": 1,
+      "halfs": {
+        "firstHalfStarted": "20.09.2026 17:05:09",
+        "secondHalfStarted": "20.09.2026 18:04:24"
+      },
+      "periodLength": 45,
+      "finished": true,
+      "started": true,
       "cancelled": false,
-      "finished": false
+      "awarded": false,
+      "scoreStr": "0 - 2",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
     }
   },
   {
@@ -5621,11 +5678,23 @@
       "id": "8405"
     },
     "status": {
-      "utcTime": "2026-09-20T15:00:00Z",
-      "timezone": "UTC",
-      "started": false,
+      "utcTime": "2026-09-20T15:00:00.000Z",
+      "halfs": {
+        "firstHalfStarted": "20.09.2026 17:04:31",
+        "secondHalfStarted": "20.09.2026 18:03:09"
+      },
+      "periodLength": 45,
+      "finished": true,
+      "started": true,
       "cancelled": false,
-      "finished": false
+      "awarded": false,
+      "scoreStr": "1 - 2",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
     }
   },
   {
@@ -5644,11 +5713,23 @@
       "id": "8616"
     },
     "status": {
-      "utcTime": "2026-09-20T15:00:00Z",
-      "timezone": "UTC",
-      "started": false,
+      "utcTime": "2026-09-20T15:00:00.000Z",
+      "halfs": {
+        "firstHalfStarted": "20.09.2026 17:05:12",
+        "secondHalfStarted": "20.09.2026 18:01:48"
+      },
+      "periodLength": 45,
+      "finished": true,
+      "started": true,
       "cancelled": false,
-      "finished": false
+      "awarded": false,
+      "scoreStr": "2 - 1",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
     }
   },
   {
@@ -5734,29 +5815,6 @@
       "name": "Odds Ballklubb",
       "shortName": "Odd",
       "id": "7988"
-    },
-    "status": {
-      "utcTime": "2026-10-03T14:00:00Z",
-      "timezone": "UTC",
-      "started": false,
-      "cancelled": false,
-      "finished": false
-    }
-  },
-  {
-    "round": "24",
-    "roundName": 24,
-    "pageUrl": "/matches/sogndal-vs-raufoss/2t3psq#5105271",
-    "id": "5105271",
-    "home": {
-      "name": "Sogndal",
-      "shortName": "Sogndal",
-      "id": "8616"
-    },
-    "away": {
-      "name": "Raufoss",
-      "shortName": "Raufoss",
-      "id": "9812"
     },
     "status": {
       "utcTime": "2026-10-03T14:00:00Z",
@@ -6381,6 +6439,29 @@
     },
     "status": {
       "utcTime": "2026-10-18T15:00:00Z",
+      "timezone": "UTC",
+      "started": false,
+      "cancelled": false,
+      "finished": false
+    }
+  },
+  {
+    "round": "24",
+    "roundName": 24,
+    "pageUrl": "/matches/sogndal-vs-raufoss/2t3psq#5105271",
+    "id": "5105271",
+    "home": {
+      "name": "Sogndal",
+      "shortName": "Sogndal",
+      "id": "8616"
+    },
+    "away": {
+      "name": "Raufoss",
+      "shortName": "Raufoss",
+      "id": "9812"
+    },
+    "status": {
+      "utcTime": "2026-10-21T17:00:00Z",
       "timezone": "UTC",
       "started": false,
       "cancelled": false,

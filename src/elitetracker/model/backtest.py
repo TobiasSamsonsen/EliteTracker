@@ -128,7 +128,7 @@ def walk_forward(
     a per-division variant when one is being fitted.
     """
     config = config or EloConfig()
-    config_for = config_for or (lambda lg, season: era_config(lg, season, config))
+    config_for = config_for or (lambda lg, season: era_config(season, config))
     card = Scorecard(name=name)
     match_league = {m.match_id: s.league for s in slices for m in s.matches}
     for season, _, _, matches in replay(slices, seeds, config, shots=shots, config_for=config_for):

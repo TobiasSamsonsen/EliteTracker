@@ -144,7 +144,7 @@ def main(argv: list[str] | None = None) -> int:
                                               score_from_season=args.score_from,
                                               name=f"k={k:.0f} ha={home:.0f} reg={reg:.2f} b={beta:.2f}",
                                               league="eliteserien", shots=shots,
-                                              config_for=lambda lg, s, l=legacy, m=modern: era_config(lg, s, l, m)))
+                                              config_for=lambda lg, s, l=legacy, m=modern: era_config(s, l, m)))
 
     shown = sorted(cards, key=lambda card: card.log_loss)[: max(1, args.top)]
     print(f"Scored from season {args.score_from}  |  {len(cards) - 1} configs + baseline\n")

@@ -186,7 +186,6 @@ def build_all_careers(
 
 
 @functools.cache
-@functools.cache
 def shot_table() -> dict[str, tuple[float, ...]]:
     """match_id -> expected goals: fotmob for Eliteserien, Sofascore for OBOS.
 
@@ -260,7 +259,7 @@ def build_report(
         all_matches = as_of_date(all_matches, asof)
         matches = as_of_date(matches, asof)
 
-    era = era_config(slug, season, elo_config)
+    era = era_config(season, elo_config)
     ratings = build_rating_table(seeds, all_matches, config=elo_config, shots=shot_table())
     prior = prior_attack_defence(root, season)
     ad = prior.copy().replay(all_matches)

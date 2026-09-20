@@ -106,7 +106,7 @@ def replay(
     ``config``.
     """
     config = config or EloConfig()
-    config_for = config_for or (lambda league, season: era_config(league, season, config))
+    config_for = config_for or (lambda league, season: era_config(season, config))
     shots = shots or {}
     ratings = dict(seeds)
     seasons = sorted({slice_.season for slice_ in slices})

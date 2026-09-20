@@ -176,15 +176,14 @@ BOUNDARY_SEASON: int = 2022
 
 
 def era_config(
-    league: str, season: int, base: EloConfig | None = None, modern: EloConfig | None = None
+    season: int, base: EloConfig | None = None, modern: EloConfig | None = None
 ) -> EloConfig:
     """The Elo config one match is rated with: modern from the boundary season
     on, the legacy `base` before it.
 
-    Every replay takes a `config_for(league, season)` of this shape. The shipped
-    rule ignores `league` -- both divisions switch together, which is what the
-    backtest prefers -- but a sweep over one division is then a different
-    function of the same shape rather than a new flag.
+    Every replay takes a `config_for(season)` of this shape. The shipped
+    rule applies to both divisions together, which is what the
+    backtest prefers.
     """
     if season >= BOUNDARY_SEASON:
         return modern or MODERN_CONFIG

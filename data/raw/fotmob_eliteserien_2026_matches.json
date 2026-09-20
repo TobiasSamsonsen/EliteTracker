@@ -5006,12 +5006,8 @@
       "id": "8422"
     },
     "status": {
-      "utcTime": "2026-09-19T14:00:00.000Z",
-      "halfs": {
-        "firstHalfStarted": "19.09.2026 16:01:34",
-        "secondHalfStarted": "19.09.2026 17:07:26"
-      },
-      "periodLength": 45,
+      "utcTime": "2026-09-19T14:00:00Z",
+      "timezone": "UTC",
       "finished": true,
       "started": true,
       "cancelled": false,
@@ -5041,12 +5037,8 @@
       "id": "8404"
     },
     "status": {
-      "utcTime": "2026-09-19T16:00:00.000Z",
-      "halfs": {
-        "firstHalfStarted": "19.09.2026 18:01:04",
-        "secondHalfStarted": "19.09.2026 19:04:41"
-      },
-      "periodLength": 45,
+      "utcTime": "2026-09-19T16:00:00Z",
+      "timezone": "UTC",
       "finished": true,
       "started": true,
       "cancelled": false,
@@ -5076,11 +5068,24 @@
       "id": "8417"
     },
     "status": {
-      "utcTime": "2026-09-20T12:30:00Z",
-      "timezone": "UTC",
-      "started": false,
+      "utcTime": "2026-09-20T12:30:00.000Z",
+      "numberOfAwayRedCards": 1,
+      "halfs": {
+        "firstHalfStarted": "20.09.2026 14:30:53",
+        "secondHalfStarted": "20.09.2026 15:33:03"
+      },
+      "periodLength": 45,
+      "finished": true,
+      "started": true,
       "cancelled": false,
-      "finished": false
+      "awarded": false,
+      "scoreStr": "1 - 1",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
     }
   },
   {
@@ -5099,11 +5104,24 @@
       "id": "9919"
     },
     "status": {
-      "utcTime": "2026-09-20T15:00:00Z",
-      "timezone": "UTC",
-      "started": false,
+      "utcTime": "2026-09-20T15:00:00.000Z",
+      "numberOfAwayRedCards": 1,
+      "halfs": {
+        "firstHalfStarted": "20.09.2026 17:01:15",
+        "secondHalfStarted": "20.09.2026 18:02:53"
+      },
+      "periodLength": 45,
+      "finished": true,
+      "started": true,
       "cancelled": false,
-      "finished": false
+      "awarded": false,
+      "scoreStr": "3 - 0",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
     }
   },
   {
@@ -5122,11 +5140,23 @@
       "id": "8448"
     },
     "status": {
-      "utcTime": "2026-09-20T15:00:00Z",
-      "timezone": "UTC",
-      "started": false,
+      "utcTime": "2026-09-20T15:00:00.000Z",
+      "halfs": {
+        "firstHalfStarted": "20.09.2026 17:00:42",
+        "secondHalfStarted": "20.09.2026 18:02:37"
+      },
+      "periodLength": 45,
+      "finished": true,
+      "started": true,
       "cancelled": false,
-      "finished": false
+      "awarded": false,
+      "scoreStr": "3 - 2",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
     }
   },
   {
@@ -5145,11 +5175,23 @@
       "id": "8476"
     },
     "status": {
-      "utcTime": "2026-09-20T15:00:00Z",
-      "timezone": "UTC",
-      "started": false,
+      "utcTime": "2026-09-20T15:00:00.000Z",
+      "halfs": {
+        "firstHalfStarted": "20.09.2026 17:00:11",
+        "secondHalfStarted": "20.09.2026 18:02:19"
+      },
+      "periodLength": 45,
+      "finished": true,
+      "started": true,
       "cancelled": false,
-      "finished": false
+      "awarded": false,
+      "scoreStr": "3 - 0",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
     }
   },
   {
@@ -5168,11 +5210,24 @@
       "id": "8402"
     },
     "status": {
-      "utcTime": "2026-09-20T17:15:00Z",
-      "timezone": "UTC",
-      "started": false,
+      "utcTime": "2026-09-20T17:15:00.000Z",
+      "numberOfHomeRedCards": 1,
+      "halfs": {
+        "firstHalfStarted": "20.09.2026 19:16:23",
+        "secondHalfStarted": "20.09.2026 20:20:03"
+      },
+      "periodLength": 45,
+      "finished": true,
+      "started": true,
       "cancelled": false,
-      "finished": false
+      "awarded": false,
+      "scoreStr": "2 - 1",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
     }
   },
   {

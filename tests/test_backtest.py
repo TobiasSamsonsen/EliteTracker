@@ -177,5 +177,5 @@ class TestEraSwitch:
         config = EloConfig(k_factor=10)
         default = walk_forward(slices, seeds, config, score_from_season=2021)
         explicit = walk_forward(slices, seeds, config, score_from_season=2021,
-                                config_for=lambda league, season: era_config(league, season, config))
+                                config_for=lambda league, season: era_config(season, config))
         assert default.log_loss == explicit.log_loss
