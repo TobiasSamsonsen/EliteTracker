@@ -63,6 +63,14 @@ const translations = {
     'grid.legend.unlikely': 'unlikely',
     'grid.legend.likely': 'likely',
     'grid.legend.hint': 'Hover for decimal figure.',
+    // Table zone badges on the standings rows that open a band.
+    'table.zone.good.champion': 'Title',
+    'table.zone.good.top': 'CL',
+    'table.zone.good.europe': 'Qual.',
+    'table.zone.good.playoff': 'Play-off',
+    'table.zone.good.promotion': 'Promo',
+    'table.zone.bad.playoff': 'Releg. play-off',
+    'table.zone.bad.relegation': 'Rel.',
 
     // Table
     'table.title': 'Table',

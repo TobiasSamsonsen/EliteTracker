@@ -691,6 +691,62 @@ table.standings .pos { text-align: center; width: 2.6rem; color: var(--ink-muted
 table.standings .sep { border-left: 1px solid var(--rule); }
 table.standings .muted { color: var(--ink-muted); }
 
+/* A zone starts at this row (first CL slot, first conference slot, relegation
+   play-off). The band-mark stripe names a single position's block; this line
+   carries the whole region's colour and separates it from the teams above. */
+table.standings tr.band-divider td {
+  border-top: 2px solid var(--band-color, var(--rule-strong));
+}
+
+/* The zone's expected points cut-off, on the first row under the divider line:
+    e.g. "CL ≈50" means a club realistically needs ~50 points to hold the band. */
+table.standings .zone-threshold {
+  display: inline-block;
+  margin-left: 0.5rem;
+  padding: 0 0.35rem;
+  border-radius: 3px;
+  font-size: 0.625rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--ink-muted);
+  background: var(--panel-sunk);
+  vertical-align: middle;
+}
+
+/* Full-width divider row between zones: text between two horizontal lines
+   extending to table edges. Format: "======== Expected CL Threshold: 67p ========" */
+table.standings tr.zone-divider {
+  pointer-events: none;   /* not a team row */
+}
+table.standings tr.zone-divider td {
+  padding: 1.25rem 0;  /* large vertical gap above and below */
+  border: none;
+  background: transparent;
+  width: 100%;
+}
+table.standings .zone-divider__wrap {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.2rem;
+  white-space: nowrap;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--band-color, var(--ink));
+  width: 100%;
+}
+table.standings .zone-divider__wrap::before,
+table.standings .zone-divider__wrap::after {
+  content: "";
+  flex: 1;
+  height: 2px;
+  background: var(--band-color, var(--rule-strong));
+  min-width: 0;  /* allow shrinking below content width */
+}
+
 /* The band a position sits in, as a stripe on the row's leading edge.
    Coloured from JS by the same rule as the grid, so the two never disagree. */
 .band-mark {

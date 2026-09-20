@@ -233,6 +233,40 @@ function bandFor(bands, position) {
   );
 }
 
+/* The widest band covering `position`, or null for the mid-table stretch.
+   Complement to bandFor: where bandFor names the tightest block (the title sits
+   inside the CL slot), zoneFor names the whole region, so the table can draw
+   one divider where a zone starts instead of one per nested band. */
+function zoneFor(bands, position) {
+  const matches = bands.filter((band) => position >= band.first && position <= band.last);
+  if (!matches.length) return null;
+  return matches.reduce((best, band) =>
+    band.last - band.first > best.last - best.first ? band : best
+  );
+}
+
+/* The position whose median points set a band's threshold: the cut a club must
+   reach. A band worth reaching (title, qualification, promotion play-off) is
+   entered at its last place; a band worth avoiding (relegation) at its first.
+   Mirrors outcomeClass: good bands are reached from below, bad ones left
+   above. */
+function thresholdPosition(band, count) {
+  const good = band.first < (count + 1) / 2;
+  return good ? band.last : band.first;
+}
+
+/* Short category label for the table's zone badges. tone alone cannot tell a
+   good play-off from a bad one (OBOS promotion vs Elite relegation), so the
+   top/bottom half decides like outcomeClass does, and whether the top band is
+   the title race or promotion. */
+function shortBandLabel(band, report) {
+  const count = report.table.length;
+  const good = band.first < (count + 1) / 2;
+  let key = `table.zone.${good ? 'good' : 'bad'}.${band.tone}`;
+  if (band.tone === 'top' && report.league.slug === 'obosligaen') key = 'table.zone.good.promotion';
+  return t(key) === key ? band.label : t(key);
+}
+
 /* ---------- the finish grid --------------------------------------- */
 
 /* Where the model expects a club to finish: the mean of its distribution.
@@ -691,7 +725,41 @@ function renderStandings(report) {
     if (!topRiser || t.diff > topRiser.diff) topRiser = { team, diff: t.diff };
   }
 
+  const positionPoints = report.model.position_points || [];
+
+  // Pre-calculate divider boundaries: after each band's threshold position.
+  // User wants thresholds one team further down:
+  // Good bands: divider after (thresholdPos + 1)
+  // Bad bands: divider after thresholdPos (since threshold was at band.first - 1, now band.first)
+  const dividerBoundaries = new Map(); // position -> {zone, cut, label}
+  for (const band of bands) {
+    const thresholdPos = thresholdPosition(band, count);
+    const cut = positionPoints[thresholdPos - 1];
+    if (cut !== undefined) {
+      const good = band.first < (count + 1) / 2;
+      const afterPos = good ? thresholdPos + 1 : thresholdPos;
+      if (afterPos >= 1 && afterPos < count) {
+        dividerBoundaries.set(afterPos, { band, cut, label: shortBandLabel(band, report) });
+      }
+    }
+  }
+
+  // Build a divider row for a boundary
+  function dividerRow(boundary) {
+    const tr = el('tr', 'zone-divider');
+    tr.style.setProperty('--band-color', bandColor(boundary.band, count));
+    const td = el('td');
+    td.colSpan = 15;  // full table width (15 columns)
+    // Format: "======== Expected CL Threshold: 67p ========"
+    const label = el('span', 'zone-divider__wrap',
+      `Expected ${boundary.label} Threshold: ${boundary.cut}p`);
+    td.appendChild(label);
+    tr.appendChild(td);
+    return tr;
+  }
+
   for (const row of sortedStandings(rows)) {
+    const zone = zoneFor(bands, row.position);
     const tr = el('tr');
     const band = bandFor(bands, row.position);
 
@@ -754,6 +822,12 @@ function renderStandings(report) {
     // Clicking anywhere on the row is a mouse convenience on top of that
     // button; it adds no keyboard or ARIA semantics of its own.
     tr.addEventListener('click', () => openTeamView(row.team_id, row.team));
+
+    // Insert divider row AFTER this row if there's a boundary here
+    if (dividerBoundaries.has(row.position)) {
+      body.appendChild(dividerRow(dividerBoundaries.get(row.position)));
+    }
+
     body.appendChild(tr);
   }
 }

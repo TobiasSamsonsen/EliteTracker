@@ -672,10 +672,14 @@ away. Nothing ships until a walk-forward says it does.
        (days since last, Thursday→Sunday) — targets the doubled late-season gap.
        See candidate 3.
 - [ ] Re-test per-era K/α with 2027 data as holdout. The candidate
-      (K=70–90, α=0.70–0.85) cleared |t|≥2 on the full xG window (log loss
-      0.9889 vs 0.9943 shipped) but not on the holdout splits (t=−0.75
-      forward, −1.99 reverse). One more season should tip it.
-      Written up under "Post-elo-v11.1 knob sweeps".
+       (K=70–90, α=0.70–0.85) cleared |t|≥2 on the full xG window (log loss
+       0.9889 vs 0.9943 shipped) but not on the holdout splits (t=−0.75
+       forward, −1.99 reverse). One more season should tip it.
+       Written up under "Post-elo-v11.1 knob sweeps".
+- [ ] Re-test the xG-margin Elo scored term (γ=0.05–0.10, alone and stacked on
+       K=80/α=0.75) with 2027 data. Same direction, same holdout-power problem
+       as the K/α candidate: −0.0011 combined on the xG window but early-half
+       t≈−1.8, not past the bar. Written up under "xG margin of victory".
 - [ ] Check whether Sofascore backfills OBOS xG before 2023 (2020–2022 report
       `hasXg: false` today); it would add ~720 matches and is one re-run of
       `research xg-obos --seasons 2020-2026` if it ever appears.
@@ -858,6 +862,50 @@ legacy era (pre-xG) is fine: shipped K=20/α=0.45 vs best K=18/α=0.0 shows
 t=−1.63 and the split shows gain only pre-2020. **Not shipped — needs 2027
 holdout to confirm.**
 
+### xG margin of victory in the Elo update (`xg_margin`) — measured, parked
+
+The elo-v3 rejection of margin-of-victory used **goals** margin; the xG form was
+never tested. The scored term gets the 538-style damped-log bonus on the side
+that won, symmetrically on both ratings:
+
+    scored = (1−α)·result + α·xg_implied_score + sign · γ · ln(1 + |ln(home_xg/away_xg)|)
+
+clamped to [0,1] (zero on draws), only where xG exists. Walk-forward on the
+shipped blend card, restricted to matches that actually carry xG (Eliteserien
+2020+, OBOS-ligaen 2023+; n=2,479):
+
+| γ | logloss | d vs γ=0 | t | early (t) | late (t) |
+|---|---|---|---|---|---|
+| 0.00 | 0.98546 | — | — | — | — |
+| 0.05 | 0.98522 | −0.00023 | −2.69 | −1.91 | −2.31 |
+| 0.10 | 0.98514 | −0.00031 | −2.36 | −1.72 | −1.97 |
+| 0.15 | 0.98510 | −0.00036 | −2.29 | −1.77 | −1.83 |
+| 0.20 | 0.98508 | −0.00038 | −2.13 | −1.84 | −1.62 |
+| 0.25–0.30 | 0.98507 | −0.00038 | ~−1.9 | ~−1.9 | < −1.5 |
+
+Signal real and monotone (negative on both halves at every γ), best head-to-head
+t at γ=0.05 (−2.69) — but the early half never clears −2, so the same-split
+independence bar is not met. The optimum is flat γ=0.05–0.30 around −0.0004,
+the same order as elo-v9's finishing quality.
+
+**Stacked on the K=80/α=0.75 candidate** (the per-era winner region above), the
+two effects add. K=80/α=0.75/γ=0.10 is the best absolute model measured to date
+(−0.00106 log loss vs shipped on the xG window, t=−1.60), but the entire gain
+rides the late half (early t≈−1.8) — the same independence failure that kept
+K=80 out. Nothing clears |t|≥2 on both halves, so nothing ships.
+
+Two side notes worth keeping:
+- The margin bonus is a *rating* change, not a prediction change directly — but
+  it did not move the matchup against the (already-shipped) K=70–90 candidate's
+  prediction blend, which is why it works additively rather than redundantly.
+- It does not serve the "smaller upset awards" intuition: a 2.6xG-favoured away
+  win like Rosenborg's 3-1 @ Kristiansund gets a *bigger* move, not a smaller
+  one; the blend-expected Elo update (expected = 25/75 Elo×AD odds, which would
+  shrink it to K·(1−0.663)=10.1 at K=30) was also measured and is worse on every
+  window (t=+2.5 on elite 2019+) — the classic calibration-fix-in-disguise trap.
+
+**Verdict: parked with the K=70–90 case — re-check both on 2027 as holdout.**
+
 ### Blend weight (OUTCOME_BLEND)
 
 Swept `OUTCOME_BLEND` 0.0–1.0 (weight on Elo odds; 1.0−w on the AD grid) for
@@ -910,3 +958,21 @@ within 0.0001 across the tested ranges. No change warranted.
   view, head-to-head section in Compare Clubs (current-season record from
   report.results), mobile header reworked — theme and language toggles moved into
   the More sheet to free a row in the masthead grid (3 columns → 2).
+
+## 🎨 Threshold dividers in standings table
+
+The standings table now shows clear zone-separator rows with the expected points
+threshold for each band (Champion, CL, EQ, Rel playoff, Relegation). Each
+divider sits **one team below the threshold position** so the gap reads as
+"above this line = in the zone":
+
+- Champion: between 2nd–3rd
+- CL: between 3rd–4th
+- EQ: between 5th–6th
+- Rel playoff: between 14th–15th
+- Relegation: between 15th–16th
+
+Format: `======== Expected CL Threshold: 67p ========` with zone-colored lines
+extending to the table edges, large vertical gaps (1.25rem), and small
+horizontal gaps (0.2rem). Implemented as dedicated `tr.zone-divider` rows with
+`colSpan=15` so lines span all columns.
