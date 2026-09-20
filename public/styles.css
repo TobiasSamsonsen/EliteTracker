@@ -720,7 +720,7 @@ table.standings tr.zone-divider {
   pointer-events: none;   /* not a team row */
 }
 table.standings tr.zone-divider td {
-  padding: 1.25rem 0;  /* large vertical gap above and below */
+  padding: 0.5rem 0;
   border: none;
   background: transparent;
   width: 100%;

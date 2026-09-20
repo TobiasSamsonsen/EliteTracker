@@ -727,19 +727,26 @@ function renderStandings(report) {
 
   const positionPoints = report.model.position_points || [];
 
+  // Threshold dividers only for position and xPTS sorts.
+  // They attach to visual position (1st, 6th, etc.) in the sorted output,
+  // not to the team's live table position.
+  const showDividers = state.sort.key === 'position' || state.sort.key === 'expected_points';
+
   // Pre-calculate divider boundaries: after each band's threshold position.
   // User wants thresholds one team further down:
   // Good bands: divider after (thresholdPos + 1)
   // Bad bands: divider after thresholdPos (since threshold was at band.first - 1, now band.first)
-  const dividerBoundaries = new Map(); // position -> {zone, cut, label}
-  for (const band of bands) {
-    const thresholdPos = thresholdPosition(band, count);
-    const cut = positionPoints[thresholdPos - 1];
-    if (cut !== undefined) {
-      const good = band.first < (count + 1) / 2;
-      const afterPos = good ? thresholdPos + 1 : thresholdPos;
-      if (afterPos >= 1 && afterPos < count) {
-        dividerBoundaries.set(afterPos, { band, cut, label: shortBandLabel(band, report) });
+  const dividerBoundaries = new Map(); // visual position (1-based) -> {zone, cut, label}
+  if (showDividers) {
+    for (const band of bands) {
+      const thresholdPos = thresholdPosition(band, count);
+      const cut = positionPoints[thresholdPos - 1];
+      if (cut !== undefined) {
+        const good = band.first < (count + 1) / 2;
+        const afterPos = good ? thresholdPos + 1 : thresholdPos;
+        if (afterPos >= 1 && afterPos < count) {
+          dividerBoundaries.set(afterPos, { band, cut, label: shortBandLabel(band, report) });
+        }
       }
     }
   }
@@ -758,7 +765,9 @@ function renderStandings(report) {
     return tr;
   }
 
-  for (const row of sortedStandings(rows)) {
+  const sorted = sortedStandings(rows);
+  for (let visualIndex = 0; visualIndex < sorted.length; visualIndex++) {
+    const row = sorted[visualIndex];
     const zone = zoneFor(bands, row.position);
     const tr = el('tr');
     const band = bandFor(bands, row.position);
@@ -823,9 +832,9 @@ function renderStandings(report) {
     // button; it adds no keyboard or ARIA semantics of its own.
     tr.addEventListener('click', () => openTeamView(row.team_id, row.team));
 
-    // Insert divider row AFTER this row if there's a boundary here
-    if (dividerBoundaries.has(row.position)) {
-      body.appendChild(dividerRow(dividerBoundaries.get(row.position)));
+    // Insert divider row AFTER this row if there's a boundary here (visual position)
+    if (dividerBoundaries.has(visualIndex + 1)) {
+      body.appendChild(dividerRow(dividerBoundaries.get(visualIndex + 1)));
     }
 
     body.appendChild(tr);
