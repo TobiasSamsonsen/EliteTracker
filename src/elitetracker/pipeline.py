@@ -300,6 +300,9 @@ def build_report(
             "seed": projection.seed,
             "matches_played": projection.matches_played,
             "matches_remaining": projection.matches_remaining,
+            # Median points per finishing position: the expected points threshold
+            # most clubs need to reach a band, shown on the table's separators.
+            "position_points": projection.position_points,
             # The compare tool works out a fictional match in the browser, so it
             # needs the same ingredients the server uses: the draw model's
             # parameters above and both divisions' attack/defence/finishing ratings.

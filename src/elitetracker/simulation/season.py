@@ -78,6 +78,8 @@ class SeasonProjection:
     seed: int
     matches_remaining: int
     matches_played: int
+    # position_points[0] is the median points of the team finishing 1st.
+    position_points: list[int] | None = None
 
 
 # Per unplayed fixture: home index, away index, P(home), P(home)+P(draw), and
@@ -176,6 +178,11 @@ def simulate_season(
 
     counts = [[0] * count for _ in range(count)]
     points_total = [0] * count
+    # Median points per finishing position, so the frontend can state a band's
+    # expected threshold. Points are bounded small integers, so a histogram per
+    # position beats sorting 50,000 samples per position per report.
+    max_points = max(row.points for row in rows) + 3 * len(fixtures)
+    position_hist = [[0] * (max_points + 1) for _ in range(count)]
 
     rng = random.Random(config.seed)
     random_value = rng.random  # bound once; this is the hot path
@@ -221,6 +228,17 @@ def simulate_season(
             index = value & mask
             counts[index][position] += 1
             points_total[index] += points[index]
+            position_hist[position][points[index]] += 1
+
+    halfway = (config.simulations + 1) // 2
+    position_points = []
+    for hist in position_hist:
+        seen = 0
+        for pts, occ in enumerate(hist):
+            seen += occ
+            if seen >= halfway:
+                position_points.append(pts)
+                break
 
     simulations = config.simulations
     projections = [
@@ -245,4 +263,5 @@ def simulate_season(
         seed=config.seed,
         matches_remaining=len(fixtures),
         matches_played=sum(1 for match in matches if match.played),
+        position_points=position_points,
     )

@@ -178,6 +178,14 @@ class TestSimulation:
             total = sum(team.position_probabilities[position] for team in projection.teams)
             assert total == pytest.approx(1.0)
 
+    def test_position_points_are_median_and_monotone(self):
+        projection = simulate_season(
+            two_team_season(remaining=4), {"A": 1500, "B": 1500}, config=SimulationConfig(simulations=300)
+        )
+        assert len(projection.position_points) == len(projection.teams)
+        for higher, lower in zip(projection.position_points, projection.position_points[1:]):
+            assert higher >= lower
+
     def test_same_seed_reproduces_the_run(self):
         args = (two_team_season(), {"A": 1500, "B": 1500})
         first = simulate_season(*args, config=SimulationConfig(simulations=300, seed=7))

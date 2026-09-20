@@ -162,6 +162,15 @@ class TestRewind:
         second = build(tiny_league, asof="2016-03-01")
         assert first["table"] == second["table"]
 
+    def test_position_points_are_exposed(self, tiny_league):
+        """The table turns the band thresholds into per-position expected points,
+        so the report must carry median points for every finishing position."""
+        report = build(tiny_league)
+        points = report["model"]["position_points"]
+        assert len(points) == len(report["table"])
+        for higher, lower in zip(points, points[1:]):
+            assert higher >= lower
+
     def test_the_other_division_is_rewound_too(self, tiny_league):
         """Ratings are shared across divisions, so both must rewind together."""
         careers = build_all_careers(tiny_league)
