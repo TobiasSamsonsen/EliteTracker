@@ -1708,12 +1708,14 @@ function renderTeamSummary(teamId, row, career, report, container) {
   container.appendChild(card);
 }
 
-/* Rating trend: 5 degrees based on how much the rating changed since 5 matches ago. */
+/* Rating trend: weighted average of the last 6 rating changes.
+   Weights [0.1, 0.2, 0.3, 0.4, 0.5, 0.6] give gentle emphasis to recent matches.
+   Thresholds: >6 strong rise, >1.5 rise, >=-1.5 steady, >=-6 fall, otherwise strong fall. */
 function computeRatingTrend(teamName, report) {
   if (!teamName) return null;
   const results = [...(report.results || [])].sort((a, b) => a.date.localeCompare(b.date));
   const ratingChanges = buildRatingChanges(state.careers);
-  const ratings = [];
+  const changes = [];
   for (const r of results) {
     if (r.home_goals == null) continue;
     const isHome = r.home === teamName;
@@ -1721,16 +1723,17 @@ function computeRatingTrend(teamName, report) {
     if (!isHome && !isAway) continue;
     const id = isHome ? r.home_id : r.away_id;
     const info = ratingChanges.get(`${id}|${r.date}`);
-    if (info) ratings.push(info.rating);
+    if (info) changes.push(info.change);
   }
-  if (ratings.length < 6) return null;
+  if (changes.length < 6) return null;
 
-  const current = ratings[ratings.length - 1];
-  const fiveAgo = ratings[ratings.length - 6];
-  const diff = current - fiveAgo;
+  const weights = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6];
+  const last6 = changes.slice(-6);
+  const weightedSum = last6.reduce((sum, c, i) => sum + c * weights[i], 0);
+  const diff = Math.round(weightedSum / weights.reduce((a, b) => a + b, 0));
 
   // 5 degrees: strong rise, rise, steady, fall, strong fall
-  const key = diff > 20 ? 'strongRise' : diff > 5 ? 'rise' : diff >= -5 ? 'steady' : diff >= -20 ? 'fall' : 'strongFall';
+  const key = diff > 6 ? 'strongRise' : diff > 1.5 ? 'rise' : diff >= -1.5 ? 'steady' : diff >= -6 ? 'fall' : 'strongFall';
   const direction = key.replace('strongR', 'strong-r').replace('strongF', 'strong-f');
   const n = Math.round(key === 'steady' ? Math.abs(diff) : diff);
   return { direction, svg: trendArrowSVG(direction), detail: t(`trend.${key}`, { n }), diff };

@@ -60,7 +60,7 @@ Standard league table with additional model columns:
 
 | Column | What it means |
 |---|---|
-| **Rating** | Current ELO rating (integer). The arrow shows recent trend over the last 5 matches. |
+| **Rating** | Current ELO rating (integer). The arrow shows recent trend based on a weighted average of the last 6 matches. |
 | **xPts** | Expected final points -- the model's prediction of total season points. |
 | **Form** | Last 5 results as points out of 15, colour-coded green-to-red. |
 | **Title / Promotion** | Probability of finishing 1st. For OBOS-ligaen this includes both promoted spots. |
@@ -129,9 +129,9 @@ and concedes about 0.90.
 **Expected points (xPts)** is the model's forecast of total season points,
 computed from the remaining fixtures and each team's current rating.
 
-**Rating trend** is based on the last 5 matches: strong rise (+20 or more),
-rising (+5 to +20), steady (-5 to +5), falling (-20 to -5), strong fall
-(below -20).
+**Rating trend** uses a weighted average of the last 6 matches (weights
+[0.1, 0.2, 0.3, 0.4, 0.5, 0.6], oldest to newest), classified as:
+strong rise (>6), rising (>1.5), steady (≥-1.5), falling (≥-6), strong fall (below -6).
 
 ## Rewind
 

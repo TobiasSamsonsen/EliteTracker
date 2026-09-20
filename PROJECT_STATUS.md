@@ -28,6 +28,17 @@ would show results before they happened.
 Lillestrøm of 21 July and its replay on 21 August, so the raw feed has 241 rows for a
 240-match season.
 
+**Rating trend uses a weighted average of the last 6 matches.** The table and team focus
+arrows no longer use the simple delta between the current rating and the rating five
+matches ago. Instead, each of the last 6 rating changes is weighted linearly
+([0.1, 0.2, 0.3, 0.4, 0.5, 0.6] from oldest to newest) and divided by the weight sum
+(2.1), so the result stays on the same per-match scale as the old diff. Thresholds were
+re-tuned on the full replay corpus (48 teams, 11,568 matches): >6 strong rise, >1.5 rise,
+>=-1.5 steady, >=-6 fall, otherwise strong fall. This produced a balanced spread across
+the five categories (roughly 15-27% each) instead of most teams landing on steady.
+The weighting is deliberately flatter than an exponential decay — recent matches matter
+more, but a single outlier result cannot dominate the arrow.
+
 ## 🔬 elo-v3: what the backtest found
 
 Fitted with `model/backtest.py` on 2019-2026 (3,623 scored matches, walk-forward, no
