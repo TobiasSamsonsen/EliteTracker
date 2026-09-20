@@ -28,7 +28,8 @@ import time
 from datetime import date, timedelta
 from typing import Any, Iterable
 
-from elitetracker.sources.fotmob import FetchError, _download, load_xg, save_xg
+from curl_cffi import requests
+from elitetracker.sources.fotmob import FetchError, load_xg, save_xg
 
 TOURNAMENT_ID = 22  # Sofascore's unique tournament id for OBOS-ligaen
 
@@ -44,6 +45,41 @@ FIRST_XG_SEASON = 2023
 # "IK Start" / "Start"); dropping the club-type words leaves the same stem.
 _NOISE = {"fk", "if", "il", "ik", "bk", "sk", "fotball", "ballklubb", "oslo", "fotballklubb"}
 
+# Sofascore blocks requests without browser-like headers (Referer, Origin)
+# curl_cffi impersonates Chrome's TLS fingerprint (JA3) to bypass WAF
+_SOFASCORE_HEADERS = {
+    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
+    "Referer": "https://www.sofascore.com/",
+    "Origin": "https://www.sofascore.com",
+    "Accept": "application/json, text/plain, */*",
+    "Accept-Language": "en-US,en;q=0.9",
+    "Accept-Encoding": "gzip, deflate, br",
+    "Sec-Fetch-Dest": "empty",
+    "Sec-Fetch-Mode": "cors",
+    "Sec-Fetch-Site": "same-origin",
+    "Sec-Ch-Ua": '"Chromium";v="124", "Google Chrome";v="124", "Not-A.Brand";v="99"',
+    "Sec-Ch-Ua-Mobile": "?0",
+    "Sec-Ch-Ua-Platform": '"Windows"',
+}
+
+_TIMEOUT_SECONDS = 30
+
+
+def _download_sofascore(url: str) -> str:
+    try:
+        response = requests.get(
+            url,
+            headers=_SOFASCORE_HEADERS,
+            timeout=_TIMEOUT_SECONDS,
+            impersonate="chrome124",
+        )
+        if response.status_code == 403:
+            raise FetchError(f"{url} returned HTTP 403 (likely IP blocked by Sofascore WAF)")
+        response.raise_for_status()
+        return response.text
+    except requests.RequestsError as exc:
+        raise FetchError(f"{url} unreachable: {exc}") from exc
+
 
 def _key(name: str) -> str:
     words = [w for w in re.findall(r"\w+", name.lower()) if w not in _NOISE]
@@ -52,7 +88,7 @@ def _key(name: str) -> str:
 
 def _get(url: str) -> dict[str, Any]:
     try:
-        return json.loads(_download(url))
+        return json.loads(_download_sofascore(url))
     except json.JSONDecodeError as exc:
         raise FetchError(f"{url}: not JSON ({exc})") from exc
 

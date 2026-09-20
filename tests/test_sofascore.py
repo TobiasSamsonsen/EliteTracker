@@ -43,11 +43,11 @@ class TestEventXg:
                 {"statisticsItems": [{"key": "ballPossession", "homeValue": 60, "awayValue": 40}]},
                 {"statisticsItems": [{"key": "expectedGoals", "homeValue": 2.77, "awayValue": 0.8}]}]},
         ]}
-        monkeypatch.setattr(sofascore, "_download", lambda url: json.dumps(payload))
+        monkeypatch.setattr(sofascore, "_download_sofascore", lambda url: json.dumps(payload))
         assert event_xg(1) == (2.77, 0.8)
 
     def test_a_fixture_without_the_row_is_none(self, monkeypatch):
-        monkeypatch.setattr(sofascore, "_download", lambda url: json.dumps({"statistics": []}))
+        monkeypatch.setattr(sofascore, "_download_sofascore", lambda url: json.dumps({"statistics": []}))
         assert event_xg(1) is None
 
 

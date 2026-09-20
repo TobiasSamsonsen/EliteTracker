@@ -8,7 +8,11 @@ requires-python = ">=3.11"
 # urllib.request and everything downstream uses the standard library.
 # tzdata is the exception: Windows ships no IANA tz database, and
 # zoneinfo.ZoneInfo("Europe/Oslo") needs it to assign kickoffs to a matchday.
-dependencies = ["tzdata; sys_platform == 'win32'"]
+# curl_cffi is needed for Sofascore which blocks non-browser TLS fingerprints.
+dependencies = [
+    "tzdata; sys_platform == 'win32'",
+    "curl-cffi>=0.7",
+]
 
 [project.optional-dependencies]
 dev = ["pytest>=8.0"]
