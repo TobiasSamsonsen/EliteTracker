@@ -1759,7 +1759,7 @@ footer a { color: var(--ink); }
 /* ---------- team focus view ---------------------------------------- */
 
 .team-section { padding: 1.25rem; border-top: 1px solid var(--rule); }
-.team-section:first-child { border-top: 0; }
+.team-section:first-child { border-top: 0; padding-top: 0.75rem; }
 .team-section > .label { margin-bottom: 0.6rem; }
 .team-section__hint { font-size: 0.85rem; color: var(--ink-muted); margin: 0 0 0.5rem; }
 .team-shape--loading { height: 280px; display: flex; align-items: center; justify-content: center; color: var(--ink-muted); }
@@ -1800,18 +1800,37 @@ footer a { color: var(--ink); }
 }
 
 .team-back {
-  background: none;
-  border: none;
-  color: var(--ink-muted);
+  background: var(--panel-sunk);
+  border: 1px solid var(--rule-strong);
+  border-radius: 999px;
+  color: var(--ink);
   font: inherit;
-  font-size: 0.8125rem;
+  font-size: 1.0625rem;
   font-weight: 600;
   cursor: pointer;
-  padding: 0.25rem 0;
-  margin-bottom: 0.25rem;
-  letter-spacing: 0.03em;
+  padding: 0.75rem 1.5rem;
+  margin-bottom: 0.4rem;
+  letter-spacing: 0.01em;
+  transition: all 0.15s ease;
 }
-.team-back:hover { color: var(--ink); }
+.team-back:hover {
+  background: var(--panel);
+  border-color: var(--ink);
+  color: var(--ink-faint);
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.10);
+}
+.team-back:focus-visible {
+  outline: 2px solid var(--home);
+  outline-offset: 2px;
+  border-radius: 999px;
+}
+.team-back:active {
+  transform: scale(0.97);
+  box-shadow: 0 1px 4px rgba(0,0,0,0.15);
+}
+
+#team-content { padding: 0.5rem 1.25rem; }
 
 .team-summary {
   padding: 1.25rem;
@@ -2217,6 +2236,10 @@ footer a { color: var(--ink); }
   .team-section .chart .tick { font-size: 9px; }
   .team-section .chart .axis-title { font-size: 9px; }
   .team-section .chart .crosshair { stroke-width: 1.5; }
+
+  /* On a phone the pill is the first thing the eye lands on, so keep it
+     readable rather than letting it eat the summary card. */
+  .team-back { font-size: 0.9375rem; padding: 0.5rem 1rem; margin-bottom: 0.35rem; }
 }
 
 /* Prevent horizontal overflow on very narrow screens */
