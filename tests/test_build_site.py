@@ -1,6 +1,7 @@
 """`build_site` writes one file per view, and can rebuild a single season only."""
 
 from concurrent.futures import Future
+from multiprocessing import Pool
 
 import pytest
 
@@ -29,6 +30,24 @@ class _SyncExecutor:
         return False
 
 
+class _SyncPool:
+    """Synchronous replacement for multiprocessing.Pool."""
+
+    def __init__(self, processes=None, initializer=None, initargs=(), maxtasksperchild=None):
+        if initializer:
+            initializer(*initargs)
+
+    def imap_unordered(self, fn, iterable):
+        for item in iterable:
+            yield fn(item)
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *exc):
+        return False
+
+
 @pytest.fixture
 def stubbed(monkeypatch, tmp_path):
     written = []
@@ -45,7 +64,7 @@ def stubbed(monkeypatch, tmp_path):
     )
     monkeypatch.setattr(build_site, "build_all_careers", lambda root, **kw: {})
     monkeypatch.setattr(build_site, "careers_payload", lambda careers, **kw: {})
-    monkeypatch.setattr(build_site, "ProcessPoolExecutor", _SyncExecutor)
+    monkeypatch.setattr(build_site, "Pool", _SyncPool)
     monkeypatch.setattr(build_site, "available_seasons", lambda root: [2024, 2025, 2026])
     monkeypatch.setattr(build_site, "current_season", lambda root: 2026)
 

@@ -27,9 +27,11 @@ import argparse
 import json
 import os
 import time
-from concurrent.futures import ProcessPoolExecutor, as_completed
+from multiprocessing import Pool
 from pathlib import Path
 from typing import Any
+
+import psutil
 
 from elitetracker.model.elo import EloConfig
 from elitetracker.pipeline import (
@@ -73,11 +75,11 @@ _ELO = EloConfig()
 _CAREERS: dict[str, Any] = {}
 
 
-def _init_worker(root: str, out_dir: str, season_regression: float) -> None:
+def _init_worker(root: str, out_dir: str, season_regression: float, careers: dict[str, Any]) -> None:
     global _ROOT, _OUT, _ELO, _CAREERS
     _ROOT, _OUT = Path(root), Path(out_dir)
     _ELO = EloConfig(season_regression=season_regression)
-    _CAREERS = build_all_careers(_ROOT, elo_config=_ELO)
+    _CAREERS = careers
 
 
 def _build_view(spec: tuple[int, str | None, bool]) -> str:
@@ -115,6 +117,11 @@ def build_site(
     """
     out_dir.mkdir(parents=True, exist_ok=True)
     jobs = jobs or os.cpu_count() or 1
+    # Cap at physical cores: Windows spawn mode hits kernel limits (commit charge /
+    # process handle table) at physical_core_count+1 concurrent processes.
+    # Logical cores (hyperthreads) share the same physical resources.
+    physical_cores = psutil.cpu_count(logical=False) or os.cpu_count() or 1
+    jobs = min(jobs, physical_cores)
 
     all_seasons = available_seasons(root)
     if not all_seasons:
@@ -140,16 +147,25 @@ def build_site(
 
     print(f"building {len(specs)} views across {len(seasons)} season(s) on {jobs} workers", flush=True)
     started = time.perf_counter()
-    with ProcessPoolExecutor(
-        max_workers=jobs,
-        initializer=_init_worker,
-        initargs=(str(root), str(out_dir), season_regression),
-    ) as executor:
-        futures = [executor.submit(_build_view, spec) for spec in specs]
-        for done, future in enumerate(as_completed(futures), 1):
-            print(f"  {done}/{len(specs)} {future.result()}", flush=True)
 
-    write_payload(out_dir / "careers.json", careers_payload(build_all_careers(root), root=root))
+    elo = EloConfig(season_regression=season_regression)
+    careers = build_all_careers(root, elo_config=elo)
+
+    # Use multiprocessing.Pool with maxtasksperchild to recycle workers and
+    # prevent unbounded memory growth from accumulated garbage in long-running
+    # simulation tasks. Each worker is replaced after 2 views at high concurrency
+    # (>=16) to keep memory bounded; 5 at lower counts.
+    max_tasks = 2 if jobs >= 16 else 5
+    with Pool(
+        processes=jobs,
+        initializer=_init_worker,
+        initargs=(str(root), str(out_dir), season_regression, careers),
+        maxtasksperchild=max_tasks,
+    ) as pool:
+        for done, name in enumerate(pool.imap_unordered(_build_view, specs), 1):
+            print(f"  {done}/{len(specs)} {name}", flush=True)
+
+    write_payload(out_dir / "careers.json", careers_payload(careers, root=root))
     print(f"built {len(specs)} views in {time.perf_counter() - started:.0f}s", flush=True)
 
 

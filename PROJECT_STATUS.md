@@ -987,3 +987,122 @@ Format: `======== Expected CL Threshold: 67p ========` with zone-colored lines
 extending to the table edges, large vertical gaps (1.25rem), and small
 horizontal gaps (0.2rem). Implemented as dedicated `tr.zone-divider` rows with
 `colSpan=15` so lines span all columns.
+
+## 🧪 Frontend: Current/Prediction table toggle
+
+The table now has a Current/Prediction toggle in the panel header. The toggle
+persists to `localStorage` under `elitetracker-table-view`. Column membership is
+encoded with `data-table-view="current"`, `"prediction"`, or `"current prediction"`.
+
+- Current view: position, club, P/W/D/L, GF/GA/GD, Pts, rating, form.
+- Prediction view: position, club, rating, xPts, fixture difficulty, form,
+  title probability, relegation probability.
+- Fixture difficulty shows as a green/amber/red pill: expected points per
+  remaining match for a league-average team (rating 1500) against each team's
+  upcoming opponents; higher = easier fixtures.
+
+**Render-order fix:** `toggleTableView()` was called inside `renderStandings()`
+after `body.replaceChildren()` but before rows were built, so the visibility
+toggle ran against an empty table and had no effect. Moved the call to the end
+of `renderStandings()`, after `body.appendChild(tr)`, so all `<td>` cells exist
+when the toggle runs.
+
+**Actual root cause of the disappearing table:** `state.activeView` defaults to
+`grid` and controls which `[data-section]` panel is visible, while the
+Current/Prediction buttons only changed the separate `state.tableView` value.
+The table section therefore stayed hidden. `toggleTableView()` now also sets
+`state.activeView = 'table'`, making the section visible before applying column
+visibility.
+
+## 🔧 build_site parallelism: BrokenProcessPool at high worker counts
+
+**Problem.** `python -m elitetracker.build_site` crashes with
+`BrokenProcessPool` when `--jobs` exceeds ~12 on a 20-core Windows machine.
+The error means a worker process was terminated mid-task by the OS. 8 workers
+completes in ~35s; 12 in ~29s; 14+ dies partway through (non-deterministic,
+sometimes 3/79 views, sometimes 48/79). The user reports ~15 GB free RAM.
+
+**Root cause (confirmed).** `ProcessPoolExecutor` on Windows uses the `spawn`
+start method: each worker is a fresh process. Two redundant computations
+amplified the memory spike:
+
+1. **`_init_worker` called `build_all_careers()` independently per worker.**
+   With N workers, N full Elo replays (24 JSON file reads + 11-season replay
+   of ~5,760 matches) ran concurrently at startup. Each replay creates ~7 MB
+   of transient Python objects (Match instances, lists) that must be allocated
+   and freed before the GC can reclaim them.
+
+2. **`prior_attack_defence()` was called ~2x per view with no caching.**
+   Each call re-read all 24 match JSON files via `load_slices()` and replayed
+   all prior seasons. For a single-season build (79 views) that is ~158 calls
+   across all workers, each loading ~1.7 MB of JSON and creating ~7 MB of
+   Python objects.
+
+3. **`load_slices()` had no caching** — every call to `prior_attack_defence`
+   or `build_all_careers` re-read all 24 match files from disk.
+
+The aggregate memory spike from N concurrent processes each doing heavy
+allocation is what Windows kills. The failure is non-deterministic because it
+depends on timing: which workers are mid-allocation when the commit charge
+hits the system limit.
+
+**Fixes shipped (complete):**
+
+1. **`@functools.cache` on `prior_attack_defence`** (pipeline.py). Callers
+   always `.copy()` before mutating, so the cached `AttackDefence` is safe.
+   Reduces calls from ~158 to ~1 per season per worker (the cache is
+   per-process).
+
+2. **`@functools.cache` on `load_slices`** (pipeline.py). Avoids re-reading
+   24 JSON files on every call. The returned `list[SeasonSlice]` is read-only
+   by all callers (`SeasonSlice` and `Match` are `frozen=True`).
+
+3. **Precompute careers once in the main process** (build_site.py).
+   `build_all_careers()` is now called once before the pool starts, and the
+   result is passed to workers as an initarg (0.3 MB pickled, ~48 teams).
+   Workers receive the careers dict directly instead of recomputing.
+
+4. **Switch to `multiprocessing.Pool` with `maxtasksperchild`** (build_site.py).
+   Workers are recycled after 2 tasks at high concurrency (≥physical cores)
+   or 5 tasks at lower counts, preventing memory growth from accumulated garbage.
+
+5. **Adaptive worker cap at physical cores** (build_site.py). Windows `spawn`
+   mode hits a kernel resource limit (commit charge / process handle table) at
+   `physical_cores + 1` concurrent processes, causing BSOD. The cap now uses
+   `psutil.cpu_count(logical=False)` to detect physical cores (14 on this
+   machine) and caps workers there. Logical cores (hyperthreads) share the
+   same physical resources and don't help CPU-bound simulation work.
+   Per-process memory is only ~35 MB RSS; the crash is a system-level limit,
+   not Python memory exhaustion.
+
+**Test results (final):**
+- 269 tests pass.
+- 8 workers: 35s single / ~7 min full. ✅
+- 12 workers: 29s single / 387s full. ✅
+- 14 workers (physical cores): 29s single / 359s full. ✅
+- 16 workers: single OK, full build unstable. ❌
+- 20 workers (logical cores): BSOD. ❌
+
+**Simulation count analysis (for GitHub Actions context):**
+
+The CI pipeline runs two workflows:
+- **refresh.yml** — every 30 min, pulls new results; only commits if data changed
+- **deploy.yml** — on push, builds *only the current season* (79 views: 1 live + 78 rewound)
+
+| View | Grid | History (per snapshot × snapshots) | Total per view | Time (2 leagues) |
+|------|------|-----------------------------------|----------------|------------------|
+| Live | 50,000 | 10,000 × 20 = 200,000 | 250,000 | ~3.5s |
+| Rewound | 10,000 | 2,500 × 8 = 20,000 | 30,000 | ~0.4s |
+
+Total per deploy: 1 × 250K + 78 × 30K ≈ **2.6M simulations** → **29s at 14 workers, 35s at 8 workers**.
+
+**Why current counts are optimal (no change needed):**
+
+- Model calibration error: **1.54 pp** (elo-v11.1)
+- 50,000 grid → **0.50 pp** worst-cell sampling error (⅓ of model error)
+- 10,000 history → **1.31 pp** worst band (below 1 pp display resolution)
+- 2,500 rewound history → **~2.6 pp** (acceptable for trend lines)
+
+Increasing to 200,000 grid would cost **4× time** (1.43s → 5.7s per league) for only **2× accuracy** (0.50 pp → 0.23 pp) — invisible on the 1 pp display. The current 50K/10K/2.5K choices sit exactly at the diminishing-returns knee.
+
+**GitHub Actions impact:** CI runners have 2–4 cores. At 2 cores the deploy takes ~2.3 min; at 4 cores ~1.2 min. The 30-min refresh cadence means most runs skip the deploy entirely (no data change). No CI optimization needed.

@@ -160,6 +160,7 @@ def seed_ratings(root: Path = NORMALIZED_DIR, *, seeding: SeedingConfig | None =
     )
 
 
+@functools.cache
 def load_slices(root: Path = NORMALIZED_DIR) -> list[SeasonSlice]:
     return [
         SeasonSlice(
@@ -195,6 +196,7 @@ def shot_table() -> dict[str, tuple[float, ...]]:
     return {match_id: tuple(values) for match_id, values in load_xg()["matches"].items()}
 
 
+@functools.cache
 def prior_attack_defence(root: Path, season: int) -> AttackDefence:
     """Attack/defence ratings at the end of the season before `season`.
 
@@ -322,7 +324,7 @@ def build_report(
                 },
             },
         },
-        "table": _table_payload(matches, ratings, projection, seeds, ad, spec.slug, season),
+        "table": _table_payload(matches, ratings, projection, seeds, ad, spec.slug, season, era),
         "fixtures": _fixtures_payload(matches, ratings, elo_config, ad),
         "results": _results_payload(matches),
         "history": _history_payload(
@@ -403,13 +405,43 @@ def _table_payload(
     ad: AttackDefence,
     slug: str,
     season: int,
+    elo_config: EloConfig,
 ) -> list[dict[str, Any]]:
     projections = {team.team_id: team for team in projection.teams}
+    # League-average rating for this division (not hardcoded 1500)
+    league_avg_rating = sum(p.rating for p in projections.values()) / len(projections) if projections else 1500.0
+    # Pre-compute remaining fixtures per team.
+    remaining: dict[str, list[tuple[str, float]]] = {team_id: [] for team_id in ratings}
+    for match in matches:
+        if match.played:
+            continue
+        home_id = match.home_id or match.home
+        away_id = match.away_id or match.away
+        if home_id in remaining:
+            remaining[home_id].append(("home", ratings.get(away_id, 1500.0)))
+        if away_id in remaining:
+            remaining[away_id].append(("away", ratings.get(home_id, 1500.0)))
     payload = []
     for position, row in enumerate(table_from_matches(matches), start=1):
         team = projections[row.team_id]
         started = seeds[row.team_id].rating if row.team_id in seeds else ratings[row.team_id]
         scored, conceded = ad.rates_against_average(row.team_id, slug, season)
+        # Calculate fixture difficulty: average expected points per match for a league-average team
+        # against each of the team's remaining opponents.
+        opp_fixtures = remaining.get(row.team_id, [])
+        if opp_fixtures:
+            expected_points = 0.0
+            for venue, opp_rating in opp_fixtures:
+                if venue == "home":
+                    prob = match_probabilities(league_avg_rating, opp_rating, elo_config)
+                    expected_points += prob.home_win * 3 + prob.draw * 1
+                else:
+                    prob = match_probabilities(opp_rating, league_avg_rating, elo_config)
+                    expected_points += prob.away_win * 3 + prob.draw * 1
+            expected_points /= len(opp_fixtures)
+        else:
+            expected_points = 0.0  # No remaining fixtures
+        
         payload.append(
             {
                 "position": position,
@@ -427,6 +459,7 @@ def _table_payload(
                 "rating_start": round(started, 1),
                 "rating_change": round(ratings[row.team_id] - started, 1),
                 "expected_points": round(team.expected_points, 1),
+                "fixture_difficulty": round(expected_points, 1),  # Lower = harder fixtures
                 "position_probabilities": [round(value, 6) for value in team.position_probabilities],
                 # Expected goals for and against per match, against an average
                 # side of the division: the readable form of the attack/defence ratings.
