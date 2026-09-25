@@ -20,7 +20,7 @@
   --panel-sunk: #f3f6f8;
   --ink: #0d1a22;
   --ink-muted: #55666f;
-  --ink-faint: #8496a0;
+  --ink-faint: #5a6c77;   /* 4.6:1 on paper; was 2.6:1 */
   --rule: #d2dae1;
   --rule-strong: #b3c0c9;
 
@@ -31,8 +31,8 @@
 
   /* Qualification markers only -- labelled status marks, not part of the
      quantitative encoding above. */
-  --outcome-good: #2a78d6;
-  --outcome-bad: #e34948;
+  --outcome-good: #1d63bb;   /* 5.0:1 as text on paper */
+  --outcome-bad: #c43534;    /* 4.6:1 as text on paper */
 
   /* Sequential data ramp. Multi-hue on purpose: sixteen stacked bands cannot
      be told apart in one hue. Resampled at uniform OKLab lightness from the
@@ -48,9 +48,9 @@
   --seq-7: #12246b;
 
   /* Diverging: home win <- draw -> away win. */
-  --home: #2a78d6;
+  --home: #1d63bb;   /* white odds labels 5.9:1 (was 4.4:1) */
   --draw: #8c8c86;
-  --away: #e34948;
+  --away: #c43534;   /* white odds labels 5.3:1 (was 4.0:1) */
 
 
   /* Outcome meters in the table. They borrow the qualification-marker colours
@@ -72,11 +72,15 @@
   /* Reserved status hues for qualification bands. Each ships with a label. */
   --band-champion: #f2b705;
 
-  --shadow: 0 1px 2px rgb(13 26 34 / 0.06), 0 8px 24px -12px rgb(13 26 34 / 0.18);
+  --shadow: 0 1px 2px rgb(13 26 34 / 0.04), 0 12px 32px -16px rgb(13 26 34 / 0.16);
+  /* A faint wash of the brand blue behind the top of the page. */
+  --glow: rgb(42 120 214 / 0.08);
 
   --measure: 68ch;
   --gutter: clamp(1rem, 4vw, 3rem);
-  --radius: 4px;
+  /* Panels and cards; controls use --radius-sm, toggles are full pills. */
+  --radius: 14px;
+  --radius-sm: 8px;
 
   --display: "Archivo", system-ui, -apple-system, "Segoe UI", sans-serif;
   --body: "Archivo", system-ui, -apple-system, "Segoe UI", sans-serif;
@@ -94,7 +98,7 @@
   --panel-sunk: #0f171c;
   --ink: #e7eef3;
   --ink-muted: #93a6b1;
-  --ink-faint: #61757f;
+  --ink-faint: #7f939e;   /* 5.4:1 on panel; was 3.6:1 */
   --rule: #22303a;
   --rule-strong: #34454f;
 
@@ -107,7 +111,7 @@
   --seq-1: #081d58;
   --seq-2: #22318d;
   --seq-3: #225aa6;
-  --seq-4: #1f83b9;
+  --seq-4: #1d7aac;   /* white numbers 4.7:1; #1f83b9 left both inks at 4.2:1 */
   --seq-5: #36abc3;
   --seq-6: #80cdbb;
   --seq-7: #caeab4;
@@ -121,7 +125,9 @@
 
   --band-champion: #eda100;
 
-  --shadow: 0 1px 2px rgb(0 0 0 / 0.4), 0 8px 24px -12px rgb(0 0 0 / 0.6);
+  /* The inset line lifts a panel's top edge off the page, the way light falls on it. */
+  --shadow: inset 0 1px 0 rgb(255 255 255 / 0.04), 0 1px 2px rgb(0 0 0 / 0.35), 0 16px 40px -20px rgb(0 0 0 / 0.7);
+  --glow: rgb(57 135 229 / 0.12);
 }
 
 /* ---------- base -------------------------------------------------- */
@@ -139,7 +145,7 @@ html, body { overflow-x: clip; }
 
 body {
   margin: 0;
-  background: var(--paper);
+  background: radial-gradient(1100px 520px at 50% -240px, var(--glow), transparent 70%) no-repeat, var(--paper);
   color: var(--ink);
   font-family: var(--body);
   font-size: 15px;
@@ -183,6 +189,25 @@ a { color: inherit; }
   padding-inline: var(--gutter);
 }
 
+/* Off-screen until focused: the first Tab lands here and jumps past the
+   navigation to the content (WCAG 2.4.1). */
+.skip-link {
+  position: absolute;
+  left: 0.75rem;
+  top: 0.75rem;
+  z-index: 100;
+  padding: 0.6rem 1rem;
+  border-radius: 999px;
+  background: var(--ink);
+  color: var(--paper);
+  font-weight: 600;
+  text-decoration: none;
+  transform: translateY(-200%);
+  transition: transform 0.15s var(--ease);
+}
+.skip-link:focus { transform: none; }
+main:focus { outline: none; }
+
 .visually-hidden {
   position: absolute;
   width: 1px; height: 1px;
@@ -193,6 +218,13 @@ a { color: inherit; }
 }
 
 /* ---------- header ------------------------------------------------ */
+
+/* The sticky masthead (and the phone bottom bar, below) would otherwise
+   cover whatever keyboard focus or a skip link scrolls to (WCAG 2.4.11). */
+html { scroll-padding-top: 76px; }
+@media (max-width: 760px) {
+  html { scroll-padding-bottom: calc(72px + env(safe-area-inset-bottom, 0px)); }
+}
 
 .masthead {
   position: sticky;
@@ -250,8 +282,8 @@ a { color: inherit; }
     display: inline-flex;
     background: var(--panel-sunk);
     border: 1px solid var(--rule);
-    border-radius: var(--radius);
-    padding: 2px;
+    border-radius: 999px;
+    padding: 3px;
     gap: 2px;
   }
 
@@ -263,10 +295,10 @@ a { color: inherit; }
     font: inherit;
     font-size: 0.8125rem;
     font-weight: 600;
-    padding: 0.3rem 0.8rem;
-    border-radius: 2px;
+    padding: 0.3rem 0.85rem;
+    border-radius: 999px;
     cursor: pointer;
-    transition: background 0.15s var(--ease), color 0.15s var(--ease);
+    transition: background 0.15s var(--ease), color 0.15s var(--ease), box-shadow 0.15s var(--ease);
   }
 
   .switch button:hover { color: var(--ink); }
@@ -274,64 +306,65 @@ a { color: inherit; }
   .switch button[aria-pressed="true"] {
     background: var(--panel);
     color: var(--ink);
-    box-shadow: 0 1px 2px rgb(13 26 34 / 0.12);
+    box-shadow: 0 1px 3px rgb(13 26 34 / 0.18), inset 0 0 0 1px var(--rule);
   }
 
-  /* Table view toggle buttons */
+  /* Table view toggle: the same segmented pill as .switch. */
   .table-controls {
-    display: flex;
-    gap: 0.5rem;
-    align-items: center;
-    margin-top: 0.5rem;
+    display: inline-flex;
+    gap: 2px;
+    padding: 3px;
+    background: var(--panel-sunk);
+    border: 1px solid var(--rule);
+    border-radius: 999px;
   }
 
   .table-control-btn {
     appearance: none;
-    border: 1px solid var(--rule);
-    background: var(--panel-sunk);
+    border: 0;
+    background: transparent;
     color: var(--ink-muted);
     font: inherit;
-    font-size: 0.75rem;
+    font-size: 0.8125rem;
     font-weight: 600;
-    padding: 0.25rem 0.75rem;
-    border-radius: 2px;
+    padding: 0.3rem 0.95rem;
+    border-radius: 999px;
     cursor: pointer;
-    transition: all 0.15s var(--ease);
+    transition: background 0.15s var(--ease), color 0.15s var(--ease), box-shadow 0.15s var(--ease);
   }
 
-  .table-control-btn:hover {
-    background: var(--panel);
-    color: var(--ink);
-    border-color: var(--rule);
-  }
+  .table-control-btn:hover { color: var(--ink); }
 
   .table-control-btn[aria-pressed="true"] {
     background: var(--panel);
     color: var(--ink);
-    border-color: var(--rule);
-  }
-
-  .table-control-btn.is-active {
-    background: var(--panel);
-    color: var(--ink);
-    border-color: var(--rule);
+    box-shadow: 0 1px 3px rgb(13 26 34 / 0.18), inset 0 0 0 1px var(--rule);
   }
 
 /* Fixture difficulty pill */
 .fixture-difficulty-pill {
     padding: 0 6px;
     border: 1px solid transparent;
-    border-radius: 8px;
+    border-radius: 999px;
     font-size: 0.75rem;
     font-weight: 600;
     display: inline-block;
     min-width: 42px;
     text-align: center;
+    /* Red (hue 0) for a harder run-in, green (135) for an easier one; the
+       tint deepens with --fd-strength, 0..1, both set per pill from JS. */
+    background: hsl(var(--fd-hue, 0) 70% 45% / calc(0.1 + 0.35 * var(--fd-strength, 0)));
+    color: hsl(var(--fd-hue, 0) 65% 24%);
     transition: background-color 0.15s var(--ease), color 0.15s var(--ease);
 }
 
+:root[data-resolved-theme="dark"] .fixture-difficulty-pill {
+    color: hsl(var(--fd-hue, 0) 80% 78%);
+}
+
 /* Within a hair of the league-mean run-in: no colour to read into. */
-.fixture-difficulty-pill--neutral {
+/* :root keeps this level with the dark-theme colour rule above, which it follows. */
+:root .fixture-difficulty-pill.fixture-difficulty-pill--neutral {
     background: transparent;
     border-color: var(--rule);
     color: var(--ink-muted);
@@ -370,6 +403,23 @@ a { color: inherit; }
   border-color: var(--ink);
   color: var(--outcome-good);
 }
+
+/* A chevron says "this opens a list" where the dashed underline alone only
+   hinted at it; it turns over while the list is open. */
+.hero-title-part::after {
+  content: "";
+  display: inline-block;
+  width: 0.32em;
+  height: 0.32em;
+  margin: 0 0.1em 0.18em 0.28em;
+  border-right: 0.08em solid currentColor;
+  border-bottom: 0.08em solid currentColor;
+  transform: rotate(45deg);
+  opacity: 0.55;
+  transition: transform 0.15s var(--ease), opacity 0.15s var(--ease);
+}
+.hero-title-part:hover::after { opacity: 1; }
+.hero-title-part[aria-expanded="true"]::after { transform: translateY(0.12em) rotate(-135deg); opacity: 1; }
 
 .hero p {
   margin: 0;
@@ -457,20 +507,6 @@ section { margin-block: clamp(1.5rem, 3vw, 2.25rem); }
 
 .grid-wrap { padding: 1.25rem; }
 
-/* The .scroller wrapper gets horizontal scroll + scroll-snap on mobile.
-   The sticky club column (tbody th) stays pinned on the left. */
-@media (max-width: 760px) {
-  .grid-wrap .scroller {
-    scroll-snap-type: x mandatory;
-    -webkit-overflow-scrolling: touch;
-  }
-  table.grid {
-    scroll-snap-align: start;
-  }
-  .cell { scroll-snap-align: start; }
-  .grid__team-name { display: none; }
-}
-
 table.grid {
   border-collapse: separate;
   border-spacing: 2px; /* the 2px surface gap between cells */
@@ -491,8 +527,10 @@ table.grid thead th {
   min-width: 2.1rem;
 }
 
+/* Left-aligned, so the current position and the crest sit in one column on
+   every row; right-aligned, they floated with the length of the name. */
 table.grid tbody th {
-  text-align: right;
+  text-align: left;
   padding-right: 0.6rem;
   white-space: nowrap;
   color: var(--ink);
@@ -505,14 +543,20 @@ table.grid tbody th {
   background: var(--panel);
 }
 
-table.grid tbody th .pos {
+table.grid tbody th .pos,
+table.grid .grid__corner .pos {
   display: inline-block;
   width: 1.5rem;
   margin-right: 0.4rem;
   text-align: right;
   color: var(--ink-faint);
   font-size: 0.6875rem;
+  vertical-align: middle;
 }
+
+table.grid tbody th .played-card__team { vertical-align: middle; }
+table.grid thead .grid__corner { text-align: left; }
+table.grid .grid__corner abbr { text-decoration: none; cursor: help; }
 
 .grid__team-name {
   background: none;
@@ -521,7 +565,8 @@ table.grid tbody th .pos {
   font: inherit;
   color: inherit;
   cursor: pointer;
-  text-align: right;
+  text-align: left;
+  vertical-align: middle;
 }
 
 .grid__team-name:hover { text-decoration: underline; }
@@ -576,6 +621,29 @@ table.grid tbody th .team-logo {
   z-index: 2;
 }
 
+/* On a phone the whole grid fits the screen. Scrolling it sideways showed
+   seven of sixteen places at a time, and the grid's point is the pattern
+   across all of them: so the columns share the width (about 18px each),
+   the club is its crest, and a tap on a cell gives the exact figure. */
+@media (max-width: 760px) {
+  .grid-wrap { padding: 0.75rem 0.5rem; }
+  table.grid {
+    width: 100%;
+    table-layout: fixed;
+    border-spacing: 1px;
+    font-size: 0.5625rem;
+  }
+  table.grid tr > :first-child { width: 2.5rem; }
+  table.grid thead th { min-width: 0; font-size: 0.5625rem; padding-bottom: 0.2rem; }
+  table.grid tbody th { padding-right: 0.2rem; }
+  table.grid tbody th .pos,
+  table.grid .grid__corner .pos { width: 0.9rem; margin-right: 0.15rem; font-size: 0.5625rem; }
+  table.grid tbody th .team-logo { width: 14px; height: 14px; margin-right: 0; }
+  .grid__team-name { display: none; }
+  .cell { width: auto; height: 1.35rem; border-radius: 2px; letter-spacing: -0.02em; }
+  .cell:hover { transform: none; }
+}
+
 /* One segment per column, marking what that finishing place is worth. Lives in
    the table head (.grid__bands) so it inherits the column geometry. */
 .band-strip__seg {
@@ -594,7 +662,7 @@ table.grid tbody th .team-logo {
 .grid-anim-btn {
   background: var(--panel);
   border: 1px solid var(--rule);
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
   padding: 0.2rem 0.5rem;
   font-size: 0.8125rem;
   cursor: pointer;
@@ -616,7 +684,7 @@ table.grid tbody th .team-logo {
 .grid-anim-speed {
   background: var(--panel);
   border: 1px solid var(--rule);
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
   padding: 0.2rem 0.6rem;
   font-size: 0.75rem;
   font-weight: 600;
@@ -631,7 +699,7 @@ table.grid tbody th .team-logo {
   position: relative;
 }
 .grid-loading::after {
-  content: 'Loading matchdays\u2026';
+  content: attr(data-loading-text); /* set from t(), so it is translated */
   position: absolute;
   inset: 0;
   display: grid;
@@ -765,7 +833,7 @@ table.standings .zone-threshold {
   margin-left: 0.5rem;
   padding: 0 0.35rem;
   border-radius: 3px;
-  font-size: 0.625rem;
+  font-size: 0.6875rem;
   font-weight: 600;
   letter-spacing: 0.04em;
   text-transform: uppercase;
@@ -798,11 +866,15 @@ table.standings .zone-divider__wrap {
   color: var(--band-color, var(--ink));
   width: 100%;
 }
+:root:not([data-resolved-theme="dark"]) table.standings .zone-divider__wrap {
+  color: color-mix(in srgb, var(--band-color, var(--ink)) 50%, var(--ink));
+}
 table.standings .zone-divider__wrap::before,
 table.standings .zone-divider__wrap::after {
   content: "";
   flex: 1;
-  height: 2px;
+  height: 1px;
+  opacity: 0.7;
   background: var(--band-color, var(--rule-strong));
   min-width: 0;  /* allow shrinking below content width */
 }
@@ -886,8 +958,10 @@ table.standings .zone-divider__wrap::after {
   position: relative;
   height: 12rem;
   width: 100%;
-  transition: height 0.3s ease;
+  transition: height 0.3s var(--ease);
 }
+
+/* ----- the strip (wide screens): crests at their rating ----- */
 
 .ladder__axis {
   position: absolute;
@@ -926,11 +1000,19 @@ table.standings .zone-divider__wrap::after {
   position: absolute;
   width: 1.5rem;
   height: 1.5rem;
-  cursor: default;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
   z-index: 1;
   transform: translate(-50%, 0);
   transition: top 0.15s ease-out;
 }
+
+/* The list row's parts; the strip shows the crest alone. */
+.ladder__rank, .ladder__name, .ladder__rating, .ladder__scale { display: none; }
 
 .ladder__team img {
   width: 100%;
@@ -953,49 +1035,130 @@ table.standings .zone-divider__wrap::after {
   font-size: 0.75rem;
   font-weight: 600;
   line-height: 1;
-  padding: 0.3rem 0.5rem;
+  padding: 0.35rem 0.55rem;
   background: var(--ink);
-  color: var(--panel);
-  border-radius: 3px;
+  color: var(--paper);
+  border-radius: var(--radius-sm);
   pointer-events: none;
   opacity: 0;
   transition: opacity 0.08s ease-out;
 }
 
-.ladder__team:hover::after { opacity: 1; }
+.ladder__team:hover::after,
+.ladder__team:focus-visible::after { opacity: 1; }
+.ladder__team:focus-visible { z-index: 10; }
 
 .ladder__team[data-tier="1"] img { border: 2px solid var(--tier-1); }
 .ladder__team[data-tier="2"] img { border: 2px solid var(--tier-2); }
 
-/* Touch support for ladder tooltips: tap to show/hide */
+/* Touch: no hover, so the first tap shows the tip and the second opens the club. */
 @media (pointer: coarse) {
-  .ladder__team { cursor: pointer; }
   .ladder__team::after { display: none; }
-  .ladder__team:focus-visible::after,
-  .ladder__team[data-tip-visible]::after {
-    display: block;
-    opacity: 1;
-  }
-  .ladder__team:focus-visible { z-index: 10; }
+  .ladder__team[data-tip-visible]::after { display: block; opacity: 1; }
+  .ladder__team[data-tip-visible] { z-index: 10; }
 }
 
-/* Mobile: vertical ladder — scroll down for worse teams */
-@media (max-width: 500px) {
-  .ladder__track { overflow-y: auto; overflow-x: hidden; }
-  .ladder__team { transform: none; transition: top 0.15s ease-out; width: 1.5rem; height: 1.5rem; }
-  .ladder__team img { width: 1.5rem; height: 1.5rem; }
-  .ladder__team::after { font-size: 0.6875rem; padding: 0.25rem 0.4rem; }
-  .ladder__axis {
-    position: absolute; left: 0; top: 0; bottom: 0; right: auto;
-    width: 2.5rem; height: auto; overflow: visible;
-  }
-  .ladder__tick {
-    position: absolute; bottom: auto;
-    transform: translateY(-50%);
-    flex-direction: row; gap: 0.2rem;
-  }
-  .ladder__tick::before { width: 0.5rem; height: 1px; }
+/* ----- the list (narrow screens): one row per club, at its rank ----- */
+
+.ladder__track--list { --scale-w: 34%; }
+@media (max-width: 760px) { .ladder { padding: 0.5rem 0.75rem 1rem; } }
+
+.ladder__track--list .ladder__team {
+  width: 100%;
+  height: 2.25rem;           /* LADDER_ROW in app.js */
+  transform: none;
+  display: grid;
+  grid-template-columns: 1.5rem 1.25rem minmax(0, 1fr) 2.4rem var(--scale-w);
+  align-items: center;
+  gap: 0.45rem;
+  text-align: left;
+  border-top: 1px solid var(--rule);
+  border-radius: 0;
+  transition: top 0.35s var(--ease);
 }
+
+.ladder__track--list .ladder__team:hover { background: var(--panel-sunk); }
+.ladder__track--list .ladder__team::after { display: none; }
+
+.ladder__track--list .ladder__rank {
+  display: block;
+  font-size: 0.75rem;
+  color: var(--ink-muted);
+  text-align: right;
+}
+
+.ladder__track--list .ladder__team img,
+.ladder__track--list .ladder__team:hover img {
+  width: 1.25rem;
+  height: 1.25rem;
+  border: 0;
+  background: none;
+  transform: none;
+}
+
+.ladder__track--list .ladder__name {
+  display: block;
+  font-size: 0.875rem;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.ladder__track--list .ladder__rating {
+  display: block;
+  font-size: 0.8125rem;
+  font-weight: 700;
+  text-align: right;
+}
+
+.ladder__track--list .ladder__scale {
+  display: block;
+  position: relative;
+  height: 100%;
+}
+
+/* The club's rating on the shared scale, in its division's colour. */
+.ladder__dot {
+  position: absolute;
+  top: 50%;
+  left: var(--x);
+  width: 0.7rem;
+  height: 0.7rem;
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  box-shadow: 0 0 0 2px var(--panel);
+  transition: left 0.15s ease-out;
+}
+.ladder__team[data-tier="1"] .ladder__dot { background: var(--tier-1); }
+.ladder__team[data-tier="2"] .ladder__dot { background: var(--tier-2); }
+
+/* The scale sits over the rows' last column; each tick is a faint line down
+   the list with its label in the header above the first row. */
+.ladder__track--list .ladder__axis {
+  top: 0;
+  bottom: 0;
+  left: auto;
+  right: 0;
+  width: var(--scale-w);
+  height: auto;
+  pointer-events: none;
+}
+
+.ladder__track--list .ladder__tick {
+  top: 0;
+  bottom: 0;
+  flex-direction: column-reverse;
+  justify-content: flex-end;
+}
+
+.ladder__track--list .ladder__tick::before {
+  flex: 1;
+  height: auto;
+  background: var(--rule);
+}
+
+.ladder__track--list .ladder__tick span { font-size: 0.6875rem; line-height: 1.75rem; }
 
 /* ---------- fixtures ---------------------------------------------- */
 
@@ -1023,7 +1186,7 @@ table.standings .zone-divider__wrap::after {
 }
 
 .fixture__line {
-  font-size: 0.625rem;
+  font-size: 0.6875rem;
   font-weight: 600;
   color: var(--ink-muted);
   background: var(--panel-sunk);
@@ -1053,14 +1216,28 @@ table.standings .zone-divider__wrap::after {
 .odds__seg[data-outcome="home"] { background: var(--home); }
 .odds__seg[data-outcome="draw"] { background: var(--draw); color: #10171b; }
 .odds__seg[data-outcome="away"] { background: var(--away); }
+/* The dark theme's brighter hues take dark labels: white was 3.2-3.6:1. */
+:root[data-resolved-theme="dark"] .odds__seg[data-outcome="home"],
+:root[data-resolved-theme="dark"] .odds__seg[data-outcome="away"] { color: #0d1a22; }
 
 /* Mobile: let fixture odds and lines stack instead of fixed min-width.
    Uses 760px to match the main mobile breakpoint (navigation, tables, etc.). */
 @media (max-width: 760px) {
   .fixture__odds-col { min-width: 0; max-width: none; flex: 2; }
   .fixture__lines { min-width: 0; max-width: none; }
-  .played-card__team-name { display: none; }
-  .played-card__side .team-logo { width: 36px; height: 36px; }
+  /* The name sits under the crest rather than disappearing: crests alone
+     asked the reader to know thirty badges by heart. */
+  .played-card__team { flex-direction: column; gap: 0.15rem; }
+  .played-card__side--home .played-card__team { flex-direction: column-reverse; }
+  /* Two classes: the base rule's font: inherit comes later in the file. */
+  .played-card__team .played-card__team-name {
+    font-size: 0.6875rem;
+    font-weight: 600;
+    max-width: 4.75rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .played-card__side .team-logo { width: 28px; height: 28px; }
 }
 
 /* Recent-form chip in the table: single rectangle, color by points (0–15). */
@@ -1068,7 +1245,7 @@ table.standings .zone-divider__wrap::after {
 .form__chip {
   width: auto; min-width: 1.05rem; padding: 0 0.25rem; height: 1.05rem; border-radius: 3px;
   display: grid; place-items: center;
-  font-size: 0.625rem; font-weight: 700; line-height: 1; color: #fff;
+  font-size: 0.6875rem; font-weight: 700; line-height: 1; color: #fff;
 }
 
 /* Compare-clubs tool. Hidden <select>s hold state; the cards beneath show the
@@ -1091,7 +1268,7 @@ table.standings .zone-divider__wrap::after {
 .compare__team:hover .compare__pick-hint,
 .compare__team:focus-visible .compare__pick-hint { color: var(--ink); }
 #compare-output { padding: 0 1.25rem 1.25rem; }
-.compare__teams { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 0.75rem; margin: 0.25rem 0 0.5rem; }
+.compare__teams { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); align-items: center; gap: 0.75rem; margin: 0.25rem 0 0.5rem; }
 .compare__swap-center {
   font: inherit; font-size: 1.4rem; line-height: 1; color: var(--ink);
   background: var(--panel); border: 1px solid var(--rule); border-radius: 999px;
@@ -1100,7 +1277,7 @@ table.standings .zone-divider__wrap::after {
 }
 .compare__swap-center:hover { background: var(--panel-sunk); }
 .compare__team-text { display: flex; flex-direction: column; align-items: flex-end; gap: 0.15rem; flex: 1; min-width: 0; }
-.compare__team-side { font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--ink-faint); font-weight: 700; }
+.compare__team-side { font-size: 0.6875rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--ink-faint); font-weight: 700; }
 .compare__team-name { font-size: 1.15rem; font-weight: 700; line-height: 1.1; }
 .compare__team-rating { font-size: 1.7rem; font-weight: 800; line-height: 1; font-variant-numeric: tabular-nums; }
 .compare__note { font-size: 0.8rem; color: var(--ink-faint); margin: 0 0 0.9rem; }
@@ -1120,8 +1297,10 @@ table.standings .zone-divider__wrap::after {
 .compare-line { fill: none; stroke-width: 2; }
 .compare-line--a { stroke: #2a78d6; }
 .compare-line--b { stroke: #e0682a; }
-.compare-legend__a { color: #2a78d6; font-weight: 600; margin-right: 0.75rem; }
-.compare-legend__b { color: #e0682a; font-weight: 600; }
+.compare-legend__a { color: color-mix(in srgb, #2a78d6 70%, var(--ink)); font-weight: 600; margin-right: 0.75rem; }
+.compare-legend__b { color: color-mix(in srgb, #e0682a 70%, var(--ink)); font-weight: 600; }
+/* The line colours are chart hues; as text they are mixed toward --ink, which
+   darkens them on light and lightens them on dark (>= 6:1 in both). */
 
 .compare__menu {
   z-index: 50;
@@ -1130,7 +1309,7 @@ table.standings .zone-divider__wrap::after {
 }
 .compare__option {
   display: flex; align-items: center; gap: 0.7rem; width: 100%;
-  background: none; border: 0; border-radius: var(--radius);
+  background: none; border: 0; border-radius: var(--radius-sm);
   padding: 0.55rem 0.6rem; text-align: left; cursor: pointer;
 }
 .compare__option:hover, .compare__option:focus-visible { background: var(--panel-sunk); outline: none; }
@@ -1152,7 +1331,7 @@ table.standings .zone-divider__wrap::after {
 .compare__h2h-team:last-child { text-align: right; }
 .compare__h2h-stat { font-size: 1.5rem; font-weight: 800; }
 .compare__h2h-goals { display: flex; flex-direction: column; align-items: center; gap: 0.1rem; margin: 0 0 0.75rem; }
-.compare__h2h-goals-label { font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--ink-muted); }
+.compare__h2h-goals-label { font-size: 0.6875rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--ink-muted); }
 .compare__h2h-goals-stat { font-size: 1rem; font-weight: 600; font-variant-numeric: tabular-nums; }
 .compare__h2h-list { display: flex; flex-direction: column; gap: 0.5rem; }
 
@@ -1198,7 +1377,10 @@ table.standings .zone-divider__wrap::after {
   font-weight: 700;
   font-size: 1rem;
   color: var(--ink);
-  min-width: 10rem;
+  /* Flexes between the two buttons: a fixed 10rem pushed them past the
+     panel edges on a 360px phone. */
+  flex: 0 1 10rem;
+  min-width: 0;
   text-align: center;
 }
 
@@ -1214,10 +1396,12 @@ table.standings .zone-divider__wrap::after {
 .played-card:last-child { border-bottom: none; }
 
 /* Gradient: gold on winning side, distinct from blue delta text */
+/* The winner's half gets a neutral wash. It used the title gold, which
+   means "champion" everywhere else and turned olive on the dark panel. */
 .played-card--home-win {
   background: linear-gradient(
     to right,
-    color-mix(in srgb, var(--band-champion) 12%, var(--panel)) 0%,
+    color-mix(in srgb, var(--ink) 7%, var(--panel)) 0%,
     var(--panel) 50%
   );
 }
@@ -1225,7 +1409,7 @@ table.standings .zone-divider__wrap::after {
 .played-card--away-win {
   background: linear-gradient(
     to left,
-    color-mix(in srgb, var(--band-champion) 12%, var(--panel)) 0%,
+    color-mix(in srgb, var(--ink) 7%, var(--panel)) 0%,
     var(--panel) 50%
   );
 }
@@ -1327,16 +1511,22 @@ table.standings .zone-divider__wrap::after {
 @media (max-width: 760px) {
   .played-card { padding: 0.5rem 0.75rem; }
   .played-card__matchup { gap: 0.375rem; }
+  .played-card__side { gap: 0.3rem; }
+  /* The delta goes under the rating: side by side, the away one ran off a
+     360px screen. */
+  .played-card__rating { flex-direction: column; align-items: center; gap: 0; line-height: 1.15; }
   .played-card__score { font-size: 1.125rem; }
   .played-card__rating-value { font-size: 0.9375rem; }
   .played-card__delta { font-size: 0.75rem; }
 
   .compare__team { padding: 0.6rem 0.7rem; gap: 0.4rem; }
   .compare__team .team-logo { width: 36px; height: 36px; }
-  .compare__team-side { font-size: 0.6rem; }
+  .compare__card-main { flex-direction: column; align-items: center; gap: 0.35rem; }
+  .compare__team-text { align-items: center; text-align: center; }
+  .compare__team-side { font-size: 0.6875rem; }
   .compare__team-name { font-size: 0.95rem; }
   .compare__team-rating { font-size: 1.3rem; }
-  .compare__pick-hint { font-size: 0.6rem; padding-top: 0.4rem; }
+  .compare__pick-hint { font-size: 0.6875rem; padding-top: 0.4rem; }
   .compare__swap-center { width: 2rem; height: 2rem; font-size: 1.1rem; }
   .compare__scoreline { font-size: 0.85rem; padding: 0.25rem 0.6rem; min-width: 4rem; gap: 0.3rem; }
   .compare__scoreline-prob { font-size: 0.7rem; }
@@ -1348,10 +1538,17 @@ table.standings .zone-divider__wrap::after {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
   gap: 1px;
-  background: var(--rule);
+  overflow: hidden; /* clips the rules the last column and row cast outward */
 }
 
-.model-grid div { background: var(--panel); padding: 0.9rem 1.25rem; }
+/* Each card draws its own right and bottom rule. A rule-coloured container
+   behind the gaps showed through the empty cells of a short last row as a
+   solid block that read as a missing card. */
+.model-grid div {
+  background: var(--panel);
+  padding: 0.9rem 1.25rem;
+  box-shadow: 1px 0 0 var(--rule), 0 1px 0 var(--rule);
+}
 .model-grid dt { overflow-wrap: anywhere; font-size: 0.6875rem; letter-spacing: 0.12em; text-transform: uppercase; color: var(--ink-faint); }
 .model-grid dd { margin: 0.25rem 0 0; font-size: 1.0625rem; font-weight: 700; }
 
@@ -1377,8 +1574,8 @@ footer a { color: var(--ink); }
   pointer-events: none;
   background: var(--ink);
   color: var(--paper);
-  padding: 0.4rem 0.6rem;
-  border-radius: 3px;
+  padding: 0.45rem 0.65rem;
+  border-radius: var(--radius-sm);
   font-size: 0.75rem;
   line-height: 1.35;
   box-shadow: 0 4px 16px rgb(0 0 0 / 0.25);
@@ -1470,15 +1667,19 @@ footer a { color: var(--ink); }
 
   .mobilebar__item[aria-pressed="true"] { color: var(--outcome-good); }
 
+  /* The active tab gets a soft pill behind its icon, as native tab bars do. */
   .mobilebar__item[aria-pressed="true"]::before {
     content: "";
     position: absolute;
-    top: 0;
-    width: 1.75rem;
-    height: 2px;
-    border-radius: 0 0 2px 2px;
-    background: var(--outcome-good);
+    top: 0.3rem;
+    width: 3.25rem;
+    height: 1.6rem;
+    border-radius: 999px;
+    background: color-mix(in srgb, var(--outcome-good) 16%, transparent);
+    z-index: -1;
   }
+
+  .mobilebar__item { isolation: isolate; transition: color 0.15s var(--ease); }
 
   .mobilebar__item { position: relative; }
 
@@ -1631,8 +1832,19 @@ footer a { color: var(--ink); }
   /* The 720px floor exists so the full desktop column set never crushes. With
       seven of those columns gone it is what was keeping the table off-screen. */
   table.standings { min-width: 0; font-size: 0.8125rem; }
+  /* The ledger columns (W/D/L, GF/GA, form; xG/xGA/xGD) stay on the club's
+     own page. Current keeps #, club, played, GD, points and rating;
+     Prediction keeps #, club, xPts, fixtures and the two odds. */
+  table.standings .col--extra { display: none; }
+  /* Rating is the headline in Current; in Prediction the phone spends its
+     width on the odds instead, which are that view's point. */
+  #standings[data-view="prediction"] .sep { display: none; }
+  table.standings .pos { width: 1.9rem; }
+  .fixture-difficulty-pill { min-width: 34px; padding-inline: 4px; font-size: 0.6875rem; }
   .career-table { min-width: 0; }
-  .standings th, .standings td { padding-inline: 0.3rem; }
+  /* table.standings: the base cell rule outranks a bare .standings, which
+     left this dead and every cell at 9.6px of side padding. */
+  table.standings th, table.standings td { padding-inline: 0.3rem; }
   /* Chrome that carries no data goes before any column does. The sorted column
      is still marked by its ink, and aria-sort still announces the direction. */
   .standings .sort-btn { gap: 0.15rem; }
@@ -1644,10 +1856,10 @@ footer a { color: var(--ink); }
   .standings .meter__value { min-width: 2rem; font-size: 0.75rem; }
   .standings th:first-child, .standings td:first-child { padding-left: 0.5rem; }
   .standings th:last-child, .standings td:last-child { padding-right: 0.5rem; }
-  .standings .sort-btn__label { font-size: 0.625rem; letter-spacing: 0.06em; }
+  .standings .sort-btn__label { font-size: 0.6875rem; letter-spacing: 0.04em; }
   /* Swap in the short heading: "Relegation" is wider than any number under it. */
   .standings .sort-btn__label:has(+ .sort-btn__short) { display: none; }
-  .standings .sort-btn__short { display: inline; font-size: 0.625rem; letter-spacing: 0.06em; }
+  .standings .sort-btn__short { display: inline; font-size: 0.6875rem; letter-spacing: 0.04em; }
   /* One line per club. Left to wrap, "Bodø/Glimt" breaks at the slash, which
      drops the column's min-content width and stacks the name under the crest. */
   .standings .club-btn { white-space: nowrap; text-align: left; }
@@ -1694,8 +1906,17 @@ footer a { color: var(--ink); }
      a phone it sits under the season's content instead of in front of it --
      unless you are actually rewound, when its state matters more than the
      scroll it saves. */
-  #content { display: flex; flex-direction: column; }
+  /* As a flex column the sections' margins no longer collapse, so each gap
+     would be both margins stacked (~48px of nothing). The gap replaces them. */
+  #content { display: flex; flex-direction: column; gap: 1rem; }
+  #content > section { margin-block: 0; }
+  .hero { padding-bottom: 0.25rem; }
   .timeline-section { order: 99; }
+
+  /* The divider row spans the whole scrolling table, so a centred label sits
+     off-screen. Pin it to the left with a short lead-in line. */
+  table.standings .zone-divider__wrap { justify-content: flex-start; padding-left: 0.5rem; }
+  table.standings .zone-divider__wrap::before { flex: 0 0 0.75rem; }
   #content:has(.timeline.is-past) .timeline-section { order: -1; }
 
   /* A tighter masthead on small screens. */
@@ -1808,7 +2029,7 @@ footer a { color: var(--ink); }
   font-weight: 600;
   text-align: left;
   padding: 0.5rem 0.65rem;
-  border-radius: 2px;
+  border-radius: var(--radius-sm);
   cursor: pointer;
   width: 100%;
 }
@@ -1983,12 +2204,14 @@ footer a { color: var(--ink); }
 .rating-trend--fall { color: var(--outcome-bad); }
 .rating-trend--strong-fall { color: var(--outcome-bad); }
 .rating-trend--top { color: var(--band-champion); }
+/* Gold on white is 1.8:1; an icon needs 3:1 (WCAG 1.4.11). */
+:root:not([data-resolved-theme="dark"]) .rating-trend--top { color: color-mix(in srgb, var(--band-champion) 60%, var(--ink)); }
 
 .pred-box {
   display: flex;
   align-items: stretch;
   gap: 0;
-  border-radius: 10px;
+  border-radius: var(--radius);
   overflow: hidden;
   border: 1px solid var(--rule);
 }
@@ -2028,7 +2251,9 @@ footer a { color: var(--ink); }
   align-items: center;
   justify-content: center;
   padding: 0.75rem 1rem;
-  background: var(--rule);
+  /* --rule is a line colour: as a fill it held the +/- delta to 3.7:1. */
+  background: var(--panel-sunk);
+  border-inline: 1px solid var(--rule);
   gap: 0.25rem;
 }
 .pred-box__arrow {
@@ -2143,6 +2368,11 @@ footer a { color: var(--ink); }
 /* ---------- career table (now inline in team view) ------------------ */
 
 .career-table { min-width: 640px; }
+.career-table__season {
+  background: none; border: none; padding: 0.25rem 0; min-height: 28px;
+  font: inherit; color: inherit; cursor: pointer;
+  text-decoration: underline dotted; text-underline-offset: 3px;
+}
 .career-table .up { color: var(--outcome-good); font-weight: 700; }
 .career-table .down { color: var(--outcome-bad); font-weight: 700; }
 
@@ -2166,8 +2396,8 @@ footer a { color: var(--ink); }
   color: inherit;
   cursor: pointer;
   text-align: left;
+  min-height: 28px;   /* 22px before: under WCAG 2.5.8's 24px target minimum */
 }
-
 .club-btn:hover { text-decoration: underline; }
 
 .club-btn--crest .team-logo {
@@ -2286,6 +2516,7 @@ footer a { color: var(--ink); }
 /* Everything downstream dims while a rewound view is being fetched, so it is
    obvious the numbers on screen are about to change. */
 #content.is-rewinding .panel:not(.timeline) { opacity: 0.55; transition: opacity 0.15s var(--ease); }
+#content.is-rewinding { cursor: progress; }
 
 .timeline.is-past { border-color: var(--tier-1); }
 .timeline.is-past .timeline__head p { color: var(--tier-1); }
@@ -2299,11 +2530,76 @@ footer a { color: var(--ink); }
   /* On a phone the pill is the first thing the eye lands on, so keep it
      readable rather than letting it eat the summary card. */
   .team-back { font-size: 0.9375rem; padding: 0.5rem 1rem; margin-bottom: 0.35rem; }
+
+  /* Beside a 2.5rem rating the club name had ~30px left and read "Vi…". The
+     rating drops to its own line so the name gets the width. */
+  .team-summary__header { flex-wrap: wrap; }
+  .team-summary__rating-block { flex-basis: 100%; margin-left: 0; align-items: flex-start; }
+
+  /* #team-content and each .team-section both padded 1.25rem: 40px a side of
+     a 360px screen before any content. One layer of gutter is enough. */
+  #team-content { padding: 0.5rem 0.25rem; }
+  .team-section { padding: 1rem 0.75rem; }
+  .team-grid-row__cell { font-size: 0.5rem; letter-spacing: -0.04em; }
 }
 
 /* Prevent horizontal overflow on very narrow screens */
 @media (max-width: 360px) {
-  .grid-wrap { padding: 0.75rem; }
+  .grid-wrap { padding: 0.5rem 0.25rem; }
+  .cell { font-size: 0.5rem; letter-spacing: -0.05em; }
+  .ladder__track--list { --scale-w: 26%; }
   .panel__head { padding: 0.75rem 0.875rem; }
   .hero { padding-inline: 0.75rem; }
 }
+
+/* ---------- one secondary button ---------------------------------- */
+
+/* Every secondary action shares one look, whichever view it is in: a pill
+   with a hairline border on the panel colour, and the same hover. They had
+   drifted apart -- 4px, 8px and 14px corners, sunk or raised fills, light or
+   strong borders -- so the same kind of control looked different per view.
+   Last in the file so it settles the corners and colours; each rule above
+   keeps its own size. */
+.grid-anim-btn,
+.grid-anim-speed,
+.played-nav__btn,
+.team-pagination__btn,
+.timeline__now,
+.timeline__step,
+.team-back,
+.compare__swap-center {
+  white-space: nowrap;
+  border: 1px solid var(--rule);
+  border-radius: 999px;
+  background: var(--panel);
+  color: var(--ink);
+  font-weight: 600;
+  transition: background 0.15s var(--ease), border-color 0.15s var(--ease);
+}
+
+.grid-anim-btn:hover,
+.grid-anim-speed:hover,
+.played-nav__btn:hover,
+.team-pagination__btn:hover:not(:disabled),
+.timeline__now:hover,
+.timeline__step:hover:not(:disabled),
+.team-back:hover,
+.compare__swap-center:hover {
+  background: var(--panel-sunk);
+  border-color: var(--rule-strong);
+}
+
+/* The play button is a circle, at the touch size of the rewind step buttons
+   beside it on a phone. */
+.grid-anim-btn {
+  display: inline-grid;
+  place-items: center;
+  width: 2rem;
+  height: 2rem;
+  padding: 0;
+}
+
+@media (pointer: coarse), (max-width: 760px) {
+  .grid-anim-btn { width: 44px; height: 44px; }
+}
+

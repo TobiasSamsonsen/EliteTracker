@@ -126,11 +126,28 @@ const teamLogo = (teamId, name) => {
    bare 0% is shown as nothing instead, and the same at the top end. */
 const smallestShown = (digits) => 0.5 / 10 ** digits / 100;
 
+/* Numbers in the reader's convention. Norwegian writes a decimal comma, a
+   space between thousands (not at four digits, so ratings stay "1794") and
+   a space before the percent sign: "70,3 %", "50 000". */
+function localeNumber() { return currentLang === 'no' ? 'nb-NO' : 'en-GB'; }
+
+const num = (value, digits = 0) => value.toLocaleString(localeNumber(), {
+  minimumFractionDigits: digits, maximumFractionDigits: digits, useGrouping: 'min2',
+});
+
+/* Signed on the shown value, so ±0.04 at one digit reads "0.0", not "+0.0". */
+const signed = (value, digits = 0) => {
+  const shown = Math.round(value * 10 ** digits) / 10 ** digits || 0;
+  return (shown > 0 ? '+' : '') + num(shown, digits);
+};
+
+const percentSign = () => (currentLang === 'no' ? String.fromCharCode(160) + '%' : '%'); // no-break space
+
 const pct = (value, digits = 1) => {
   const smallest = smallestShown(digits);
-  if (value >= 1 - smallest) return '100%';
+  if (value >= 1 - smallest) return `100${percentSign()}`;
   if (value < smallest) return '—';
-  return `${(value * 100).toFixed(digits)}%`;
+  return `${num(value * 100, digits)}${percentSign()}`;
 };
 
 const pctShort = (value) =>
@@ -182,11 +199,11 @@ function outcomeClass(position, bands, count) {
   return band.first < (count + 1) / 2 ? 'good' : 'bad';
 }
 
-/* Text must stay legible as the fill moves away from the surface, which is a
-   different direction in each theme. */
+/* Text must stay legible as the fill darkens (light theme) or brightens (dark
+   theme). Step 5 is where the other ink clears 4.5:1 in both palettes: on
+   light step 4 dark ink is 4.7:1 but white only 3.8:1. */
 function heatTextClass(step) {
-  const darkMode = document.documentElement.dataset.resolvedTheme === 'dark';
-  return step >= (darkMode ? 5 : 4) ? 'cell--invert' : '';
+  return step >= 5 ? 'cell--invert' : '';
 }
 
 /* ---------- tooltip ---------------------------------------------- */
@@ -200,6 +217,16 @@ function showTooltip(event, html) {
 }
 
 const coarsePointer = window.matchMedia('(pointer: coarse)');
+
+// Where the pointer is, so an animation frame can re-check what is under it
+// without waiting for the next pointer event. Tracked on the whole document:
+// updated only over cells, it went stale when the pointer left the grid, and
+// every frame then found a cell at the old spot and kept the readout up.
+const lastPointer = { x: -1, y: -1 };
+document.addEventListener('pointermove', (event) => {
+  lastPointer.x = event.clientX;
+  lastPointer.y = event.clientY;
+}, { passive: true });
 
 function moveTooltip(event) {
   const box = tooltip.getBoundingClientRect();
@@ -259,6 +286,12 @@ function thresholdPosition(band, count) {
   return good ? band.last : band.first;
 }
 
+/* A band's full name in the reader's language; the report carries English. */
+function bandName(band) {
+  const key = `band.${band.label}`;
+  return t(key) === key ? band.label : t(key);
+}
+
 /* Short category label for the table's zone badges. tone alone cannot tell a
    good play-off from a bad one (OBOS promotion vs Elite relegation), so the
    top/bottom half decides like outcomeClass does, and whether the top band is
@@ -268,7 +301,7 @@ function shortBandLabel(band, report) {
   const good = band.first < (count + 1) / 2;
   let key = `table.zone.${good ? 'good' : 'bad'}.${band.tone}`;
   if (band.tone === 'top' && report.league.slug === 'obosligaen') key = 'table.zone.good.promotion';
-  return t(key) === key ? band.label : t(key);
+  return t(key) === key ? bandName(band) : t(key);
 }
 
 /* ---------- the finish grid --------------------------------------- */
@@ -311,6 +344,9 @@ function buildGrid(report, tableData, record = null) {
   const count = rows.length;
   const bands = report.league.bands;
 
+  // A rebuild removes the cell under the pointer without a pointerleave, which
+  // left the readout stuck on screen after the animation.
+  hideTooltip();
   table.replaceChildren(table.querySelector('caption'));
 
   const head = el('thead');
@@ -319,14 +355,20 @@ function buildGrid(report, tableData, record = null) {
   const bandRow = el('tr', 'grid__bands');
   bandRow.appendChild(el('td', '', ''));
   const headRow = el('tr');
-  headRow.appendChild(el('th', '', ''));
+  // The corner names the small number before each club: where it stands now.
+  const corner = el('th', 'grid__corner');
+  corner.scope = 'col';
+  const now = el('abbr', 'pos', t('grid.nowPos'));
+  now.title = t('grid.nowPos.desc');
+  corner.appendChild(now);
+  headRow.appendChild(corner);
   for (let position = 1; position <= count; position += 1) {
     const band = bandFor(bands, position);
     const cell = el('td');
     const bar = el('span', 'band-strip__seg');
     if (band) {
       bar.style.background = bandColor(band, count);
-      bar.title = band.label;
+      bar.title = bandName(band);
     }
     cell.appendChild(bar);
     bandRow.appendChild(cell);
@@ -352,13 +394,15 @@ function buildGrid(report, tableData, record = null) {
       const cell = paintCell(el('td'), probability);
       cell.style.setProperty('--col', String(index));
       const position = index + 1;
+      cell.setAttribute('aria-label', t('aria.gridCell', { team: row.team, position: ordinal(position), pct: pct(probability, 2) }));
       const band = bandFor(bands, position);
-      cell.addEventListener('pointerenter', (event) => {
-        // Mid-animation the readout follows the last frame, not the build.
+      // Mid-animation the readout follows the last frame, not the build.
+      cell.tip = () => {
         const live = anim.gridTableData?.find((r) => r.team_id === row.team_id);
         const prob = live ? live.position_probabilities[index] : probability;
-        showTooltip(event, `<b>${row.team}</b> ${ordinal(position)}<br>${pct(prob, 2)}` + (band ? `<br>${band.label}` : ''));
-      });
+        return `<b>${row.team}</b> ${ordinal(position)}<br>${pct(prob, 2)}` + (band ? `<br>${bandName(band)}` : '');
+      };
+      cell.addEventListener('pointerenter', (event) => showTooltip(event, cell.tip()));
       cell.addEventListener('pointermove', moveTooltip);
       cell.addEventListener('pointerleave', hideTooltip);
       cells.push(cell);
@@ -438,6 +482,13 @@ function updateGridAnimFrame(tableData) {
     row.position_probabilities.forEach((probability, index) => paintCell(cells[index], probability));
     body.appendChild(a.gridRows.get(row.team_id));
   }
+  // Rows move under a still pointer and fire no pointer events, so the
+  // readout is refreshed for whichever cell is there now, or hidden.
+  if (tooltip.dataset.show === 'true') {
+    const under = document.elementFromPoint(lastPointer.x, lastPointer.y);
+    if (under?.tip) tooltip.innerHTML = under.tip();
+    else hideTooltip();
+  }
 }
 
 const anim = state.anim;
@@ -482,6 +533,7 @@ function animUpdateTimeline(report, days) {
   range.value = String(anim.matchdayIndex);
   const day = days[anim.matchdayIndex];
   if (day) {
+    range.setAttribute('aria-valuetext', longDate(day.date));
     $('#timeline-when').textContent = t('timeline.animating', { when: longDate(day.date) });
   }
 }
@@ -497,6 +549,7 @@ async function animStart() {
 
   const ladder = state.activeView === 'ladder';
   const holder = $(ladder ? '#ladder-lanes' : '#grid').parentElement;
+  holder.dataset.loadingText = t('anim.loading');
   holder.classList.add('grid-loading');
 
   anim.matchdayIndex = 0;
@@ -611,7 +664,7 @@ function renderGridLegend() {
   key.appendChild(el('span', '', t('grid.legend.likely')));
   legend.appendChild(key);
 
-  legend.appendChild(el('span', '', t('grid.legend.hint')));
+  legend.appendChild(el('span', '', t(coarsePointer.matches ? 'grid.legend.hintTouch' : 'grid.legend.hint')));
 }
 
 function renderBandLegend(report) {
@@ -623,7 +676,7 @@ function renderBandLegend(report) {
     swatch.style.background = bandColor(band, report.table.length);
     key.appendChild(swatch);
     const range = band.first === band.last ? `${band.first}` : `${band.first}–${band.last}`;
-    key.appendChild(el('span', '', `${band.label} (${range})`));
+    key.appendChild(el('span', '', `${bandName(band)} (${range})`));
     legend.appendChild(key);
   }
 }
@@ -708,6 +761,8 @@ function toggleTableView(view) {
 /* Visibility only: renderStandings calls this after building the rows. */
 function applyTableView() {
   const view = state.tableView;
+  // Lets the phone layout drop columns per view (see the CSS).
+  $('#standings').dataset.view = view;
   // Update toggle button states.
   for (const button of document.querySelectorAll('.table-control-btn')) {
     button.setAttribute('aria-pressed', button.dataset.tableMode === view ? 'true' : 'false');
@@ -814,7 +869,7 @@ $('#head-last').textContent = t('table.relegation');
      td.colSpan = 19;  // full table width (19 columns)
      // Format: "======== Expected CL Threshold: 67p ========"
      const label = el('span', 'zone-divider__wrap',
-       `Expected ${boundary.label} Threshold: ${boundary.cut}p`);
+       t('table.threshold', { band: boundary.label, points: boundary.cut }));
      td.appendChild(label);
      tr.appendChild(td);
      return tr;
@@ -832,7 +887,7 @@ $('#head-last').textContent = t('table.relegation');
     const mark = el('span', 'band-mark');
     if (band) {
       mark.style.background = bandColor(band, count);
-      mark.title = band.label;
+      mark.title = bandName(band);
     }
     position.appendChild(mark);
     position.appendChild(document.createTextNode(String(row.position)));
@@ -855,16 +910,16 @@ $('#head-last').textContent = t('table.relegation');
     });
     club.appendChild(clubButton);
     tr.appendChild(club);
-    // 'extra' marks the tallies a phone drops -- see .col--extra in the CSS.
+    // 'extra' marks the columns a phone drops -- see .col--extra in the CSS.
     for (const [key, extra] of [
-      ['played', true], ['wins', true], ['draws', true],
+      ['played', false], ['wins', true], ['draws', true],
       ['losses', true], ['goals_for', true], ['goals_against', true],
     ]) {
       const td = el('td', `num muted${extra ? ' col--extra' : ''}`, String(row[key]));
       td.dataset.tableView = 'current';
       tr.appendChild(td);
     }
-    const gdTd = el('td', 'num col--extra', row.goal_difference > 0 ? `+${row.goal_difference}` : String(row.goal_difference));
+    const gdTd = el('td', 'num', row.goal_difference > 0 ? `+${row.goal_difference}` : String(row.goal_difference));
     gdTd.dataset.tableView = 'current';
     tr.appendChild(gdTd);
     const points = el('td', 'num', String(row.points));
@@ -874,26 +929,27 @@ $('#head-last').textContent = t('table.relegation');
 
     const ratingCell = el('td', 'num sep');
     ratingCell.dataset.tableView = 'current prediction';
-    ratingCell.appendChild(document.createTextNode(row.rating.toFixed(0)));
+    ratingCell.appendChild(document.createTextNode(num(row.rating)));
     const trend = computeRatingTrend(row.team, report);
     if (trend) {
       const isTop = topRiser && topRiser.team === row.team && topRiser.diff > 0;
       const arrow = el('span', `rating-trend rating-trend--${trend.direction}${isTop ? ' rating-trend--top' : ''}`);
       arrow.innerHTML = trend.svg;
+      arrow.setAttribute('role', 'img');
+      arrow.setAttribute('aria-label', trend.detail);
+      arrow.title = trend.detail;
       ratingCell.appendChild(arrow);
     }
     tr.appendChild(ratingCell);
-    const xpTd = el('td', 'num muted col--extra', row.expected_points.toFixed(1));
+    const xpTd = el('td', 'num muted', num(row.expected_points, 1));
     xpTd.dataset.tableView = 'prediction';
     tr.appendChild(xpTd);
 
     // Expected goals for/against per match against an average side of the division.
-    // Signed on the shown value, so ±0.04 reads "0.0", not "+0.0" or "-0.0".
-    const xgd = Math.round(row.xg_diff * 10) / 10 || 0;
     for (const [text, muted] of [
-      [row.attack.toFixed(1), true],
-      [row.defence.toFixed(1), true],
-      [(xgd > 0 ? '+' : '') + xgd.toFixed(1), false],
+      [num(row.attack, 1), true],
+      [num(row.defence, 1), true],
+      [signed(row.xg_diff, 1), false],
     ]) {
       const td = el('td', `num${muted ? ' muted' : ''} col--extra`, text);
       td.dataset.tableView = 'prediction';
@@ -902,23 +958,19 @@ $('#head-last').textContent = t('table.relegation');
 
     // Fixture difficulty: expected points per remaining match for an average
     // side. Red below the league mean (a harder run-in), green above.
-    const fixtureCell = el('td', 'num col--extra', '');
+    const fixtureCell = el('td', 'num', '');
     fixtureCell.dataset.tableView = 'prediction';
     if (row.fixture_difficulty > 0) {
       const value = row.fixture_difficulty;
-      const pill = el('span', 'fixture-difficulty-pill', value.toFixed(2));
+      const pill = el('span', 'fixture-difficulty-pill', num(value, 2));
       const gap = value - neutralRunIn;
       if (Math.abs(gap) < 0.02) {
         pill.classList.add('fixture-difficulty-pill--neutral');
       } else {
-        // Run-ins spread about ±0.15 around the mean, so that is full colour:
-        // a pale tint just off neutral, deepening as the gap grows.
-        const strength = Math.min(1, Math.abs(gap) / 0.15);
-        const lightness = 85 - strength * 45;
-        pill.style.backgroundColor = gap < 0
-          ? `hsl(0, 70%, ${lightness}%)`
-          : `hsl(130, 55%, ${lightness - 5}%)`;
-        pill.style.color = strength > 0.45 ? 'white' : '#1c2a33';
+        // Run-ins spread about ±0.15 around the mean, so that is full colour.
+        // The CSS turns hue + strength into a tint that suits either theme.
+        pill.style.setProperty('--fd-hue', gap < 0 ? '0' : '135');
+        pill.style.setProperty('--fd-strength', Math.min(1, Math.abs(gap) / 0.15).toFixed(2));
       }
       fixtureCell.appendChild(pill);
     }
@@ -1009,31 +1061,51 @@ function ladderTeams(reports) {
 }
 
 /* Both divisions on one axis, which is the only place the model compares
-   them directly. A narrow track runs vertically (rem down the track, crests
-   stacking into columns); otherwise horizontally (percent across it, crests
-   stacking into rows). Ranks and placement are written onto the team objects;
-   the ticks (every 50 points) and track size come back. `maxStack` reserves
-   extra stacking depth so an animated track keeps one size. */
+   them directly. A wide track is a strip: crests at their rating, percent
+   across it, stacking into rows where they collide. A narrow track (a phone)
+   is a ranked list instead -- one row per club at its rank, with the rating
+   as a dot on a shared scale -- because crests alone cannot be told apart at
+   that size. Ranks and placement are written onto the team objects; the ticks
+   (every 50 points on the strip, 100 in the list) and track size come back.
+   `maxStack` reserves extra stacking depth so an animated strip keeps one size. */
+const LADDER_ROW = 2.25;    // rem per club in the list
+const LADDER_HEAD = 1.75;   // rem above the first row, for the scale labels
+
 function layoutLadder(teams, track, maxStack = 0) {
   const ratings = teams.map((t) => t.rating);
   const low = Math.min(...ratings);
   const high = Math.max(...ratings);
   const trackWidth = track.clientWidth || 1000;
-  const vertical = trackWidth < 500;
+  const list = trackWidth < 500;
   teams.sort((a, b) => a.rating - b.rating || a.team.localeCompare(b.team));
   teams.forEach((t, i) => { t._rank = teams.length - i; });
+  const fraction = (rating) => (high === low ? 0.5 : (rating - low) / (high - low));
+  // In the list the scale has a 0.5rem margin at each end, so the extreme dots
+  // are not cut in half by the panel edge.
+  const along = (f) => `calc(0.5rem + ${f.toFixed(4)} * (100% - 1rem))`;
 
-  const AXIS_WIDTH = 2.5;
-  const COL_WIDTH = 1.8;
-  const VERT_PAD = 1;
-  const TRACK_CONTENT = Math.max(20, (high - low) / 50 * 6);
+  // The list's scale is a third of a phone's width: lines every 100 points,
+  // labelled every 200, where the strip has room for every 50.
+  const step = list ? 100 : 50;
+  const ticks = [];
+  for (let r = Math.ceil(low / step) * step; r <= high; r += step) {
+    const label = !list || r % 200 === 0 ? String(r) : '';
+    ticks.push({ label, left: list ? along(fraction(r)) : `${2 + fraction(r) * 96}%` });
+  }
+
+  if (list) {
+    for (const team of teams) {
+      team._tip = `#${team._rank}  ${team.team}  ${Math.round(team.rating)}`;
+      team._top = `${LADDER_HEAD + (team._rank - 1) * LADDER_ROW}rem`;
+      team._left = '0';
+      team._x = along(fraction(team.rating));
+    }
+    return { list, ticks, depth: 1, height: `${LADDER_HEAD + teams.length * LADDER_ROW}rem`, width: '' };
+  }
+
   const crestPx = parseFloat(getComputedStyle(document.documentElement).fontSize) * 1.5;
-  const overlap = vertical ? 1.7 : Math.min(50, ((crestPx + 2) / trackWidth) * 100);
-  const pos = (rating) => {
-    if (high === low) return vertical ? VERT_PAD + TRACK_CONTENT / 2 : 50;
-    const f = (rating - low) / (high - low);
-    return vertical ? VERT_PAD + TRACK_CONTENT - f * TRACK_CONTENT : 2 + f * 96;
-  };
+  const overlap = Math.min(50, ((crestPx + 2) / trackWidth) * 100);
+  const pos = (rating) => 2 + fraction(rating) * 96;
 
   // Highest-rated first; a crest overlapping one already placed steps out one stack level.
   const placed = [];
@@ -1051,28 +1123,19 @@ function layoutLadder(teams, track, maxStack = 0) {
 
   for (const team of teams) {
     team._tip = `#${team._rank}  ${team.team}  ${Math.round(team.rating)}`;
-    team._top = vertical ? `${pos(team.rating)}rem` : `${0.5 + team._stack * rowHeight}rem`;
-    team._left = vertical ? `${AXIS_WIDTH + team._stack * COL_WIDTH}rem` : `${pos(team.rating)}%`;
+    team._top = `${0.5 + team._stack * rowHeight}rem`;
+    team._left = `${pos(team.rating)}%`;
   }
-  const ticks = [];
-  for (let r = Math.ceil(low / 50) * 50; r <= high; r += 50) {
-    ticks.push({ label: String(r), [vertical ? 'top' : 'left']: vertical ? `${pos(r)}rem` : `${pos(r)}%` });
-  }
-  return {
-    ticks,
-    depth,
-    height: vertical ? `${VERT_PAD * 2 + TRACK_CONTENT}rem` : `${4 + (depth - 1) * rowHeight}rem`,
-    width: vertical ? `${AXIS_WIDTH + depth * COL_WIDTH + 0.5}rem` : '',
-  };
+  return { list, ticks, depth, height: `${4 + (depth - 1) * rowHeight}rem`, width: '' };
 }
 
 function ladderAxis(track, layout) {
   track.querySelector('.ladder__axis')?.remove();
+  track.classList.toggle('ladder__track--list', layout.list);
   const axis = el('div', 'ladder__axis');
   for (const tick of layout.ticks) {
     const node = el('div', 'ladder__tick');
-    if (tick.top) node.style.top = tick.top;
-    else node.style.left = tick.left;
+    node.style.left = tick.left;
     node.appendChild(el('span', '', tick.label));
     axis.appendChild(node);
   }
@@ -1081,20 +1144,60 @@ function ladderAxis(track, layout) {
   track.style.width = layout.width;
 }
 
+/* One club. On the strip only the crest shows; the list row adds rank, name,
+   rating and the dot, which the CSS hides on the strip. A button either way:
+   it opens the club, as a row does in the table. */
 function ladderTeamEl(team) {
-  const wrap = el('div', 'ladder__team');
+  const wrap = el('button', 'ladder__team');
+  wrap.type = 'button';
   wrap.dataset.tier = String(team.tier);
+  wrap.dataset.teamId = team.teamId;
+  wrap.dataset.team = team.team;
+  wrap.appendChild(el('span', 'ladder__rank'));
   const img = el('img');
   img.src = `logos/${team.teamId}.png`;
-  img.alt = team.team;
+  img.alt = '';
   wrap.appendChild(img);
+  wrap.appendChild(el('span', 'ladder__name', team.team));
+  wrap.appendChild(el('span', 'ladder__rating'));
+  const scale = el('span', 'ladder__scale');
+  scale.appendChild(el('span', 'ladder__dot'));
+  wrap.appendChild(scale);
   return wrap;
 }
 
 function placeLadderTeam(wrap, team) {
   wrap.style.top = team._top;
   wrap.style.left = team._left;
+  if (team._x) wrap.style.setProperty('--x', team._x);
   wrap.dataset.tip = team._tip;
+  wrap.setAttribute('aria-label', team._tip);
+  wrap.querySelector('.ladder__rank').textContent = String(team._rank);
+  wrap.querySelector('.ladder__rating').textContent = String(Math.round(team.rating));
+}
+
+/* Bound once: the track outlives every render, and a listener added per
+   render stacked up until each tap toggled the tip an even number of times.
+   A list row opens the club; on the strip a tap shows the crest's tip on
+   touch screens, where there is no hover, and a click opens the club. */
+function bindLadderClicks(track) {
+  if (track.dataset.bound) return;
+  track.dataset.bound = 'true';
+  track.addEventListener('click', (event) => {
+    const wrap = event.target.closest('.ladder__team');
+    if (!wrap) return;
+    event.stopPropagation();
+    const tapToPeek = coarsePointer.matches && !track.classList.contains('ladder__track--list');
+    if (tapToPeek && !wrap.hasAttribute('data-tip-visible')) {
+      track.querySelectorAll('.ladder__team[data-tip-visible]').forEach((other) => other.removeAttribute('data-tip-visible'));
+      wrap.setAttribute('data-tip-visible', '');
+      return;
+    }
+    openTeamView(wrap.dataset.teamId, wrap.dataset.team);
+  });
+  document.addEventListener('click', () => {
+    track.querySelectorAll('.ladder__team[data-tip-visible]').forEach((w) => w.removeAttribute('data-tip-visible'));
+  }, { passive: true });
 }
 
 function renderLadder(reports) {
@@ -1108,24 +1211,7 @@ function renderLadder(reports) {
     track.appendChild(wrap);
   }
 
-  // Touch/click support for ladder tooltips on mobile (event delegation on track)
-  if (coarsePointer.matches) {
-    track.addEventListener('click', (e) => {
-      const wrap = e.target.closest('.ladder__team');
-      if (!wrap) return;
-      e.stopPropagation();
-      track.querySelectorAll('.ladder__team[data-tip-visible]').forEach((other) => {
-        if (other !== wrap) other.removeAttribute('data-tip-visible');
-      });
-      wrap.toggleAttribute('data-tip-visible');
-    });
-    // Click outside to close — named handler so we don't leak listeners on re-render
-    if (state._ladderOutsideHandler) document.removeEventListener('click', state._ladderOutsideHandler);
-    state._ladderOutsideHandler = () => {
-      track.querySelectorAll('.ladder__team[data-tip-visible]').forEach((w) => w.removeAttribute('data-tip-visible'));
-    };
-    document.addEventListener('click', state._ladderOutsideHandler, { passive: true });
-  }
+  bindLadderClicks(track);
 
   // Legend
   const legend = $('#ladder-legend');
@@ -1164,7 +1250,7 @@ function buildFixtureCard(fixture) {
 
   const matchup = el('div', 'played-card__matchup');
   const homeSide = el('div', 'played-card__side played-card__side--home');
-  homeSide.appendChild(el('span', 'played-card__rating-value', fixture.home_rating.toFixed(0)));
+  homeSide.appendChild(el('span', 'played-card__rating-value', num(fixture.home_rating)));
   homeSide.appendChild(sideBlock(fixture.home, fixture.home_id, false));
   matchup.appendChild(homeSide);
 
@@ -1174,7 +1260,7 @@ function buildFixtureCard(fixture) {
 
   const awaySide = el('div', 'played-card__side played-card__side--away');
   awaySide.appendChild(sideBlock(fixture.away, fixture.away_id, true));
-  awaySide.appendChild(el('span', 'played-card__rating-value', fixture.away_rating.toFixed(0)));
+  awaySide.appendChild(el('span', 'played-card__rating-value', num(fixture.away_rating)));
   matchup.appendChild(awaySide);
   card.appendChild(matchup);
 
@@ -1201,7 +1287,7 @@ function playedCard(match, ratingChanges) {
   const card = el('div', 'played-card');
   if (match.home_goals > match.away_goals) card.classList.add('played-card--home-win');
   else if (match.away_goals > match.home_goals) card.classList.add('played-card--away-win');
-  card.appendChild(el('div', 'played-card__date', formatDate(match.date) + (match.round ? ` \u00b7 R${match.round}` : '')));
+  card.appendChild(el('div', 'played-card__date', formatDate(match.date) + (match.round ? ` \u00b7 ${t('played.round', { n: match.round })}` : '')));
 
   const ratingBlock = (id) => {
     const info = ratingChanges.get(`${id}|${match.date}`) ?? { change: 0, rating: 0 };
@@ -1392,17 +1478,23 @@ function renderHero(report) {
   // Build interactive title: clickable division name + clickable season year.
   const title = $('#hero-title');
   title.replaceChildren();
-  const divSpan = el('span', 'hero-title-part', report.league.name);
-  divSpan.dataset.role = 'division';
-  divSpan.setAttribute('tabindex', '0');
-  divSpan.setAttribute('role', 'button');
-  divSpan.setAttribute('aria-label', 'Change division');
-  const space = document.createTextNode('\u00a0');
-  const seasonSpan = el('span', 'hero-title-part', String(report.league.season));
-  seasonSpan.dataset.role = 'season';
-  seasonSpan.setAttribute('tabindex', '0');
-  seasonSpan.setAttribute('role', 'button');
-  seasonSpan.setAttribute('aria-label', 'Change season');
+  // Each half of the heading is a button that opens a picker. The visible
+  // text stays the accessible name -- an aria-label here would replace it, and
+  // the page heading would read "Change division Change season" -- and a
+  // hidden hint says what pressing it does.
+  const titlePart = (text, role, menuId, hintKey) => {
+    const part = el('span', 'hero-title-part', text);
+    part.dataset.role = role;
+    part.setAttribute('tabindex', '0');
+    part.setAttribute('role', 'button');
+    part.setAttribute('aria-expanded', 'false');
+    part.setAttribute('aria-controls', menuId);
+    part.appendChild(el('span', 'visually-hidden', `, ${t(hintKey)}`));
+    return part;
+  };
+  const divSpan = titlePart(report.league.name, 'division', 'hero-league-menu', 'hero.changeDivision');
+  const space = document.createTextNode(' ');
+  const seasonSpan = titlePart(String(report.league.season), 'season', 'hero-season-menu', 'hero.changeSeason');
   title.appendChild(divSpan);
   title.appendChild(space);
   title.appendChild(seasonSpan);
@@ -1419,6 +1511,7 @@ function renderHero(report) {
       btn.setAttribute('aria-pressed', String(btn.dataset.league === state.league));
     }
     menu.hidden = false;
+    divSpan.setAttribute('aria-expanded', 'true');
     const rect = divSpan.getBoundingClientRect();
     menu.style.position = 'fixed';
     menu.style.top = `${rect.bottom + 6}px`;
@@ -1454,6 +1547,7 @@ function renderHero(report) {
       menu.appendChild(btn);
     }
     menu.hidden = false;
+    seasonSpan.setAttribute('aria-expanded', 'true');
     const rect = seasonSpan.getBoundingClientRect();
     menu.style.position = 'fixed';
     menu.style.top = `${rect.bottom + 6}px`;
@@ -1492,7 +1586,7 @@ function renderHero(report) {
       t('hero.lede.remaining', {
         lede,
         remaining: model.matches_remaining,
-        simulations: model.simulations.toLocaleString(),
+        simulations: num(model.simulations),
       });
   }
 
@@ -1504,7 +1598,7 @@ function renderHero(report) {
   for (const [name, value, provenance] of [
     [t('hero.played'), `${model.matches_played}`, false],
     [t('hero.remaining'), `${model.matches_remaining}`, false],
-    [t('hero.simulated'), model.simulations.toLocaleString(), true],
+    [t('hero.simulated'), num(model.simulations), true],
     [t('hero.model'), model.version, true],
     [t('hero.ratingsFrom'), `${model.seed_season} ${t('hero.onward')}`, true],
   ]) {
@@ -1528,8 +1622,8 @@ function renderModelCard(report) {
     rows.push([t('model.homeAdvantageBeta'), model.home_advantage_beta]);
   }
   rows.push(
-    [t('model.xgAlpha'), `${Math.round(model.xg_alpha * 100)}%`],
-    [t('model.crossRegression'), `${Math.round((1 - model.season_regression) * 100)}% ${t('model.towardMean')}`],
+    [t('model.xgAlpha'), pct(model.xg_alpha, 0)],
+    [t('model.crossRegression'), `${pct(1 - model.season_regression, 0)} ${t('model.towardMean')}`],
   );
   if (model.attack_defence.blend_gamma) {
     rows.push([t('model.blendGamma'), model.attack_defence.blend_gamma]);
@@ -1538,7 +1632,7 @@ function renderModelCard(report) {
     [t('model.peakDraw'), pct(model.draw_base, 0)],
     [t('model.outcomeOdds'), t('model.outcomeOddsValue')],
     [t('model.scorelines'), t('model.scorelinesValue')],
-    [t('model.simulations'), model.simulations.toLocaleString()],
+    [t('model.simulations'), num(model.simulations)],
     [t('model.seed'), model.seed],
   );
   for (const [name, value] of rows) {
@@ -1616,13 +1710,13 @@ function renderTeamView(report) {
     if (career.peak) {
       const peakItem = el('span', 'team-chart-stat');
       peakItem.appendChild(el('span', 'label', t('team.peak')));
-      peakItem.appendChild(el('span', '', `${career.peak[1]} (${career.peak[0].slice(0, 4)})`));
+      peakItem.appendChild(el('span', '', `${num(career.peak[1])} (${career.peak[0].slice(0, 4)})`));
       stats.appendChild(peakItem);
     }
     if (career.trough) {
       const troughItem = el('span', 'team-chart-stat');
       troughItem.appendChild(el('span', 'label', t('team.worst')));
-      troughItem.appendChild(el('span', '', `${career.trough[1]} (${career.trough[0].slice(0, 4)})`));
+      troughItem.appendChild(el('span', '', `${num(career.trough[1])} (${career.trough[0].slice(0, 4)})`));
       stats.appendChild(troughItem);
     }
     chartSection.appendChild(stats);
@@ -1701,16 +1795,23 @@ function renderTeamView(report) {
           existing.replaceChildren(el('div', '', t('team.loadError', { error: err.message })));
         }
       });
-      tr.appendChild(el('td', 'pos', String(record.season)));
+      // The year is the row's keyboard handle: a click on it bubbles to the
+      // row, which loads that season's shape into the chart above.
+      const seasonCell = el('td', 'pos');
+      const seasonBtn = el('button', 'career-table__season', String(record.season));
+      seasonBtn.type = 'button';
+      seasonBtn.setAttribute('aria-label', t('team.showShape', { year: record.season }));
+      seasonCell.appendChild(seasonBtn);
+      tr.appendChild(seasonCell);
       tr.appendChild(el('td', 'club', record.league_name));
       tr.appendChild(el('td', 'num', String(record.position)));
       tr.appendChild(el('td', 'num muted', String(record.played)));
       tr.appendChild(el('td', 'num', String(record.points)));
       tr.appendChild(el('td', 'num muted', record.goal_difference > 0 ? `+${record.goal_difference}` : String(record.goal_difference)));
-      tr.appendChild(el('td', 'num sep muted', String(record.rating_start)));
-      tr.appendChild(el('td', 'num', String(record.rating_end)));
+      tr.appendChild(el('td', 'num sep muted', num(record.rating_start)));
+      tr.appendChild(el('td', 'num', num(record.rating_end)));
       const change = el('td', `num ${record.rating_change >= 0 ? 'up' : 'down'}`);
-      change.textContent = record.rating_change >= 0 ? `+${record.rating_change}` : String(record.rating_change);
+      change.textContent = signed(record.rating_change);
       tr.appendChild(change);
       tbody.appendChild(tr);
     }
@@ -1772,6 +1873,8 @@ function renderTeamSummary(teamId, row, career, report, container) {
     const trendEl = el('span', `team-summary__trend team-summary__trend--${trend.direction}`);
     trendEl.innerHTML = trend.svg;
     trendEl.title = trend.detail;
+    trendEl.setAttribute('role', 'img');
+    trendEl.setAttribute('aria-label', trend.detail);
     ratingLine.appendChild(trendEl);
   }
   const rating = Math.round(row?.rating || career?.current_rating || 0);
@@ -1796,8 +1899,8 @@ function renderTeamSummary(teamId, row, career, report, container) {
     stats.appendChild(summaryStat(t('team.points'), String(row.points)));
     stats.appendChild(summaryStat(t('team.gd'), row.goal_difference > 0 ? `+${row.goal_difference}` : String(row.goal_difference)));
     stats.appendChild(summaryStat(t('team.played'), String(row.played)));
-    stats.appendChild(summaryStat(t('team.attack'), row.attack.toFixed(2), t('team.attackHint')));
-    stats.appendChild(summaryStat(t('team.defence'), row.defence.toFixed(2), t('team.defenceHint')));
+    stats.appendChild(summaryStat(t('team.attack'), num(row.attack, 2), t('team.attackHint')));
+    stats.appendChild(summaryStat(t('team.defence'), num(row.defence, 2), t('team.defenceHint')));
   } else if (career) {
     stats.appendChild(summaryStat(t('team.matches'), String(career.points.length)));
   }
@@ -1888,7 +1991,7 @@ function renderTeamGridRow(teamId, row, report, container) {
 
     const band = bandFor(bands, position);
     cell.addEventListener('pointerenter', (event) =>
-      showTooltip(event, `<b>${row.team}</b> ${ordinal(position)}<br>${pct(prob, 2)}` + (band ? `<br>${band.label}` : ''))
+      showTooltip(event, `<b>${row.team}</b> ${ordinal(position)}<br>${pct(prob, 2)}` + (band ? `<br>${bandName(band)}` : ''))
     );
     cell.addEventListener('pointermove', moveTooltip);
     cell.addEventListener('pointerleave', hideTooltip);
@@ -2100,6 +2203,8 @@ function renderTeamShape(teamId, report, container) {
 
   const section = el('div', 'team-section');
   section.id = 'team-shape-section';
+  // A season row swaps this chart in place; the live region says which one.
+  section.setAttribute('aria-live', 'polite');
   section.appendChild(el('div', 'label', t('team.seasonShape')));
   const hint = el('p', 'team-section__hint');
   hint.textContent = t('team.shapeHint');
@@ -2144,7 +2249,7 @@ function drawTeamShape(report, team, chart) {
       svgEl('line', { class: 'grid-line', x1: pad.left, x2: width - pad.right, y1: y(value), y2: y(value) })
     );
     const label = svgEl('text', { class: 'tick', x: pad.left - 6, y: y(value) + 3, 'text-anchor': 'end' });
-    label.textContent = `${100 - gridline * 100 / 4}%`;
+    label.textContent = `${100 - gridline * 100 / 4}${percentSign()}`;
     chart.appendChild(label);
   }
 
@@ -2314,6 +2419,7 @@ function renderTimeline(report) {
   $('#timeline-now').hidden = live;
 
   const when = longDate(day.date);
+  range.setAttribute('aria-valuetext', live ? t('timeline.scrubLive') : when);
   $('#timeline-when').textContent = live
     ? t('timeline.liveCount', { n: day.matches_played })
     : t('timeline.asOf', { when, n: day.matches_played, total: report.model.matches_played + report.model.matches_remaining });
@@ -2349,6 +2455,7 @@ function onTimelineInput(event) {
   }
 
   const live = index === days.length - 1;
+  event.target.setAttribute('aria-valuetext', live ? t('timeline.scrubLive') : longDate(day.date));
   $('#timeline-when').textContent = live ? t('timeline.scrubLive') : t('timeline.scrubAsOf', { when: longDate(day.date) });
   $('#timeline').classList.toggle('is-past', !live);
 
@@ -2360,6 +2467,7 @@ async function rewindTo(asof) {
   if (asof === state.asof) return;
   const content = $('#content');
   content.classList.add('is-rewinding');
+  content.setAttribute('aria-busy', 'true');
   try {
     const response = await fetch(reportUrl(state.season, asof));
     if (!response.ok) throw new Error(`server returned ${response.status}`);
@@ -2370,6 +2478,7 @@ async function rewindTo(asof) {
     $('#timeline-when').textContent = t('status.couldNotRewind', { error: error.message });
   } finally {
     content.classList.remove('is-rewinding');
+    content.removeAttribute('aria-busy');
   }
 }
 
@@ -2379,6 +2488,8 @@ function resolveTheme() {
   const chosen = localStorage.getItem('elitetracker-theme');
   document.documentElement.dataset.resolvedTheme = chosen === 'light' || chosen === 'dark' ? chosen
     : window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+  $('meta[name=theme-color]').content =
+    document.documentElement.dataset.resolvedTheme === 'dark' ? '#0b1116' : '#e9edf1';
   for (const button of document.querySelectorAll('[data-theme-choice]')) {
     button.setAttribute('aria-pressed', String(button.dataset.themeChoice === chosen));
   }
@@ -2427,7 +2538,7 @@ function render() {
     case 'ladder':
       if (!anim.playing) {
         renderLadder(state.reports);
-        const days = matchdays(reports[state.league]);
+        const days = matchdays(report);
         $('#ladder-anim-play').hidden = days.length < 2;
       }
       break;
@@ -2542,6 +2653,7 @@ function wire() {
       else closeSheet();
     });
   }
+  moreSheet?.addEventListener('keydown', trapSheetFocus);
   for (const closer of document.querySelectorAll('[data-close-sheet]')) {
     closer.addEventListener('click', closeSheet);
   }
@@ -2555,6 +2667,9 @@ function wire() {
   $('#timeline-forward').addEventListener('click', () => stepMatchday(1));
 
   $('#grid-anim-play').addEventListener('click', animStart);
+  // Leaving the grid always clears its readout, even when the cell that had
+  // the pointer was moved or replaced mid-animation and fires no leave itself.
+  $('#grid').addEventListener('pointerleave', hideTooltip);
   $('#grid-anim-speed').addEventListener('click', animToggleSpeed);
 
   $('#ladder-anim-play').addEventListener('click', animStart);
@@ -2674,6 +2789,7 @@ function markActiveView() {
 
 function closeAllMenus() {
   for (const menu of document.querySelectorAll('.popover-menu')) menu.hidden = true;
+  for (const part of document.querySelectorAll('.hero-title-part')) part.setAttribute('aria-expanded', 'false');
   const btn = $('#settings-btn');
   if (btn) btn.setAttribute('aria-expanded', 'false');
   closeSheet();
@@ -2689,15 +2805,33 @@ function positionPopover(menu, anchor) {
 function openSheet() {
   const sheet = $('#more-sheet');
   const btn = $('#more-button');
-  if (sheet) sheet.hidden = false;
+  if (!sheet) return;
+  sheet.hidden = false;
   if (btn) btn.setAttribute('aria-expanded', 'true');
+  sheet.querySelector('button')?.focus();
 }
 
 function closeSheet() {
   const sheet = $('#more-sheet');
   const btn = $('#more-button');
-  if (sheet) sheet.hidden = true;
-  if (btn) btn.setAttribute('aria-expanded', 'false');
+  if (!sheet || sheet.hidden) return;
+  const hadFocus = sheet.contains(document.activeElement);
+  sheet.hidden = true;
+  if (btn) {
+    btn.setAttribute('aria-expanded', 'false');
+    if (hadFocus) btn.focus();
+  }
+}
+
+/* Tab and Shift+Tab wrap within the open sheet instead of leaving it. */
+function trapSheetFocus(event) {
+  if (event.key !== 'Tab') return;
+  const items = [...$('#more-sheet').querySelectorAll('button')].filter((item) => item.offsetParent);
+  if (!items.length) return;
+  const first = items[0];
+  const last = items[items.length - 1];
+  if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last.focus(); }
+  else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first.focus(); }
 }
 
 /* ?view=grid makes any view linkable. Applied early so the first render
@@ -2718,6 +2852,11 @@ async function loadSeason(season) {
   const select = $('#season-select');
   select.disabled = true;
   const previous = state.season;
+  // A past season is a larger download: dim the page and mark it busy, as a
+  // rewind does, so a slow fetch does not look like a dead click.
+  const content = $('#content');
+  content.classList.add('is-rewinding');
+  content.setAttribute('aria-busy', 'true');
   try {
     const response = await fetch(reportUrl(season));
     if (!response.ok) throw new Error(`server returned ${response.status}`);
@@ -2730,6 +2869,8 @@ async function loadSeason(season) {
     $('#status').textContent = t('status.couldNotLoad', { season, error: error.message });
   } finally {
     select.disabled = false;
+    content.classList.remove('is-rewinding');
+    content.removeAttribute('aria-busy');
   }
 }
 
@@ -2877,7 +3018,7 @@ function oddsBar(homeName, awayName, entry) {
     const segment = el('div', 'odds__seg');
     segment.dataset.outcome = outcome;
     segment.style.flex = `${Math.max(value, 0.001)}`;
-    segment.textContent = value >= 0.12 ? `${Math.round(value * 100)}%` : '';
+    segment.textContent = value >= 0.12 ? pct(value, 0) : '';
     segment.addEventListener('pointerenter', (event) => showTooltip(event, `<b>${who}</b><br>${pct(value, 1)}`));
     segment.addEventListener('pointermove', moveTooltip);
     segment.addEventListener('pointerleave', hideTooltip);
@@ -3163,8 +3304,12 @@ function drawCompareHistory(svg, careerA, careerB, labelA, labelB) {
   const x = (t) => pad.left + ((t - tMin) / (tMax - tMin || 1)) * plotW;
   const y = (r) => pad.top + (1 - (r - rMin) / (rMax - rMin || 1)) * plotH;
 
-  for (let i = 0; i <= 4; i += 1) {
-    const value = rMin + (i / 4) * (rMax - rMin);
+  // Ticks on round ratings (1, 2 or 5 x 10^n apart, four to six of them), not
+  // the range cut into equal quarters, which gave 1456, 1559, 1662...
+  const rough = (rMax - rMin) / 5;
+  const magnitude = 10 ** Math.floor(Math.log10(rough));
+  const tickStep = [1, 2, 5, 10].map((m) => m * magnitude).find((v) => v >= rough);
+  for (let value = Math.ceil(rMin / tickStep) * tickStep; value <= rMax; value += tickStep) {
     svg.appendChild(svgEl('line', { class: 'grid-line', x1: pad.left, x2: width - pad.right, y1: y(value), y2: y(value) }));
     const tick = svgEl('text', { class: 'tick', x: pad.left - 8, y: y(value) + 3.5, 'text-anchor': 'end' });
     tick.textContent = String(Math.round(value));
@@ -3241,7 +3386,7 @@ function drawCompareHistory(svg, careerA, careerB, labelA, labelB) {
 
 async function boot() {
   resolveTheme();
-  document.documentElement.lang = currentLang;
+  document.documentElement.lang = htmlLang(currentLang);
   for (const button of document.querySelectorAll('[data-lang]')) {
     button.setAttribute('aria-pressed', String(button.dataset.lang === currentLang));
   }

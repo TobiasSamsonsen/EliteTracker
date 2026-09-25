@@ -92,7 +92,33 @@ const translations = {
     'table.col.xgd': 'xGD',
     'table.col.xgd.desc': 'Expected goal difference per match vs league average',
     'table.col.fixture_difficulty': 'Fix Diff',
+    'table.col.fixture_difficultyShort': 'Fix',
     'table.col.fixture_difficulty.desc': 'Expected points per remaining match vs league average',
+    // Standings column heads and what a screen reader hears after each.
+    'th.position': '#', 'th.position.desc': ', position',
+    'th.team.desc': ', club name',
+    'th.played': 'P', 'th.played.desc': ', played',
+    'th.wins': 'W', 'th.wins.desc': ', wins',
+    'th.draws': 'D', 'th.draws.desc': ', draws',
+    'th.losses': 'L', 'th.losses.desc': ', losses',
+    'th.goals_for': 'GF', 'th.goals_for.desc': ', goals for',
+    'th.goals_against': 'GA', 'th.goals_against.desc': ', goals against',
+    'th.goal_difference': 'GD', 'th.goal_difference.desc': ', goal difference',
+    'th.points': 'Pts', 'th.points.desc': ', points',
+    'th.rating.desc': ', Elo rating',
+    'th.expected_points': 'xPts', 'th.expected_points.desc': ', expected final points',
+    'th.form.desc': ', recent results',
+    // Full band names, keyed by the label the report carries.
+    'band.Champions': 'Champions',
+    'band.Champions League qualification': 'Champions League qualification',
+    'band.Europa League qualification': 'Europa League qualification',
+    'band.Conference League qualification': 'Conference League qualification',
+    'band.Promotion': 'Promotion',
+    'band.Promotion play-off': 'Promotion play-off',
+    'band.Relegation play-off': 'Relegation play-off',
+    'band.Relegation': 'Relegation',
+    'grid.nowPos': 'Now',
+    'grid.nowPos.desc': 'Current table position',
 
     // Ladder
     'ladder.title': 'The ladder',
@@ -194,6 +220,9 @@ const translations = {
     'team.seasonShape': 'Season shape',
     'team.shapeHint': 'How this team\'s title, promotion or relegation chance changed after every match. Each colour band is a finishing position.',
     'team.seasonShapeYear': '{year} season shape',
+    'team.showShape': '{year}: show season shape',
+    'played.round': 'Round {n}',
+    'anim.loading': 'Loading matchdays…',
     'team.loadingShape': 'Loading {year} shape\u2026',
     'team.noShape': 'No shape data available.',
     'team.loadError': 'Could not load: {error}',
@@ -258,6 +287,14 @@ const translations = {
     'aria.oneEarlier': 'One matchday earlier',
     'aria.oneLater': 'One matchday later',
     'aria.gridCaption': 'Probability that each team finishes in each position',
+    'aria.settings': 'Settings',
+    'aria.skip': 'Skip to content',
+    'aria.season': 'Season',
+    'aria.gridCell': '{team}, {position}: {pct}',
+    'hero.changeDivision': 'change division',
+    'hero.changeSeason': 'change season',
+    'table.threshold': 'Expected {band} threshold: {points} pts',
+    'grid.legend.hintTouch': 'Tap a square for the decimal figure.',
     'aria.odds': '{home} win {hw}, draw {d}, {away} win {aw}',
     'aria.scoreline': '{score} about {pct}',
     'title.animateSeason': 'Animate the season',
@@ -275,7 +312,7 @@ const translations = {
     'tab.model': 'Modellkort',
 
     // Mobile bar
-    'mob.grid': 'Prognose',
+    'mob.grid': 'Sluttabell',
     'mob.table': 'Tabell',
     'mob.ladder': 'Stige',
     'mob.next': 'Neste',
@@ -347,7 +384,38 @@ const translations = {
     'table.col.xgd': 'xGD',
     'table.col.xgd.desc': 'Forventet målforskjell per kamp vs gjennomsnitt',
     'table.col.fixture_difficulty': 'Kamptakt',
+    'table.col.fixture_difficultyShort': 'Takt',
     'table.col.fixture_difficulty.desc': 'Forventede poeng per gjenværende kamp vs gjennomsnittslag',
+    'th.position': '#', 'th.position.desc': ', plass',
+    'th.team.desc': ', klubbnavn',
+    'th.played': 'K', 'th.played.desc': ', kamper',
+    'th.wins': 'V', 'th.wins.desc': ', vunnet',
+    'th.draws': 'U', 'th.draws.desc': ', uavgjort',
+    'th.losses': 'T', 'th.losses.desc': ', tapt',
+    'th.goals_for': '+', 'th.goals_for.desc': ', mål for',
+    'th.goals_against': '−', 'th.goals_against.desc': ', mål imot',
+    'th.goal_difference': 'MF', 'th.goal_difference.desc': ', målforskjell',
+    'th.points': 'P', 'th.points.desc': ', poeng',
+    'th.rating.desc': ', Elo-rating',
+    'th.expected_points': 'xP', 'th.expected_points.desc': ', forventede sluttpoeng',
+    'th.form.desc': ', siste resultater',
+    'table.zone.good.champion': 'Tittel',
+    'table.zone.good.top': 'CL',
+    'table.zone.good.europe': 'Europa',
+    'table.zone.good.playoff': 'Kvalik',
+    'table.zone.good.promotion': 'Opprykk',
+    'table.zone.bad.playoff': 'Nedrykkskvalik',
+    'table.zone.bad.relegation': 'Nedrykk',
+    'band.Champions': 'Seriemester',
+    'band.Champions League qualification': 'Kvalifisering til Champions League',
+    'band.Europa League qualification': 'Kvalifisering til Europa League',
+    'band.Conference League qualification': 'Kvalifisering til Conference League',
+    'band.Promotion': 'Opprykk',
+    'band.Promotion play-off': 'Opprykkskvalifisering',
+    'band.Relegation play-off': 'Nedrykkskvalifisering',
+    'band.Relegation': 'Nedrykk',
+    'grid.nowPos': 'Nå',
+    'grid.nowPos.desc': 'Plass i tabellen nå',
 
     // Ladder
     'ladder.title': 'Stigen',
@@ -441,14 +509,17 @@ const translations = {
     'team.pos': 'Plass',
     'team.pl': 'Sp',
     'team.ptsShort': 'Po',
-    'team.ratingStart': 'Rating start',
-    'team.ratingEnd': 'Rating slutt',
+    'team.ratingStart': 'Rating ved start',
+    'team.ratingEnd': 'Rating ved slutt',
     'team.change': 'Endring',
     'team.upcomingFixtures': 'Kommende kamper — {n}',
     'team.recentResults': 'Nylige resultater — {n} spilt',
     'team.seasonShape': 'Sesongform',
     'team.shapeHint': 'Hvordan dette lagets sjanse for tittel, opprykk eller nedrykk endret seg etter hver kamp. Hver fargebredde er en sluttplassering.',
     'team.seasonShapeYear': 'Sesongform {year}',
+    'team.showShape': '{year}: vis sesongform',
+    'played.round': 'Runde {n}',
+    'anim.loading': 'Laster kampdager…',
     'team.loadingShape': 'Laster {year}-form\u2026',
     'team.noShape': 'Ingen shapedata tilgjengelig.',
     'team.loadError': 'Kunne ikke laste: {error}',
@@ -474,7 +545,7 @@ const translations = {
     'form.tooltip': '{w}S {d}U {l}T',
 
     // Season select
-    'season.live': '{season} (live)',
+    'season.live': '{season} (direkte)',
 
     // Status / errors
     'status.loading': 'Laster sesongen\u2026',
@@ -513,6 +584,14 @@ const translations = {
     'aria.oneEarlier': 'En spillerunde tidligere',
     'aria.oneLater': 'En spillerunde senere',
     'aria.gridCaption': 'Sannsynlighet for at hvert lag ender på hver plass',
+    'aria.settings': 'Innstillinger',
+    'aria.skip': 'Hopp til innholdet',
+    'aria.season': 'Sesong',
+    'aria.gridCell': '{team}, {position}: {pct}',
+    'hero.changeDivision': 'bytt divisjon',
+    'hero.changeSeason': 'bytt sesong',
+    'table.threshold': 'Forventet grense for {band}: {points} p',
+    'grid.legend.hintTouch': 'Trykk på en rute for desimaltall.',
     'aria.odds': '{home} seier {hw}, uavgjort {d}, {away} seier {aw}',
     'aria.scoreline': '{score} omtrent {pct}',
     'title.animateSeason': 'Animér sesongen',
@@ -529,10 +608,17 @@ function t(key, params = {}) {
   return Object.keys(params).reduce((s, k) => s.replace(`{${k}}`, params[k]), str);
 }
 
+/* The stored key is 'no', but the page's language tag is 'nb' (Bokmål): 'no'
+   is the macrolanguage, and screen readers and hyphenation pick their
+   dictionary from the tag. */
+function htmlLang(lang) {
+  return lang === 'no' ? 'nb' : lang;
+}
+
 function setLang(lang) {
   currentLang = lang;
   localStorage.setItem('lang', lang);
-  document.documentElement.lang = lang;
+  document.documentElement.lang = htmlLang(lang);
   applyTranslations();
 }
 

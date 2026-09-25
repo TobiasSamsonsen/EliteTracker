@@ -95,7 +95,7 @@ No framework, no build step. `app.js` renders one JSON report; `i18n.js` holds N
 strings (`data-i18n` in the HTML, `t()` in JS). Tabbed views, default Finish Grid:
 - **Finish Grid** — 16×16 heat matrix of finishing-position probability, animatable
 - **Table** — standings, rating, expected points, title/relegation odds, all sortable
-- **Ladder** — both divisions on one rating axis (vertical on phones), animatable
+- **Ladder** — both divisions on one rating axis (a ranked list with a rating dot on phones), animatable
 - **Next Up** — three-way odds per fixture with predicted scorelines
 - **Played Results** — completed matches by ISO week with rating deltas
 - **Compare Clubs** — two native selects; odds computed in the browser from `report.model`
