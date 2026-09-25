@@ -31,7 +31,12 @@ from multiprocessing import Pool
 from pathlib import Path
 from typing import Any
 
-import psutil
+# Optional: the runtime is stdlib-only, so CI (Linux, few cores) has no psutil
+# and simply uses the logical core count.
+try:
+    import psutil
+except ImportError:
+    psutil = None
 
 from elitetracker.model.elo import EloConfig
 from elitetracker.pipeline import (
@@ -120,7 +125,7 @@ def build_site(
     # Cap at physical cores: Windows spawn mode hits kernel limits (commit charge /
     # process handle table) at physical_core_count+1 concurrent processes.
     # Logical cores (hyperthreads) share the same physical resources.
-    physical_cores = psutil.cpu_count(logical=False) or os.cpu_count() or 1
+    physical_cores = (psutil and psutil.cpu_count(logical=False)) or os.cpu_count() or 1
     jobs = min(jobs, physical_cores)
 
     all_seasons = available_seasons(root)
