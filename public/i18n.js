@@ -83,6 +83,10 @@ const translations = {
     'table.col.championShort': 'Title',
     'table.col.relegation': 'Relegation',
     'table.col.relegationShort': 'Rel',
+    'table.view.current': 'Current',
+    'table.view.prediction': 'Prediction',
+    'table.col.fixture_difficulty': 'Fix Diff',
+    'table.col.fixture_difficulty.desc': 'Expected points per remaining match vs league average',
 
     // Ladder
     'ladder.title': 'The ladder',
@@ -328,6 +332,10 @@ const translations = {
     'table.col.championShort': 'Titt',
     'table.col.relegation': 'Nedrykk',
     'table.col.relegationShort': 'Ned',
+    'table.view.current': 'Nåværende',
+    'table.view.prediction': 'Prognose',
+    'table.col.fixture_difficulty': 'Kamptakt',
+    'table.col.fixture_difficulty.desc': 'Forventede poeng per gjenværende kamp vs gjennomsnittslag',
 
     // Ladder
     'ladder.title': 'Stigen',

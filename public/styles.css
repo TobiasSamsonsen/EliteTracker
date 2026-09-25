@@ -247,34 +247,85 @@ a { color: inherit; }
 
 /* Segmented control: the league switch and the theme switch share it. */
 .switch {
-  display: inline-flex;
-  background: var(--panel-sunk);
-  border: 1px solid var(--rule);
-  border-radius: var(--radius);
-  padding: 2px;
-  gap: 2px;
-}
+    display: inline-flex;
+    background: var(--panel-sunk);
+    border: 1px solid var(--rule);
+    border-radius: var(--radius);
+    padding: 2px;
+    gap: 2px;
+  }
 
-.switch button {
-  appearance: none;
-  border: 0;
-  background: transparent;
-  color: var(--ink-muted);
-  font: inherit;
-  font-size: 0.8125rem;
-  font-weight: 600;
-  padding: 0.3rem 0.8rem;
-  border-radius: 2px;
-  cursor: pointer;
-  transition: background 0.15s var(--ease), color 0.15s var(--ease);
-}
+  .switch button {
+    appearance: none;
+    border: 0;
+    background: transparent;
+    color: var(--ink-muted);
+    font: inherit;
+    font-size: 0.8125rem;
+    font-weight: 600;
+    padding: 0.3rem 0.8rem;
+    border-radius: 2px;
+    cursor: pointer;
+    transition: background 0.15s var(--ease), color 0.15s var(--ease);
+  }
 
-.switch button:hover { color: var(--ink); }
+  .switch button:hover { color: var(--ink); }
 
-.switch button[aria-pressed="true"] {
-  background: var(--panel);
-  color: var(--ink);
-  box-shadow: 0 1px 2px rgb(13 26 34 / 0.12);
+  .switch button[aria-pressed="true"] {
+    background: var(--panel);
+    color: var(--ink);
+    box-shadow: 0 1px 2px rgb(13 26 34 / 0.12);
+  }
+
+  /* Table view toggle buttons */
+  .table-controls {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+    margin-top: 0.5rem;
+  }
+
+  .table-control-btn {
+    appearance: none;
+    border: 1px solid var(--rule);
+    background: var(--panel-sunk);
+    color: var(--ink-muted);
+    font: inherit;
+    font-size: 0.75rem;
+    font-weight: 600;
+    padding: 0.25rem 0.75rem;
+    border-radius: 2px;
+    cursor: pointer;
+    transition: all 0.15s var(--ease);
+  }
+
+  .table-control-btn:hover {
+    background: var(--panel);
+    color: var(--ink);
+    border-color: var(--rule);
+  }
+
+  .table-control-btn[aria-pressed="true"] {
+    background: var(--panel);
+    color: var(--ink);
+    border-color: var(--rule);
+  }
+
+  .table-control-btn.is-active {
+    background: var(--panel);
+    color: var(--ink);
+    border-color: var(--rule);
+  }
+
+/* Fixture difficulty pill */
+.fixture-difficulty-pill {
+    padding: 0 6px;
+    border-radius: 8px;
+    font-size: 0.75rem;
+    font-weight: 500;
+    display: inline-block;
+    min-width: 36px;
+    text-align: center;
 }
 
 /* ---------- hero -------------------------------------------------- */
@@ -1566,11 +1617,10 @@ footer a { color: var(--ink); }
   .hero__meta { gap: 0.4rem 1.25rem; }
 
   /* A phone has room for the story, not the ledger. The W/D/L/GF/GA tallies,
-     xPts and the form chips go; position, club, played, GD, points, rating and
-     the two odds stay. Tapping a row still opens the club's full history. */
-  .standings .col--extra { display: none; }
+      xPts and the form chips go; position, club, played, GD, points, rating and
+      the two odds stay. Tapping a row still opens the club's full history. */
   /* The 720px floor exists so the full desktop column set never crushes. With
-     seven of those columns gone it is what was keeping the table off-screen. */
+      seven of those columns gone it is what was keeping the table off-screen. */
   table.standings { min-width: 0; font-size: 0.8125rem; }
   .career-table { min-width: 0; }
   .standings th, .standings td { padding-inline: 0.3rem; }

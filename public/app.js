@@ -9,6 +9,8 @@ const state = {
   careers: null,
   // Default view is the league table as it actually stands.
   sort: { key: 'position', dir: 1 },
+  // Table view mode: 'current' shows live stats, 'prediction' shows model stats.
+  tableView: (typeof localStorage !== 'undefined' && localStorage.getItem('elitetracker-table-view')) || 'current',
   // ISO date the whole page is rewound to; null means live.
   asof: null,
   rewindTimer: null,
@@ -682,6 +684,35 @@ function toggleSort(key) {
   renderStandings(state.reports[state.league]);
 }
 
+function toggleTableView(view) {
+  state.tableView = view;
+  state.activeView = 'table';
+  if (typeof localStorage !== 'undefined') {
+    localStorage.setItem('elitetracker-table-view', view);
+  }
+  // Update toggle button states.
+  for (const button of document.querySelectorAll('.table-control-btn')) {
+    button.setAttribute('aria-pressed', button.dataset.tableMode === view ? 'true' : 'false');
+    button.classList.toggle('is-active', button.dataset.tableMode === view);
+  }
+  // Update column visibility based on table view mode.
+  // Show fixture difficulty column only in prediction mode.
+  for (const header of document.querySelectorAll('#standings th[data-table-view]')) {
+    const views = header.dataset.tableView.split(' ');
+    header.hidden = !views.includes(view);
+  }
+  for (const cell of document.querySelectorAll('#standings td[data-table-view]')) {
+    const views = cell.dataset.tableView.split(' ');
+    cell.hidden = !views.includes(view);
+  }
+  // Update section visibility to ensure table is shown.
+  for (const section of document.querySelectorAll('[data-section]')) {
+    const views = section.dataset.section.split(' ');
+    section.hidden = !views.includes(state.activeView);
+  }
+  renderSortHeaders();
+}
+
 function renderSortHeaders() {
   for (const header of document.querySelectorAll('#standings th[data-sort-col]')) {
     const active = header.dataset.sortCol === state.sort.key;
@@ -693,10 +724,10 @@ function renderSortHeaders() {
 }
 
 function renderStandings(report) {
-  const body = $('#standings tbody');
-  body.replaceChildren();
+   const body = $('#standings tbody');
+   body.replaceChildren();
 
-  const bands = report.league.bands;
+   const bands = report.league.bands;
   const count = report.table.length;
 
   const promotion = report.league.slug === 'obosligaen';
@@ -705,10 +736,9 @@ function renderStandings(report) {
   $('#head-first-desc').textContent = promotion
     ? t('table.promotionDesc')
     : t('table.championDesc');
-  $('#head-last').textContent = t('table.relegation');
-  renderSortHeaders();
+$('#head-last').textContent = t('table.relegation');
 
-  const formByTeamName = formByTeam(report.results);
+   const formByTeamName = formByTeam(report.results);
   const rows = standingsRows(report).map((row) => ({
     ...row,
     form: formPoints(formByTeamName[row.team]),
@@ -751,19 +781,19 @@ function renderStandings(report) {
     }
   }
 
-  // Build a divider row for a boundary
-  function dividerRow(boundary) {
-    const tr = el('tr', 'zone-divider');
-    tr.style.setProperty('--band-color', bandColor(boundary.band, count));
-    const td = el('td');
-    td.colSpan = 15;  // full table width (15 columns)
-    // Format: "======== Expected CL Threshold: 67p ========"
-    const label = el('span', 'zone-divider__wrap',
-      `Expected ${boundary.label} Threshold: ${boundary.cut}p`);
-    td.appendChild(label);
-    tr.appendChild(td);
-    return tr;
-  }
+// Build a divider row for a boundary
+   function dividerRow(boundary) {
+     const tr = el('tr', 'zone-divider');
+     tr.style.setProperty('--band-color', bandColor(boundary.band, count));
+     const td = el('td');
+     td.colSpan = 16;  // full table width (16 columns)
+     // Format: "======== Expected CL Threshold: 67p ========"
+     const label = el('span', 'zone-divider__wrap',
+       `Expected ${boundary.label} Threshold: ${boundary.cut}p`);
+     td.appendChild(label);
+     tr.appendChild(td);
+     return tr;
+   }
 
   const sorted = sortedStandings(rows);
   for (let visualIndex = 0; visualIndex < sorted.length; visualIndex++) {
@@ -773,6 +803,7 @@ function renderStandings(report) {
     const band = bandFor(bands, row.position);
 
     const position = el('td', 'pos');
+    position.dataset.tableView = 'current prediction';
     const mark = el('span', 'band-mark');
     if (band) {
       mark.style.background = bandColor(band, count);
@@ -786,6 +817,7 @@ function renderStandings(report) {
     // every cell presentational, which hid the scores from screen readers and
     // stopped the new aria-sort from ever being announced.
     const club = el('td', 'club');
+    club.dataset.tableView = 'current prediction';
     const clubButton = el('button', 'club-btn');
     clubButton.type = 'button';
     clubButton.classList.add('club-btn--crest');
@@ -803,14 +835,20 @@ function renderStandings(report) {
       ['played', true], ['wins', true], ['draws', true],
       ['losses', true], ['goals_for', true], ['goals_against', true],
     ]) {
-      tr.appendChild(el('td', `num muted${extra ? ' col--extra' : ''}`, String(row[key])));
+      const td = el('td', `num muted${extra ? ' col--extra' : ''}`, String(row[key]));
+      td.dataset.tableView = 'current';
+      tr.appendChild(td);
     }
-    tr.appendChild(el('td', 'num col--extra', row.goal_difference > 0 ? `+${row.goal_difference}` : String(row.goal_difference)));
+    const gdTd = el('td', 'num col--extra', row.goal_difference > 0 ? `+${row.goal_difference}` : String(row.goal_difference));
+    gdTd.dataset.tableView = 'current';
+    tr.appendChild(gdTd);
     const points = el('td', 'num', String(row.points));
     points.style.fontWeight = '700';
+    points.dataset.tableView = 'current';
     tr.appendChild(points);
 
     const ratingCell = el('td', 'num sep');
+    ratingCell.dataset.tableView = 'current prediction';
     ratingCell.appendChild(document.createTextNode(row.rating.toFixed(0)));
     const trend = computeRatingTrend(row.team, report);
     if (trend) {
@@ -820,13 +858,41 @@ function renderStandings(report) {
       ratingCell.appendChild(arrow);
     }
     tr.appendChild(ratingCell);
-    tr.appendChild(el('td', 'num muted col--extra', row.expected_points.toFixed(1)));
+    const xpTd = el('td', 'num muted col--extra', row.expected_points.toFixed(1));
+    xpTd.dataset.tableView = 'prediction';
+    tr.appendChild(xpTd);
+
+    // Fixture difficulty: expected points per remaining match vs league average.
+    const fixtureCell = el('td', 'num col--extra', '');
+    fixtureCell.dataset.tableView = 'prediction';
+    if (row.fixture_difficulty !== undefined) {
+      const value = row.fixture_difficulty;
+      const pill = el('span', 'fixture-difficulty-pill');
+      pill.textContent = value.toFixed(1);
+      const normalized = Math.min(1, Math.max(0, (value - 0) / 3));
+      const hue = 120 * normalized;
+      pill.style.backgroundColor = `hsl(${hue}, 70%, 40%)`;
+      pill.style.color = 'white';
+      pill.style.padding = '2px 6px';
+      pill.style.borderRadius = '12px';
+      pill.style.fontSize = '0.85rem';
+      pill.style.fontWeight = '600';
+      pill.style.display = 'inline-block';
+      fixtureCell.appendChild(pill);
+    }
+    tr.appendChild(fixtureCell);
+
     const formTd = el('td', 'num form col--extra');
+    formTd.dataset.tableView = 'current prediction';
     formTd.appendChild(formChipsEl(formByTeamName[row.team]));
     tr.appendChild(formTd);
 
-    tr.appendChild(meterCell(row.up, 'up'));
-    tr.appendChild(meterCell(row.down, 'down'));
+    const upCell = meterCell(row.up, 'up');
+    upCell.dataset.tableView = 'prediction';
+    tr.appendChild(upCell);
+    const downCell = meterCell(row.down, 'down');
+    downCell.dataset.tableView = 'prediction';
+    tr.appendChild(downCell);
 
     // Clicking anywhere on the row is a mouse convenience on top of that
     // button; it adds no keyboard or ARIA semantics of its own.
@@ -837,8 +903,11 @@ function renderStandings(report) {
       body.appendChild(dividerRow(dividerBoundaries.get(visualIndex + 1)));
     }
 
-    body.appendChild(tr);
-  }
+body.appendChild(tr);
+   }
+
+   // Apply the current view mode to the rendered cells.
+   toggleTableView(state.tableView);
 }
 
 const METER_DIGITS = 0;
@@ -2451,6 +2520,11 @@ function wire() {
 
   for (const button of document.querySelectorAll('#standings .sort-btn')) {
     button.addEventListener('click', () => toggleSort(button.dataset.sortKey));
+  }
+
+  // Bind table view toggle buttons.
+  for (const button of document.querySelectorAll('[data-table-mode]')) {
+    button.addEventListener('click', () => toggleTableView(button.dataset.tableMode));
   }
 
   $('#season-select').addEventListener('change', async (event) => {
