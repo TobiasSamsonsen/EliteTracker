@@ -130,11 +130,23 @@ class TestConfig:
         assert config.season_regression == pytest.approx(0.88)
 
     def test_model_version_is_declared(self):
-        assert MODEL_VERSION == "elo-v11.1"
+        assert MODEL_VERSION == "elo-v12.0"
 
     def test_xg_alpha_default(self):
         config = EloConfig()
         assert config.xg_alpha == pytest.approx(0.45)
+
+    def test_xg_margin_rewards_a_deserved_win_more(self):
+        base = EloConfig(xg_margin=0.0)
+        margin = EloConfig(xg_margin=0.05)
+        # A 1-0 win on 2.5 xG to 0.3 moves more with the margin term...
+        assert updated_pair(1500, 1500, 1, 0, margin, 2.5, 0.3)[0] > updated_pair(1500, 1500, 1, 0, base, 2.5, 0.3)[0]
+        # ...a draw is untouched, and without xG the term never applies.
+        assert updated_pair(1500, 1500, 1, 1, margin, 2.5, 0.3) == updated_pair(1500, 1500, 1, 1, base, 2.5, 0.3)
+        assert updated_pair(1500, 1500, 1, 0, margin) == updated_pair(1500, 1500, 1, 0, base)
+        # Ratings stay zero-sum.
+        home, away = updated_pair(1500, 1500, 0, 2, margin, 0.4, 1.9)
+        assert home + away == pytest.approx(3000)
 
 
 class TestFittedDefaults:

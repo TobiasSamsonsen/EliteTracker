@@ -157,3 +157,11 @@ test('blendOdds with gamma shifts weight toward grid for large gaps', () => {
   const distGamma = Math.abs(midGamma.home_win - own.home_win);
   assert.ok(distGamma < distBase);
 });
+
+test('spread stretches attack - defence the way model/attack_defence.py does', () => {
+  const wide = { ...MODEL, attack_defence: { ...MODEL.attack_defence, spread: 1.1 } };
+  const home = grid => grid.reduce((sum, row, i) => sum + row.slice(0, i).reduce((a, b) => a + b, 0), 0);
+  assert.ok(home(scoreGrid(wide, 'A', 'B')) > home(scoreGrid(MODEL, 'A', 'B')));
+  // No spread in the payload (older reports) is the unstretched grid.
+  assert.deepEqual(scoreGrid({ ...MODEL, attack_defence: { ...MODEL.attack_defence, spread: 1 } }, 'A', 'B'), scoreGrid(MODEL, 'A', 'B'));
+});

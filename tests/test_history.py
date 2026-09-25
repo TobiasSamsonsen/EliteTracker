@@ -169,9 +169,12 @@ class TestBuildHistory:
         games = two_team_season()
         history = build_history(games, games, SEEDS, config=FAST)
 
+        from elitetracker.model.attack_defence import AttackDefence
+
         ratings = build_rating_table(SEEDS, games)
         direct = simulate_season(
-            games, ratings, config=SimulationConfig(simulations=FAST.simulations, seed=FAST.seed)
+            games, ratings, ad=AttackDefence().replay(games),
+            config=SimulationConfig(simulations=FAST.simulations, seed=FAST.seed),
         )
         for team in direct.teams:
             assert history[-1].positions[team.team_id] == pytest.approx(team.position_probabilities)

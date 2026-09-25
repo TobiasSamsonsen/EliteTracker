@@ -299,6 +299,7 @@ def build_report(
             "seed_season": SEED_SEASON,
             "simulations": projection.simulations,
             "seed": projection.seed,
+            "strength_sd": projection.strength_sd,
             "matches_played": projection.matches_played,
             "matches_remaining": projection.matches_remaining,
             # Median points per finishing position: the expected points threshold
@@ -312,6 +313,7 @@ def build_report(
                 "home_beta": ad.config.home_beta,
                 "base": ad.config.base,
                 "rho": ad.config.rho,
+                "spread": ad.config.spread,
                 "k": ad.config.k,
                 "k_shots": ad.config.k_shots,
                 "alpha": ad.config.alpha,

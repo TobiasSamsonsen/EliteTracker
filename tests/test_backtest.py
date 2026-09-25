@@ -179,3 +179,13 @@ class TestEraSwitch:
         explicit = walk_forward(slices, seeds, config, score_from_season=2021,
                                 config_for=lambda league, season: era_config(season, config))
         assert default.log_loss == explicit.log_loss
+
+
+def test_rps_orders_outcomes_so_a_draw_is_a_smaller_miss():
+    from elitetracker.model.backtest import ranked_probability_score
+    from elitetracker.model.probabilities import MatchProbabilities
+    favourite = MatchProbabilities(0.7, 0.2, 0.1)
+    assert ranked_probability_score(favourite, "home_win") < ranked_probability_score(favourite, "draw")
+    assert ranked_probability_score(favourite, "draw") < ranked_probability_score(favourite, "away_win")
+    assert ranked_probability_score(MatchProbabilities(1.0, 0.0, 0.0), "home_win") == 0.0
+    assert ranked_probability_score(MatchProbabilities(1.0, 0.0, 0.0), "away_win") == 1.0

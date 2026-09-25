@@ -9,8 +9,12 @@ produce the same matrix. No network access is involved.
 
 Two deliberate simplifications, both documented rather than hidden:
 
-* Ratings are held fixed for the rest of the season. A team does not get
-  stronger inside a simulation by winning simulated matches.
+* Ratings are not updated inside a simulation: a team does not get stronger
+  by winning simulated matches. What each run does draw is one strength shock
+  per club, held for the rest of that run (`STRENGTH_SD`), because today's
+  rating is an estimate and a club's true level drifts over a season. Without
+  it every run replays the same strengths and the finishing odds come out too
+  sure of themselves.
 * Who wins comes from the Elo odds; how many goals from the two sides' attack
   and defence ratings (`model.attack_defence`), conditioned on that outcome.
   So goal difference moves within a simulation and tied finishes resolve on
@@ -20,6 +24,7 @@ Two deliberate simplifications, both documented rather than hidden:
 
 from __future__ import annotations
 
+import math
 import random
 from bisect import bisect_left
 from dataclasses import dataclass
@@ -50,11 +55,29 @@ from elitetracker.normalize.standings import POINTS_FOR_DRAW, POINTS_FOR_WIN
 DEFAULT_SIMULATIONS = 50_000
 DEFAULT_SEED = 20260809
 
+# Per-run strength shock, in log-odds of home win against away win: a club
+# drawn +0.15 has every remaining fixture's win odds multiplied by exp(0.15)
+# (1.16x) against its loss odds, draws renormalised. Fitted by backtest on the
+# finished seasons 2016-2025, both divisions, simulating from the start, a
+# quarter, half and three quarters in and scoring the final table (t clustered
+# by season-league, 20 clusters):
+#
+#     sd     RPS over positions      log loss of the actual position
+#     0.10   -0.00049 (t -3.0)       -0.0113 (t -2.9)
+#     0.15   -0.00084 (t -2.7)       -0.0183 (t -3.0)
+#     0.20   -0.00105 (t -2.3)       -0.0205 (t -2.3)
+#     0.25   -0.00098 (t -1.6)       -0.0178 (t -1.6)
+#
+# Negative on both halves (2016-2020, 2021-2025) and in both divisions; 0.15
+# is the middle of the basin. The shock does not touch single-match odds.
+STRENGTH_SD = 0.15
+
 
 @dataclass(frozen=True)
 class SimulationConfig:
     simulations: int = DEFAULT_SIMULATIONS
     seed: int = DEFAULT_SEED
+    strength_sd: float = STRENGTH_SD
 
 
 @dataclass
@@ -80,6 +103,7 @@ class SeasonProjection:
     matches_played: int
     # position_points[0] is the median points of the team finishing 1st.
     position_points: list[int] | None = None
+    strength_sd: float = 0.0
 
 
 # Per unplayed fixture: home index, away index, P(home), P(home)+P(draw), and
@@ -186,12 +210,23 @@ def simulate_season(
 
     rng = random.Random(config.seed)
     random_value = rng.random  # bound once; this is the hot path
+    strength_sd = config.strength_sd
 
     for _ in range(config.simulations):
         points = base_points[:]
         goals_for = base_goals_for[:]
         goals_against = base_goals_against[:]
+        # exp(shock) per club: the fixture's win odds scale by boost[home] /
+        # boost[away], its loss odds by the inverse, and the three renormalise.
+        boost = [math.exp(rng.gauss(0.0, strength_sd)) for _ in range(count)] if strength_sd else None
         for home, away, home_chance, home_or_draw_chance, tables in fixtures:
+            if boost is not None:
+                ratio = boost[home] / boost[away]
+                home_weight = home_chance * ratio
+                draw_weight = home_or_draw_chance - home_chance
+                total = home_weight + draw_weight + (1.0 - home_or_draw_chance) / ratio
+                home_chance = home_weight / total
+                home_or_draw_chance = (home_weight + draw_weight) / total
             roll = random_value()
             if roll < home_chance:
                 outcome_code = 0
@@ -264,4 +299,5 @@ def simulate_season(
         matches_remaining=len(fixtures),
         matches_played=sum(1 for match in matches if match.played),
         position_points=position_points,
+        strength_sd=strength_sd,
     )

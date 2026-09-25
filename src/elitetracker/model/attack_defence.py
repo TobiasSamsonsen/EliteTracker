@@ -70,6 +70,13 @@ class ADConfig:
     # outcome blend shrinks as the rating gap grows (more grid weight for
     # heavy favourites).  weight = clamp(OUTCOME_BLEND - gamma * |gap|, 0.05, 0.50).
     blend_gamma: float = 0.0      # 0.0 reproduces the constant
+    # The fixed-step online update lags, so the ratings sit too close together
+    # and the grid under-prices favourites (priced 0.60-0.70 at home, they win
+    # 0.72). At prediction time each side's attack - defence + finishing is
+    # stretched by `spread`. Chosen walk-forward (every season 2019-2026 picked
+    # 1.10 from prior seasons, grid capped there): -0.0011 log loss out of sample
+    # (t -3.0), Brier t -2.6, RPS t -2.3, negative in both halves. 1.0 is elo-v11.
+    spread: float = 1.10
 
 
 def tau(home_goals: int, away_goals: int, lam: float, mu: float, rho: float) -> float:
@@ -187,9 +194,9 @@ class AttackDefence:
         peers = [t for (year, t), lg in self.divisions.items() if year == season and lg == league and t in self.attack]
         mean_attack = sum(self.attack[t] for t in peers) / len(peers) if peers else 0.0
         mean_defence = sum(self.defence[t] for t in peers) / len(peers) if peers else 0.0
-        scored = math.exp(cfg.base + self.attack.get(team_id, mean_attack) - mean_defence
-                          + self.finishing.get(team_id, 0.0))
-        conceded = math.exp(cfg.base + mean_attack - self.defence.get(team_id, mean_defence))
+        scored = math.exp(cfg.base + cfg.spread * (self.attack.get(team_id, mean_attack) - mean_defence
+                                                   + self.finishing.get(team_id, 0.0)))
+        conceded = math.exp(cfg.base + cfg.spread * (mean_attack - self.defence.get(team_id, mean_defence)))
         return scored, conceded
 
     # -- seasons ---------------------------------------------------------
@@ -257,7 +264,18 @@ class AttackDefence:
         self._ensure(on, home_id, away_id)
         cfg = self.config
         effective_home = cfg.home * (1.0 + cfg.home_beta * elo_gap)
-        lam = math.exp(cfg.base + effective_home + self.attack[home_id] - self.defence[away_id]
+        lam = math.exp(cfg.base + effective_home + cfg.spread * (
+            self.attack[home_id] - self.defence[away_id] + self.finishing.get(home_id, 0.0)))
+        mu = math.exp(cfg.base + cfg.spread * (
+            self.attack[away_id] - self.defence[home_id] + self.finishing.get(away_id, 0.0)))
+        return lam, mu
+
+    def _learning_rates(self, home_id: str, away_id: str, on: str) -> tuple[float, float]:
+        """The rates the online update measures surprise against: unstretched,
+        so `spread` changes predictions and never what the ratings learn."""
+        self._ensure(on, home_id, away_id)
+        cfg = self.config
+        lam = math.exp(cfg.base + cfg.home + self.attack[home_id] - self.defence[away_id]
                         + self.finishing.get(home_id, 0.0))
         mu = math.exp(cfg.base + self.attack[away_id] - self.defence[home_id]
                        + self.finishing.get(away_id, 0.0))
@@ -285,7 +303,7 @@ class AttackDefence:
 
     def observe(self, match: Match) -> None:
         home, away = team_ids(match)
-        lam, mu = self.rates(home, away, match.date)
+        lam, mu = self._learning_rates(home, away, match.date)
         obs_home, obs_away, k = self.observed(match)
         cfg = self.config
         home_surprise = max(-cfg.cap, min(cfg.cap, obs_home - lam))

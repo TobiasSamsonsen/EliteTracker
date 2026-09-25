@@ -117,7 +117,17 @@ from dataclasses import dataclass
 # loss on the xG window (Elite 2020+, OBOS 2023+; t=-0.98, not yet significant
 # at |t|>=2 but consistent across divisions).  Also fixed backtest_cli.py to
 # load shot_table() so future sweeps test the actual shipped model.
-MODEL_VERSION = "elo-v11.1"
+# elo-v12.0: three changes, judged on log loss, Brier and the ranked probability
+# score, each chosen walk-forward (from prior seasons only) and shipped at a
+# value shrunk toward no change:
+#   * an xG margin-of-victory term in the rating update (`xg_margin` 0.05),
+#   * the goals model's attack-defence stretched by `ADConfig.spread` 1.10 at
+#     prediction time, correcting its under-priced favourites,
+#   * a per-run strength shock in the season Monte Carlo
+#     (`simulation.season.STRENGTH_SD` 0.15), so finishing odds carry the
+#     uncertainty of the ratings.
+# See PROJECT_STATUS.md, "elo-v12.0".
+MODEL_VERSION = "elo-v12.0"
 
 # A 400-point rating gap means the stronger side is expected to score 10 times
 # as often as the weaker one; this is the constant that defines the ELO scale.
@@ -161,6 +171,16 @@ class EloConfig:
     # log loss (t=-2.58) and stacks on elo-v7's attack/defence blend for -0.00580
     # vs plain Elo (t=-3.38).
     xg_alpha: float = 0.45
+    # Margin of victory measured in xG, added to the winner's side of the
+    # observed score where there is xG: gamma * ln(1 + |ln(home_xg / away_xg)|),
+    # the 538 damped-log form on the xG ratio, clamped to [0, 1], nothing on a
+    # draw. Goal margins were rejected in elo-v3 (Norwegian margins are mostly
+    # noise); the xG ratio says how deserved a win was. Judged on Elo's own
+    # odds (the displayed ratings), selected walk-forward from 0/0.05/0.1:
+    # -0.0007 log loss out of sample (t -2.0), Brier t -1.8, RPS t -1.7,
+    # negative in both halves. Walk-forward picked 0.1; 0.05 keeps ~90 % of the
+    # in-sample gain (-0.00055, t -3.2) and is the value shrunk toward none.
+    xg_margin: float = 0.05
 
 
 # Era-switch constants.  Warmup seasons use the legacy config above; from the
@@ -171,7 +191,7 @@ class EloConfig:
 # the fitted pair stands for both.
 MODERN_K: float = 30.0
 MODERN_XG_ALPHA: float = 0.30
-MODERN_CONFIG = EloConfig(k_factor=MODERN_K, xg_alpha=MODERN_XG_ALPHA)
+MODERN_CONFIG = EloConfig(k_factor=MODERN_K, xg_alpha=MODERN_XG_ALPHA)  # xg_margin: the default
 BOUNDARY_SEASON: int = 2022
 
 
@@ -264,6 +284,10 @@ def updated_pair(
     if home_xg is not None and away_xg is not None and config.xg_alpha > 0.0:
         xg_score = xg_implied_score(home_xg, away_xg)
         scored_home = (1.0 - config.xg_alpha) * scored_home + config.xg_alpha * xg_score
+        if config.xg_margin and home_goals != away_goals and home_xg > 0 and away_xg > 0:
+            winner = 1.0 if home_goals > away_goals else -1.0
+            bonus = config.xg_margin * math.log(1.0 + abs(math.log(home_xg / away_xg)))
+            scored_home = min(1.0, max(0.0, scored_home + winner * bonus))
     change = config.k_factor * (scored_home - expected_home)
     return home_rating + change, away_rating - change
 

@@ -219,6 +219,16 @@ class TestSimulation:
         strong = next(t for t in projection.teams if t.team == "A")
         assert strong.position_probabilities[0] > 0.9
 
+    def test_strength_shock_makes_the_favourite_less_certain(self):
+        """A per-run shock stands for the rating being an estimate: a favourite's
+        title odds fall, and a shock of zero is the fixed-strength simulation."""
+        args = (two_team_season(remaining=10), {"A": 1650, "B": 1500})
+        fixed = simulate_season(*args, config=SimulationConfig(simulations=4000, strength_sd=0.0))
+        shocked = simulate_season(*args, config=SimulationConfig(simulations=4000, strength_sd=0.5))
+        title = lambda projection: next(t for t in projection.teams if t.team == "A").position_probabilities[0]
+        assert shocked.strength_sd == 0.5 and fixed.strength_sd == 0.0
+        assert title(shocked) < title(fixed) - 0.02
+
     def test_a_big_lead_is_hard_to_overturn(self):
         played = [match(i, "A", "B", day=i, score=(3, 0)) for i in range(1, 6)]
         projection = simulate_season(

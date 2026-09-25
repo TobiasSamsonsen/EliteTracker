@@ -679,19 +679,14 @@ away. Nothing ships until a walk-forward says it does.
        Flat surface (t=−0.24 at best β).  See "elo-v12 candidates" section.
 - [x] Favourite sharpening — coded, measured, rejected.  γ=0.0 is best;
        every non-zero value is worse.  See "elo-v12 candidates" section.
-- [ ] Calendar-derived rest days and congested weeks from fotmob kickoff dates
-       (days since last, Thursday→Sunday) — targets the doubled late-season gap.
-       See candidate 3.
-- [ ] Re-test per-era K/α with 2027 data as holdout. The candidate
-       (K=70–90, α=0.70–0.85) cleared |t|≥2 on the full xG window (log loss
-       0.9889 vs 0.9943 shipped) but not on the holdout splits (t=−0.75
-       forward, −1.99 reverse). One more season should tip it.
-       Written up under "Post-elo-v11.1 knob sweeps".
-- [ ] Re-test the xG-margin Elo scored term (γ=0.05–0.10, alone and stacked on
-       K=80/α=0.75) with 2027 data. Same direction, same holdout-power problem
-       as the K/α candidate: −0.0011 combined on the xG window but early-half
-       t≈−1.8, not past the bar. Written up under "xG margin of victory".
-- [ ] Check whether Sofascore backfills OBOS xG before 2023 (2020–2022 report
+- [x] Calendar-derived rest days and congested weeks — measured with every
+       UEFA and cup fixture of our clubs, no signal. See "elo-v12.0".
+- [x] Per-era K/α — rejected out of sample (walk-forward). See "elo-v12.0".
+- [x] xG-margin Elo term — shipped in elo-v12.0 (γ 0.05).
+- [x] Penalty-adjusted xG and red-card-aware updates — measured on all 1,608
+       Eliteserien matches 2020–2026, nothing to change. See "elo-v12.0".
+- [ ] Check whether Sofascore backfills OBOS xG before 2023 (it 403s from the
+      developer machine as of 2026-09-25; not checked from CI) (2020–2022 report
       `hasXg: false` today); it would add ~720 matches and is one re-run of
       `research xg-obos --seasons 2020-2026` if it ever appears.
 - [ ] Re-test the offseason pull (0.88 vs 1.00) after 2027, when the modern era has
@@ -1083,6 +1078,17 @@ hits the system limit.
 - 16 workers: single OK, full build unstable. ❌
 - 20 workers (logical cores): BSOD. ❌
 
+**Correction (2026-09-25): the blue screens are the CPU, not the build.** A full
+elo-v12.0 build at the default 14 workers blue-screened with bugcheck **0x101
+CLOCK_WATCHDOG_TIMEOUT** (a core stopped answering the clock interrupt; minidump
+`C:\Windows\Minidumps\092526-9906-01.dmp`). The machine is an i5-14600KF on a
+December 2023 BIOS, which predates Intel's 0x129/0x12B microcode for the Raptor
+Lake Vmin instability; 0x101 under sustained all-core load is that fault's
+signature, and Python in user mode cannot cause a bugcheck on its own. The
+physical-core cap and psutil are gone: `build_site` now defaults to
+`min(8, cpu_count)` workers, measured stable. The real fix is a BIOS update
+with 0x12B or later microcode (and Intel's default power profile).
+
 **Simulation count analysis (for GitHub Actions context):**
 
 The CI pipeline runs two workflows:
@@ -1130,3 +1136,219 @@ The Prediction view of the table now:
 `applyTableView` (visibility only, called at the end of `renderStandings`). The
 stored plan had the handler call `renderStandings`, which already called the
 handler, and that recursed.
+
+## 🧪 elo-v12.0: sharper goals model, xG margin, and season odds with a strength shock (September 2026)
+
+Scored with the **ranked probability score** alongside log loss and Brier: RPS
+over home/draw/away for single matches, and RPS over the sixteen finishing
+positions for season odds, where the order of the outcomes is the whole point.
+Match-level comparisons are paired per match; season-level ones are
+clustered by season-league (the sixteen clubs of one table are not
+independent), so t has 20 clusters behind it, not 1,280 rows.
+
+### Shipped: a strength shock in the Monte Carlo
+
+The simulation held every club's strength fixed for the rest of the season, so
+each run replayed the same odds and the finishing grid was too sure of itself.
+Each run now draws one shock per club, N(0, 0.15) in log-odds of win against
+loss, held for that run (`simulation/season.py`, `STRENGTH_SD`). Single-match
+odds are untouched.
+
+Backtest: every finished season 2016–2025, both divisions, simulated from the
+start, a quarter, half and three quarters in, 10,000 runs each, scored against
+the final table:
+
+| sd | RPS (positions) | t | log loss of actual position | t | Brier | t |
+|---|---|---|---|---|---|---|
+| 0.05 | −0.00008 | −1.2 | +0.0019 | +0.9 | +0.0002 | +0.6 |
+| 0.10 | −0.00049 | −3.0 | −0.0113 | −2.9 | −0.0008 | −1.3 |
+| **0.15** | **−0.00084** | **−2.7** | **−0.0183** | **−3.0** | −0.0011 | −1.0 |
+| 0.20 | −0.00105 | −2.3 | −0.0205 | −2.3 | −0.0005 | −0.3 |
+| 0.25 | −0.00098 | −1.6 | −0.0178 | −1.6 | +0.0007 | +0.3 |
+
+Negative in both divisions and both halves (2016–2020 small, 2021–2025
+t ≈ −3.9 at 0.15, where K is faster and ratings move more). Re-measured through
+the shipped `simulate_season`: RPS −0.00093 (t −3.1), log loss −0.016 (t −2.9).
+Cost: about 45 % more CPU per simulation.
+
+### Measured and rejected (match odds)
+
+Baseline for all of these: the shipped blend, scored 2016+ (n=5,152): log loss
+1.00178, Brier 0.59837, RPS 0.20926; −0.0039 / −0.0027 / −0.0012 against Elo
+alone (t −2.8 / −2.7 / −2.5). Market gap on Eliteserien (n=2,552): +0.0114 log
+loss, +0.0038 RPS.
+
+- **Calendar: rest days, European and cup congestion — dead.** All UEFA
+  competitions (qualifiers included, fotmob ids 10611/42/10613/73/10615/10216)
+  and the NM Cup (206), 2014/15–2026/27, were pulled into
+  `data/raw/fotmob_other_matches.json` (1,578 matches involving our clubs, ~85
+  page requests). The shipped model's residual (actual points share minus the
+  predicted one) against rest days of either side, rest-day difference, a
+  European match within 4 days before or after, a cup match within 4 days
+  before: every bucket |t| < 1.7, most < 1, no monotone pattern. The late-season
+  and August market gap is not congestion.
+- **Cup matches as extra rating updates — null.** 213 cup ties between two
+  league clubs of that season, at K×0.5/K×1, with and without the attack/defence
+  update, home or neutral: every variant within ±0.0001 log loss (|t| < 1).
+- **Recalibration layers fitted walk-forward** (on all prior seasons, applied
+  to the next): temperature on the blend settles at 1.09–1.12 and is worth
+  −0.0010 (t −1.4); temperature + outcome biases −0.0006 (t −0.6); biases alone
+  +0.0005; a multinomial stack of log Elo and log grid −0.0003. The home-bias
+  that the market analysis found does not survive out of sample.
+- **Multi-timescale ensembles** (attack/defence at ×0.5/×2/×3 the step,
+  blended 50/50 with the shipped one; Elo at K 15 or 60 alongside): +0.0012 to
+  −0.0002, nothing past |t| 1.1.
+- **Offseason pull toward each club's own long-run level** (EWMA of its
+  end-of-season deviation from the division mean) instead of the division
+  mean, in Elo, attack/defence or both: best −0.0002 (t −1.8), and worse for
+  Elo on its own.
+
+### The ship rule, revised
+
+`|t| >= 2` on a paired in-sample test was the bar for everything. At n ≈ 5,000
+it has little power for effects of 0.0005 log loss, so small but consistent
+gains (the spread below, the xG margin, each negative in every half) were parked
+season after season, while the one thing it does not guard against, picking
+the best of many sweeps, went unaddressed. For **cheap one-knob changes** the
+bar is now:
+
+1. the gain **out of sample** (the value chosen walk-forward from prior
+   seasons only, scored on the next) is negative on log loss, Brier and RPS;
+2. same sign in both date halves;
+3. t ≤ −1 on that out-of-sample test;
+4. ship a value shrunk toward "no change", not the sweep's best;
+
+`|t| >= 2` stays for anything that adds complexity or a new data dependency.
+
+### Shipped: de-shrinking the goals model (`ADConfig.spread` 1.10)
+
+The grid is under-confident on favourites: where it prices the home side at
+0.60–0.70 they win 0.72, at 0.70+ they win 0.81 (Elo: 0.67 / 0.77). Stretching
+each side's attack − defence + finishing by s at prediction time (the online
+update still learns against the unstretched rates, so the ratings are
+unchanged):
+
+| s, fixed, 2016+ | log loss | t | Brier | t | RPS | t |
+|---|---|---|---|---|---|---|
+| 1.05 | −0.00046 | −3.2 | −0.00026 | −2.8 | −0.00011 | −2.6 |
+| 1.10 | −0.00080 | −2.8 | −0.00045 | −2.4 | −0.00019 | −2.2 |
+| 1.15 | −0.00104 | −2.4 | −0.00056 | −2.0 | −0.00024 | −1.8 |
+
+It survives refitting the blend weight on both sides (the best weight at s=1.0
+gains only −0.00007) and is the same size at every stage of the season, so it
+is not the offseason pull; it reads as the lag of a fixed-step online update.
+**Walk-forward** from {1.0, 1.05, 1.10}: 1.10 is picked in every season
+2019–2026, and out of sample it is worth −0.0011 log loss (t −3.0), Brier
+t −2.6, RPS t −2.3; halves −0.0012 (t −2.7) / −0.0009 (t −1.7). With the grid
+open to 1.20 the pick drifts to 1.20 and the out-of-sample gain is no larger
+(−0.0014, t −2.1), so 1.10 is the shrunk value. Ported to the browser
+(`scoreGrid`, `report.model.attack_defence.spread`).
+
+### Shipped: xG margin of victory in the Elo update (`EloConfig.xg_margin` 0.05)
+
+The term parked under "Post-elo-v11.1 knob sweeps", judged this time on Elo's
+own odds, since what it changes is the displayed rating. Walk-forward from
+{0, 0.05, 0.10}: −0.0007 log loss out of sample (t −2.0), Brier t −1.8,
+RPS t −1.7, halves t −1.5 / −1.4. In-sample, γ 0.05 keeps 90 % of 0.10's gain
+at a better t (−0.00055, t −3.2 against −0.00062, t −2.4). On top of the
+spread its contribution to the blend is small (−0.00006), the reason it ships
+is the ratings.
+
+### Rejected out of sample: per-era K / α (K 50–80, α 0.5–0.75)
+
+Walk-forward over K {30, 50, 80} × α {0.3, 0.5, 0.75}: the blend is +0.0002
+*worse* out of sample, and Elo alone −0.0008 with the first half +0.0005.
+The full-window sweep that found K=70–90 was selection, not signal. Closed.
+
+### elo-v12.0 against elo-v11.1, all together
+
+| scored 2016+ (n=5,152) | log loss | t | Brier | t | RPS | t |
+|---|---|---|---|---|---|---|
+| shipped odds (blend) | −0.00087 | −2.8 | −0.00048 | −2.3 | −0.00021 | −2.1 |
+| Elo alone (the ratings) | −0.00055 | −3.2 | −0.00036 | −3.1 | −0.00016 | −3.0 |
+
+Gap to the Eliteserien closing line: +0.0114 → +0.0107 log loss. The season
+shock re-measured on top of the new match odds: sd 0.15 is worth RPS −0.0012
+(t −3.7), log loss −0.023 (t −3.4) over the positions; 0.10 and 0.20 bracket it.
+
+### Why are the favourites under-priced? Regression and lag, measured
+
+The obvious suspect for compressed ratings is the offseason pull toward the
+division mean. Swept jointly, Elo pull × attack/defence pull {0.80, 0.88, 0.94,
+1.00} × finishing pull {0.50, 0.70, 0.85, 1.00} × spread {1.00–1.20}, against
+elo-v12.0 (0.88/0.88/0.70, spread 1.10):
+
+- No pull in the goals model (1.00) makes every metric worse (+0.0005 log loss)
+  and still wants a spread of 1.10–1.15. A *stronger* pull (0.80) wants a
+  *larger* spread (1.20). The compression is not the pull.
+- Elo alone: 0.88 is still the best pull (0.80 +0.0002, 0.94 +0.0001, 1.00
+  +0.0006).
+- Walk-forward over the pulls at spread 1.10: +0.00015 (worse); with the
+  spread free as well: −0.0004 (t −1.1), first half t −0.6. Nothing to change.
+- A faster attack/defence step (×1.5, ×2) does not remove the need for the
+  spread either; it is worse at every spread (×2: +0.0022, t +2.2).
+
+So the stretch stays a prediction-time correction; its cause is not the pull
+and not simple lag.
+
+Also measured against elo-v12.0 and left alone:
+- **Elo-side spread** (the rating gap × c at prediction): in-sample −0.0003
+  (t −2.4) at c 1.10, and walk-forward picks 1.10 every season, but out of
+  sample the gain is entirely in the first half (t −3.4); the second half is
+  flat on log loss and slightly positive on Brier and RPS. Fails rule 2.
+- **Draw model** (0.24–0.28 × 300–450), **ρ** (−0.12 to 0), **blend weight**
+  (0.20–0.35) with the spread in place: all within |t| < 1.6.
+- **Spread per division**, walk-forward (OBOS picks 1.20, Eliteserien
+  1.00–1.20): +0.00005 against the single 1.10.
+
+### Momentum, re-tested on the xG-era model — rejected again
+
+The elo-v3 rejections (EWMA form, the autocorrelation damper) were on plain
+Elo. The spread finding (ratings too close together) reopened the question: a
+rating trailing a club that is still rising would look exactly like that. Three
+readings, all at prediction time on top of elo-v12.0, scored 2016+:
+
+- **Residual xG form** (EWMA of a club's recent xG difference above what the
+  model expected, as a log-odds shift): worse in both directions at every
+  weight (+0.2: +0.0086, t +4.0; −0.2: +0.015, t +7.0). Once the ratings have
+  absorbed a result, nothing of recent form is left to add.
+- **Attack/defence trend** (extrapolate the last 3/5/8 matches' change): flat
+  or worse, up to +0.0028 (t +2.5).
+- **Elo trend** (rating + β × its change over the last n matches): the one
+  with a sign, consistently small gains in-sample (n 8, β 0.25–1.0: −0.00014
+  to −0.00032, t −0.9 to −1.6) and mean reversion clearly worse (β −0.5:
+  +0.0004, t +2.3). Walk-forward over n {5, 8, 12} × β {0–1} × within/across
+  seasons: −0.00005 (t −0.1) out of sample, first half −0.0005 (t −2.1),
+  second half +0.0004. The pick wanders (n 5→12→8, β 0→1). Rejected.
+
+### Penalties and red cards — measured, nothing to change
+
+fotmob's match details for every Eliteserien match 2020–2026 (1,608) are in
+`data/raw/fotmob_match_extras.json`: each shot's minute, side, xG and situation
+(penalty or not), red-card minutes and goal minutes. Pulled at one request
+started every 1.75 s. xG rebuilt from the shots reproduces the stored values to
++0.00002 log loss (fotmob revises recent matches). Against elo-v12.0, both the
+Elo xG update and the attack/defence observation switched together:
+
+| variant | log loss | t | Brier | t | RPS | t | halves (log loss t) |
+|---|---|---|---|---|---|---|---|
+| penalty xG ×0 (non-penalty xG) | +0.00089 | +2.4 | +0.00057 | +2.2 | +0.00021 | +1.8 | +1.7 / +1.8 |
+| penalty xG ×0.5 | +0.00035 | +1.9 | +0.00022 | +1.7 | +0.00007 | +1.3 | +1.5 / +1.4 |
+| penalty xG ×1.5 | −0.00016 | −0.9 | −0.00008 | −0.7 | −0.00002 | −0.3 | −1.0 / −0.5 |
+| half step after a red before 70' (106 matches) | −0.00002 | −0.1 | −0.00005 | −0.4 | −0.00003 | −0.5 | **+2.7** / −1.2 |
+| same, before 60' | +0.00003 | +0.2 | −0.00002 | −0.1 | −0.00001 | −0.2 | +2.1 / −0.7 |
+| no update after a red before 70' | +0.00020 | +0.5 | +0.00006 | +0.2 | +0.00001 | +0.1 | +2.9 / −0.7 |
+| xG only up to the red, scaled to 90' | +0.00043 | +1.4 | +0.00022 | +1.0 | +0.00010 | +0.9 | +1.9 / +0.8 |
+
+Penalties are signal, not noise: a side that wins them dominates the box, and
+taking them out costs in both halves. Weighting them up is picked every season
+walk-forward and is worth −0.00005 (t −0.2) out of sample, with Brier and RPS
+slightly positive — nothing. Red cards flip sign between the halves; walk-forward
+keeps the plain update every season. Both closed.
+
+### Data sources, for the record
+
+Sofascore now answers 403 from this machine on every endpoint (the OBOS xG
+refresh included); FBref sits behind Cloudflare (403). Neither was retried.
+fotmob's match details carry shot counts, shots on target and big chances for
+Eliteserien back to at least 2017, but nothing for OBOS-ligaen before 2023.

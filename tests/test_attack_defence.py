@@ -157,3 +157,19 @@ def test_update_xg_refetches_recent_matches(tmp_path):
     # Second fetch: only recent matches are re-fetched (stale is skipped)
     assert update_xg(games, path=path, fetch=fetch, delay=0) == 2
     assert set(calls) == {"recent1", "recent2"}
+
+
+def test_spread_stretches_predictions_but_not_what_the_ratings_learn():
+    divisions = {(2020, "A"): "l", (2020, "B"): "l"}
+    plain = AttackDefence(config=ADConfig(k=0.1, spread=1.0), divisions=divisions)
+    wide = AttackDefence(config=ADConfig(k=0.1, spread=1.5), divisions=divisions)
+    for model in (plain, wide):
+        model.observe(match("1", "2020-03-01", "A", "B", 3, 0))
+    assert wide.attack == plain.attack and wide.defence == plain.defence
+    cfg = plain.config
+    lam_plain, mu_plain = plain.rates("A", "B", "2020-03-02")
+    lam_wide, mu_wide = wide.rates("A", "B", "2020-03-02")
+    # log rate minus its constant part scales by exactly the spread
+    assert math.isclose(math.log(lam_wide) - cfg.base - cfg.home, 1.5 * (math.log(lam_plain) - cfg.base - cfg.home))
+    assert math.isclose(math.log(mu_wide) - cfg.base, 1.5 * (math.log(mu_plain) - cfg.base))
+    assert wide.predict("A", "B", "2020-03-02").home_win > plain.predict("A", "B", "2020-03-02").home_win

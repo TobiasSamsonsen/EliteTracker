@@ -5,8 +5,9 @@ the result is revealed and the model updates. That ordering is the whole point:
 a model tuned on results it has already absorbed will always look good.
 
 Scoring uses log loss as the headline (it punishes confident mistakes, which is
-what matters for a probability model) with the Brier score and hit rate
-alongside. Lower is better for both losses.
+what matters for a probability model) with the Brier score, the ranked
+probability score and hit rate alongside. RPS treats home/draw/away as ordered,
+so a draw is a smaller miss than the wrong winner. Lower is better for all three.
 
 A burn-in period is excluded from scoring so every variant starts from ratings
 that have already settled, and none is judged on its first, wildest guesses.
@@ -27,17 +28,30 @@ from elitetracker.model.probabilities import AWAY_WIN, DRAW, HOME_WIN, MatchProb
 _FLOOR = 1e-12
 
 
+def ranked_probability_score(probabilities: MatchProbabilities, outcome: str) -> float:
+    """RPS over the ordered outcomes home win < draw < away win: the mean squared
+    gap between the predicted and realised cumulative distributions."""
+    home = 1.0 if outcome == HOME_WIN else 0.0
+    home_or_draw = 1.0 if outcome in (HOME_WIN, DRAW) else 0.0
+    return ((probabilities.home_win - home) ** 2
+            + (probabilities.home_win + probabilities.draw - home_or_draw) ** 2) / 2.0
+
+
 @dataclass
 class Scorecard:
     name: str = ""
     matches: int = 0
     log_loss_total: float = 0.0
     brier_total: float = 0.0
+    rps_total: float = 0.0
     hits: int = 0
     # Reliability: predicted vs realised, bucketed by predicted probability.
     buckets: dict[int, list[float]] = field(default_factory=dict)
-    # match_id -> -log p(outcome), so two cards can be compared match by match.
+    # match_id -> -log p(outcome), so two cards can be compared match by match;
+    # the Brier and RPS per match alongside, for `paired(..., metric=...)`.
     losses: dict[str, float] = field(default_factory=dict)
+    brier_losses: dict[str, float] = field(default_factory=dict)
+    rps_losses: dict[str, float] = field(default_factory=dict)
     # match_id -> (probabilities, outcome), so cards can be blended or restricted.
     predictions: dict[str, tuple[MatchProbabilities, str]] = field(default_factory=dict)
 
@@ -48,6 +62,10 @@ class Scorecard:
     @property
     def brier(self) -> float:
         return self.brier_total / self.matches if self.matches else float("nan")
+
+    @property
+    def rps(self) -> float:
+        return self.rps_total / self.matches if self.matches else float("nan")
 
     @property
     def accuracy(self) -> float:
@@ -62,12 +80,15 @@ class Scorecard:
         self.matches += 1
         loss = -math.log(max(predicted[outcome], _FLOOR))
         self.log_loss_total += loss
+        brier = sum((value - (1.0 if key == outcome else 0.0)) ** 2 for key, value in predicted.items())
+        rps = ranked_probability_score(probabilities, outcome)
         if match_id:
             self.losses[match_id] = loss
+            self.brier_losses[match_id] = brier
+            self.rps_losses[match_id] = rps
             self.predictions[match_id] = (probabilities, outcome)
-        self.brier_total += sum(
-            (value - (1.0 if key == outcome else 0.0)) ** 2 for key, value in predicted.items()
-        )
+        self.brier_total += brier
+        self.rps_total += rps
         if max(predicted, key=predicted.get) == outcome:
             self.hits += 1
 
@@ -96,7 +117,7 @@ class Scorecard:
     def summary(self) -> str:
         return (
             f"{self.name:<34} n={self.matches:<5} "
-            f"logloss={self.log_loss:.5f}  brier={self.brier:.5f}  hit={self.accuracy:.4f}  calib={self.calibration_error():.4f}"
+            f"logloss={self.log_loss:.5f}  brier={self.brier:.5f}  rps={self.rps:.5f}  hit={self.accuracy:.4f}  calib={self.calibration_error():.4f}"
         )
 
 
@@ -151,13 +172,17 @@ def restrict(card: Scorecard, keep: set[str], name: str | None = None) -> Scorec
     return out
 
 
-def paired(a: Scorecard, b: Scorecard) -> tuple[int, float, float]:
-    """(n, mean of a-b per-match log loss, t-stat) over the matches both scored.
+def paired(a: Scorecard, b: Scorecard, metric: str = "log_loss") -> tuple[int, float, float]:
+    """(n, mean of a-b per-match loss, t-stat) over the matches both scored.
 
-    Negative means `a` is better. |t| >= 2 is the bar for calling it real.
+    `metric` is "log_loss", "brier" or "rps". Negative means `a` is better. For
+    the ship rule (|t| >= 2, or the out-of-sample rule for one-knob changes)
+    see PROJECT_STATUS.md, "elo-v12.0".
     """
-    ids = a.losses.keys() & b.losses.keys()
-    diffs = [a.losses[i] - b.losses[i] for i in ids]
+    pick = {"log_loss": "losses", "brier": "brier_losses", "rps": "rps_losses"}[metric]
+    first, second = getattr(a, pick), getattr(b, pick)
+    ids = first.keys() & second.keys()
+    diffs = [first[i] - second[i] for i in ids]
     n = len(diffs)
     if n < 2:
         return n, float("nan"), float("nan")

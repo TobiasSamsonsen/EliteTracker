@@ -31,12 +31,6 @@ from multiprocessing import Pool
 from pathlib import Path
 from typing import Any
 
-# Optional: the runtime is stdlib-only, so CI (Linux, few cores) has no psutil
-# and simply uses the logical core count.
-try:
-    import psutil
-except ImportError:
-    psutil = None
 
 from elitetracker.model.elo import EloConfig
 from elitetracker.pipeline import (
@@ -121,12 +115,12 @@ def build_site(
     workflow runs: past seasons come from the published archive instead.
     """
     out_dir.mkdir(parents=True, exist_ok=True)
-    jobs = jobs or os.cpu_count() or 1
-    # Cap at physical cores: Windows spawn mode hits kernel limits (commit charge /
-    # process handle table) at physical_core_count+1 concurrent processes.
-    # Logical cores (hyperthreads) share the same physical resources.
-    physical_cores = (psutil and psutil.cpu_count(logical=False)) or os.cpu_count() or 1
-    jobs = min(jobs, physical_cores)
+    # Default to at most 8 workers. A full build holds every worker at 100 % for
+    # minutes; on the developer's i5-14600KF (pre-0x12B microcode BIOS) 14 workers
+    # ended in a CLOCK_WATCHDOG_TIMEOUT (0x101) blue screen, the known Raptor
+    # Lake instability under sustained all-core load. 8 is measured stable.
+    # --jobs still overrides.
+    jobs = jobs or min(8, os.cpu_count() or 1)
 
     all_seasons = available_seasons(root)
     if not all_seasons:
@@ -178,7 +172,7 @@ def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument("--root", type=Path, default=NORMALIZED_DIR)
     parser.add_argument("--out", type=Path, default=Path("public/data"))
-    parser.add_argument("--jobs", type=int, help="worker processes (default: CPU count)")
+    parser.add_argument("--jobs", type=int, help="worker processes (default: min(8, CPU count))")
     parser.add_argument("--regression", type=float, default=EloConfig.season_regression,
                         help="cross-season mean reversion (1.0 = none)")
     parser.add_argument("--only-season", type=int, default=None,

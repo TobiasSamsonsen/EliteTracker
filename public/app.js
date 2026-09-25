@@ -1633,8 +1633,11 @@ function renderModelCard(report) {
     [t('model.outcomeOdds'), t('model.outcomeOddsValue')],
     [t('model.scorelines'), t('model.scorelinesValue')],
     [t('model.simulations'), num(model.simulations)],
-    [t('model.seed'), model.seed],
   );
+  if (model.strength_sd) {
+    rows.push([t('model.strengthSd'), `±${model.strength_sd}`]);
+  }
+  rows.push([t('model.seed'), model.seed]);
   for (const [name, value] of rows) {
     const cell = el('div');
     cell.appendChild(el('dt', '', name));
@@ -2946,8 +2949,9 @@ function scoreGrid(model, homeId, awayId, eloGap) {
   const [awayAttack, awayDefence, awayFinishing] = ad.teams[awayId] || [0, 0, 0];
   const gap = eloGap || 0;
   const effective_home = ad.home * (1 + (ad.home_beta || 0) * gap);
-  const lam = Math.exp(ad.base + effective_home + homeAttack - awayDefence + (homeFinishing || 0));
-  const mu = Math.exp(ad.base + awayAttack - homeDefence + (awayFinishing || 0));
+  const spread = ad.spread ?? 1;
+  const lam = Math.exp(ad.base + effective_home + spread * (homeAttack - awayDefence + (homeFinishing || 0)));
+  const mu = Math.exp(ad.base + spread * (awayAttack - homeDefence + (awayFinishing || 0)));
   const fact = [1, 1, 2, 6, 24, 120, 720, 5040, 40320];
   const pois = (k, rate) => Math.exp(-rate) * rate ** k / fact[k];
   const tau = (i, j) => (i === 0 && j === 0 ? 1 - lam * mu * ad.rho

@@ -106,6 +106,8 @@ def _halves(card: Scorecard, dates: dict[str, str]) -> tuple[Scorecard, Scorecar
     for part, chunk in ((early, ids[:cut]), (late, ids[cut:])):
         for match_id in chunk:
             part.losses[match_id] = card.losses[match_id]
+            part.brier_losses[match_id] = card.brier_losses[match_id]
+            part.rps_losses[match_id] = card.rps_losses[match_id]
     return early, late
 
 
@@ -137,15 +139,17 @@ def cmd_run(args: argparse.Namespace) -> int:
                if s.league == "eliteserien" and int(m.date[:4]) >= args.score_from]
     pinnacle = benchmark.benchmark_card(benchmark.load_odds(), matches)
     print(f"Scored from season {args.score_from}\n\n{elo.summary()}\n{shipped.summary()}\n{pinnacle.summary()}\n")
-    print("paired per-match log loss (negative = first is better; |t| >= 2 counts):")
-    for card, other in ((shipped, elo), (elo, pinnacle), (shipped, pinnacle)):
-        n, mean, t = paired(card, other)
-        early_a, late_a = _halves(card, dates)
-        early_b, late_b = _halves(other, dates)
-        _, mean_early, t_early = paired(early_a, early_b)
-        _, mean_late, t_late = paired(late_a, late_b)
-        print(f"  {card.name:<22} vs {other.name:<16} n={n} d={mean:+.5f} t={t:+.2f}"
-              f"   early d={mean_early:+.5f} t={t_early:+.2f}   late d={mean_late:+.5f} t={t_late:+.2f}")
+    print("paired per-match loss (negative = first is better):")
+    for metric in ("log_loss", "brier", "rps"):
+        print(f" {metric}")
+        for card, other in ((shipped, elo), (elo, pinnacle), (shipped, pinnacle)):
+            n, mean, t = paired(card, other, metric)
+            early_a, late_a = _halves(card, dates)
+            early_b, late_b = _halves(other, dates)
+            _, mean_early, t_early = paired(early_a, early_b, metric)
+            _, mean_late, t_late = paired(late_a, late_b, metric)
+            print(f"  {card.name:<22} vs {other.name:<16} n={n} d={mean:+.5f} t={t:+.2f}"
+                  f"   early d={mean_early:+.5f} t={t_early:+.2f}   late d={mean_late:+.5f} t={t_late:+.2f}")
     return 0
 
 
