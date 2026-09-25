@@ -11,6 +11,8 @@ const state = {
   sort: { key: 'position', dir: 1 },
   // Table view mode: 'current' shows live stats, 'prediction' shows model stats.
   tableView: (typeof localStorage !== 'undefined' && localStorage.getItem('elitetracker-table-view')) || 'current',
+  // Last sort used in each table view, restored when switching back to it.
+  sortByView: {},
   // ISO date the whole page is rewound to; null means live.
   asof: null,
   rewindTimer: null,
@@ -684,12 +686,28 @@ function toggleSort(key) {
   renderStandings(state.reports[state.league]);
 }
 
+/* Each view opens on its natural order: the table as it stands, or the
+   projection by expected points. A sort picked within a view is kept for it. */
+const DEFAULT_SORT = {
+  current: { key: 'position', dir: 1 },
+  prediction: { key: 'expected_points', dir: -1 },
+};
+
 function toggleTableView(view) {
+  state.sortByView[state.tableView] = state.sort;
   state.tableView = view;
   state.activeView = 'table';
+  state.sort = state.sortByView[view] || DEFAULT_SORT[view];
   if (typeof localStorage !== 'undefined') {
     localStorage.setItem('elitetracker-table-view', view);
   }
+  if (state.reports) renderStandings(state.reports[state.league]);
+  else applyTableView();
+}
+
+/* Visibility only: renderStandings calls this after building the rows. */
+function applyTableView() {
+  const view = state.tableView;
   // Update toggle button states.
   for (const button of document.querySelectorAll('.table-control-btn')) {
     button.setAttribute('aria-pressed', button.dataset.tableMode === view ? 'true' : 'false');
@@ -742,7 +760,14 @@ $('#head-last').textContent = t('table.relegation');
   const rows = standingsRows(report).map((row) => ({
     ...row,
     form: formPoints(formByTeamName[row.team]),
+    xg_diff: row.attack - row.defence,
   }));
+
+  // Fixture difficulty is read against the league's own mean run-in: with
+  // draws, even an average side's run-in is worth well under 1.5 points a
+  // match. Clubs with no fixtures left (0) are left out.
+  const runIns = rows.map((row) => row.fixture_difficulty).filter((value) => value > 0);
+  const neutralRunIn = runIns.reduce((sum, value) => sum + value, 0) / (runIns.length || 1);
 
   // Find the team with the highest rating rise for the champion-yellow arrow
   const trends = new Map();
@@ -786,7 +811,7 @@ $('#head-last').textContent = t('table.relegation');
      const tr = el('tr', 'zone-divider');
      tr.style.setProperty('--band-color', bandColor(boundary.band, count));
      const td = el('td');
-     td.colSpan = 16;  // full table width (16 columns)
+     td.colSpan = 19;  // full table width (19 columns)
      // Format: "======== Expected CL Threshold: 67p ========"
      const label = el('span', 'zone-divider__wrap',
        `Expected ${boundary.label} Threshold: ${boundary.cut}p`);
@@ -862,28 +887,45 @@ $('#head-last').textContent = t('table.relegation');
     xpTd.dataset.tableView = 'prediction';
     tr.appendChild(xpTd);
 
-    // Fixture difficulty: expected points per remaining match vs league average.
+    // Expected goals for/against per match against an average side of the division.
+    // Signed on the shown value, so ±0.04 reads "0.0", not "+0.0" or "-0.0".
+    const xgd = Math.round(row.xg_diff * 10) / 10 || 0;
+    for (const [text, muted] of [
+      [row.attack.toFixed(1), true],
+      [row.defence.toFixed(1), true],
+      [(xgd > 0 ? '+' : '') + xgd.toFixed(1), false],
+    ]) {
+      const td = el('td', `num${muted ? ' muted' : ''} col--extra`, text);
+      td.dataset.tableView = 'prediction';
+      tr.appendChild(td);
+    }
+
+    // Fixture difficulty: expected points per remaining match for an average
+    // side. Red below the league mean (a harder run-in), green above.
     const fixtureCell = el('td', 'num col--extra', '');
     fixtureCell.dataset.tableView = 'prediction';
-    if (row.fixture_difficulty !== undefined) {
+    if (row.fixture_difficulty > 0) {
       const value = row.fixture_difficulty;
-      const pill = el('span', 'fixture-difficulty-pill');
-      pill.textContent = value.toFixed(1);
-      const normalized = Math.min(1, Math.max(0, (value - 0) / 3));
-      const hue = 120 * normalized;
-      pill.style.backgroundColor = `hsl(${hue}, 70%, 40%)`;
-      pill.style.color = 'white';
-      pill.style.padding = '2px 6px';
-      pill.style.borderRadius = '12px';
-      pill.style.fontSize = '0.85rem';
-      pill.style.fontWeight = '600';
-      pill.style.display = 'inline-block';
+      const pill = el('span', 'fixture-difficulty-pill', value.toFixed(2));
+      const gap = value - neutralRunIn;
+      if (Math.abs(gap) < 0.02) {
+        pill.classList.add('fixture-difficulty-pill--neutral');
+      } else {
+        // Run-ins spread about ±0.15 around the mean, so that is full colour:
+        // a pale tint just off neutral, deepening as the gap grows.
+        const strength = Math.min(1, Math.abs(gap) / 0.15);
+        const lightness = 85 - strength * 45;
+        pill.style.backgroundColor = gap < 0
+          ? `hsl(0, 70%, ${lightness}%)`
+          : `hsl(130, 55%, ${lightness - 5}%)`;
+        pill.style.color = strength > 0.45 ? 'white' : '#1c2a33';
+      }
       fixtureCell.appendChild(pill);
     }
     tr.appendChild(fixtureCell);
 
     const formTd = el('td', 'num form col--extra');
-    formTd.dataset.tableView = 'current prediction';
+    formTd.dataset.tableView = 'current';
     formTd.appendChild(formChipsEl(formByTeamName[row.team]));
     tr.appendChild(formTd);
 
@@ -907,7 +949,7 @@ body.appendChild(tr);
    }
 
    // Apply the current view mode to the rendered cells.
-   toggleTableView(state.tableView);
+   applyTableView();
 }
 
 const METER_DIGITS = 0;
@@ -2581,6 +2623,7 @@ function wire() {
 function applySortParameter() {
   const params = new URLSearchParams(window.location.search);
   const key = params.get('sort');
+  state.sort = DEFAULT_SORT[state.tableView] || DEFAULT_SORT.current;
   if (!key) return;
   const known = document.querySelector(`#standings th[data-sort-col="${CSS.escape(key)}"]`);
   if (!known) return;

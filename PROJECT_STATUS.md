@@ -1107,233 +1107,26 @@ Increasing to 200,000 grid would cost **4× time** (1.43s → 5.7s per league) f
 
 **GitHub Actions impact:** CI runners have 2–4 cores. At 2 cores the deploy takes ~2.3 min; at 4 cores ~1.2 min. The 30-min refresh cadence means most runs skip the deploy entirely (no data change). No CI optimization needed.
 
-## 🎯 Prediction Table Enhancements — Plan
+## 🎯 Prediction table enhancements — shipped
 
-### Context
-The Current/Prediction toggle is working, but the Prediction view needs richer expected-goals data and better visual design for Fixture Difficulty.
+The Prediction view of the table now:
 
-### Requirements
-1. **Auto-sort:** When switching to Prediction, sort by xPts descending. When switching to Current, sort by Position ascending.
-2. **Add xG/xGA/xGD columns** to Prediction view (1 decimal each).
-3. **Remove Form pill** from Prediction view (Current view only).
-4. **Fixture Difficulty redesign:**
-   - 2 decimals (e.g., "1.47")
-   - Neutral threshold at 1.50 (xPTS for equal teams, no home advantage)
-   - 1.50 → transparent pill with subtle border
-   - < 1.50 → red spectrum (harder fixtures)
-   - > 1.50 → green spectrum (easier fixtures)
-5. **Sort persistence:** Store sort preference per view mode.
+- **Sorts itself on switch:** Prediction opens on xPts ↓, Current on position ↑.
+  A sort picked inside a view is remembered for that view (in memory) and
+  restored on switching back. `?sort=` still overrides on load.
+- **Adds xG / xGA / xGD** (1 decimal, xGD signed): the attack/defence ratings
+  read as goals per match against an average side of the division
+  (`row.attack` / `row.defence`), sortable as `attack`, `defence`, `xg_diff`.
+- **Drops Form**, which is now Current-only.
+- **Shows Fixture Difficulty with 2 decimals** (`pipeline` rounds it to 2 now)
+  as a pill centred on the **league's mean run-in**, not 1.50. With draws, an
+  average side against average opponents earns about (3 − P(draw))/2 ≈ 1.37
+  points a match, so a 1.50 neutral painted nearly every club red. Within
+  ±0.02 of the mean the pill is transparent with a border. Below the mean it is
+  red (harder), above it green (easier), reaching full colour at ±0.15, which
+  is about the real spread.
 
----
-
-### Data Availability
-All required data already exists in `_table_payload()` output:
-- `row.attack` → xG (expected goals for per match vs avg opponent)
-- `row.defence` → xGA (expected goals against per match vs avg opponent)
-- `row.fixture_difficulty` → expected pts per remaining match vs league avg
-- `row.expected_points` → xPts
-
----
-
-### Files to Modify
-
-| File | Changes |
-|------|---------|
-| `public/app.js` | `toggleTableView()` auto-sort + re-render; `renderStandings()` new cells; Fixture Difficulty color logic |
-| `public/index.html` | 3 new `<th>` for xG/xGA/xGD; Form header `data-table-view="current"` only |
-| `public/i18n.js` | EN/NO translations for xG, xGA, xGD column labels |
-| `public/styles.css` | `.fixture-difficulty-pill` base styles (wider for 2 decimals) |
-
----
-
-### 1. Auto-Sort Logic in `toggleTableView()`
-
-```javascript
-function toggleTableView(view) {
-  state.tableView = view;
-  state.activeView = 'table';
-  if (typeof localStorage !== 'undefined') {
-    localStorage.setItem('elitetracker-table-view', view);
-  }
-  // Button states
-  for (const button of document.querySelectorAll('.table-control-btn')) {
-    button.setAttribute('aria-pressed', button.dataset.tableMode === view ? 'true' : 'false');
-    button.classList.toggle('is-active', button.dataset.tableMode === view);
-  }
-  // Auto-sort per view
-  if (view === 'prediction') {
-    state.sort = { key: 'expected_points', dir: -1 };
-  } else {
-    state.sort = { key: 'position', dir: 1 };
-  }
-  // Column visibility
-  for (const header of document.querySelectorAll('#standings th[data-table-view]')) {
-    const views = header.dataset.tableView.split(' ');
-    header.hidden = !views.includes(view);
-  }
-  for (const cell of document.querySelectorAll('#standings td[data-table-view]')) {
-    const views = cell.dataset.tableView.split(' ');
-    cell.hidden = !views.includes(view);
-  }
-  // Section visibility
-  for (const section of document.querySelectorAll('[data-section]')) {
-    const views = section.dataset.section.split(' ');
-    section.hidden = !views.includes(state.activeView);
-  }
-  renderSortHeaders();
-  renderStandings(state.reports[state.league]); // re-render with new sort
-}
-```
-
----
-
-### 2. Add xG, xGA, xGD Columns
-
-**HTML Headers** (after xPts, before Fixture Difficulty):
-```html
-<th class="num col--extra" scope="col" data-sort-col="xg" data-table-view="prediction">
-  <button class="sort-btn" data-sort-key="xg">
-    <span data-i18n="table.col.xg">xG</span>
-    <span class="visually-hidden" data-i18n="table.col.xg.desc">Expected goals for per match vs league average</span>
-    <span class="sort-btn__caret"></span>
-  </button>
-</th>
-<th class="num col--extra" scope="col" data-sort-col="xga" data-table-view="prediction">
-  <button class="sort-btn" data-sort-key="xga">
-    <span data-i18n="table.col.xga">xGA</span>
-    <span class="visually-hidden" data-i18n="table.col.xga.desc">Expected goals against per match vs league average</span>
-    <span class="sort-btn__caret"></span>
-  </button>
-</th>
-<th class="num col--extra" scope="col" data-sort-col="xgd" data-table-view="prediction">
-  <button class="sort-btn" data-sort-key="xgd">
-    <span data-i18n="table.col.xgd">xGD</span>
-    <span class="visually-hidden" data-i18n="table.col.xgd.desc">Expected goal difference per match vs league average</span>
-    <span class="sort-btn__caret"></span>
-  </button>
-</th>
-```
-
-**JS Cells** (after xPts cell):
-```javascript
-// xG
-const xgTd = el('td', 'num muted col--extra', row.attack.toFixed(1));
-xgTd.dataset.tableView = 'prediction';
-tr.appendChild(xgTd);
-// xGA
-const xgaTd = el('td', 'num muted col--extra', row.defence.toFixed(1));
-xgaTd.dataset.tableView = 'prediction';
-tr.appendChild(xgaTd);
-// xGD (raw difference, 1 decimal, signed)
-const xgd = row.attack - row.defence;
-const xgdTd = el('td', 'num col--extra', xgd > 0 ? `+${xgd.toFixed(1)}` : xgd.toFixed(1));
-xgdTd.dataset.tableView = 'prediction';
-tr.appendChild(xgdTd);
-```
-
-**i18n Translations:**
-```javascript
-// English
-'table.col.xg': 'xG',
-'table.col.xg.desc': 'Expected goals for per match vs league average',
-'table.col.xga': 'xGA',
-'table.col.xga.desc': 'Expected goals against per match vs league average',
-'table.col.xgd': 'xGD',
-'table.col.xgd.desc': 'Expected goal difference per match vs league average',
-// Norwegian
-'table.col.xg': 'xG',
-'table.col.xg.desc': 'Forventede mål for per kamp vs gjennomsnitt',
-'table.col.xga': 'xGA',
-'table.col.xga.desc': 'Forventede mål imot per kamp vs gjennomsnitt',
-'table.col.xgd': 'xGD',
-'table.col.xgd.desc': 'Forventet målforskjell per kamp vs gjennomsnitt',
-```
-
----
-
-### 3. Remove Form from Prediction View
-
-**HTML:** `data-table-view="current"` only  
-**JS:** `formTd.dataset.tableView = 'current'`
-
----
-
-### 4. Fixture Difficulty Redesign
-
-**Formatting:** `value.toFixed(2)` (2 decimals)
-
-**Color Logic (neutral at 1.50 = equal teams xPTS, no home advantage):**
-```javascript
-pill.textContent = value.toFixed(2);
-
-if (Math.abs(value - 1.5) < 0.02) {
-  // Neutral: transparent with subtle border
-  pill.style.backgroundColor = 'transparent';
-  pill.style.color = 'var(--ink-muted)';
-  pill.style.border = '1px solid var(--rule)';
-} else if (value < 1.5) {
-  // Harder: red spectrum (1.0 = deep red, 1.5 = neutral)
-  const t = (1.5 - value) / 0.5;
-  pill.style.backgroundColor = `hsl(0, ${60 + t * 20}%, ${40 + t * 10}%)`;
-  pill.style.color = 'white';
-  pill.style.border = 'none';
-} else {
-  // Easier: green spectrum (1.5 = neutral, 2.0 = forest green)
-  const t = Math.min(1, (value - 1.5) / 0.5);
-  pill.style.backgroundColor = `hsl(130, ${50 + t * 20}%, ${40 - t * 10}%)`;
-  pill.style.color = 'white';
-  pill.style.border = 'none';
-}
-pill.style.borderRadius = '12px';
-pill.style.padding = '2px 6px';
-pill.style.fontSize = '0.8rem';
-pill.style.fontWeight = '600';
-pill.style.display = 'inline-block';
-pill.style.minWidth = '42px';
-pill.style.textAlign = 'center';
-```
-
-**CSS Base:**
-```css
-.fixture-difficulty-pill {
-  padding: 2px 6px;
-  border-radius: 12px;
-  font-size: 0.8rem;
-  font-weight: 600;
-  display: inline-block;
-  min-width: 42px;
-  text-align: center;
-  transition: background-color 0.15s var(--ease), color 0.15s var(--ease);
-}
-```
-
----
-
-### 5. Column Order (Prediction View)
-
-| # | Column | Sort Key | View | Decimals |
-|---|--------|----------|------|----------|
-| 1 | Position | `position` | current prediction | — |
-| 2 | Club | `team` | current prediction | — |
-| 3 | Rating | `rating` | current prediction | 0 |
-| 4 | xPts | `expected_points` | prediction | 1 |
-| 5 | xG | `xg` | prediction | 1 |
-| 6 | xGA | `xga` | prediction | 1 |
-| 7 | xGD | `xgd` | prediction | 1 (signed) |
-| 8 | Fixture Diff | `fixture_difficulty` | prediction | 2 |
-| 9 | Champion | `up` | prediction | 0% |
-| 10 | Relegation | `down` | prediction | 0% |
-
----
-
-### Testing Checklist
-- [ ] Prediction → auto-sorts xPts desc
-- [ ] Current → auto-sorts Position asc
-- [ ] xG/xGA/xGD visible in Prediction, hidden in Current
-- [ ] Form visible in Current, hidden in Prediction
-- [ ] Fixture Difficulty 2 decimals
-- [ ] 1.50 → transparent + border
-- [ ] < 1.50 → red spectrum
-- [ ] > 1.50 → green spectrum
-- [ ] Mobile horizontal scroll OK
-- [ ] All 269 Python + 12 frontend tests pass
+`toggleTableView` (button handler: sort + re-render) is split from
+`applyTableView` (visibility only, called at the end of `renderStandings`). The
+stored plan had the handler call `renderStandings`, which already called the
+handler, and that recursed.

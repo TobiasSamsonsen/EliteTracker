@@ -459,7 +459,7 @@ def _table_payload(
                 "rating_start": round(started, 1),
                 "rating_change": round(ratings[row.team_id] - started, 1),
                 "expected_points": round(team.expected_points, 1),
-                "fixture_difficulty": round(expected_points, 1),  # Lower = harder fixtures
+                "fixture_difficulty": round(expected_points, 2),  # Lower = harder fixtures
                 "position_probabilities": [round(value, 6) for value in team.position_probabilities],
                 # Expected goals for and against per match, against an average
                 # side of the division: the readable form of the attack/defence ratings.
