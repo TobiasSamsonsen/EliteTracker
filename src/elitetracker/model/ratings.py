@@ -38,12 +38,16 @@ def build_rating_table(
     shots: dict[str, tuple[float, ...]] | None = None,
     config_for: Callable[[str, int], EloConfig] | None = None,
     league: str = "",
+    before: dict[str, tuple[float, float]] | None = None,
 ) -> dict[str, float]:
     """Seed from the start of the season, then apply every played match in order.
 
     Teams appearing in `matches` without a seed start at the ladder floor. All
     the matches belong to one season, so no offseason regression applies here:
     `seeds` are already that season's opening ratings.
+
+    `before`, when given, is filled with each played match's pre-match
+    (home, away) ratings by match_id -- the same replay, not a second one.
     """
     _assert_ids(matches)
     ratings = {team_id: seed.rating for team_id, seed in seeds.items()}
@@ -54,6 +58,7 @@ def build_rating_table(
     # alone, so one label is enough for both divisions.
     slices = [SeasonSlice(league, league, season, matches)]
     for _, _, ratings, applied in replay(slices, ratings, config, shots=shots, config_for=config_for):
-        for _ in applied:
-            pass
+        for match, pair in applied:
+            if before is not None:
+                before[match.match_id] = pair
     return ratings

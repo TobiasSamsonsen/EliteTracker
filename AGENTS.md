@@ -98,8 +98,8 @@ strings (`data-i18n` in the HTML, `t()` in JS). Tabbed views, default Finish Gri
 - **Finish Grid** — 16×16 heat matrix of finishing-position probability, animatable
 - **Table** — standings, rating, expected points, title/relegation odds, all sortable
 - **Ladder** — both divisions on one rating axis (a ranked list with a rating dot on phones), animatable
-- **Next Up** — three-way odds per fixture with predicted scorelines
-- **Played Results** — completed matches by ISO week with rating deltas
+- **Next Up** — three-way odds per fixture with predicted scorelines, paged by ISO week
+- **Played Results** — completed matches by ISO week with rating deltas and xG under the score
 - **Compare Clubs** — two native selects; odds computed in the browser from `report.model`
 - **Model Card** — parameters and known limits
 - **Team focus** — summary (with expected goals for/against per match), finish row,
@@ -170,7 +170,7 @@ python -m venv .venv && .venv/bin/pip install -e '.[dev]'   # one-time (Windows:
 
 ## Testing
 
-273 Python tests, plus a small Node suite over the pure frontend logic (form chips, the
+276 Python tests, plus a small Node suite over the pure frontend logic (form chips, the
 compare tool's odds port). Required coverage:
 * ELO initialization, expected result, actual score, update
 * Draw probability logic

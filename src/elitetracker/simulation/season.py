@@ -92,6 +92,10 @@ class TeamProjection:
     # position_probabilities[0] is the chance of finishing 1st.
     position_probabilities: list[float]
     expected_points: float
+    # Season totals averaged over the runs: goals already scored plus the
+    # simulated scorelines of the remaining fixtures.
+    expected_goals_for: float = 0.0
+    expected_goals_against: float = 0.0
 
 
 @dataclass
@@ -202,6 +206,8 @@ def simulate_season(
 
     counts = [[0] * count for _ in range(count)]
     points_total = [0] * count
+    goals_for_total = [0] * count
+    goals_against_total = [0] * count
     # Median points per finishing position, so the frontend can state a band's
     # expected threshold. Points are bounded small integers, so a histogram per
     # position beats sorting 50,000 samples per position per report.
@@ -263,6 +269,8 @@ def simulate_season(
             index = value & mask
             counts[index][position] += 1
             points_total[index] += points[index]
+            goals_for_total[index] += goals_for[index]
+            goals_against_total[index] += goals_against[index]
             position_hist[position][points[index]] += 1
 
     halfway = (config.simulations + 1) // 2
@@ -287,6 +295,8 @@ def simulate_season(
             played=rows[index].played,
             position_probabilities=[value / simulations for value in counts[index]],
             expected_points=points_total[index] / simulations,
+            expected_goals_for=goals_for_total[index] / simulations,
+            expected_goals_against=goals_against_total[index] / simulations,
         )
         for index, team_id in enumerate(team_ids)
     ]

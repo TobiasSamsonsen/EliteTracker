@@ -5,6 +5,7 @@ import json
 import pytest
 
 from elitetracker.normalize.matches import Match, dump
+from elitetracker import pipeline
 from elitetracker.pipeline import LEAGUE_SPECS, _matchdays, bands_for, build_all_careers, build_report
 from elitetracker.simulation.history import HistoryConfig
 from elitetracker.simulation.season import SimulationConfig
@@ -119,6 +120,31 @@ class TestRewind:
         for result in report["results"]:
             assert result["home_id"] == result["home"]
             assert result["away_id"] == result["away"]
+
+    def test_results_carry_xg_where_known(self, monkeypatch):
+        """Played Results prints xG under the score; matches without it get no key."""
+        monkeypatch.setattr(pipeline, "shot_table", lambda: {"1": (1.234, 0.5, 0.9, 0.2)})
+        with_xg, without = pipeline._results_payload(
+            [match(1, "A", "B", "2026-03-01"), match(2, "C", "D", "2026-03-01")]
+        )
+        assert with_xg["xg"] == [1.23, 0.5]
+        assert "xg" not in without
+
+    def test_xg_form_is_the_rating_change_the_chances_alone_would_give(self, monkeypatch):
+        """The trend arrow's signal: K * (xG-implied score - expected score), and
+        the away side's is the negative. Even ratings, even xG: the home side
+        only matched what home advantage expected of it, so it comes out below."""
+        from elitetracker.model.elo import EloConfig
+        config = EloConfig(k_factor=30, home_advantage=60)
+        even = pipeline.xg_form(1500, 1500, 1.4, 1.4, config)
+        assert even < 0
+        assert pipeline.xg_form(1500, 1500, 3.0, 0.5, config) > 5
+        monkeypatch.setattr(pipeline, "shot_table", lambda: {"1": (3.0, 0.5)})
+        (result,) = pipeline._results_payload(
+            [match(1, "A", "B", "2026-03-01")], {"1": (1500.0, 1500.0)}, config
+        )
+        home, away = result["xg_form"]
+        assert home == pytest.approx(-away) and home > 5
 
     def test_rewinding_hides_later_results(self, tiny_league):
         report = build(tiny_league, asof="2016-03-01")

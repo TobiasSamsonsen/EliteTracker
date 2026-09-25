@@ -695,6 +695,11 @@ away. Nothing ships until a walk-forward says it does.
       same 1,600 matches would say how much of the model's xG noise is the provider's,
       and an average of the two would be a cheap variance reduction if they disagree.
 
+- [ ] Rebuild and re-upload the past-seasons archive (AGENTS.md, "Publishing past
+      seasons"): reports built before September 2026 lack `results[].xg`,
+      `results[].xg_form` and the projected goal totals, so 2015–2025 show no xG
+      under scores, dashes for projected GF/GA/GD and the old trend arrow.
+
 **Ongoing:**
 - [ ] Re-fit the draw model periodically as seasons accumulate.
 - [ ] Re-run `backtest_cli` after each new season to keep K / home advantage / regression
@@ -1123,6 +1128,11 @@ The Prediction view of the table now:
 - **Adds xG / xGA / xGD** (1 decimal, xGD signed): the attack/defence ratings
   read as goals per match against an average side of the division
   (`row.attack` / `row.defence`), sortable as `attack`, `defence`, `xg_diff`.
+  *Replaced (September 2026):* the columns are now projected final **GF / GA /
+  GD** -- goals so far plus the simulated rest, averaged over the runs
+  (`expected_goals_for` / `expected_goals_against`). Labelled like the Current
+  view's goal columns rather than "xG", which on this site means the match
+  statistic from FotMob/Sofascore.
 - **Drops Form**, which is now Current-only.
 - **Shows Fixture Difficulty with 2 decimals** (`pipeline` rounds it to 2 now)
   as a pill centred on the **league's mean run-in**, not 1.50. With draws, an
@@ -1352,3 +1362,76 @@ Sofascore now answers 403 from this machine on every endpoint (the OBOS xG
 refresh included); FBref sits behind Cloudflare (403). Neither was retried.
 fotmob's match details carry shot counts, shots on target and big chances for
 Eliteserien back to at least 2017, but nothing for OBOS-ligaen before 2023.
+
+## 🎯 Trend arrow on xG form (September 2026) — shipped
+
+The arrow beside a rating (table and team view) was a weighted average of the
+last 6 actual rating changes. Those are mostly result luck: an Elo change is the
+surprise in a result, and surprises do not persist. Measured on 3,738
+club-season windows with xG (Eliteserien 2020→, OBOS 2023→), correlation of the
+arrow's value with the next 3 matches:
+
+| window | signal | next 3 by xG | next 3 by rating Δ | mean age | label flips |
+|---|---|---|---|---|---|
+| linear 0.1…0.6, last 6 (old) | rating Δ | −0.01 | 0.06 | 13 d | 53 % |
+| **linear 0.1…0.6, last 6 (shipped)** | **xG form** | **0.17** | **0.15** | **13 d** | 47 % |
+| equal, last 6 | xG form | 0.17 | 0.16 | 19 d | 39 % |
+| equal, last 3 | xG form | 0.14 | 0.13 | 8 d | 55 % |
+| decay, half-life 21 days | xG form | 0.17 | 0.15 | 20 d | 46 % |
+
+xG form per match is `K · (xG-implied score − expected score)`: the rating change
+the chances alone would have produced (`pipeline.xg_form`, served per result as
+`xg_form: [home, away]`). With it the window barely matters; the linear weights
+keep the most recent information (the last three matches carry 71 %) at full
+signal. Cut-offs ±1 / ±4 per match keep the old mix of arrows (the signal's sd is
+2.9 against 4.3). Clubs or seasons without six xG matches fall back to the old
+rating-change arrow and wording. Display only: no prediction changes, no
+`MODEL_VERSION` bump.
+
+## 🎨 Site pass: rewind/season bugs, projected goals, UI consistency (September 2026) — shipped
+
+Display and data-payload changes only; predictions are untouched, `MODEL_VERSION`
+stays elo-v12.0.
+
+**New data in the report**
+- `results[].xg` (`[home, away]`) printed under every played score, so a rating
+  move can be read against the chances. `results[].xg_form` feeds the trend arrow
+  (section above).
+- `table[].expected_goals_for` / `expected_goals_against`: season totals averaged
+  over the simulations -- goals so far plus the simulated scorelines. The Monte
+  Carlo already drew them for the tiebreak; it now sums them. No extra random
+  draws, so every probability is bit-identical. Shown in the Prediction table as
+  projected **GF / GA / GD** (not "xG", which on this site means the match
+  statistic); older reports without the fields show a dash.
+- `careers.json` is no longer thinned to 400 points per club: Played Results and
+  the arrows read each match's rating change by date, and the longest career
+  (364 points) would have crossed the cap in 2027.
+
+**Rewind and season-switch bugs fixed**
+- Slider sat on matchday 1 after switching division while rewound (the divisions
+  play on different dates): now the last matchday on or before the rewound date.
+- Out-of-order responses: rewinds and season loads share one request counter, so
+  a slow earlier fetch can no longer paint over a newer one; a pending slider
+  fetch and the animation are stopped by every season change; a season load that
+  fails keeps `state.asof` describing the page still on screen.
+- `?season=` / `?asof=` are written back to the URL, so a reload or shared link
+  lands where the reader was.
+- Team view follows a promoted/relegated club into its division when the season
+  changes, instead of showing today's rating and no matches.
+- Finished seasons show "—" for fixture difficulty (no run-in) rather than a blank.
+- Short club names (HamKam, Odd, ...) also applied to head-to-head meetings and to
+  the matchday reports the finish-grid/ladder animation prefetches.
+- Status line: a careers failure stays visible; a later successful season load
+  clears an earlier error.
+
+**UI**
+- One pagination control (`pageNav`) everywhere, modelled on Played Results: Next
+  Up is paged by ISO week, the team page and Compare head-to-head by page.
+- Animation controls: labelled Play/Stop button, a bar under the panel head with
+  the date on show, a progress bar and a 1×/2×/4× segmented speed control.
+- Team view: tile strips for position/points/GD/played and for attack/defence as
+  ± % against the division average (defence inverted, + is better), with a
+  diverging bar; a quieter back button; form removed.
+- Phones: rewind slider keeps its place above the view (it jumped mid-drag);
+  Played Results and Next Up show crests only, larger.
+- Model card: the modern era's xG weight is *lower* (30 %) than the legacy 45 %.

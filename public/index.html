@@ -152,7 +152,16 @@
           </div>
           <div class="grid-controls">
             <div class="label" id="grid-count"></div>
-            <button type="button" class="grid-anim-btn" id="grid-anim-play" data-i18n="title.animateSeason" data-i18n-attr="title" title="Animate the season">▶</button>
+            <button type="button" class="grid-anim-btn" id="grid-anim-play" aria-pressed="false" data-i18n="title.animateSeason" data-i18n-attr="title" title="Replay the season matchday by matchday"><span class="grid-anim-btn__icon" aria-hidden="true">▶</span><span class="grid-anim-btn__label" data-i18n="anim.play">Play season</span></button>
+          </div>
+        </div>
+        <div class="grid-anim-bar" id="grid-anim-controls" hidden>
+          <span class="grid-anim-bar__when" id="grid-anim-when"></span>
+          <span class="grid-anim-bar__track" aria-hidden="true"><span class="grid-anim-bar__fill" id="grid-anim-fill"></span></span>
+          <div class="grid-anim-speed" role="group" data-i18n="anim.speed" data-i18n-attr="aria-label" aria-label="Speed">
+            <button type="button" data-speed="1" aria-pressed="true">1×</button>
+            <button type="button" data-speed="2" aria-pressed="false">2×</button>
+            <button type="button" data-speed="4" aria-pressed="false">4×</button>
           </div>
         </div>
         <div class="scroller">
@@ -161,9 +170,6 @@
               <caption class="visually-hidden" data-i18n="aria.gridCaption">Probability that each team finishes in each position</caption>
             </table>
           </div>
-        </div>
-        <div class="grid-anim-bar" id="grid-anim-controls" hidden>
-          <button type="button" id="grid-anim-speed" class="grid-anim-speed" data-i18n="title.changeSpeed" data-i18n-attr="title" title="Change speed">1×</button>
         </div>
         <div class="legend" id="grid-legend"></div>
       </div>
@@ -215,26 +221,26 @@
                 <th class="num" scope="col" aria-sort="none" data-sort-col="points" data-table-view="current">
                   <button type="button" class="sort-btn" data-sort-key="points"><span class="sort-btn__label" data-i18n="th.points">Pts</span><span class="visually-hidden" data-i18n="th.points.desc">, points</span><span class="sort-btn__caret" aria-hidden="true"></span></button>
                 </th>
+                <th class="num form col--extra" scope="col" aria-sort="none" data-sort-col="form" data-table-view="current">
+                  <button type="button" class="sort-btn" data-sort-key="form"><span class="sort-btn__label" data-i18n="table.col.form">Form</span><span class="visually-hidden" data-i18n="th.form.desc">, recent results</span><span class="sort-btn__caret" aria-hidden="true"></span></button>
+                </th>
                 <th class="num sep" scope="col" aria-sort="none" data-sort-col="rating" data-table-view="current prediction">
                   <button type="button" class="sort-btn" data-sort-key="rating"><span class="sort-btn__label" data-i18n="table.col.rating">Rating</span><span class="sort-btn__short" aria-hidden="true" data-i18n="table.col.ratingShort">Elo</span><span class="visually-hidden" data-i18n="th.rating.desc">, ELO rating</span><span class="sort-btn__caret" aria-hidden="true"></span></button>
                 </th>
                 <th class="num" scope="col" aria-sort="none" data-sort-col="expected_points" data-table-view="prediction">
                   <button type="button" class="sort-btn" data-sort-key="expected_points"><span class="sort-btn__label" data-i18n="th.expected_points">xPts</span><span class="visually-hidden" data-i18n="th.expected_points.desc">, expected final points</span><span class="sort-btn__caret" aria-hidden="true"></span></button>
                 </th>
-                <th class="num col--extra" scope="col" aria-sort="none" data-sort-col="attack" data-table-view="prediction">
-                  <button type="button" class="sort-btn" data-sort-key="attack"><span class="sort-btn__label" data-i18n="table.col.xg">xG</span><span class="visually-hidden" data-i18n="table.col.xg.desc">Expected goals for per match vs league average</span><span class="sort-btn__caret" aria-hidden="true"></span></button>
+                <th class="num col--extra" scope="col" aria-sort="none" data-sort-col="expected_goals_for" data-table-view="prediction">
+                  <button type="button" class="sort-btn" data-sort-key="expected_goals_for"><span class="sort-btn__label" data-i18n="table.col.projGoalsFor">GF</span><span class="visually-hidden" data-i18n="table.col.projGoalsFor.desc">, projected final goals for: goals so far plus the simulated rest of the season</span><span class="sort-btn__caret" aria-hidden="true"></span></button>
                 </th>
-                <th class="num col--extra" scope="col" aria-sort="none" data-sort-col="defence" data-table-view="prediction">
-                  <button type="button" class="sort-btn" data-sort-key="defence"><span class="sort-btn__label" data-i18n="table.col.xga">xGA</span><span class="visually-hidden" data-i18n="table.col.xga.desc">Expected goals against per match vs league average</span><span class="sort-btn__caret" aria-hidden="true"></span></button>
+                <th class="num col--extra" scope="col" aria-sort="none" data-sort-col="expected_goals_against" data-table-view="prediction">
+                  <button type="button" class="sort-btn" data-sort-key="expected_goals_against"><span class="sort-btn__label" data-i18n="table.col.projGoalsAgainst">GA</span><span class="visually-hidden" data-i18n="table.col.projGoalsAgainst.desc">, projected final goals against</span><span class="sort-btn__caret" aria-hidden="true"></span></button>
                 </th>
-                <th class="num col--extra" scope="col" aria-sort="none" data-sort-col="xg_diff" data-table-view="prediction">
-                  <button type="button" class="sort-btn" data-sort-key="xg_diff"><span class="sort-btn__label" data-i18n="table.col.xgd">xGD</span><span class="visually-hidden" data-i18n="table.col.xgd.desc">Expected goal difference per match vs league average</span><span class="sort-btn__caret" aria-hidden="true"></span></button>
+                <th class="num col--extra" scope="col" aria-sort="none" data-sort-col="expected_goal_difference" data-table-view="prediction">
+                  <button type="button" class="sort-btn" data-sort-key="expected_goal_difference"><span class="sort-btn__label" data-i18n="table.col.projGoalDiff">GD</span><span class="visually-hidden" data-i18n="table.col.projGoalDiff.desc">, projected final goal difference</span><span class="sort-btn__caret" aria-hidden="true"></span></button>
                 </th>
                 <th class="num" scope="col" aria-sort="none" data-sort-col="fixture_difficulty" data-table-view="prediction">
                   <button type="button" class="sort-btn" data-sort-key="fixture_difficulty"><span class="sort-btn__label" data-i18n="table.col.fixture_difficulty">Fix Diff</span><span class="sort-btn__short" aria-hidden="true" data-i18n="table.col.fixture_difficultyShort">Fix</span><span class="visually-hidden" data-i18n="table.col.fixture_difficulty.desc">Expected points per remaining match vs league average</span><span class="sort-btn__caret" aria-hidden="true"></span></button>
-                </th>
-                <th class="num form col--extra" scope="col" aria-sort="none" data-sort-col="form" data-table-view="current">
-                  <button type="button" class="sort-btn" data-sort-key="form"><span class="sort-btn__label" data-i18n="table.col.form">Form</span><span class="visually-hidden" data-i18n="th.form.desc">, recent results</span><span class="sort-btn__caret" aria-hidden="true"></span></button>
                 </th>
                 <th class="num" scope="col" aria-sort="none" data-sort-col="up" data-table-view="prediction">
                   <button type="button" class="sort-btn" data-sort-key="up"><span class="sort-btn__label" id="head-first" data-i18n="table.col.champion">Champion</span><span class="sort-btn__short" id="head-first-short" aria-hidden="true" data-i18n="table.col.championShort">Title</span><span class="visually-hidden" id="head-first-desc">, chance of winning the title</span><span class="sort-btn__caret" aria-hidden="true"></span></button>
@@ -260,13 +266,19 @@
             <h2 data-i18n="ladder.title">The ladder</h2>
             <p data-i18n="ladder.desc">All teams in both divisions compared on one rating scale.</p>
           </div>
-          <button type="button" class="grid-anim-btn" id="ladder-anim-play" data-i18n="title.animateSeason" data-i18n-attr="title" title="Animate the season">▶</button>
+          <button type="button" class="grid-anim-btn" id="ladder-anim-play" aria-pressed="false" data-i18n="title.animateSeason" data-i18n-attr="title" title="Replay the season matchday by matchday"><span class="grid-anim-btn__icon" aria-hidden="true">▶</span><span class="grid-anim-btn__label" data-i18n="anim.play">Play season</span></button>
+        </div>
+        <div class="grid-anim-bar" id="ladder-anim-controls" hidden>
+          <span class="grid-anim-bar__when" id="ladder-anim-when"></span>
+          <span class="grid-anim-bar__track" aria-hidden="true"><span class="grid-anim-bar__fill" id="ladder-anim-fill"></span></span>
+          <div class="grid-anim-speed" role="group" data-i18n="anim.speed" data-i18n-attr="aria-label" aria-label="Speed">
+            <button type="button" data-speed="1" aria-pressed="true">1×</button>
+            <button type="button" data-speed="2" aria-pressed="false">2×</button>
+            <button type="button" data-speed="4" aria-pressed="false">4×</button>
+          </div>
         </div>
         <div class="ladder">
           <div id="ladder-lanes" class="ladder__track"></div>
-        </div>
-        <div class="grid-anim-bar" id="ladder-anim-controls" hidden>
-          <button type="button" id="ladder-anim-speed" class="grid-anim-speed" data-i18n="title.changeSpeed" data-i18n-attr="title" title="Change speed">1×</button>
         </div>
         <div class="legend" id="ladder-legend"></div>
       </div>

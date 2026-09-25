@@ -239,6 +239,20 @@ class TestSimulation:
         leader = next(t for t in projection.teams if t.team == "A")
         assert leader.position_probabilities[0] == pytest.approx(1.0)
 
+    def test_expected_goals_start_from_the_goals_already_scored(self):
+        # Season totals: goals so far plus the simulated rest; in a two-club
+        # league one side's goals for are the other's against.
+        played = [match(1, "A", "B", day=1, score=(3, 1))]
+        projection = simulate_season(
+            two_team_season(played=played, remaining=4), {"A": 1500, "B": 1500},
+            config=SimulationConfig(simulations=300),
+        )
+        a = next(t for t in projection.teams if t.team == "A")
+        b = next(t for t in projection.teams if t.team == "B")
+        assert a.expected_goals_for > 3 and a.expected_goals_against > 1
+        assert a.expected_goals_for == pytest.approx(b.expected_goals_against)
+        assert a.expected_goals_against == pytest.approx(b.expected_goals_for)
+
     def test_expected_points_lie_between_current_and_maximum(self):
         projection = simulate_season(
             two_team_season(remaining=4), {"A": 1500, "B": 1500}, config=SimulationConfig(simulations=300)

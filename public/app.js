@@ -26,8 +26,8 @@ const state = {
   teamFocusId: null,
   // Pagination for played results.
   playedWeek: 0,
-  // How many upcoming fixtures Next Up shows; "show more" adds a dozen.
-  fixturesShown: 12,
+  // Next Up is paged by ISO week too; 0 is the nearest week.
+  fixturesWeek: 0,
   // Pagination for team focus view.
   teamFixturesPage: 0,
   teamResultsPage: 0,
@@ -86,6 +86,12 @@ function applyShortNames(reports) {
 
 function applyShortNamesToCareers(careers) {
   for (const team of careers?.teams || []) team.team = shortName(team.team);
+  for (const meetings of Object.values(careers?.head_to_head || {})) {
+    for (const match of meetings) {
+      match.home = shortName(match.home);
+      match.away = shortName(match.away);
+    }
+  }
   return careers;
 }
 
@@ -434,7 +440,7 @@ async function prefetchAnimReports() {
   const days = matchdays(state.reports[state.league]);
   if (days.length < 2) return null;
   const fetched = await Promise.all(
-    days.map((d) => fetch(reportUrl(state.season, d.date)).then((r) => (r.ok ? r.json() : null))),
+    days.map((d) => fetch(reportUrl(state.season, d.date)).then((r) => (r.ok ? r.json().then(applyShortNames) : null))),
   );
   const map = new Map();
   fetched.forEach((r, i) => { if (r) map.set(i, r); });
@@ -495,6 +501,7 @@ const anim = state.anim;
 
 /* One interpolated frame between the current matchday and the next. */
 function animFrame(frac) {
+  animUpdateProgress(frac);
   const cur = anim.reports.get(anim.matchdayIndex);
   const next = anim.reports.get(anim.matchdayIndex + 1);
   if (!cur || !next) return;
@@ -535,6 +542,35 @@ function animUpdateTimeline(report, days) {
   if (day) {
     range.setAttribute('aria-valuetext', longDate(day.date));
     $('#timeline-when').textContent = t('timeline.animating', { when: longDate(day.date) });
+    $(`#${animView()}-anim-when`).textContent = formatDate(day.date);
+  }
+}
+
+/* Which view's controls the animation drives. */
+function animView() {
+  return state.activeView === 'ladder' ? 'ladder' : 'grid';
+}
+
+/* The progress bar follows the interpolated frame, not just whole matchdays,
+   so it moves as smoothly as the cells do. */
+function animUpdateProgress(frac) {
+  const days = matchdays(state.reports[state.league]).length;
+  const done = days > 1 ? (anim.matchdayIndex + frac) / (days - 1) : 1;
+  $(`#${animView()}-anim-fill`).style.transform = `scaleX(${Math.min(1, done).toFixed(4)})`;
+}
+
+/* Play and Stop are one button: the icon, the label and aria-pressed follow
+   the state. The label keeps a data-i18n key, so a language switch mid-play
+   still reads Stop. */
+function animSetPlayButtons(playing) {
+  for (const view of ['grid', 'ladder']) {
+    const button = $(`#${view}-anim-play`);
+    const on = playing && view === animView();
+    button.setAttribute('aria-pressed', String(on));
+    button.querySelector('.grid-anim-btn__icon').textContent = on ? '■' : '▶';
+    const label = button.querySelector('.grid-anim-btn__label');
+    label.dataset.i18n = on ? 'anim.stop' : 'anim.play';
+    label.textContent = t(label.dataset.i18n);
   }
 }
 
@@ -551,14 +587,21 @@ async function animStart() {
   const holder = $(ladder ? '#ladder-lanes' : '#grid').parentElement;
   holder.dataset.loadingText = t('anim.loading');
   holder.classList.add('grid-loading');
+  // One prefetch at a time: a second click while loading would start another.
+  const playButton = $(`#${animView()}-anim-play`);
+  playButton.disabled = true;
 
   anim.matchdayIndex = 0;
-  anim.speed = 1;
-  animUpdateSpeedButton();
+  animUpdateSpeedButton(); // the speed picked last time carries over
 
+  const started = `${state.season} ${state.league} ${state.activeView}`;
   anim.reports = await prefetchAnimReports();
   holder.classList.remove('grid-loading');
+  playButton.disabled = false;
 
+  // The prefetch takes a while; a season, division or view picked meanwhile
+  // wins, rather than an animation of the old one playing over it.
+  if (`${state.season} ${state.league} ${state.activeView}` !== started) return;
   if (!anim.reports || anim.reports.size < 2 || !anim.reports.get(0)) return;
 
   if (ladder) initLadderAnimDOM(anim.reports);
@@ -567,8 +610,9 @@ async function animStart() {
 
   anim.playing = true;
   anim.lastTick = performance.now();
-  $(ladder ? '#ladder-anim-play' : '#grid-anim-play').textContent = '⏸';
-  $(ladder ? '#ladder-anim-controls' : '#grid-anim-controls').hidden = false;
+  animSetPlayButtons(true);
+  animUpdateProgress(0);
+  $(`#${animView()}-anim-controls`).hidden = false;
   anim.raf = requestAnimationFrame(animTick);
 }
 
@@ -578,20 +622,20 @@ function animStop() {
   if (anim.gridTable) anim.gridTable.classList.remove('grid-anim');
   anim.gridRows = anim.gridCells = anim.gridTable = anim.gridTableData = null;
   anim.ladder = null;
-  for (const view of ['grid', 'ladder']) {
-    $(`#${view}-anim-play`).textContent = '▶';
-    $(`#${view}-anim-controls`).hidden = true;
-  }
+  animSetPlayButtons(false);
+  for (const view of ['grid', 'ladder']) $(`#${view}-anim-controls`).hidden = true;
   setTimeout(() => render(), 0);
 }
 
-function animToggleSpeed() {
-  anim.speed = anim.speed >= 4 ? 1 : anim.speed * 2;
+function animSetSpeed(speed) {
+  anim.speed = speed;
   animUpdateSpeedButton();
 }
 
 function animUpdateSpeedButton() {
-  for (const btn of document.querySelectorAll('.grid-anim-speed')) btn.textContent = `${anim.speed}×`;
+  for (const btn of document.querySelectorAll('.grid-anim-speed [data-speed]')) {
+    btn.setAttribute('aria-pressed', String(Number(btn.dataset.speed) === anim.speed));
+  }
 }
 
 /* ---------- ladder animation --------------------------------------- */
@@ -640,9 +684,14 @@ function bandColor(band, count) {
 }
 
 function ordinal(n) {
-  if (currentLang === 'no') return `${n}. plass`;
+  return currentLang === 'no' ? `${n}. plass` : `${ordinalShort(n)} place`;
+}
+
+/* "3rd" / "3.": for tiles where the label already says it is a position. */
+function ordinalShort(n) {
+  if (currentLang === 'no') return `${n}.`;
   const suffix = ['th', 'st', 'nd', 'rd'][(n % 100 - 20) % 10] || ['th', 'st', 'nd', 'rd'][n % 100] || 'th';
-  return `${n}${suffix} place`;
+  return `${n}${suffix}`;
 }
 
 /* ---------- legends ----------------------------------------------- */
@@ -815,7 +864,7 @@ $('#head-last').textContent = t('table.relegation');
   const rows = standingsRows(report).map((row) => ({
     ...row,
     form: formPoints(formByTeamName[row.team]),
-    xg_diff: row.attack - row.defence,
+    expected_goal_difference: row.expected_goals_for - row.expected_goals_against,
   }));
 
   // Fixture difficulty is read against the league's own mean run-in: with
@@ -927,10 +976,16 @@ $('#head-last').textContent = t('table.relegation');
     points.dataset.tableView = 'current';
     tr.appendChild(points);
 
+    // Form sits beside the points it explains; the rating opens the model
+    // columns, marked by its separator.
+    const formTd = el('td', 'num form col--extra');
+    formTd.dataset.tableView = 'current';
+    formTd.appendChild(formChipsEl(formByTeamName[row.team]));
+    tr.appendChild(formTd);
     const ratingCell = el('td', 'num sep');
     ratingCell.dataset.tableView = 'current prediction';
     ratingCell.appendChild(document.createTextNode(num(row.rating)));
-    const trend = computeRatingTrend(row.team, report);
+    const trend = trends.get(row.team);
     if (trend) {
       const isTop = topRiser && topRiser.team === row.team && topRiser.diff > 0;
       const arrow = el('span', `rating-trend rating-trend--${trend.direction}${isTop ? ' rating-trend--top' : ''}`);
@@ -945,11 +1000,14 @@ $('#head-last').textContent = t('table.relegation');
     xpTd.dataset.tableView = 'prediction';
     tr.appendChild(xpTd);
 
-    // Expected goals for/against per match against an average side of the division.
+    // Season totals, averaged over the simulations: goals so far plus the
+    // simulated rest. Whole goals: a tenth of a goal over a season is noise.
+    // Reports built before these totals existed show a dash, not a crash.
+    const known = row.expected_goals_for != null;
     for (const [text, muted] of [
-      [num(row.attack, 1), true],
-      [num(row.defence, 1), true],
-      [signed(row.xg_diff, 1), false],
+      [known ? num(row.expected_goals_for) : '—', true],
+      [known ? num(row.expected_goals_against) : '—', true],
+      [known ? signed(row.expected_goal_difference) : '—', false],
     ]) {
       const td = el('td', `num${muted ? ' muted' : ''} col--extra`, text);
       td.dataset.tableView = 'prediction';
@@ -973,13 +1031,14 @@ $('#head-last').textContent = t('table.relegation');
         pill.style.setProperty('--fd-strength', Math.min(1, Math.abs(gap) / 0.15).toFixed(2));
       }
       fixtureCell.appendChild(pill);
+    } else {
+      // A finished season (or a club done early) has no run-in to rate.
+      fixtureCell.textContent = '—';
+      fixtureCell.classList.add('muted');
+      fixtureCell.title = t('table.noFixturesLeft');
     }
     tr.appendChild(fixtureCell);
 
-    const formTd = el('td', 'num form col--extra');
-    formTd.dataset.tableView = 'current';
-    formTd.appendChild(formChipsEl(formByTeamName[row.team]));
-    tr.appendChild(formTd);
 
     const upCell = meterCell(row.up, 'up');
     upCell.dataset.tableView = 'prediction';
@@ -1290,8 +1349,9 @@ function playedCard(match, ratingChanges) {
   card.appendChild(el('div', 'played-card__date', formatDate(match.date) + (match.round ? ` \u00b7 ${t('played.round', { n: match.round })}` : '')));
 
   const ratingBlock = (id) => {
-    const info = ratingChanges.get(`${id}|${match.date}`) ?? { change: 0, rating: 0 };
+    const info = ratingChanges.get(`${id}|${match.date}`);
     const node = el('div', 'played-card__rating');
+    if (!info) return node;
     node.appendChild(el('span', 'played-card__rating-value', String(info.rating)));
     if (info.change !== 0) {
       const up = info.change > 0;
@@ -1309,7 +1369,15 @@ function playedCard(match, ratingChanges) {
   awaySide.appendChild(sideBlock(match.away, match.away_id, true));
   awaySide.appendChild(ratingBlock(match.away_id));
   matchup.appendChild(homeSide);
-  matchup.appendChild(el('div', 'played-card__score', `${match.home_goals}\u2013${match.away_goals}`));
+  const score = el('div', 'played-card__score', `${match.home_goals}\u2013${match.away_goals}`);
+  // xG under the score: the rating moves on both, so a "lucky" win shows why
+  // it earned less than the scoreline suggests.
+  if (match.xg) {
+    const xg = el('span', 'played-card__xg', `xG ${num(match.xg[0], 1)}\u2013${num(match.xg[1], 1)}`);
+    xg.title = t('played.xgHint');
+    score.appendChild(xg);
+  }
+  matchup.appendChild(score);
   matchup.appendChild(awaySide);
   card.appendChild(matchup);
   return card;
@@ -1319,18 +1387,57 @@ function renderFixtures(report) {
   const holder = $('#fixtures');
   holder.replaceChildren();
 
-  const next = report.fixtures.slice(0, state.fixturesShown);
-  $('#fixture-count').textContent = t('next.count', { n: next.length, total: report.fixtures.length });
+  // Paged by ISO week like Played Results, nearest week first.
+  const { weeks, byWeek } = groupByWeek([...report.fixtures].sort((a, b) => a.date.localeCompare(b.date)));
+  if (!weeks.length) {
+    $('#fixture-count').textContent = '';
+    return;
+  }
+  state.fixturesWeek = Math.max(0, Math.min(state.fixturesWeek, weeks.length - 1));
+  const week = weeks[state.fixturesWeek];
+  const fixtures = byWeek.get(week);
+  $('#fixture-count').textContent = t('next.count', { n: fixtures.length, total: report.fixtures.length });
 
-  for (const fixture of next) {
-    holder.appendChild(buildFixtureCard(fixture));
+  const go = (index) => () => { state.fixturesWeek = index; renderFixtures(report); };
+  holder.appendChild(pageNav(
+    t('played.week', { n: week }),
+    state.fixturesWeek > 0 ? go(state.fixturesWeek - 1) : null,
+    state.fixturesWeek < weeks.length - 1 ? go(state.fixturesWeek + 1) : null,
+  ));
+  for (const fixture of fixtures) holder.appendChild(buildFixtureCard(fixture));
+}
+
+/* Matches bucketed by ISO week, weeks in the order the list first meets them. */
+function groupByWeek(matches) {
+  const weeks = [];
+  const byWeek = new Map();
+  for (const match of matches) {
+    const week = isoWeek(match.date);
+    if (!byWeek.has(week)) {
+      byWeek.set(week, []);
+      weeks.push(week);
+    }
+    byWeek.get(week).push(match);
   }
-  if (next.length < report.fixtures.length) {
-    const more = el('button', 'played-nav__btn fixtures__more', t('next.showMore', { n: Math.min(12, report.fixtures.length - next.length) }));
-    more.type = 'button';
-    more.addEventListener('click', () => { state.fixturesShown += 12; renderFixtures(report); });
-    holder.appendChild(more);
+  return { weeks, byWeek };
+}
+
+/* The one pagination control on the site, modelled on Played Results: Prev,
+   what is on show, Next. Prev always goes back in time and Next forward; a
+   missing handler disables that side. */
+function pageNav(label, onPrev, onNext) {
+  const nav = el('div', 'played-nav');
+  const prev = el('button', 'played-nav__btn', t('played.prev'));
+  const next = el('button', 'played-nav__btn', t('played.next'));
+  for (const [button, handler] of [[prev, onPrev], [next, onNext]]) {
+    button.type = 'button';
+    button.disabled = !handler;
+    if (handler) button.addEventListener('click', handler);
   }
+  nav.appendChild(prev);
+  nav.appendChild(el('span', 'played-nav__label', label));
+  nav.appendChild(next);
+  return nav;
 }
 
 /* ---------- played results ------------------------------------------ */
@@ -1338,10 +1445,15 @@ function renderFixtures(report) {
 /* Build a map of rating changes per team per match date from careers data.
    career.points is an array of [date, rating] after each match.
    Returns a Map keyed "teamId|date" -> { change, rating } where rating is
-   the rating after the match and change is the delta from the previous match. */
+   the rating after the match and change is the delta from the previous match.
+   Built once per careers payload: the table asks for it on every row. */
+const ratingChangesCache = new WeakMap();
+
 function buildRatingChanges(careers) {
   const changes = new Map();
   if (!careers?.teams) return changes;
+  if (ratingChangesCache.has(careers)) return ratingChangesCache.get(careers);
+  ratingChangesCache.set(careers, changes);
 
   for (const career of careers.teams) {
     const points = career.points;
@@ -1381,38 +1493,18 @@ function renderPlayedResults(report) {
   const ratingChanges = buildRatingChanges(state.careers);
   const sorted = [...results].sort((a, b) => b.date.localeCompare(a.date));
 
-  // Group matches by ISO week (most recent week first)
-  const weeks = [];
-  const weekMap = new Map();
-  for (const m of sorted) {
-    const wk = isoWeek(m.date);
-    if (!weekMap.has(wk)) {
-      weekMap.set(wk, []);
-      weeks.push(wk);
-    }
-    weekMap.get(wk).push(m);
-  }
-
+  // Most recent week first, so Prev (back in time) is the next index up.
+  const { weeks, byWeek } = groupByWeek(sorted);
   state.playedWeek = Math.min(state.playedWeek || 0, weeks.length - 1);
   const currentWeek = weeks[state.playedWeek];
-  const weekMatches = weekMap.get(currentWeek);
+  const weekMatches = byWeek.get(currentWeek);
 
-  // Week navigation (at top)
-  const nav = el('div', 'played-nav');
-  const prev = el('button', 'played-nav__btn', t('played.prev'));
-  prev.disabled = state.playedWeek >= weeks.length - 1;
-  prev.addEventListener('click', () => { state.playedWeek++; renderPlayedResults(report); });
-
-  const label = el('span', 'played-nav__label', t('played.week', { n: currentWeek }));
-
-  const next = el('button', 'played-nav__btn', t('played.next'));
-  next.disabled = state.playedWeek === 0;
-  next.addEventListener('click', () => { state.playedWeek--; renderPlayedResults(report); });
-
-  nav.appendChild(prev);
-  nav.appendChild(label);
-  nav.appendChild(next);
-  holder.appendChild(nav);
+  const go = (index) => () => { state.playedWeek = index; renderPlayedResults(report); };
+  holder.appendChild(pageNav(
+    t('played.week', { n: currentWeek }),
+    state.playedWeek < weeks.length - 1 ? go(state.playedWeek + 1) : null,
+    state.playedWeek > 0 ? go(state.playedWeek - 1) : null,
+  ));
 
   for (const match of weekMatches) holder.appendChild(playedCard(match, ratingChanges));
 }
@@ -1539,10 +1631,7 @@ function renderHero(report) {
       if (s === report.league.season) btn.setAttribute('aria-current', 'true');
       btn.addEventListener('click', () => {
         closeAllMenus();
-        if (s !== state.season) {
-          state.asof = null;
-          loadSeason(s);
-        }
+        if (s !== state.season) loadSeason(s);
       });
       menu.appendChild(btn);
     }
@@ -1649,21 +1738,25 @@ function renderModelCard(report) {
 
 /* ---------- team: one club's focus view ----------------------------- */
 
-function openTeamView(teamId, fallbackName, { push = true } = {}) {
-  if (anim.playing) animStop();
-  // If the team isn't in the current league's report, find the right one
+/* Show the division the club plays in this season. Clubs move between the
+   two, so this runs on opening a club and again whenever a season loads. */
+function followTeamLeague(teamId) {
   const currentReport = state.reports?.[state.league];
-  if (currentReport && !currentReport.table.some((t) => t.team_id === teamId)) {
-    for (const [league, report] of Object.entries(state.reports)) {
-      if (report.table.some((t) => t.team_id === teamId)) {
-        state.league = league;
-        for (const button of document.querySelectorAll('[data-league]')) {
-          button.setAttribute('aria-pressed', String(button.dataset.league === league));
-        }
-        break;
+  if (!currentReport || currentReport.table.some((t) => t.team_id === teamId)) return;
+  for (const [league, report] of Object.entries(state.reports)) {
+    if (report.table.some((t) => t.team_id === teamId)) {
+      state.league = league;
+      for (const button of document.querySelectorAll('[data-league]')) {
+        button.setAttribute('aria-pressed', String(button.dataset.league === league));
       }
+      return;
     }
   }
+}
+
+function openTeamView(teamId, fallbackName, { push = true } = {}) {
+  if (anim.playing) animStop();
+  followTeamLeague(teamId);
   state.teamFocusId = teamId;
   state.teamFixturesPage = 0;
   state.teamResultsPage = 0;
@@ -1681,7 +1774,10 @@ function renderTeamView(report) {
   content.replaceChildren();
   if (!teamId) return;
 
-  const back = el('button', 'team-back', '\u2190 ' + t('team.back'));
+  const back = el('button', 'team-back');
+  back.type = 'button';
+  back.innerHTML = '<svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>';
+  back.appendChild(el('span', '', t('team.back')));
   back.addEventListener('click', () => history.back());
   content.appendChild(back);
 
@@ -1743,10 +1839,10 @@ function renderTeamView(report) {
     const totalPages = Math.ceil(seasonsDesc.length / PAGE);
     state.teamSeasonsPage = Math.min(state.teamSeasonsPage, totalPages - 1);
     const page = state.teamSeasonsPage;
-    if (totalPages > 1) {
-      header.appendChild(paginator(page, totalPages, (p) => { state.teamSeasonsPage = p; renderTeamView(report); }, true));
-    }
     seasonSection.appendChild(header);
+    if (totalPages > 1) {
+      seasonSection.appendChild(paginator(page, totalPages, (p) => { state.teamSeasonsPage = p; renderTeamView(report); }, true));
+    }
     const scroller = el('div', 'scroller');
     const table = el('table', 'standings career-table');
     const thead = el('thead');
@@ -1835,20 +1931,17 @@ function fallbackNameById(teamId) {
   return allTeams().find((t) => t.team_id === teamId)?.team;
 }
 
-/* Arrows step through pages; `reversed` lists (newest first) page the other way. */
+/* Numbered pages in the shared control. `reversed` lists run newest first,
+   so going back in time (Prev) is the next page up. */
 function paginator(page, totalPages, go, reversed = false) {
-  const nav = el('div', 'team-pagination');
-  const step = reversed ? -1 : 1;
-  const prev = el('button', 'team-pagination__btn', '\u2190');
-  prev.disabled = reversed ? page >= totalPages - 1 : page === 0;
-  prev.addEventListener('click', () => go(page - step));
-  nav.appendChild(prev);
-  nav.appendChild(el('span', 'team-pagination__label', `${page + 1} / ${totalPages}`));
-  const next = el('button', 'team-pagination__btn', '\u2192');
-  next.disabled = reversed ? page === 0 : page >= totalPages - 1;
-  next.addEventListener('click', () => go(page + step));
-  nav.appendChild(next);
-  return nav;
+  const earlier = reversed ? page + 1 : page - 1;
+  const later = reversed ? page - 1 : page + 1;
+  const valid = (p) => p >= 0 && p < totalPages;
+  return pageNav(
+    t('page.of', { n: page + 1, total: totalPages }),
+    valid(earlier) ? () => go(earlier) : null,
+    valid(later) ? () => go(later) : null,
+  );
 }
 
 function renderTeamSummary(teamId, row, career, report, container) {
@@ -1875,9 +1968,13 @@ function renderTeamSummary(teamId, row, career, report, container) {
   if (trend) {
     const trendEl = el('span', `team-summary__trend team-summary__trend--${trend.direction}`);
     trendEl.innerHTML = trend.svg;
-    trendEl.title = trend.detail;
     trendEl.setAttribute('role', 'img');
     trendEl.setAttribute('aria-label', trend.detail);
+    // The site's own tooltip rather than a title: it shows at once, takes
+    // the extra lines, and a tap brings it up on a phone.
+    trendEl.addEventListener('pointerenter', (event) => showTooltip(event, trend.tip));
+    trendEl.addEventListener('pointermove', moveTooltip);
+    trendEl.addEventListener('pointerleave', hideTooltip);
     ratingLine.appendChild(trendEl);
   }
   const rating = Math.round(row?.rating || career?.current_rating || 0);
@@ -1895,65 +1992,83 @@ function renderTeamSummary(teamId, row, career, report, container) {
 
   card.appendChild(header);
 
-  // Stats row
-  const stats = el('div', 'team-summary__stats');
+  // Two strips of tiles, big value over a small label: where the club stands,
+  // then how it plays. Four short numbers fit one row even on a phone, which
+  // the old run of label-value pairs never did.
   if (row) {
-    stats.appendChild(summaryStat(t('team.position'), ordinal(row.position)));
-    stats.appendChild(summaryStat(t('team.points'), String(row.points)));
-    stats.appendChild(summaryStat(t('team.gd'), row.goal_difference > 0 ? `+${row.goal_difference}` : String(row.goal_difference)));
-    stats.appendChild(summaryStat(t('team.played'), String(row.played)));
-    stats.appendChild(summaryStat(t('team.attack'), num(row.attack, 2), t('team.attackHint')));
-    stats.appendChild(summaryStat(t('team.defence'), num(row.defence, 2), t('team.defenceHint')));
-  } else if (career) {
-    stats.appendChild(summaryStat(t('team.matches'), String(career.points.length)));
-  }
-  card.appendChild(stats);
+    const table = el('dl', 'team-stats');
+    table.appendChild(summaryStat(t('team.position'), ordinalShort(row.position)));
+    table.appendChild(summaryStat(t('team.points'), String(row.points)));
+    table.appendChild(summaryStat(t('team.gd'), signed(row.goal_difference)));
+    table.appendChild(summaryStat(t('team.played'), String(row.played)));
+    card.appendChild(table);
 
-  // Form chips
-  const formByTeamName = formByTeam(state.reports[state.league].results);
-  const teamName = row?.team || career?.team;
-  if (teamName) {
-    const form = formByTeamName[teamName];
-    if (form && form.length) {
-      const formRow = el('div', 'team-summary__form');
-      formRow.appendChild(el('span', 'label', t('team.form')));
-      formRow.appendChild(formChipsEl(form));
-      card.appendChild(formRow);
-    }
+    const xg = el('dl', 'team-stats team-stats--xg');
+    xg.appendChild(xgStat(t('team.attack'), t('team.attackHint'), row.attack, report.table.map((r) => r.attack), true));
+    xg.appendChild(xgStat(t('team.defence'), t('team.defenceHint'), row.defence, report.table.map((r) => r.defence), false));
+    card.appendChild(xg);
+  } else if (career) {
+    const table = el('dl', 'team-stats');
+    table.appendChild(summaryStat(t('team.matches'), String(career.points.length)));
+    card.appendChild(table);
   }
 
   container.appendChild(card);
 }
 
-/* Rating trend: weighted average of the last 6 rating changes.
-   Weights [0.1, 0.2, 0.3, 0.4, 0.5, 0.6] give gentle emphasis to recent matches.
-   Thresholds: >6 strong rise, >1.5 rise, >=-1.5 steady, >=-6 fall, otherwise strong fall. */
+/* The arrow beside a rating: which way recent performances are pushing it.
+
+   Built on xG form -- per match, K * (xG-implied score - expected score), the
+   rating change the chances alone would have produced (`xg_form` in the
+   results, from pipeline.xg_form). Measured on every club-season with xG, a
+   recent average of it tracks the next few matches (r ~0.17), where an average
+   of actual rating changes, which are mostly result luck, does not (~0.05).
+
+   Weights 0.1..0.6 over the last 6 matches: the latest three carry 71 %, so
+   the information is on average under two weeks old.
+
+   Seasons or clubs without xG fall back to the actual rating changes, on
+   their own cut-offs (that signal is about 1.5x as spread). */
+const TREND_WEIGHTS = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6];
+const TREND_KINDS = {
+  //       cut-offs: steady inside ±mild, strong beyond ±strong; label keys; digits
+  xg: { mild: 1, strong: 4, prefix: 'form', digits: 1 },
+  rating: { mild: 1.5, strong: 6, prefix: 'trend', digits: 0 },
+};
+
 function computeRatingTrend(teamName, report) {
   if (!teamName) return null;
   const results = [...(report.results || [])].sort((a, b) => a.date.localeCompare(b.date));
   const ratingChanges = buildRatingChanges(state.careers);
+  const xgForm = [];
   const changes = [];
   for (const r of results) {
     if (r.home_goals == null) continue;
     const isHome = r.home === teamName;
-    const isAway = r.away === teamName;
-    if (!isHome && !isAway) continue;
-    const id = isHome ? r.home_id : r.away_id;
-    const info = ratingChanges.get(`${id}|${r.date}`);
+    if (!isHome && r.away !== teamName) continue;
+    if (r.xg_form) xgForm.push(r.xg_form[isHome ? 0 : 1]);
+    const info = ratingChanges.get(`${isHome ? r.home_id : r.away_id}|${r.date}`);
     if (info) changes.push(info.change);
   }
-  if (changes.length < 6) return null;
+  const kind = xgForm.length >= 6 ? 'xg' : 'rating';
+  const values = (kind === 'xg' ? xgForm : changes).slice(-6);
+  if (values.length < 6) return null;
+  const { mild, strong, prefix, digits } = TREND_KINDS[kind];
 
-  const weights = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6];
-  const last6 = changes.slice(-6);
-  const weightedSum = last6.reduce((sum, c, i) => sum + c * weights[i], 0);
-  const diff = Math.round(weightedSum / weights.reduce((a, b) => a + b, 0));
+  const diff = values.reduce((sum, v, i) => sum + v * TREND_WEIGHTS[i], 0)
+    / TREND_WEIGHTS.reduce((a, b) => a + b, 0);
 
   // 5 degrees: strong rise, rise, steady, fall, strong fall
-  const key = diff > 6 ? 'strongRise' : diff > 1.5 ? 'rise' : diff >= -1.5 ? 'steady' : diff >= -6 ? 'fall' : 'strongFall';
+  const key = diff > strong ? 'strongRise' : diff > mild ? 'rise' : diff >= -mild ? 'steady' : diff >= -strong ? 'fall' : 'strongFall';
   const direction = key.replace('strongR', 'strong-r').replace('strongF', 'strong-f');
-  const n = Math.round(key === 'steady' ? Math.abs(diff) : diff);
-  return { direction, svg: trendArrowSVG(direction), detail: t(`trend.${key}`, { n }), diff };
+  const label = t(`${prefix}.${key}`);
+  const perMatch = signed(diff, digits);
+  // One line for the table's arrow and for screen readers; the team view
+  // shows `tip`, which adds the matches behind the number.
+  const detail = t(`${prefix}.detail`, { label, n: perMatch });
+  const tip = `<b>${label}</b><br>${t(`${prefix}.tipPerMatch`, { n: perMatch })}`
+    + `<br><span class="tooltip__muted">${t('trend.tipMatches', { list: values.map((v) => signed(v, digits)).join(' ') })}</span>`;
+  return { direction, svg: trendArrowSVG(direction), detail, tip, diff };
 }
 
 function trendArrowSVG(direction) {
@@ -1968,11 +2083,34 @@ function trendArrowSVG(direction) {
   return `<svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="transform:rotate(${rotation}deg)"><path d="M12 19V5"/><polyline points="5 12 12 5 19 12"/></svg>`;
 }
 
+/* One tile: the label comes first for screen readers (dt before dd) and the
+   CSS lifts the value above it. */
 function summaryStat(label, value, title) {
-  const item = el('div', 'team-summary__stat');
+  const item = el('div', 'team-stats__tile');
   if (title) item.title = title;
-  item.appendChild(el('span', 'team-summary__stat-label', label));
-  item.appendChild(el('span', 'team-summary__stat-value', value));
+  item.appendChild(el('dt', 'team-stats__label', label));
+  item.appendChild(el('dd', 'team-stats__value', value));
+  return item;
+}
+
+/* An xG rate as a percentage above or below the division average, the one
+   number that says what the rate means. Defence is turned round (conceding
+   fewer is the good direction) so + is better on both tiles. The bar
+   diverges from a centre line at the average, scaled to the division's
+   widest gap; the raw rate stays underneath. */
+function xgStat(label, hint, value, division, higherIsBetter) {
+  const average = division.reduce((sum, v) => sum + v, 0) / (division.length || 1);
+  const relative = (v) => (higherIsBetter ? v / average - 1 : 1 - v / average);
+  const share = relative(value);
+  const widest = Math.max(...division.map((v) => Math.abs(relative(v))), Math.abs(share)) || 1;
+  const item = summaryStat(label, `${signed(share * 100)}${percentSign()}`, hint);
+  const half = (Math.abs(share) / widest) * 50;
+  const bar = el('dd', `team-stats__bar team-stats__bar--${share >= 0 ? 'good' : 'bad'}`);
+  bar.setAttribute('aria-hidden', 'true');
+  bar.style.setProperty('--from', `${share >= 0 ? 50 : 50 - half}%`);
+  bar.style.setProperty('--width', `${half}%`);
+  item.appendChild(bar);
+  item.appendChild(el('dd', 'team-stats__note', t('team.xgRaw', { value: num(value, 2), avg: num(average, 2) })));
   return item;
 }
 
@@ -2157,10 +2295,10 @@ function renderTeamFixtures(teamId, teamName, report, container) {
   const section = el('div', 'team-section');
   const header = el('div', 'team-section__header');
   header.appendChild(el('div', 'label', t('team.upcomingFixtures', { n: allFixtures.length })));
-  if (totalPages > 1) {
-    header.appendChild(paginator(page, totalPages, (p) => { state.teamFixturesPage = p; renderTeamView(report); }));
-  }
   section.appendChild(header);
+  if (totalPages > 1) {
+    section.appendChild(paginator(page, totalPages, (p) => { state.teamFixturesPage = p; renderTeamView(report); }));
+  }
 
   for (const fixture of fixtures) {
     section.appendChild(buildFixtureCard(fixture));
@@ -2186,10 +2324,10 @@ function renderTeamResults(teamId, teamName, report, container) {
   const section = el('div', 'team-section');
   const header = el('div', 'team-section__header');
   header.appendChild(el('div', 'label', t('team.recentResults', { n: allResults.length })));
-  if (totalPages > 1) {
-    header.appendChild(paginator(page, totalPages, (p) => { state.teamResultsPage = p; renderTeamView(report); }, true));
-  }
   section.appendChild(header);
+  if (totalPages > 1) {
+    section.appendChild(paginator(page, totalPages, (p) => { state.teamResultsPage = p; renderTeamView(report); }, true));
+  }
 
   for (const match of matches) section.appendChild(playedCard(match, ratingChanges));
   container.appendChild(section);
@@ -2411,8 +2549,11 @@ function renderTimeline(report) {
     range.step = '1';
   }
 
+  // The divisions play on different days, so after a league switch the
+  // rewound date may not be one of this league's matchdays: sit on the last
+  // one on or before it, which is what the data is showing.
   const index = state.asof
-    ? Math.max(0, days.findIndex((day) => day.date === state.asof))
+    ? Math.max(0, days.findLastIndex((day) => day.date <= state.asof))
     : days.length - 1;
   range.value = String(index);
 
@@ -2454,6 +2595,7 @@ function onTimelineInput(event) {
     anim.lastTick = performance.now();
     animFrame(0);
     $('#timeline-when').textContent = t('timeline.paused', { when: longDate(day.date) });
+    $(`#${animView()}-anim-when`).textContent = formatDate(day.date);
     return;
   }
 
@@ -2466,22 +2608,41 @@ function onTimelineInput(event) {
   state.rewindTimer = setTimeout(() => rewindTo(live ? null : day.date), 220);
 }
 
+/* Rewinds and season loads share one counter: only the latest request may
+   paint. Without it a slow response for an earlier date (or the previous
+   season) could land after a newer one and leave the page showing data the
+   slider no longer points at. */
+let latestLoad = 0;
+// The date last asked for, which is ahead of state.asof while a fetch is out.
+let requestedAsof = null;
+let seasonLoading = false;
+
 async function rewindTo(asof) {
-  if (asof === state.asof) return;
+  // A new season's timeline replaces this one; the slider waits for it.
+  if (seasonLoading || asof === requestedAsof) return;
+  requestedAsof = asof;
+  const token = ++latestLoad; // retires any rewind still in flight
+  const season = state.season;
   const content = $('#content');
   content.classList.add('is-rewinding');
   content.setAttribute('aria-busy', 'true');
   try {
-    const response = await fetch(reportUrl(state.season, asof));
+    const response = await fetch(reportUrl(season, asof));
     if (!response.ok) throw new Error(`server returned ${response.status}`);
-    state.reports = applyShortNames(await response.json());
+    const reports = applyShortNames(await response.json());
+    if (token !== latestLoad) return;
+    state.reports = reports;
     state.asof = asof;
     render();
   } catch (error) {
+    if (token !== latestLoad) return;
+    requestedAsof = state.asof; // so the same date can be tried again
     $('#timeline-when').textContent = t('status.couldNotRewind', { error: error.message });
   } finally {
-    content.classList.remove('is-rewinding');
-    content.removeAttribute('aria-busy');
+    if (token === latestLoad) {
+      content.classList.remove('is-rewinding');
+      content.removeAttribute('aria-busy');
+    }
   }
 }
 
@@ -2546,6 +2707,7 @@ function render() {
       }
       break;
     case 'next-up':
+      if (state._prevActiveView !== 'next-up') state.fixturesWeek = 0;
       renderFixtures(report);
       renderOddsLegend();
       break;
@@ -2575,6 +2737,12 @@ function render() {
   } else {
     params.delete('team');
   }
+  // Season and rewind date too, so a reload or a shared link lands where the
+  // reader was; boot reads both back.
+  if (report.league.season !== report.league.current_season) params.set('season', report.league.season);
+  else params.delete('season');
+  if (state.asof) params.set('asof', state.asof);
+  else params.delete('asof');
   window.history.replaceState(null, '', `${window.location.pathname}?${params.toString()}${window.location.hash}`);
 
   document.title = `${report.league.name} ${report.league.season} — EliteTracker`;
@@ -2673,10 +2841,11 @@ function wire() {
   // Leaving the grid always clears its readout, even when the cell that had
   // the pointer was moved or replaced mid-animation and fires no leave itself.
   $('#grid').addEventListener('pointerleave', hideTooltip);
-  $('#grid-anim-speed').addEventListener('click', animToggleSpeed);
 
   $('#ladder-anim-play').addEventListener('click', animStart);
-  $('#ladder-anim-speed').addEventListener('click', animToggleSpeed);
+  for (const button of document.querySelectorAll('.grid-anim-speed [data-speed]')) {
+    button.addEventListener('click', () => animSetSpeed(Number(button.dataset.speed)));
+  }
 
   for (const button of document.querySelectorAll('#standings .sort-btn')) {
     button.addEventListener('click', () => toggleSort(button.dataset.sortKey));
@@ -2688,8 +2857,6 @@ function wire() {
   }
 
   $('#season-select').addEventListener('change', async (event) => {
-    if (anim.playing) animStop();
-    state.asof = null; // a different season has a different timeline
     await loadSeason(Number(event.target.value));
   });
 
@@ -2852,6 +3019,12 @@ function applyViewParameter() {
    first time they are asked for), so this can take a moment. Say so rather
    than appearing to hang. */
 async function loadSeason(season) {
+  // Every way into a new season goes through here, so the animation and a
+  // pending slider fetch (both tied to the old season) are stopped here too.
+  if (anim.playing) animStop();
+  clearTimeout(state.rewindTimer);
+  const token = ++latestLoad;
+  seasonLoading = true;
   const select = $('#season-select');
   select.disabled = true;
   const previous = state.season;
@@ -2863,17 +3036,29 @@ async function loadSeason(season) {
   try {
     const response = await fetch(reportUrl(season));
     if (!response.ok) throw new Error(`server returned ${response.status}`);
-    state.reports = applyShortNames(await response.json());
+    const reports = applyShortNames(await response.json());
+    if (token !== latestLoad) return;
+    state.reports = reports;
     state.season = season;
+    // Only now: a failed load leaves the old (possibly rewound) page up, and
+    // state.asof must keep describing it.
+    state.asof = requestedAsof = null;
+    if (state.activeView === 'team' && state.teamFocusId) followTeamLeague(state.teamFocusId);
+    $('#status').hidden = true; // clears an earlier failure's message
     render();
   } catch (error) {
+    if (token !== latestLoad) return;
+    requestedAsof = state.asof; // a rewind this load cancelled never landed
     select.value = String(previous);
     $('#status').hidden = false;
     $('#status').textContent = t('status.couldNotLoad', { season, error: error.message });
   } finally {
-    select.disabled = false;
-    content.classList.remove('is-rewinding');
-    content.removeAttribute('aria-busy');
+    if (token === latestLoad) {
+      seasonLoading = false;
+      select.disabled = false;
+      content.classList.remove('is-rewinding');
+      content.removeAttribute('aria-busy');
+    }
   }
 }
 
@@ -3242,18 +3427,15 @@ function renderCompare(report) {
     h2hBlock.appendChild(goalsBlock);
     const PAGE_SIZE = 5;
     const totalPages = Math.ceil(h2h.length / PAGE_SIZE);
-    let h2hPage = 0;
+    // The shared page control sits above the list, as on Played Results;
+    // meetings run newest first, so Prev goes back in time.
+    const navSlot = el('div');
     const list = el('div', 'compare__h2h-list');
+    h2hBlock.appendChild(navSlot);
     h2hBlock.appendChild(list);
-    const nav = el('div', 'played-nav');
-    const prevBtn = el('button', 'played-nav__btn', t('played.prev'));
-    const label = el('span', 'played-nav__label');
-    const nextBtn = el('button', 'played-nav__btn', t('played.next'));
-    nav.appendChild(prevBtn);
-    nav.appendChild(label);
-    nav.appendChild(nextBtn);
-    h2hBlock.appendChild(nav);
-    const renderH2hPage = () => {
+    const renderH2hPage = (h2hPage) => {
+      navSlot.replaceChildren();
+      if (totalPages > 1) navSlot.appendChild(paginator(h2hPage, totalPages, renderH2hPage, true));
       list.replaceChildren();
       const start = h2hPage * PAGE_SIZE;
       for (const m of h2h.slice(start, start + PAGE_SIZE)) {
@@ -3272,13 +3454,8 @@ function renderCompare(report) {
         card.appendChild(matchup);
         list.appendChild(card);
       }
-      prevBtn.disabled = h2hPage >= totalPages - 1;
-      nextBtn.disabled = h2hPage === 0;
-      label.textContent = t('compare.h2h.page', { n: h2hPage + 1, total: totalPages });
     };
-    prevBtn.addEventListener('click', () => { h2hPage++; renderH2hPage(); });
-    nextBtn.addEventListener('click', () => { h2hPage--; renderH2hPage(); });
-    renderH2hPage();
+    renderH2hPage(0);
     holder.appendChild(h2hBlock);
   }
 }
@@ -3415,15 +3592,17 @@ async function boot() {
     state.reports = applyShortNames(reports);
     state.careers = applyShortNamesToCareers(careers);
     state.season = reports[state.league].league.season;
-    $('#status').hidden = true;
+    // Left up when careers failed, so the warning above stays readable.
+    if (careers) $('#status').hidden = true;
     $('#content').hidden = false;
+    // Read before the first render, which rewrites the query string.
+    const params = new URLSearchParams(window.location.search);
     applyLeagueParameter();
     applySortParameter();
     applyViewParameter();
     applyTeamParameter();
     render();
 
-    const params = new URLSearchParams(window.location.search);
     const wantedSeason = Number(params.get('season'));
     if (wantedSeason && wantedSeason !== state.season) await loadSeason(wantedSeason);
 
