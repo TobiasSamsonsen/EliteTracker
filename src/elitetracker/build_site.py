@@ -115,12 +115,10 @@ def build_site(
     workflow runs: past seasons come from the published archive instead.
     """
     out_dir.mkdir(parents=True, exist_ok=True)
-    # Default to at most 8 workers. A full build holds every worker at 100 % for
-    # minutes; on the developer's i5-14600KF (pre-0x12B microcode BIOS) 14 workers
-    # ended in a CLOCK_WATCHDOG_TIMEOUT (0x101) blue screen, the known Raptor
-    # Lake instability under sustained all-core load. 8 is measured stable.
+    # Use all available CPU cores. BIOS update (0x12B microcode) fixed the
+    # Raptor Lake CLOCK_WATCHDOG_TIMEOUT instability under sustained all-core load.
     # --jobs still overrides.
-    jobs = jobs or min(8, os.cpu_count() or 1)
+    jobs = jobs or (os.cpu_count() or 1)
 
     all_seasons = available_seasons(root)
     if not all_seasons:
