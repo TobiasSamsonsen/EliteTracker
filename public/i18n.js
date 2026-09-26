@@ -23,6 +23,11 @@ const translations = {
     'sheet.theme': 'Theme',
     'sheet.lang': 'Language',
 
+    // Pull to refresh
+    'ptr.pull': 'Pull to refresh',
+    'ptr.release': 'Release to refresh',
+    'ptr.loading': 'Refreshing…',
+
     // Hero
     'hero.title': 'Where everyone finishes',
     'hero.played': 'Played',
@@ -336,6 +341,11 @@ const translations = {
     'mob.more': 'Mer',
     'sheet.theme': 'Tema',
     'sheet.lang': 'Språk',
+
+    // Pull to refresh
+    'ptr.pull': 'Trekk for å oppdatere',
+    'ptr.release': 'Slipp for å oppdatere',
+    'ptr.loading': 'Oppdaterer…',
 
     // Hero
     'hero.title': 'Hvem ender hvor',

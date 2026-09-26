@@ -2659,6 +2659,94 @@ function resolveTheme() {
   }
 }
 
+/* ---------- skeleton loading helpers ---------------------------------- */
+
+/* Show skeleton placeholders while data loads. Called before render functions
+   to provide immediate visual feedback. */
+function showSkeleton(view) {
+  const section = document.querySelector(`[data-section="${view}"]`);
+  if (!section) return;
+
+  const panel = section.querySelector('.panel');
+  if (!panel) return;
+
+  // Clear existing content except panel head
+  const panelHead = panel.querySelector('.panel__head');
+  const scroller = panel.querySelector('.scroller');
+  const legend = panel.querySelector('.legend');
+  const fixtures = panel.querySelector('.fixtures');
+  const playedResults = panel.querySelector('.played-results');
+  const compareOutput = panel.querySelector('#compare-output');
+  const modelGrid = panel.querySelector('.model-grid');
+  const caveats = panel.querySelector('.caveats');
+  const ladderTrack = panel.querySelector('.ladder__track');
+  const gridAnimBar = panel.querySelector('.grid-anim-bar');
+
+  // Remove old skeletons
+  panel.querySelectorAll('.skeleton-row, .skeleton-fixture, .skeleton-played-card, .skeleton-grid-cell, .skeleton-ladder-row').forEach(el => el.remove());
+
+  if (view === 'table' || view === 'grid') {
+    const table = scroller?.querySelector('table') || panel.querySelector('table');
+    if (table) {
+      const tbody = table.querySelector('tbody');
+      if (tbody) {
+        // Add 8 skeleton rows
+        for (let i = 0; i < 8; i++) {
+          const tr = document.createElement('tr');
+          tr.className = 'skeleton-row';
+          if (view === 'grid') {
+            // Grid has 17 columns (pos + 16 positions)
+            for (let j = 0; j < 17; j++) {
+              const td = document.createElement('td');
+              td.className = 'skeleton skeleton-grid-cell';
+              tr.appendChild(td);
+            }
+          } else {
+            // Standings table
+            for (let j = 0; j < 10; j++) {
+              const td = document.createElement('td');
+              td.className = 'skeleton skeleton-cell';
+              tr.appendChild(td);
+            }
+          }
+          tbody.appendChild(tr);
+        }
+      }
+    }
+  } else if (view === 'ladder') {
+    if (ladderTrack) {
+      for (let i = 0; i < 10; i++) {
+        const div = document.createElement('div');
+        div.className = 'skeleton skeleton-ladder-row';
+        ladderTrack.appendChild(div);
+      }
+    }
+  } else if (view === 'next-up') {
+    if (fixtures) {
+      for (let i = 0; i < 5; i++) {
+        const div = document.createElement('div');
+        div.className = 'skeleton skeleton-fixture';
+        fixtures.appendChild(div);
+      }
+    }
+  } else if (view === 'played') {
+    if (playedResults) {
+      for (let i = 0; i < 6; i++) {
+        const div = document.createElement('div');
+        div.className = 'skeleton skeleton-played-card';
+        playedResults.appendChild(div);
+      }
+    }
+  }
+}
+
+/* Clear skeletons after render */
+function clearSkeleton(view) {
+  const section = document.querySelector(`[data-section="${view}"]`);
+  if (!section) return;
+  section.querySelectorAll('.skeleton-row, .skeleton-fixture, .skeleton-played-card, .skeleton-grid-cell, .skeleton-ladder-row').forEach(el => el.remove());
+}
+
 /* ---------- wiring -------------------------------------------------- */
 
 function render() {
@@ -2687,6 +2775,9 @@ function render() {
   }
 
   // View-specific renders
+  // Clear skeletons from previous view
+  clearSkeleton(state._prevActiveView);
+  clearSkeleton(state.activeView);
   switch (state.activeView) {
     case 'table':
       renderStandings(report);
@@ -2871,7 +2962,7 @@ function wire() {
     closeAllMenus();
   });
 
-  // Close menus when clicking outside.
+// Close menus when clicking outside.
   document.addEventListener('pointerdown', (event) => {
     const settingsMenu = $('#settings-menu');
     const settingsBtn = $('#settings-btn');
@@ -2887,6 +2978,14 @@ function wire() {
     if (!seasonMenu.hidden && !seasonMenu.contains(event.target) && !event.target.closest('.hero-title-part[data-role="season"]')) {
       seasonMenu.hidden = true;
     }
+  });
+
+  // Mobile gesture handling: swipe navigation, pull-to-refresh, swipe-to-dismiss sheet
+  initMobileGestures();
+
+  window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => {
+    resolveTheme();
+    render();
   });
 
   window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => {
@@ -3618,5 +3717,305 @@ async function boot() {
       t('status.couldNotLoadSeason', { error: error.message });
   }
 }
+
+/* ---------- mobile gestures ----------------------------------------- */
+
+/* Mobile gesture handling: swipe navigation, pull-to-refresh, swipe-to-dismiss sheet */
+function initMobileGestures() {
+  // Only on mobile
+  if (window.innerWidth > 760) return;
+
+  const content = $('#content');
+  const mobilebar = $('#mobilebar');
+  const sheet = $('#more-sheet');
+  const sheetPanel = sheet?.querySelector('.sheet__panel');
+  const viewsInBar = ['grid', 'table', 'next-up', 'played'];
+
+  // Pull-to-refresh
+  let ptrState = { startY: 0, currentY: 0, pulling: false, triggered: false };
+  const ptrIndicator = createPullToRefreshIndicator();
+  content.prepend(ptrIndicator);
+
+  // Swipe navigation on bottom bar
+  let swipeState = { startX: 0, startY: 0, currentX: 0, swiping: false };
+
+  // Swipe-to-dismiss sheet
+  let sheetSwipeState = { startY: 0, currentY: 0, dragging: false };
+
+  // Touch ripple for interactive elements
+  addTouchRipple();
+
+  // --- Pull to Refresh ---
+  content.addEventListener('touchstart', (e) => {
+    if (content.scrollTop > 0) return; // Only at top
+    if (ptrState.pulling) return;
+    ptrState.startY = e.touches[0].clientY;
+    ptrState.pulling = true;
+    ptrState.triggered = false;
+  }, { passive: true });
+
+  content.addEventListener('touchmove', (e) => {
+    if (!ptrState.pulling || content.scrollTop > 0) {
+      ptrState.pulling = false;
+      return;
+    }
+    ptrState.currentY = e.touches[0].clientY;
+    const delta = ptrState.currentY - ptrState.startY;
+    if (delta <= 0) {
+      ptrState.pulling = false;
+      return;
+    }
+    e.preventDefault(); // Prevent native scroll bounce
+    const pullDistance = Math.min(delta * 0.5, 80); // Resistance
+    ptrIndicator.style.transform = `translateY(${-60 + pullDistance}px)`;
+    ptrIndicator.style.opacity = '1';
+    ptrIndicator.classList.toggle('pulling', pullDistance > 40);
+    if (pullDistance > 60 && !ptrState.triggered) {
+      ptrState.triggered = true;
+      ptrIndicator.querySelector('.ptr-text').textContent = t('ptr.release');
+      // Haptic feedback simulation
+      if (navigator.vibrate) navigator.vibrate(10);
+    }
+  }, { passive: false });
+
+  content.addEventListener('touchend', async () => {
+    if (!ptrState.pulling || !ptrState.triggered) {
+      resetPullToRefresh();
+      return;
+    }
+    // Trigger refresh
+    ptrIndicator.classList.remove('pulling');
+    ptrIndicator.classList.add('loading');
+    ptrIndicator.querySelector('.ptr-text').textContent = t('ptr.loading');
+    ptrIndicator.querySelector('.ptr-spinner').style.display = 'block';
+
+    // Reload current season data
+    try {
+      await loadSeason(state.season);
+    } catch (err) {
+      console.warn('Pull to refresh failed:', err);
+    }
+    resetPullToRefresh();
+  }, { passive: true });
+
+  function resetPullToRefresh() {
+    ptrState.pulling = false;
+    ptrState.triggered = false;
+    ptrIndicator.classList.remove('pulling', 'loading', 'visible');
+    ptrIndicator.style.transform = 'translateY(-100%)';
+    ptrIndicator.style.opacity = '0';
+    ptrIndicator.querySelector('.ptr-spinner').style.display = 'none';
+    ptrIndicator.querySelector('.ptr-text').textContent = t('ptr.pull');
+  }
+
+  function createPullToRefreshIndicator() {
+    const div = document.createElement('div');
+    div.className = 'ptr-indicator';
+    div.innerHTML = `
+      <div class="ptr-spinner" style="display:none;"></div>
+      <span class="ptr-text">${t('ptr.pull')}</span>
+    `;
+    return div;
+  }
+
+  // --- Swipe Navigation on Bottom Bar ---
+  mobilebar?.addEventListener('touchstart', (e) => {
+    const target = e.target.closest('.mobilebar__item[data-view]');
+    if (!target) return;
+    swipeState.startX = e.touches[0].clientX;
+    swipeState.startY = e.touches[0].clientY;
+    swipeState.swiping = true;
+  }, { passive: true });
+
+  mobilebar?.addEventListener('touchmove', (e) => {
+    if (!swipeState.swiping) return;
+    swipeState.currentX = e.touches[0].clientX;
+    const deltaX = swipeState.currentX - swipeState.startX;
+    const deltaY = Math.abs(e.touches[0].clientY - swipeState.startY);
+    // Allow vertical scroll if vertical movement > horizontal
+    if (deltaY > Math.abs(deltaX) * 1.5) {
+      swipeState.swiping = false;
+      return;
+    }
+    e.preventDefault();
+    // Visual feedback on the bar items
+    const threshold = 50;
+    if (Math.abs(deltaX) > threshold) {
+      const direction = deltaX > 0 ? 1 : -1; // right = previous, left = next
+      const currentIndex = viewsInBar.indexOf(state.activeView);
+      const nextIndex = (currentIndex + direction + viewsInBar.length) % viewsInBar.length;
+      const nextView = viewsInBar[nextIndex];
+      highlightBarItem(nextView);
+    }
+  }, { passive: false });
+
+  mobilebar?.addEventListener('touchend', () => {
+    if (!swipeState.swiping) return;
+    swipeState.swiping = false;
+    const deltaX = swipeState.currentX - swipeState.startX;
+    const threshold = 50;
+    if (Math.abs(deltaX) > threshold) {
+      const direction = deltaX > 0 ? 1 : -1;
+      const currentIndex = viewsInBar.indexOf(state.activeView);
+      const nextIndex = (currentIndex + direction + viewsInBar.length) % viewsInBar.length;
+      const nextView = viewsInBar[nextIndex];
+      switchView(nextView);
+      if (navigator.vibrate) navigator.vibrate(15);
+    }
+    clearBarHighlight();
+  }, { passive: true });
+
+  function highlightBarItem(view) {
+    mobilebar.querySelectorAll('.mobilebar__item[data-view]').forEach(btn => {
+      btn.style.opacity = btn.dataset.view === view ? '1' : '0.4';
+      btn.style.transform = btn.dataset.view === view ? 'scale(1.05)' : 'scale(0.95)';
+    });
+  }
+  function clearBarHighlight() {
+    mobilebar.querySelectorAll('.mobilebar__item[data-view]').forEach(btn => {
+      btn.style.opacity = '';
+      btn.style.transform = '';
+    });
+  }
+
+  // --- Swipe to Dismiss Sheet ---
+  sheetPanel?.addEventListener('touchstart', (e) => {
+    if (sheet.hidden) return;
+    sheetSwipeState.startY = e.touches[0].clientY;
+    sheetSwipeState.dragging = true;
+    sheetPanel.classList.add('is-dragging');
+  }, { passive: true });
+
+  sheetPanel?.addEventListener('touchmove', (e) => {
+    if (!sheetSwipeState.dragging) return;
+    sheetSwipeState.currentY = e.touches[0].clientY;
+    const deltaY = sheetSwipeState.currentY - sheetSwipeState.startY;
+    if (deltaY <= 0) return; // Only dismiss on downward swipe
+    e.preventDefault();
+    const pullDistance = Math.min(deltaY * 0.4, 200);
+    sheetPanel.style.transform = `translateY(${pullDistance}px)`;
+    sheetPanel.style.opacity = String(1 - pullDistance / 300);
+    sheet.querySelector('.sheet__scrim').style.opacity = String(0.45 * (1 - pullDistance / 300));
+  }, { passive: false });
+
+  sheetPanel?.addEventListener('touchend', () => {
+    if (!sheetSwipeState.dragging) return;
+    sheetSwipeState.dragging = false;
+    sheetPanel.classList.remove('is-dragging');
+    const deltaY = sheetSwipeState.currentY - sheetSwipeState.startY;
+    if (deltaY > 100) {
+      // Dismiss
+      sheetPanel.classList.add('is-dismissed');
+      setTimeout(() => {
+        closeSheet();
+        sheetPanel.classList.remove('is-dismissed');
+        sheetPanel.style.transform = '';
+        sheetPanel.style.opacity = '';
+        sheet.querySelector('.sheet__scrim').style.opacity = '';
+        if (navigator.vibrate) navigator.vibrate(20);
+      }, 250);
+    } else {
+      // Snap back
+      sheetPanel.style.transition = 'transform 0.2s var(--ease), opacity 0.2s var(--ease)';
+      sheetPanel.style.transform = '';
+      sheetPanel.style.opacity = '';
+      sheet.querySelector('.sheet__scrim').style.opacity = '';
+      setTimeout(() => sheetPanel.style.transition = '', 200);
+    }
+  }, { passive: true });
+}
+
+/* Touch ripple effect for buttons and interactive elements */
+function addTouchRipple() {
+  const interactiveSelectors = [
+    'button:not(.switch button):not(.sort-btn):not(.grid-anim-speed button)',
+    '.club-btn',
+    '.played-card',
+    '.ladder__team',
+    '.compare__team',
+    '.team-logo',
+    '.hero-title-part',
+    '.timeline__step',
+    '.grid-anim-btn',
+    '.played-nav__btn',
+    '.timeline__now',
+    '.compare__swap-center',
+    '.sheet__item',
+    '.mobilebar__item',
+    '.settings-btn',
+    '.popover-menu__btn',
+  ];
+
+  // Use event delegation for performance
+  document.addEventListener('touchstart', (e) => {
+    const target = e.target.closest(interactiveSelectors.join(', '));
+    if (!target) return;
+    // Don't add ripple to elements that already have visual feedback
+    if (target.classList.contains('switch') || target.closest('.switch')) return;
+    if (target.classList.contains('sort-btn')) return;
+    if (target.classList.contains('grid-anim-speed') || target.closest('.grid-anim-speed')) return;
+
+    target.classList.add('touch-ripple');
+  }, { passive: true });
+
+  document.addEventListener('touchend', (e) => {
+    const target = e.target.closest('.touch-ripple');
+    if (target) {
+      // Remove after animation
+      setTimeout(() => target.classList.remove('touch-ripple'), 300);
+    }
+  }, { passive: true });
+
+  document.addEventListener('touchcancel', (e) => {
+    const target = e.target.closest('.touch-ripple');
+    if (target) target.classList.remove('touch-ripple');
+  }, { passive: true });
+}
+
+/* Reduced motion check for gestures */
+function prefersReducedMotion() {
+  return window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+}
+
+/* Smooth scroll to element with offset for fixed headers */
+function smoothScrollTo(element, offset = 0) {
+  if (prefersReducedMotion()) {
+    element.scrollIntoView({ block: 'start' });
+    return;
+  }
+  const headerHeight = document.querySelector('.masthead')?.offsetHeight || 0;
+  const mobilebarHeight = window.innerWidth <= 760 ? (document.querySelector('.mobilebar')?.offsetHeight || 0) : 0;
+  const targetPosition = element.getBoundingClientRect().top + window.scrollY - headerHeight - mobilebarHeight - offset;
+  window.scrollTo({ top: targetPosition, behavior: 'smooth' });
+}
+
+/* Handle orientation change */
+function handleOrientationChange() {
+  // Recalculate viewport heights for fixed elements
+  const vh = window.innerHeight * 0.01;
+  document.documentElement.style.setProperty('--vh', `${vh}px`);
+
+  // Close any open menus/sheets on orientation change
+  closeAllMenus();
+
+  // Re-render if needed (e.g., grid animation bar)
+  if (state.anim.playing) {
+    renderAnimBar();
+  }
+}
+
+window.addEventListener('orientationchange', handleOrientationChange);
+window.addEventListener('resize', () => {
+  // Only reinitialize gestures if crossing the mobile breakpoint
+  const wasMobile = document.body.dataset.wasMobile === 'true';
+  const isMobile = window.innerWidth <= 760;
+  if (wasMobile !== isMobile) {
+    document.body.dataset.wasMobile = String(isMobile);
+    // Re-init would require removing old listeners; for simplicity, just refresh on next interaction
+  }
+});
+
+// Initialize viewport height variable for CSS
+handleOrientationChange();
 
 boot();
