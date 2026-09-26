@@ -1,0 +1,78 @@
+# Rebuild every past season and replace the `past-seasons` release asset, then
+# redeploy -- the CI version of AGENTS.md, "Publishing past seasons". Run it by
+# hand (Actions tab, or `gh workflow run past-seasons.yml`) after a model change
+# or a change to what a report carries; ordinary results never need it.
+#
+# Each season is its own job, so the ~1,000 views build in parallel.
+
+name: Rebuild past seasons
+on:
+  workflow_dispatch:
+
+permissions:
+  actions: write    # start the deploy once the asset is replaced
+  contents: write   # replace the release asset
+
+jobs:
+  seasons:
+    runs-on: ubuntu-latest
+    outputs:
+      past: ${{ steps.list.outputs.past }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: pip install .
+      - id: list
+        run: |
+          echo "past=$(python -c 'import json; from elitetracker.pipeline import available_seasons, current_season; print(json.dumps([s for s in available_seasons() if s != current_season()]))')" >> "$GITHUB_OUTPUT"
+
+  build:
+    needs: seasons
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        season: ${{ fromJson(needs.seasons.outputs.past) }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: pip install .
+      - run: python -m elitetracker.build_site --only-season ${{ matrix.season }}
+      # Only this season's reports: careers.json and report.json are rebuilt by
+      # every deploy, and the other seasons come from their own jobs.
+      - uses: actions/upload-artifact@v4
+        with:
+          name: season-${{ matrix.season }}
+          path: public/data/report-${{ matrix.season }}*.json
+          if-no-files-found: error
+          retention-days: 1
+
+  publish:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: season-*
+          path: out
+          merge-multiple: true
+      - name: Replace the release asset
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          echo "files: $(ls out | wc -l)"
+          tar -czf past-seasons.tar.gz -C out .
+          ls -lh past-seasons.tar.gz
+          if gh release view past-seasons > /dev/null 2>&1; then
+            gh release upload past-seasons past-seasons.tar.gz --clobber
+          else
+            gh release create past-seasons past-seasons.tar.gz --title past-seasons --notes "Prebuilt past-season reports"
+          fi
+      - name: Redeploy with the new asset
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gh workflow run deploy.yml --ref main

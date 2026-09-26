@@ -695,8 +695,9 @@ away. Nothing ships until a walk-forward says it does.
       same 1,600 matches would say how much of the model's xG noise is the provider's,
       and an average of the two would be a cheap variance reduction if they disagree.
 
-- [ ] Rebuild and re-upload the past-seasons archive (AGENTS.md, "Publishing past
-      seasons"): reports built before September 2026 lack `results[].xg`,
+- [ ] Rebuild and re-upload the past-seasons archive (`gh workflow run
+      past-seasons.yml`, or AGENTS.md, "Publishing past seasons"): reports built
+      before September 2026 lack `results[].xg`,
       `results[].xg_form` and the projected goal totals, so 2015–2025 show no xG
       under scores, dashes for projected GF/GA/GD and the old trend arrow.
 

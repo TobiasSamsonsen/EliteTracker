@@ -111,6 +111,7 @@ strings (`data-i18n` in the HTML, `t()` in JS). Tabbed views, default Finish Gri
 - `.github/workflows/deploy.yml` — every push to `main` builds **only the current season**
   and deploys live; a pull request from this repo gets a preview channel
 - `.github/workflows/refresh.yml` — every 30 minutes, refresh results and commit if changed
+- `.github/workflows/past-seasons.yml` — manual: rebuild every past season in parallel jobs, replace the release asset, redeploy
 - Past seasons are simulated on the developer's machine and uploaded once as a release
   asset; CI downloads it
 - Deployed at `elitetrackerno.web.app`
@@ -118,7 +119,9 @@ strings (`data-i18n` in the HTML, `t()` in JS). Tabbed views, default Finish Gri
 #### Publishing past seasons
 
 Only after a model change or a past-season backfill -- never for ordinary results, which
-touch the current season alone:
+touch the current season alone. The easy way is CI: `gh workflow run past-seasons.yml`
+(or Actions → "Rebuild past seasons") builds each past season in its own job, replaces
+the release asset and redeploys. By hand, on your machine:
 
 ```bash
 python -m elitetracker.build_site          # every season, on your machine (~270 MB)
