@@ -1286,8 +1286,8 @@ table.standings .zone-divider__wrap::after {
   /* Played Results and Next Up: crest only, and a bigger one. The name
      button stays, stretched invisibly over the crest, so a tap still opens
      the club, focus rings the crest and a screen reader still reads the name. */
-  :is(#played-results, #fixtures) .played-card__team { position: relative; }
-  :is(#played-results, #fixtures) .played-card__team .played-card__team-name {
+  :is(#played-results, #fixtures, #team-content) .played-card__team { position: relative; }
+  :is(#played-results, #fixtures, #team-content) .played-card__team .played-card__team-name {
     position: absolute;
     inset: 0;
     max-width: none;
@@ -1295,7 +1295,7 @@ table.standings .zone-divider__wrap::after {
     color: transparent;
     border-radius: 6px;
   }
-  :is(#played-results, #fixtures) .played-card__side .team-logo { width: 40px; height: 40px; }
+  :is(#played-results, #fixtures, #team-content) .played-card__side .team-logo { width: 40px; height: 40px; }
 }
 
 /* Recent-form chip in the table: single rectangle, color by points (0–15). */

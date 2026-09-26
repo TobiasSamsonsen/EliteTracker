@@ -1436,3 +1436,9 @@ stays elo-v12.0.
 - Phones: rewind slider keeps its place above the view (it jumped mid-drag);
   Played Results and Next Up show crests only, larger.
 - Model card: the modern era's xG weight is *lower* (30 %) than the legacy 45 %.
+
+## 🎨 Team view mobile consistency (September 2026)
+
+The "Played Results" and "Next Up" tabs already showed crests only (no team names) on mobile, with 40px crests and invisible-but-accessible name buttons overlaid. The team view's match cards used the same render functions but rendered inside `#team-content` instead of the main tab containers, so the mobile-only CSS selector missed them.
+
+Extended the CSS selector from `:is(#played-results, #fixtures)` to `:is(#played-results, #fixtures, #team-content)` so the team view now matches the main tabs exactly: 40px crests, hidden names, accessible overlay. No JS changes needed — the existing `sideBlock`/`buildFixtureCard`/`playedCard` output already had the right classes.
