@@ -2036,18 +2036,29 @@ function renderTeamView(report) {
 }
 
 function renderSeasonBySeason(career, teamId, container, currentReport) {
-  
   if (!career || !Array.isArray(career.seasons) || !career.seasons.length) return;
   const seasonsDesc = [...career.seasons].reverse();
   const PAGE = 8;
   const totalPages = Math.ceil(seasonsDesc.length / PAGE);
-  state.teamSeasonsPage = Math.min(state.teamSeasonsPage ?? 0, totalPages - 1);
-  const page = state.teamSeasonsPage;
-  const pageRecords = seasonsDesc.slice(page * PAGE, (page + 1) * PAGE);
 
-  // Determine which season's shape is currently displayed (stored in state)
-  const activeSeason = state.activeSeasonShape?.season;
-  const activeLeague = state.activeSeasonShape?.league;
+  // The stored season comes from whichever club was open last; a club that
+  // never played it would show "no shape data". Anything this career does not
+  // hold falls back to the season on show now.
+  const stored = state.activeSeasonShape;
+  const storedOk = !!stored && career.seasons.some(
+    (s) => String(s.season) === String(stored.season) && s.league === stored.league
+  );
+  if (stored && !storedOk) state.activeSeasonShape = null;
+  const initialSeason = storedOk ? stored.season : currentReport.league.season;
+  const initialLeague = storedOk ? stored.league : currentReport.league.slug;
+
+  // Open on the page holding the season on show; paging later never re-checks.
+  const activeIdx = seasonsDesc.findIndex(
+    (s) => String(s.season) === String(initialSeason) && s.league === initialLeague
+  );
+  state.teamSeasonsPage = activeIdx >= 0
+    ? Math.floor(activeIdx / PAGE)
+    : Math.min(state.teamSeasonsPage ?? 0, totalPages - 1);
 
   // Compute max absolute rating change for scaling bars
   const maxAbsChange = Math.max(...career.seasons.map(s => Math.abs(s.rating_change)), 1);
@@ -2057,50 +2068,49 @@ function renderSeasonBySeason(career, teamId, container, currentReport) {
   header.appendChild(el('div', 'label', t('team.seasonBySeason', { n: career.seasons.length })));
   section.appendChild(header);
 
-  // Season shape chart container (at top of section)
+  // The colours are explained once, under the heading, so the words stay put
+  // while seasons swap underneath them.
+  section.appendChild(el('p', 'team-section__hint', t('team.shapeHint')));
+
   const shapeContainer = el('div', 'team-shape-container');
   shapeContainer.id = 'team-shape-container';
   shapeContainer.setAttribute('aria-live', 'polite');
-  // Add hint text explaining the chart
-  const hint = el('p', 'team-section__hint');
-  hint.textContent = t('team.shapeHint');
-  shapeContainer.appendChild(hint);
   section.appendChild(shapeContainer);
-  
 
-  // Render initial season shape (current season by default, or previously selected)
-  const initialSeason = activeSeason || currentReport.league.season;
-  const initialLeague = activeLeague || currentReport.league.slug;
-  
+  // Attached before the chart draws: drawTeamShape sizes itself to the
+  // container, which is zero while the section is still a fragment.
+  container.appendChild(section);
+
   renderSeasonShapeInContainer(initialSeason, initialLeague, teamId, shapeContainer, currentReport);
 
-  // Pagination (top only)
-  if (totalPages > 1) {
-    section.appendChild(paginator(page, totalPages, (p) => { state.teamSeasonsPage = p; renderTeamView(currentReport); }, true));
-  }
-
-  // Unified compact season list (replaces both table and mobile list)
+  // The list is the picker: its rows swap the chart above. Paging re-renders
+  // the list alone, so a page turn no longer tears down and rebuilds the chart.
   const list = el('div', 'seasons-list-compact');
-  for (const record of pageRecords) {
-    list.appendChild(createCompactSeasonRow(record, career.seasons, teamId, container, currentReport, activeSeason, activeLeague, maxAbsChange, shapeContainer));
-  }
   section.appendChild(list);
+  const pagerBox = el('div', 'seasons-pager');
+  if (totalPages > 1) section.appendChild(pagerBox);
 
-  container.appendChild(section);
+  const paint = () => {
+    const page = Math.min(state.teamSeasonsPage ?? 0, totalPages - 1);
+    state.teamSeasonsPage = page;
+    const active = state.activeSeasonShape || { season: initialSeason, league: initialLeague };
+    list.replaceChildren(...seasonsDesc.slice(page * PAGE, (page + 1) * PAGE).map(
+      (record) => createCompactSeasonRow(
+        record, teamId, container, currentReport,
+        active.season, active.league, maxAbsChange, shapeContainer
+      )
+    ));
+    if (totalPages > 1) {
+      pagerBox.replaceChildren(
+        paginator(page, totalPages, (p) => { state.teamSeasonsPage = p; paint(); }, true)
+      );
+    }
+  };
+  paint();
 }
 
-function getSeasonMovement(allSeasons, record) {
-  const idx = allSeasons.findIndex((s) => s.season === record.season && s.league === record.league);
-  if (idx <= 0) return null;  // first season or not found — no previous to compare
-  const prev = allSeasons[idx - 1];
-  return prev.league !== record.league
-    ? (record.league === 'eliteserien' ? 'promoted' : 'relegated')
-    : null;
-}
-
-function createCompactSeasonRow(record, allSeasons, teamId, container, currentReport, activeSeason, activeLeague, maxAbsChange, shapeContainer) {
-  const movement = getSeasonMovement(allSeasons, record);
-  const isActive = String(record.season) === activeSeason && record.league === activeLeague;
+function createCompactSeasonRow(record, teamId, container, currentReport, activeSeason, activeLeague, maxAbsChange, shapeContainer) {
+  const isActive = String(record.season) === String(activeSeason) && record.league === activeLeague;
 
   const row = el('button', `season-row-compact${isActive ? ' is-active' : ''}`);
   row.type = 'button';
@@ -2119,12 +2129,6 @@ function createCompactSeasonRow(record, allSeasons, teamId, container, currentRe
   badge.title = record.league_name;
   seasonCell.appendChild(badge);
 
-  if (movement) {
-    const moveBadge = el('span', `movement-badge movement-badge--${movement} season-row-compact__movement`);
-    moveBadge.textContent = movement === 'promoted' ? '↑' : '↓';
-    moveBadge.title = movement === 'promoted' ? t('team.promoted') : t('team.relegated');
-    seasonCell.appendChild(moveBadge);
-  }
   row.appendChild(seasonCell);
 
   // Position only (league shown via badge)
@@ -2152,67 +2156,77 @@ function createCompactSeasonRow(record, allSeasons, teamId, container, currentRe
   ratingCell.appendChild(el('div', 'season-row-compact__rating-end', num(record.rating_end)));
   row.appendChild(ratingCell);
 
-  // Click handler
-  row.addEventListener('click', () => loadSeasonShape(record.season, record.league, teamId, shapeContainer, currentReport));
-  row.addEventListener('keydown', (e) => {
-    if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); loadSeasonShape(record.season, record.league, teamId, shapeContainer, currentReport); }
+  // Click handler. The native button already fires on Enter and Space.
+  row.addEventListener('click', () => {
+    loadSeasonShape(record.season, record.league, teamId, shapeContainer, currentReport);
+    // The chart sits above the list; a pick made from deep inside the list
+    // would otherwise change a chart nobody can see.
+    const box = shapeContainer.getBoundingClientRect();
+    if (box.bottom < 0 || box.top > window.innerHeight) {
+      shapeContainer.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+    }
   });
 
   return row;
 }
 
-function renderSeasonShapeInContainer(season, league, teamId, container, currentReport) {
-  container.classList.add('team-shape--loading');
-  // Preserve the hint element
-  const hint = container.querySelector('.team-section__hint');
-  container.replaceChildren(el('div', '', t('team.loadingShape', { year: season })));
-  if (hint) container.appendChild(hint);
-  // If it's the current report's season/league, use the already-loaded report
-  if (season === currentReport.league.season && league === currentReport.league.slug) {
-    const team = currentReport.history?.teams?.find((t) => String(t.team_id) === String(teamId));
-    container.classList.remove('team-shape--loading');
-    if (!team) { container.replaceChildren(el('div', '', t('team.noShape'))); if (hint) container.appendChild(hint); return; }
-    const chart = svgEl('svg', { class: 'chart', role: 'img' });
-    chart.setAttribute('aria-label', t('team.seasonShapeYear', { year: season }));
-    drawTeamShape(currentReport, team, chart);
-    const frag = document.createDocumentFragment();
-    frag.appendChild(el('div', 'label', t('team.seasonShapeYear', { year: season })));
-    frag.appendChild(chart);
-    container.replaceChildren(frag);
-    if (hint) container.appendChild(hint);
-    // Update active state in row
-    updateActiveSeasonRow(season, league);
-    return;
-  }
-  // Otherwise fetch the report for that season
-  fetch(reportUrl(season))
+/* Season reports are fetched once and kept: flipping back and forth through
+   the picker should neither refetch nor flash a spinner. */
+const seasonReportCache = new Map();
+
+function loadSeasonReports(season) {
+  if (season === state.season && state.reports) return Promise.resolve(state.reports);
+  const hit = seasonReportCache.get(season);
+  if (hit) return Promise.resolve(hit);
+  const pending = fetch(reportUrl(season))
     .then((res) => {
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       return res.json();
     })
-    .then((reports) => applyShortNames(reports))
-    .then((reports) => {
-      const report = reports[league];
-      const team = report.history?.teams?.find((t) => String(t.team_id) === String(teamId));
-      container.classList.remove('team-shape--loading');
-      if (!team) { container.replaceChildren(el('div', '', t('team.noShape'))); if (hint) container.appendChild(hint); return; }
-      const chart = svgEl('svg', { class: 'chart', role: 'img' });
-      chart.setAttribute('aria-label', t('team.seasonShapeYear', { year: season }));
-      drawTeamShape(report, team, chart);
-      const frag = document.createDocumentFragment();
-      frag.appendChild(el('div', 'label', t('team.seasonShapeYear', { year: season })));
-      frag.appendChild(chart);
-      container.replaceChildren(frag);
-      if (hint) container.appendChild(hint);
-      // Update active state in row
-      updateActiveSeasonRow(season, league);
-      // Store active season in state
-      state.activeSeasonShape = { season, league };
-    })
+    .then(applyShortNames)
+    .then((reports) => { seasonReportCache.set(season, reports); return reports; })
+    .catch((err) => { seasonReportCache.delete(season); throw err; });
+  seasonReportCache.set(season, pending);
+  return pending;
+}
+
+/* A slow fetch for one season must not land after the reader has already
+   picked another. Only the newest request writes. */
+let shapeRequest = 0;
+
+function renderSeasonShapeInContainer(season, league, teamId, container, currentReport) {
+  const request = ++shapeRequest;
+  container.classList.add('team-shape--loading');
+  container.replaceChildren(el('div', '', t('team.loadingShape', { year: season })));
+
+  const show = (report) => {
+    if (request !== shapeRequest || !container.isConnected) return;
+    const team = report?.history?.teams?.find((t) => String(t.team_id) === String(teamId));
+    container.classList.remove('team-shape--loading');
+    if (!team) { container.replaceChildren(el('div', '', t('team.noShape'))); return; }
+    const chart = svgEl('svg', { class: 'chart', role: 'img' });
+    chart.setAttribute('aria-label', t('team.seasonShapeYear', { year: season }));
+    drawTeamShape(report, team, chart, container.clientWidth);
+    container.replaceChildren(
+      el('div', 'label', t('team.seasonShapeYear', { year: season })),
+      chart
+    );
+    // The rows highlight what is on show, so both branches record it.
+    state.activeSeasonShape = { season, league };
+    updateActiveSeasonRow(season, league);
+  };
+
+  // The season the page already carries needs no fetch; anything else does.
+  if (season === currentReport.league.season && league === currentReport.league.slug) {
+    show(currentReport);
+    return;
+  }
+  loadSeasonReports(season)
+    .then((reports) => show(reports[league]))
     .catch((err) => {
+      if (request !== shapeRequest || !container.isConnected) return;
       container.classList.remove('team-shape--loading');
       container.replaceChildren(el('div', '', t('team.loadError', { error: err.message })));
-      if (hint) container.appendChild(hint);
     });
 }
 
@@ -2648,16 +2662,26 @@ function renderTeamResults(teamId, teamName, report, container) {
   container.appendChild(section);
 }
 
-function drawTeamShape(report, team, chart) {
+/* Below this container width the chart gets a viewBox of its own width: a
+   phone reads the 900-wide desktop box at ~0.4 scale, which shrinks the 10px
+   ticks to 4px. `lastShape` is what a window resize redraws when the chart
+   crosses that width. */
+const SHAPE_NARROW = 640;
+let lastShape = null;
+
+function drawTeamShape(report, team, chart, boxWidth) {
   const history = report.history;
   const count = report.table.length;
   const snapshots = history.dates.length;
 
-  const width = 900;
-  const height = 280;
+  const box = boxWidth || 900;
+  const narrow = box < SHAPE_NARROW;
+  const width = narrow ? Math.round(box) : 900;
+  const height = narrow ? 300 : 280;
   const pad = { top: 10, right: 12, bottom: 30, left: 40 };
   const plotWidth = width - pad.left - pad.right;
   const plotHeight = height - pad.top - pad.bottom;
+  lastShape = { report, team, chart, narrow };
 
   chart.setAttribute('viewBox', `0 0 ${width} ${height}`);
   chart.replaceChildren();
@@ -2731,6 +2755,83 @@ function drawTeamShape(report, team, chart) {
     svgEl('line', { class: 'axis-line', x1: pad.left, x2: width - pad.right, y1: y(1), y2: y(1) })
   );
 
+  // The two edges the season hangs on: European qualification above,
+  // relegation below -- the threshold is the *lowest* place that still goes to
+  // Europe. Eliteserien's European allocation moves year to year and 2025
+  // splits Europa (3rd) from Conference (4th), so the lowest europe band wins
+  // (pipeline, _ELITESERIEN_EUROPE). OBOS has no European place and keeps its
+  // direct-promotion threshold. Each is a curve -- the band boundary moves as
+  // the probabilities move -- and takes the colour of its outcome. An edge
+  // that never leaves a frame for the whole season says nothing the areas do
+  // not -- it is dropped rather than drawn glued to the border.
+  const edges = [];
+  const europeBands = report.league.bands.filter((b) => b.tone === 'europe');
+  const qualBand = europeBands.length
+    ? europeBands.reduce((lowest, b) => (b.last > lowest.last ? b : lowest))
+    : report.league.bands.find((b) => b.tone === 'top');
+  const relegBand = report.league.bands.find((b) => b.tone === 'relegation');
+  for (const [band, key] of [[qualBand, 'good'], [relegBand, 'bad']]) {
+    if (!band) continue;
+    const edge = key === 'bad' ? band.first - 1 : band.last;
+    const values = cumulative.map((run) => run[edge]);
+    if (Math.max(...values) < 0.1 || Math.min(...values) > 0.9) continue;
+    // ponytail: ~1% display inset at the plot edges. A 0.000 line sits exactly
+    // on the frame and is invisible; drop this if exact placement matters.
+    const edgeY = (cum) => Math.min(Math.max(y(cum), pad.top + 6), pad.top + plotHeight - 6);
+    edges.push({
+      key,
+      points: cumulative.map((run, index) => `${x(index)},${edgeY(run[edge])}`),
+      label: band.label,
+      // The label sits at the left, so it hangs on the line's left end: under
+      // the qualification line, above the relegation one.
+      labelY: Math.min(
+        Math.max(edgeY(values[0]) + (key === 'bad' ? -5 : 12), pad.top + 10),
+        pad.top + plotHeight - 4
+      ),
+    });
+  }
+  // Halos first: each line knocks out the frame, the gridlines and the blue
+  // cells underneath (paper is what the chart sits on), so the colour shows.
+  for (const e of edges) chart.appendChild(svgEl('polyline', { class: 'band-edge-halo', points: e.points.join(' ') }));
+  for (const e of edges) {
+    chart.appendChild(svgEl('polyline', { class: `band-edge band-edge--${e.key}`, points: e.points.join(' ') }));
+    const tag = svgEl('text', {
+      class: `band-edge-label band-edge-label--${e.key}`,
+      x: pad.left + 4,
+      y: e.labelY,
+    });
+    tag.textContent = e.label;
+    chart.appendChild(tag);
+  }
+
+  // Position numbers inside the bands, at each band's thickest snapshot, so
+  // the reader can name a band without a boundary line drawn across it. Bands
+  // too thin to hold the text are left to the tooltip. Ink flips with the ramp
+  // step exactly as heatTextClass does for the grid's cells.
+  const MIN_BAND_LABEL = 16;
+  for (let position = 1; position <= count; position += 1) {
+    let best = 0;
+    let bestAt = 0;
+    for (let index = 0; index < snapshots; index += 1) {
+      const probability = team.positions[index][position - 1];
+      if (probability > best) { best = probability; bestAt = index; }
+    }
+    if (best * plotHeight < MIN_BAND_LABEL) continue;
+    const step = Math.round(((count - position) / (count - 1)) * (SEQ_STEPS - 1)) + 1;
+    const centre = cumulative[bestAt][position] - best / 2;
+    // A band that peaks on the first or last snapshot would otherwise centre
+    // its numeral half off the plot; hold it a little inside the edge.
+    const NUMERAL_EDGE = 14;
+    const label = svgEl('text', {
+      class: `band-pos${step >= 5 ? ' band-pos--invert' : ''}`,
+      x: Math.min(Math.max(x(bestAt), pad.left + NUMERAL_EDGE), pad.left + plotWidth - NUMERAL_EDGE),
+      y: y(centre),
+      'text-anchor': 'middle',
+    });
+    label.textContent = ordinalShort(position);
+    chart.appendChild(label);
+  }
+
   // Build a list of months to label, including gaps (e.g. June during summer break).
   // For each month, interpolate its x position between the two nearest snapshots.
   const firstDate = new Date(`${history.dates[0]}T12:00:00Z`);
@@ -2768,9 +2869,6 @@ function drawTeamShape(report, team, chart) {
     const label = svgEl('text', { class: 'tick', x: xPos, y: height - pad.bottom + 12, 'text-anchor': 'middle' });
     label.textContent = monthName;
     chart.appendChild(label);
-    chart.appendChild(
-      svgEl('line', { class: 'grid-line', x1: xPos, x2: xPos, y1: pad.top, y2: y(1) })
-    );
   }
 
   const axisTitle = svgEl('text', { class: 'axis-title', x: pad.left, y: height - 4 });
@@ -4390,6 +4488,7 @@ function handleOrientationChange() {
 }
 
 window.addEventListener('orientationchange', handleOrientationChange);
+let shapeResizeTimer;
 window.addEventListener('resize', () => {
   // Only reinitialize gestures if crossing the mobile breakpoint
   const wasMobile = document.body.dataset.wasMobile === 'true';
@@ -4398,6 +4497,17 @@ window.addEventListener('resize', () => {
     document.body.dataset.wasMobile = String(isMobile);
     // Re-init would require removing old listeners; for simplicity, just refresh on next interaction
   }
+  // The season-shape chart is sized to its container's width; redraw it when
+  // a resize crosses the narrow/desktop split, and not on every pixel.
+  clearTimeout(shapeResizeTimer);
+  shapeResizeTimer = setTimeout(() => {
+    if (!lastShape || !lastShape.chart.isConnected) return;
+    const box = lastShape.chart.getBoundingClientRect().width;
+    if (!box) return;
+    if ((box < SHAPE_NARROW) !== lastShape.narrow) {
+      drawTeamShape(lastShape.report, lastShape.team, lastShape.chart, box);
+    }
+  }, 150);
 });
 
 // Initialize viewport height variable for CSS

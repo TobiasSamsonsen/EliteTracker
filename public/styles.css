@@ -65,9 +65,13 @@
   --meter-up: var(--outcome-good);
   --meter-down: var(--outcome-bad);
 
-  /* Division identity on the ladder: two categories, so two fixed hues. */
-  --tier-1: #2a78d6;
-  --tier-2: #eb6834;
+  /* Division identity: two categories, so two fixed hues. Eliteserien's
+     violet keeps clear of --outcome-good, which is the blue that reads as
+     "win" on rating changes (this used to be #2a78d6, nearly that blue; dark
+     was #3987e5, exactly it). Light values must clear 4.5:1 as white text on
+     the season row's pill, dark ones as --panel text on it. */
+  --tier-1: #6f38d6;
+  --tier-2: #c94a1c;
 
   /* Reserved status hues for qualification bands. Each ships with a label. */
   --band-champion: #f2b705;
@@ -120,7 +124,7 @@
   --draw: #b5b5ac;
   --away: #e66767;
 
-  --tier-1: #3987e5;
+  --tier-1: #a78bfa;
   --tier-2: #d95926;
 
   --band-champion: #eda100;
@@ -2352,12 +2356,12 @@ footer a { color: var(--ink); }
 .team-summary__trend--fall { color: var(--outcome-bad); }
 .team-summary__trend--strong-fall { color: var(--outcome-bad); }
 
-/* Rating trend arrow in the standings table — same style, smaller */
+/* Rating trend arrow in the standings table — same style as the team view */
 .rating-trend {
   display: inline-flex;
   vertical-align: middle;
-  margin-left: 0.25rem;
-  font-size: 0.8rem;
+  margin-left: 0.3rem;
+  font-size: 1.15rem;
   line-height: 1;
 }
 .rating-trend--strong-rise { color: var(--outcome-good); }
@@ -2573,13 +2577,12 @@ footer a { color: var(--ink); }
 
 /* ---------- season-by-season (team view) ---------------------------- */
 
-.team-seasons { }
-
-/* Unified compact season list */
+/* Unified compact season list: one single column of rows under the chart,
+   which is also the picker. */
 .seasons-list-compact {
-  display: flex;
-  flex-direction: column;
-  gap: 0;
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0.4rem;
   padding: 0.25rem 0.75rem 0.75rem;
 }
 
@@ -2595,6 +2598,7 @@ footer a { color: var(--ink); }
   transition: background 0.12s var(--ease), border-color 0.12s var(--ease), transform 0.1s var(--ease), box-shadow 0.12s var(--ease);
   position: relative;
   width: 100%;
+  min-width: 0;
   text-align: left;
 }
 .season-row-compact:hover,
@@ -2633,39 +2637,24 @@ footer a { color: var(--ink); }
   font-variant-numeric: tabular-nums;
   color: var(--ink);
 }
+/* Division pill: full-round, type big enough to read at a glance. */
 .season-row-compact__badge {
   flex-shrink: 0;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   min-width: 3.5rem;
-  height: 1.5rem;
-  font-size: 0.5rem;
+  height: 1.375rem;
+  padding: 0 0.45rem;
+  font-size: 0.625rem;
   font-weight: 700;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.06em;
   text-transform: uppercase;
-  border-radius: var(--radius-sm);
+  border-radius: 999px;
   color: var(--panel);
 }
 .season-row-compact__badge--tier1 { background: var(--tier-1); }
 .season-row-compact__badge--tier2 { background: var(--tier-2); }
-  .season-row-compact__movement {
-    flex-shrink: 0;
-  }
-  .movement-badge {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    min-width: 1.5rem;
-    height: 1.5rem;
-    font-size: 0.75rem;
-    font-weight: 700;
-    border-radius: var(--radius-sm);
-    color: var(--panel);
-  }
-  .movement-badge--promoted { background: var(--outcome-good); }
-  .movement-badge--relegated { background: var(--outcome-bad); }
-
 
 .season-row-compact__main {
   display: flex;
@@ -2746,6 +2735,13 @@ footer a { color: var(--ink); }
 @media (max-width: 760px) {
   .team-section .played-nav { padding-inline: 0; }
 }
+/* ...but under the picker it aligns with the rows and drops the trailing
+   rule: the section already has an edge. */
+.team-seasons .played-nav {
+  padding-inline: 0;
+  border-bottom: 0;
+  margin-top: 0.35rem;
+}
 
 /* Rating chart used in team view */
 .chart .career-line { fill: none; stroke: var(--seq-5); stroke-width: 2; }
@@ -2753,6 +2749,31 @@ footer a { color: var(--ink); }
 .chart .season-split { stroke: var(--rule); stroke-width: 1; }
 .chart .season-label { fill: var(--ink-muted); font-size: 9px; }
 .chart .career-dot { fill: var(--seq-5); stroke: var(--panel); stroke-width: 2; }
+
+/* Season shape overlays: the qualification and relegation edges the finish is
+   measured against, colour-coded like the outcome elsewhere, and where it
+   ended. */
+.chart .band-edge-halo { fill: none; stroke: var(--paper); stroke-width: 5; stroke-linejoin: round; }
+.chart .band-edge { fill: none; stroke-width: 1.5; stroke-dasharray: 5 4; }
+.chart .band-edge--good { stroke: var(--outcome-good); }
+.chart .band-edge--bad { stroke: var(--outcome-bad); }
+/* The edge labels sit on top of the coloured cells, so they carry their own
+   paper halo: stroke is painted under the fill (paint-order) and knocks the
+   cells out from behind the letters. */
+.chart .band-edge-label {
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  paint-order: stroke;
+  stroke: var(--paper);
+  stroke-width: 3px;
+  stroke-linejoin: round;
+}
+.chart .band-edge-label--good { fill: var(--outcome-good); }
+.chart .band-edge-label--bad { fill: var(--outcome-bad); }
+.chart .band-pos { font-size: 9.5px; font-weight: 700; fill: var(--ink); opacity: 0.8; dominant-baseline: middle; }
+.chart .band-pos--invert { fill: var(--panel); opacity: 1; }
 
 /* Responsive adjustments for compact list */
 @media (max-width: 760px) {
