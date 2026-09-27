@@ -1297,8 +1297,6 @@ table.standings .zone-divider__wrap::after {
 }
 
 @media (max-width: 480px) {
-  .odds { flex-direction: column; height: auto; gap: 2px; }
-  .odds__seg { border-radius: 2px; min-width: auto; width: 100%; }
   .fixture__lines { justify-content: flex-start; }
 }
 
@@ -1601,8 +1599,6 @@ table.standings .zone-divider__wrap::after {
 }
 
 @media (max-width: 480px) {
-  .odds { flex-direction: column; height: auto; gap: 2px; }
-  .odds__seg { border-radius: 2px; }
   .compare__h2h-record { font-size: 1.1rem; }
 }
 
@@ -3055,7 +3051,7 @@ footer a { color: var(--ink); }
   .played-card__matchup { gap: 0.5rem; }
   .played-card__side { gap: 0.4rem; }
 
-  /* Odds bar and scorelines already handled at 480px */
+  /* Tighter gaps: the odds bar keeps its row layout at every width */
   .fixture__odds-col { gap: 0.25rem; }
   .fixture__lines { gap: 0.25rem; }
   .fixture__line { font-size: 0.625rem; padding: 0.05rem 0.25rem; }
