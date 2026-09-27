@@ -122,7 +122,7 @@ const teamLogo = (teamId, name) => {
   if (!teamId) return null;
   const img = el('img', 'team-logo');
   img.src = `/logos/${teamId}.png`;
-  img.alt = '';
+  img.alt = name;
   img.loading = 'lazy';
   img.title = name;
   return img;
@@ -159,18 +159,32 @@ const pct = (value, digits = 1) => {
 const pctShort = (value) =>
   value < 0.005 ? '' : `${Math.round(value * 100)}`;
 
-/* ---------- the sequential ramp -----------------------------------
-   One gradient does all the quantitative colour on the page: probability in
-   the finish grid, and finishing position in the season-shape chart.
+/* ---------- accessibility utilities ---------------------------------- */
 
-   It is multi-hue by necessity. Sixteen stacked bands in a single hue are not
-   tellable apart, so the ramp travels pale green -> teal -> blue -> deep navy,
-   resampled at uniform OKLab lightness. That keeps lightness monotone (so it
-   still reads as one ordered scale) while giving every neighbouring pair a
-   real colour gap: worst adjacent dE 10.5 light, 11.3 dark.
+/* Focus trap for modal dialogs. Returns a cleanup function. */
+function trapFocus(element) {
+  const focusable = element.querySelectorAll(
+    'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+  );
+  const first = focusable[0];
+  const last = focusable[focusable.length - 1];
 
-   Step 0 is "as good as never" and stays at the surface, so a 16x16 grid of
-   mostly-zero cells reads as empty rather than as pale noise. */
+  function handleTab(event) {
+    if (event.key !== 'Tab') return;
+    if (event.shiftKey && document.activeElement === first) {
+      event.preventDefault();
+      last.focus();
+    } else if (!event.shiftKey && document.activeElement === last) {
+      event.preventDefault();
+      first.focus();
+    }
+  }
+
+  element.addEventListener('keydown', handleTab);
+  first?.focus();
+
+  return () => element.removeEventListener('keydown', handleTab);
+}
 
 const SEQ_STEPS = 7;
 const HEAT_STOPS = [0.005, 0.02, 0.05, 0.1, 0.2, 0.35, 0.6];
@@ -215,10 +229,18 @@ function heatTextClass(step) {
 /* ---------- tooltip ---------------------------------------------- */
 
 const tooltip = $('#tooltip');
+let tooltipTrigger = null;
 
-function showTooltip(event, html) {
+function showTooltip(event, html, triggerElement = null) {
   tooltip.innerHTML = html;
   tooltip.dataset.show = 'true';
+  if (triggerElement) {
+    // The readout is announced through the thing that raised it, so a
+    // keyboard user hears the cell's text when focus lands on it.
+    tooltipTrigger?.removeAttribute('aria-describedby');
+    tooltipTrigger = triggerElement;
+    triggerElement.setAttribute('aria-describedby', 'tooltip');
+  }
   moveTooltip(event);
 }
 
@@ -256,6 +278,8 @@ function moveTooltip(event) {
 
 function hideTooltip() {
   tooltip.dataset.show = 'false';
+  tooltipTrigger?.removeAttribute('aria-describedby');
+  tooltipTrigger = null;
 }
 
 /* ---------- bands ------------------------------------------------- */
@@ -344,6 +368,7 @@ function paintCell(cell, probability) {
    elements are collected per team so the animation can update them in place. */
 function buildGrid(report, tableData, record = null) {
   const table = $('#grid');
+  table.setAttribute('role', 'grid'); // cells below are role=gridcell, so the table must be their grid
   const rows = [...tableData].sort(
     (a, b) => expectedFinish(a) - expectedFinish(b) || a.position - b.position,
   );
@@ -359,6 +384,7 @@ function buildGrid(report, tableData, record = null) {
   // The band strip lives inside the table so it inherits the column geometry
   // exactly; positioning it separately drifts as soon as the table is centred.
   const bandRow = el('tr', 'grid__bands');
+  bandRow.setAttribute('aria-hidden', 'true'); // colour strip only, the th row below carries the numbers
   bandRow.appendChild(el('td', '', ''));
   const headRow = el('tr');
   // The corner names the small number before each club: where it stands now.
@@ -389,6 +415,7 @@ function buildGrid(report, tableData, record = null) {
   const body = el('tbody');
   for (const row of rows) {
     const tr = el('tr');
+    const rowIndex = rows.indexOf(row);
     const label = el('th', 'grid__team');
     label.scope = 'row';
     label.appendChild(el('span', 'pos', String(row.position)));
@@ -408,9 +435,20 @@ function buildGrid(report, tableData, record = null) {
         const prob = live ? live.position_probabilities[index] : probability;
         return `<b>${row.team}</b> ${ordinal(position)}<br>${pct(prob, 2)}` + (band ? `<br>${bandName(band)}` : '');
       };
-      cell.addEventListener('pointerenter', (event) => showTooltip(event, cell.tip()));
+      // Roving tabindex: one stop for the whole grid, arrows move within it.
+      cell.setAttribute('tabindex', rowIndex === 0 && index === 0 ? '0' : '-1');
+      cell.setAttribute('role', 'gridcell');
+      cell.addEventListener('pointerenter', (event) => showTooltip(event, cell.tip(), cell));
       cell.addEventListener('pointermove', moveTooltip);
       cell.addEventListener('pointerleave', hideTooltip);
+      cell.addEventListener('focus', () => {
+        table.querySelectorAll('[role="gridcell"]').forEach((c) => { c.tabIndex = -1; });
+        cell.tabIndex = 0;
+        const rect = cell.getBoundingClientRect();
+        showTooltip({ clientX: rect.left + rect.width / 2, clientY: rect.top }, cell.tip(), cell);
+      });
+      cell.addEventListener('blur', hideTooltip);
+      cell.addEventListener('keydown', (event) => handleGridKeydown(event, cell, rows, index, rowIndex));
       cells.push(cell);
       tr.appendChild(cell);
     });
@@ -423,6 +461,64 @@ function buildGrid(report, tableData, record = null) {
   table.appendChild(body);
   $('#grid-count').textContent = '';
   return table;
+}
+
+/* Keyboard navigation for the finish grid: arrow keys move between cells. */
+function handleGridKeydown(event, cell, rows, cellIndex, rowIndex) {
+  const count = rows.length;
+  const maxCol = count - 1;
+  const maxRow = count - 1;
+  let targetCell = null;
+
+  switch (event.key) {
+    case 'ArrowRight':
+      if (cellIndex < maxCol) {
+        event.preventDefault();
+        targetCell = cell.parentElement.querySelectorAll('[role="gridcell"]')[cellIndex + 1];
+      }
+      break;
+    case 'ArrowLeft':
+      if (cellIndex > 0) {
+        event.preventDefault();
+        targetCell = cell.parentElement.querySelectorAll('[role="gridcell"]')[cellIndex - 1];
+      }
+      break;
+    case 'ArrowDown':
+      if (rowIndex < maxRow) {
+        event.preventDefault();
+        const nextRow = cell.parentElement.nextElementSibling;
+        if (nextRow) {
+          targetCell = nextRow.querySelectorAll('[role="gridcell"]')[cellIndex];
+        }
+      }
+      break;
+    case 'ArrowUp':
+      if (rowIndex > 0) {
+        event.preventDefault();
+        const prevRow = cell.parentElement.previousElementSibling;
+        if (prevRow) {
+          targetCell = prevRow.querySelectorAll('[role="gridcell"]')[cellIndex];
+        }
+      }
+      break;
+    case 'Home':
+      event.preventDefault();
+      targetCell = cell.parentElement.querySelector('[role="gridcell"]');
+      break;
+    case 'End':
+      event.preventDefault();
+      targetCell = cell.parentElement.querySelectorAll('[role="gridcell"]')[maxCol];
+      break;
+    case 'Escape':
+      hideTooltip();
+      cell.blur();
+      break;
+  }
+
+  if (targetCell) {
+    targetCell.focus();
+    showTooltip({ clientX: targetCell.getBoundingClientRect().left, clientY: targetCell.getBoundingClientRect().top }, targetCell.tip(), targetCell);
+  }
 }
 
 function renderGrid(report) {
@@ -1127,7 +1223,7 @@ function ladderTeams(reports) {
    that size. Ranks and placement are written onto the team objects; the ticks
    (every 50 points on the strip, 100 in the list) and track size come back.
    `maxStack` reserves extra stacking depth so an animated strip keeps one size. */
-const LADDER_ROW = 2.25;    // rem per club in the list
+const LADDER_ROW = 2.75;    // rem per club in the list (44px at 16px base = 44px touch target)
 const LADDER_HEAD = 1.75;   // rem above the first row, for the scale labels
 
 function layoutLadder(teams, track, maxStack = 0) {
@@ -1215,7 +1311,7 @@ function ladderTeamEl(team) {
   wrap.appendChild(el('span', 'ladder__rank'));
   const img = el('img');
   img.src = `logos/${team.teamId}.png`;
-  img.alt = '';
+  img.alt = team.team;
   wrap.appendChild(img);
   wrap.appendChild(el('span', 'ladder__name', team.team));
   wrap.appendChild(el('span', 'ladder__rating'));
@@ -1254,9 +1350,75 @@ function bindLadderClicks(track) {
     }
     openTeamView(wrap.dataset.teamId, wrap.dataset.team);
   });
+  track.addEventListener('keydown', (event) => handleLadderKeydown(event, track));
   document.addEventListener('click', () => {
     track.querySelectorAll('.ladder__team[data-tip-visible]').forEach((w) => w.removeAttribute('data-tip-visible'));
   }, { passive: true });
+}
+
+/* Keyboard navigation for the ladder: arrow keys move between teams. */
+function handleLadderKeydown(event, track) {
+  const items = [...track.querySelectorAll('.ladder__team')].filter((item) => item.offsetParent);
+  if (!items.length) return;
+  const activeIndex = items.findIndex((item) => item === document.activeElement);
+  if (activeIndex === -1) return;
+
+  let targetIndex = -1;
+  switch (event.key) {
+    case 'ArrowDown':
+      if (track.classList.contains('ladder__track--list')) {
+        event.preventDefault();
+        targetIndex = Math.min(activeIndex + 1, items.length - 1);
+      }
+      break;
+    case 'ArrowUp':
+      if (track.classList.contains('ladder__track--list')) {
+        event.preventDefault();
+        targetIndex = Math.max(activeIndex - 1, 0);
+      }
+      break;
+    case 'ArrowRight':
+      if (!track.classList.contains('ladder__track--list')) {
+        event.preventDefault();
+        // On strip mode, move to next team by rating
+        targetIndex = Math.min(activeIndex + 1, items.length - 1);
+      }
+      break;
+    case 'ArrowLeft':
+      if (!track.classList.contains('ladder__track--list')) {
+        event.preventDefault();
+        targetIndex = Math.max(activeIndex - 1, 0);
+      }
+      break;
+    case 'Home':
+      event.preventDefault();
+      targetIndex = 0;
+      break;
+    case 'End':
+      event.preventDefault();
+      targetIndex = items.length - 1;
+      break;
+    case 'Enter':
+    case ' ':
+      event.preventDefault();
+      items[activeIndex].click();
+      break;
+    case 'Escape':
+      hideTooltip();
+      items[activeIndex].blur();
+      break;
+  }
+
+  if (targetIndex >= 0 && targetIndex !== activeIndex) {
+    items[targetIndex].focus();
+    const target = items[targetIndex];
+    if (target.dataset.tip) {
+      showTooltip({
+        clientX: target.getBoundingClientRect().left,
+        clientY: target.getBoundingClientRect().top
+      }, target.dataset.tip, target);
+    }
+  }
 }
 
 function renderLadder(reports) {
@@ -1591,38 +1753,38 @@ function renderHero(report) {
   title.appendChild(space);
   title.appendChild(seasonSpan);
 
-  // Division popover
+  // The pickers live on freshly built title parts, so their listeners are
+  // bound here, not once at boot: a rebuilt heading would be silent.
+  const leagueMenu = $('#hero-league-menu');
   divSpan.addEventListener('click', (event) => {
     event.stopPropagation();
-    const menu = $('#hero-league-menu');
-    const open = !menu.hidden;
+    const open = !leagueMenu.hidden;
     closeAllMenus();
     if (open) return;
-    // Mark current league
-    for (const btn of menu.querySelectorAll('[data-league]')) {
+    for (const btn of leagueMenu.querySelectorAll('[data-league]')) {
       btn.setAttribute('aria-pressed', String(btn.dataset.league === state.league));
     }
-    menu.hidden = false;
+    leagueMenu.hidden = false;
     divSpan.setAttribute('aria-expanded', 'true');
     const rect = divSpan.getBoundingClientRect();
-    menu.style.position = 'fixed';
-    menu.style.top = `${rect.bottom + 6}px`;
-    menu.style.left = `${rect.left}px`;
-    menu.style.width = `${rect.width}px`;
+    leagueMenu.style.position = 'fixed';
+    leagueMenu.style.top = `${rect.bottom + 6}px`;
+    leagueMenu.style.left = `${rect.left}px`;
+    leagueMenu.style.width = `${rect.width}px`;
+    menuFocusCleanup = trapFocus(leagueMenu);
   });
   divSpan.addEventListener('keydown', (event) => {
     if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); divSpan.click(); }
   });
 
-  // Season popover
+  const seasonMenu = $('#hero-season-menu');
   seasonSpan.addEventListener('click', (event) => {
     event.stopPropagation();
-    const menu = $('#hero-season-menu');
-    const open = !menu.hidden;
+    const open = !seasonMenu.hidden;
     closeAllMenus();
     if (open) return;
     const seasons = report.league.seasons || [report.league.season];
-    menu.replaceChildren();
+    seasonMenu.replaceChildren();
     for (const s of [...seasons].reverse()) {
       const btn = el('button', 'popover-menu__btn', String(s));
       btn.type = 'button';
@@ -1633,19 +1795,25 @@ function renderHero(report) {
         closeAllMenus();
         if (s !== state.season) loadSeason(s);
       });
-      menu.appendChild(btn);
+      seasonMenu.appendChild(btn);
     }
-    menu.hidden = false;
+    seasonMenu.hidden = false;
     seasonSpan.setAttribute('aria-expanded', 'true');
     const rect = seasonSpan.getBoundingClientRect();
-    menu.style.position = 'fixed';
-    menu.style.top = `${rect.bottom + 6}px`;
-    menu.style.left = `${rect.left}px`;
-    menu.style.width = `${rect.width}px`;
+    seasonMenu.style.position = 'fixed';
+    seasonMenu.style.top = `${rect.bottom + 6}px`;
+    seasonMenu.style.left = `${rect.left}px`;
+    seasonMenu.style.width = `${rect.width}px`;
+    menuFocusCleanup = trapFocus(seasonMenu);
   });
   seasonSpan.addEventListener('keydown', (event) => {
     if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); seasonSpan.click(); }
   });
+
+  // Mark current league in division menu
+  for (const btn of leagueMenu.querySelectorAll('[data-league]')) {
+    btn.setAttribute('aria-pressed', String(btn.dataset.league === state.league));
+  }
 
   $('#model-badge').textContent = model.version;
 
@@ -1742,9 +1910,9 @@ function renderModelCard(report) {
    two, so this runs on opening a club and again whenever a season loads. */
 function followTeamLeague(teamId) {
   const currentReport = state.reports?.[state.league];
-  if (!currentReport || currentReport.table.some((t) => t.team_id === teamId)) return;
+  if (!currentReport || currentReport.table.some((t) => String(t.team_id) === String(teamId))) return;
   for (const [league, report] of Object.entries(state.reports)) {
-    if (report.table.some((t) => t.team_id === teamId)) {
+    if (report.table.some((t) => String(t.team_id) === String(teamId))) {
       state.league = league;
       for (const button of document.querySelectorAll('[data-league]')) {
         button.setAttribute('aria-pressed', String(button.dataset.league === league));
@@ -1769,10 +1937,14 @@ function openTeamView(teamId, fallbackName, { push = true } = {}) {
 }
 
 function renderTeamView(report) {
+  
   const teamId = state.teamFocusId;
   const content = $('#team-content');
+  
+  if (!content) { console.error('[TeamView] team-content not found in DOM'); return; }
   content.replaceChildren();
-  if (!teamId) return;
+  if (!teamId) { console.warn('[TeamView] no teamId'); return; }
+  
 
   const back = el('button', 'team-back');
   back.type = 'button';
@@ -1781,154 +1953,289 @@ function renderTeamView(report) {
   back.addEventListener('click', () => history.back());
   content.appendChild(back);
 
-  const row = report.table.find((t) => t.team_id === teamId);
+  const row = report.table.find((t) => String(t.team_id) === String(teamId));
+  
   const career = careerById(teamId);
+  
   const teamName = row?.team || career?.team || fallbackNameById(teamId) || 'Unknown';
 
+  // Helper to safely render a section
+  const safeRender = (fn, context = 'section') => {
+    try { fn(); }
+    catch (e) { console.error(`[TeamView] ${context} failed:`, e); }
+  };
+
   // 1. Summary card
-  renderTeamSummary(teamId, row, career, report, content);
+  safeRender(() => renderTeamSummary(teamId, row, career, report, content), 'summary');
 
   // 2. Finish grid row
-  renderTeamGridRow(teamId, row, report, content);
+  safeRender(() => renderTeamGridRow(teamId, row, report, content), 'gridRow');
 
   // 2b. Pre-season vs live prediction
-  renderPreSeasonComparison(teamId, row, report, content);
+  safeRender(() => renderPreSeasonComparison(teamId, row, report, content), 'preSeason');
 
   // 3. Rating history chart
-  if (career && career.points.length >= 2) {
-    const chartSection = el('div', 'team-section');
-    chartSection.appendChild(el('div', 'label', t('team.ratingHistory')));
-    const chart = svgEl('svg', { class: 'chart', id: 'team-chart', role: 'img' });
-    chartSection.appendChild(chart);
-    const desc = el('p', 'visually-hidden');
-    desc.id = 'team-chart-desc';
-    chartSection.appendChild(desc);
+  if (career && career.points?.length >= 2) {
+    safeRender(() => {
+      
+      const chartSection = el('div', 'team-section');
+      chartSection.appendChild(el('div', 'label', t('team.ratingHistory')));
+      const chart = svgEl('svg', { class: 'chart', id: 'team-chart', role: 'img' });
+      chartSection.appendChild(chart);
+      const desc = el('p', 'visually-hidden');
+      desc.id = 'team-chart-desc';
+      chartSection.appendChild(desc);
 
-    // Peak and worst rating stats beneath the chart
-    const stats = el('div', 'team-chart-stats');
-    if (career.peak) {
-      const peakItem = el('span', 'team-chart-stat');
-      peakItem.appendChild(el('span', 'label', t('team.peak')));
-      peakItem.appendChild(el('span', '', `${num(career.peak[1])} (${career.peak[0].slice(0, 4)})`));
-      stats.appendChild(peakItem);
-    }
-    if (career.trough) {
-      const troughItem = el('span', 'team-chart-stat');
-      troughItem.appendChild(el('span', 'label', t('team.worst')));
-      troughItem.appendChild(el('span', '', `${num(career.trough[1])} (${career.trough[0].slice(0, 4)})`));
-      stats.appendChild(troughItem);
-    }
-    chartSection.appendChild(stats);
-
-    content.appendChild(chartSection);
-    drawTeamChart(career);
+      // Peak and worst rating stats beneath the chart
+      const stats = el('div', 'team-chart-stats');
+      if (career.peak) {
+        const peakItem = el('span', 'team-chart-stat');
+        peakItem.appendChild(el('span', 'label', t('team.peak')));
+        peakItem.appendChild(el('span', '', `${num(career.peak[1])} (${career.peak[0].slice(0, 4)})`));
+        stats.appendChild(peakItem);
+      }
+      if (career.trough) {
+        const troughItem = el('span', 'team-chart-stat');
+        troughItem.appendChild(el('span', 'label', t('team.worst')));
+        troughItem.appendChild(el('span', '', `${num(career.trough[1])} (${career.trough[0].slice(0, 4)})`));
+        stats.appendChild(troughItem);
+      }
+      chartSection.appendChild(stats);
+      content.appendChild(chartSection);
+      drawTeamChart(career);
+      
+    }, 'ratingHistory');
+  } else {
+    
   }
 
-  // 4. Season shape for this team
-  if (report.history) {
-    renderTeamShape(teamId, report, content);
-  }
-
-  // 5. Season stats table
-  if (career && career.seasons.length) {
-    const seasonSection = el('div', 'team-section');
-    const header = el('div', 'team-section__header');
-    header.appendChild(el('div', 'label', t('team.seasonBySeason', { n: career.seasons.length })));
-    const seasonsDesc = [...career.seasons].reverse();
-    const PAGE = 5;
-    const totalPages = Math.ceil(seasonsDesc.length / PAGE);
-    state.teamSeasonsPage = Math.min(state.teamSeasonsPage, totalPages - 1);
-    const page = state.teamSeasonsPage;
-    seasonSection.appendChild(header);
-    if (totalPages > 1) {
-      seasonSection.appendChild(paginator(page, totalPages, (p) => { state.teamSeasonsPage = p; renderTeamView(report); }, true));
-    }
-    const scroller = el('div', 'scroller');
-    const table = el('table', 'standings career-table');
-    const thead = el('thead');
-    const seasonHeaders = [
-      [t('team.season'), 'pos'],
-      [t('team.division'), 'club'],
-      [t('team.pos'), 'num'],
-      [t('team.pl'), 'num'],
-      [t('team.ptsShort'), 'num'],
-      [t('team.gd'), 'num'],
-      [t('team.ratingStart'), 'num sep'],
-      [t('team.ratingEnd'), 'num'],
-      [t('team.change'), 'num'],
-    ];
-    const headRow = el('tr');
-    for (const [label, cls] of seasonHeaders) {
-      const th = el('th', cls, label);
-      th.scope = 'col';
-      headRow.appendChild(th);
-    }
-    thead.appendChild(headRow);
-    table.appendChild(thead);
-    const tbody = el('tbody');
-    for (const record of seasonsDesc.slice(page * PAGE, (page + 1) * PAGE)) {
-      const tr = el('tr');
-      tr.style.cursor = 'pointer';
-      tr.addEventListener('click', async () => {
-        const existing = content.querySelector('#team-shape-section');
-        if (!existing) return;
-        existing.classList.add('team-shape--loading');
-        existing.replaceChildren(el('div', '', t('team.loadingShape', { year: record.season })));
-        try {
-          const res = await fetch(reportUrl(record.season));
-          if (!res.ok) throw new Error(`HTTP ${res.status}`);
-          const reports = applyShortNames(await res.json());
-          const report = reports[record.league];
-          const team = report.history?.teams?.find((t) => t.team_id === teamId);
-          existing.classList.remove('team-shape--loading');
-          if (!team) { existing.replaceChildren(el('div', '', t('team.noShape'))); return; }
-          const chart = svgEl('svg', { class: 'chart', role: 'img' });
-          chart.setAttribute('aria-label', t('team.seasonShapeYear', { year: record.season }));
-          drawTeamShape(report, team, chart);
-          const frag = document.createDocumentFragment();
-          frag.appendChild(el('div', 'label', t('team.seasonShapeYear', { year: record.season })));
-          frag.appendChild(chart);
-          existing.replaceChildren(frag);
-        } catch (err) {
-          existing.classList.remove('team-shape--loading');
-          existing.replaceChildren(el('div', '', t('team.loadError', { error: err.message })));
-        }
-      });
-      // The year is the row's keyboard handle: a click on it bubbles to the
-      // row, which loads that season's shape into the chart above.
-      const seasonCell = el('td', 'pos');
-      const seasonBtn = el('button', 'career-table__season', String(record.season));
-      seasonBtn.type = 'button';
-      seasonBtn.setAttribute('aria-label', t('team.showShape', { year: record.season }));
-      seasonCell.appendChild(seasonBtn);
-      tr.appendChild(seasonCell);
-      tr.appendChild(el('td', 'club', record.league_name));
-      tr.appendChild(el('td', 'num', String(record.position)));
-      tr.appendChild(el('td', 'num muted', String(record.played)));
-      tr.appendChild(el('td', 'num', String(record.points)));
-      tr.appendChild(el('td', 'num muted', record.goal_difference > 0 ? `+${record.goal_difference}` : String(record.goal_difference)));
-      tr.appendChild(el('td', 'num sep muted', num(record.rating_start)));
-      tr.appendChild(el('td', 'num', num(record.rating_end)));
-      const change = el('td', `num ${record.rating_change >= 0 ? 'up' : 'down'}`);
-      change.textContent = signed(record.rating_change);
-      tr.appendChild(change);
-      tbody.appendChild(tr);
-    }
-    table.appendChild(tbody);
-    scroller.appendChild(table);
-    seasonSection.appendChild(scroller);
-    content.appendChild(seasonSection);
+  // 4. Season shape + season-by-season (combined)
+  if (career && Array.isArray(career.seasons) && career.seasons.length) {
+    safeRender(() => {
+      
+      renderSeasonBySeason(career, teamId, content, report);
+      
+    }, 'seasonShape');
+  } else {
+    
   }
 
   // 5. Upcoming fixtures for this team
-  renderTeamFixtures(teamId, teamName, report, content);
+  safeRender(() => {
+    
+    renderTeamFixtures(teamId, teamName, report, content);
+    
+  }, 'fixtures');
 
   // 6. Recent results for this team
-  renderTeamResults(teamId, teamName, report, content);
+  safeRender(() => {
+    
+    renderTeamResults(teamId, teamName, report, content);
+    
+  }, 'results');
+}
+
+function renderSeasonBySeason(career, teamId, container, currentReport) {
+  
+  if (!career || !Array.isArray(career.seasons) || !career.seasons.length) return;
+  const seasonsDesc = [...career.seasons].reverse();
+  const PAGE = 8;
+  const totalPages = Math.ceil(seasonsDesc.length / PAGE);
+  state.teamSeasonsPage = Math.min(state.teamSeasonsPage ?? 0, totalPages - 1);
+  const page = state.teamSeasonsPage;
+  const pageRecords = seasonsDesc.slice(page * PAGE, (page + 1) * PAGE);
+
+  // Determine which season's shape is currently displayed (stored in state)
+  const activeSeason = state.activeSeasonShape?.season;
+  const activeLeague = state.activeSeasonShape?.league;
+
+  // Compute max absolute rating change for scaling bars
+  const maxAbsChange = Math.max(...career.seasons.map(s => Math.abs(s.rating_change)), 1);
+
+  const section = el('div', 'team-section team-seasons');
+  const header = el('div', 'team-section__header');
+  header.appendChild(el('div', 'label', t('team.seasonBySeason', { n: career.seasons.length })));
+  section.appendChild(header);
+
+  // Season shape chart container (at top of section)
+  const shapeContainer = el('div', 'team-shape-container');
+  shapeContainer.id = 'team-shape-container';
+  shapeContainer.setAttribute('aria-live', 'polite');
+  // Add hint text explaining the chart
+  const hint = el('p', 'team-section__hint');
+  hint.textContent = t('team.shapeHint');
+  shapeContainer.appendChild(hint);
+  section.appendChild(shapeContainer);
+  
+
+  // Render initial season shape (current season by default, or previously selected)
+  const initialSeason = activeSeason || currentReport.league.season;
+  const initialLeague = activeLeague || currentReport.league.slug;
+  
+  renderSeasonShapeInContainer(initialSeason, initialLeague, teamId, shapeContainer, currentReport);
+
+  // Pagination (top only)
+  if (totalPages > 1) {
+    section.appendChild(paginator(page, totalPages, (p) => { state.teamSeasonsPage = p; renderTeamView(currentReport); }, true));
+  }
+
+  // Unified compact season list (replaces both table and mobile list)
+  const list = el('div', 'seasons-list-compact');
+  for (const record of pageRecords) {
+    list.appendChild(createCompactSeasonRow(record, career.seasons, teamId, container, currentReport, activeSeason, activeLeague, maxAbsChange, shapeContainer));
+  }
+  section.appendChild(list);
+
+  container.appendChild(section);
+}
+
+function getSeasonMovement(allSeasons, record) {
+  const idx = allSeasons.findIndex((s) => s.season === record.season && s.league === record.league);
+  if (idx <= 0) return null;  // first season or not found — no previous to compare
+  const prev = allSeasons[idx - 1];
+  return prev.league !== record.league
+    ? (record.league === 'eliteserien' ? 'promoted' : 'relegated')
+    : null;
+}
+
+function createCompactSeasonRow(record, allSeasons, teamId, container, currentReport, activeSeason, activeLeague, maxAbsChange, shapeContainer) {
+  const movement = getSeasonMovement(allSeasons, record);
+  const isActive = String(record.season) === activeSeason && record.league === activeLeague;
+
+  const row = el('button', `season-row-compact${isActive ? ' is-active' : ''}`);
+  row.type = 'button';
+  row.dataset.season = record.season;
+  row.dataset.league = record.league;
+  row.setAttribute('aria-label', t('team.showShape', { year: record.season }));
+  row.setAttribute('aria-pressed', String(isActive));
+
+  // Season year + league badge
+  const seasonCell = el('div', 'season-row-compact__season');
+  const year = el('span', 'season-row-compact__year', String(record.season));
+  seasonCell.appendChild(year);
+
+  const badge = el('span', `league-badge league-badge--${record.league === 'eliteserien' ? 'tier1' : 'tier2'} season-row-compact__badge season-row-compact__badge--${record.league === 'eliteserien' ? 'tier1' : 'tier2'}`);
+  badge.textContent = record.league === 'eliteserien' ? 'ELITE' : 'OBOS';
+  badge.title = record.league_name;
+  seasonCell.appendChild(badge);
+
+  if (movement) {
+    const moveBadge = el('span', `movement-badge movement-badge--${movement} season-row-compact__movement`);
+    moveBadge.textContent = movement === 'promoted' ? '↑' : '↓';
+    moveBadge.title = movement === 'promoted' ? t('team.promoted') : t('team.relegated');
+    seasonCell.appendChild(moveBadge);
+  }
+  row.appendChild(seasonCell);
+
+  // Position only (league shown via badge)
+  const mainCell = el('div', 'season-row-compact__main');
+  mainCell.appendChild(el('div', 'season-row-compact__pos', `#${record.position}`));
+  row.appendChild(mainCell);
+
+  // Rating: start -> end with change indicator
+  const ratingCell = el('div', 'season-row-compact__rating');
+  ratingCell.appendChild(el('div', 'season-row-compact__rating-start', num(record.rating_start)));
+
+  const change = record.rating_change;
+  const changeWrap = el('div', `season-row-compact__change ${change >= 0 ? 'up' : 'down'}`);
+  const changeVal = el('span', `season-row-compact__change-val ${change >= 0 ? 'up' : 'down'}`, signed(change));
+  const changeBar = el('div', 'season-row-compact__change-bar');
+  const barFill = el('div', `season-row-compact__change-fill season-row-compact__change-fill--${change >= 0 ? 'up' : 'down'}`);
+  // Scale bar based on team's max absolute rating change across all seasons
+  const barWidth = Math.min(Math.abs(change) / maxAbsChange * 100, 100);
+  barFill.style.width = `${barWidth}%`;
+  changeBar.appendChild(barFill);
+  changeWrap.appendChild(changeVal);
+  changeWrap.appendChild(changeBar);
+  ratingCell.appendChild(changeWrap);
+
+  ratingCell.appendChild(el('div', 'season-row-compact__rating-end', num(record.rating_end)));
+  row.appendChild(ratingCell);
+
+  // Click handler
+  row.addEventListener('click', () => loadSeasonShape(record.season, record.league, teamId, shapeContainer, currentReport));
+  row.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); loadSeasonShape(record.season, record.league, teamId, shapeContainer, currentReport); }
+  });
+
+  return row;
+}
+
+function renderSeasonShapeInContainer(season, league, teamId, container, currentReport) {
+  container.classList.add('team-shape--loading');
+  // Preserve the hint element
+  const hint = container.querySelector('.team-section__hint');
+  container.replaceChildren(el('div', '', t('team.loadingShape', { year: season })));
+  if (hint) container.appendChild(hint);
+  // If it's the current report's season/league, use the already-loaded report
+  if (season === currentReport.league.season && league === currentReport.league.slug) {
+    const team = currentReport.history?.teams?.find((t) => String(t.team_id) === String(teamId));
+    container.classList.remove('team-shape--loading');
+    if (!team) { container.replaceChildren(el('div', '', t('team.noShape'))); if (hint) container.appendChild(hint); return; }
+    const chart = svgEl('svg', { class: 'chart', role: 'img' });
+    chart.setAttribute('aria-label', t('team.seasonShapeYear', { year: season }));
+    drawTeamShape(currentReport, team, chart);
+    const frag = document.createDocumentFragment();
+    frag.appendChild(el('div', 'label', t('team.seasonShapeYear', { year: season })));
+    frag.appendChild(chart);
+    container.replaceChildren(frag);
+    if (hint) container.appendChild(hint);
+    // Update active state in row
+    updateActiveSeasonRow(season, league);
+    return;
+  }
+  // Otherwise fetch the report for that season
+  fetch(reportUrl(season))
+    .then((res) => {
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      return res.json();
+    })
+    .then((reports) => applyShortNames(reports))
+    .then((reports) => {
+      const report = reports[league];
+      const team = report.history?.teams?.find((t) => String(t.team_id) === String(teamId));
+      container.classList.remove('team-shape--loading');
+      if (!team) { container.replaceChildren(el('div', '', t('team.noShape'))); if (hint) container.appendChild(hint); return; }
+      const chart = svgEl('svg', { class: 'chart', role: 'img' });
+      chart.setAttribute('aria-label', t('team.seasonShapeYear', { year: season }));
+      drawTeamShape(report, team, chart);
+      const frag = document.createDocumentFragment();
+      frag.appendChild(el('div', 'label', t('team.seasonShapeYear', { year: season })));
+      frag.appendChild(chart);
+      container.replaceChildren(frag);
+      if (hint) container.appendChild(hint);
+      // Update active state in row
+      updateActiveSeasonRow(season, league);
+      // Store active season in state
+      state.activeSeasonShape = { season, league };
+    })
+    .catch((err) => {
+      container.classList.remove('team-shape--loading');
+      container.replaceChildren(el('div', '', t('team.loadError', { error: err.message })));
+      if (hint) container.appendChild(hint);
+    });
+}
+
+function updateActiveSeasonRow(season, league) {
+  const section = document.querySelector('.team-seasons');
+  if (!section) return;
+  for (const row of section.querySelectorAll('.season-row-compact')) {
+    const isActive = row.dataset.season === String(season) && row.dataset.league === league;
+    row.classList.toggle('is-active', isActive);
+    row.setAttribute('aria-pressed', String(isActive));
+  }
+}
+
+async function loadSeasonShape(season, league, teamId, container, currentReport) {
+  // Find the shape container within the team-seasons section
+  const section = container.closest('.team-seasons') || container.querySelector('.team-seasons');
+  const shapeContainer = section?.querySelector('#team-shape-container') || container.querySelector('#team-shape-container');
+  if (!shapeContainer) return;
+  await renderSeasonShapeInContainer(season, league, teamId, shapeContainer, currentReport);
 }
 
 function fallbackNameById(teamId) {
-  return allTeams().find((t) => t.team_id === teamId)?.team;
+  return allTeams().find((t) => String(t.team_id) === String(teamId))?.team;
 }
 
 /* Numbered pages in the shared control. `reversed` lists run newest first,
@@ -1985,7 +2292,7 @@ function renderTeamSummary(teamId, row, career, report, container) {
     ? Object.values(state.reports).flatMap((r) => r.table.map((t) => ({ team_id: t.team_id, rating: t.rating })))
     : [];
   allTeams.sort((a, b) => b.rating - a.rating);
-  const crossRank = allTeams.findIndex((t) => t.team_id === teamId);
+  const crossRank = allTeams.findIndex((t) => String(t.team_id) === String(teamId));
   const totalTeams = allTeams.length || report.table.length;
   ratingBlock.appendChild(el('span', 'team-summary__rating-pos', t('team.rankOf', { rank: ordinal(crossRank >= 0 ? crossRank + 1 : (row?.position ?? 0)), total: totalTeams })));
   header.appendChild(ratingBlock);
@@ -2148,7 +2455,7 @@ function renderTeamGridRow(teamId, row, report, container) {
 }
 
 function renderPreSeasonComparison(teamId, row, report, container) {
-  const historyTeam = report.history?.teams?.find((t) => t.team_id === teamId);
+  const historyTeam = report.history?.teams?.find((t) => String(t.team_id) === String(teamId));
   if (!historyTeam || historyTeam.positions.length < 2 || !row) return;
 
   const prePositions = historyTeam.positions[0];
@@ -2193,6 +2500,14 @@ function drawTeamChart(career) {
 
   chart.setAttribute('viewBox', `0 0 ${width} ${height}`);
   chart.replaceChildren();
+
+  // SVG accessibility: title and desc
+  const title = svgEl('title');
+  title.textContent = t('chart.rating', { n: career.team });
+  chart.appendChild(title);
+  const desc = svgEl('desc');
+  desc.textContent = t('chart.ratingMoved', { team: career.team, from: points[0][1], to: career.current_rating, seasons: career.seasons.length });
+  chart.appendChild(desc);
 
   const times = points.map(pointTime);
   const first = times[0];
@@ -2275,14 +2590,14 @@ function drawTeamChart(career) {
   chart.appendChild(surface);
 
   chart.setAttribute('aria-label', t('chart.ratingFrom', { team: career.team, from: points[0][0], to: points[points.length - 1][0] }));
-  const desc = $('#team-chart-desc');
-  if (desc) desc.textContent =
+  const descEl = $('#team-chart-desc');
+  if (descEl) descEl.textContent =
     t('chart.ratingMoved', { team: career.team, from: points[0][1], to: career.current_rating, seasons: career.seasons.length });
 }
 
 function renderTeamFixtures(teamId, teamName, report, container) {
   const allFixtures = (report.fixtures || []).filter(
-    (f) => f.home_id === teamId || f.away_id === teamId
+    (f) => String(f.home_id) === String(teamId) || String(f.away_id) === String(teamId)
   );
   if (!allFixtures.length) return;
 
@@ -2308,7 +2623,7 @@ function renderTeamFixtures(teamId, teamName, report, container) {
 
 function renderTeamResults(teamId, teamName, report, container) {
   const allResults = (report.results || []).filter(
-    (r) => r.home_id === teamId || r.away_id === teamId
+    (r) => String(r.home_id) === String(teamId) || String(r.away_id) === String(teamId)
   );
   if (!allResults.length) return;
 
@@ -2333,32 +2648,6 @@ function renderTeamResults(teamId, teamName, report, container) {
   container.appendChild(section);
 }
 
-/* ---------- team focus: season shape -------------------------------- */
-
-function renderTeamShape(teamId, report, container) {
-  const history = report.history;
-  if (!history) return;
-
-  const team = history.teams.find((t) => t.team_id === teamId);
-  if (!team) return;
-
-  const section = el('div', 'team-section');
-  section.id = 'team-shape-section';
-  // A season row swaps this chart in place; the live region says which one.
-  section.setAttribute('aria-live', 'polite');
-  section.appendChild(el('div', 'label', t('team.seasonShape')));
-  const hint = el('p', 'team-section__hint');
-  hint.textContent = t('team.shapeHint');
-  section.appendChild(hint);
-
-  const chart = svgEl('svg', { class: 'chart', role: 'img' });
-  chart.setAttribute('aria-label', t('shape.stackedArea', { team: team.team }));
-  section.appendChild(chart);
-
-  container.appendChild(section);
-  drawTeamShape(report, team, chart);
-}
-
 function drawTeamShape(report, team, chart) {
   const history = report.history;
   const count = report.table.length;
@@ -2372,6 +2661,14 @@ function drawTeamShape(report, team, chart) {
 
   chart.setAttribute('viewBox', `0 0 ${width} ${height}`);
   chart.replaceChildren();
+
+  // SVG accessibility: title and desc
+  const title = svgEl('title');
+  title.textContent = t('team.seasonShapeYear', { year: history.dates[0].slice(0, 4) });
+  chart.appendChild(title);
+  const desc = svgEl('desc');
+  desc.textContent = t('shape.stackedArea', { team: team.team });
+  chart.appendChild(desc);
 
   const x = (index) => pad.left + (index / (snapshots - 1 || 1)) * plotWidth;
   const y = (cumulative) => pad.top + cumulative * plotHeight;
@@ -2408,6 +2705,8 @@ function drawTeamShape(report, team, chart) {
     });
 
     const bandLabel = bandFor(report.league.bands, position);
+    band.setAttribute('role', 'img');
+    band.setAttribute('aria-label', `${ordinal(position)}${bandLabel ? `, ${bandLabel.label}` : ''}`);
     band.addEventListener('pointerenter', (event) => {
       const latest = team.positions[snapshots - 1][position - 1];
       showTooltip(
@@ -2418,6 +2717,13 @@ function drawTeamShape(report, team, chart) {
     });
     band.addEventListener('pointermove', moveTooltip);
     band.addEventListener('pointerleave', hideTooltip);
+    band.addEventListener('focus', () => {
+      const latest = team.positions[snapshots - 1][position - 1];
+      const rect = band.getBoundingClientRect();
+      showTooltip({ clientX: rect.left + rect.width / 2, clientY: rect.top }, `<b>${ordinal(position)}</b>${bandLabel ? ` · ${bandLabel.label}` : ''}<br>` + t('shape.now', { pct: pct(latest, 1) }), band);
+    });
+    band.addEventListener('blur', hideTooltip);
+    band.setAttribute('tabindex', '0');
     chart.appendChild(band);
   }
 
@@ -2903,7 +3209,13 @@ function wire() {
     const open = !settingsMenu.hidden;
     settingsMenu.hidden = open;
     settingsBtn.setAttribute('aria-expanded', String(!open));
-    if (!open) positionPopover(settingsMenu, settingsBtn);
+    if (!open) {
+      positionPopover(settingsMenu, settingsBtn);
+      menuFocusCleanup = trapFocus(settingsMenu);
+    } else {
+      menuFocusCleanup?.();
+      menuFocusCleanup = null;
+    }
   });
 
   // Mobile More button: toggle the sheet.
@@ -2915,7 +3227,6 @@ function wire() {
       else closeSheet();
     });
   }
-  moreSheet?.addEventListener('keydown', trapSheetFocus);
   for (const closer of document.querySelectorAll('[data-close-sheet]')) {
     closer.addEventListener('click', closeSheet);
   }
@@ -2971,22 +3282,23 @@ function wire() {
     if (!settingsMenu.hidden && !settingsMenu.contains(event.target) && event.target !== settingsBtn) {
       settingsMenu.hidden = true;
       settingsBtn.setAttribute('aria-expanded', 'false');
+      menuFocusCleanup?.();
+      menuFocusCleanup = null;
     }
-    if (!leagueMenu.hidden && !leagueMenu.contains(event.target)) {
+    if (!leagueMenu.hidden && !leagueMenu.contains(event.target) && !event.target.closest('.hero-title-part[data-role="division"]')) {
       leagueMenu.hidden = true;
+      menuFocusCleanup?.();
+      menuFocusCleanup = null;
     }
     if (!seasonMenu.hidden && !seasonMenu.contains(event.target) && !event.target.closest('.hero-title-part[data-role="season"]')) {
       seasonMenu.hidden = true;
+      menuFocusCleanup?.();
+      menuFocusCleanup = null;
     }
   });
 
   // Mobile gesture handling: swipe navigation, pull-to-refresh, swipe-to-dismiss sheet
   initMobileGestures();
-
-  window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => {
-    resolveTheme();
-    render();
-  });
 
   window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => {
     resolveTheme();
@@ -3056,11 +3368,17 @@ function markActiveView() {
   if (moreBtn) moreBtn.setAttribute('aria-pressed', String(!inBar));
 }
 
+/* Focus trap cleanup for whichever popover is open; only one can be, since
+   every opener closes the rest first. */
+let menuFocusCleanup = null;
+
 function closeAllMenus() {
   for (const menu of document.querySelectorAll('.popover-menu')) menu.hidden = true;
   for (const part of document.querySelectorAll('.hero-title-part')) part.setAttribute('aria-expanded', 'false');
   const btn = $('#settings-btn');
   if (btn) btn.setAttribute('aria-expanded', 'false');
+  menuFocusCleanup?.();
+  menuFocusCleanup = null;
   closeSheet();
 }
 
@@ -3071,13 +3389,15 @@ function positionPopover(menu, anchor) {
   menu.style.right = `${window.innerWidth - rect.right}px`;
 }
 
+let sheetFocusCleanup = null;
+
 function openSheet() {
   const sheet = $('#more-sheet');
   const btn = $('#more-button');
   if (!sheet) return;
   sheet.hidden = false;
   if (btn) btn.setAttribute('aria-expanded', 'true');
-  sheet.querySelector('button')?.focus();
+  sheetFocusCleanup = trapFocus(sheet.querySelector('.sheet__panel'));
 }
 
 function closeSheet() {
@@ -3086,21 +3406,14 @@ function closeSheet() {
   if (!sheet || sheet.hidden) return;
   const hadFocus = sheet.contains(document.activeElement);
   sheet.hidden = true;
+  if (sheetFocusCleanup) {
+    sheetFocusCleanup();
+    sheetFocusCleanup = null;
+  }
   if (btn) {
     btn.setAttribute('aria-expanded', 'false');
     if (hadFocus) btn.focus();
   }
-}
-
-/* Tab and Shift+Tab wrap within the open sheet instead of leaving it. */
-function trapSheetFocus(event) {
-  if (event.key !== 'Tab') return;
-  const items = [...$('#more-sheet').querySelectorAll('button')].filter((item) => item.offsetParent);
-  if (!items.length) return;
-  const first = items[0];
-  const last = items[items.length - 1];
-  if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last.focus(); }
-  else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first.focus(); }
 }
 
 /* ?view=grid makes any view linkable. Applied early so the first render
@@ -3182,8 +3495,9 @@ function allTeams() {
   const teams = [];
   for (const report of Object.values(state.reports || {})) {
     for (const row of report.table || []) {
-      if (seen.has(row.team_id)) continue;
-      seen.add(row.team_id);
+      const id = String(row.team_id);
+      if (seen.has(id)) continue;
+      seen.add(id);
       teams.push(row);
     }
   }
@@ -3192,15 +3506,15 @@ function allTeams() {
 }
 
 function teamNameById(id) {
-  return allTeams().find((team) => team.team_id === id)?.team || id;
+  return allTeams().find((team) => String(team.team_id) === String(id))?.team || id;
 }
 
 function careerById(id) {
-  return (state.careers?.teams || []).find((team) => team.team_id === id);
+  return (state.careers?.teams || []).find((team) => String(team.team_id) === String(id));
 }
 
 function ratingById(id) {
-  return allTeams().find((team) => team.team_id === id)?.rating ?? 0;
+  return allTeams().find((team) => String(team.team_id) === String(id))?.rating ?? 0;
 }
 
 /* Three-way odds for a fictional match, ported from model/probabilities.py.
@@ -3336,12 +3650,19 @@ function populateCompare(report) {
 }
 
 let compareMenuEl = null;
+let compareMenuFocusCleanup = null;
+let compareMenuActiveIndex = -1;
 
 function closeCompareMenu() {
   if (compareMenuEl) {
     compareMenuEl.remove();
     compareMenuEl = null;
   }
+  if (compareMenuFocusCleanup) {
+    compareMenuFocusCleanup();
+    compareMenuFocusCleanup = null;
+  }
+  compareMenuActiveIndex = -1;
   document.removeEventListener('pointerdown', compareMenuOutside, true);
   document.removeEventListener('keydown', compareMenuKey);
   window.removeEventListener('scroll', compareMenuScroll, true);
@@ -3352,7 +3673,37 @@ function compareMenuOutside(event) {
 }
 
 function compareMenuKey(event) {
-  if (event.key === 'Escape') closeCompareMenu();
+  if (event.key === 'Escape') {
+    closeCompareMenu();
+    return;
+  }
+  if (!compareMenuEl) return;
+  const options = [...compareMenuEl.querySelectorAll('[role="option"]:not([disabled])')];
+  if (!options.length) return;
+  if (event.key === 'ArrowDown') {
+    event.preventDefault();
+    compareMenuActiveIndex = Math.min(compareMenuActiveIndex + 1, options.length - 1);
+    options[compareMenuActiveIndex].focus();
+    compareMenuEl.setAttribute('aria-activedescendant', options[compareMenuActiveIndex].id);
+  } else if (event.key === 'ArrowUp') {
+    event.preventDefault();
+    compareMenuActiveIndex = Math.max(compareMenuActiveIndex - 1, 0);
+    options[compareMenuActiveIndex].focus();
+    compareMenuEl.setAttribute('aria-activedescendant', options[compareMenuActiveIndex].id);
+  } else if (event.key === 'Home') {
+    event.preventDefault();
+    compareMenuActiveIndex = 0;
+    options[0].focus();
+    compareMenuEl.setAttribute('aria-activedescendant', options[0].id);
+  } else if (event.key === 'End') {
+    event.preventDefault();
+    compareMenuActiveIndex = options.length - 1;
+    options[compareMenuActiveIndex].focus();
+    compareMenuEl.setAttribute('aria-activedescendant', options[compareMenuActiveIndex].id);
+  } else if (event.key === 'Enter' || event.key === ' ') {
+    event.preventDefault();
+    if (compareMenuActiveIndex >= 0) options[compareMenuActiveIndex].click();
+  }
 }
 
 function compareMenuScroll(event) {
@@ -3364,14 +3715,23 @@ function openCompareMenu(box, side, report) {
   closeCompareMenu();
   const menu = el('div', 'compare__menu');
   menu.setAttribute('role', 'listbox');
+  menu.setAttribute('aria-label', t('compare.chooseClub'));
   menu.dataset.side = side;
   const select = side === 'home' ? $('#compare-a') : $('#compare-b');
   const otherId = side === 'home' ? $('#compare-b').value : $('#compare-a').value;
-  for (const team of allTeams()) {
+  let selectedIndex = -1;
+  const teams = allTeams();
+  for (let i = 0; i < teams.length; i++) {
+    const team = teams[i];
     const option = el('button', 'compare__option');
     option.type = 'button';
     option.setAttribute('role', 'option');
+    option.id = `compare-option-${side}-${team.team_id}`;
     if (team.team_id === otherId) option.disabled = true;
+    if (team.team_id === select.value) {
+      option.setAttribute('aria-selected', 'true');
+      selectedIndex = i;
+    }
     const crest = teamLogo(team.team_id, team.team);
     if (crest) option.appendChild(crest);
     option.appendChild(el('span', 'compare__option-name', team.team));
@@ -3391,6 +3751,12 @@ function openCompareMenu(box, side, report) {
   menu.style.setProperty('--menu-width', `${rect.width}px`);
   document.body.appendChild(menu);
   compareMenuEl = menu;
+  compareMenuActiveIndex = selectedIndex;
+  if (selectedIndex >= 0) {
+    const selectedOption = menu.querySelector('[aria-selected="true"]');
+    if (selectedOption) menu.setAttribute('aria-activedescendant', selectedOption.id);
+  }
+  compareMenuFocusCleanup = trapFocus(menu);
   setTimeout(() => {
     document.addEventListener('pointerdown', compareMenuOutside, true);
     document.addEventListener('keydown', compareMenuKey);
@@ -3566,6 +3932,11 @@ function drawCompareHistory(svg, careerA, careerB, labelA, labelB) {
   svg.setAttribute('viewBox', `0 0 ${width} ${height}`);
   svg.replaceChildren();
 
+  // SVG accessibility: title doubles as the accessible name
+  const title = svgEl('title');
+  title.textContent = t('chart.ratingHistoryFor', { home: labelA, away: labelB });
+  svg.appendChild(title);
+
   const series = [careerA.points || [], careerB.points || []];
   const all = series.flat();
   if (!all.length) return;
@@ -3665,6 +4036,7 @@ function drawCompareHistory(svg, careerA, careerB, labelA, labelB) {
 }
 
 async function boot() {
+  
   resolveTheme();
   document.documentElement.lang = htmlLang(currentLang);
   for (const button of document.querySelectorAll('[data-lang]')) {
@@ -3672,35 +4044,43 @@ async function boot() {
   }
   applyTranslations();
   wire();
+  
   try {
     const reports = await fetch(reportUrl(null)).then((r) => {
       if (!r.ok) throw new Error(`server returned ${r.status}`);
       return r.json();
     });
+    
     let careers = null;
     try {
       careers = await fetch('/data/careers.json').then((r) => {
         if (!r.ok) throw new Error(`/data/careers.json ${r.status}`);
         return r.json();
       });
+      
     } catch (error) {
-      console.warn('careers.json unavailable — rating history and career tables will be empty', error);
+      console.warn('[Boot] careers.json unavailable', error);
       $('#status').hidden = false;
       $('#status').textContent = t('status.couldNotLoad', { season: 'careers', error: error.message });
     }
+    
     state.reports = applyShortNames(reports);
     state.careers = applyShortNamesToCareers(careers);
     state.season = reports[state.league].league.season;
+    
     // Left up when careers failed, so the warning above stays readable.
     if (careers) $('#status').hidden = true;
     $('#content').hidden = false;
+    
     // Read before the first render, which rewrites the query string.
     const params = new URLSearchParams(window.location.search);
     applyLeagueParameter();
     applySortParameter();
     applyViewParameter();
     applyTeamParameter();
+    
     render();
+    
 
     const wantedSeason = Number(params.get('season'));
     if (wantedSeason && wantedSeason !== state.season) await loadSeason(wantedSeason);
@@ -3713,6 +4093,7 @@ async function boot() {
       document.querySelector(window.location.hash)?.scrollIntoView();
     }
   } catch (error) {
+    console.error('[Boot] ERROR:', error);
     $('#status').textContent =
       t('status.couldNotLoadSeason', { error: error.message });
   }
@@ -3747,7 +4128,7 @@ function initMobileGestures() {
 
   // --- Pull to Refresh ---
   content.addEventListener('touchstart', (e) => {
-    if (content.scrollTop > 0) return; // Only at top
+    if (window.scrollY > 0) return; // Only at top of page
     if (ptrState.pulling) return;
     ptrState.startY = e.touches[0].clientY;
     ptrState.pulling = true;
@@ -3755,7 +4136,7 @@ function initMobileGestures() {
   }, { passive: true });
 
   content.addEventListener('touchmove', (e) => {
-    if (!ptrState.pulling || content.scrollTop > 0) {
+    if (!ptrState.pulling || window.scrollY > 0) {
       ptrState.pulling = false;
       return;
     }
@@ -3944,6 +4325,10 @@ function addTouchRipple() {
     '.mobilebar__item',
     '.settings-btn',
     '.popover-menu__btn',
+    '.compare__option',
+    '.pred-box__from',
+    '.pred-box__to',
+    '.team-grid-row__cell-wrap',
   ];
 
   // Use event delegation for performance

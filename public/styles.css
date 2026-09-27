@@ -21,8 +21,8 @@
   --ink: #0d1a22;
   --ink-muted: #55666f;
   --ink-faint: #5a6c77;   /* 4.6:1 on paper; was 2.6:1 */
-  --rule: #d2dae1;
-  --rule-strong: #b3c0c9;
+  --rule: #bcc8d1;
+  --rule-strong: #9ab0bb;
 
   /* Default label ink on a cell, and the inverted ink used once the fill
      has moved far enough from the surface. */
@@ -808,8 +808,6 @@ table.standings thead th {
   font-weight: 600;
   letter-spacing: 0.09em;
   text-transform: uppercase;
-  /* These label 14 controls, so they need text contrast: --ink-faint is
-     3.07:1 on the light panel, --ink-muted is 5.97:1. */
   color: var(--ink-muted);
   border-bottom-color: var(--rule-strong);
 }
@@ -984,9 +982,9 @@ table.standings .zone-divider__wrap::after {
 .chart .band:hover { stroke: var(--ink); stroke-width: 1.2; }
 .chart .axis-line { stroke: var(--rule-strong); stroke-width: 1; }
 .chart .grid-line { stroke: var(--rule); stroke-width: 1; stroke-dasharray: 2 3; }
-.chart .tick { fill: var(--ink-faint); font-size: 10px; font-variant-numeric: tabular-nums; }
+.chart .tick { fill: var(--ink-muted); font-size: 10px; font-variant-numeric: tabular-nums; }
 .chart .crosshair { stroke: var(--ink); stroke-width: 1; stroke-dasharray: 3 2; pointer-events: none; }
-.chart .axis-title { fill: var(--ink-faint); font-size: 10px; letter-spacing: 0.12em; text-transform: uppercase; }
+.chart .axis-title { fill: var(--ink-muted); font-size: 10px; letter-spacing: 0.12em; text-transform: uppercase; }
 
 
 /* ---------- rating ladder ----------------------------------------- */
@@ -1109,7 +1107,7 @@ table.standings .zone-divider__wrap::after {
 
 .ladder__track--list .ladder__team {
   width: 100%;
-  height: 2.25rem;           /* LADDER_ROW in app.js */
+  height: 2.75rem;           /* LADDER_ROW in app.js - 44px touch target */
   transform: none;
   display: grid;
   grid-template-columns: 1.5rem 1.25rem minmax(0, 1fr) 2.4rem var(--scale-w);
@@ -1296,6 +1294,12 @@ table.standings .zone-divider__wrap::after {
     border-radius: 6px;
   }
   :is(#played-results, #fixtures, #team-content) .played-card__side .team-logo { width: 40px; height: 40px; }
+}
+
+@media (max-width: 480px) {
+  .odds { flex-direction: column; height: auto; gap: 2px; }
+  .odds__seg { border-radius: 2px; min-width: auto; width: 100%; }
+  .fixture__lines { justify-content: flex-start; }
 }
 
 /* Recent-form chip in the table: single rectangle, color by points (0–15). */
@@ -1587,9 +1591,19 @@ table.standings .zone-divider__wrap::after {
   .compare__team-name { font-size: 0.95rem; }
   .compare__team-rating { font-size: 1.3rem; }
   .compare__pick-hint { font-size: 0.6875rem; padding-top: 0.4rem; }
-  .compare__swap-center { width: 2rem; height: 2rem; font-size: 1.1rem; }
+  .compare__swap-center { width: 44px; height: 44px; font-size: 1.1rem; }
   .compare__scoreline { font-size: 0.85rem; padding: 0.25rem 0.6rem; min-width: 4rem; gap: 0.3rem; }
   .compare__scoreline-prob { font-size: 0.7rem; }
+}
+
+@media (max-width: 760px) {
+  .compare__scoreline { min-width: auto; flex: 1 1 45%; }
+}
+
+@media (max-width: 480px) {
+  .odds { flex-direction: column; height: auto; gap: 2px; }
+  .odds__seg { border-radius: 2px; }
+  .compare__h2h-record { font-size: 1.1rem; }
 }
 
 /* ---------- model card -------------------------------------------- */
@@ -1690,6 +1704,14 @@ footer a { color: var(--ink); }
    control was tapped. */
 
 .mobilebar { display: none; }
+
+/* Touch ripple for interactive elements on mobile */
+@media (max-width: 760px) {
+  .touch-ripple { position: relative; overflow: hidden; }
+  .touch-ripple::after { content: ''; position: absolute; inset: 0; background: currentColor; opacity: 0; border-radius: inherit; pointer-events: none; }
+  .touch-ripple:active::after { animation: ripple 0.3s var(--ease); opacity: 0.1; }
+  @keyframes ripple { 0% { transform: scale(0.5); opacity: 0.15; } 100% { transform: scale(2.5); opacity: 0; } }
+}
 .sheet { display: none; }
 
 @media (max-width: 760px) {
@@ -1850,6 +1872,9 @@ footer a { color: var(--ink); }
   .season-select { min-height: 44px; }
   .standings .sort-btn { min-height: 44px; }
   .timeline__now { min-height: 44px; }
+  .table-control-btn { min-height: 44px; padding-inline: 1rem; }
+  .played-nav__btn { min-height: 44px; padding-inline: 1.25rem; }
+  .compare__option { min-height: 44px; }
 
   /* A 47-step slider is about 7px per matchday; a bigger thumb and the step
      buttons beside it make single matchdays reachable. Scoped through
@@ -1899,6 +1924,10 @@ footer a { color: var(--ink); }
 
 @media (max-width: 760px) {
   .hero__meta { gap: 0.4rem 1.25rem; }
+
+  /* Bring the title closer to the top on mobile so "Eliteserien 2026"
+     is visible immediately when scrolled to top, below the sticky masthead. */
+  .hero { padding-top: clamp(0.5rem, 2vw, 1rem); }
 
   /* A phone has room for the story, not the ledger. The W/D/L/GF/GA tallies,
       xPts and the form chips go; position, club, played, GD, points, rating and
@@ -2075,9 +2104,47 @@ footer a { color: var(--ink); }
 
   /* Two model-card columns; the long Norwegian labels need the padding back. */
   .panel .model-grid div { padding: 0.8rem 0.9rem; }
+  .model-grid { grid-template-columns: 1fr; }
 
   /* Tighter wordmark on small phones. */
   .wordmark { font-size: 0.8rem; letter-spacing: 0; }
+
+  /* Grid animation controls: ensure they fit */
+  .grid-anim-bar { padding: 0.5rem 1rem; gap: 0.5rem; }
+  .grid-anim-bar__when { min-width: 0; font-size: 0.75rem; }
+  .grid-anim-speed button { min-width: 2.5rem; padding: 0.2rem 0.4rem; font-size: 0.6875rem; }
+}
+
+/* ---- 360px and below: extreme narrow ---- */
+@media (max-width: 360px) {
+  .grid-wrap { padding: 0.5rem 0.25rem; }
+  .cell { font-size: 0.5rem; letter-spacing: -0.05em; }
+  .ladder__track--list { --scale-w: 26%; }
+  .panel__head { padding: 0.75rem 0.875rem; }
+  .hero { padding-inline: 0.75rem; }
+
+  /* Hide more table columns on very narrow screens */
+  table.standings .sep { display: none; }
+  .standings .meter__value { min-width: 1.5rem; font-size: 0.6875rem; }
+
+  /* Ladder row height bump for touch */
+  .ladder__track--list .ladder__team { height: 2.75rem; }
+  .ladder__track--list .ladder__rank { font-size: 0.6875rem; }
+  .ladder__track--list .ladder__name { font-size: 0.8125rem; }
+  .ladder__track--list .ladder__rating { font-size: 0.75rem; }
+  .ladder__track--list .ladder__team img { width: 1.125rem; height: 1.125rem; }
+
+  /* Team focus tighter */
+  .team-summary__name { font-size: 1.125rem; }
+  .team-summary__rating { font-size: 2rem; }
+  .team-stats__value { font-size: 1.25rem; }
+  .team-stats__label { font-size: 0.625rem; }
+  .team-stats__tile { padding: 0.5rem 0.35rem; }
+
+  /* Compare clubs tighter */
+  .compare__team-name { font-size: 0.875rem; }
+  .compare__team-rating { font-size: 1.1rem; }
+  .compare__scoreline { font-size: 0.75rem; padding: 0.2rem 0.5rem; min-width: 3.5rem; }
 }
 
 /* ---------- season selector --------------------------------------- */
@@ -2508,23 +2575,216 @@ footer a { color: var(--ink); }
   z-index: 2;
 }
 
-/* ---------- career table (now inline in team view) ------------------ */
+/* ---------- season-by-season (team view) ---------------------------- */
 
-.career-table { min-width: 640px; }
-.career-table__season {
-  background: none; border: none; padding: 0.25rem 0; min-height: 28px;
-  font: inherit; color: inherit; cursor: pointer;
-  text-decoration: underline dotted; text-underline-offset: 3px;
+.team-seasons { }
+
+/* Unified compact season list */
+.seasons-list-compact {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  padding: 0.25rem 0.75rem 0.75rem;
 }
-.career-table .up { color: var(--outcome-good); font-weight: 700; }
-.career-table .down { color: var(--outcome-bad); font-weight: 700; }
+
+.season-row-compact {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.6rem 0.85rem;
+  background: var(--panel);
+  border: 1px solid var(--rule);
+  border-radius: var(--radius);
+  cursor: pointer;
+  transition: background 0.12s var(--ease), border-color 0.12s var(--ease), transform 0.1s var(--ease), box-shadow 0.12s var(--ease);
+  position: relative;
+  width: 100%;
+  text-align: left;
+}
+.season-row-compact:hover,
+.season-row-compact:focus-visible {
+  background: var(--panel-sunk);
+  border-color: var(--rule-strong);
+  box-shadow: var(--shadow);
+}
+.season-row-compact:focus-visible {
+  outline: 2px solid var(--tier-1);
+  outline-offset: 2px;
+}
+.season-row-compact:active { transform: scale(0.99); }
+
+/* Active state - currently displayed season shape */
+.season-row-compact.is-active {
+  background: color-mix(in srgb, var(--tier-1) 8%, var(--panel));
+  border-color: var(--tier-1);
+  box-shadow: 0 0 0 1px var(--tier-1);
+}
+.season-row-compact.is-active:hover {
+  background: color-mix(in srgb, var(--tier-1) 12%, var(--panel));
+}
+
+.season-row-compact__season {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  width: 7.5rem;
+  flex-shrink: 0;
+}
+.season-row-compact__year {
+  font-family: var(--display);
+  font-size: 0.9375rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--ink);
+}
+.season-row-compact__badge {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 3.5rem;
+  height: 1.5rem;
+  font-size: 0.5rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  border-radius: var(--radius-sm);
+  color: var(--panel);
+}
+.season-row-compact__badge--tier1 { background: var(--tier-1); }
+.season-row-compact__badge--tier2 { background: var(--tier-2); }
+  .season-row-compact__movement {
+    flex-shrink: 0;
+  }
+  .movement-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 1.5rem;
+    height: 1.5rem;
+    font-size: 0.75rem;
+    font-weight: 700;
+    border-radius: var(--radius-sm);
+    color: var(--panel);
+  }
+  .movement-badge--promoted { background: var(--outcome-good); }
+  .movement-badge--relegated { background: var(--outcome-bad); }
+
+
+.season-row-compact__main {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex: 1;
+  min-width: 0;
+  padding-left: 0.5rem;
+}
+.season-row-compact__pos {
+  font-family: var(--display);
+  font-size: 1rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--ink);
+  width: 3rem;
+  text-align: right;
+}
+
+.season-row-compact__rating {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-shrink: 0;
+  min-width: 7rem;
+}
+.season-row-compact__rating-start {
+  font-family: var(--display);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: var(--ink-muted);
+  text-align: right;
+  min-width: 3rem;
+}
+.season-row-compact__change {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  min-width: 5.5rem;
+}
+.season-row-compact__change-val {
+  font-family: var(--display);
+  font-size: 0.875rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  min-width: 2.2rem;
+  text-align: right;
+}
+.season-row-compact__change-val.up { color: var(--outcome-good); }
+.season-row-compact__change-val.down { color: var(--outcome-bad); }
+.season-row-compact__change-bar {
+  flex: 1;
+  height: 4px;
+  background: var(--rule);
+  border-radius: 999px;
+  overflow: hidden;
+}
+.season-row-compact__change-fill {
+  height: 100%;
+  border-radius: 999px;
+  transition: width 0.3s var(--ease);
+}
+.season-row-compact__change-fill--up { background: var(--outcome-good); }
+.season-row-compact__change-fill--down { background: var(--outcome-bad); }
+.season-row-compact__rating-end {
+  font-family: var(--display);
+  font-size: 0.8125rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--ink);
+  min-width: 3rem;
+  text-align: right;
+}
+
+/* Pagination in team section */
+.team-section .played-nav { padding-inline: 1.25rem; }
+@media (max-width: 760px) {
+  .team-section .played-nav { padding-inline: 0; }
+}
 
 /* Rating chart used in team view */
 .chart .career-line { fill: none; stroke: var(--seq-5); stroke-width: 2; }
 .chart .career-area { fill: var(--seq-5); opacity: 0.12; }
 .chart .season-split { stroke: var(--rule); stroke-width: 1; }
-.chart .season-label { fill: var(--ink-faint); font-size: 9px; }
+.chart .season-label { fill: var(--ink-muted); font-size: 9px; }
 .chart .career-dot { fill: var(--seq-5); stroke: var(--panel); stroke-width: 2; }
+
+/* Responsive adjustments for compact list */
+@media (max-width: 760px) {
+  .seasons-list-compact { padding: 0.25rem 0.5rem 0.5rem; }
+  .season-row-compact { padding: 0.5rem 0.6rem; gap: 0.75rem; }
+  .season-row-compact__season { width: 6.5rem; gap: 0.35rem; }
+  .season-row-compact__year { font-size: 0.875rem; }
+  .season-row-compact__main { gap: 0.5rem; }
+  .season-row-compact__pos { font-size: 0.9375rem; min-width: 2rem; }
+  .season-row-compact__rating { min-width: 6rem; gap: 0.35rem; }
+  .season-row-compact__rating-start { font-size: 0.75rem; min-width: 2.5rem; }
+  .season-row-compact__change { min-width: 5rem; }
+  .season-row-compact__change-val { font-size: 0.8125rem; min-width: 2rem; }
+  .season-row-compact__rating-end { font-size: 0.75rem; min-width: 2.5rem; }
+}
+
+@media (max-width: 480px) {
+  .season-row-compact { padding: 0.45rem 0.5rem; gap: 0.5rem; }
+  .season-row-compact__season { width: 6rem; }
+  .season-row-compact__year { font-size: 0.8125rem; }
+  .season-row-compact__main { gap: 0.35rem; }
+  .season-row-compact__pos { font-size: 0.875rem; min-width: 1.75rem; }
+  .season-row-compact__rating { min-width: 5.5rem; }
+  .season-row-compact__rating-start { min-width: 2.25rem; }
+  .season-row-compact__change { min-width: 4.5rem; }
+  .season-row-compact__change-val { min-width: 1.75rem; }
+  .season-row-compact__rating-end { min-width: 2.25rem; }
+}
 
 #standings tbody tr { cursor: pointer; }
 
@@ -2539,7 +2799,7 @@ footer a { color: var(--ink); }
   color: inherit;
   cursor: pointer;
   text-align: left;
-  min-height: 28px;   /* 22px before: under WCAG 2.5.8's 24px target minimum */
+  min-height: 44px;   /* WCAG 2.5.8 target minimum */
 }
 .club-btn:hover { text-decoration: underline; }
 
@@ -2689,6 +2949,239 @@ footer a { color: var(--ink); }
   .ladder__track--list { --scale-w: 26%; }
   .panel__head { padding: 0.75rem 0.875rem; }
   .hero { padding-inline: 0.75rem; }
+
+  /* Hide more table columns on very narrow screens */
+  table.standings .sep { display: none; }
+  .standings .meter__value { min-width: 1.5rem; font-size: 0.6875rem; }
+
+  /* Ladder row height bump for touch */
+  .ladder__track--list .ladder__team { height: 2.75rem; }
+  .ladder__track--list .ladder__rank { font-size: 0.6875rem; }
+  .ladder__track--list .ladder__name { font-size: 0.8125rem; }
+  .ladder__track--list .ladder__rating { font-size: 0.75rem; }
+  .ladder__track--list .ladder__team img { width: 1.125rem; height: 1.125rem; }
+
+  /* Team focus tighter */
+  .team-summary__name { font-size: 1.125rem; }
+  .team-summary__rating { font-size: 2rem; }
+  .team-stats__value { font-size: 1.25rem; }
+  .team-stats__label { font-size: 0.625rem; }
+  .team-stats__tile { padding: 0.5rem 0.35rem; }
+
+  /* Compare clubs tighter */
+  .compare__team-name { font-size: 0.875rem; }
+  .compare__team-rating { font-size: 1.1rem; }
+  .compare__scoreline { font-size: 0.75rem; padding: 0.2rem 0.5rem; min-width: 3.5rem; }
+}
+
+/* ----- Team Focus mobile refinements ----- */
+@media (max-width: 760px) {
+  /* Team summary: stack header elements */
+  .team-summary__header { flex-wrap: wrap; gap: 0.5rem; }
+  .team-summary__rating-block { flex-basis: 100%; margin-left: 0; align-items: flex-start; }
+  .team-summary__rating-line { justify-content: flex-start; }
+
+  /* Team stats grid: 2 columns on mobile */
+  .team-stats { grid-template-columns: 1fr 1fr; }
+  .team-stats--xg { grid-template-columns: 1fr 1fr; }
+
+  /* Team grid row: smaller cells */
+  .team-grid-row__cell { height: 1.5rem; font-size: 0.5625rem; }
+  .team-grid-row__pos { font-size: 0.5rem; }
+
+  /* Season shape chart container */
+  .team-shape-container { min-height: 280px; }
+  .team-section .chart { max-width: 100%; }
+
+  /* Season by season: tighter rows */
+  .season-row-compact { padding: 0.5rem 0.6rem; gap: 0.75rem; }
+  .season-row-compact__season { width: 6.5rem; gap: 0.35rem; }
+  .season-row-compact__year { font-size: 0.875rem; }
+  .season-row-compact__main { gap: 0.5rem; }
+  .season-row-compact__pos { font-size: 0.9375rem; min-width: 2rem; }
+  .season-row-compact__rating { min-width: 6rem; gap: 0.35rem; }
+  .season-row-compact__rating-start { font-size: 0.75rem; min-width: 2.5rem; }
+  .season-row-compact__change { min-width: 5rem; }
+  .season-row-compact__change-val { font-size: 0.8125rem; min-width: 2rem; }
+  .season-row-compact__rating-end { font-size: 0.75rem; min-width: 2.5rem; }
+
+  /* Pagination in team section */
+  .team-section .played-nav { padding-inline: 0; }
+
+  /* Rating chart tick sizes */
+  .team-section .chart .tick { font-size: 9px; }
+  .team-section .chart .axis-title { font-size: 9px; }
+
+  /* Prediction box stacks on mobile */
+  .pred-box { flex-direction: column; }
+  .pred-box__mid { flex-direction: row; padding: 0.5rem 1rem; gap: 0.75rem; }
+  .pred-box__arrow { transform: rotate(90deg); }
+}
+
+@media (max-width: 480px) {
+  /* Team content and sections: single gutter layer */
+  #team-content { padding: 0.5rem 0.25rem; }
+  .team-section { padding: 1rem 0.75rem; }
+  .team-grid-row__cell { font-size: 0.5rem; letter-spacing: -0.04em; }
+  .team-summary__name { font-size: 1.25rem; }
+  .team-summary__rating { font-size: 2rem; }
+  .team-stats__value { font-size: 1.25rem; }
+  .team-stats__label { font-size: 0.625rem; }
+  .team-stats__tile { padding: 0.5rem 0.35rem; }
+
+  /* Season shape chart: smaller */
+  .team-section .chart { height: auto; max-height: 260px; }
+
+  /* Season by season: even tighter */
+  .season-row-compact { padding: 0.45rem 0.5rem; gap: 0.5rem; }
+  .season-row-compact__season { width: 6rem; }
+  .season-row-compact__year { font-size: 0.8125rem; }
+  .season-row-compact__main { gap: 0.35rem; }
+  .season-row-compact__pos { font-size: 0.875rem; min-width: 1.75rem; }
+  .season-row-compact__rating { min-width: 5.5rem; }
+  .season-row-compact__rating-start { min-width: 2.25rem; }
+  .season-row-compact__change { min-width: 4.5rem; }
+  .season-row-compact__change-val { min-width: 1.75rem; }
+  .season-row-compact__rating-end { min-width: 2.25rem; }
+
+  /* Fixtures/results pagination buttons */
+  .team-section .played-nav__btn { padding: 0.35rem 0.75rem; font-size: 0.75rem; }
+}
+
+/* ----- Next Up / Fixtures mobile refinements ----- */
+@media (max-width: 760px) {
+  /* Fixture cards stack properly */
+  .played-card { padding: 0.75rem 1rem; }
+  .played-card__matchup { gap: 0.5rem; }
+  .played-card__side { gap: 0.4rem; }
+
+  /* Odds bar and scorelines already handled at 480px */
+  .fixture__odds-col { gap: 0.25rem; }
+  .fixture__lines { gap: 0.25rem; }
+  .fixture__line { font-size: 0.625rem; padding: 0.05rem 0.25rem; }
+
+  /* Week pagination: larger touch targets */
+  .fixtures .played-nav__btn { min-height: 44px; min-width: 44px; padding: 0.4rem 0.75rem; }
+  .fixtures .played-nav__label { min-width: 0; font-size: 0.875rem; }
+}
+
+@media (max-width: 480px) {
+  .played-card { padding: 0.5rem 0.75rem; }
+  .played-card__matchup { gap: 0.375rem; }
+  .played-card__side { gap: 0.3rem; }
+  .played-card__rating { flex-direction: column; align-items: center; gap: 0; line-height: 1.15; }
+  .played-card__score { font-size: 1.125rem; }
+  .played-card__rating-value { font-size: 0.9375rem; }
+  .played-card__delta { font-size: 0.75rem; }
+
+  .fixtures .played-nav { padding: 0.6rem 0.75rem; }
+  .fixtures .played-nav__btn { min-width: 40px; padding: 0.35rem 0.5rem; font-size: 0.75rem; }
+  .fixtures .played-nav__label { font-size: 0.8125rem; }
+}
+
+/* ----- Played Results mobile refinements ----- */
+@media (max-width: 760px) {
+  .played-results .played-nav { padding: 0.6rem 1rem; }
+  .played-results .played-nav__btn { min-height: 44px; min-width: 44px; }
+  .played-results .played-nav__label { min-width: 0; }
+
+  /* xG under score readability */
+  .played-card__xg { font-size: 0.625rem; margin-top: 0.25rem; }
+}
+
+@media (max-width: 480px) {
+  .played-results .played-nav { padding: 0.5rem 0.75rem; }
+  .played-results .played-nav__btn { padding: 0.35rem 0.5rem; font-size: 0.75rem; }
+}
+
+/* ----- Compare Clubs mobile refinements ----- */
+@media (max-width: 760px) {
+  /* Team pickers already full-width cards */
+  .compare__team { padding: 0.75rem 1rem; gap: 0.5rem; }
+  .compare__team .team-logo { width: 40px; height: 40px; }
+  .compare__card-main { flex-direction: column; align-items: center; gap: 0.35rem; }
+  .compare__team-text { align-items: center; text-align: center; }
+  .compare__pick-hint { font-size: 0.6875rem; padding-top: 0.4rem; }
+  .compare__swap-center { width: 44px; height: 44px; font-size: 1.1rem; }
+
+  /* Scoreline chips wrap */
+  .compare__scorelines-chips { gap: 0.4rem; }
+  .compare__scoreline { font-size: 0.85rem; padding: 0.25rem 0.6rem; min-width: 4rem; gap: 0.3rem; }
+  .compare__scoreline-prob { font-size: 0.7rem; }
+
+  /* H2H record */
+  .compare__h2h-record { font-size: 1.1rem; }
+  .compare__h2h-team { font-size: 0.6875rem; }
+  .compare__h2h-stat { font-size: 1.1rem; }
+}
+
+@media (max-width: 480px) {
+  .compare__team { padding: 0.6rem 0.7rem; }
+  .compare__team .team-logo { width: 36px; height: 36px; }
+  .compare__team-name { font-size: 0.875rem; }
+  .compare__team-rating { font-size: 1.1rem; }
+  .compare__scoreline { font-size: 0.75rem; padding: 0.2rem 0.5rem; min-width: 3.5rem; }
+  .compare__scoreline-prob { font-size: 0.625rem; }
+  .compare__h2h-record { font-size: 1rem; }
+  .compare__h2h-stat { font-size: 1rem; }
+}
+
+/* ----- Model Card mobile refinements ----- */
+@media (max-width: 760px) {
+  .model-grid { grid-template-columns: 1fr 1fr; }
+}
+
+@media (max-width: 480px) {
+  .model-grid { grid-template-columns: 1fr; }
+  .panel .model-grid div { padding: 0.8rem 0.9rem; }
+  .model-grid dt { font-size: 0.625rem; }
+  .model-grid dd { font-size: 0.9375rem; }
+  .caveats { padding: 1rem; }
+  .caveats li { font-size: 0.8125rem; }
+}
+
+/* ----- Grid Animation Controls mobile ----- */
+@media (max-width: 760px) {
+  .grid-anim-btn { height: 44px; padding: 0 0.75rem; }
+  .grid-anim-bar { padding: 0.5rem 1rem; gap: 0.5rem; }
+  .grid-anim-bar__when { min-width: 0; font-size: 0.75rem; }
+  .grid-anim-speed button { min-height: 44px; min-width: 3rem; padding: 0.2rem 0.4rem; font-size: 0.6875rem; }
+  .grid-anim-speed { padding: 2px; }
+}
+
+@media (max-width: 480px) {
+  .grid-anim-bar { flex-wrap: wrap; justify-content: center; gap: 0.5rem; }
+  .grid-anim-bar__when { order: -1; width: 100%; text-align: center; margin-bottom: 0.25rem; }
+  .grid-anim-speed { order: 0; }
+}
+
+/* ----- Finish Grid mobile: ensure tooltip works on tap ----- */
+@media (pointer: coarse) {
+  .cell { cursor: pointer; }
+  .team-grid-row__cell { cursor: pointer; }
+}
+
+/* Ensure all interactive elements have 44px minimum touch target */
+@media (pointer: coarse) {
+  .compare__option { min-height: 44px; padding: 0.6rem 0.75rem; }
+  .popover-menu__btn { min-height: 44px; padding: 0.6rem 0.75rem; }
+  .settings-btn { min-height: 44px; min-width: 44px; }
+  .hero-title-part { min-height: 44px; display: inline-flex; align-items: center; padding: 0.25rem 0; }
+}
+
+/* Focus visible styles for mobile keyboard navigation */
+@media (max-width: 760px) {
+  :where(a, button, [tabindex]):focus-visible {
+    outline: 2px solid var(--tier-1);
+    outline-offset: 2px;
+    border-radius: 2px;
+  }
+}
+
+/* Smooth scrolling for anchor links */
+html { scroll-behavior: smooth; }
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
 }
 
 /* ---------- one secondary button ---------------------------------- */
@@ -2725,7 +3218,7 @@ footer a { color: var(--ink); }
 /* Touch size on a phone, like the rewind step buttons. */
 @media (pointer: coarse), (max-width: 760px) {
   .grid-anim-btn { height: 44px; }
-  .grid-anim-speed button { min-height: 36px; min-width: 2.75rem; }
+  .grid-anim-speed button { min-height: 44px; min-width: 3rem; }
   .grid-anim-bar { padding-inline: 1rem; gap: 0.6rem; }
   .grid-anim-bar__when { min-width: 0; }
 }
