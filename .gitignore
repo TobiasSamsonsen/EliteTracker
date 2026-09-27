@@ -11,3 +11,4 @@ past-seasons.tar.gz
 data/raw/football-data_*.csv
 build/
 scripts/
+.slim/deepwork/
