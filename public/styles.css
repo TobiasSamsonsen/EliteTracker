@@ -1852,7 +1852,8 @@ footer a { color: var(--ink); }
 
 /* Sheet swipe-to-dismiss */
 .sheet__panel.is-dragging {
-  animation: none;
+  animation-name: sheet-up;
+  animation-play-state: paused;
   transition: transform 0.05s linear, opacity 0.05s linear;
 }
 

@@ -3244,6 +3244,17 @@ function render() {
   state._prevActiveView = state.activeView;
 }
 
+// Switch the active view: shared by top-strip/bar clicks and the bar swipe.
+function switchView(view) {
+  closeSheet();
+  if (anim.playing && view !== state.activeView) animStop();
+  state.activeView = view;
+  markActiveView();
+  render();
+  hideTooltip();
+  window.scrollTo({ top: 0, behavior: 'instant' });
+}
+
 function wire() {
   for (const button of document.querySelectorAll('[data-league]')) {
     button.addEventListener('click', () => {
@@ -3282,13 +3293,7 @@ function wire() {
 
   for (const button of document.querySelectorAll('[data-view]')) {
     button.addEventListener('click', () => {
-      closeSheet();
-      if (anim.playing && button.dataset.view !== state.activeView) animStop();
-      state.activeView = button.dataset.view;
-      markActiveView();
-      render();
-      hideTooltip();
-      window.scrollTo({ top: 0, behavior: 'instant' });
+      switchView(button.dataset.view);
     });
   }
 
@@ -4303,6 +4308,7 @@ function initMobileGestures() {
     if (!target) return;
     swipeState.startX = e.touches[0].clientX;
     swipeState.startY = e.touches[0].clientY;
+    swipeState.currentX = swipeState.startX;  // a tap must not fake a swipe delta
     swipeState.swiping = true;
   }, { passive: true });
 
@@ -4338,10 +4344,15 @@ function initMobileGestures() {
       const currentIndex = viewsInBar.indexOf(state.activeView);
       const nextIndex = (currentIndex + direction + viewsInBar.length) % viewsInBar.length;
       const nextView = viewsInBar[nextIndex];
-      switchView(nextView);
-      if (navigator.vibrate) navigator.vibrate(15);
+      try {
+        switchView(nextView);
+        if (navigator.vibrate) navigator.vibrate(15);
+      } finally {
+        clearBarHighlight();
+      }
+    } else {
+      clearBarHighlight();
     }
-    clearBarHighlight();
   }, { passive: true });
 
   function highlightBarItem(view) {
