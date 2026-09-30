@@ -77,6 +77,17 @@ scroller ≤480, `.odds__seg` ellipsis ≤360. Audit hardening: WCAG 2.5.8 exemp
   memory listed as possible enhancement only.
 - Remaining: one @oracle review of `git diff main…mobile-ui`, then final report.
 
+### Next-session pickup
+
+- Oracle review attempts all failed on provider issues (degenerate output → 502
+  ResourceExhausted → hung generation, session `ses_f0c883550ffeM2HbCQDI5T87GJ`
+  aborted). Scope for the retry: **code-only diff** — `git diff main..mobile-ui --
+  public/app.js public/styles.css` (~40 lines) + audit.py hunk; never the full diff
+  (5k-line report JSON floods context). Check: P0-A paused-animation robustness,
+  P0-B hoisted `switchView`, CSS media-query scope leaks, then verdict.
+- After verdict: deliver final before/after report (baseline `baseline-report.md`,
+  final `after-report.md`, shots local in `shots-*/`).
+
 ## Conventions
 
 - Commit after each fix group on `mobile-ui`. No backend/model changes; no MODEL_VERSION bump.
