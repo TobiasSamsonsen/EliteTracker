@@ -1,0 +1,6603 @@
+{
+ "meta": {
+  "name": "baseline",
+  "timestamp": "2026-09-30 18:48:22",
+  "base_url": "http://127.0.0.1:8123",
+  "views": [
+   "grid",
+   "table",
+   "ladder",
+   "next-up",
+   "played",
+   "compare",
+   "model"
+  ],
+  "run_seconds": 88.2
+ },
+ "css_static": {
+  "uses_100vh": 0,
+  "uses_100dvh": 0,
+  "safe_area_env": 4,
+  "tap_highlight": 1,
+  "prefers_reduced_motion": 4,
+  "prefers_color_scheme": 0,
+  "overscroll_behavior": 1,
+  "touch_action": 0,
+  "scroll_padding": 2,
+  "media_760": 18
+ },
+ "viewports": [
+  {
+   "name": "320x568",
+   "w": 320,
+   "h": 568,
+   "touch": true,
+   "mobile": true,
+   "views": [
+    {
+     "view": "grid",
+     "loaded": true,
+     "error": null,
+     "load_ms": 247,
+     "active_state": {
+      "active": true,
+      "visible": true,
+      "url_view": "grid",
+      "sheet_open": false,
+      "expanded": "false"
+     },
+     "overflow": {
+      "scrollW": 320,
+      "clientW": 320,
+      "offenders": []
+     },
+     "targets": {
+      "total": 12,
+      "small_count": 1,
+      "worst": [
+       {
+        "sel": "a.wordmark",
+        "w": 129,
+        "h": 20
+       }
+      ],
+      "overlaps": [
+       {
+        "a": "button.mobilebar__item",
+        "b": "input",
+        "area": 1740
+       },
+       {
+        "a": "button.mobilebar__item",
+        "b": "input",
+        "area": 1169
+       },
+       {
+        "a": "button.mobilebar__item",
+        "b": "input",
+        "area": 1169
+       },
+       {
+        "a": "button.mobilebar__item",
+        "b": "button.timeline__step",
+        "area": 843
+       },
+       {
+        "a": "button.mobilebar__item",
+        "b": "button.timeline__step",
+        "area": 843
+       },
+       {
+        "a": "button.mobilebar__item",
+        "b": "button.timeline__step",
+        "area": 353
+       }
+      ]
+     },
+     "inputs_font": [
+      {
+       "sel": "input[range]",
+       "fs": "13.3333px"
+      },
+      {
+       "sel": "select[select-one]",
+       "fs": "13px"
+      }
+     ],
+     "clipped": [],
+     "fixed": [
+      {
+       "sel": "header.masthead",
+       "pos": "sticky",
+       "top": 0,
+       "h": 67,
+       "z": "20",
+       "pe": "auto",
+       "covers_text": 0
+      },
+      {
+       "sel": "nav#mobilebar.mobilebar",
+       "pos": "fixed",
+       "top": 515,
+       "h": 53,
+       "z": "40",
+       "pe": "auto",
+       "covers_text": 2
+      },
+      {
+       "sel": "div.ptr-indicator",
+       "pos": "sticky",
+       "top": 7,
+       "h": 60,
+       "z": "10",
+       "pe": "none",
+       "covers_text": 0
+      }
+     ],
+     "cls": 0,
+     "viewport_meta": "width=device-width, initial-scale=1, viewport-fit=cover",
+     "errors": [],
+     "failed": []
+    },
+    {
+     "view": "table",
+     "loaded": true,
+     "error": null,
+     "load_ms": 51,
+     "active_state": {
+      "active": true,
+      "visible": true,
+      "url_view": "table",
+      "sheet_open": false,
+      "expanded": "false"
+     },
+     "overflow": {
+      "scrollW": 320,
+      "clientW": 320,
+      "offenders": []
+     },
+     "targets": {
+      "total": 12,
+      "small_count": 1,
+      "worst": [
+       {
+        "sel": "a.wordmark",
+        "w": 129,
+        "h": 20
+       }
+      ],
+      "overlaps": [
+       {
+        "a": "button.mobilebar__item",
+        "b": "input",
+        "area": 1740
+       },
+       {
+        "a": "button.mobilebar__item",
+        "b": "input",
+        "area": 1169
+       },
+       {
+        "a": "button.mobilebar__item",
+        "b": "input",
+        "area": 1169
+       },
+       {
+        "a": "button.mobilebar__item",
+        "b": "button.timeline__step",
+        "area": 843
+       },
+       {
+        "a": "button.mobilebar__item",
+        "b": "button.timeline__step",
+        "area": 843
+       },
+       {
+        "a": "button.mobilebar__item",
+        "b": "button.timeline__step",
+        "area": 353
+       }
+      ]
+     },
+     "inputs_font": [
+      {
+       "sel": "input[range]",
+       "fs": "13.3333px"
+      },
+      {
+       "sel": "select[select-one]",
+       "fs": "13px"
+      }
+     ],
+     "clipped": [],
+     "fixed": [
+      {
+       "sel": "header.masthead",
+       "pos": "sticky",
+       "top": 0,
+       "h": 67,
+       "z": "20",
+       "pe": "auto",
+       "covers_text": 0
+      },
+      {
+       "sel": "nav#mobilebar.mobilebar",
+       "pos": "fixed",
+       "top": 515,
+       "h": 53,
+       "z": "40",
+       "pe": "auto",
+       "covers_text": 2
+      },
+      {
+       "sel": "div.ptr-indicator",
+       "pos": "sticky",
+       "top": 7,
+       "h": 60,
+       "z": "10",
+       "pe": "none",
+       "covers_text": 0
+      }
+     ],
+     "cls": 0,
+     "viewport_meta": "width=device-width, initial-scale=1, viewport-fit=cover",
+     "errors": [],
+     "failed": []
+    },
+    {
+     "view": "ladder",
+     "loaded": true,
+     "error": null,
+     "load_ms": 36,
+     "active_state": {
+      "active": true,
+      "visible": true,
+      "url_view": "ladder",
+      "sheet_open": false,
+      "expanded": "false"
+     },
+     "overflow": {
+      "scrollW": 320,
+      "clientW": 320,
+      "offenders": []
+     },
+     "targets": {
+      "total": 12,
+      "small_count": 1,
+      "worst": [
+       {
+        "sel": "a.wordmark",
+        "w": 129,
+        "h": 20
+       }
+      ],
+      "overlaps": [
+       {
+        "a": "button.mobilebar__item",
+        "b": "input",
+        "area": 1740
+       },
+       {
+        "a": "button.mobilebar__item",
+        "b": "input",
+        "area": 1169
+       },
+       {
+        "a": "button.mobilebar__item",
+        "b": "input",
+        "area": 1169
+       },
+       {
+        "a": "button.mobilebar__item",
+        "b": "button.timeline__step",
+        "area": 843
+       },
+       {
+        "a": "button.mobilebar__item",
+        "b": "button.timeline__step",
+        "area": 843
+       },
+       {
+        "a": "button.mobilebar__item",
+        "b": "button.timeline__step",
+        "area": 353
+       }
+      ]
+     },
+     "inputs_font": [
+      {
+       "sel": "input[range]",
+       "fs": "13.3333px"
+      },
+      {
+       "sel": "select[select-one]",
+       "fs": "13px"
+      }
+     ],
+     "clipped": [],
+     "fixed": [
+      {
+       "sel": "header.masthead",
+       "pos": "sticky",
+       "top": 0,
+       "h": 67,
+       "z": "20",
+       "pe": "auto",
+       "covers_text": 0
+      },
+      {
+       "sel": "nav#mobilebar.mobilebar",
+       "pos": "fixed",
+       "top": 515,
+       "h": 53,
+       "z": "40",
+       "pe": "auto",
+       "covers_text": 2
+      },
+      {
+       "sel": "div.ptr-indicator",
+       "pos": "sticky",
+       "top": 7,
+       "h": 60,
+       "z": "10",
+       "pe": "none",
+       "covers_text": 0
+      }
+     ],
+     "cls": 0,
+     "viewport_meta": "width=device-width, initial-scale=1, viewport-fit=cover",
+     "errors": [],
+     "failed": []
+    },
+    {
+     "view": "next-up",
+     "loaded": true,
+     "error": null,
+     "load_ms": 38,
+     "active_state": {
+      "active": true,
+      "visible": true,
+      "url_view": "next-up",
+      "sheet_open": false,
+      "expanded": "false"
+     },
+     "overflow": {
+      "scrollW": 320,
+      "clientW": 320,
+      "offenders": []
+     },
+     "targets": {
+      "total": 11,
+      "small_count": 1,
+      "worst": [
+       {
+        "sel": "a.wordmark",
+        "w": 129,
+        "h": 20
+       }
+      ],
+      "overlaps": [
+       {
+        "a": "button.mobilebar__item",
+        "b": "button.played-nav__btn",
+        "area": 352
+       },
+       {
+        "a": "button.mobilebar__item",
+        "b": "button.played-nav__btn",
+        "area": 352
+       },
+       {
+        "a": "button.mobilebar__item",
+        "b": "button.played-nav__btn",
+        "area": 181
+       },
+       {
+        "a": "button.mobilebar__item",
+        "b": "button.played-nav__btn",
+        "area": 131
+       }
+      ]
+     },
+     "inputs_font": [
+      {
+       "sel": "select[select-one]",
+       "fs": "13px"
+      }
+     ],
+     "clipped": [
+      {
+       "sel": "div.odds__seg",
+       "text": "25\u00a0%",
+       "sw": 26,
+       "cw": 23,
+       "ellipsis": false
+      },
+      {
+       "sel": "div.odds__seg",
+       "text": "22\u00a0%",
+       "sw": 26,
+       "cw": 21,
+       "ellipsis": false
+      },
+      {
+       "sel": "div.odds__seg",
+       "text": "20\u00a0%",
+       "sw": 26,
+       "cw": 18,
+       "ellipsis": false
+      },
+      {
+       "sel": "div.odds__seg",
+       "text": "17\u00a0%",
+       "sw": 26,
+       "cw": 15,
+       "ellipsis": false
+      },
+      {
+       "sel": "div.odds__seg",
+       "text": "25\u00a0%",
+       "sw": 26,
+       "cw": 23,
+       "ellipsis": false
+      },
+      {
+       "sel": "div.odds__seg",
+       "text": "24\u00a0%",
+       "sw": 26,
+       "cw": 22,
+       "ellipsis": false
+      },
+      {
+       "sel": "div.odds__seg",
+       "text": "24\u00a0%",
+       "sw": 26,
+       "cw": 22,
+       "ellipsis": false
+      }
+     ],
+     "fixed": [
+      {
+       "sel": "header.masthead",
+       "pos": "sticky",
+       "top": 0,
+       "h": 67,
+       "z": "20",
+       "pe": "auto",
+       "covers_text": 0
+      },
+      {
+       "sel": "nav#mobilebar.mobilebar",
+       "pos": "fixed",
+       "top": 515,
+       "h": 53,
+       "z": "40",
+       "pe": "auto",
+       "covers_text": 2
+      },
+      {
+       "sel": "div.ptr-indicator",
+       "pos": "sticky",
+       "top": 7,
+       "h": 60,
+       "z": "10",
+       "pe": "none",
+       "covers_text": 0
+      }
+     ],
+     "cls": 0,
+     "viewport_meta": "width=device-width, initial-scale=1, viewport-fit=cover",
+     "errors": [],
+     "failed": []
+    },
+    {
+     "view": "played",
+     "loaded": true,
+     "error": null,
+     "load_ms": 41,
+     "active_state": {
+      "active": true,
+      "visible": true,
+      "url_view": "played",
+      "sheet_open": false,
+      "expanded": "false"
+     },
+     "overflow": {
+      "scrollW": 320,
+      "clientW": 320,
+      "offenders": []
+     },
+     "targets": {
+      "total": 11,
+      "small_count": 1,
+      "worst": [
+       {
+        "sel": "a.wordmark",
+        "w": 129,
+        "h": 20
+       }
+      ],
+      "overlaps": [
+       {
+        "a": "button.mobilebar__item",
+        "b": "button.played-nav__btn",
+        "area": 1703
+       },
+       {
+        "a": "button.mobilebar__item",
+        "b": "button.played-nav__btn",
+        "area": 1703
+       },
+       {
+        "a": "button.mobilebar__item",
+        "b": "button.played-nav__btn",
+        "area": 878
+       },
+       {
+        "a": "button.mobilebar__item",
+        "b": "button.played-nav__btn",
+        "area": 633
+       }
+      ]
+     },
+     "inputs_font": [
+      {
+       "sel": "select[select-one]",
+       "fs": "13px"
+      }
+     ],
+     "clipped": [],
+     "fixed": [
+      {
+       "sel": "header.masthead",
+       "pos": "sticky",
+       "top": 0,
+       "h": 67,
+       "z": "20",
+       "pe": "auto",
+       "covers_text": 0
+      },
+      {
+       "sel": "nav#mobilebar.mobilebar",
+       "pos": "fixed",
+       "top": 515,
+       "h": 53,
+       "z": "40",
+       "pe": "auto",
+       "covers_text": 2
+      },
+      {
+       "sel": "div.ptr-indicator",
+       "pos": "sticky",
+       "top": 7,
+       "h": 60,
+       "z": "10",
+       "pe": "none",
+       "covers_text": 0
+      }
+     ],
+     "cls": 0,
+     "viewport_meta": "width=device-width, initial-scale=1, viewport-fit=cover",
+     "errors": [],
+     "failed": []
+    },
+    {
+     "view": "compare",
+     "loaded": true,
+     "error": null,
+     "load_ms": 44,
+     "active_state": {
+      "active": true,
+      "visible": true,
+      "url_view": "compare",
+      "sheet_open": false,
+      "expanded": "false"
+     },
+     "overflow": {
+      "scrollW": 320,
+      "clientW": 320,
+      "offenders": []
+     },
+     "targets": {
+      "total": 11,
+      "small_count": 1,
+      "worst": [
+       {
+        "sel": "a.wordmark",
+        "w": 129,
+        "h": 20
+       }
+      ],
+      "overlaps": [
+       {
+        "a": "button.mobilebar__item",
+        "b": "div.compare__team",
+        "area": 975
+       },
+       {
+        "a": "button.mobilebar__item",
+        "b": "div.compare__team",
+        "area": 975
+       },
+       {
+        "a": "button.mobilebar__item",
+        "b": "div.compare__team",
+        "area": 487
+       },
+       {
+        "a": "button.mobilebar__item",
+        "b": "div.compare__team",
+        "area": 487
+       }
+      ]
+     },
+     "inputs_font": [
+      {
+       "sel": "select[select-one]",
+       "fs": "13px"
+      }
+     ],
+     "clipped": [],
+     "fixed": [
+      {
+       "sel": "header.masthead",
+       "pos": "sticky",
+       "top": 0,
+       "h": 67,
+       "z": "20",
+       "pe": "auto",
+       "covers_text": 0
+      },
+      {
+       "sel": "nav#mobilebar.mobilebar",
+       "pos": "fixed",
+       "top": 515,
+       "h": 53,
+       "z": "40",
+       "pe": "auto",
+       "covers_text": 0
+      },
+      {
+       "sel": "div.ptr-indicator",
+       "pos": "sticky",
+       "top": 7,
+       "h": 60,
+       "z": "10",
+       "pe": "none",
+       "covers_text": 0
+      }
+     ],
+     "cls": 0,
+     "viewport_meta": "width=device-width, initial-scale=1, viewport-fit=cover",
+     "errors": [],
+     "failed": []
+    },
+    {
+     "view": "model",
+     "loaded": true,
+     "error": null,
+     "load_ms": 31,
+     "active_state": {
+      "active": true,
+      "visible": true,
+      "url_view": "model",
+      "sheet_open": false,
+      "expanded": "false"
+     },
+     "overflow": {
+      "scrollW": 320,
+      "clientW": 320,
+      "offenders": []
+     },
+     "targets": {
+      "total": 9,
+      "small_count": 1,
+      "worst": [
+       {
+        "sel": "a.wordmark",
+        "w": 129,
+        "h": 20
+       }
+      ],
+      "overlaps": []
+     },
+     "inputs_font": [
+      {
+       "sel": "select[select-one]",
+       "fs": "13px"
+      }
+     ],
+     "clipped": [],
+     "fixed": [
+      {
+       "sel": "header.masthead",
+       "pos": "sticky",
+       "top": 0,
+       "h": 67,
+       "z": "20",
+       "pe": "auto",
+       "covers_text": 0
+      },
+      {
+       "sel": "nav#mobilebar.mobilebar",
+       "pos": "fixed",
+       "top": 515,
+       "h": 53,
+       "z": "40",
+       "pe": "auto",
+       "covers_text": 0
+      },
+      {
+       "sel": "div.ptr-indicator",
+       "pos": "sticky",
+       "top": 7,
+       "h": 60,
+       "z": "10",
+       "pe": "none",
+       "covers_text": 0
+      }
+     ],
+     "cls": 0,
+     "viewport_meta": "width=device-width, initial-scale=1, viewport-fit=cover",
+     "errors": [],
+     "failed": []
+    }
+   ],
+   "team": {
+    "opened": true,
+    "tap": {
+     "hit": true,
+     "at": [
+      81,
+      286
+     ],
+     "under_pointer": "button.club-btn"
+    },
+    "state": {
+     "active": false,
+     "visible": true,
+     "url_view": "team",
+     "sheet_open": false,
+     "expanded": "false"
+    },
+    "errors": [],
+    "overflow": {
+     "scrollW": 320,
+     "clientW": 320,
+     "offenders": []
+    },
+    "targets": {
+     "total": 10,
+     "small_count": 2,
+     "worst": [
+      {
+       "sel": "a.wordmark",
+       "w": 129,
+       "h": 20
+      },
+      {
+       "sel": "button.team-back",
+       "w": 96,
+       "h": 40
+      }
+     ],
+     "overlaps": []
+    },
+    "inputs_font": [
+     {
+      "sel": "select[select-one]",
+      "fs": "13px"
+     }
+    ],
+    "clipped": [
+     {
+      "sel": "div.odds__seg",
+      "text": "25\u00a0%",
+      "sw": 26,
+      "cw": 15,
+      "ellipsis": false
+     },
+     {
+      "sel": "div.odds__seg",
+      "text": "22\u00a0%",
+      "sw": 26,
+      "cw": 14,
+      "ellipsis": false
+     },
+     {
+      "sel": "div.odds__seg",
+      "text": "16\u00a0%",
+      "sw": 26,
+      "cw": 10,
+      "ellipsis": false
+     },
+     {
+      "sel": "div.odds__seg",
+      "text": "20\u00a0%",
+      "sw": 26,
+      "cw": 12,
+      "ellipsis": false
+     },
+     {
+      "sel": "div.odds__seg",
+      "text": "17\u00a0%",
+      "sw": 26,
+      "cw": 10,
+      "ellipsis": false
+     },
+     {
+      "sel": "div.odds__seg",
+      "text": "22\u00a0%",
+      "sw": 26,
+      "cw": 13,
+      "ellipsis": false
+     },
+     {
+      "sel": "div.odds__seg",
+      "text": "23\u00a0%",
+      "sw": 26,
+      "cw": 14,
+      "ellipsis": false
+     },
+     {
+      "sel": "div.odds__seg",
+      "text": "12\u00a0%",
+      "sw": 26,
+      "cw": 7,
+      "ellipsis": false
+     }
+    ],
+    "fixed": [
+     {
+      "sel": "header.masthead",
+      "pos": "sticky",
+      "top": 0,
+      "h": 67,
+      "z": "20",
+      "pe": "auto",
+      "covers_text": 0
+     },
+     {
+      "sel": "nav#mobilebar.mobilebar",
+      "pos": "fixed",
+      "top": 515,
+      "h": 53,
+      "z": "40",
+      "pe": "auto",
+      "covers_text": 0
+     },
+     {
+      "sel": "div.ptr-indicator",
+      "pos": "sticky",
+      "top": 7,
+      "h": 60,
+      "z": "10",
+      "pe": "none",
+      "covers_text": 0
+     }
+    ],
+    "cls": 0
+   },
+   "more": {
+    "available": true,
+    "open": {
+     "hit": true,
+     "at": [
+      288,
+      542
+     ],
+     "under_pointer": "button#more-button.mobilebar__item",
+     "sheet_open_after_tap": true,
+     "aria_expanded": "true"
+    },
+    "items": [
+     {
+      "view": "ladder",
+      "tap": {
+       "hit": true,
+       "at": [
+        160,
+        260
+       ],
+       "under_pointer": "button.sheet__item"
+      },
+      "state": {
+       "active": false,
+       "visible": false,
+       "url_view": "grid",
+       "sheet_open": false,
+       "expanded": "false"
+      },
+      "errors": [],
+      "failed": []
+     },
+     {
+      "view": "compare",
+      "tap": {
+       "hit": true,
+       "at": [
+        160,
+        310
+       ],
+       "under_pointer": "button.sheet__item"
+      },
+      "state": {
+       "active": false,
+       "visible": false,
+       "url_view": "grid",
+       "sheet_open": false,
+       "expanded": "false"
+      },
+      "errors": [],
+      "failed": []
+     },
+     {
+      "view": "model",
+      "tap": {
+       "hit": true,
+       "at": [
+        160,
+        360
+       ],
+       "under_pointer": "button.sheet__item"
+      },
+      "state": {
+       "active": false,
+       "visible": false,
+       "url_view": "grid",
+       "sheet_open": false,
+       "expanded": "false"
+      },
+      "errors": [],
+      "failed": []
+     }
+    ],
+    "outside_tap": {
+     "sheet_closed": true,
+     "errors": []
+    },
+    "diag": {}
+   },
+   "swipe": {
+    "available": true,
+    "swipe1": {
+     "state": {
+      "active": false,
+      "visible": false,
+      "url_view": "grid",
+      "sheet_open": false,
+      "expanded": "false"
+     },
+     "sample": {
+      "frames": 29,
+      "max_doc_delta": 0,
+      "max_panel_delta": 0,
+      "scroll_y": 909,
+      "doc_h": 1477
+     },
+     "cls_delta": 0,
+     "scroll_y_after": 909,
+     "errors": [
+      "pageerror: switchView is not defined"
+     ]
+    },
+    "swipe2": {
+     "state": {
+      "active": true,
+      "visible": true,
+      "url_view": "grid",
+      "sheet_open": false,
+      "expanded": "false"
+     },
+     "sample": {
+      "frames": 28,
+      "max_doc_delta": 0,
+      "max_panel_delta": 0,
+      "scroll_y": 909,
+      "doc_h": 1477
+     },
+     "cls_delta": 0,
+     "scroll_y_after": 909,
+     "errors": []
+    },
+    "scroll": {
+     "before": 909,
+     "after_swipe1": 909,
+     "after_swipe2": 909,
+     "restored": true
+    },
+    "cls_total": 0,
+    "cls_entries": []
+   },
+   "content_swipe": {
+    "available": true,
+    "horizontal": {
+     "tag": "horizontal",
+     "ptr": {
+      "cls": "ptr-indicator",
+      "tf": "matrix(1, 0, 0, 1, 0, -60)",
+      "op": "0"
+     },
+     "cls": 0,
+     "sample": {
+      "frames": 22,
+      "max_doc_delta": 0,
+      "max_panel_delta": 0,
+      "scroll_y": 0,
+      "doc_h": 1477
+     },
+     "scroll_y": 0,
+     "errors": [],
+     "fetches": 0,
+     "cls_delta": 0
+    },
+    "diagonal": {
+     "tag": "diagonal",
+     "ptr": {
+      "cls": "ptr-indicator",
+      "tf": "matrix(1, 0, 0, 1, 0, -60)",
+      "op": "0"
+     },
+     "cls": 0,
+     "sample": {
+      "frames": 23,
+      "max_doc_delta": 0,
+      "max_panel_delta": 0,
+      "scroll_y": 0,
+      "doc_h": 1477
+     },
+     "scroll_y": 0,
+     "errors": [],
+     "fetches": 0,
+     "cls_delta": 0
+    },
+    "note": "app.js wires swipe-nav only on .mobilebar; content gestures route to pull-to-refresh"
+   },
+   "tab_taps": [
+    {
+     "view": "grid",
+     "state": {
+      "active": true,
+      "visible": true,
+      "url_view": "grid",
+      "sheet_open": false,
+      "expanded": "false"
+     },
+     "ok": true,
+     "errors": []
+    },
+    {
+     "view": "table",
+     "state": {
+      "active": true,
+      "visible": true,
+      "url_view": "table",
+      "sheet_open": false,
+      "expanded": "false"
+     },
+     "ok": true,
+     "errors": [
+      "pageerror: switchView is not defined"
+     ]
+    },
+    {
+     "view": "next-up",
+     "state": {
+      "active": true,
+      "visible": true,
+      "url_view": "next-up",
+      "sheet_open": false,
+      "expanded": "false"
+     },
+     "ok": true,
+     "errors": [
+      "pageerror: switchView is not defined"
+     ]
+    },
+    {
+     "view": "played",
+     "state": {
+      "active": true,
+      "visible": true,
+      "url_view": "played",
+      "sheet_open": false,
+      "expanded": "false"
+     },
+     "ok": true,
+     "errors": [
+      "pageerror: switchView is not defined"
+     ]
+    }
+   ],
+   "tab_jump": {
+    "before": {
+     "sy": 909,
+     "dh": 1477
+    },
+    "after": {
+     "sy": 0,
+     "dh": 2304
+    },
+    "scroll_jump_px": 909,
+    "doc_height_delta": 827,
+    "cls_delta": 0,
+    "errors": [
+     "pageerror: switchView is not defined"
+    ]
+   }
+  },
+  {
+   "name": "375x667",
+   "w": 375,
+   "h": 667,
+   "touch": true,
+   "mobile": true,
+   "views": [
+    {
+     "view": "grid",
+     "loaded": true,
+     "error": null,
+     "load_ms": 240,
+     "active_state": {
+      "active": true,
+      "visible": true,
+      "url_view": "grid",
+      "sheet_open": false,
+      "expanded": "false"
+     },
+     "overflow": {
+      "scrollW": 375,
+      "clientW": 375,
+      "offenders": []
+     },
+     "targets": {
+      "total": 13,
+      "small_count": 1,
+      "worst": [
+       {
+        "sel": "a.wordmark",
+        "w": 129,
+        "h": 20
+       }
+      ],
+      "overlaps": [
+       {
+        "a": "button.mobilebar__item",
+        "b": "button.grid-anim-btn",
+        "area": 2531
+       },
+       {
+        "a": "button.mobilebar__item",
+        "b": "button.grid-anim-btn",
+        "area": 1339
+       },
+       {
+        "a": "button.mobilebar__item",
+        "b": "button.grid-anim-btn",
+        "area": 1283
+       }
+      ]
+     },
+     "inputs_font": [
+      {
+       "sel": "input[range]",
+       "fs": "13.3333px"
+      },
+      {
+       "sel": "select[select-one]",
+       "fs": "13px"
+      }
+     ],
+     "clipped": [],
+     "fixed": [
+      {
+       "sel": "header.masthead",
+       "pos": "sticky",
+       "top": 0,
+       "h": 67,
+       "z": "20",
+       "pe": "auto",
+       "covers_text": 0
+      },
+      {
+       "sel": "nav#mobilebar.mobilebar",
+       "pos": "fixed",
+       "top": 614,
+       "h": 53,
+       "z": "40",
+       "pe": "auto",
+       "covers_text": 1
+      },
+      {
+       "sel": "div.ptr-indicator",
+       "pos": "sticky",
+       "top": 7,
+       "h": 60,
+       "z": "10",
+       "pe": "none",
+       "covers_text": 0
+      }
+     ],
+     "cls": 0,
+     "viewport_meta": "width=device-width, initial-scale=1, viewport-fit=cover",
+     "errors": [],
+     "failed": []
+    },
+    {
+     "view": "table",
+     "loaded": true,
+     "error": null,
+     "load_ms": 49,
+     "active_state": {
+      "active": true,
+      "visible": true,
+      "url_view": "table",
+      "sheet_open": false,
+      "expanded": "false"
+     },
+     "overflow": {
+      "scrollW": 375,
+      "clientW": 375,
+      "offenders": []
+     },
+     "targets": {
+      "total": 20,
+      "small_count": 5,
+      "worst": [
+       {
+        "sel": "button.sort-btn",
+        "w": 27,
+        "h": 44
+       },
+       {
+        "sel": "button.sort-btn",
+        "w": 27,
+        "h": 44
+       },
+       {
+        "sel": "button.sort-btn",
+        "w": 34,
+        "h": 44
+       },
+       {
+        "sel": "button.sort-btn",
+        "w": 36,
+        "h": 44
+       },
+       {
+        "sel": "a.wordmark",
+        "w": 129,
+        "h": 20
+       }
+      ],
+      "overlaps": [
+       {
+        "a": "button.mobilebar__item",
+        "b": "button.sort-btn",
+        "area": 1241
+       },
+       {
+        "a": "button.mobilebar__item",
+        "b": "button.table-control-btn",
+        "area": 1205
+       },
+       {
+        "a": "button.mobilebar__item",
+        "b": "button.sort-btn",
+        "area": 1026
+       },
+       {
+        "a": "button.mobilebar__item",
+        "b": "button.sort-btn",
+        "area": 965
+       },
+       {
+        "a": "button.mobilebar__item",
+        "b": "button.table-control-btn",
+        "area": 958
+       },
+       {
+        "a": "button.mobilebar__item",
+        "b": "button.table-control-btn",
+        "area": 675
+       }
+      ]
+     },
+     "inputs_font": [
+      {
+       "sel": "input[range]",
+       "fs": "13.3333px"
+      },
+      {
+       "sel": "select[select-one]",
+       "fs": "13px"
+      }
+     ],
+     "clipped": [],
+     "fixed": [
+      {
+       "sel": "header.masthead",
+       "pos": "sticky",
+       "top": 0,
+       "h": 67,
+       "z": "20",
+       "pe": "auto",
+       "covers_text": 0
+      },
+      {
+       "sel": "nav#mobilebar.mobilebar",
+       "pos": "fixed",
+       "top": 614,
+       "h": 53,
+       "z": "40",
+       "pe": "auto",
+       "covers_text": 8
+      },
+      {
+       "sel": "div.ptr-indicator",
+       "pos": "sticky",
+       "top": 7,
+       "h": 60,
+       "z": "10",
+       "pe": "none",
+       "covers_text": 0
+      }
+     ],
+     "cls": 0,
+     "viewport_meta": "width=device-width, initial-scale=1, viewport-fit=cover",
+     "errors": [],
+     "failed": []
+    },
+    {
+     "view": "ladder",
+     "loaded": true,
+     "error": null,
+     "load_ms": 37,
+     "active_state": {
+      "active": true,
+      "visible": true,
+      "url_view": "ladder",
+      "sheet_open": false,
+      "expanded": "false"
+     },
+     "overflow": {
+      "scrollW": 375,
+      "clientW": 375,
+      "offenders": []
+     },
+     "targets": {
+      "total": 13,
+      "small_count": 1,
+      "worst": [
+       {
+        "sel": "a.wordmark",
+        "w": 129,
+        "h": 20
+       }
+      ],
+      "overlaps": [
+       {
+        "a": "button.mobilebar__item",
+        "b": "button.grid-anim-btn",
+        "area": 2531
+       },
+       {
+        "a": "button.mobilebar__item",
+        "b": "button.grid-anim-btn",
+        "area": 1553
+       },
+       {
+        "a": "button.mobilebar__item",
+        "b": "button.grid-anim-btn",
+        "area": 1069
+       }
+      ]
+     },
+     "inputs_font": [
+      {
+       "sel": "input[range]",
+       "fs": "13.3333px"
+      },
+      {
+       "sel": "select[select-one]",
+       "fs": "13px"
+      }
+     ],
+     "clipped": [],
+     "fixed": [
+      {
+       "sel": "header.masthead",
+       "pos": "sticky",
+       "top": 0,
+       "h": 67,
+       "z": "20",
+       "pe": "auto",
+       "covers_text": 0
+      },
+      {
+       "sel": "nav#mobilebar.mobilebar",
+       "pos": "fixed",
+       "top": 614,
+       "h": 53,
+       "z": "40",
+       "pe": "auto",
+       "covers_text": 1
+      },
+      {
+       "sel": "div.ptr-indicator",
+       "pos": "sticky",
+       "top": 7,
+       "h": 60,
+       "z": "10",
+       "pe": "none",
+       "covers_text": 0
+      }
+     ],
+     "cls": 0,
+     "viewport_meta": "width=device-width, initial-scale=1, viewport-fit=cover",
+     "errors": [],
+     "failed": []
+    },
+    {
+     "view": "next-up",
+     "loaded": true,
+     "error": null,
+     "load_ms": 38,
+     "active_state": {
+      "active": true,
+      "visible": true,
+      "url_view": "next-up",
+      "sheet_open": false,
+      "expanded": "false"
+     },
+     "overflow": {
+      "scrollW": 375,
+      "clientW": 375,
+      "offenders": []
+     },
+     "targets": {
+      "total": 13,
+      "small_count": 3,
+      "worst": [
+       {
+        "sel": "button.played-card__team-name",
+        "w": 40,
+        "h": 40
+       },
+       {
+        "sel": "button.played-card__team-name",
+        "w": 40,
+        "h": 40
+       },
+       {
+        "sel": "a.wordmark",
+        "w": 129,
+        "h": 20
+       }
+      ],
+      "overlaps": [
+       {
+        "a": "button.mobilebar__item",
+        "b": "button.played-card__team-name",
+        "area": 279
+       },
+       {
+        "a": "button.mobilebar__item",
+        "b": "button.played-card__team-name",
+        "area": 279
+       },
+       {
+        "a": "button.mobilebar__item",
+        "b": "button.played-card__team-name",
+        "area": 85
+       },
+       {
+        "a": "button.mobilebar__item",
+        "b": "button.played-card__team-name",
+        "area": 85
+       }
+      ]
+     },
+     "inputs_font": [
+      {
+       "sel": "select[select-one]",
+       "fs": "13px"
+      }
+     ],
+     "clipped": [],
+     "fixed": [
+      {
+       "sel": "header.masthead",
+       "pos": "sticky",
+       "top": 0,
+       "h": 67,
+       "z": "20",
+       "pe": "auto",
+       "covers_text": 0
+      },
+      {
+       "sel": "nav#mobilebar.mobilebar",
+       "pos": "fixed",
+       "top": 614,
+       "h": 53,
+       "z": "40",
+       "pe": "auto",
+       "covers_text": 2
+      },
+      {
+       "sel": "div.ptr-indicator",
+       "pos": "sticky",
+       "top": 7,
+       "h": 60,
+       "z": "10",
+       "pe": "none",
+       "covers_text": 0
+      }
+     ],
+     "cls": 0,
+     "viewport_meta": "width=device-width, initial-scale=1, viewport-fit=cover",
+     "errors": [],
+     "failed": []
+    },
+    {
+     "view": "played",
+     "loaded": true,
+     "error": null,
+     "load_ms": 42,
+     "active_state": {
+      "active": true,
+      "visible": true,
+      "url_view": "played",
+      "sheet_open": false,
+      "expanded": "false"
+     },
+     "overflow": {
+      "scrollW": 375,
+      "clientW": 375,
+      "offenders": []
+     },
+     "targets": {
+      "total": 15,
+      "small_count": 5,
+      "worst": [
+       {
+        "sel": "button.played-card__team-name",
+        "w": 40,
+        "h": 40
+       },
+       {
+        "sel": "button.played-card__team-name",
+        "w": 40,
+        "h": 40
+       },
+       {
+        "sel": "button.played-card__team-name",
+        "w": 40,
+        "h": 40
+       },
+       {
+        "sel": "button.played-card__team-name",
+        "w": 40,
+        "h": 40
+       },
+       {
+        "sel": "a.wordmark",
+        "w": 129,
+        "h": 20
+       }
+      ],
+      "overlaps": [
+       {
+        "a": "button.mobilebar__item",
+        "b": "button.played-card__team-name",
+        "area": 1405
+       },
+       {
+        "a": "button.mobilebar__item",
+        "b": "button.played-card__team-name",
+        "area": 1405
+       }
+      ]
+     },
+     "inputs_font": [
+      {
+       "sel": "select[select-one]",
+       "fs": "13px"
+      }
+     ],
+     "clipped": [],
+     "fixed": [
+      {
+       "sel": "header.masthead",
+       "pos": "sticky",
+       "top": 0,
+       "h": 67,
+       "z": "20",
+       "pe": "auto",
+       "covers_text": 0
+      },
+      {
+       "sel": "nav#mobilebar.mobilebar",
+       "pos": "fixed",
+       "top": 614,
+       "h": 53,
+       "z": "40",
+       "pe": "auto",
+       "covers_text": 2
+      },
+      {
+       "sel": "div.ptr-indicator",
+       "pos": "sticky",
+       "top": 7,
+       "h": 60,
+       "z": "10",
+       "pe": "none",
+       "covers_text": 0
+      }
+     ],
+     "cls": 0,
+     "viewport_meta": "width=device-width, initial-scale=1, viewport-fit=cover",
+     "errors": [],
+     "failed": []
+    },
+    {
+     "view": "compare",
+     "loaded": true,
+     "error": null,
+     "load_ms": 46,
+     "active_state": {
+      "active": true,
+      "visible": true,
+      "url_view": "compare",
+      "sheet_open": false,
+      "expanded": "false"
+     },
+     "overflow": {
+      "scrollW": 375,
+      "clientW": 375,
+      "offenders": []
+     },
+     "targets": {
+      "total": 12,
+      "small_count": 1,
+      "worst": [
+       {
+        "sel": "a.wordmark",
+        "w": 129,
+        "h": 20
+       }
+      ],
+      "overlaps": [
+       {
+        "a": "button.mobilebar__item",
+        "b": "div.compare__team",
+        "area": 3026
+       },
+       {
+        "a": "button.mobilebar__item",
+        "b": "div.compare__team",
+        "area": 3026
+       },
+       {
+        "a": "button.mobilebar__item",
+        "b": "div.compare__team",
+        "area": 1694
+       },
+       {
+        "a": "button.mobilebar__item",
+        "b": "div.compare__team",
+        "area": 1694
+       }
+      ]
+     },
+     "inputs_font": [
+      {
+       "sel": "select[select-one]",
+       "fs": "13px"
+      }
+     ],
+     "clipped": [],
+     "fixed": [
+      {
+       "sel": "header.masthead",
+       "pos": "sticky",
+       "top": 0,
+       "h": 67,
+       "z": "20",
+       "pe": "auto",
+       "covers_text": 0
+      },
+      {
+       "sel": "nav#mobilebar.mobilebar",
+       "pos": "fixed",
+       "top": 614,
+       "h": 53,
+       "z": "40",
+       "pe": "auto",
+       "covers_text": 1
+      },
+      {
+       "sel": "div.ptr-indicator",
+       "pos": "sticky",
+       "top": 7,
+       "h": 60,
+       "z": "10",
+       "pe": "none",
+       "covers_text": 0
+      }
+     ],
+     "cls": 0,
+     "viewport_meta": "width=device-width, initial-scale=1, viewport-fit=cover",
+     "errors": [],
+     "failed": []
+    },
+    {
+     "view": "model",
+     "loaded": true,
+     "error": null,
+     "load_ms": 31,
+     "active_state": {
+      "active": true,
+      "visible": true,
+      "url_view": "model",
+      "sheet_open": false,
+      "expanded": "false"
+     },
+     "overflow": {
+      "scrollW": 375,
+      "clientW": 375,
+      "offenders": []
+     },
+     "targets": {
+      "total": 9,
+      "small_count": 1,
+      "worst": [
+       {
+        "sel": "a.wordmark",
+        "w": 129,
+        "h": 20
+       }
+      ],
+      "overlaps": []
+     },
+     "inputs_font": [
+      {
+       "sel": "select[select-one]",
+       "fs": "13px"
+      }
+     ],
+     "clipped": [],
+     "fixed": [
+      {
+       "sel": "header.masthead",
+       "pos": "sticky",
+       "top": 0,
+       "h": 67,
+       "z": "20",
+       "pe": "auto",
+       "covers_text": 0
+      },
+      {
+       "sel": "nav#mobilebar.mobilebar",
+       "pos": "fixed",
+       "top": 614,
+       "h": 53,
+       "z": "40",
+       "pe": "auto",
+       "covers_text": 0
+      },
+      {
+       "sel": "div.ptr-indicator",
+       "pos": "sticky",
+       "top": 7,
+       "h": 60,
+       "z": "10",
+       "pe": "none",
+       "covers_text": 0
+      }
+     ],
+     "cls": 0,
+     "viewport_meta": "width=device-width, initial-scale=1, viewport-fit=cover",
+     "errors": [],
+     "failed": []
+    }
+   ],
+   "team": {
+    "opened": true,
+    "tap": {
+     "hit": true,
+     "at": [
+      81,
+      335
+     ],
+     "under_pointer": "button.club-btn"
+    },
+    "state": {
+     "active": false,
+     "visible": true,
+     "url_view": "team",
+     "sheet_open": false,
+     "expanded": "false"
+    },
+    "errors": [],
+    "overflow": {
+     "scrollW": 375,
+     "clientW": 375,
+     "offenders": []
+    },
+    "targets": {
+     "total": 10,
+     "small_count": 2,
+     "worst": [
+      {
+       "sel": "a.wordmark",
+       "w": 129,
+       "h": 20
+      },
+      {
+       "sel": "button.team-back",
+       "w": 96,
+       "h": 40
+      }
+     ],
+     "overlaps": []
+    },
+    "inputs_font": [
+     {
+      "sel": "select[select-one]",
+      "fs": "13px"
+     }
+    ],
+    "clipped": [
+     {
+      "sel": "div.odds__seg",
+      "text": "16\u00a0%",
+      "sw": 26,
+      "cw": 19,
+      "ellipsis": false
+     },
+     {
+      "sel": "div.odds__seg",
+      "text": "20\u00a0%",
+      "sw": 26,
+      "cw": 23,
+      "ellipsis": false
+     },
+     {
+      "sel": "div.odds__seg",
+      "text": "17\u00a0%",
+      "sw": 26,
+      "cw": 20,
+      "ellipsis": false
+     },
+     {
+      "sel": "div.odds__seg",
+      "text": "12\u00a0%",
+      "sw": 26,
+      "cw": 14,
+      "ellipsis": false
+     }
+    ],
+    "fixed": [
+     {
+      "sel": "header.masthead",
+      "pos": "sticky",
+      "top": 0,
+      "h": 67,
+      "z": "20",
+      "pe": "auto",
+      "covers_text": 0
+     },
+     {
+      "sel": "nav#mobilebar.mobilebar",
+      "pos": "fixed",
+      "top": 614,
+      "h": 53,
+      "z": "40",
+      "pe": "auto",
+      "covers_text": 0
+     },
+     {
+      "sel": "div.ptr-indicator",
+      "pos": "sticky",
+      "top": 7,
+      "h": 60,
+      "z": "10",
+      "pe": "none",
+      "covers_text": 0
+     }
+    ],
+    "cls": 0
+   },
+   "more": {
+    "available": true,
+    "open": {
+     "hit": true,
+     "at": [
+      338,
+      641
+     ],
+     "under_pointer": "button#more-button.mobilebar__item",
+     "sheet_open_after_tap": true,
+     "aria_expanded": "true"
+    },
+    "items": [
+     {
+      "view": "ladder",
+      "tap": {
+       "hit": true,
+       "at": [
+        188,
+        359
+       ],
+       "under_pointer": "button.sheet__item"
+      },
+      "state": {
+       "active": false,
+       "visible": false,
+       "url_view": "grid",
+       "sheet_open": false,
+       "expanded": "false"
+      },
+      "errors": [],
+      "failed": []
+     },
+     {
+      "view": "compare",
+      "tap": {
+       "hit": true,
+       "at": [
+        188,
+        409
+       ],
+       "under_pointer": "button.sheet__item"
+      },
+      "state": {
+       "active": false,
+       "visible": false,
+       "url_view": "grid",
+       "sheet_open": false,
+       "expanded": "false"
+      },
+      "errors": [],
+      "failed": []
+     },
+     {
+      "view": "model",
+      "tap": {
+       "hit": true,
+       "at": [
+        188,
+        459
+       ],
+       "under_pointer": "button.sheet__item"
+      },
+      "state": {
+       "active": false,
+       "visible": false,
+       "url_view": "grid",
+       "sheet_open": false,
+       "expanded": "false"
+      },
+      "errors": [],
+      "failed": []
+     }
+    ],
+    "outside_tap": {
+     "sheet_closed": true,
+     "errors": []
+    },
+    "diag": {}
+   },
+   "swipe": {
+    "available": true,
+    "swipe1": {
+     "state": {
+      "active": false,
+      "visible": false,
+      "url_view": "grid",
+      "sheet_open": false,
+      "expanded": "false"
+     },
+     "sample": {
+      "frames": 29,
+      "max_doc_delta": 0,
+      "max_panel_delta": 0,
+      "scroll_y": 762,
+      "doc_h": 1429
+     },
+     "cls_delta": 0,
+     "scroll_y_after": 762,
+     "errors": [
+      "pageerror: switchView is not defined"
+     ]
+    },
+    "swipe2": {
+     "state": {
+      "active": true,
+      "visible": true,
+      "url_view": "grid",
+      "sheet_open": false,
+      "expanded": "false"
+     },
+     "sample": {
+      "frames": 28,
+      "max_doc_delta": 0,
+      "max_panel_delta": 0,
+      "scroll_y": 762,
+      "doc_h": 1429
+     },
+     "cls_delta": 0,
+     "scroll_y_after": 762,
+     "errors": []
+    },
+    "scroll": {
+     "before": 762,
+     "after_swipe1": 762,
+     "after_swipe2": 762,
+     "restored": true
+    },
+    "cls_total": 0,
+    "cls_entries": []
+   },
+   "content_swipe": {
+    "available": true,
+    "horizontal": {
+     "tag": "horizontal",
+     "ptr": {
+      "cls": "ptr-indicator",
+      "tf": "matrix(1, 0, 0, 1, 0, -60)",
+      "op": "0"
+     },
+     "cls": 0,
+     "sample": {
+      "frames": 22,
+      "max_doc_delta": 0,
+      "max_panel_delta": 0,
+      "scroll_y": 0,
+      "doc_h": 1429
+     },
+     "scroll_y": 0,
+     "errors": [],
+     "fetches": 0,
+     "cls_delta": 0
+    },
+    "diagonal": {
+     "tag": "diagonal",
+     "ptr": {
+      "cls": "ptr-indicator",
+      "tf": "matrix(1, 0, 0, 1, 0, -60)",
+      "op": "0"
+     },
+     "cls": 0,
+     "sample": {
+      "frames": 23,
+      "max_doc_delta": 0,
+      "max_panel_delta": 0,
+      "scroll_y": 0,
+      "doc_h": 1429
+     },
+     "scroll_y": 0,
+     "errors": [],
+     "fetches": 0,
+     "cls_delta": 0
+    },
+    "note": "app.js wires swipe-nav only on .mobilebar; content gestures route to pull-to-refresh"
+   },
+   "tab_taps": [
+    {
+     "view": "grid",
+     "state": {
+      "active": true,
+      "visible": true,
+      "url_view": "grid",
+      "sheet_open": false,
+      "expanded": "false"
+     },
+     "ok": true,
+     "errors": []
+    },
+    {
+     "view": "table",
+     "state": {
+      "active": true,
+      "visible": true,
+      "url_view": "table",
+      "sheet_open": false,
+      "expanded": "false"
+     },
+     "ok": true,
+     "errors": [
+      "pageerror: switchView is not defined"
+     ]
+    },
+    {
+     "view": "next-up",
+     "state": {
+      "active": true,
+      "visible": true,
+      "url_view": "next-up",
+      "sheet_open": false,
+      "expanded": "false"
+     },
+     "ok": true,
+     "errors": [
+      "pageerror: switchView is not defined"
+     ]
+    },
+    {
+     "view": "played",
+     "state": {
+      "active": true,
+      "visible": true,
+      "url_view": "played",
+      "sheet_open": false,
+      "expanded": "false"
+     },
+     "ok": true,
+     "errors": [
+      "pageerror: switchView is not defined"
+     ]
+    }
+   ],
+   "tab_jump": {
+    "before": {
+     "sy": 762,
+     "dh": 1429
+    },
+    "after": {
+     "sy": 0,
+     "dh": 2212
+    },
+    "scroll_jump_px": 762,
+    "doc_height_delta": 783,
+    "cls_delta": 0,
+    "errors": [
+     "pageerror: switchView is not defined"
+    ]
+   }
+  },
+  {
+   "name": "390x844",
+   "w": 390,
+   "h": 844,
+   "touch": true,
+   "mobile": true,
+   "views": [
+    {
+     "view": "grid",
+     "loaded": true,
+     "error": null,
+     "load_ms": 237,
+     "active_state": {
+      "active": true,
+      "visible": true,
+      "url_view": "grid",
+      "sheet_open": false,
+      "expanded": "false"
+     },
+     "overflow": {
+      "scrollW": 390,
+      "clientW": 390,
+      "offenders": []
+     },
+     "targets": {
+      "total": 13,
+      "small_count": 1,
+      "worst": [
+       {
+        "sel": "a.wordmark",
+        "w": 129,
+        "h": 20
+       }
+      ],
+      "overlaps": []
+     },
+     "inputs_font": [
+      {
+       "sel": "input[range]",
+       "fs": "13.3333px"
+      },
+      {
+       "sel": "select[select-one]",
+       "fs": "13px"
+      }
+     ],
+     "clipped": [],
+     "fixed": [
+      {
+       "sel": "header.masthead",
+       "pos": "sticky",
+       "top": 0,
+       "h": 67,
+       "z": "20",
+       "pe": "auto",
+       "covers_text": 0
+      },
+      {
+       "sel": "nav#mobilebar.mobilebar",
+       "pos": "fixed",
+       "top": 791,
+       "h": 53,
+       "z": "40",
+       "pe": "auto",
+       "covers_text": 41
+      },
+      {
+       "sel": "div.ptr-indicator",
+       "pos": "sticky",
+       "top": 7,
+       "h": 60,
+       "z": "10",
+       "pe": "none",
+       "covers_text": 0
+      },
+      {
+       "sel": "th.grid__team",
+       "pos": "sticky",
+       "top": 709,
+       "h": 22,
+       "z": "1",
+       "pe": "auto",
+       "covers_text": 0
+      },
+      {
+       "sel": "th.grid__team",
+       "pos": "sticky",
+       "top": 732,
+       "h": 22,
+       "z": "1",
+       "pe": "auto",
+       "covers_text": 0
+      },
+      {
+       "sel": "th.grid__team",
+       "pos": "sticky",
+       "top": 755,
+       "h": 22,
+       "z": "1",
+       "pe": "auto",
+       "covers_text": 0
+      },
+      {
+       "sel": "th.grid__team",
+       "pos": "sticky",
+       "top": 777,
+       "h": 22,
+       "z": "1",
+       "pe": "auto",
+       "covers_text": 0
+      },
+      {
+       "sel": "th.grid__team",
+       "pos": "sticky",
+       "top": 800,
+       "h": 22,
+       "z": "1",
+       "pe": "auto",
+       "covers_text": 0
+      },
+      {
+       "sel": "th.grid__team",
+       "pos": "sticky",
+       "top": 822,
+       "h": 22,
+       "z": "1",
+       "pe": "auto",
+       "covers_text": 0
+      }
+     ],
+     "cls": 0,
+     "viewport_meta": "width=device-width, initial-scale=1, viewport-fit=cover",
+     "errors": [],
+     "failed": []
+    },
+    {
+     "view": "table",
+     "loaded": true,
+     "error": null,
+     "load_ms": 49,
+     "active_state": {
+      "active": true,
+      "visible": true,
+      "url_view": "table",
+      "sheet_open": false,
+      "expanded": "false"
+     },
+     "overflow": {
+      "scrollW": 390,
+      "clientW": 390,
+      "offenders": []
+     },
+     "targets": {
+      "total": 22,
+      "small_count": 5,
+      "worst": [
+       {
+        "sel": "button.sort-btn",
+        "w": 27,
+        "h": 44
+       },
+       {
+        "sel": "button.sort-btn",
+        "w": 27,
+        "h": 44
+       },
+       {
+        "sel": "button.sort-btn",
+        "w": 34,
+        "h": 44
+       },
+       {
+        "sel": "button.sort-btn",
+        "w": 36,
+        "h": 44
+       },
+       {
+        "sel": "a.wordmark",
+        "w": 129,
+        "h": 20
+       }
+      ],
+      "overlaps": [
+       {
+        "a": "button.mobilebar__item",
+        "b": "button.club-btn",
+        "area": 2764
+       },
+       {
+        "a": "button.mobilebar__item",
+        "b": "button.club-btn",
+        "area": 1163
+       }
+      ]
+     },
+     "inputs_font": [
+      {
+       "sel": "input[range]",
+       "fs": "13.3333px"
+      },
+      {
+       "sel": "select[select-one]",
+       "fs": "13px"
+      }
+     ],
+     "clipped": [],
+     "fixed": [
+      {
+       "sel": "header.masthead",
+       "pos": "sticky",
+       "top": 0,
+       "h": 67,
+       "z": "20",
+       "pe": "auto",
+       "covers_text": 0
+      },
+      {
+       "sel": "nav#mobilebar.mobilebar",
+       "pos": "fixed",
+       "top": 791,
+       "h": 53,
+       "z": "40",
+       "pe": "auto",
+       "covers_text": 7
+      },
+      {
+       "sel": "div.ptr-indicator",
+       "pos": "sticky",
+       "top": 7,
+       "h": 60,
+       "z": "10",
+       "pe": "none",
+       "covers_text": 0
+      }
+     ],
+     "cls": 0,
+     "viewport_meta": "width=device-width, initial-scale=1, viewport-fit=cover",
+     "errors": [],
+     "failed": []
+    },
+    {
+     "view": "ladder",
+     "loaded": true,
+     "error": null,
+     "load_ms": 37,
+     "active_state": {
+      "active": true,
+      "visible": true,
+      "url_view": "ladder",
+      "sheet_open": false,
+      "expanded": "false"
+     },
+     "overflow": {
+      "scrollW": 390,
+      "clientW": 390,
+      "offenders": []
+     },
+     "targets": {
+      "total": 17,
+      "small_count": 1,
+      "worst": [
+       {
+        "sel": "a.wordmark",
+        "w": 129,
+        "h": 20
+       }
+      ],
+      "overlaps": [
+       {
+        "a": "button.mobilebar__item",
+        "b": "button.ladder__team",
+        "area": 3131
+       },
+       {
+        "a": "button.mobilebar__item",
+        "b": "button.ladder__team",
+        "area": 3131
+       },
+       {
+        "a": "button.mobilebar__item",
+        "b": "button.ladder__team",
+        "area": 3131
+       },
+       {
+        "a": "button.mobilebar__item",
+        "b": "button.ladder__team",
+        "area": 2127
+       },
+       {
+        "a": "button.mobilebar__item",
+        "b": "button.ladder__team",
+        "area": 2127
+       },
+       {
+        "a": "button.mobilebar__item",
+        "b": "button.ladder__team",
+        "area": 925
+       }
+      ]
+     },
+     "inputs_font": [
+      {
+       "sel": "input[range]",
+       "fs": "13.3333px"
+      },
+      {
+       "sel": "select[select-one]",
+       "fs": "13px"
+      }
+     ],
+     "clipped": [],
+     "fixed": [
+      {
+       "sel": "header.masthead",
+       "pos": "sticky",
+       "top": 0,
+       "h": 67,
+       "z": "20",
+       "pe": "auto",
+       "covers_text": 0
+      },
+      {
+       "sel": "nav#mobilebar.mobilebar",
+       "pos": "fixed",
+       "top": 791,
+       "h": 53,
+       "z": "40",
+       "pe": "auto",
+       "covers_text": 2
+      },
+      {
+       "sel": "div.ptr-indicator",
+       "pos": "sticky",
+       "top": 7,
+       "h": 60,
+       "z": "10",
+       "pe": "none",
+       "covers_text": 0
+      }
+     ],
+     "cls": 0,
+     "viewport_meta": "width=device-width, initial-scale=1, viewport-fit=cover",
+     "errors": [],
+     "failed": []
+    },
+    {
+     "view": "next-up",
+     "loaded": true,
+     "error": null,
+     "load_ms": 38,
+     "active_state": {
+      "active": true,
+      "visible": true,
+      "url_view": "next-up",
+      "sheet_open": false,
+      "expanded": "false"
+     },
+     "overflow": {
+      "scrollW": 390,
+      "clientW": 390,
+      "offenders": []
+     },
+     "targets": {
+      "total": 17,
+      "small_count": 7,
+      "worst": [
+       {
+        "sel": "button.played-card__team-name",
+        "w": 40,
+        "h": 40
+       },
+       {
+        "sel": "button.played-card__team-name",
+        "w": 40,
+        "h": 40
+       },
+       {
+        "sel": "button.played-card__team-name",
+        "w": 40,
+        "h": 40
+       },
+       {
+        "sel": "button.played-card__team-name",
+        "w": 40,
+        "h": 40
+       },
+       {
+        "sel": "button.played-card__team-name",
+        "w": 40,
+        "h": 40
+       },
+       {
+        "sel": "button.played-card__team-name",
+        "w": 40,
+        "h": 40
+       },
+       {
+        "sel": "a.wordmark",
+        "w": 129,
+        "h": 20
+       }
+      ],
+      "overlaps": [
+       {
+        "a": "button.mobilebar__item",
+        "b": "button.played-card__team-name",
+        "area": 1160
+       },
+       {
+        "a": "button.mobilebar__item",
+        "b": "button.played-card__team-name",
+        "area": 1160
+       },
+       {
+        "a": "button.mobilebar__item",
+        "b": "button.played-card__team-name",
+        "area": 440
+       },
+       {
+        "a": "button.mobilebar__item",
+        "b": "button.played-card__team-name",
+        "area": 440
+       }
+      ]
+     },
+     "inputs_font": [
+      {
+       "sel": "select[select-one]",
+       "fs": "13px"
+      }
+     ],
+     "clipped": [],
+     "fixed": [
+      {
+       "sel": "header.masthead",
+       "pos": "sticky",
+       "top": 0,
+       "h": 67,
+       "z": "20",
+       "pe": "auto",
+       "covers_text": 0
+      },
+      {
+       "sel": "nav#mobilebar.mobilebar",
+       "pos": "fixed",
+       "top": 791,
+       "h": 53,
+       "z": "40",
+       "pe": "auto",
+       "covers_text": 2
+      },
+      {
+       "sel": "div.ptr-indicator",
+       "pos": "sticky",
+       "top": 7,
+       "h": 60,
+       "z": "10",
+       "pe": "none",
+       "covers_text": 0
+      }
+     ],
+     "cls": 0,
+     "viewport_meta": "width=device-width, initial-scale=1, viewport-fit=cover",
+     "errors": [],
+     "failed": []
+    },
+    {
+     "view": "played",
+     "loaded": true,
+     "error": null,
+     "load_ms": 40,
+     "active_state": {
+      "active": true,
+      "visible": true,
+      "url_view": "played",
+      "sheet_open": false,
+      "expanded": "false"
+     },
+     "overflow": {
+      "scrollW": 390,
+      "clientW": 390,
+      "offenders": []
+     },
+     "targets": {
+      "total": 19,
+      "small_count": 9,
+      "worst": [
+       {
+        "sel": "button.played-card__team-name",
+        "w": 40,
+        "h": 40
+       },
+       {
+        "sel": "button.played-card__team-name",
+        "w": 40,
+        "h": 40
+       },
+       {
+        "sel": "button.played-card__team-name",
+        "w": 40,
+        "h": 40
+       },
+       {
+        "sel": "button.played-card__team-name",
+        "w": 40,
+        "h": 40
+       },
+       {
+        "sel": "button.played-card__team-name",
+        "w": 40,
+        "h": 40
+       },
+       {
+        "sel": "button.played-card__team-name",
+        "w": 40,
+        "h": 40
+       },
+       {
+        "sel": "button.played-card__team-name",
+        "w": 40,
+        "h": 40
+       },
+       {
+        "sel": "button.played-card__team-name",
+        "w": 40,
+        "h": 40
+       }
+      ],
+      "overlaps": [
+       {
+        "a": "button.mobilebar__item",
+        "b": "button.played-card__team-name",
+        "area": 939
+       },
+       {
+        "a": "button.mobilebar__item",
+        "b": "button.played-card__team-name",
+        "area": 939
+       }
+      ]
+     },
+     "inputs_font": [
+      {
+       "sel": "select[select-one]",
+       "fs": "13px"
+      }
+     ],
+     "clipped": [],
+     "fixed": [
+      {
+       "sel": "header.masthead",
+       "pos": "sticky",
+       "top": 0,
+       "h": 67,
+       "z": "20",
+       "pe": "auto",
+       "covers_text": 0
+      },
+      {
+       "sel": "nav#mobilebar.mobilebar",
+       "pos": "fixed",
+       "top": 791,
+       "h": 53,
+       "z": "40",
+       "pe": "auto",
+       "covers_text": 2
+      },
+      {
+       "sel": "div.ptr-indicator",
+       "pos": "sticky",
+       "top": 7,
+       "h": 60,
+       "z": "10",
+       "pe": "none",
+       "covers_text": 0
+      }
+     ],
+     "cls": 0,
+     "viewport_meta": "width=device-width, initial-scale=1, viewport-fit=cover",
+     "errors": [],
+     "failed": []
+    },
+    {
+     "view": "compare",
+     "loaded": true,
+     "error": null,
+     "load_ms": 46,
+     "active_state": {
+      "active": true,
+      "visible": true,
+      "url_view": "compare",
+      "sheet_open": false,
+      "expanded": "false"
+     },
+     "overflow": {
+      "scrollW": 390,
+      "clientW": 390,
+      "offenders": []
+     },
+     "targets": {
+      "total": 12,
+      "small_count": 1,
+      "worst": [
+       {
+        "sel": "a.wordmark",
+        "w": 129,
+        "h": 20
+       }
+      ],
+      "overlaps": []
+     },
+     "inputs_font": [
+      {
+       "sel": "select[select-one]",
+       "fs": "13px"
+      }
+     ],
+     "clipped": [],
+     "fixed": [
+      {
+       "sel": "header.masthead",
+       "pos": "sticky",
+       "top": 0,
+       "h": 67,
+       "z": "20",
+       "pe": "auto",
+       "covers_text": 0
+      },
+      {
+       "sel": "nav#mobilebar.mobilebar",
+       "pos": "fixed",
+       "top": 791,
+       "h": 53,
+       "z": "40",
+       "pe": "auto",
+       "covers_text": 0
+      },
+      {
+       "sel": "div.ptr-indicator",
+       "pos": "sticky",
+       "top": 7,
+       "h": 60,
+       "z": "10",
+       "pe": "none",
+       "covers_text": 0
+      }
+     ],
+     "cls": 0,
+     "viewport_meta": "width=device-width, initial-scale=1, viewport-fit=cover",
+     "errors": [],
+     "failed": []
+    },
+    {
+     "view": "model",
+     "loaded": true,
+     "error": null,
+     "load_ms": 31,
+     "active_state": {
+      "active": true,
+      "visible": true,
+      "url_view": "model",
+      "sheet_open": false,
+      "expanded": "false"
+     },
+     "overflow": {
+      "scrollW": 390,
+      "clientW": 390,
+      "offenders": []
+     },
+     "targets": {
+      "total": 9,
+      "small_count": 1,
+      "worst": [
+       {
+        "sel": "a.wordmark",
+        "w": 129,
+        "h": 20
+       }
+      ],
+      "overlaps": []
+     },
+     "inputs_font": [
+      {
+       "sel": "select[select-one]",
+       "fs": "13px"
+      }
+     ],
+     "clipped": [],
+     "fixed": [
+      {
+       "sel": "header.masthead",
+       "pos": "sticky",
+       "top": 0,
+       "h": 67,
+       "z": "20",
+       "pe": "auto",
+       "covers_text": 0
+      },
+      {
+       "sel": "nav#mobilebar.mobilebar",
+       "pos": "fixed",
+       "top": 791,
+       "h": 53,
+       "z": "40",
+       "pe": "auto",
+       "covers_text": 0
+      },
+      {
+       "sel": "div.ptr-indicator",
+       "pos": "sticky",
+       "top": 7,
+       "h": 60,
+       "z": "10",
+       "pe": "none",
+       "covers_text": 0
+      }
+     ],
+     "cls": 0,
+     "viewport_meta": "width=device-width, initial-scale=1, viewport-fit=cover",
+     "errors": [],
+     "failed": []
+    }
+   ],
+   "team": {
+    "opened": true,
+    "tap": {
+     "hit": true,
+     "at": [
+      81,
+      725
+     ],
+     "under_pointer": "button.club-btn"
+    },
+    "state": {
+     "active": false,
+     "visible": true,
+     "url_view": "team",
+     "sheet_open": false,
+     "expanded": "false"
+    },
+    "errors": [],
+    "overflow": {
+     "scrollW": 390,
+     "clientW": 390,
+     "offenders": []
+    },
+    "targets": {
+     "total": 10,
+     "small_count": 2,
+     "worst": [
+      {
+       "sel": "a.wordmark",
+       "w": 129,
+       "h": 20
+      },
+      {
+       "sel": "button.team-back",
+       "w": 96,
+       "h": 40
+      }
+     ],
+     "overlaps": []
+    },
+    "inputs_font": [
+     {
+      "sel": "select[select-one]",
+      "fs": "13px"
+     }
+    ],
+    "clipped": [
+     {
+      "sel": "div.odds__seg",
+      "text": "16\u00a0%",
+      "sw": 26,
+      "cw": 21,
+      "ellipsis": false
+     },
+     {
+      "sel": "div.odds__seg",
+      "text": "17\u00a0%",
+      "sw": 26,
+      "cw": 23,
+      "ellipsis": false
+     },
+     {
+      "sel": "div.odds__seg",
+      "text": "12\u00a0%",
+      "sw": 26,
+      "cw": 16,
+      "ellipsis": false
+     }
+    ],
+    "fixed": [
+     {
+      "sel": "header.masthead",
+      "pos": "sticky",
+      "top": 0,
+      "h": 67,
+      "z": "20",
+      "pe": "auto",
+      "covers_text": 0
+     },
+     {
+      "sel": "nav#mobilebar.mobilebar",
+      "pos": "fixed",
+      "top": 791,
+      "h": 53,
+      "z": "40",
+      "pe": "auto",
+      "covers_text": 0
+     },
+     {
+      "sel": "div.ptr-indicator",
+      "pos": "sticky",
+      "top": 7,
+      "h": 60,
+      "z": "10",
+      "pe": "none",
+      "covers_text": 0
+     }
+    ],
+    "cls": 0
+   },
+   "more": {
+    "available": true,
+    "open": {
+     "hit": true,
+     "at": [
+      351,
+      818
+     ],
+     "under_pointer": "button#more-button.mobilebar__item",
+     "sheet_open_after_tap": true,
+     "aria_expanded": "true"
+    },
+    "items": [
+     {
+      "view": "ladder",
+      "tap": {
+       "hit": true,
+       "at": [
+        195,
+        536
+       ],
+       "under_pointer": "button.sheet__item"
+      },
+      "state": {
+       "active": false,
+       "visible": false,
+       "url_view": "grid",
+       "sheet_open": false,
+       "expanded": "false"
+      },
+      "errors": [],
+      "failed": []
+     },
+     {
+      "view": "compare",
+      "tap": {
+       "hit": true,
+       "at": [
+        195,
+        586
+       ],
+       "under_pointer": "button.sheet__item"
+      },
+      "state": {
+       "active": false,
+       "visible": false,
+       "url_view": "grid",
+       "sheet_open": false,
+       "expanded": "false"
+      },
+      "errors": [],
+      "failed": []
+     },
+     {
+      "view": "model",
+      "tap": {
+       "hit": true,
+       "at": [
+        195,
+        636
+       ],
+       "under_pointer": "button.sheet__item"
+      },
+      "state": {
+       "active": false,
+       "visible": false,
+       "url_view": "grid",
+       "sheet_open": false,
+       "expanded": "false"
+      },
+      "errors": [],
+      "failed": []
+     }
+    ],
+    "outside_tap": {
+     "sheet_closed": true,
+     "errors": []
+    },
+    "diag": {}
+   },
+   "swipe": {
+    "available": true,
+    "swipe1": {
+     "state": {
+      "active": false,
+      "visible": false,
+      "url_view": "grid",
+      "sheet_open": false,
+      "expanded": "false"
+     },
+     "sample": {
+      "frames": 28,
+      "max_doc_delta": 0,
+      "max_panel_delta": 0,
+      "scroll_y": 565,
+      "doc_h": 1409
+     },
+     "cls_delta": 0,
+     "scroll_y_after": 565,
+     "errors": [
+      "pageerror: switchView is not defined"
+     ]
+    },
+    "swipe2": {
+     "state": {
+      "active": true,
+      "visible": true,
+      "url_view": "grid",
+      "sheet_open": false,
+      "expanded": "false"
+     },
+     "sample": {
+      "frames": 28,
+      "max_doc_delta": 0,
+      "max_panel_delta": 0,
+      "scroll_y": 565,
+      "doc_h": 1409
+     },
+     "cls_delta": 0,
+     "scroll_y_after": 565,
+     "errors": []
+    },
+    "scroll": {
+     "before": 565,
+     "after_swipe1": 565,
+     "after_swipe2": 565,
+     "restored": true
+    },
+    "cls_total": 0,
+    "cls_entries": []
+   },
+   "content_swipe": {
+    "available": true,
+    "horizontal": {
+     "tag": "horizontal",
+     "ptr": {
+      "cls": "ptr-indicator",
+      "tf": "matrix(1, 0, 0, 1, 0, -60)",
+      "op": "0"
+     },
+     "cls": 0,
+     "sample": {
+      "frames": 22,
+      "max_doc_delta": 0,
+      "max_panel_delta": 0,
+      "scroll_y": 0,
+      "doc_h": 1409
+     },
+     "scroll_y": 0,
+     "errors": [],
+     "fetches": 0,
+     "cls_delta": 0
+    },
+    "diagonal": {
+     "tag": "diagonal",
+     "ptr": {
+      "cls": "ptr-indicator",
+      "tf": "matrix(1, 0, 0, 1, 0, -60)",
+      "op": "0"
+     },
+     "cls": 0,
+     "sample": {
+      "frames": 23,
+      "max_doc_delta": 0,
+      "max_panel_delta": 0,
+      "scroll_y": 0,
+      "doc_h": 1409
+     },
+     "scroll_y": 0,
+     "errors": [],
+     "fetches": 0,
+     "cls_delta": 0
+    },
+    "note": "app.js wires swipe-nav only on .mobilebar; content gestures route to pull-to-refresh"
+   },
+   "tab_taps": [
+    {
+     "view": "grid",
+     "state": {
+      "active": true,
+      "visible": true,
+      "url_view": "grid",
+      "sheet_open": false,
+      "expanded": "false"
+     },
+     "ok": true,
+     "errors": []
+    },
+    {
+     "view": "table",
+     "state": {
+      "active": true,
+      "visible": true,
+      "url_view": "table",
+      "sheet_open": false,
+      "expanded": "false"
+     },
+     "ok": true,
+     "errors": [
+      "pageerror: switchView is not defined"
+     ]
+    },
+    {
+     "view": "next-up",
+     "state": {
+      "active": true,
+      "visible": true,
+      "url_view": "next-up",
+      "sheet_open": false,
+      "expanded": "false"
+     },
+     "ok": true,
+     "errors": [
+      "pageerror: switchView is not defined"
+     ]
+    },
+    {
+     "view": "played",
+     "state": {
+      "active": true,
+      "visible": true,
+      "url_view": "played",
+      "sheet_open": false,
+      "expanded": "false"
+     },
+     "ok": true,
+     "errors": [
+      "pageerror: switchView is not defined"
+     ]
+    }
+   ],
+   "tab_jump": {
+    "before": {
+     "sy": 565,
+     "dh": 1409
+    },
+    "after": {
+     "sy": 0,
+     "dh": 2192
+    },
+    "scroll_jump_px": 565,
+    "doc_height_delta": 783,
+    "cls_delta": 0,
+    "errors": [
+     "pageerror: switchView is not defined"
+    ]
+   }
+  },
+  {
+   "name": "412x915",
+   "w": 412,
+   "h": 915,
+   "touch": true,
+   "mobile": true,
+   "views": [
+    {
+     "view": "grid",
+     "loaded": true,
+     "error": null,
+     "load_ms": 232,
+     "active_state": {
+      "active": true,
+      "visible": true,
+      "url_view": "grid",
+      "sheet_open": false,
+      "expanded": "false"
+     },
+     "overflow": {
+      "scrollW": 412,
+      "clientW": 412,
+      "offenders": []
+     },
+     "targets": {
+      "total": 13,
+      "small_count": 1,
+      "worst": [
+       {
+        "sel": "a.wordmark",
+        "w": 129,
+        "h": 20
+       }
+      ],
+      "overlaps": []
+     },
+     "inputs_font": [
+      {
+       "sel": "input[range]",
+       "fs": "13.3333px"
+      },
+      {
+       "sel": "select[select-one]",
+       "fs": "13px"
+      }
+     ],
+     "clipped": [],
+     "fixed": [
+      {
+       "sel": "header.masthead",
+       "pos": "sticky",
+       "top": 0,
+       "h": 67,
+       "z": "20",
+       "pe": "auto",
+       "covers_text": 0
+      },
+      {
+       "sel": "nav#mobilebar.mobilebar",
+       "pos": "fixed",
+       "top": 862,
+       "h": 53,
+       "z": "40",
+       "pe": "auto",
+       "covers_text": 45
+      },
+      {
+       "sel": "div.ptr-indicator",
+       "pos": "sticky",
+       "top": 7,
+       "h": 60,
+       "z": "10",
+       "pe": "none",
+       "covers_text": 0
+      },
+      {
+       "sel": "th.grid__team",
+       "pos": "sticky",
+       "top": 710,
+       "h": 22,
+       "z": "1",
+       "pe": "auto",
+       "covers_text": 0
+      },
+      {
+       "sel": "th.grid__team",
+       "pos": "sticky",
+       "top": 732,
+       "h": 22,
+       "z": "1",
+       "pe": "auto",
+       "covers_text": 0
+      },
+      {
+       "sel": "th.grid__team",
+       "pos": "sticky",
+       "top": 755,
+       "h": 22,
+       "z": "1",
+       "pe": "auto",
+       "covers_text": 0
+      },
+      {
+       "sel": "th.grid__team",
+       "pos": "sticky",
+       "top": 777,
+       "h": 22,
+       "z": "1",
+       "pe": "auto",
+       "covers_text": 0
+      },
+      {
+       "sel": "th.grid__team",
+       "pos": "sticky",
+       "top": 800,
+       "h": 22,
+       "z": "1",
+       "pe": "auto",
+       "covers_text": 0
+      },
+      {
+       "sel": "th.grid__team",
+       "pos": "sticky",
+       "top": 823,
+       "h": 22,
+       "z": "1",
+       "pe": "auto",
+       "covers_text": 0
+      },
+      {
+       "sel": "th.grid__team",
+       "pos": "sticky",
+       "top": 845,
+       "h": 22,
+       "z": "1",
+       "pe": "auto",
+       "covers_text": 0
+      },
+      {
+       "sel": "th.grid__team",
+       "pos": "sticky",
+       "top": 868,
+       "h": 22,
+       "z": "1",
+       "pe": "auto",
+       "covers_text": 0
+      },
+      {
+       "sel": "th.grid__team",
+       "pos": "sticky",
+       "top": 890,
+       "h": 22,
+       "z": "1",
+       "pe": "auto",
+       "covers_text": 0
+      },
+      {
+       "sel": "th.grid__team",
+       "pos": "sticky",
+       "top": 913,
+       "h": 22,
+       "z": "1",
+       "pe": "auto",
+       "covers_text": 0
+      }
+     ],
+     "cls": 0,
+     "viewport_meta": "width=device-width, initial-scale=1, viewport-fit=cover",
+     "errors": [],
+     "failed": []
+    },
+    {
+     "view": "table",
+     "loaded": true,
+     "error": null,
+     "load_ms": 50,
+     "active_state": {
+      "active": true,
+      "visible": true,
+      "url_view": "table",
+      "sheet_open": false,
+      "expanded": "false"
+     },
+     "overflow": {
+      "scrollW": 412,
+      "clientW": 412,
+      "offenders": []
+     },
+     "targets": {
+      "total": 23,
+      "small_count": 5,
+      "worst": [
+       {
+        "sel": "button.sort-btn",
+        "w": 27,
+        "h": 44
+       },
+       {
+        "sel": "button.sort-btn",
+        "w": 27,
+        "h": 44
+       },
+       {
+        "sel": "button.sort-btn",
+        "w": 34,
+        "h": 44
+       },
+       {
+        "sel": "button.sort-btn",
+        "w": 36,
+        "h": 44
+       },
+       {
+        "sel": "a.wordmark",
+        "w": 129,
+        "h": 20
+       }
+      ],
+      "overlaps": [
+       {
+        "a": "button.mobilebar__item",
+        "b": "button.club-btn",
+        "area": 801
+       },
+       {
+        "a": "button.mobilebar__item",
+        "b": "button.club-btn",
+        "area": 697
+       }
+      ]
+     },
+     "inputs_font": [
+      {
+       "sel": "input[range]",
+       "fs": "13.3333px"
+      },
+      {
+       "sel": "select[select-one]",
+       "fs": "13px"
+      }
+     ],
+     "clipped": [],
+     "fixed": [
+      {
+       "sel": "header.masthead",
+       "pos": "sticky",
+       "top": 0,
+       "h": 67,
+       "z": "20",
+       "pe": "auto",
+       "covers_text": 0
+      },
+      {
+       "sel": "nav#mobilebar.mobilebar",
+       "pos": "fixed",
+       "top": 862,
+       "h": 53,
+       "z": "40",
+       "pe": "auto",
+       "covers_text": 8
+      },
+      {
+       "sel": "div.ptr-indicator",
+       "pos": "sticky",
+       "top": 7,
+       "h": 60,
+       "z": "10",
+       "pe": "none",
+       "covers_text": 0
+      }
+     ],
+     "cls": 0,
+     "viewport_meta": "width=device-width, initial-scale=1, viewport-fit=cover",
+     "errors": [],
+     "failed": []
+    },
+    {
+     "view": "ladder",
+     "loaded": true,
+     "error": null,
+     "load_ms": 37,
+     "active_state": {
+      "active": true,
+      "visible": true,
+      "url_view": "ladder",
+      "sheet_open": false,
+      "expanded": "false"
+     },
+     "overflow": {
+      "scrollW": 412,
+      "clientW": 412,
+      "offenders": []
+     },
+     "targets": {
+      "total": 18,
+      "small_count": 1,
+      "worst": [
+       {
+        "sel": "a.wordmark",
+        "w": 129,
+        "h": 20
+       }
+      ],
+      "overlaps": [
+       {
+        "a": "button.mobilebar__item",
+        "b": "button.ladder__team",
+        "area": 3183
+       },
+       {
+        "a": "button.mobilebar__item",
+        "b": "button.ladder__team",
+        "area": 3183
+       },
+       {
+        "a": "button.mobilebar__item",
+        "b": "button.ladder__team",
+        "area": 3182
+       },
+       {
+        "a": "button.mobilebar__item",
+        "b": "button.ladder__team",
+        "area": 2217
+       },
+       {
+        "a": "button.mobilebar__item",
+        "b": "button.ladder__team",
+        "area": 2217
+       },
+       {
+        "a": "button.mobilebar__item",
+        "b": "button.ladder__team",
+        "area": 1102
+       }
+      ]
+     },
+     "inputs_font": [
+      {
+       "sel": "input[range]",
+       "fs": "13.3333px"
+      },
+      {
+       "sel": "select[select-one]",
+       "fs": "13px"
+      }
+     ],
+     "clipped": [],
+     "fixed": [
+      {
+       "sel": "header.masthead",
+       "pos": "sticky",
+       "top": 0,
+       "h": 67,
+       "z": "20",
+       "pe": "auto",
+       "covers_text": 0
+      },
+      {
+       "sel": "nav#mobilebar.mobilebar",
+       "pos": "fixed",
+       "top": 862,
+       "h": 53,
+       "z": "40",
+       "pe": "auto",
+       "covers_text": 2
+      },
+      {
+       "sel": "div.ptr-indicator",
+       "pos": "sticky",
+       "top": 7,
+       "h": 60,
+       "z": "10",
+       "pe": "none",
+       "covers_text": 0
+      }
+     ],
+     "cls": 0,
+     "viewport_meta": "width=device-width, initial-scale=1, viewport-fit=cover",
+     "errors": [],
+     "failed": []
+    },
+    {
+     "view": "next-up",
+     "loaded": true,
+     "error": null,
+     "load_ms": 38,
+     "active_state": {
+      "active": true,
+      "visible": true,
+      "url_view": "next-up",
+      "sheet_open": false,
+      "expanded": "false"
+     },
+     "overflow": {
+      "scrollW": 412,
+      "clientW": 412,
+      "offenders": []
+     },
+     "targets": {
+      "total": 19,
+      "small_count": 9,
+      "worst": [
+       {
+        "sel": "button.played-card__team-name",
+        "w": 40,
+        "h": 40
+       },
+       {
+        "sel": "button.played-card__team-name",
+        "w": 40,
+        "h": 40
+       },
+       {
+        "sel": "button.played-card__team-name",
+        "w": 40,
+        "h": 40
+       },
+       {
+        "sel": "button.played-card__team-name",
+        "w": 40,
+        "h": 40
+       },
+       {
+        "sel": "button.played-card__team-name",
+        "w": 40,
+        "h": 40
+       },
+       {
+        "sel": "button.played-card__team-name",
+        "w": 40,
+        "h": 40
+       },
+       {
+        "sel": "button.played-card__team-name",
+        "w": 40,
+        "h": 40
+       },
+       {
+        "sel": "button.played-card__team-name",
+        "w": 40,
+        "h": 40
+       }
+      ],
+      "overlaps": []
+     },
+     "inputs_font": [
+      {
+       "sel": "select[select-one]",
+       "fs": "13px"
+      }
+     ],
+     "clipped": [],
+     "fixed": [
+      {
+       "sel": "header.masthead",
+       "pos": "sticky",
+       "top": 0,
+       "h": 67,
+       "z": "20",
+       "pe": "auto",
+       "covers_text": 0
+      },
+      {
+       "sel": "nav#mobilebar.mobilebar",
+       "pos": "fixed",
+       "top": 862,
+       "h": 53,
+       "z": "40",
+       "pe": "auto",
+       "covers_text": 2
+      },
+      {
+       "sel": "div.ptr-indicator",
+       "pos": "sticky",
+       "top": 7,
+       "h": 60,
+       "z": "10",
+       "pe": "none",
+       "covers_text": 0
+      }
+     ],
+     "cls": 0,
+     "viewport_meta": "width=device-width, initial-scale=1, viewport-fit=cover",
+     "errors": [],
+     "failed": []
+    },
+    {
+     "view": "played",
+     "loaded": true,
+     "error": null,
+     "load_ms": 40,
+     "active_state": {
+      "active": true,
+      "visible": true,
+      "url_view": "played",
+      "sheet_open": false,
+      "expanded": "false"
+     },
+     "overflow": {
+      "scrollW": 412,
+      "clientW": 412,
+      "offenders": []
+     },
+     "targets": {
+      "total": 21,
+      "small_count": 11,
+      "worst": [
+       {
+        "sel": "button.played-card__team-name",
+        "w": 40,
+        "h": 40
+       },
+       {
+        "sel": "button.played-card__team-name",
+        "w": 40,
+        "h": 40
+       },
+       {
+        "sel": "button.played-card__team-name",
+        "w": 40,
+        "h": 40
+       },
+       {
+        "sel": "button.played-card__team-name",
+        "w": 40,
+        "h": 40
+       },
+       {
+        "sel": "button.played-card__team-name",
+        "w": 40,
+        "h": 40
+       },
+       {
+        "sel": "button.played-card__team-name",
+        "w": 40,
+        "h": 40
+       },
+       {
+        "sel": "button.played-card__team-name",
+        "w": 40,
+        "h": 40
+       },
+       {
+        "sel": "button.played-card__team-name",
+        "w": 40,
+        "h": 40
+       }
+      ],
+      "overlaps": [
+       {
+        "a": "button.mobilebar__item",
+        "b": "button.played-card__team-name",
+        "area": 1341
+       },
+       {
+        "a": "button.mobilebar__item",
+        "b": "button.played-card__team-name",
+        "area": 1341
+       },
+       {
+        "a": "button.mobilebar__item",
+        "b": "button.played-card__team-name",
+        "area": 160
+       },
+       {
+        "a": "button.mobilebar__item",
+        "b": "button.played-card__team-name",
+        "area": 159
+       }
+      ]
+     },
+     "inputs_font": [
+      {
+       "sel": "select[select-one]",
+       "fs": "13px"
+      }
+     ],
+     "clipped": [],
+     "fixed": [
+      {
+       "sel": "header.masthead",
+       "pos": "sticky",
+       "top": 0,
+       "h": 67,
+       "z": "20",
+       "pe": "auto",
+       "covers_text": 0
+      },
+      {
+       "sel": "nav#mobilebar.mobilebar",
+       "pos": "fixed",
+       "top": 862,
+       "h": 53,
+       "z": "40",
+       "pe": "auto",
+       "covers_text": 2
+      },
+      {
+       "sel": "div.ptr-indicator",
+       "pos": "sticky",
+       "top": 7,
+       "h": 60,
+       "z": "10",
+       "pe": "none",
+       "covers_text": 0
+      }
+     ],
+     "cls": 0,
+     "viewport_meta": "width=device-width, initial-scale=1, viewport-fit=cover",
+     "errors": [],
+     "failed": []
+    },
+    {
+     "view": "compare",
+     "loaded": true,
+     "error": null,
+     "load_ms": 43,
+     "active_state": {
+      "active": true,
+      "visible": true,
+      "url_view": "compare",
+      "sheet_open": false,
+      "expanded": "false"
+     },
+     "overflow": {
+      "scrollW": 412,
+      "clientW": 412,
+      "offenders": []
+     },
+     "targets": {
+      "total": 12,
+      "small_count": 1,
+      "worst": [
+       {
+        "sel": "a.wordmark",
+        "w": 129,
+        "h": 20
+       }
+      ],
+      "overlaps": []
+     },
+     "inputs_font": [
+      {
+       "sel": "select[select-one]",
+       "fs": "13px"
+      }
+     ],
+     "clipped": [],
+     "fixed": [
+      {
+       "sel": "header.masthead",
+       "pos": "sticky",
+       "top": 0,
+       "h": 67,
+       "z": "20",
+       "pe": "auto",
+       "covers_text": 0
+      },
+      {
+       "sel": "nav#mobilebar.mobilebar",
+       "pos": "fixed",
+       "top": 862,
+       "h": 53,
+       "z": "40",
+       "pe": "auto",
+       "covers_text": 0
+      },
+      {
+       "sel": "div.ptr-indicator",
+       "pos": "sticky",
+       "top": 7,
+       "h": 60,
+       "z": "10",
+       "pe": "none",
+       "covers_text": 0
+      }
+     ],
+     "cls": 0,
+     "viewport_meta": "width=device-width, initial-scale=1, viewport-fit=cover",
+     "errors": [],
+     "failed": []
+    },
+    {
+     "view": "model",
+     "loaded": true,
+     "error": null,
+     "load_ms": 36,
+     "active_state": {
+      "active": true,
+      "visible": true,
+      "url_view": "model",
+      "sheet_open": false,
+      "expanded": "false"
+     },
+     "overflow": {
+      "scrollW": 412,
+      "clientW": 412,
+      "offenders": []
+     },
+     "targets": {
+      "total": 9,
+      "small_count": 1,
+      "worst": [
+       {
+        "sel": "a.wordmark",
+        "w": 129,
+        "h": 20
+       }
+      ],
+      "overlaps": []
+     },
+     "inputs_font": [
+      {
+       "sel": "select[select-one]",
+       "fs": "13px"
+      }
+     ],
+     "clipped": [],
+     "fixed": [
+      {
+       "sel": "header.masthead",
+       "pos": "sticky",
+       "top": 0,
+       "h": 67,
+       "z": "20",
+       "pe": "auto",
+       "covers_text": 0
+      },
+      {
+       "sel": "nav#mobilebar.mobilebar",
+       "pos": "fixed",
+       "top": 862,
+       "h": 53,
+       "z": "40",
+       "pe": "auto",
+       "covers_text": 0
+      },
+      {
+       "sel": "div.ptr-indicator",
+       "pos": "sticky",
+       "top": 7,
+       "h": 60,
+       "z": "10",
+       "pe": "none",
+       "covers_text": 0
+      }
+     ],
+     "cls": 0,
+     "viewport_meta": "width=device-width, initial-scale=1, viewport-fit=cover",
+     "errors": [],
+     "failed": []
+    }
+   ],
+   "team": {
+    "opened": true,
+    "tap": {
+     "hit": true,
+     "at": [
+      81,
+      726
+     ],
+     "under_pointer": "button.club-btn"
+    },
+    "state": {
+     "active": false,
+     "visible": true,
+     "url_view": "team",
+     "sheet_open": false,
+     "expanded": "false"
+    },
+    "errors": [],
+    "overflow": {
+     "scrollW": 412,
+     "clientW": 412,
+     "offenders": []
+    },
+    "targets": {
+     "total": 10,
+     "small_count": 2,
+     "worst": [
+      {
+       "sel": "a.wordmark",
+       "w": 129,
+       "h": 20
+      },
+      {
+       "sel": "button.team-back",
+       "w": 96,
+       "h": 40
+      }
+     ],
+     "overlaps": []
+    },
+    "inputs_font": [
+     {
+      "sel": "select[select-one]",
+      "fs": "13px"
+     }
+    ],
+    "clipped": [
+     {
+      "sel": "div.odds__seg",
+      "text": "16\u00a0%",
+      "sw": 26,
+      "cw": 24,
+      "ellipsis": false
+     },
+     {
+      "sel": "div.odds__seg",
+      "text": "12\u00a0%",
+      "sw": 26,
+      "cw": 19,
+      "ellipsis": false
+     }
+    ],
+    "fixed": [
+     {
+      "sel": "header.masthead",
+      "pos": "sticky",
+      "top": 0,
+      "h": 67,
+      "z": "20",
+      "pe": "auto",
+      "covers_text": 0
+     },
+     {
+      "sel": "nav#mobilebar.mobilebar",
+      "pos": "fixed",
+      "top": 862,
+      "h": 53,
+      "z": "40",
+      "pe": "auto",
+      "covers_text": 0
+     },
+     {
+      "sel": "div.ptr-indicator",
+      "pos": "sticky",
+      "top": 7,
+      "h": 60,
+      "z": "10",
+      "pe": "none",
+      "covers_text": 0
+     }
+    ],
+    "cls": 0
+   },
+   "more": {
+    "available": true,
+    "open": {
+     "hit": true,
+     "at": [
+      371,
+      889
+     ],
+     "under_pointer": "button#more-button.mobilebar__item",
+     "sheet_open_after_tap": true,
+     "aria_expanded": "true"
+    },
+    "items": [
+     {
+      "view": "ladder",
+      "tap": {
+       "hit": true,
+       "at": [
+        206,
+        607
+       ],
+       "under_pointer": "button.sheet__item"
+      },
+      "state": {
+       "active": false,
+       "visible": false,
+       "url_view": "grid",
+       "sheet_open": false,
+       "expanded": "false"
+      },
+      "errors": [],
+      "failed": []
+     },
+     {
+      "view": "compare",
+      "tap": {
+       "hit": true,
+       "at": [
+        206,
+        657
+       ],
+       "under_pointer": "button.sheet__item"
+      },
+      "state": {
+       "active": false,
+       "visible": false,
+       "url_view": "grid",
+       "sheet_open": false,
+       "expanded": "false"
+      },
+      "errors": [],
+      "failed": []
+     },
+     {
+      "view": "model",
+      "tap": {
+       "hit": true,
+       "at": [
+        206,
+        707
+       ],
+       "under_pointer": "button.sheet__item"
+      },
+      "state": {
+       "active": false,
+       "visible": false,
+       "url_view": "grid",
+       "sheet_open": false,
+       "expanded": "false"
+      },
+      "errors": [],
+      "failed": []
+     }
+    ],
+    "outside_tap": {
+     "sheet_closed": true,
+     "errors": []
+    },
+    "diag": {}
+   },
+   "swipe": {
+    "available": true,
+    "swipe1": {
+     "state": {
+      "active": false,
+      "visible": false,
+      "url_view": "grid",
+      "sheet_open": false,
+      "expanded": "false"
+     },
+     "sample": {
+      "frames": 29,
+      "max_doc_delta": 0,
+      "max_panel_delta": 0,
+      "scroll_y": 494,
+      "doc_h": 1409
+     },
+     "cls_delta": 0,
+     "scroll_y_after": 494,
+     "errors": [
+      "pageerror: switchView is not defined"
+     ]
+    },
+    "swipe2": {
+     "state": {
+      "active": true,
+      "visible": true,
+      "url_view": "grid",
+      "sheet_open": false,
+      "expanded": "false"
+     },
+     "sample": {
+      "frames": 28,
+      "max_doc_delta": 0,
+      "max_panel_delta": 0,
+      "scroll_y": 494,
+      "doc_h": 1409
+     },
+     "cls_delta": 0,
+     "scroll_y_after": 494,
+     "errors": []
+    },
+    "scroll": {
+     "before": 494,
+     "after_swipe1": 494,
+     "after_swipe2": 494,
+     "restored": true
+    },
+    "cls_total": 0,
+    "cls_entries": []
+   },
+   "content_swipe": {
+    "available": true,
+    "horizontal": {
+     "tag": "horizontal",
+     "ptr": {
+      "cls": "ptr-indicator",
+      "tf": "matrix(1, 0, 0, 1, 0, -60)",
+      "op": "0"
+     },
+     "cls": 0,
+     "sample": {
+      "frames": 21,
+      "max_doc_delta": 0,
+      "max_panel_delta": 0,
+      "scroll_y": 0,
+      "doc_h": 1409
+     },
+     "scroll_y": 0,
+     "errors": [],
+     "fetches": 0,
+     "cls_delta": 0
+    },
+    "diagonal": {
+     "tag": "diagonal",
+     "ptr": {
+      "cls": "ptr-indicator",
+      "tf": "matrix(1, 0, 0, 1, 0, -60)",
+      "op": "0"
+     },
+     "cls": 0,
+     "sample": {
+      "frames": 23,
+      "max_doc_delta": 0,
+      "max_panel_delta": 0,
+      "scroll_y": 0,
+      "doc_h": 1409
+     },
+     "scroll_y": 0,
+     "errors": [],
+     "fetches": 0,
+     "cls_delta": 0
+    },
+    "note": "app.js wires swipe-nav only on .mobilebar; content gestures route to pull-to-refresh"
+   },
+   "tab_taps": [
+    {
+     "view": "grid",
+     "state": {
+      "active": true,
+      "visible": true,
+      "url_view": "grid",
+      "sheet_open": false,
+      "expanded": "false"
+     },
+     "ok": true,
+     "errors": []
+    },
+    {
+     "view": "table",
+     "state": {
+      "active": true,
+      "visible": true,
+      "url_view": "table",
+      "sheet_open": false,
+      "expanded": "false"
+     },
+     "ok": true,
+     "errors": [
+      "pageerror: switchView is not defined"
+     ]
+    },
+    {
+     "view": "next-up",
+     "state": {
+      "active": true,
+      "visible": true,
+      "url_view": "next-up",
+      "sheet_open": false,
+      "expanded": "false"
+     },
+     "ok": true,
+     "errors": [
+      "pageerror: switchView is not defined"
+     ]
+    },
+    {
+     "view": "played",
+     "state": {
+      "active": true,
+      "visible": true,
+      "url_view": "played",
+      "sheet_open": false,
+      "expanded": "false"
+     },
+     "ok": true,
+     "errors": [
+      "pageerror: switchView is not defined"
+     ]
+    }
+   ],
+   "tab_jump": {
+    "before": {
+     "sy": 494,
+     "dh": 1409
+    },
+    "after": {
+     "sy": 0,
+     "dh": 2192
+    },
+    "scroll_jump_px": 494,
+    "doc_height_delta": 783,
+    "cls_delta": 0,
+    "errors": [
+     "pageerror: switchView is not defined"
+    ]
+   }
+  },
+  {
+   "name": "844x390-landscape",
+   "w": 844,
+   "h": 390,
+   "touch": true,
+   "mobile": false,
+   "views": [
+    {
+     "view": "grid",
+     "loaded": true,
+     "error": null,
+     "load_ms": 216,
+     "active_state": {
+      "active": true,
+      "visible": true,
+      "url_view": "grid",
+      "sheet_open": false,
+      "expanded": "false"
+     },
+     "overflow": {
+      "scrollW": 844,
+      "clientW": 844,
+      "offenders": []
+     },
+     "targets": {
+      "total": 11,
+      "small_count": 1,
+      "worst": [
+       {
+        "sel": "a.wordmark",
+        "w": 251,
+        "h": 26
+       }
+      ],
+      "overlaps": [
+       {
+        "a": "button",
+        "b": "button.settings-btn",
+        "area": 1191
+       },
+       {
+        "a": "button",
+        "b": "button.settings-btn",
+        "area": 657
+       }
+      ]
+     },
+     "inputs_font": [
+      {
+       "sel": "input[range]",
+       "fs": "13.3333px"
+      },
+      {
+       "sel": "select[select-one]",
+       "fs": "13px"
+      }
+     ],
+     "clipped": [],
+     "fixed": [
+      {
+       "sel": "header.masthead",
+       "pos": "sticky",
+       "top": 0,
+       "h": 61,
+       "z": "20",
+       "pe": "auto",
+       "covers_text": 0
+      }
+     ],
+     "cls": 0,
+     "viewport_meta": "width=device-width, initial-scale=1, viewport-fit=cover",
+     "errors": [],
+     "failed": []
+    },
+    {
+     "view": "table",
+     "loaded": true,
+     "error": null,
+     "load_ms": 48,
+     "active_state": {
+      "active": true,
+      "visible": true,
+      "url_view": "table",
+      "sheet_open": false,
+      "expanded": "false"
+     },
+     "overflow": {
+      "scrollW": 844,
+      "clientW": 844,
+      "offenders": []
+     },
+     "targets": {
+      "total": 11,
+      "small_count": 1,
+      "worst": [
+       {
+        "sel": "a.wordmark",
+        "w": 251,
+        "h": 26
+       }
+      ],
+      "overlaps": [
+       {
+        "a": "button",
+        "b": "button.settings-btn",
+        "area": 1191
+       },
+       {
+        "a": "button",
+        "b": "button.settings-btn",
+        "area": 657
+       }
+      ]
+     },
+     "inputs_font": [
+      {
+       "sel": "input[range]",
+       "fs": "13.3333px"
+      },
+      {
+       "sel": "select[select-one]",
+       "fs": "13px"
+      }
+     ],
+     "clipped": [],
+     "fixed": [
+      {
+       "sel": "header.masthead",
+       "pos": "sticky",
+       "top": 0,
+       "h": 61,
+       "z": "20",
+       "pe": "auto",
+       "covers_text": 0
+      }
+     ],
+     "cls": 0,
+     "viewport_meta": "width=device-width, initial-scale=1, viewport-fit=cover",
+     "errors": [],
+     "failed": []
+    },
+    {
+     "view": "ladder",
+     "loaded": true,
+     "error": null,
+     "load_ms": 33,
+     "active_state": {
+      "active": true,
+      "visible": true,
+      "url_view": "ladder",
+      "sheet_open": false,
+      "expanded": "false"
+     },
+     "overflow": {
+      "scrollW": 844,
+      "clientW": 844,
+      "offenders": []
+     },
+     "targets": {
+      "total": 11,
+      "small_count": 1,
+      "worst": [
+       {
+        "sel": "a.wordmark",
+        "w": 251,
+        "h": 26
+       }
+      ],
+      "overlaps": [
+       {
+        "a": "button",
+        "b": "button.settings-btn",
+        "area": 1191
+       },
+       {
+        "a": "button",
+        "b": "button.settings-btn",
+        "area": 657
+       }
+      ]
+     },
+     "inputs_font": [
+      {
+       "sel": "input[range]",
+       "fs": "13.3333px"
+      },
+      {
+       "sel": "select[select-one]",
+       "fs": "13px"
+      }
+     ],
+     "clipped": [],
+     "fixed": [
+      {
+       "sel": "header.masthead",
+       "pos": "sticky",
+       "top": 0,
+       "h": 61,
+       "z": "20",
+       "pe": "auto",
+       "covers_text": 0
+      }
+     ],
+     "cls": 0,
+     "viewport_meta": "width=device-width, initial-scale=1, viewport-fit=cover",
+     "errors": [],
+     "failed": []
+    },
+    {
+     "view": "next-up",
+     "loaded": true,
+     "error": null,
+     "load_ms": 34,
+     "active_state": {
+      "active": true,
+      "visible": true,
+      "url_view": "next-up",
+      "sheet_open": false,
+      "expanded": "false"
+     },
+     "overflow": {
+      "scrollW": 844,
+      "clientW": 844,
+      "offenders": []
+     },
+     "targets": {
+      "total": 11,
+      "small_count": 1,
+      "worst": [
+       {
+        "sel": "a.wordmark",
+        "w": 251,
+        "h": 26
+       }
+      ],
+      "overlaps": [
+       {
+        "a": "button",
+        "b": "button.settings-btn",
+        "area": 1191
+       },
+       {
+        "a": "button",
+        "b": "button.settings-btn",
+        "area": 657
+       }
+      ]
+     },
+     "inputs_font": [
+      {
+       "sel": "select[select-one]",
+       "fs": "13px"
+      }
+     ],
+     "clipped": [],
+     "fixed": [
+      {
+       "sel": "header.masthead",
+       "pos": "sticky",
+       "top": 0,
+       "h": 61,
+       "z": "20",
+       "pe": "auto",
+       "covers_text": 0
+      }
+     ],
+     "cls": 0,
+     "viewport_meta": "width=device-width, initial-scale=1, viewport-fit=cover",
+     "errors": [],
+     "failed": []
+    },
+    {
+     "view": "played",
+     "loaded": true,
+     "error": null,
+     "load_ms": 38,
+     "active_state": {
+      "active": true,
+      "visible": true,
+      "url_view": "played",
+      "sheet_open": false,
+      "expanded": "false"
+     },
+     "overflow": {
+      "scrollW": 844,
+      "clientW": 844,
+      "offenders": []
+     },
+     "targets": {
+      "total": 11,
+      "small_count": 1,
+      "worst": [
+       {
+        "sel": "a.wordmark",
+        "w": 251,
+        "h": 26
+       }
+      ],
+      "overlaps": [
+       {
+        "a": "button",
+        "b": "button.settings-btn",
+        "area": 1191
+       },
+       {
+        "a": "button",
+        "b": "button.settings-btn",
+        "area": 657
+       }
+      ]
+     },
+     "inputs_font": [
+      {
+       "sel": "select[select-one]",
+       "fs": "13px"
+      }
+     ],
+     "clipped": [],
+     "fixed": [
+      {
+       "sel": "header.masthead",
+       "pos": "sticky",
+       "top": 0,
+       "h": 61,
+       "z": "20",
+       "pe": "auto",
+       "covers_text": 0
+      }
+     ],
+     "cls": 0,
+     "viewport_meta": "width=device-width, initial-scale=1, viewport-fit=cover",
+     "errors": [],
+     "failed": []
+    },
+    {
+     "view": "compare",
+     "loaded": true,
+     "error": null,
+     "load_ms": 41,
+     "active_state": {
+      "active": true,
+      "visible": true,
+      "url_view": "compare",
+      "sheet_open": false,
+      "expanded": "false"
+     },
+     "overflow": {
+      "scrollW": 844,
+      "clientW": 844,
+      "offenders": []
+     },
+     "targets": {
+      "total": 11,
+      "small_count": 1,
+      "worst": [
+       {
+        "sel": "a.wordmark",
+        "w": 251,
+        "h": 26
+       }
+      ],
+      "overlaps": [
+       {
+        "a": "button",
+        "b": "button.settings-btn",
+        "area": 1191
+       },
+       {
+        "a": "button",
+        "b": "button.settings-btn",
+        "area": 657
+       }
+      ]
+     },
+     "inputs_font": [
+      {
+       "sel": "select[select-one]",
+       "fs": "13px"
+      }
+     ],
+     "clipped": [],
+     "fixed": [
+      {
+       "sel": "header.masthead",
+       "pos": "sticky",
+       "top": 0,
+       "h": 61,
+       "z": "20",
+       "pe": "auto",
+       "covers_text": 0
+      }
+     ],
+     "cls": 0,
+     "viewport_meta": "width=device-width, initial-scale=1, viewport-fit=cover",
+     "errors": [],
+     "failed": []
+    },
+    {
+     "view": "model",
+     "loaded": true,
+     "error": null,
+     "load_ms": 29,
+     "active_state": {
+      "active": true,
+      "visible": true,
+      "url_view": "model",
+      "sheet_open": false,
+      "expanded": "false"
+     },
+     "overflow": {
+      "scrollW": 844,
+      "clientW": 844,
+      "offenders": []
+     },
+     "targets": {
+      "total": 11,
+      "small_count": 1,
+      "worst": [
+       {
+        "sel": "a.wordmark",
+        "w": 251,
+        "h": 26
+       }
+      ],
+      "overlaps": [
+       {
+        "a": "button",
+        "b": "button.settings-btn",
+        "area": 1936
+       },
+       {
+        "a": "a.wordmark",
+        "b": "button",
+        "area": 1370
+       }
+      ]
+     },
+     "inputs_font": [
+      {
+       "sel": "select[select-one]",
+       "fs": "13px"
+      }
+     ],
+     "clipped": [],
+     "fixed": [
+      {
+       "sel": "header.masthead",
+       "pos": "sticky",
+       "top": 0,
+       "h": 61,
+       "z": "20",
+       "pe": "auto",
+       "covers_text": 0
+      }
+     ],
+     "cls": 0,
+     "viewport_meta": "width=device-width, initial-scale=1, viewport-fit=cover",
+     "errors": [],
+     "failed": []
+    }
+   ],
+   "team": {
+    "opened": true,
+    "tap": {
+     "hit": true,
+     "at": [
+      123,
+      233
+     ],
+     "under_pointer": "button.club-btn"
+    },
+    "state": {
+     "active": false,
+     "visible": true,
+     "url_view": "team",
+     "sheet_open": false,
+     "expanded": "false"
+    },
+    "errors": [],
+    "overflow": {
+     "scrollW": 844,
+     "clientW": 844,
+     "offenders": []
+    },
+    "targets": {
+     "total": 12,
+     "small_count": 2,
+     "worst": [
+      {
+       "sel": "button.team-back",
+       "w": 96,
+       "h": 40
+      },
+      {
+       "sel": "a.wordmark",
+       "w": 251,
+       "h": 26
+      }
+     ],
+     "overlaps": [
+      {
+       "a": "button",
+       "b": "button.settings-btn",
+       "area": 1191
+      },
+      {
+       "a": "button",
+       "b": "button.settings-btn",
+       "area": 657
+      }
+     ]
+    },
+    "inputs_font": [
+     {
+      "sel": "select[select-one]",
+      "fs": "13px"
+     }
+    ],
+    "clipped": [],
+    "fixed": [
+     {
+      "sel": "header.masthead",
+      "pos": "sticky",
+      "top": 0,
+      "h": 61,
+      "z": "20",
+      "pe": "auto",
+      "covers_text": 0
+     }
+    ],
+    "cls": 0
+   },
+   "more": {
+    "available": false,
+    "note": "width > 760: desktop nav"
+   },
+   "swipe": {
+    "available": false,
+    "note": "width > 760: no mobilebar"
+   },
+   "tab_taps": [
+    {
+     "view": "grid",
+     "state": {
+      "active": true,
+      "visible": true,
+      "url_view": "grid",
+      "sheet_open": false,
+      "expanded": "false"
+     },
+     "ok": true,
+     "errors": []
+    },
+    {
+     "view": "table",
+     "state": {
+      "active": true,
+      "visible": true,
+      "url_view": "table",
+      "sheet_open": false,
+      "expanded": "false"
+     },
+     "ok": true,
+     "errors": []
+    },
+    {
+     "view": "next-up",
+     "state": {
+      "active": true,
+      "visible": true,
+      "url_view": "next-up",
+      "sheet_open": false,
+      "expanded": "false"
+     },
+     "ok": true,
+     "errors": []
+    },
+    {
+     "view": "played",
+     "state": {
+      "active": true,
+      "visible": true,
+      "url_view": "played",
+      "sheet_open": false,
+      "expanded": "false"
+     },
+     "ok": true,
+     "errors": []
+    }
+   ]
+  },
+  {
+   "name": "768x1024-tablet",
+   "w": 768,
+   "h": 1024,
+   "touch": true,
+   "mobile": false,
+   "views": [
+    {
+     "view": "grid",
+     "loaded": true,
+     "error": null,
+     "load_ms": 218,
+     "active_state": {
+      "active": true,
+      "visible": true,
+      "url_view": "grid",
+      "sheet_open": false,
+      "expanded": "false"
+     },
+     "overflow": {
+      "scrollW": 768,
+      "clientW": 768,
+      "offenders": []
+     },
+     "targets": {
+      "total": 25,
+      "small_count": 11,
+      "worst": [
+       {
+        "sel": "button.grid__team-name",
+        "w": 45,
+        "h": 19
+       },
+       {
+        "sel": "button.grid__team-name",
+        "w": 46,
+        "h": 19
+       },
+       {
+        "sel": "button.grid__team-name",
+        "w": 46,
+        "h": 19
+       },
+       {
+        "sel": "button.grid__team-name",
+        "w": 56,
+        "h": 19
+       },
+       {
+        "sel": "button.grid__team-name",
+        "w": 73,
+        "h": 19
+       },
+       {
+        "sel": "button.grid__team-name",
+        "w": 81,
+        "h": 19
+       },
+       {
+        "sel": "button.grid__team-name",
+        "w": 82,
+        "h": 19
+       },
+       {
+        "sel": "button.grid__team-name",
+        "w": 84,
+        "h": 19
+       }
+      ],
+      "overlaps": [
+       {
+        "a": "button",
+        "b": "button.settings-btn",
+        "area": 1936
+       }
+      ]
+     },
+     "inputs_font": [
+      {
+       "sel": "input[range]",
+       "fs": "13.3333px"
+      },
+      {
+       "sel": "select[select-one]",
+       "fs": "13px"
+      }
+     ],
+     "clipped": [],
+     "fixed": [
+      {
+       "sel": "header.masthead",
+       "pos": "sticky",
+       "top": 0,
+       "h": 61,
+       "z": "20",
+       "pe": "auto",
+       "covers_text": 0
+      },
+      {
+       "sel": "th.grid__team",
+       "pos": "sticky",
+       "top": 736,
+       "h": 28,
+       "z": "1",
+       "pe": "auto",
+       "covers_text": 0
+      },
+      {
+       "sel": "th.grid__team",
+       "pos": "sticky",
+       "top": 766,
+       "h": 28,
+       "z": "1",
+       "pe": "auto",
+       "covers_text": 0
+      },
+      {
+       "sel": "th.grid__team",
+       "pos": "sticky",
+       "top": 796,
+       "h": 28,
+       "z": "1",
+       "pe": "auto",
+       "covers_text": 0
+      },
+      {
+       "sel": "th.grid__team",
+       "pos": "sticky",
+       "top": 826,
+       "h": 28,
+       "z": "1",
+       "pe": "auto",
+       "covers_text": 0
+      },
+      {
+       "sel": "th.grid__team",
+       "pos": "sticky",
+       "top": 856,
+       "h": 28,
+       "z": "1",
+       "pe": "auto",
+       "covers_text": 0
+      },
+      {
+       "sel": "th.grid__team",
+       "pos": "sticky",
+       "top": 886,
+       "h": 28,
+       "z": "1",
+       "pe": "auto",
+       "covers_text": 0
+      },
+      {
+       "sel": "th.grid__team",
+       "pos": "sticky",
+       "top": 916,
+       "h": 28,
+       "z": "1",
+       "pe": "auto",
+       "covers_text": 0
+      },
+      {
+       "sel": "th.grid__team",
+       "pos": "sticky",
+       "top": 946,
+       "h": 28,
+       "z": "1",
+       "pe": "auto",
+       "covers_text": 0
+      },
+      {
+       "sel": "th.grid__team",
+       "pos": "sticky",
+       "top": 976,
+       "h": 28,
+       "z": "1",
+       "pe": "auto",
+       "covers_text": 0
+      },
+      {
+       "sel": "th.grid__team",
+       "pos": "sticky",
+       "top": 1006,
+       "h": 28,
+       "z": "1",
+       "pe": "auto",
+       "covers_text": 0
+      }
+     ],
+     "cls": 0,
+     "viewport_meta": "width=device-width, initial-scale=1, viewport-fit=cover",
+     "errors": [],
+     "failed": []
+    },
+    {
+     "view": "table",
+     "loaded": true,
+     "error": null,
+     "load_ms": 51,
+     "active_state": {
+      "active": true,
+      "visible": true,
+      "url_view": "table",
+      "sheet_open": false,
+      "expanded": "false"
+     },
+     "overflow": {
+      "scrollW": 768,
+      "clientW": 768,
+      "offenders": []
+     },
+     "targets": {
+      "total": 33,
+      "small_count": 8,
+      "worst": [
+       {
+        "sel": "button.sort-btn",
+        "w": 35,
+        "h": 44
+       },
+       {
+        "sel": "button.sort-btn",
+        "w": 35,
+        "h": 44
+       },
+       {
+        "sel": "button.sort-btn",
+        "w": 35,
+        "h": 44
+       },
+       {
+        "sel": "button.sort-btn",
+        "w": 36,
+        "h": 44
+       },
+       {
+        "sel": "button.sort-btn",
+        "w": 36,
+        "h": 44
+       },
+       {
+        "sel": "button.sort-btn",
+        "w": 36,
+        "h": 44
+       },
+       {
+        "sel": "button.sort-btn",
+        "w": 36,
+        "h": 44
+       },
+       {
+        "sel": "a.wordmark",
+        "w": 251,
+        "h": 26
+       }
+      ],
+      "overlaps": [
+       {
+        "a": "button",
+        "b": "button.settings-btn",
+        "area": 1936
+       }
+      ]
+     },
+     "inputs_font": [
+      {
+       "sel": "input[range]",
+       "fs": "13.3333px"
+      },
+      {
+       "sel": "select[select-one]",
+       "fs": "13px"
+      }
+     ],
+     "clipped": [],
+     "fixed": [
+      {
+       "sel": "header.masthead",
+       "pos": "sticky",
+       "top": 0,
+       "h": 61,
+       "z": "20",
+       "pe": "auto",
+       "covers_text": 0
+      }
+     ],
+     "cls": 0,
+     "viewport_meta": "width=device-width, initial-scale=1, viewport-fit=cover",
+     "errors": [],
+     "failed": []
+    },
+    {
+     "view": "ladder",
+     "loaded": true,
+     "error": null,
+     "load_ms": 33,
+     "active_state": {
+      "active": true,
+      "visible": true,
+      "url_view": "ladder",
+      "sheet_open": false,
+      "expanded": "false"
+     },
+     "overflow": {
+      "scrollW": 768,
+      "clientW": 768,
+      "offenders": []
+     },
+     "targets": {
+      "total": 47,
+      "small_count": 33,
+      "worst": [
+       {
+        "sel": "button.ladder__team",
+        "w": 24,
+        "h": 24
+       },
+       {
+        "sel": "button.ladder__team",
+        "w": 24,
+        "h": 24
+       },
+       {
+        "sel": "button.ladder__team",
+        "w": 24,
+        "h": 24
+       },
+       {
+        "sel": "button.ladder__team",
+        "w": 24,
+        "h": 24
+       },
+       {
+        "sel": "button.ladder__team",
+        "w": 24,
+        "h": 24
+       },
+       {
+        "sel": "button.ladder__team",
+        "w": 24,
+        "h": 24
+       },
+       {
+        "sel": "button.ladder__team",
+        "w": 24,
+        "h": 24
+       },
+       {
+        "sel": "button.ladder__team",
+        "w": 24,
+        "h": 24
+       }
+      ],
+      "overlaps": [
+       {
+        "a": "button",
+        "b": "button.settings-btn",
+        "area": 1936
+       }
+      ]
+     },
+     "inputs_font": [
+      {
+       "sel": "input[range]",
+       "fs": "13.3333px"
+      },
+      {
+       "sel": "select[select-one]",
+       "fs": "13px"
+      }
+     ],
+     "clipped": [],
+     "fixed": [
+      {
+       "sel": "header.masthead",
+       "pos": "sticky",
+       "top": 0,
+       "h": 61,
+       "z": "20",
+       "pe": "auto",
+       "covers_text": 0
+      }
+     ],
+     "cls": 0,
+     "viewport_meta": "width=device-width, initial-scale=1, viewport-fit=cover",
+     "errors": [],
+     "failed": []
+    },
+    {
+     "view": "next-up",
+     "loaded": true,
+     "error": null,
+     "load_ms": 35,
+     "active_state": {
+      "active": true,
+      "visible": true,
+      "url_view": "next-up",
+      "sheet_open": false,
+      "expanded": "false"
+     },
+     "overflow": {
+      "scrollW": 768,
+      "clientW": 768,
+      "offenders": []
+     },
+     "targets": {
+      "total": 21,
+      "small_count": 9,
+      "worst": [
+       {
+        "sel": "button.played-card__team-name",
+        "w": 45,
+        "h": 19
+       },
+       {
+        "sel": "button.played-card__team-name",
+        "w": 46,
+        "h": 19
+       },
+       {
+        "sel": "button.played-card__team-name",
+        "w": 56,
+        "h": 19
+       },
+       {
+        "sel": "button.played-card__team-name",
+        "w": 81,
+        "h": 19
+       },
+       {
+        "sel": "button.played-card__team-name",
+        "w": 82,
+        "h": 19
+       },
+       {
+        "sel": "button.played-card__team-name",
+        "w": 84,
+        "h": 19
+       },
+       {
+        "sel": "button.played-card__team-name",
+        "w": 84,
+        "h": 19
+       },
+       {
+        "sel": "button.played-card__team-name",
+        "w": 94,
+        "h": 19
+       }
+      ],
+      "overlaps": [
+       {
+        "a": "button",
+        "b": "button.settings-btn",
+        "area": 1936
+       }
+      ]
+     },
+     "inputs_font": [
+      {
+       "sel": "select[select-one]",
+       "fs": "13px"
+      }
+     ],
+     "clipped": [],
+     "fixed": [
+      {
+       "sel": "header.masthead",
+       "pos": "sticky",
+       "top": 0,
+       "h": 61,
+       "z": "20",
+       "pe": "auto",
+       "covers_text": 0
+      }
+     ],
+     "cls": 0,
+     "viewport_meta": "width=device-width, initial-scale=1, viewport-fit=cover",
+     "errors": [],
+     "failed": []
+    },
+    {
+     "view": "played",
+     "loaded": true,
+     "error": null,
+     "load_ms": 37,
+     "active_state": {
+      "active": true,
+      "visible": true,
+      "url_view": "played",
+      "sheet_open": false,
+      "expanded": "false"
+     },
+     "overflow": {
+      "scrollW": 768,
+      "clientW": 768,
+      "offenders": []
+     },
+     "targets": {
+      "total": 25,
+      "small_count": 13,
+      "worst": [
+       {
+        "sel": "button.played-card__team-name",
+        "w": 35,
+        "h": 19
+       },
+       {
+        "sel": "button.played-card__team-name",
+        "w": 45,
+        "h": 19
+       },
+       {
+        "sel": "button.played-card__team-name",
+        "w": 46,
+        "h": 19
+       },
+       {
+        "sel": "button.played-card__team-name",
+        "w": 56,
+        "h": 19
+       },
+       {
+        "sel": "button.played-card__team-name",
+        "w": 68,
+        "h": 19
+       },
+       {
+        "sel": "button.played-card__team-name",
+        "w": 73,
+        "h": 19
+       },
+       {
+        "sel": "button.played-card__team-name",
+        "w": 74,
+        "h": 19
+       },
+       {
+        "sel": "button.played-card__team-name",
+        "w": 81,
+        "h": 19
+       }
+      ],
+      "overlaps": [
+       {
+        "a": "button",
+        "b": "button.settings-btn",
+        "area": 1936
+       }
+      ]
+     },
+     "inputs_font": [
+      {
+       "sel": "select[select-one]",
+       "fs": "13px"
+      }
+     ],
+     "clipped": [],
+     "fixed": [
+      {
+       "sel": "header.masthead",
+       "pos": "sticky",
+       "top": 0,
+       "h": 61,
+       "z": "20",
+       "pe": "auto",
+       "covers_text": 0
+      }
+     ],
+     "cls": 0,
+     "viewport_meta": "width=device-width, initial-scale=1, viewport-fit=cover",
+     "errors": [],
+     "failed": []
+    },
+    {
+     "view": "compare",
+     "loaded": true,
+     "error": null,
+     "load_ms": 40,
+     "active_state": {
+      "active": true,
+      "visible": true,
+      "url_view": "compare",
+      "sheet_open": false,
+      "expanded": "false"
+     },
+     "overflow": {
+      "scrollW": 768,
+      "clientW": 768,
+      "offenders": []
+     },
+     "targets": {
+      "total": 14,
+      "small_count": 2,
+      "worst": [
+       {
+        "sel": "button.compare__swap-center",
+        "w": 38,
+        "h": 38
+       },
+       {
+        "sel": "a.wordmark",
+        "w": 251,
+        "h": 26
+       }
+      ],
+      "overlaps": [
+       {
+        "a": "button",
+        "b": "button.settings-btn",
+        "area": 1936
+       },
+       {
+        "a": "a.wordmark",
+        "b": "button",
+        "area": 659
+       }
+      ]
+     },
+     "inputs_font": [
+      {
+       "sel": "select[select-one]",
+       "fs": "13px"
+      }
+     ],
+     "clipped": [],
+     "fixed": [
+      {
+       "sel": "header.masthead",
+       "pos": "sticky",
+       "top": 0,
+       "h": 61,
+       "z": "20",
+       "pe": "auto",
+       "covers_text": 0
+      }
+     ],
+     "cls": 0,
+     "viewport_meta": "width=device-width, initial-scale=1, viewport-fit=cover",
+     "errors": [],
+     "failed": []
+    },
+    {
+     "view": "model",
+     "loaded": true,
+     "error": null,
+     "load_ms": 29,
+     "active_state": {
+      "active": true,
+      "visible": true,
+      "url_view": "model",
+      "sheet_open": false,
+      "expanded": "false"
+     },
+     "overflow": {
+      "scrollW": 768,
+      "clientW": 768,
+      "offenders": []
+     },
+     "targets": {
+      "total": 11,
+      "small_count": 1,
+      "worst": [
+       {
+        "sel": "a.wordmark",
+        "w": 251,
+        "h": 26
+       }
+      ],
+      "overlaps": [
+       {
+        "a": "a.wordmark",
+        "b": "button",
+        "area": 2331
+       },
+       {
+        "a": "button",
+        "b": "button.settings-btn",
+        "area": 1936
+       },
+       {
+        "a": "a.wordmark",
+        "b": "button",
+        "area": 831
+       }
+      ]
+     },
+     "inputs_font": [
+      {
+       "sel": "select[select-one]",
+       "fs": "13px"
+      }
+     ],
+     "clipped": [],
+     "fixed": [
+      {
+       "sel": "header.masthead",
+       "pos": "sticky",
+       "top": 0,
+       "h": 61,
+       "z": "20",
+       "pe": "auto",
+       "covers_text": 0
+      }
+     ],
+     "cls": 0,
+     "viewport_meta": "width=device-width, initial-scale=1, viewport-fit=cover",
+     "errors": [],
+     "failed": []
+    }
+   ],
+   "team": {
+    "opened": true,
+    "tap": {
+     "hit": true,
+     "at": [
+      120,
+      674
+     ],
+     "under_pointer": "button.club-btn"
+    },
+    "state": {
+     "active": false,
+     "visible": true,
+     "url_view": "team",
+     "sheet_open": false,
+     "expanded": "false"
+    },
+    "errors": [],
+    "overflow": {
+     "scrollW": 768,
+     "clientW": 768,
+     "offenders": []
+    },
+    "targets": {
+     "total": 12,
+     "small_count": 2,
+     "worst": [
+      {
+       "sel": "button.team-back",
+       "w": 96,
+       "h": 40
+      },
+      {
+       "sel": "a.wordmark",
+       "w": 251,
+       "h": 26
+      }
+     ],
+     "overlaps": [
+      {
+       "a": "button",
+       "b": "button.settings-btn",
+       "area": 1936
+      }
+     ]
+    },
+    "inputs_font": [
+     {
+      "sel": "select[select-one]",
+      "fs": "13px"
+     }
+    ],
+    "clipped": [],
+    "fixed": [
+     {
+      "sel": "header.masthead",
+      "pos": "sticky",
+      "top": 0,
+      "h": 61,
+      "z": "20",
+      "pe": "auto",
+      "covers_text": 0
+     }
+    ],
+    "cls": 0
+   },
+   "more": {
+    "available": false,
+    "note": "width > 760: desktop nav"
+   },
+   "swipe": {
+    "available": false,
+    "note": "width > 760: no mobilebar"
+   },
+   "tab_taps": [
+    {
+     "view": "grid",
+     "state": {
+      "active": true,
+      "visible": true,
+      "url_view": "grid",
+      "sheet_open": false,
+      "expanded": "false"
+     },
+     "ok": true,
+     "errors": []
+    },
+    {
+     "view": "table",
+     "state": {
+      "active": true,
+      "visible": true,
+      "url_view": "table",
+      "sheet_open": false,
+      "expanded": "false"
+     },
+     "ok": true,
+     "errors": []
+    },
+    {
+     "view": "next-up",
+     "state": {
+      "active": true,
+      "visible": true,
+      "url_view": "next-up",
+      "sheet_open": false,
+      "expanded": "false"
+     },
+     "ok": true,
+     "errors": []
+    },
+    {
+     "view": "played",
+     "state": {
+      "active": true,
+      "visible": true,
+      "url_view": "played",
+      "sheet_open": false,
+      "expanded": "false"
+     },
+     "ok": true,
+     "errors": []
+    }
+   ]
+  },
+  {
+   "name": "1440x900-desktop",
+   "w": 1440,
+   "h": 900,
+   "touch": false,
+   "mobile": false,
+   "views": [
+    {
+     "view": "grid",
+     "loaded": true,
+     "error": null,
+     "load_ms": 219,
+     "active_state": {
+      "active": true,
+      "visible": true,
+      "url_view": "grid",
+      "sheet_open": false,
+      "expanded": "false"
+     },
+     "overflow": {
+      "scrollW": 1440,
+      "clientW": 1440,
+      "offenders": []
+     },
+     "targets": {
+      "total": 21,
+      "small_count": 19,
+      "worst": [
+       {
+        "sel": "button#settings-btn.settings-btn",
+        "w": 29,
+        "h": 29
+       },
+       {
+        "sel": "button.grid__team-name",
+        "w": 45,
+        "h": 19
+       },
+       {
+        "sel": "button.grid__team-name",
+        "w": 46,
+        "h": 19
+       },
+       {
+        "sel": "button.grid__team-name",
+        "w": 46,
+        "h": 19
+       },
+       {
+        "sel": "button.grid__team-name",
+        "w": 56,
+        "h": 19
+       },
+       {
+        "sel": "button.grid__team-name",
+        "w": 73,
+        "h": 19
+       },
+       {
+        "sel": "button.grid__team-name",
+        "w": 82,
+        "h": 19
+       },
+       {
+        "sel": "button.grid__team-name",
+        "w": 84,
+        "h": 19
+       }
+      ],
+      "overlaps": []
+     },
+     "inputs_font": [
+      {
+       "sel": "input[range]",
+       "fs": "13.3333px"
+      },
+      {
+       "sel": "select[select-one]",
+       "fs": "13px"
+      }
+     ],
+     "clipped": [],
+     "fixed": [
+      {
+       "sel": "header.masthead",
+       "pos": "sticky",
+       "top": 0,
+       "h": 61,
+       "z": "20",
+       "pe": "auto",
+       "covers_text": 0
+      },
+      {
+       "sel": "th.grid__team",
+       "pos": "sticky",
+       "top": 681,
+       "h": 28,
+       "z": "1",
+       "pe": "auto",
+       "covers_text": 0
+      },
+      {
+       "sel": "th.grid__team",
+       "pos": "sticky",
+       "top": 711,
+       "h": 28,
+       "z": "1",
+       "pe": "auto",
+       "covers_text": 0
+      },
+      {
+       "sel": "th.grid__team",
+       "pos": "sticky",
+       "top": 741,
+       "h": 28,
+       "z": "1",
+       "pe": "auto",
+       "covers_text": 0
+      },
+      {
+       "sel": "th.grid__team",
+       "pos": "sticky",
+       "top": 771,
+       "h": 28,
+       "z": "1",
+       "pe": "auto",
+       "covers_text": 0
+      },
+      {
+       "sel": "th.grid__team",
+       "pos": "sticky",
+       "top": 801,
+       "h": 28,
+       "z": "1",
+       "pe": "auto",
+       "covers_text": 0
+      },
+      {
+       "sel": "th.grid__team",
+       "pos": "sticky",
+       "top": 831,
+       "h": 28,
+       "z": "1",
+       "pe": "auto",
+       "covers_text": 0
+      },
+      {
+       "sel": "th.grid__team",
+       "pos": "sticky",
+       "top": 861,
+       "h": 28,
+       "z": "1",
+       "pe": "auto",
+       "covers_text": 0
+      },
+      {
+       "sel": "th.grid__team",
+       "pos": "sticky",
+       "top": 891,
+       "h": 28,
+       "z": "1",
+       "pe": "auto",
+       "covers_text": 0
+      }
+     ],
+     "cls": 0,
+     "viewport_meta": "width=device-width, initial-scale=1, viewport-fit=cover",
+     "errors": [],
+     "failed": []
+    },
+    {
+     "view": "table",
+     "loaded": true,
+     "error": null,
+     "load_ms": 51,
+     "active_state": {
+      "active": true,
+      "visible": true,
+      "url_view": "table",
+      "sheet_open": false,
+      "expanded": "false"
+     },
+     "overflow": {
+      "scrollW": 1440,
+      "clientW": 1440,
+      "offenders": []
+     },
+     "targets": {
+      "total": 30,
+      "small_count": 24,
+      "worst": [
+       {
+        "sel": "button#settings-btn.settings-btn",
+        "w": 29,
+        "h": 29
+       },
+       {
+        "sel": "button.sort-btn",
+        "w": 35,
+        "h": 36
+       },
+       {
+        "sel": "button.sort-btn",
+        "w": 35,
+        "h": 36
+       },
+       {
+        "sel": "button.sort-btn",
+        "w": 35,
+        "h": 36
+       },
+       {
+        "sel": "button.sort-btn",
+        "w": 36,
+        "h": 36
+       },
+       {
+        "sel": "button.sort-btn",
+        "w": 36,
+        "h": 36
+       },
+       {
+        "sel": "button.sort-btn",
+        "w": 36,
+        "h": 36
+       },
+       {
+        "sel": "button.sort-btn",
+        "w": 36,
+        "h": 36
+       }
+      ],
+      "overlaps": []
+     },
+     "inputs_font": [
+      {
+       "sel": "input[range]",
+       "fs": "13.3333px"
+      },
+      {
+       "sel": "select[select-one]",
+       "fs": "13px"
+      }
+     ],
+     "clipped": [],
+     "fixed": [
+      {
+       "sel": "header.masthead",
+       "pos": "sticky",
+       "top": 0,
+       "h": 61,
+       "z": "20",
+       "pe": "auto",
+       "covers_text": 0
+      }
+     ],
+     "cls": 0,
+     "viewport_meta": "width=device-width, initial-scale=1, viewport-fit=cover",
+     "errors": [],
+     "failed": []
+    },
+    {
+     "view": "ladder",
+     "loaded": true,
+     "error": null,
+     "load_ms": 33,
+     "active_state": {
+      "active": true,
+      "visible": true,
+      "url_view": "ladder",
+      "sheet_open": false,
+      "expanded": "false"
+     },
+     "overflow": {
+      "scrollW": 1440,
+      "clientW": 1440,
+      "offenders": []
+     },
+     "targets": {
+      "total": 45,
+      "small_count": 43,
+      "worst": [
+       {
+        "sel": "button.ladder__team",
+        "w": 24,
+        "h": 24
+       },
+       {
+        "sel": "button.ladder__team",
+        "w": 24,
+        "h": 24
+       },
+       {
+        "sel": "button.ladder__team",
+        "w": 24,
+        "h": 24
+       },
+       {
+        "sel": "button.ladder__team",
+        "w": 24,
+        "h": 24
+       },
+       {
+        "sel": "button.ladder__team",
+        "w": 24,
+        "h": 24
+       },
+       {
+        "sel": "button.ladder__team",
+        "w": 24,
+        "h": 24
+       },
+       {
+        "sel": "button.ladder__team",
+        "w": 24,
+        "h": 24
+       },
+       {
+        "sel": "button.ladder__team",
+        "w": 24,
+        "h": 24
+       }
+      ],
+      "overlaps": []
+     },
+     "inputs_font": [
+      {
+       "sel": "input[range]",
+       "fs": "13.3333px"
+      },
+      {
+       "sel": "select[select-one]",
+       "fs": "13px"
+      }
+     ],
+     "clipped": [],
+     "fixed": [
+      {
+       "sel": "header.masthead",
+       "pos": "sticky",
+       "top": 0,
+       "h": 61,
+       "z": "20",
+       "pe": "auto",
+       "covers_text": 0
+      }
+     ],
+     "cls": 0,
+     "viewport_meta": "width=device-width, initial-scale=1, viewport-fit=cover",
+     "errors": [],
+     "failed": []
+    },
+    {
+     "view": "next-up",
+     "loaded": true,
+     "error": null,
+     "load_ms": 35,
+     "active_state": {
+      "active": true,
+      "visible": true,
+      "url_view": "next-up",
+      "sheet_open": false,
+      "expanded": "false"
+     },
+     "overflow": {
+      "scrollW": 1440,
+      "clientW": 1440,
+      "offenders": []
+     },
+     "targets": {
+      "total": 21,
+      "small_count": 19,
+      "worst": [
+       {
+        "sel": "button#settings-btn.settings-btn",
+        "w": 29,
+        "h": 29
+       },
+       {
+        "sel": "button.played-card__team-name",
+        "w": 45,
+        "h": 19
+       },
+       {
+        "sel": "button.played-card__team-name",
+        "w": 46,
+        "h": 19
+       },
+       {
+        "sel": "button.played-card__team-name",
+        "w": 56,
+        "h": 19
+       },
+       {
+        "sel": "button.played-card__team-name",
+        "w": 81,
+        "h": 19
+       },
+       {
+        "sel": "button.played-card__team-name",
+        "w": 82,
+        "h": 19
+       },
+       {
+        "sel": "button.played-card__team-name",
+        "w": 84,
+        "h": 19
+       },
+       {
+        "sel": "button.played-card__team-name",
+        "w": 84,
+        "h": 19
+       }
+      ],
+      "overlaps": []
+     },
+     "inputs_font": [
+      {
+       "sel": "select[select-one]",
+       "fs": "13px"
+      }
+     ],
+     "clipped": [],
+     "fixed": [
+      {
+       "sel": "header.masthead",
+       "pos": "sticky",
+       "top": 0,
+       "h": 61,
+       "z": "20",
+       "pe": "auto",
+       "covers_text": 0
+      }
+     ],
+     "cls": 0,
+     "viewport_meta": "width=device-width, initial-scale=1, viewport-fit=cover",
+     "errors": [],
+     "failed": []
+    },
+    {
+     "view": "played",
+     "loaded": true,
+     "error": null,
+     "load_ms": 39,
+     "active_state": {
+      "active": true,
+      "visible": true,
+      "url_view": "played",
+      "sheet_open": false,
+      "expanded": "false"
+     },
+     "overflow": {
+      "scrollW": 1440,
+      "clientW": 1440,
+      "offenders": []
+     },
+     "targets": {
+      "total": 21,
+      "small_count": 19,
+      "worst": [
+       {
+        "sel": "button.played-card__team-name",
+        "w": 35,
+        "h": 19
+       },
+       {
+        "sel": "button#settings-btn.settings-btn",
+        "w": 29,
+        "h": 29
+       },
+       {
+        "sel": "button.played-card__team-name",
+        "w": 46,
+        "h": 19
+       },
+       {
+        "sel": "button.played-card__team-name",
+        "w": 56,
+        "h": 19
+       },
+       {
+        "sel": "button.played-card__team-name",
+        "w": 68,
+        "h": 19
+       },
+       {
+        "sel": "button.played-card__team-name",
+        "w": 73,
+        "h": 19
+       },
+       {
+        "sel": "button.played-card__team-name",
+        "w": 74,
+        "h": 19
+       },
+       {
+        "sel": "button.played-card__team-name",
+        "w": 81,
+        "h": 19
+       }
+      ],
+      "overlaps": []
+     },
+     "inputs_font": [
+      {
+       "sel": "select[select-one]",
+       "fs": "13px"
+      }
+     ],
+     "clipped": [],
+     "fixed": [
+      {
+       "sel": "header.masthead",
+       "pos": "sticky",
+       "top": 0,
+       "h": 61,
+       "z": "20",
+       "pe": "auto",
+       "covers_text": 0
+      }
+     ],
+     "cls": 0,
+     "viewport_meta": "width=device-width, initial-scale=1, viewport-fit=cover",
+     "errors": [],
+     "failed": []
+    },
+    {
+     "view": "compare",
+     "loaded": true,
+     "error": null,
+     "load_ms": 40,
+     "active_state": {
+      "active": true,
+      "visible": true,
+      "url_view": "compare",
+      "sheet_open": false,
+      "expanded": "false"
+     },
+     "overflow": {
+      "scrollW": 1440,
+      "clientW": 1440,
+      "offenders": []
+     },
+     "targets": {
+      "total": 14,
+      "small_count": 10,
+      "worst": [
+       {
+        "sel": "button#settings-btn.settings-btn",
+        "w": 29,
+        "h": 29
+       },
+       {
+        "sel": "button.compare__swap-center",
+        "w": 38,
+        "h": 38
+       },
+       {
+        "sel": "button",
+        "w": 58,
+        "h": 30
+       },
+       {
+        "sel": "button",
+        "w": 63,
+        "h": 30
+       },
+       {
+        "sel": "button",
+        "w": 84,
+        "h": 30
+       },
+       {
+        "sel": "button",
+        "w": 91,
+        "h": 30
+       },
+       {
+        "sel": "button",
+        "w": 100,
+        "h": 30
+       },
+       {
+        "sel": "button",
+        "w": 102,
+        "h": 30
+       }
+      ],
+      "overlaps": []
+     },
+     "inputs_font": [
+      {
+       "sel": "select[select-one]",
+       "fs": "13px"
+      }
+     ],
+     "clipped": [],
+     "fixed": [
+      {
+       "sel": "header.masthead",
+       "pos": "sticky",
+       "top": 0,
+       "h": 61,
+       "z": "20",
+       "pe": "auto",
+       "covers_text": 0
+      }
+     ],
+     "cls": 0,
+     "viewport_meta": "width=device-width, initial-scale=1, viewport-fit=cover",
+     "errors": [],
+     "failed": []
+    },
+    {
+     "view": "model",
+     "loaded": true,
+     "error": null,
+     "load_ms": 32,
+     "active_state": {
+      "active": true,
+      "visible": true,
+      "url_view": "model",
+      "sheet_open": false,
+      "expanded": "false"
+     },
+     "overflow": {
+      "scrollW": 1440,
+      "clientW": 1440,
+      "offenders": []
+     },
+     "targets": {
+      "total": 11,
+      "small_count": 9,
+      "worst": [
+       {
+        "sel": "button#settings-btn.settings-btn",
+        "w": 29,
+        "h": 29
+       },
+       {
+        "sel": "button",
+        "w": 58,
+        "h": 30
+       },
+       {
+        "sel": "button",
+        "w": 63,
+        "h": 30
+       },
+       {
+        "sel": "button",
+        "w": 84,
+        "h": 30
+       },
+       {
+        "sel": "button",
+        "w": 91,
+        "h": 30
+       },
+       {
+        "sel": "button",
+        "w": 100,
+        "h": 30
+       },
+       {
+        "sel": "button",
+        "w": 102,
+        "h": 30
+       },
+       {
+        "sel": "button",
+        "w": 109,
+        "h": 30
+       }
+      ],
+      "overlaps": []
+     },
+     "inputs_font": [
+      {
+       "sel": "select[select-one]",
+       "fs": "13px"
+      }
+     ],
+     "clipped": [],
+     "fixed": [
+      {
+       "sel": "header.masthead",
+       "pos": "sticky",
+       "top": 0,
+       "h": 61,
+       "z": "20",
+       "pe": "auto",
+       "covers_text": 0
+      }
+     ],
+     "cls": 0,
+     "viewport_meta": "width=device-width, initial-scale=1, viewport-fit=cover",
+     "errors": [],
+     "failed": []
+    }
+   ],
+   "team": {
+    "opened": true,
+    "tap": {
+     "hit": true,
+     "at": [
+      248,
+      667
+     ],
+     "under_pointer": "button.club-btn"
+    },
+    "state": {
+     "active": false,
+     "visible": true,
+     "url_view": "team",
+     "sheet_open": false,
+     "expanded": "false"
+    },
+    "errors": [],
+    "overflow": {
+     "scrollW": 1440,
+     "clientW": 1440,
+     "offenders": []
+    },
+    "targets": {
+     "total": 12,
+     "small_count": 10,
+     "worst": [
+      {
+       "sel": "button#settings-btn.settings-btn",
+       "w": 29,
+       "h": 29
+      },
+      {
+       "sel": "button",
+       "w": 58,
+       "h": 30
+      },
+      {
+       "sel": "button",
+       "w": 63,
+       "h": 30
+      },
+      {
+       "sel": "button",
+       "w": 84,
+       "h": 30
+      },
+      {
+       "sel": "button",
+       "w": 91,
+       "h": 30
+      },
+      {
+       "sel": "button",
+       "w": 100,
+       "h": 30
+      },
+      {
+       "sel": "button",
+       "w": 102,
+       "h": 30
+      },
+      {
+       "sel": "button",
+       "w": 109,
+       "h": 30
+      }
+     ],
+     "overlaps": []
+    },
+    "inputs_font": [
+     {
+      "sel": "select[select-one]",
+      "fs": "13px"
+     }
+    ],
+    "clipped": [],
+    "fixed": [
+     {
+      "sel": "header.masthead",
+      "pos": "sticky",
+      "top": 0,
+      "h": 61,
+      "z": "20",
+      "pe": "auto",
+      "covers_text": 0
+     }
+    ],
+    "cls": 0
+   },
+   "more": {
+    "available": false,
+    "note": "width > 760: desktop nav"
+   },
+   "swipe": {
+    "available": false,
+    "note": "width > 760: no mobilebar"
+   },
+   "tab_taps": [
+    {
+     "view": "grid",
+     "state": {
+      "active": true,
+      "visible": true,
+      "url_view": "grid",
+      "sheet_open": false,
+      "expanded": "false"
+     },
+     "ok": true,
+     "errors": []
+    },
+    {
+     "view": "table",
+     "state": {
+      "active": true,
+      "visible": true,
+      "url_view": "table",
+      "sheet_open": false,
+      "expanded": "false"
+     },
+     "ok": true,
+     "errors": []
+    },
+    {
+     "view": "next-up",
+     "state": {
+      "active": true,
+      "visible": true,
+      "url_view": "next-up",
+      "sheet_open": false,
+      "expanded": "false"
+     },
+     "ok": true,
+     "errors": []
+    },
+    {
+     "view": "played",
+     "state": {
+      "active": true,
+      "visible": true,
+      "url_view": "played",
+      "sheet_open": false,
+      "expanded": "false"
+     },
+     "ok": true,
+     "errors": []
+    }
+   ]
+  }
+ ]
+}
