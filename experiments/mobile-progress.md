@@ -46,24 +46,36 @@ Run: `experiments/mobile-audit/baseline-report.md` / `.json` / `shots-baseline/`
   `switchView(view)`, guard the fake-delta (track real movement), always clear the
   bar highlight.
 
-## Phase 4: P0 FIXES (⏳ next)
+## Phase 4: P0 FIXES (✅ done — commit `a0e8246`)
 
-- Dispatch fixer: P0-A CSS animation toggle + P0-B `switchView` extraction (owns
-  `public/styles.css` + `public/app.js`).
-- Verify: `repro_more3.py` (expect baseline side to pass after real fix), `audit.py --out p0`
-  at phone viewports; compare against baseline; commit.
+- P0-A: `.sheet__panel.is-dragging` keeps `animation-name: sheet-up` +
+  `animation-play-state: paused` (`styles.css` ~1854).
+- P0-B: top-level `function switchView(view)` before `wire()` in `app.js`; click handler
+  calls it; swipe touchend wraps it in try/finally + `clearBarHighlight()`;
+  `swipeState.currentX = swipeState.startX` on touchstart (kills tap fake-delta).
+- Verified: `repro_more3.py` baseline side switched=YES; audit `items_ok=3/3` all 4
+  phones, swipe switches views, 0 pageerrors. (Second commit `41b65e0` refined the
+  audit's reachability check and refreshed the baseline.)
 
-## Phase 5: REMAINING FINDINGS (⏳)
+## Phase 5: REMAINING FINDINGS (✅ done — commit `f79d6ff`)
 
-Design/JS lanes (disjoint files): tap targets <44px, input font <16px (iOS zoom),
-clipped text at 320, overlap pairs, PTR horizontal-guard if proven needed,
-`touch-action` / `overscroll-behavior` static gaps.
+Designer lane, `public/styles.css` only, scoped `(pointer: coarse), (max-width: 760px)` /
+`480px` / `360px`: 44px targets (swap-center, settings, ladder__team, played/grid
+team-name, sort-btn, grid-anim-speed, wordmark via padding+negative margin),
+`select/input/textarea` 16px on touch, played-card crest 40→44px, `.odds` horizontal
+scroller ≤480, `.odds__seg` ellipsis ≤360. Audit hardening: WCAG 2.5.8 exemptions
+(skip-link, inline links) + sr-only/inert exclusions in FONTS_JS.
 
-## Phase 6: VERIFY + REVIEW (⏳)
+## Phase 6: VERIFY + REVIEW (✅ audit done, oracle pending)
 
-- Full re-audit all 7 viewports → `after` report, before/after table.
-- Desktop regression check (1440x900 must not regress).
-- One @oracle review of the combined diff. Final report.
+- Full after-audit green (`after-report.md`, 89.9s): touch viewports small/inputs/
+  clipped/covered = 0/0/0/0; landscape+tablet 0 small, 3 inputs (range only, out of
+  scope); no overflow, 0 console errors everywhere; desktop unchanged (179 small =
+  mouse targets, intentional; drop from 193 = audit exemptions).
+- Desktop screenshots eyeballed: layout intact, no regression.
+- Deliberate design kept: view switch scrolls to top (tab reset); per-view scroll
+  memory listed as possible enhancement only.
+- Remaining: one @oracle review of `git diff main…mobile-ui`, then final report.
 
 ## Conventions
 
