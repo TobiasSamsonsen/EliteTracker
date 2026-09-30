@@ -149,6 +149,7 @@ INTERACTIVE_JS = """
 FONTS_JS = """
 () => [...document.querySelectorAll('input,select,textarea')]
   .filter(el => {
+    if (el.type === 'range') return false;            // iOS doesn't zoom range inputs
     if (el.closest('.visually-hidden') || el.closest('[inert]')) return false;  // sr-only state holders
     const r = el.getBoundingClientRect();
     return r.width > 0 && parseFloat(getComputedStyle(el).fontSize) < 16;

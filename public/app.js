@@ -4213,7 +4213,7 @@ function initMobileGestures() {
   const mobilebar = $('#mobilebar');
   const sheet = $('#more-sheet');
   const sheetPanel = sheet?.querySelector('.sheet__panel');
-  const viewsInBar = ['grid', 'table', 'next-up', 'played'];
+  const viewsInBar = [...mobilebar.querySelectorAll('.mobilebar__item[data-view]')].map(b => b.dataset.view);
 
   // Pull-to-refresh
   let ptrState = { startY: 0, currentY: 0, pulling: false, triggered: false };
@@ -4344,15 +4344,10 @@ function initMobileGestures() {
       const currentIndex = viewsInBar.indexOf(state.activeView);
       const nextIndex = (currentIndex + direction + viewsInBar.length) % viewsInBar.length;
       const nextView = viewsInBar[nextIndex];
-      try {
-        switchView(nextView);
-        if (navigator.vibrate) navigator.vibrate(15);
-      } finally {
-        clearBarHighlight();
-      }
-    } else {
-      clearBarHighlight();
+      switchView(nextView);
+      if (navigator.vibrate) navigator.vibrate(15);
     }
+    clearBarHighlight();
   }, { passive: true });
 
   function highlightBarItem(view) {
@@ -4371,6 +4366,7 @@ function initMobileGestures() {
   // --- Swipe to Dismiss Sheet ---
   sheetPanel?.addEventListener('touchstart', (e) => {
     if (sheet.hidden) return;
+    if (sheetPanel.getAnimations().some(a => a.playState === 'running')) return;
     sheetSwipeState.startY = e.touches[0].clientY;
     sheetSwipeState.dragging = true;
     sheetPanel.classList.add('is-dragging');

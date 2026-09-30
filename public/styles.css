@@ -1302,12 +1302,12 @@ table.standings .zone-divider__wrap::after {
 
 @media (max-width: 480px) {
   .fixture__lines { justify-content: flex-start; }
-  .odds { overflow-x: auto; scrollbar-width: none; }
+  .odds { overflow-x: auto; scrollbar-width: none; overscroll-behavior-x: contain; }
   .odds::-webkit-scrollbar { display: none; }
 }
 
 @media (max-width: 360px) {
-  .odds__seg { font-size: 0.5rem; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .odds__seg { font-size: 0.625rem; white-space: nowrap; text-overflow: ellipsis; }
 }
 
 /* Recent-form chip in the table: single rectangle, color by points (0–15). */
@@ -1845,6 +1845,13 @@ footer a { color: var(--ink); }
 
   .sheet__setting .switch { padding: 2px; }
   .sheet__setting .switch button { padding: 0.3rem 0.65rem; font-size: 0.8125rem; }
+
+  /* Sheet swipe-to-dismiss. Pausing (never cancelling) the open animation
+     keeps a class toggle on any touch from restarting it. */
+  .sheet__panel.is-dragging {
+    animation-play-state: paused;
+    transition: transform 0.05s linear, opacity 0.05s linear;
+  }
 }
 
 @keyframes sheet-up {
@@ -1854,13 +1861,6 @@ footer a { color: var(--ink); }
 
 @media (prefers-reduced-motion: reduce) {
   .sheet__panel { animation: none; }
-}
-
-/* Sheet swipe-to-dismiss */
-.sheet__panel.is-dragging {
-  animation-name: sheet-up;
-  animation-play-state: paused;
-  transition: transform 0.05s linear, opacity 0.05s linear;
 }
 
 .sheet__panel.is-dismissed {
@@ -1886,7 +1886,7 @@ footer a { color: var(--ink); }
   .settings-btn { min-height: 44px; min-width: 44px; }
   .ladder__team { min-height: 44px; min-width: 44px; }
   .played-card__team-name { min-height: 44px; min-width: 44px; display: inline-flex; align-items: center; }
-  .grid__team-name { min-height: 44px; min-width: 44px; display: inline-flex; align-items: center; }
+  .grid__team-name { min-height: 44px; min-width: 44px; }
   .sort-btn { min-width: 44px; }
   .grid-anim-speed button { min-height: 44px; min-width: 44px; padding: 0.5rem 0.75rem; }
 
@@ -1953,8 +1953,7 @@ footer a { color: var(--ink); }
   .hero { padding-top: clamp(0.5rem, 2vw, 1rem); }
 
   /* Input font size >= 16px to prevent iOS Safari zoom on focus */
-  select, input, textarea,
-  .season-select, .compare__select { font-size: 16px; }
+  select, textarea, input:not([type="range"]) { font-size: 16px; }
 
   /* A phone has room for the story, not the ledger. The W/D/L/GF/GA tallies,
       xPts and the form chips go; position, club, played, GD, points, rating and
