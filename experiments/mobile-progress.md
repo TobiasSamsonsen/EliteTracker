@@ -75,18 +75,16 @@ scroller ≤480, `.odds__seg` ellipsis ≤360. Audit hardening: WCAG 2.5.8 exemp
 - Desktop screenshots eyeballed: layout intact, no regression.
 - Deliberate design kept: view switch scrolls to top (tab reset); per-view scroll
   memory listed as possible enhancement only.
-- Remaining: one @oracle review of `git diff main…mobile-ui`, then final report.
-
-### Next-session pickup
-
-- Oracle review attempts all failed on provider issues (degenerate output → 502
-  ResourceExhausted → hung generation, session `ses_f0c883550ffeM2HbCQDI5T87GJ`
-  aborted). Scope for the retry: **code-only diff** — `git diff main..mobile-ui --
-  public/app.js public/styles.css` (~40 lines) + audit.py hunk; never the full diff
-  (5k-line report JSON floods context). Check: P0-A paused-animation robustness,
-  P0-B hoisted `switchView`, CSS media-query scope leaks, then verdict.
-- After verdict: deliver final before/after report (baseline `baseline-report.md`,
-  final `after-report.md`, shots local in `shots-*/`).
+- Oracle review done (fresh session after 3 provider failures; code-only diff scope
+  to avoid the 5k-line report JSON). Verdict `request-changes` → all findings applied
+  in `9684b85`: blocker `.grid__team-name` re-enabled names over the phone matrix
+  (crest-only design restored), `.is-dragging` moved inside the ≤760 block +
+  redundant `animation-name` dropped (reduced-motion leak), drag bails while the open
+  animation runs, swipe handler simplified, `viewsInBar` from DOM, input selectors
+  cleaned, odds label 8→10px + `overscroll-behavior-x`, `playwright` in `dev` extra.
+  Skipped: #10 (deleting committed reports/repro scripts — evidence trail).
+- Final re-audit `review-report.md`: all touch viewports 0/0/0/0, desktop unchanged;
+  276 pytest + 13 node tests pass. Final report delivered. **Branch done.**
 
 ## Conventions
 
