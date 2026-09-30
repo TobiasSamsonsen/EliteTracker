@@ -105,6 +105,9 @@ INTERACTIVE_JS = """
   });
   const small = [];
   for (const el of els) {
+    // WCAG 2.5.8 exemptions: keyboard skip link; links inline in prose.
+    if (el.matches('a.skip-link')) continue;
+    if (el.tagName === 'A' && getComputedStyle(el).display === 'inline') continue;
     const r = el.getBoundingClientRect();
     if (r.width < 43.5 || r.height < 43.5) {
       let s = el.tagName.toLowerCase();
@@ -145,8 +148,11 @@ INTERACTIVE_JS = """
 
 FONTS_JS = """
 () => [...document.querySelectorAll('input,select,textarea')]
-  .filter(el => { const r = el.getBoundingClientRect();
-                  return r.width > 0 && parseFloat(getComputedStyle(el).fontSize) < 16; })
+  .filter(el => {
+    if (el.closest('.visually-hidden') || el.closest('[inert]')) return false;  // sr-only state holders
+    const r = el.getBoundingClientRect();
+    return r.width > 0 && parseFloat(getComputedStyle(el).fontSize) < 16;
+  })
   .map(el => ({sel: el.tagName.toLowerCase() + (el.type ? '[' + el.type + ']' : ''),
                fs: getComputedStyle(el).fontSize}))
 """

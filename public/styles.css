@@ -1297,11 +1297,17 @@ table.standings .zone-divider__wrap::after {
     color: transparent;
     border-radius: 6px;
   }
-  :is(#played-results, #fixtures, #team-content) .played-card__side .team-logo { width: 40px; height: 40px; }
+  :is(#played-results, #fixtures, #team-content) .played-card__side .team-logo { width: 44px; height: 44px; }
 }
 
 @media (max-width: 480px) {
   .fixture__lines { justify-content: flex-start; }
+  .odds { overflow-x: auto; scrollbar-width: none; }
+  .odds::-webkit-scrollbar { display: none; }
+}
+
+@media (max-width: 360px) {
+  .odds__seg { font-size: 0.5rem; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 }
 
 /* Recent-form chip in the table: single rectangle, color by points (0–15). */
@@ -1876,6 +1882,13 @@ footer a { color: var(--ink); }
   .table-control-btn { min-height: 44px; padding-inline: 1rem; }
   .played-nav__btn { min-height: 44px; padding-inline: 1.25rem; }
   .compare__option { min-height: 44px; }
+  .compare__swap-center { min-height: 44px; min-width: 44px; }
+  .settings-btn { min-height: 44px; min-width: 44px; }
+  .ladder__team { min-height: 44px; min-width: 44px; }
+  .played-card__team-name { min-height: 44px; min-width: 44px; display: inline-flex; align-items: center; }
+  .grid__team-name { min-height: 44px; min-width: 44px; display: inline-flex; align-items: center; }
+  .sort-btn { min-width: 44px; }
+  .grid-anim-speed button { min-height: 44px; min-width: 44px; padding: 0.5rem 0.75rem; }
 
   /* A 47-step slider is about 7px per matchday; a bigger thumb and the step
      buttons beside it make single matchdays reachable. Scoped through
@@ -1887,6 +1900,15 @@ footer a { color: var(--ink); }
 
   /* The default blue flash on tap reads as a rendering fault on a dark panel. */
   * { -webkit-tap-highlight-color: transparent; }
+}
+
+/* Wordmark hit-area expansion: grow element's own rect downward to ~44px,
+   layout-neutral via padding + negative margin (masthead stays 60px). */
+@media (pointer: coarse), (max-width: 760px) {
+  .wordmark {
+    padding-block-end: 24px;
+    margin-block-end: -24px;
+  }
 }
 
 /* ---------- the step buttons beside the rewind slider -------------- */
@@ -1929,6 +1951,10 @@ footer a { color: var(--ink); }
   /* Bring the title closer to the top on mobile so "Eliteserien 2026"
      is visible immediately when scrolled to top, below the sticky masthead. */
   .hero { padding-top: clamp(0.5rem, 2vw, 1rem); }
+
+  /* Input font size >= 16px to prevent iOS Safari zoom on focus */
+  select, input, textarea,
+  .season-select, .compare__select { font-size: 16px; }
 
   /* A phone has room for the story, not the ledger. The W/D/L/GF/GA tallies,
       xPts and the form chips go; position, club, played, GD, points, rating and
