@@ -45,21 +45,17 @@ FIRST_XG_SEASON = 2023
 # "IK Start" / "Start"); dropping the club-type words leaves the same stem.
 _NOISE = {"fk", "if", "il", "ik", "bk", "sk", "fotball", "ballklubb", "oslo", "fotballklubb"}
 
-# Sofascore blocks requests without browser-like headers (Referer, Origin)
-# curl_cffi impersonates Chrome's TLS fingerprint (JA3) to bypass WAF
+# WAF rejects header/fingerprint mismatches: chrome124 + Chrome headers 403'd
+# (broke xg-obos, Gate E). Passing pair: safari17_0 + this minimal set; no UA
+# or Sec-Ch-Ua -- curl_cffi supplies Safari's own for the profile.
 _SOFASCORE_HEADERS = {
-    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
     "Referer": "https://www.sofascore.com/",
-    "Origin": "https://www.sofascore.com",
+    "Origin": "https://www.sofascore",  # exact string that passed, not a typo to "fix"
     "Accept": "application/json, text/plain, */*",
     "Accept-Language": "en-US,en;q=0.9",
-    "Accept-Encoding": "gzip, deflate, br",
     "Sec-Fetch-Dest": "empty",
     "Sec-Fetch-Mode": "cors",
     "Sec-Fetch-Site": "same-origin",
-    "Sec-Ch-Ua": '"Chromium";v="124", "Google Chrome";v="124", "Not-A.Brand";v="99"',
-    "Sec-Ch-Ua-Mobile": "?0",
-    "Sec-Ch-Ua-Platform": '"Windows"',
 }
 
 _TIMEOUT_SECONDS = 30
@@ -71,7 +67,7 @@ def _download_sofascore(url: str) -> str:
             url,
             headers=_SOFASCORE_HEADERS,
             timeout=_TIMEOUT_SECONDS,
-            impersonate="chrome124",
+            impersonate="safari17_0",
         )
         if response.status_code == 403:
             raise FetchError(f"{url} returned HTTP 403 (likely IP blocked by Sofascore WAF)")
