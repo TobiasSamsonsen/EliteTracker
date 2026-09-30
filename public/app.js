@@ -2678,7 +2678,12 @@ function drawTeamShape(report, team, chart, boxWidth) {
   const narrow = box < SHAPE_NARROW;
   const width = narrow ? Math.round(box) : 900;
   const height = narrow ? 300 : 280;
-  const pad = { top: 10, right: 12, bottom: 30, left: 40 };
+  // The desktop gutter (40/12 of 900) is a sixth of a phone's 340px box. The
+  // narrow box trims it so the bands start where the rating chart's line does
+  // above it; the "100%" tick hangs left into the section's own padding.
+  const pad = narrow
+    ? { top: 10, right: 6, bottom: 30, left: 20 }
+    : { top: 10, right: 12, bottom: 30, left: 40 };
   const plotWidth = width - pad.left - pad.right;
   const plotHeight = height - pad.top - pad.bottom;
   lastShape = { report, team, chart, narrow };

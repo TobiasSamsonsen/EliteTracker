@@ -3072,9 +3072,6 @@ footer a { color: var(--ink); }
   .team-stats__label { font-size: 0.625rem; }
   .team-stats__tile { padding: 0.5rem 0.35rem; }
 
-  /* Season shape chart: smaller */
-  .team-section .chart { height: auto; max-height: 260px; }
-
   /* Season by season: even tighter */
   .season-row-compact { padding: 0.45rem 0.5rem; gap: 0.5rem; }
   .season-row-compact__season { width: 6rem; }
