@@ -1,7 +1,7 @@
 {
  "meta": {
   "name": "baseline",
-  "timestamp": "2026-09-30 18:48:22",
+  "timestamp": "2026-09-30 19:14:21",
   "base_url": "http://127.0.0.1:8123",
   "views": [
    "grid",
@@ -38,7 +38,7 @@
      "view": "grid",
      "loaded": true,
      "error": null,
-     "load_ms": 247,
+     "load_ms": 260,
      "active_state": {
       "active": true,
       "visible": true,
@@ -52,47 +52,26 @@
       "offenders": []
      },
      "targets": {
-      "total": 12,
-      "small_count": 1,
+      "total": 15,
+      "small_count": 3,
       "worst": [
+       {
+        "sel": "a",
+        "w": 110,
+        "h": 14
+       },
        {
         "sel": "a.wordmark",
         "w": 129,
         "h": 20
+       },
+       {
+        "sel": "a.skip-link",
+        "w": 153,
+        "h": 42
        }
       ],
-      "overlaps": [
-       {
-        "a": "button.mobilebar__item",
-        "b": "input",
-        "area": 1740
-       },
-       {
-        "a": "button.mobilebar__item",
-        "b": "input",
-        "area": 1169
-       },
-       {
-        "a": "button.mobilebar__item",
-        "b": "input",
-        "area": 1169
-       },
-       {
-        "a": "button.mobilebar__item",
-        "b": "button.timeline__step",
-        "area": 843
-       },
-       {
-        "a": "button.mobilebar__item",
-        "b": "button.timeline__step",
-        "area": 843
-       },
-       {
-        "a": "button.mobilebar__item",
-        "b": "button.timeline__step",
-        "area": 353
-       }
-      ]
+      "covered": []
      },
      "inputs_font": [
       {
@@ -143,7 +122,7 @@
      "view": "table",
      "loaded": true,
      "error": null,
-     "load_ms": 51,
+     "load_ms": 52,
      "active_state": {
       "active": true,
       "visible": true,
@@ -157,47 +136,46 @@
       "offenders": []
      },
      "targets": {
-      "total": 12,
-      "small_count": 1,
+      "total": 37,
+      "small_count": 7,
       "worst": [
+       {
+        "sel": "button.sort-btn",
+        "w": 27,
+        "h": 44
+       },
+       {
+        "sel": "button.sort-btn",
+        "w": 27,
+        "h": 44
+       },
+       {
+        "sel": "button.sort-btn",
+        "w": 34,
+        "h": 44
+       },
+       {
+        "sel": "a",
+        "w": 110,
+        "h": 14
+       },
+       {
+        "sel": "button.sort-btn",
+        "w": 36,
+        "h": 44
+       },
        {
         "sel": "a.wordmark",
         "w": 129,
         "h": 20
+       },
+       {
+        "sel": "a.skip-link",
+        "w": 153,
+        "h": 42
        }
       ],
-      "overlaps": [
-       {
-        "a": "button.mobilebar__item",
-        "b": "input",
-        "area": 1740
-       },
-       {
-        "a": "button.mobilebar__item",
-        "b": "input",
-        "area": 1169
-       },
-       {
-        "a": "button.mobilebar__item",
-        "b": "input",
-        "area": 1169
-       },
-       {
-        "a": "button.mobilebar__item",
-        "b": "button.timeline__step",
-        "area": 843
-       },
-       {
-        "a": "button.mobilebar__item",
-        "b": "button.timeline__step",
-        "area": 843
-       },
-       {
-        "a": "button.mobilebar__item",
-        "b": "button.timeline__step",
-        "area": 353
-       }
-      ]
+      "covered": []
      },
      "inputs_font": [
       {
@@ -248,7 +226,7 @@
      "view": "ladder",
      "loaded": true,
      "error": null,
-     "load_ms": 36,
+     "load_ms": 39,
      "active_state": {
       "active": true,
       "visible": true,
@@ -262,47 +240,26 @@
       "offenders": []
      },
      "targets": {
-      "total": 12,
-      "small_count": 1,
+      "total": 47,
+      "small_count": 3,
       "worst": [
+       {
+        "sel": "a",
+        "w": 110,
+        "h": 14
+       },
        {
         "sel": "a.wordmark",
         "w": 129,
         "h": 20
+       },
+       {
+        "sel": "a.skip-link",
+        "w": 153,
+        "h": 42
        }
       ],
-      "overlaps": [
-       {
-        "a": "button.mobilebar__item",
-        "b": "input",
-        "area": 1740
-       },
-       {
-        "a": "button.mobilebar__item",
-        "b": "input",
-        "area": 1169
-       },
-       {
-        "a": "button.mobilebar__item",
-        "b": "input",
-        "area": 1169
-       },
-       {
-        "a": "button.mobilebar__item",
-        "b": "button.timeline__step",
-        "area": 843
-       },
-       {
-        "a": "button.mobilebar__item",
-        "b": "button.timeline__step",
-        "area": 843
-       },
-       {
-        "a": "button.mobilebar__item",
-        "b": "button.timeline__step",
-        "area": 353
-       }
-      ]
+      "covered": []
      },
      "inputs_font": [
       {
@@ -367,37 +324,51 @@
       "offenders": []
      },
      "targets": {
-      "total": 11,
-      "small_count": 1,
+      "total": 27,
+      "small_count": 17,
       "worst": [
        {
-        "sel": "a.wordmark",
-        "w": 129,
-        "h": 20
+        "sel": "a",
+        "w": 110,
+        "h": 14
+       },
+       {
+        "sel": "button.played-card__team-name",
+        "w": 40,
+        "h": 40
+       },
+       {
+        "sel": "button.played-card__team-name",
+        "w": 40,
+        "h": 40
+       },
+       {
+        "sel": "button.played-card__team-name",
+        "w": 40,
+        "h": 40
+       },
+       {
+        "sel": "button.played-card__team-name",
+        "w": 40,
+        "h": 40
+       },
+       {
+        "sel": "button.played-card__team-name",
+        "w": 40,
+        "h": 40
+       },
+       {
+        "sel": "button.played-card__team-name",
+        "w": 40,
+        "h": 40
+       },
+       {
+        "sel": "button.played-card__team-name",
+        "w": 40,
+        "h": 40
        }
       ],
-      "overlaps": [
-       {
-        "a": "button.mobilebar__item",
-        "b": "button.played-nav__btn",
-        "area": 352
-       },
-       {
-        "a": "button.mobilebar__item",
-        "b": "button.played-nav__btn",
-        "area": 352
-       },
-       {
-        "a": "button.mobilebar__item",
-        "b": "button.played-nav__btn",
-        "area": 181
-       },
-       {
-        "a": "button.mobilebar__item",
-        "b": "button.played-nav__btn",
-        "area": 131
-       }
-      ]
+      "covered": []
      },
      "inputs_font": [
       {
@@ -508,37 +479,51 @@
       "offenders": []
      },
      "targets": {
-      "total": 11,
-      "small_count": 1,
+      "total": 31,
+      "small_count": 21,
       "worst": [
        {
-        "sel": "a.wordmark",
-        "w": 129,
-        "h": 20
+        "sel": "a",
+        "w": 110,
+        "h": 14
+       },
+       {
+        "sel": "button.played-card__team-name",
+        "w": 40,
+        "h": 40
+       },
+       {
+        "sel": "button.played-card__team-name",
+        "w": 40,
+        "h": 40
+       },
+       {
+        "sel": "button.played-card__team-name",
+        "w": 40,
+        "h": 40
+       },
+       {
+        "sel": "button.played-card__team-name",
+        "w": 40,
+        "h": 40
+       },
+       {
+        "sel": "button.played-card__team-name",
+        "w": 40,
+        "h": 40
+       },
+       {
+        "sel": "button.played-card__team-name",
+        "w": 40,
+        "h": 40
+       },
+       {
+        "sel": "button.played-card__team-name",
+        "w": 40,
+        "h": 40
        }
       ],
-      "overlaps": [
-       {
-        "a": "button.mobilebar__item",
-        "b": "button.played-nav__btn",
-        "area": 1703
-       },
-       {
-        "a": "button.mobilebar__item",
-        "b": "button.played-nav__btn",
-        "area": 1703
-       },
-       {
-        "a": "button.mobilebar__item",
-        "b": "button.played-nav__btn",
-        "area": 878
-       },
-       {
-        "a": "button.mobilebar__item",
-        "b": "button.played-nav__btn",
-        "area": 633
-       }
-      ]
+      "covered": []
      },
      "inputs_font": [
       {
@@ -585,7 +570,7 @@
      "view": "compare",
      "loaded": true,
      "error": null,
-     "load_ms": 44,
+     "load_ms": 46,
      "active_state": {
       "active": true,
       "visible": true,
@@ -599,37 +584,51 @@
       "offenders": []
      },
      "targets": {
-      "total": 11,
-      "small_count": 1,
+      "total": 26,
+      "small_count": 13,
       "worst": [
        {
-        "sel": "a.wordmark",
-        "w": 129,
-        "h": 20
+        "sel": "button.played-card__team-name",
+        "w": 32,
+        "h": 13
+       },
+       {
+        "sel": "button.played-card__team-name",
+        "w": 32,
+        "h": 13
+       },
+       {
+        "sel": "button.played-card__team-name",
+        "w": 32,
+        "h": 13
+       },
+       {
+        "sel": "button.played-card__team-name",
+        "w": 32,
+        "h": 13
+       },
+       {
+        "sel": "button.played-card__team-name",
+        "w": 32,
+        "h": 13
+       },
+       {
+        "sel": "button.played-card__team-name",
+        "w": 58,
+        "h": 13
+       },
+       {
+        "sel": "button.played-card__team-name",
+        "w": 58,
+        "h": 13
+       },
+       {
+        "sel": "button.played-card__team-name",
+        "w": 58,
+        "h": 13
        }
       ],
-      "overlaps": [
-       {
-        "a": "button.mobilebar__item",
-        "b": "div.compare__team",
-        "area": 975
-       },
-       {
-        "a": "button.mobilebar__item",
-        "b": "div.compare__team",
-        "area": 975
-       },
-       {
-        "a": "button.mobilebar__item",
-        "b": "div.compare__team",
-        "area": 487
-       },
-       {
-        "a": "button.mobilebar__item",
-        "b": "div.compare__team",
-        "area": 487
-       }
-      ]
+      "covered": []
      },
      "inputs_font": [
       {
@@ -676,7 +675,7 @@
      "view": "model",
      "loaded": true,
      "error": null,
-     "load_ms": 31,
+     "load_ms": 32,
      "active_state": {
       "active": true,
       "visible": true,
@@ -690,16 +689,26 @@
       "offenders": []
      },
      "targets": {
-      "total": 9,
-      "small_count": 1,
+      "total": 11,
+      "small_count": 3,
       "worst": [
+       {
+        "sel": "a",
+        "w": 110,
+        "h": 14
+       },
        {
         "sel": "a.wordmark",
         "w": 129,
         "h": 20
+       },
+       {
+        "sel": "a.skip-link",
+        "w": 153,
+        "h": 42
        }
       ],
-      "overlaps": []
+      "covered": []
      },
      "inputs_font": [
       {
@@ -767,21 +776,51 @@
      "offenders": []
     },
     "targets": {
-     "total": 10,
-     "small_count": 2,
+     "total": 46,
+     "small_count": 32,
      "worst": [
       {
-       "sel": "a.wordmark",
-       "w": 129,
-       "h": 20
+       "sel": "a",
+       "w": 110,
+       "h": 14
       },
       {
-       "sel": "button.team-back",
-       "w": 96,
+       "sel": "button.played-card__team-name",
+       "w": 40,
+       "h": 40
+      },
+      {
+       "sel": "button.played-card__team-name",
+       "w": 40,
+       "h": 40
+      },
+      {
+       "sel": "button.played-card__team-name",
+       "w": 40,
+       "h": 40
+      },
+      {
+       "sel": "button.played-card__team-name",
+       "w": 40,
+       "h": 40
+      },
+      {
+       "sel": "button.played-card__team-name",
+       "w": 40,
+       "h": 40
+      },
+      {
+       "sel": "button.played-card__team-name",
+       "w": 40,
+       "h": 40
+      },
+      {
+       "sel": "button.played-card__team-name",
+       "w": 40,
        "h": 40
       }
      ],
-     "overlaps": []
+     "covered": []
     },
     "inputs_font": [
      {
@@ -902,9 +941,9 @@
        "under_pointer": "button.sheet__item"
       },
       "state": {
-       "active": false,
-       "visible": false,
-       "url_view": "grid",
+       "active": true,
+       "visible": true,
+       "url_view": "ladder",
        "sheet_open": false,
        "expanded": "false"
       },
@@ -922,9 +961,9 @@
        "under_pointer": "button.sheet__item"
       },
       "state": {
-       "active": false,
-       "visible": false,
-       "url_view": "grid",
+       "active": true,
+       "visible": true,
+       "url_view": "compare",
        "sheet_open": false,
        "expanded": "false"
       },
@@ -942,9 +981,9 @@
        "under_pointer": "button.sheet__item"
       },
       "state": {
-       "active": false,
-       "visible": false,
-       "url_view": "grid",
+       "active": true,
+       "visible": true,
+       "url_view": "model",
        "sheet_open": false,
        "expanded": "false"
       },
@@ -964,28 +1003,7 @@
      "state": {
       "active": false,
       "visible": false,
-      "url_view": "grid",
-      "sheet_open": false,
-      "expanded": "false"
-     },
-     "sample": {
-      "frames": 29,
-      "max_doc_delta": 0,
-      "max_panel_delta": 0,
-      "scroll_y": 909,
-      "doc_h": 1477
-     },
-     "cls_delta": 0,
-     "scroll_y_after": 909,
-     "errors": [
-      "pageerror: switchView is not defined"
-     ]
-    },
-    "swipe2": {
-     "state": {
-      "active": true,
-      "visible": true,
-      "url_view": "grid",
+      "url_view": "played",
       "sheet_open": false,
       "expanded": "false"
      },
@@ -993,18 +1011,37 @@
       "frames": 28,
       "max_doc_delta": 0,
       "max_panel_delta": 0,
-      "scroll_y": 909,
-      "doc_h": 1477
+      "scroll_y": 0,
+      "doc_h": 1571
      },
      "cls_delta": 0,
-     "scroll_y_after": 909,
+     "scroll_y_after": 0,
+     "errors": []
+    },
+    "swipe2": {
+     "state": {
+      "active": false,
+      "visible": false,
+      "url_view": "played",
+      "sheet_open": false,
+      "expanded": "false"
+     },
+     "sample": {
+      "frames": 28,
+      "max_doc_delta": 0,
+      "max_panel_delta": 0,
+      "scroll_y": 0,
+      "doc_h": 1571
+     },
+     "cls_delta": 0,
+     "scroll_y_after": 0,
      "errors": []
     },
     "scroll": {
      "before": 909,
-     "after_swipe1": 909,
-     "after_swipe2": 909,
-     "restored": true
+     "after_swipe1": 0,
+     "after_swipe2": 0,
+     "restored": false
     },
     "cls_total": 0,
     "cls_entries": []
@@ -1076,9 +1113,7 @@
       "expanded": "false"
      },
      "ok": true,
-     "errors": [
-      "pageerror: switchView is not defined"
-     ]
+     "errors": []
     },
     {
      "view": "next-up",
@@ -1090,9 +1125,7 @@
       "expanded": "false"
      },
      "ok": true,
-     "errors": [
-      "pageerror: switchView is not defined"
-     ]
+     "errors": []
     },
     {
      "view": "played",
@@ -1104,9 +1137,7 @@
       "expanded": "false"
      },
      "ok": true,
-     "errors": [
-      "pageerror: switchView is not defined"
-     ]
+     "errors": []
     }
    ],
    "tab_jump": {
@@ -1121,9 +1152,7 @@
     "scroll_jump_px": 909,
     "doc_height_delta": 827,
     "cls_delta": 0,
-    "errors": [
-     "pageerror: switchView is not defined"
-    ]
+    "errors": []
    }
   },
   {
@@ -1137,7 +1166,7 @@
      "view": "grid",
      "loaded": true,
      "error": null,
-     "load_ms": 240,
+     "load_ms": 244,
      "active_state": {
       "active": true,
       "visible": true,
@@ -1151,32 +1180,26 @@
       "offenders": []
      },
      "targets": {
-      "total": 13,
-      "small_count": 1,
+      "total": 15,
+      "small_count": 3,
       "worst": [
        {
         "sel": "a.wordmark",
         "w": 129,
         "h": 20
+       },
+       {
+        "sel": "a",
+        "w": 188,
+        "h": 34
+       },
+       {
+        "sel": "a.skip-link",
+        "w": 153,
+        "h": 42
        }
       ],
-      "overlaps": [
-       {
-        "a": "button.mobilebar__item",
-        "b": "button.grid-anim-btn",
-        "area": 2531
-       },
-       {
-        "a": "button.mobilebar__item",
-        "b": "button.grid-anim-btn",
-        "area": 1339
-       },
-       {
-        "a": "button.mobilebar__item",
-        "b": "button.grid-anim-btn",
-        "area": 1283
-       }
-      ]
+      "covered": []
      },
      "inputs_font": [
       {
@@ -1227,7 +1250,7 @@
      "view": "table",
      "loaded": true,
      "error": null,
-     "load_ms": 49,
+     "load_ms": 52,
      "active_state": {
       "active": true,
       "visible": true,
@@ -1241,8 +1264,8 @@
       "offenders": []
      },
      "targets": {
-      "total": 20,
-      "small_count": 5,
+      "total": 38,
+      "small_count": 7,
       "worst": [
        {
         "sel": "button.sort-btn",
@@ -1268,40 +1291,19 @@
         "sel": "a.wordmark",
         "w": 129,
         "h": 20
+       },
+       {
+        "sel": "a",
+        "w": 188,
+        "h": 34
+       },
+       {
+        "sel": "a.skip-link",
+        "w": 153,
+        "h": 42
        }
       ],
-      "overlaps": [
-       {
-        "a": "button.mobilebar__item",
-        "b": "button.sort-btn",
-        "area": 1241
-       },
-       {
-        "a": "button.mobilebar__item",
-        "b": "button.table-control-btn",
-        "area": 1205
-       },
-       {
-        "a": "button.mobilebar__item",
-        "b": "button.sort-btn",
-        "area": 1026
-       },
-       {
-        "a": "button.mobilebar__item",
-        "b": "button.sort-btn",
-        "area": 965
-       },
-       {
-        "a": "button.mobilebar__item",
-        "b": "button.table-control-btn",
-        "area": 958
-       },
-       {
-        "a": "button.mobilebar__item",
-        "b": "button.table-control-btn",
-        "area": 675
-       }
-      ]
+      "covered": []
      },
      "inputs_font": [
       {
@@ -1352,7 +1354,7 @@
      "view": "ladder",
      "loaded": true,
      "error": null,
-     "load_ms": 37,
+     "load_ms": 43,
      "active_state": {
       "active": true,
       "visible": true,
@@ -1366,32 +1368,26 @@
       "offenders": []
      },
      "targets": {
-      "total": 13,
-      "small_count": 1,
+      "total": 47,
+      "small_count": 3,
       "worst": [
        {
         "sel": "a.wordmark",
         "w": 129,
         "h": 20
+       },
+       {
+        "sel": "a",
+        "w": 188,
+        "h": 34
+       },
+       {
+        "sel": "a.skip-link",
+        "w": 153,
+        "h": 42
        }
       ],
-      "overlaps": [
-       {
-        "a": "button.mobilebar__item",
-        "b": "button.grid-anim-btn",
-        "area": 2531
-       },
-       {
-        "a": "button.mobilebar__item",
-        "b": "button.grid-anim-btn",
-        "area": 1553
-       },
-       {
-        "a": "button.mobilebar__item",
-        "b": "button.grid-anim-btn",
-        "area": 1069
-       }
-      ]
+      "covered": []
      },
      "inputs_font": [
       {
@@ -1442,7 +1438,7 @@
      "view": "next-up",
      "loaded": true,
      "error": null,
-     "load_ms": 38,
+     "load_ms": 37,
      "active_state": {
       "active": true,
       "visible": true,
@@ -1456,8 +1452,8 @@
       "offenders": []
      },
      "targets": {
-      "total": 13,
-      "small_count": 3,
+      "total": 27,
+      "small_count": 17,
       "worst": [
        {
         "sel": "button.played-card__team-name",
@@ -1470,33 +1466,37 @@
         "h": 40
        },
        {
-        "sel": "a.wordmark",
-        "w": 129,
-        "h": 20
+        "sel": "button.played-card__team-name",
+        "w": 40,
+        "h": 40
+       },
+       {
+        "sel": "button.played-card__team-name",
+        "w": 40,
+        "h": 40
+       },
+       {
+        "sel": "button.played-card__team-name",
+        "w": 40,
+        "h": 40
+       },
+       {
+        "sel": "button.played-card__team-name",
+        "w": 40,
+        "h": 40
+       },
+       {
+        "sel": "button.played-card__team-name",
+        "w": 40,
+        "h": 40
+       },
+       {
+        "sel": "button.played-card__team-name",
+        "w": 40,
+        "h": 40
        }
       ],
-      "overlaps": [
-       {
-        "a": "button.mobilebar__item",
-        "b": "button.played-card__team-name",
-        "area": 279
-       },
-       {
-        "a": "button.mobilebar__item",
-        "b": "button.played-card__team-name",
-        "area": 279
-       },
-       {
-        "a": "button.mobilebar__item",
-        "b": "button.played-card__team-name",
-        "area": 85
-       },
-       {
-        "a": "button.mobilebar__item",
-        "b": "button.played-card__team-name",
-        "area": 85
-       }
-      ]
+      "covered": []
      },
      "inputs_font": [
       {
@@ -1543,7 +1543,7 @@
      "view": "played",
      "loaded": true,
      "error": null,
-     "load_ms": 42,
+     "load_ms": 40,
      "active_state": {
       "active": true,
       "visible": true,
@@ -1557,8 +1557,8 @@
       "offenders": []
      },
      "targets": {
-      "total": 15,
-      "small_count": 5,
+      "total": 31,
+      "small_count": 21,
       "worst": [
        {
         "sel": "button.played-card__team-name",
@@ -1581,23 +1581,27 @@
         "h": 40
        },
        {
-        "sel": "a.wordmark",
-        "w": 129,
-        "h": 20
-       }
-      ],
-      "overlaps": [
-       {
-        "a": "button.mobilebar__item",
-        "b": "button.played-card__team-name",
-        "area": 1405
+        "sel": "button.played-card__team-name",
+        "w": 40,
+        "h": 40
        },
        {
-        "a": "button.mobilebar__item",
-        "b": "button.played-card__team-name",
-        "area": 1405
+        "sel": "button.played-card__team-name",
+        "w": 40,
+        "h": 40
+       },
+       {
+        "sel": "button.played-card__team-name",
+        "w": 40,
+        "h": 40
+       },
+       {
+        "sel": "button.played-card__team-name",
+        "w": 40,
+        "h": 40
        }
-      ]
+      ],
+      "covered": []
      },
      "inputs_font": [
       {
@@ -1658,37 +1662,51 @@
       "offenders": []
      },
      "targets": {
-      "total": 12,
-      "small_count": 1,
+      "total": 26,
+      "small_count": 13,
       "worst": [
        {
-        "sel": "a.wordmark",
-        "w": 129,
-        "h": 20
+        "sel": "button.played-card__team-name",
+        "w": 32,
+        "h": 13
+       },
+       {
+        "sel": "button.played-card__team-name",
+        "w": 32,
+        "h": 13
+       },
+       {
+        "sel": "button.played-card__team-name",
+        "w": 32,
+        "h": 13
+       },
+       {
+        "sel": "button.played-card__team-name",
+        "w": 32,
+        "h": 13
+       },
+       {
+        "sel": "button.played-card__team-name",
+        "w": 32,
+        "h": 13
+       },
+       {
+        "sel": "button.played-card__team-name",
+        "w": 58,
+        "h": 13
+       },
+       {
+        "sel": "button.played-card__team-name",
+        "w": 58,
+        "h": 13
+       },
+       {
+        "sel": "button.played-card__team-name",
+        "w": 58,
+        "h": 13
        }
       ],
-      "overlaps": [
-       {
-        "a": "button.mobilebar__item",
-        "b": "div.compare__team",
-        "area": 3026
-       },
-       {
-        "a": "button.mobilebar__item",
-        "b": "div.compare__team",
-        "area": 3026
-       },
-       {
-        "a": "button.mobilebar__item",
-        "b": "div.compare__team",
-        "area": 1694
-       },
-       {
-        "a": "button.mobilebar__item",
-        "b": "div.compare__team",
-        "area": 1694
-       }
-      ]
+      "covered": []
      },
      "inputs_font": [
       {
@@ -1749,16 +1767,26 @@
       "offenders": []
      },
      "targets": {
-      "total": 9,
-      "small_count": 1,
+      "total": 11,
+      "small_count": 3,
       "worst": [
        {
         "sel": "a.wordmark",
         "w": 129,
         "h": 20
+       },
+       {
+        "sel": "a",
+        "w": 188,
+        "h": 34
+       },
+       {
+        "sel": "a.skip-link",
+        "w": 153,
+        "h": 42
        }
       ],
-      "overlaps": []
+      "covered": []
      },
      "inputs_font": [
       {
@@ -1826,21 +1854,51 @@
      "offenders": []
     },
     "targets": {
-     "total": 10,
-     "small_count": 2,
+     "total": 46,
+     "small_count": 32,
      "worst": [
       {
-       "sel": "a.wordmark",
-       "w": 129,
-       "h": 20
+       "sel": "button.played-card__team-name",
+       "w": 40,
+       "h": 40
       },
       {
-       "sel": "button.team-back",
-       "w": 96,
+       "sel": "button.played-card__team-name",
+       "w": 40,
+       "h": 40
+      },
+      {
+       "sel": "button.played-card__team-name",
+       "w": 40,
+       "h": 40
+      },
+      {
+       "sel": "button.played-card__team-name",
+       "w": 40,
+       "h": 40
+      },
+      {
+       "sel": "button.played-card__team-name",
+       "w": 40,
+       "h": 40
+      },
+      {
+       "sel": "button.played-card__team-name",
+       "w": 40,
+       "h": 40
+      },
+      {
+       "sel": "button.played-card__team-name",
+       "w": 40,
+       "h": 40
+      },
+      {
+       "sel": "button.played-card__team-name",
+       "w": 40,
        "h": 40
       }
      ],
-     "overlaps": []
+     "covered": []
     },
     "inputs_font": [
      {
@@ -1933,9 +1991,9 @@
        "under_pointer": "button.sheet__item"
       },
       "state": {
-       "active": false,
-       "visible": false,
-       "url_view": "grid",
+       "active": true,
+       "visible": true,
+       "url_view": "ladder",
        "sheet_open": false,
        "expanded": "false"
       },
@@ -1953,9 +2011,9 @@
        "under_pointer": "button.sheet__item"
       },
       "state": {
-       "active": false,
-       "visible": false,
-       "url_view": "grid",
+       "active": true,
+       "visible": true,
+       "url_view": "compare",
        "sheet_open": false,
        "expanded": "false"
       },
@@ -1973,9 +2031,9 @@
        "under_pointer": "button.sheet__item"
       },
       "state": {
-       "active": false,
-       "visible": false,
-       "url_view": "grid",
+       "active": true,
+       "visible": true,
+       "url_view": "model",
        "sheet_open": false,
        "expanded": "false"
       },
@@ -1995,7 +2053,7 @@
      "state": {
       "active": false,
       "visible": false,
-      "url_view": "grid",
+      "url_view": "played",
       "sheet_open": false,
       "expanded": "false"
      },
@@ -2003,20 +2061,18 @@
       "frames": 29,
       "max_doc_delta": 0,
       "max_panel_delta": 0,
-      "scroll_y": 762,
-      "doc_h": 1429
+      "scroll_y": 0,
+      "doc_h": 1507
      },
      "cls_delta": 0,
-     "scroll_y_after": 762,
-     "errors": [
-      "pageerror: switchView is not defined"
-     ]
+     "scroll_y_after": 0,
+     "errors": []
     },
     "swipe2": {
      "state": {
-      "active": true,
-      "visible": true,
-      "url_view": "grid",
+      "active": false,
+      "visible": false,
+      "url_view": "played",
       "sheet_open": false,
       "expanded": "false"
      },
@@ -2024,18 +2080,18 @@
       "frames": 28,
       "max_doc_delta": 0,
       "max_panel_delta": 0,
-      "scroll_y": 762,
-      "doc_h": 1429
+      "scroll_y": 0,
+      "doc_h": 1507
      },
      "cls_delta": 0,
-     "scroll_y_after": 762,
+     "scroll_y_after": 0,
      "errors": []
     },
     "scroll": {
      "before": 762,
-     "after_swipe1": 762,
-     "after_swipe2": 762,
-     "restored": true
+     "after_swipe1": 0,
+     "after_swipe2": 0,
+     "restored": false
     },
     "cls_total": 0,
     "cls_entries": []
@@ -2107,9 +2163,7 @@
       "expanded": "false"
      },
      "ok": true,
-     "errors": [
-      "pageerror: switchView is not defined"
-     ]
+     "errors": []
     },
     {
      "view": "next-up",
@@ -2121,9 +2175,7 @@
       "expanded": "false"
      },
      "ok": true,
-     "errors": [
-      "pageerror: switchView is not defined"
-     ]
+     "errors": []
     },
     {
      "view": "played",
@@ -2135,9 +2187,7 @@
       "expanded": "false"
      },
      "ok": true,
-     "errors": [
-      "pageerror: switchView is not defined"
-     ]
+     "errors": []
     }
    ],
    "tab_jump": {
@@ -2152,9 +2202,7 @@
     "scroll_jump_px": 762,
     "doc_height_delta": 783,
     "cls_delta": 0,
-    "errors": [
-     "pageerror: switchView is not defined"
-    ]
+    "errors": []
    }
   },
   {
@@ -2168,7 +2216,7 @@
      "view": "grid",
      "loaded": true,
      "error": null,
-     "load_ms": 237,
+     "load_ms": 245,
      "active_state": {
       "active": true,
       "visible": true,
@@ -2182,16 +2230,26 @@
       "offenders": []
      },
      "targets": {
-      "total": 13,
-      "small_count": 1,
+      "total": 15,
+      "small_count": 3,
       "worst": [
+       {
+        "sel": "a",
+        "w": 110,
+        "h": 14
+       },
        {
         "sel": "a.wordmark",
         "w": 129,
         "h": 20
+       },
+       {
+        "sel": "a.skip-link",
+        "w": 153,
+        "h": 42
        }
       ],
-      "overlaps": []
+      "covered": []
      },
      "inputs_font": [
       {
@@ -2221,7 +2279,7 @@
        "h": 53,
        "z": "40",
        "pe": "auto",
-       "covers_text": 41
+       "covers_text": 42
       },
       {
        "sel": "div.ptr-indicator",
@@ -2296,7 +2354,7 @@
      "view": "table",
      "loaded": true,
      "error": null,
-     "load_ms": 49,
+     "load_ms": 51,
      "active_state": {
       "active": true,
       "visible": true,
@@ -2310,8 +2368,8 @@
       "offenders": []
      },
      "targets": {
-      "total": 22,
-      "small_count": 5,
+      "total": 38,
+      "small_count": 7,
       "worst": [
        {
         "sel": "button.sort-btn",
@@ -2329,6 +2387,11 @@
         "h": 44
        },
        {
+        "sel": "a",
+        "w": 110,
+        "h": 14
+       },
+       {
         "sel": "button.sort-btn",
         "w": 36,
         "h": 44
@@ -2337,20 +2400,14 @@
         "sel": "a.wordmark",
         "w": 129,
         "h": 20
-       }
-      ],
-      "overlaps": [
-       {
-        "a": "button.mobilebar__item",
-        "b": "button.club-btn",
-        "area": 2764
        },
        {
-        "a": "button.mobilebar__item",
-        "b": "button.club-btn",
-        "area": 1163
+        "sel": "a.skip-link",
+        "w": 153,
+        "h": 42
        }
-      ]
+      ],
+      "covered": []
      },
      "inputs_font": [
       {
@@ -2401,7 +2458,7 @@
      "view": "ladder",
      "loaded": true,
      "error": null,
-     "load_ms": 37,
+     "load_ms": 38,
      "active_state": {
       "active": true,
       "visible": true,
@@ -2415,47 +2472,26 @@
       "offenders": []
      },
      "targets": {
-      "total": 17,
-      "small_count": 1,
+      "total": 47,
+      "small_count": 3,
       "worst": [
+       {
+        "sel": "a",
+        "w": 110,
+        "h": 14
+       },
        {
         "sel": "a.wordmark",
         "w": 129,
         "h": 20
+       },
+       {
+        "sel": "a.skip-link",
+        "w": 153,
+        "h": 42
        }
       ],
-      "overlaps": [
-       {
-        "a": "button.mobilebar__item",
-        "b": "button.ladder__team",
-        "area": 3131
-       },
-       {
-        "a": "button.mobilebar__item",
-        "b": "button.ladder__team",
-        "area": 3131
-       },
-       {
-        "a": "button.mobilebar__item",
-        "b": "button.ladder__team",
-        "area": 3131
-       },
-       {
-        "a": "button.mobilebar__item",
-        "b": "button.ladder__team",
-        "area": 2127
-       },
-       {
-        "a": "button.mobilebar__item",
-        "b": "button.ladder__team",
-        "area": 2127
-       },
-       {
-        "a": "button.mobilebar__item",
-        "b": "button.ladder__team",
-        "area": 925
-       }
-      ]
+      "covered": []
      },
      "inputs_font": [
       {
@@ -2520,13 +2556,13 @@
       "offenders": []
      },
      "targets": {
-      "total": 17,
-      "small_count": 7,
+      "total": 27,
+      "small_count": 17,
       "worst": [
        {
-        "sel": "button.played-card__team-name",
-        "w": 40,
-        "h": 40
+        "sel": "a",
+        "w": 110,
+        "h": 14
        },
        {
         "sel": "button.played-card__team-name",
@@ -2554,33 +2590,17 @@
         "h": 40
        },
        {
-        "sel": "a.wordmark",
-        "w": 129,
-        "h": 20
+        "sel": "button.played-card__team-name",
+        "w": 40,
+        "h": 40
+       },
+       {
+        "sel": "button.played-card__team-name",
+        "w": 40,
+        "h": 40
        }
       ],
-      "overlaps": [
-       {
-        "a": "button.mobilebar__item",
-        "b": "button.played-card__team-name",
-        "area": 1160
-       },
-       {
-        "a": "button.mobilebar__item",
-        "b": "button.played-card__team-name",
-        "area": 1160
-       },
-       {
-        "a": "button.mobilebar__item",
-        "b": "button.played-card__team-name",
-        "area": 440
-       },
-       {
-        "a": "button.mobilebar__item",
-        "b": "button.played-card__team-name",
-        "area": 440
-       }
-      ]
+      "covered": []
      },
      "inputs_font": [
       {
@@ -2627,7 +2647,7 @@
      "view": "played",
      "loaded": true,
      "error": null,
-     "load_ms": 40,
+     "load_ms": 39,
      "active_state": {
       "active": true,
       "visible": true,
@@ -2641,13 +2661,13 @@
       "offenders": []
      },
      "targets": {
-      "total": 19,
-      "small_count": 9,
+      "total": 31,
+      "small_count": 21,
       "worst": [
        {
-        "sel": "button.played-card__team-name",
-        "w": 40,
-        "h": 40
+        "sel": "a",
+        "w": 110,
+        "h": 14
        },
        {
         "sel": "button.played-card__team-name",
@@ -2685,18 +2705,7 @@
         "h": 40
        }
       ],
-      "overlaps": [
-       {
-        "a": "button.mobilebar__item",
-        "b": "button.played-card__team-name",
-        "area": 939
-       },
-       {
-        "a": "button.mobilebar__item",
-        "b": "button.played-card__team-name",
-        "area": 939
-       }
-      ]
+      "covered": []
      },
      "inputs_font": [
       {
@@ -2743,7 +2752,7 @@
      "view": "compare",
      "loaded": true,
      "error": null,
-     "load_ms": 46,
+     "load_ms": 45,
      "active_state": {
       "active": true,
       "visible": true,
@@ -2757,16 +2766,51 @@
       "offenders": []
      },
      "targets": {
-      "total": 12,
-      "small_count": 1,
+      "total": 26,
+      "small_count": 13,
       "worst": [
        {
-        "sel": "a.wordmark",
-        "w": 129,
-        "h": 20
+        "sel": "button.played-card__team-name",
+        "w": 32,
+        "h": 13
+       },
+       {
+        "sel": "button.played-card__team-name",
+        "w": 32,
+        "h": 13
+       },
+       {
+        "sel": "button.played-card__team-name",
+        "w": 32,
+        "h": 13
+       },
+       {
+        "sel": "button.played-card__team-name",
+        "w": 32,
+        "h": 13
+       },
+       {
+        "sel": "button.played-card__team-name",
+        "w": 32,
+        "h": 13
+       },
+       {
+        "sel": "button.played-card__team-name",
+        "w": 58,
+        "h": 13
+       },
+       {
+        "sel": "button.played-card__team-name",
+        "w": 58,
+        "h": 13
+       },
+       {
+        "sel": "button.played-card__team-name",
+        "w": 58,
+        "h": 13
        }
       ],
-      "overlaps": []
+      "covered": []
      },
      "inputs_font": [
       {
@@ -2827,16 +2871,26 @@
       "offenders": []
      },
      "targets": {
-      "total": 9,
-      "small_count": 1,
+      "total": 11,
+      "small_count": 3,
       "worst": [
+       {
+        "sel": "a",
+        "w": 110,
+        "h": 14
+       },
        {
         "sel": "a.wordmark",
         "w": 129,
         "h": 20
+       },
+       {
+        "sel": "a.skip-link",
+        "w": 153,
+        "h": 42
        }
       ],
-      "overlaps": []
+      "covered": []
      },
      "inputs_font": [
       {
@@ -2904,21 +2958,51 @@
      "offenders": []
     },
     "targets": {
-     "total": 10,
-     "small_count": 2,
+     "total": 46,
+     "small_count": 32,
      "worst": [
       {
-       "sel": "a.wordmark",
-       "w": 129,
-       "h": 20
+       "sel": "a",
+       "w": 110,
+       "h": 14
       },
       {
-       "sel": "button.team-back",
-       "w": 96,
+       "sel": "button.played-card__team-name",
+       "w": 40,
+       "h": 40
+      },
+      {
+       "sel": "button.played-card__team-name",
+       "w": 40,
+       "h": 40
+      },
+      {
+       "sel": "button.played-card__team-name",
+       "w": 40,
+       "h": 40
+      },
+      {
+       "sel": "button.played-card__team-name",
+       "w": 40,
+       "h": 40
+      },
+      {
+       "sel": "button.played-card__team-name",
+       "w": 40,
+       "h": 40
+      },
+      {
+       "sel": "button.played-card__team-name",
+       "w": 40,
+       "h": 40
+      },
+      {
+       "sel": "button.played-card__team-name",
+       "w": 40,
        "h": 40
       }
      ],
-     "overlaps": []
+     "covered": []
     },
     "inputs_font": [
      {
@@ -3004,9 +3088,9 @@
        "under_pointer": "button.sheet__item"
       },
       "state": {
-       "active": false,
-       "visible": false,
-       "url_view": "grid",
+       "active": true,
+       "visible": true,
+       "url_view": "ladder",
        "sheet_open": false,
        "expanded": "false"
       },
@@ -3024,9 +3108,9 @@
        "under_pointer": "button.sheet__item"
       },
       "state": {
-       "active": false,
-       "visible": false,
-       "url_view": "grid",
+       "active": true,
+       "visible": true,
+       "url_view": "compare",
        "sheet_open": false,
        "expanded": "false"
       },
@@ -3044,9 +3128,9 @@
        "under_pointer": "button.sheet__item"
       },
       "state": {
-       "active": false,
-       "visible": false,
-       "url_view": "grid",
+       "active": true,
+       "visible": true,
+       "url_view": "model",
        "sheet_open": false,
        "expanded": "false"
       },
@@ -3066,28 +3150,26 @@
      "state": {
       "active": false,
       "visible": false,
-      "url_view": "grid",
+      "url_view": "played",
       "sheet_open": false,
       "expanded": "false"
      },
      "sample": {
-      "frames": 28,
+      "frames": 29,
       "max_doc_delta": 0,
       "max_panel_delta": 0,
-      "scroll_y": 565,
-      "doc_h": 1409
+      "scroll_y": 0,
+      "doc_h": 1465
      },
      "cls_delta": 0,
-     "scroll_y_after": 565,
-     "errors": [
-      "pageerror: switchView is not defined"
-     ]
+     "scroll_y_after": 0,
+     "errors": []
     },
     "swipe2": {
      "state": {
-      "active": true,
-      "visible": true,
-      "url_view": "grid",
+      "active": false,
+      "visible": false,
+      "url_view": "played",
       "sheet_open": false,
       "expanded": "false"
      },
@@ -3095,18 +3177,18 @@
       "frames": 28,
       "max_doc_delta": 0,
       "max_panel_delta": 0,
-      "scroll_y": 565,
-      "doc_h": 1409
+      "scroll_y": 0,
+      "doc_h": 1465
      },
      "cls_delta": 0,
-     "scroll_y_after": 565,
+     "scroll_y_after": 0,
      "errors": []
     },
     "scroll": {
      "before": 565,
-     "after_swipe1": 565,
-     "after_swipe2": 565,
-     "restored": true
+     "after_swipe1": 0,
+     "after_swipe2": 0,
+     "restored": false
     },
     "cls_total": 0,
     "cls_entries": []
@@ -3178,9 +3260,7 @@
       "expanded": "false"
      },
      "ok": true,
-     "errors": [
-      "pageerror: switchView is not defined"
-     ]
+     "errors": []
     },
     {
      "view": "next-up",
@@ -3192,9 +3272,7 @@
       "expanded": "false"
      },
      "ok": true,
-     "errors": [
-      "pageerror: switchView is not defined"
-     ]
+     "errors": []
     },
     {
      "view": "played",
@@ -3206,9 +3284,7 @@
       "expanded": "false"
      },
      "ok": true,
-     "errors": [
-      "pageerror: switchView is not defined"
-     ]
+     "errors": []
     }
    ],
    "tab_jump": {
@@ -3223,9 +3299,7 @@
     "scroll_jump_px": 565,
     "doc_height_delta": 783,
     "cls_delta": 0,
-    "errors": [
-     "pageerror: switchView is not defined"
-    ]
+    "errors": []
    }
   },
   {
@@ -3239,7 +3313,7 @@
      "view": "grid",
      "loaded": true,
      "error": null,
-     "load_ms": 232,
+     "load_ms": 257,
      "active_state": {
       "active": true,
       "visible": true,
@@ -3253,16 +3327,26 @@
       "offenders": []
      },
      "targets": {
-      "total": 13,
-      "small_count": 1,
+      "total": 15,
+      "small_count": 3,
       "worst": [
+       {
+        "sel": "a",
+        "w": 110,
+        "h": 14
+       },
        {
         "sel": "a.wordmark",
         "w": 129,
         "h": 20
+       },
+       {
+        "sel": "a.skip-link",
+        "w": 153,
+        "h": 42
        }
       ],
-      "overlaps": []
+      "covered": []
      },
      "inputs_font": [
       {
@@ -3292,7 +3376,7 @@
        "h": 53,
        "z": "40",
        "pe": "auto",
-       "covers_text": 45
+       "covers_text": 46
       },
       {
        "sel": "div.ptr-indicator",
@@ -3403,7 +3487,7 @@
      "view": "table",
      "loaded": true,
      "error": null,
-     "load_ms": 50,
+     "load_ms": 49,
      "active_state": {
       "active": true,
       "visible": true,
@@ -3417,8 +3501,8 @@
       "offenders": []
      },
      "targets": {
-      "total": 23,
-      "small_count": 5,
+      "total": 38,
+      "small_count": 7,
       "worst": [
        {
         "sel": "button.sort-btn",
@@ -3436,6 +3520,11 @@
         "h": 44
        },
        {
+        "sel": "a",
+        "w": 110,
+        "h": 14
+       },
+       {
         "sel": "button.sort-btn",
         "w": 36,
         "h": 44
@@ -3444,20 +3533,14 @@
         "sel": "a.wordmark",
         "w": 129,
         "h": 20
-       }
-      ],
-      "overlaps": [
-       {
-        "a": "button.mobilebar__item",
-        "b": "button.club-btn",
-        "area": 801
        },
        {
-        "a": "button.mobilebar__item",
-        "b": "button.club-btn",
-        "area": 697
+        "sel": "a.skip-link",
+        "w": 153,
+        "h": 42
        }
-      ]
+      ],
+      "covered": []
      },
      "inputs_font": [
       {
@@ -3508,7 +3591,7 @@
      "view": "ladder",
      "loaded": true,
      "error": null,
-     "load_ms": 37,
+     "load_ms": 41,
      "active_state": {
       "active": true,
       "visible": true,
@@ -3522,47 +3605,26 @@
       "offenders": []
      },
      "targets": {
-      "total": 18,
-      "small_count": 1,
+      "total": 47,
+      "small_count": 3,
       "worst": [
+       {
+        "sel": "a",
+        "w": 110,
+        "h": 14
+       },
        {
         "sel": "a.wordmark",
         "w": 129,
         "h": 20
+       },
+       {
+        "sel": "a.skip-link",
+        "w": 153,
+        "h": 42
        }
       ],
-      "overlaps": [
-       {
-        "a": "button.mobilebar__item",
-        "b": "button.ladder__team",
-        "area": 3183
-       },
-       {
-        "a": "button.mobilebar__item",
-        "b": "button.ladder__team",
-        "area": 3183
-       },
-       {
-        "a": "button.mobilebar__item",
-        "b": "button.ladder__team",
-        "area": 3182
-       },
-       {
-        "a": "button.mobilebar__item",
-        "b": "button.ladder__team",
-        "area": 2217
-       },
-       {
-        "a": "button.mobilebar__item",
-        "b": "button.ladder__team",
-        "area": 2217
-       },
-       {
-        "a": "button.mobilebar__item",
-        "b": "button.ladder__team",
-        "area": 1102
-       }
-      ]
+      "covered": []
      },
      "inputs_font": [
       {
@@ -3613,7 +3675,7 @@
      "view": "next-up",
      "loaded": true,
      "error": null,
-     "load_ms": 38,
+     "load_ms": 39,
      "active_state": {
       "active": true,
       "visible": true,
@@ -3627,13 +3689,13 @@
       "offenders": []
      },
      "targets": {
-      "total": 19,
-      "small_count": 9,
+      "total": 27,
+      "small_count": 17,
       "worst": [
        {
-        "sel": "button.played-card__team-name",
-        "w": 40,
-        "h": 40
+        "sel": "a",
+        "w": 110,
+        "h": 14
        },
        {
         "sel": "button.played-card__team-name",
@@ -3671,7 +3733,7 @@
         "h": 40
        }
       ],
-      "overlaps": []
+      "covered": []
      },
      "inputs_font": [
       {
@@ -3718,7 +3780,7 @@
      "view": "played",
      "loaded": true,
      "error": null,
-     "load_ms": 40,
+     "load_ms": 44,
      "active_state": {
       "active": true,
       "visible": true,
@@ -3732,13 +3794,13 @@
       "offenders": []
      },
      "targets": {
-      "total": 21,
-      "small_count": 11,
+      "total": 31,
+      "small_count": 21,
       "worst": [
        {
-        "sel": "button.played-card__team-name",
-        "w": 40,
-        "h": 40
+        "sel": "a",
+        "w": 110,
+        "h": 14
        },
        {
         "sel": "button.played-card__team-name",
@@ -3776,28 +3838,7 @@
         "h": 40
        }
       ],
-      "overlaps": [
-       {
-        "a": "button.mobilebar__item",
-        "b": "button.played-card__team-name",
-        "area": 1341
-       },
-       {
-        "a": "button.mobilebar__item",
-        "b": "button.played-card__team-name",
-        "area": 1341
-       },
-       {
-        "a": "button.mobilebar__item",
-        "b": "button.played-card__team-name",
-        "area": 160
-       },
-       {
-        "a": "button.mobilebar__item",
-        "b": "button.played-card__team-name",
-        "area": 159
-       }
-      ]
+      "covered": []
      },
      "inputs_font": [
       {
@@ -3858,16 +3899,51 @@
       "offenders": []
      },
      "targets": {
-      "total": 12,
-      "small_count": 1,
+      "total": 26,
+      "small_count": 13,
       "worst": [
        {
-        "sel": "a.wordmark",
-        "w": 129,
-        "h": 20
+        "sel": "button.played-card__team-name",
+        "w": 32,
+        "h": 13
+       },
+       {
+        "sel": "button.played-card__team-name",
+        "w": 32,
+        "h": 13
+       },
+       {
+        "sel": "button.played-card__team-name",
+        "w": 32,
+        "h": 13
+       },
+       {
+        "sel": "button.played-card__team-name",
+        "w": 32,
+        "h": 13
+       },
+       {
+        "sel": "button.played-card__team-name",
+        "w": 32,
+        "h": 13
+       },
+       {
+        "sel": "button.played-card__team-name",
+        "w": 58,
+        "h": 13
+       },
+       {
+        "sel": "button.played-card__team-name",
+        "w": 58,
+        "h": 13
+       },
+       {
+        "sel": "button.played-card__team-name",
+        "w": 58,
+        "h": 13
        }
       ],
-      "overlaps": []
+      "covered": []
      },
      "inputs_font": [
       {
@@ -3914,7 +3990,7 @@
      "view": "model",
      "loaded": true,
      "error": null,
-     "load_ms": 36,
+     "load_ms": 35,
      "active_state": {
       "active": true,
       "visible": true,
@@ -3928,16 +4004,26 @@
       "offenders": []
      },
      "targets": {
-      "total": 9,
-      "small_count": 1,
+      "total": 11,
+      "small_count": 3,
       "worst": [
+       {
+        "sel": "a",
+        "w": 110,
+        "h": 14
+       },
        {
         "sel": "a.wordmark",
         "w": 129,
         "h": 20
+       },
+       {
+        "sel": "a.skip-link",
+        "w": 153,
+        "h": 42
        }
       ],
-      "overlaps": []
+      "covered": []
      },
      "inputs_font": [
       {
@@ -4005,21 +4091,51 @@
      "offenders": []
     },
     "targets": {
-     "total": 10,
-     "small_count": 2,
+     "total": 46,
+     "small_count": 32,
      "worst": [
       {
-       "sel": "a.wordmark",
-       "w": 129,
-       "h": 20
+       "sel": "a",
+       "w": 110,
+       "h": 14
       },
       {
-       "sel": "button.team-back",
-       "w": 96,
+       "sel": "button.played-card__team-name",
+       "w": 40,
+       "h": 40
+      },
+      {
+       "sel": "button.played-card__team-name",
+       "w": 40,
+       "h": 40
+      },
+      {
+       "sel": "button.played-card__team-name",
+       "w": 40,
+       "h": 40
+      },
+      {
+       "sel": "button.played-card__team-name",
+       "w": 40,
+       "h": 40
+      },
+      {
+       "sel": "button.played-card__team-name",
+       "w": 40,
+       "h": 40
+      },
+      {
+       "sel": "button.played-card__team-name",
+       "w": 40,
+       "h": 40
+      },
+      {
+       "sel": "button.played-card__team-name",
+       "w": 40,
        "h": 40
       }
      ],
-     "overlaps": []
+     "covered": []
     },
     "inputs_font": [
      {
@@ -4098,9 +4214,9 @@
        "under_pointer": "button.sheet__item"
       },
       "state": {
-       "active": false,
-       "visible": false,
-       "url_view": "grid",
+       "active": true,
+       "visible": true,
+       "url_view": "ladder",
        "sheet_open": false,
        "expanded": "false"
       },
@@ -4118,9 +4234,9 @@
        "under_pointer": "button.sheet__item"
       },
       "state": {
-       "active": false,
-       "visible": false,
-       "url_view": "grid",
+       "active": true,
+       "visible": true,
+       "url_view": "compare",
        "sheet_open": false,
        "expanded": "false"
       },
@@ -4138,9 +4254,9 @@
        "under_pointer": "button.sheet__item"
       },
       "state": {
-       "active": false,
-       "visible": false,
-       "url_view": "grid",
+       "active": true,
+       "visible": true,
+       "url_view": "model",
        "sheet_open": false,
        "expanded": "false"
       },
@@ -4160,7 +4276,7 @@
      "state": {
       "active": false,
       "visible": false,
-      "url_view": "grid",
+      "url_view": "played",
       "sheet_open": false,
       "expanded": "false"
      },
@@ -4168,20 +4284,18 @@
       "frames": 29,
       "max_doc_delta": 0,
       "max_panel_delta": 0,
-      "scroll_y": 494,
-      "doc_h": 1409
+      "scroll_y": 0,
+      "doc_h": 1465
      },
      "cls_delta": 0,
-     "scroll_y_after": 494,
-     "errors": [
-      "pageerror: switchView is not defined"
-     ]
+     "scroll_y_after": 0,
+     "errors": []
     },
     "swipe2": {
      "state": {
-      "active": true,
-      "visible": true,
-      "url_view": "grid",
+      "active": false,
+      "visible": false,
+      "url_view": "played",
       "sheet_open": false,
       "expanded": "false"
      },
@@ -4189,18 +4303,18 @@
       "frames": 28,
       "max_doc_delta": 0,
       "max_panel_delta": 0,
-      "scroll_y": 494,
-      "doc_h": 1409
+      "scroll_y": 0,
+      "doc_h": 1465
      },
      "cls_delta": 0,
-     "scroll_y_after": 494,
+     "scroll_y_after": 0,
      "errors": []
     },
     "scroll": {
      "before": 494,
-     "after_swipe1": 494,
-     "after_swipe2": 494,
-     "restored": true
+     "after_swipe1": 0,
+     "after_swipe2": 0,
+     "restored": false
     },
     "cls_total": 0,
     "cls_entries": []
@@ -4216,7 +4330,7 @@
      },
      "cls": 0,
      "sample": {
-      "frames": 21,
+      "frames": 22,
       "max_doc_delta": 0,
       "max_panel_delta": 0,
       "scroll_y": 0,
@@ -4272,9 +4386,7 @@
       "expanded": "false"
      },
      "ok": true,
-     "errors": [
-      "pageerror: switchView is not defined"
-     ]
+     "errors": []
     },
     {
      "view": "next-up",
@@ -4286,9 +4398,7 @@
       "expanded": "false"
      },
      "ok": true,
-     "errors": [
-      "pageerror: switchView is not defined"
-     ]
+     "errors": []
     },
     {
      "view": "played",
@@ -4300,9 +4410,7 @@
       "expanded": "false"
      },
      "ok": true,
-     "errors": [
-      "pageerror: switchView is not defined"
-     ]
+     "errors": []
     }
    ],
    "tab_jump": {
@@ -4317,9 +4425,7 @@
     "scroll_jump_px": 494,
     "doc_height_delta": 783,
     "cls_delta": 0,
-    "errors": [
-     "pageerror: switchView is not defined"
-    ]
+    "errors": []
    }
   },
   {
@@ -4347,27 +4453,51 @@
       "offenders": []
      },
      "targets": {
-      "total": 11,
-      "small_count": 1,
+      "total": 33,
+      "small_count": 19,
       "worst": [
        {
-        "sel": "a.wordmark",
-        "w": 251,
-        "h": 26
-       }
-      ],
-      "overlaps": [
-       {
-        "a": "button",
-        "b": "button.settings-btn",
-        "area": 1191
+        "sel": "button.grid__team-name",
+        "w": 35,
+        "h": 19
        },
        {
-        "a": "button",
-        "b": "button.settings-btn",
-        "area": 657
+        "sel": "button.grid__team-name",
+        "w": 45,
+        "h": 19
+       },
+       {
+        "sel": "button.grid__team-name",
+        "w": 46,
+        "h": 19
+       },
+       {
+        "sel": "button.grid__team-name",
+        "w": 46,
+        "h": 19
+       },
+       {
+        "sel": "button.grid__team-name",
+        "w": 46,
+        "h": 19
+       },
+       {
+        "sel": "button.grid__team-name",
+        "w": 56,
+        "h": 19
+       },
+       {
+        "sel": "button.grid__team-name",
+        "w": 68,
+        "h": 19
+       },
+       {
+        "sel": "button.grid__team-name",
+        "w": 70,
+        "h": 19
        }
-      ]
+      ],
+      "covered": []
      },
      "inputs_font": [
       {
@@ -4400,7 +4530,7 @@
      "view": "table",
      "loaded": true,
      "error": null,
-     "load_ms": 48,
+     "load_ms": 51,
      "active_state": {
       "active": true,
       "visible": true,
@@ -4414,27 +4544,51 @@
       "offenders": []
      },
      "targets": {
-      "total": 11,
-      "small_count": 1,
+      "total": 46,
+      "small_count": 10,
       "worst": [
        {
-        "sel": "a.wordmark",
-        "w": 251,
-        "h": 26
-       }
-      ],
-      "overlaps": [
-       {
-        "a": "button",
-        "b": "button.settings-btn",
-        "area": 1191
+        "sel": "button.sort-btn",
+        "w": 35,
+        "h": 44
        },
        {
-        "a": "button",
-        "b": "button.settings-btn",
-        "area": 657
+        "sel": "button.sort-btn",
+        "w": 35,
+        "h": 44
+       },
+       {
+        "sel": "button.sort-btn",
+        "w": 35,
+        "h": 44
+       },
+       {
+        "sel": "a",
+        "w": 110,
+        "h": 14
+       },
+       {
+        "sel": "button.sort-btn",
+        "w": 36,
+        "h": 44
+       },
+       {
+        "sel": "button.sort-btn",
+        "w": 36,
+        "h": 44
+       },
+       {
+        "sel": "button.sort-btn",
+        "w": 36,
+        "h": 44
+       },
+       {
+        "sel": "button.sort-btn",
+        "w": 36,
+        "h": 44
        }
-      ]
+      ],
+      "covered": []
      },
      "inputs_font": [
       {
@@ -4467,7 +4621,7 @@
      "view": "ladder",
      "loaded": true,
      "error": null,
-     "load_ms": 33,
+     "load_ms": 36,
      "active_state": {
       "active": true,
       "visible": true,
@@ -4481,27 +4635,51 @@
       "offenders": []
      },
      "targets": {
-      "total": 11,
-      "small_count": 1,
+      "total": 49,
+      "small_count": 35,
       "worst": [
        {
-        "sel": "a.wordmark",
-        "w": 251,
-        "h": 26
-       }
-      ],
-      "overlaps": [
-       {
-        "a": "button",
-        "b": "button.settings-btn",
-        "area": 1191
+        "sel": "button.ladder__team",
+        "w": 24,
+        "h": 24
        },
        {
-        "a": "button",
-        "b": "button.settings-btn",
-        "area": 657
+        "sel": "button.ladder__team",
+        "w": 24,
+        "h": 24
+       },
+       {
+        "sel": "button.ladder__team",
+        "w": 24,
+        "h": 24
+       },
+       {
+        "sel": "button.ladder__team",
+        "w": 24,
+        "h": 24
+       },
+       {
+        "sel": "button.ladder__team",
+        "w": 24,
+        "h": 24
+       },
+       {
+        "sel": "button.ladder__team",
+        "w": 24,
+        "h": 24
+       },
+       {
+        "sel": "button.ladder__team",
+        "w": 24,
+        "h": 24
+       },
+       {
+        "sel": "button.ladder__team",
+        "w": 24,
+        "h": 24
        }
-      ]
+      ],
+      "covered": []
      },
      "inputs_font": [
       {
@@ -4534,7 +4712,7 @@
      "view": "next-up",
      "loaded": true,
      "error": null,
-     "load_ms": 34,
+     "load_ms": 36,
      "active_state": {
       "active": true,
       "visible": true,
@@ -4548,27 +4726,51 @@
       "offenders": []
      },
      "targets": {
-      "total": 11,
-      "small_count": 1,
+      "total": 29,
+      "small_count": 17,
       "worst": [
        {
-        "sel": "a.wordmark",
-        "w": 251,
-        "h": 26
-       }
-      ],
-      "overlaps": [
-       {
-        "a": "button",
-        "b": "button.settings-btn",
-        "area": 1191
+        "sel": "button.played-card__team-name",
+        "w": 35,
+        "h": 19
        },
        {
-        "a": "button",
-        "b": "button.settings-btn",
-        "area": 657
+        "sel": "button.played-card__team-name",
+        "w": 45,
+        "h": 19
+       },
+       {
+        "sel": "button.played-card__team-name",
+        "w": 46,
+        "h": 19
+       },
+       {
+        "sel": "button.played-card__team-name",
+        "w": 46,
+        "h": 19
+       },
+       {
+        "sel": "button.played-card__team-name",
+        "w": 56,
+        "h": 19
+       },
+       {
+        "sel": "button.played-card__team-name",
+        "w": 68,
+        "h": 19
+       },
+       {
+        "sel": "button.played-card__team-name",
+        "w": 70,
+        "h": 19
+       },
+       {
+        "sel": "button.played-card__team-name",
+        "w": 73,
+        "h": 19
        }
-      ]
+      ],
+      "covered": []
      },
      "inputs_font": [
       {
@@ -4597,7 +4799,7 @@
      "view": "played",
      "loaded": true,
      "error": null,
-     "load_ms": 38,
+     "load_ms": 41,
      "active_state": {
       "active": true,
       "visible": true,
@@ -4611,27 +4813,51 @@
       "offenders": []
      },
      "targets": {
-      "total": 11,
-      "small_count": 1,
+      "total": 33,
+      "small_count": 21,
       "worst": [
        {
-        "sel": "a.wordmark",
-        "w": 251,
-        "h": 26
-       }
-      ],
-      "overlaps": [
-       {
-        "a": "button",
-        "b": "button.settings-btn",
-        "area": 1191
+        "sel": "button.played-card__team-name",
+        "w": 35,
+        "h": 19
        },
        {
-        "a": "button",
-        "b": "button.settings-btn",
-        "area": 657
+        "sel": "button.played-card__team-name",
+        "w": 45,
+        "h": 19
+       },
+       {
+        "sel": "button.played-card__team-name",
+        "w": 46,
+        "h": 19
+       },
+       {
+        "sel": "button.played-card__team-name",
+        "w": 46,
+        "h": 19
+       },
+       {
+        "sel": "button.played-card__team-name",
+        "w": 46,
+        "h": 19
+       },
+       {
+        "sel": "button.played-card__team-name",
+        "w": 56,
+        "h": 19
+       },
+       {
+        "sel": "button.played-card__team-name",
+        "w": 68,
+        "h": 19
+       },
+       {
+        "sel": "button.played-card__team-name",
+        "w": 70,
+        "h": 19
        }
-      ]
+      ],
+      "covered": []
      },
      "inputs_font": [
       {
@@ -4660,7 +4886,7 @@
      "view": "compare",
      "loaded": true,
      "error": null,
-     "load_ms": 41,
+     "load_ms": 45,
      "active_state": {
       "active": true,
       "visible": true,
@@ -4674,27 +4900,51 @@
       "offenders": []
      },
      "targets": {
-      "total": 11,
-      "small_count": 1,
+      "total": 28,
+      "small_count": 14,
       "worst": [
        {
-        "sel": "a.wordmark",
-        "w": 251,
-        "h": 26
-       }
-      ],
-      "overlaps": [
-       {
-        "a": "button",
-        "b": "button.settings-btn",
-        "area": 1191
+        "sel": "button.played-card__team-name",
+        "w": 46,
+        "h": 19
        },
        {
-        "a": "button",
-        "b": "button.settings-btn",
-        "area": 657
+        "sel": "button.played-card__team-name",
+        "w": 46,
+        "h": 19
+       },
+       {
+        "sel": "button.played-card__team-name",
+        "w": 46,
+        "h": 19
+       },
+       {
+        "sel": "button.played-card__team-name",
+        "w": 46,
+        "h": 19
+       },
+       {
+        "sel": "button.played-card__team-name",
+        "w": 46,
+        "h": 19
+       },
+       {
+        "sel": "button.compare__swap-center",
+        "w": 38,
+        "h": 38
+       },
+       {
+        "sel": "a",
+        "w": 110,
+        "h": 14
+       },
+       {
+        "sel": "button.played-card__team-name",
+        "w": 84,
+        "h": 19
        }
-      ]
+      ],
+      "covered": []
      },
      "inputs_font": [
       {
@@ -4723,7 +4973,7 @@
      "view": "model",
      "loaded": true,
      "error": null,
-     "load_ms": 29,
+     "load_ms": 32,
      "active_state": {
       "active": true,
       "visible": true,
@@ -4737,27 +4987,26 @@
       "offenders": []
      },
      "targets": {
-      "total": 11,
-      "small_count": 1,
+      "total": 13,
+      "small_count": 3,
       "worst": [
+       {
+        "sel": "a",
+        "w": 110,
+        "h": 14
+       },
+       {
+        "sel": "a.skip-link",
+        "w": 153,
+        "h": 42
+       },
        {
         "sel": "a.wordmark",
         "w": 251,
         "h": 26
        }
       ],
-      "overlaps": [
-       {
-        "a": "button",
-        "b": "button.settings-btn",
-        "area": 1936
-       },
-       {
-        "a": "a.wordmark",
-        "b": "button",
-        "area": 1370
-       }
-      ]
+      "covered": []
      },
      "inputs_font": [
       {
@@ -4807,32 +5056,51 @@
      "offenders": []
     },
     "targets": {
-     "total": 12,
-     "small_count": 2,
+     "total": 48,
+     "small_count": 32,
      "worst": [
       {
-       "sel": "button.team-back",
-       "w": 96,
-       "h": 40
+       "sel": "button.played-card__team-name",
+       "w": 45,
+       "h": 19
       },
       {
-       "sel": "a.wordmark",
-       "w": 251,
-       "h": 26
+       "sel": "button.played-card__team-name",
+       "w": 46,
+       "h": 19
+      },
+      {
+       "sel": "button.played-card__team-name",
+       "w": 46,
+       "h": 19
+      },
+      {
+       "sel": "button.played-card__team-name",
+       "w": 46,
+       "h": 19
+      },
+      {
+       "sel": "button.played-card__team-name",
+       "w": 46,
+       "h": 19
+      },
+      {
+       "sel": "button.played-card__team-name",
+       "w": 46,
+       "h": 19
+      },
+      {
+       "sel": "button.played-card__team-name",
+       "w": 46,
+       "h": 19
+      },
+      {
+       "sel": "button.played-card__team-name",
+       "w": 46,
+       "h": 19
       }
      ],
-     "overlaps": [
-      {
-       "a": "button",
-       "b": "button.settings-btn",
-       "area": 1191
-      },
-      {
-       "a": "button",
-       "b": "button.settings-btn",
-       "area": 657
-      }
-     ]
+     "covered": []
     },
     "inputs_font": [
      {
@@ -4924,7 +5192,7 @@
      "view": "grid",
      "loaded": true,
      "error": null,
-     "load_ms": 218,
+     "load_ms": 221,
      "active_state": {
       "active": true,
       "visible": true,
@@ -4938,12 +5206,22 @@
       "offenders": []
      },
      "targets": {
-      "total": 25,
-      "small_count": 11,
+      "total": 33,
+      "small_count": 19,
       "worst": [
        {
         "sel": "button.grid__team-name",
+        "w": 35,
+        "h": 19
+       },
+       {
+        "sel": "button.grid__team-name",
         "w": 45,
+        "h": 19
+       },
+       {
+        "sel": "button.grid__team-name",
+        "w": 46,
         "h": 19
        },
        {
@@ -4963,32 +5241,16 @@
        },
        {
         "sel": "button.grid__team-name",
-        "w": 73,
+        "w": 68,
         "h": 19
        },
        {
         "sel": "button.grid__team-name",
-        "w": 81,
-        "h": 19
-       },
-       {
-        "sel": "button.grid__team-name",
-        "w": 82,
-        "h": 19
-       },
-       {
-        "sel": "button.grid__team-name",
-        "w": 84,
+        "w": 70,
         "h": 19
        }
       ],
-      "overlaps": [
-       {
-        "a": "button",
-        "b": "button.settings-btn",
-        "area": 1936
-       }
-      ]
+      "covered": []
      },
      "inputs_font": [
       {
@@ -5111,7 +5373,7 @@
      "view": "table",
      "loaded": true,
      "error": null,
-     "load_ms": 51,
+     "load_ms": 62,
      "active_state": {
       "active": true,
       "visible": true,
@@ -5125,8 +5387,8 @@
       "offenders": []
      },
      "targets": {
-      "total": 33,
-      "small_count": 8,
+      "total": 46,
+      "small_count": 10,
       "worst": [
        {
         "sel": "button.sort-btn",
@@ -5144,9 +5406,9 @@
         "h": 44
        },
        {
-        "sel": "button.sort-btn",
-        "w": 36,
-        "h": 44
+        "sel": "a",
+        "w": 110,
+        "h": 14
        },
        {
         "sel": "button.sort-btn",
@@ -5164,18 +5426,12 @@
         "h": 44
        },
        {
-        "sel": "a.wordmark",
-        "w": 251,
-        "h": 26
+        "sel": "button.sort-btn",
+        "w": 36,
+        "h": 44
        }
       ],
-      "overlaps": [
-       {
-        "a": "button",
-        "b": "button.settings-btn",
-        "area": 1936
-       }
-      ]
+      "covered": []
      },
      "inputs_font": [
       {
@@ -5208,7 +5464,7 @@
      "view": "ladder",
      "loaded": true,
      "error": null,
-     "load_ms": 33,
+     "load_ms": 41,
      "active_state": {
       "active": true,
       "visible": true,
@@ -5222,8 +5478,8 @@
       "offenders": []
      },
      "targets": {
-      "total": 47,
-      "small_count": 33,
+      "total": 49,
+      "small_count": 35,
       "worst": [
        {
         "sel": "button.ladder__team",
@@ -5266,13 +5522,7 @@
         "h": 24
        }
       ],
-      "overlaps": [
-       {
-        "a": "button",
-        "b": "button.settings-btn",
-        "area": 1936
-       }
-      ]
+      "covered": []
      },
      "inputs_font": [
       {
@@ -5305,7 +5555,7 @@
      "view": "next-up",
      "loaded": true,
      "error": null,
-     "load_ms": 35,
+     "load_ms": 37,
      "active_state": {
       "active": true,
       "visible": true,
@@ -5319,12 +5569,22 @@
       "offenders": []
      },
      "targets": {
-      "total": 21,
-      "small_count": 9,
+      "total": 29,
+      "small_count": 17,
       "worst": [
        {
         "sel": "button.played-card__team-name",
+        "w": 35,
+        "h": 19
+       },
+       {
+        "sel": "button.played-card__team-name",
         "w": 45,
+        "h": 19
+       },
+       {
+        "sel": "button.played-card__team-name",
+        "w": 46,
         "h": 19
        },
        {
@@ -5339,37 +5599,21 @@
        },
        {
         "sel": "button.played-card__team-name",
-        "w": 81,
+        "w": 68,
         "h": 19
        },
        {
         "sel": "button.played-card__team-name",
-        "w": 82,
+        "w": 70,
         "h": 19
        },
        {
         "sel": "button.played-card__team-name",
-        "w": 84,
-        "h": 19
-       },
-       {
-        "sel": "button.played-card__team-name",
-        "w": 84,
-        "h": 19
-       },
-       {
-        "sel": "button.played-card__team-name",
-        "w": 94,
+        "w": 73,
         "h": 19
        }
       ],
-      "overlaps": [
-       {
-        "a": "button",
-        "b": "button.settings-btn",
-        "area": 1936
-       }
-      ]
+      "covered": []
      },
      "inputs_font": [
       {
@@ -5398,7 +5642,7 @@
      "view": "played",
      "loaded": true,
      "error": null,
-     "load_ms": 37,
+     "load_ms": 42,
      "active_state": {
       "active": true,
       "visible": true,
@@ -5412,8 +5656,8 @@
       "offenders": []
      },
      "targets": {
-      "total": 25,
-      "small_count": 13,
+      "total": 33,
+      "small_count": 21,
       "worst": [
        {
         "sel": "button.played-card__team-name",
@@ -5423,6 +5667,16 @@
        {
         "sel": "button.played-card__team-name",
         "w": 45,
+        "h": 19
+       },
+       {
+        "sel": "button.played-card__team-name",
+        "w": 46,
+        "h": 19
+       },
+       {
+        "sel": "button.played-card__team-name",
+        "w": 46,
         "h": 19
        },
        {
@@ -5442,27 +5696,11 @@
        },
        {
         "sel": "button.played-card__team-name",
-        "w": 73,
-        "h": 19
-       },
-       {
-        "sel": "button.played-card__team-name",
-        "w": 74,
-        "h": 19
-       },
-       {
-        "sel": "button.played-card__team-name",
-        "w": 81,
+        "w": 70,
         "h": 19
        }
       ],
-      "overlaps": [
-       {
-        "a": "button",
-        "b": "button.settings-btn",
-        "area": 1936
-       }
-      ]
+      "covered": []
      },
      "inputs_font": [
       {
@@ -5491,7 +5729,7 @@
      "view": "compare",
      "loaded": true,
      "error": null,
-     "load_ms": 40,
+     "load_ms": 41,
      "active_state": {
       "active": true,
       "visible": true,
@@ -5505,32 +5743,51 @@
       "offenders": []
      },
      "targets": {
-      "total": 14,
-      "small_count": 2,
+      "total": 28,
+      "small_count": 14,
       "worst": [
+       {
+        "sel": "button.played-card__team-name",
+        "w": 46,
+        "h": 19
+       },
+       {
+        "sel": "button.played-card__team-name",
+        "w": 46,
+        "h": 19
+       },
+       {
+        "sel": "button.played-card__team-name",
+        "w": 46,
+        "h": 19
+       },
+       {
+        "sel": "button.played-card__team-name",
+        "w": 46,
+        "h": 19
+       },
+       {
+        "sel": "button.played-card__team-name",
+        "w": 46,
+        "h": 19
+       },
        {
         "sel": "button.compare__swap-center",
         "w": 38,
         "h": 38
        },
        {
-        "sel": "a.wordmark",
-        "w": 251,
-        "h": 26
-       }
-      ],
-      "overlaps": [
-       {
-        "a": "button",
-        "b": "button.settings-btn",
-        "area": 1936
+        "sel": "a",
+        "w": 110,
+        "h": 14
        },
        {
-        "a": "a.wordmark",
-        "b": "button",
-        "area": 659
+        "sel": "button.played-card__team-name",
+        "w": 84,
+        "h": 19
        }
-      ]
+      ],
+      "covered": []
      },
      "inputs_font": [
       {
@@ -5573,32 +5830,26 @@
       "offenders": []
      },
      "targets": {
-      "total": 11,
-      "small_count": 1,
+      "total": 13,
+      "small_count": 3,
       "worst": [
+       {
+        "sel": "a",
+        "w": 110,
+        "h": 14
+       },
+       {
+        "sel": "a.skip-link",
+        "w": 153,
+        "h": 42
+       },
        {
         "sel": "a.wordmark",
         "w": 251,
         "h": 26
        }
       ],
-      "overlaps": [
-       {
-        "a": "a.wordmark",
-        "b": "button",
-        "area": 2331
-       },
-       {
-        "a": "button",
-        "b": "button.settings-btn",
-        "area": 1936
-       },
-       {
-        "a": "a.wordmark",
-        "b": "button",
-        "area": 831
-       }
-      ]
+      "covered": []
      },
      "inputs_font": [
       {
@@ -5648,27 +5899,51 @@
      "offenders": []
     },
     "targets": {
-     "total": 12,
-     "small_count": 2,
+     "total": 48,
+     "small_count": 32,
      "worst": [
       {
-       "sel": "button.team-back",
-       "w": 96,
-       "h": 40
+       "sel": "button.played-card__team-name",
+       "w": 45,
+       "h": 19
       },
       {
-       "sel": "a.wordmark",
-       "w": 251,
-       "h": 26
+       "sel": "button.played-card__team-name",
+       "w": 46,
+       "h": 19
+      },
+      {
+       "sel": "button.played-card__team-name",
+       "w": 46,
+       "h": 19
+      },
+      {
+       "sel": "button.played-card__team-name",
+       "w": 46,
+       "h": 19
+      },
+      {
+       "sel": "button.played-card__team-name",
+       "w": 46,
+       "h": 19
+      },
+      {
+       "sel": "button.played-card__team-name",
+       "w": 46,
+       "h": 19
+      },
+      {
+       "sel": "button.played-card__team-name",
+       "w": 46,
+       "h": 19
+      },
+      {
+       "sel": "button.played-card__team-name",
+       "w": 46,
+       "h": 19
       }
      ],
-     "overlaps": [
-      {
-       "a": "button",
-       "b": "button.settings-btn",
-       "area": 1936
-      }
-     ]
+     "covered": []
     },
     "inputs_font": [
      {
@@ -5760,7 +6035,7 @@
      "view": "grid",
      "loaded": true,
      "error": null,
-     "load_ms": 219,
+     "load_ms": 223,
      "active_state": {
       "active": true,
       "visible": true,
@@ -5774,9 +6049,14 @@
       "offenders": []
      },
      "targets": {
-      "total": 21,
-      "small_count": 19,
+      "total": 31,
+      "small_count": 29,
       "worst": [
+       {
+        "sel": "button.grid__team-name",
+        "w": 35,
+        "h": 19
+       },
        {
         "sel": "button#settings-btn.settings-btn",
         "w": 29,
@@ -5799,26 +6079,21 @@
        },
        {
         "sel": "button.grid__team-name",
+        "w": 46,
+        "h": 19
+       },
+       {
+        "sel": "button.grid__team-name",
         "w": 56,
         "h": 19
        },
        {
         "sel": "button.grid__team-name",
-        "w": 73,
-        "h": 19
-       },
-       {
-        "sel": "button.grid__team-name",
-        "w": 82,
-        "h": 19
-       },
-       {
-        "sel": "button.grid__team-name",
-        "w": 84,
+        "w": 68,
         "h": 19
        }
       ],
-      "overlaps": []
+      "covered": []
      },
      "inputs_font": [
       {
@@ -5937,8 +6212,8 @@
       "offenders": []
      },
      "targets": {
-      "total": 30,
-      "small_count": 24,
+      "total": 44,
+      "small_count": 26,
       "worst": [
        {
         "sel": "button#settings-btn.settings-btn",
@@ -5981,7 +6256,7 @@
         "h": 36
        }
       ],
-      "overlaps": []
+      "covered": []
      },
      "inputs_font": [
       {
@@ -6014,7 +6289,7 @@
      "view": "ladder",
      "loaded": true,
      "error": null,
-     "load_ms": 33,
+     "load_ms": 56,
      "active_state": {
       "active": true,
       "visible": true,
@@ -6028,8 +6303,8 @@
       "offenders": []
      },
      "targets": {
-      "total": 45,
-      "small_count": 43,
+      "total": 47,
+      "small_count": 45,
       "worst": [
        {
         "sel": "button.ladder__team",
@@ -6072,7 +6347,7 @@
         "h": 24
        }
       ],
-      "overlaps": []
+      "covered": []
      },
      "inputs_font": [
       {
@@ -6105,7 +6380,7 @@
      "view": "next-up",
      "loaded": true,
      "error": null,
-     "load_ms": 35,
+     "load_ms": 37,
      "active_state": {
       "active": true,
       "visible": true,
@@ -6119,9 +6394,14 @@
       "offenders": []
      },
      "targets": {
-      "total": 21,
-      "small_count": 19,
+      "total": 29,
+      "small_count": 27,
       "worst": [
+       {
+        "sel": "button.played-card__team-name",
+        "w": 35,
+        "h": 19
+       },
        {
         "sel": "button#settings-btn.settings-btn",
         "w": 29,
@@ -6139,31 +6419,26 @@
        },
        {
         "sel": "button.played-card__team-name",
+        "w": 46,
+        "h": 19
+       },
+       {
+        "sel": "button.played-card__team-name",
         "w": 56,
         "h": 19
        },
        {
         "sel": "button.played-card__team-name",
-        "w": 81,
+        "w": 68,
         "h": 19
        },
        {
         "sel": "button.played-card__team-name",
-        "w": 82,
-        "h": 19
-       },
-       {
-        "sel": "button.played-card__team-name",
-        "w": 84,
-        "h": 19
-       },
-       {
-        "sel": "button.played-card__team-name",
-        "w": 84,
+        "w": 70,
         "h": 19
        }
       ],
-      "overlaps": []
+      "covered": []
      },
      "inputs_font": [
       {
@@ -6192,7 +6467,7 @@
      "view": "played",
      "loaded": true,
      "error": null,
-     "load_ms": 39,
+     "load_ms": 41,
      "active_state": {
       "active": true,
       "visible": true,
@@ -6206,8 +6481,8 @@
       "offenders": []
      },
      "targets": {
-      "total": 21,
-      "small_count": 19,
+      "total": 33,
+      "small_count": 31,
       "worst": [
        {
         "sel": "button.played-card__team-name",
@@ -6218,6 +6493,21 @@
         "sel": "button#settings-btn.settings-btn",
         "w": 29,
         "h": 29
+       },
+       {
+        "sel": "button.played-card__team-name",
+        "w": 45,
+        "h": 19
+       },
+       {
+        "sel": "button.played-card__team-name",
+        "w": 46,
+        "h": 19
+       },
+       {
+        "sel": "button.played-card__team-name",
+        "w": 46,
+        "h": 19
        },
        {
         "sel": "button.played-card__team-name",
@@ -6233,24 +6523,9 @@
         "sel": "button.played-card__team-name",
         "w": 68,
         "h": 19
-       },
-       {
-        "sel": "button.played-card__team-name",
-        "w": 73,
-        "h": 19
-       },
-       {
-        "sel": "button.played-card__team-name",
-        "w": 74,
-        "h": 19
-       },
-       {
-        "sel": "button.played-card__team-name",
-        "w": 81,
-        "h": 19
        }
       ],
-      "overlaps": []
+      "covered": []
      },
      "inputs_font": [
       {
@@ -6279,7 +6554,7 @@
      "view": "compare",
      "loaded": true,
      "error": null,
-     "load_ms": 40,
+     "load_ms": 43,
      "active_state": {
       "active": true,
       "visible": true,
@@ -6293,8 +6568,8 @@
       "offenders": []
      },
      "targets": {
-      "total": 14,
-      "small_count": 10,
+      "total": 28,
+      "small_count": 24,
       "worst": [
        {
         "sel": "button#settings-btn.settings-btn",
@@ -6302,42 +6577,42 @@
         "h": 29
        },
        {
+        "sel": "button.played-card__team-name",
+        "w": 46,
+        "h": 19
+       },
+       {
+        "sel": "button.played-card__team-name",
+        "w": 46,
+        "h": 19
+       },
+       {
+        "sel": "button.played-card__team-name",
+        "w": 46,
+        "h": 19
+       },
+       {
+        "sel": "button.played-card__team-name",
+        "w": 46,
+        "h": 19
+       },
+       {
+        "sel": "button.played-card__team-name",
+        "w": 46,
+        "h": 19
+       },
+       {
         "sel": "button.compare__swap-center",
         "w": 38,
         "h": 38
        },
        {
-        "sel": "button",
-        "w": 58,
-        "h": 30
-       },
-       {
-        "sel": "button",
-        "w": 63,
-        "h": 30
-       },
-       {
-        "sel": "button",
-        "w": 84,
-        "h": 30
-       },
-       {
-        "sel": "button",
-        "w": 91,
-        "h": 30
-       },
-       {
-        "sel": "button",
-        "w": 100,
-        "h": 30
-       },
-       {
-        "sel": "button",
-        "w": 102,
-        "h": 30
+        "sel": "a",
+        "w": 110,
+        "h": 14
        }
       ],
-      "overlaps": []
+      "covered": []
      },
      "inputs_font": [
       {
@@ -6380,13 +6655,18 @@
       "offenders": []
      },
      "targets": {
-      "total": 11,
-      "small_count": 9,
+      "total": 13,
+      "small_count": 11,
       "worst": [
        {
         "sel": "button#settings-btn.settings-btn",
         "w": 29,
         "h": 29
+       },
+       {
+        "sel": "a",
+        "w": 110,
+        "h": 14
        },
        {
         "sel": "button",
@@ -6417,14 +6697,9 @@
         "sel": "button",
         "w": 102,
         "h": 30
-       },
-       {
-        "sel": "button",
-        "w": 109,
-        "h": 30
        }
       ],
-      "overlaps": []
+      "covered": []
      },
      "inputs_font": [
       {
@@ -6474,8 +6749,8 @@
      "offenders": []
     },
     "targets": {
-     "total": 12,
-     "small_count": 10,
+     "total": 48,
+     "small_count": 46,
      "worst": [
       {
        "sel": "button#settings-btn.settings-btn",
@@ -6483,42 +6758,42 @@
        "h": 29
       },
       {
-       "sel": "button",
-       "w": 58,
-       "h": 30
+       "sel": "button.played-card__team-name",
+       "w": 45,
+       "h": 19
       },
       {
-       "sel": "button",
-       "w": 63,
-       "h": 30
+       "sel": "button.played-card__team-name",
+       "w": 46,
+       "h": 19
       },
       {
-       "sel": "button",
-       "w": 84,
-       "h": 30
+       "sel": "button.played-card__team-name",
+       "w": 46,
+       "h": 19
       },
       {
-       "sel": "button",
-       "w": 91,
-       "h": 30
+       "sel": "button.played-card__team-name",
+       "w": 46,
+       "h": 19
       },
       {
-       "sel": "button",
-       "w": 100,
-       "h": 30
+       "sel": "button.played-card__team-name",
+       "w": 46,
+       "h": 19
       },
       {
-       "sel": "button",
-       "w": 102,
-       "h": 30
+       "sel": "button.played-card__team-name",
+       "w": 46,
+       "h": 19
       },
       {
-       "sel": "button",
-       "w": 109,
-       "h": 30
+       "sel": "button.played-card__team-name",
+       "w": 46,
+       "h": 19
       }
      ],
-     "overlaps": []
+     "covered": []
     },
     "inputs_font": [
      {

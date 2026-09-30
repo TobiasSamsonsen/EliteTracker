@@ -96,9 +96,12 @@ OVERFLOW_JS = """
 INTERACTIVE_JS = """
 () => {
   const sel = 'a[href],button,input,select,textarea,[role=button],[role=tab],[role=switch]';
+  // All sized elements (hidden sections report 0x0 and drop out naturally);
+  // no viewport filter — off-screen elements must still be reachable by scroll.
   const els = [...document.querySelectorAll(sel)].filter(el => {
+    if (el.closest('.visually-hidden') || el.closest('[inert]')) return false;  // sr-only state holders
     const r = el.getBoundingClientRect();
-    return r.width > 0 && r.height > 0 && r.bottom > 0 && r.top < innerHeight;
+    return r.width > 0 && r.height > 0;
   });
   const small = [];
   for (const el of els) {
@@ -112,25 +115,31 @@ INTERACTIVE_JS = """
     }
   }
   small.sort((a, b) => a.w * a.h - b.w * b.h);
-  const pairs = [];
-  const pool = els.slice(0, 250);
-  for (let i = 0; i < pool.length; i++) {
-    for (let j = i + 1; j < pool.length; j++) {
-      const a = pool[i], b = pool[j];
-      if (a.contains(b) || b.contains(a)) continue;
-      const ra = a.getBoundingClientRect(), rb = b.getBoundingClientRect();
-      const ix = Math.min(ra.right, rb.right) - Math.max(ra.left, rb.left);
-      const iy = Math.min(ra.bottom, rb.bottom) - Math.max(ra.top, rb.top);
-      if (ix > 4 && iy > 4) {
-        let sa = a.tagName.toLowerCase() + (a.className && typeof a.className === 'string' ? '.' + a.className.trim().split(/\\s+/)[0] : '');
-        let sb = b.tagName.toLowerCase() + (b.className && typeof b.className === 'string' ? '.' + b.className.trim().split(/\\s+/)[0] : '');
-        pairs.push({a: sa, b: sb, area: Math.round(ix * iy)});
-      }
+  // Reachability: scroll each element to the viewport centre and test whether
+  // its centre point is still covered by something else (elementFromPoint).
+  // Catches permanently-covered targets (fixed bar, sticky header, collisions)
+  // while ignoring transient overlaps that scrolling resolves.
+  const covered = [];
+  const scrollBefore = window.scrollY;
+  for (const el of els) {
+    el.scrollIntoView({block: 'center', inline: 'nearest', behavior: 'instant'});
+    const r = el.getBoundingClientRect();
+    const hit = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2);
+    if (hit && hit !== el && !el.contains(hit) && !hit.contains(el)) {
+      let s = el.tagName.toLowerCase();
+      if (el.id) s += '#' + el.id;
+      if (el.className && typeof el.className === 'string')
+        s += '.' + el.className.trim().split(/\\s+/).slice(0, 2).join('.');
+      let b = hit.tagName.toLowerCase();
+      if (hit.id) b += '#' + hit.id;
+      if (hit.className && typeof hit.className === 'string')
+        b += '.' + String(hit.className).trim().split(/\\s+/).slice(0, 2).join('.');
+      covered.push({sel: s, blocker: b});
     }
   }
-  pairs.sort((x, y) => y.area - x.area);
+  window.scrollTo({top: scrollBefore, behavior: 'instant'});
   return {total: els.length, small_count: small.length, worst: small.slice(0, 8),
-          overlaps: pairs.slice(0, 6)};
+          covered: covered.slice(0, 8)};
 }
 """
 
@@ -645,7 +654,7 @@ def md_report(report: dict) -> str:
         L.append(f"| {k} | {v} |")
     L += ["", "## Per-viewport summary", "",
           "| viewport | views loaded | console errs | doc overflow | small tap targets | "
-          "inputs <16px | clipped text | overlaps |", "|---|---|---|---|---|---|---|---|"]
+          "inputs <16px | clipped text | covered targets |", "|---|---|---|---|---|---|---|---|"]
     for vp in report["viewports"]:
         rows = vp["views"]
         loaded = sum(1 for r in rows if r.get("loaded"))
@@ -661,7 +670,7 @@ def md_report(report: dict) -> str:
             small += r.get("targets", {}).get("small_count", 0)
             fonts += len(r.get("inputs_font") or [])
             clipped += len(r.get("clipped") or [])
-            over += len(r.get("targets", {}).get("overlaps") or [])
+            over += len(r.get("targets", {}).get("covered") or [])
         L.append(f"| {vp['name']} | {loaded}/{len(VIEWS)} | {errs} | {ov} | {small} | "
                  f"{fonts} | {clipped} | {over} |")
 
