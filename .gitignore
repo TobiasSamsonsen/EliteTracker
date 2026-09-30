@@ -12,3 +12,4 @@ data/raw/football-data_*.csv
 build/
 scripts/
 .slim/deepwork/
+experiments/data/*.log
