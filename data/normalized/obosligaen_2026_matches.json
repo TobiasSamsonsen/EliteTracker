@@ -3136,6 +3136,20 @@
     "away_id": "8179"
   },
   {
+    "match_id": "5105311",
+    "date": "2026-11-01",
+    "time": "14:30",
+    "home": "Ranheim",
+    "away": "Sogndal",
+    "home_goals": null,
+    "away_goals": null,
+    "played": false,
+    "kickoff_utc": "2026-11-01T13:30:00Z",
+    "round": 29,
+    "home_id": "6563",
+    "away_id": "8616"
+  },
+  {
     "match_id": "5105306",
     "date": "2026-11-01",
     "time": "17:00",
@@ -3190,20 +3204,6 @@
     "round": 29,
     "home_id": "7988",
     "away_id": "8133"
-  },
-  {
-    "match_id": "5105311",
-    "date": "2026-11-01",
-    "time": "17:00",
-    "home": "Ranheim",
-    "away": "Sogndal",
-    "home_goals": null,
-    "away_goals": null,
-    "played": false,
-    "kickoff_utc": "2026-11-01T16:00:00Z",
-    "round": 29,
-    "home_id": "6563",
-    "away_id": "8616"
   },
   {
     "match_id": "5105312",
