@@ -2000,7 +2000,7 @@ footer a { color: var(--ink); }
   .standings .team-logo { width: 17px; height: 17px; }
   .standings .meter__value { min-width: 2rem; font-size: 0.75rem; }
   .standings th:first-child, .standings td:first-child { padding-left: 0.5rem; }
-  .standings th:last-child, .standings td:last-child { padding-right: 0.5rem; }
+  .standings th:last-child, .standings td:last-child { padding-right: 0.85rem; }
   .standings .sort-btn__label { font-size: 0.6875rem; letter-spacing: 0.04em; }
   /* Swap in the short heading: "Relegation" is wider than any number under it. */
   .standings .sort-btn__label:has(+ .sort-btn__short) { display: none; }

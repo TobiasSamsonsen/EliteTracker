@@ -1125,12 +1125,12 @@ function dividerRow(boundary) {
     const attackPct = row.attack_pct;
     const defencePct = row.defence_pct;
 
-    const attackCell = el('td', 'num');
+    const attackCell = el('td', 'num col--extra');
     attackCell.dataset.tableView = 'current';
     attackCell.appendChild(makePctPill(attackPct, row.attack_k));
     tr.appendChild(attackCell);
 
-    const defenceCell = el('td', 'num');
+    const defenceCell = el('td', 'num col--extra');
     defenceCell.dataset.tableView = 'current';
     defenceCell.appendChild(makePctPill(defencePct, row.defence_k));
     tr.appendChild(defenceCell);
@@ -2833,12 +2833,12 @@ function drawTeamShape(report, team, chart, boxWidth) {
 
     const bandLabel = bandFor(report.league.bands, position);
     band.setAttribute('role', 'img');
-    band.setAttribute('aria-label', `${ordinal(position)}${bandLabel ? `, ${bandLabel.label}` : ''}`);
+    band.setAttribute('aria-label', `${ordinal(position)}${bandLabel ? `, ${bandName(bandLabel)}` : ''}`);
     band.addEventListener('pointerenter', (event) => {
       const latest = team.positions[snapshots - 1][position - 1];
       showTooltip(
         event,
-        `<b>${ordinal(position)}</b>${bandLabel ? ` · ${bandLabel.label}` : ''}<br>` +
+        `<b>${ordinal(position)}</b>${bandLabel ? ` · ${bandName(bandLabel)}` : ''}<br>` +
           t('shape.now', { pct: pct(latest, 1) })
       );
     });
@@ -2847,7 +2847,7 @@ function drawTeamShape(report, team, chart, boxWidth) {
     band.addEventListener('focus', () => {
       const latest = team.positions[snapshots - 1][position - 1];
       const rect = band.getBoundingClientRect();
-      showTooltip({ clientX: rect.left + rect.width / 2, clientY: rect.top }, `<b>${ordinal(position)}</b>${bandLabel ? ` · ${bandLabel.label}` : ''}<br>` + t('shape.now', { pct: pct(latest, 1) }), band);
+      showTooltip({ clientX: rect.left + rect.width / 2, clientY: rect.top }, `<b>${ordinal(position)}</b>${bandLabel ? ` · ${bandName(bandLabel)}` : ''}<br>` + t('shape.now', { pct: pct(latest, 1) }), band);
     });
     band.addEventListener('blur', hideTooltip);
     band.setAttribute('tabindex', '0');
@@ -2884,7 +2884,7 @@ function drawTeamShape(report, team, chart, boxWidth) {
     edges.push({
       key,
       points: cumulative.map((run, index) => `${x(index)},${edgeY(run[edge])}`),
-      label: band.label,
+      label: bandName(band),
       // The label sits at the left, so it hangs on the line's left end: under
       // the qualification line, above the relegation one.
       labelY: Math.min(

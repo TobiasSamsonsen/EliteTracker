@@ -410,7 +410,7 @@ const translations = {
     'table.col.projGoalDiff': 'MF',
     'table.col.projGoalDiff.desc': ', forventet målforskjell ved sesongslutt',
     'table.col.fixture_difficulty': 'Kampprogram',
-    'table.col.fixture_difficultyShort': 'Program',
+    'table.col.fixture_difficultyShort': 'Prog',
     'table.col.fixture_difficulty.desc': 'Forventede poeng per gjenværende kamp vs gjennomsnittslag',
     'table.noFixturesLeft': 'Ingen kamper igjen å spille',
     'th.position': '#', 'th.position.desc': ', plass',
