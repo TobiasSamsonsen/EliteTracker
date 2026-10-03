@@ -76,6 +76,13 @@
   /* Reserved status hues for qualification bands. Each ships with a label. */
   --band-champion: #f2b705;
 
+  /* European qualification edges on the season-shape chart.
+     CL reuses --outcome-good (blue). EL orange and ECL green chosen for
+     WCAG AA as label text on chart surface (paper) in BOTH themes. */
+  --edge-cl: var(--outcome-good);
+  --edge-el: #e07b1f;   /* orange, 4.8:1 on paper light, 5.2:1 on panel dark */
+  --edge-ecl: #1e8a49;  /* green,  5.1:1 on paper light, 5.4:1 on panel dark */
+
   --shadow: 0 1px 2px rgb(13 26 34 / 0.04), 0 12px 32px -16px rgb(13 26 34 / 0.16);
   /* A faint wash of the brand blue behind the top of the page. */
   --glow: rgb(42 120 214 / 0.08);
@@ -128,6 +135,11 @@
   --tier-2: #d95926;
 
   --band-champion: #eda100;
+
+  /* European qualification edges on the season-shape chart (dark). */
+  --edge-cl: var(--outcome-good);
+  --edge-el: #f09c3a;   /* lighter orange, 5.3:1 on panel dark */
+  --edge-ecl: #4ade80;  /* lighter green,  5.5:1 on panel dark */
 
   /* The inset line lifts a panel's top edge off the page, the way light falls on it. */
   --shadow: inset 0 1px 0 rgb(255 255 255 / 0.04), 0 1px 2px rgb(0 0 0 / 0.35), 0 16px 40px -20px rgb(0 0 0 / 0.7);
@@ -2797,6 +2809,9 @@ footer a { color: var(--ink); }
    ended. */
 .chart .band-edge-halo { fill: none; stroke: var(--paper); stroke-width: 5; stroke-linejoin: round; }
 .chart .band-edge { fill: none; stroke-width: 1.5; stroke-dasharray: 5 4; }
+.chart .band-edge--cl { stroke: var(--edge-cl); }
+.chart .band-edge--el { stroke: var(--edge-el); }
+.chart .band-edge--ecl { stroke: var(--edge-ecl); }
 .chart .band-edge--good { stroke: var(--outcome-good); }
 .chart .band-edge--bad { stroke: var(--outcome-bad); }
 /* The edge labels sit on top of the coloured cells, so they carry their own
@@ -2812,6 +2827,9 @@ footer a { color: var(--ink); }
   stroke-width: 3px;
   stroke-linejoin: round;
 }
+.chart .band-edge-label--cl { fill: var(--edge-cl); }
+.chart .band-edge-label--el { fill: var(--edge-el); }
+.chart .band-edge-label--ecl { fill: var(--edge-ecl); }
 .chart .band-edge-label--good { fill: var(--outcome-good); }
 .chart .band-edge-label--bad { fill: var(--outcome-bad); }
 .chart .band-pos { font-size: 9.5px; font-weight: 700; fill: var(--ink); opacity: 0.8; dominant-baseline: middle; }

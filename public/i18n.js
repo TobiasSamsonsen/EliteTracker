@@ -125,6 +125,10 @@ const translations = {
     'band.Promotion play-off': 'Promotion play-off',
     'band.Relegation play-off': 'Relegation play-off',
     'band.Relegation': 'Relegation',
+    // Short edge labels for season-shape chart (small, on the line)
+    'band.edge.CL': 'CL quali',
+    'band.edge.EL': 'EL quali',
+    'band.edge.ECL': 'ECL quali',
     'grid.nowPos': 'Now',
     'grid.nowPos.desc': 'Current table position',
 
@@ -443,6 +447,10 @@ const translations = {
     'band.Promotion play-off': 'Opprykkskvalifisering',
     'band.Relegation play-off': 'Nedrykkskvalifisering',
     'band.Relegation': 'Nedrykk',
+    // Short edge labels for season-shape chart (small, on the line)
+    'band.edge.CL': 'CL-kvalik',
+    'band.edge.EL': 'EL-kvalik',
+    'band.edge.ECL': 'ECL-kvalik',
     'grid.nowPos': 'Nå',
     'grid.nowPos.desc': 'Plass i tabellen nå',
 

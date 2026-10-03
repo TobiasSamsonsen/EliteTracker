@@ -322,6 +322,18 @@ function bandName(band) {
   return t(key) === key ? band.label : t(key);
 }
 
+/* Short edge label for season-shape chart lines.
+   European bands map to CL/EL/ECL keys; others fall back to full bandName. */
+function bandEdgeName(band) {
+  const label = band.label;
+  let key;
+  if (label === 'Champions League qualification') key = 'band.edge.CL';
+  else if (label === 'Europa League qualification') key = 'band.edge.EL';
+  else if (label === 'Conference League qualification') key = 'band.edge.ECL';
+  else return bandName(band);
+  return t(key) === key ? bandName(band) : t(key);
+}
+
 /* Short category label for the table's zone badges. tone alone cannot tell a
    good play-off from a bad one (OBOS promotion vs Elite relegation), so the
    top/bottom half decides like outcomeClass does, and whether the top band is
@@ -2858,40 +2870,60 @@ function drawTeamShape(report, team, chart, boxWidth) {
     svgEl('line', { class: 'axis-line', x1: pad.left, x2: width - pad.right, y1: y(1), y2: y(1) })
   );
 
-  // The two edges the season hangs on: European qualification above,
-  // relegation below -- the threshold is the *lowest* place that still goes to
-  // Europe. Eliteserien's European allocation moves year to year and 2025
-  // splits Europa (3rd) from Conference (4th), so the lowest europe band wins
-  // (pipeline, _ELITESERIEN_EUROPE). OBOS has no European place and keeps its
-  // direct-promotion threshold. Each is a curve -- the band boundary moves as
-  // the probabilities move -- and takes the colour of its outcome. An edge
-  // that never leaves a frame for the whole season says nothing the areas do
-  // not -- it is dropped rather than drawn glued to the border.
+  // Threshold edges: every European band (CL/EL/ECL) + OBOS Promotion (tone 'top') + Relegation.
+  // Each edge is the band boundary: band.last for good, band.first-1 for bad.
+  // Lines that stay outside the visible frame (<0.1 or >0.9 prob) are dropped.
+  // European bands map to specific keys (cl/el/ecl) for per-league colours; OBOS Promotion uses 'good',
+  // Relegation uses 'bad'. Labels on the line use short i18n keys for European bands,
+  // full bandName for Promotion/Relegation (already short).
   const edges = [];
-  const europeBands = report.league.bands.filter((b) => b.tone === 'europe');
-  const qualBand = europeBands.length
-    ? europeBands.reduce((lowest, b) => (b.last > lowest.last ? b : lowest))
-    : report.league.bands.find((b) => b.tone === 'top');
+  const goodBands = report.league.bands.filter((b) => b.tone === 'europe' || b.tone === 'top');
   const relegBand = report.league.bands.find((b) => b.tone === 'relegation');
-  for (const [band, key] of [[qualBand, 'good'], [relegBand, 'bad']]) {
-    if (!band) continue;
-    const edge = key === 'bad' ? band.first - 1 : band.last;
+  for (const band of goodBands) {
+    const edge = band.last;
     const values = cumulative.map((run) => run[edge]);
     if (Math.max(...values) < 0.1 || Math.min(...values) > 0.9) continue;
-    // ponytail: ~1% display inset at the plot edges. A 0.000 line sits exactly
-    // on the frame and is invisible; drop this if exact placement matters.
     const edgeY = (cum) => Math.min(Math.max(y(cum), pad.top + 6), pad.top + plotHeight - 6);
+    const labelY = Math.min(
+      Math.max(edgeY(values[0]) + 12, pad.top + 10),
+      pad.top + plotHeight - 4
+    );
+    // Map European band labels to edge keys for per-league colours
+    let key;
+    if (band.label === 'Champions League qualification') key = 'cl';
+    else if (band.label === 'Europa League qualification') key = 'el';
+    else if (band.label === 'Conference League qualification') key = 'ecl';
+    else key = 'good'; // OBOS Promotion
     edges.push({
       key,
       points: cumulative.map((run, index) => `${x(index)},${edgeY(run[edge])}`),
-      label: bandName(band),
-      // The label sits at the left, so it hangs on the line's left end: under
-      // the qualification line, above the relegation one.
-      labelY: Math.min(
-        Math.max(edgeY(values[0]) + (key === 'bad' ? -5 : 12), pad.top + 10),
-        pad.top + plotHeight - 4
-      ),
+      label: bandEdgeName(band),
+      labelY,
     });
+  }
+  if (relegBand) {
+    const edge = relegBand.first - 1;
+    const values = cumulative.map((run) => run[edge]);
+    if (!(Math.max(...values) < 0.1 || Math.min(...values) > 0.9)) {
+      const edgeY = (cum) => Math.min(Math.max(y(cum), pad.top + 6), pad.top + plotHeight - 6);
+      edges.push({
+        key: 'bad',
+        points: cumulative.map((run, index) => `${x(index)},${edgeY(run[edge])}`),
+        label: bandName(relegBand),
+        labelY: Math.min(
+          Math.max(edgeY(values[0]) - 5, pad.top + 10),
+          pad.top + plotHeight - 4
+        ),
+      });
+    }
+  }
+  // Simple label collision avoidance for good edges: stack with 10px min gap,
+  // CL (usually highest) on top, then EL, then ECL, then Promotion.
+  const goodEdges = edges.filter((e) => e.key !== 'bad').sort((a, b) => a.labelY - b.labelY);
+  let lastY = -Infinity;
+  for (const e of goodEdges) {
+    if (lastY !== -Infinity && e.labelY - lastY < 10) e.labelY = lastY + 10;
+    lastY = e.labelY;
   }
   // Halos first: each line knocks out the frame, the gridlines and the blue
   // cells underneath (paper is what the chart sits on), so the colour shows.
