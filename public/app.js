@@ -850,14 +850,38 @@ function standingsRows(report) {
   const promotion = report.league.slug === 'obosligaen';
   const sum = (values) => values.reduce((total, value) => total + value, 0);
 
-  return report.table.map((row) => ({
-    ...row,
-    // Promotion for the second tier is the top band, not just the title.
-    up: promotion ? sum(row.position_probabilities.slice(0, 2)) : row.position_probabilities[0],
-    down: relegation
-      ? sum(row.position_probabilities.slice(relegation.first - 1, relegation.last))
-      : 0,
-  }));
+  const attackVals = report.table.map((r) => r.attack);
+  const defenceVals = report.table.map((r) => r.defence);
+  const attackAvg = attackVals.reduce((s, v) => s + v, 0) / (attackVals.length || 1);
+  const defenceAvg = defenceVals.reduce((s, v) => s + v, 0) / (defenceVals.length || 1);
+
+  const attackPcts = report.table.map((r) => (r.attack / attackAvg - 1) * 100);
+  const defencePcts = report.table.map((r) => (1 - r.defence / defenceAvg) * 100);
+  const attackPctMin = Math.min(...attackPcts);
+  const attackPctMax = Math.max(...attackPcts);
+  const defencePctMin = Math.min(...defencePcts);
+  const defencePctMax = Math.max(...defencePcts);
+
+  return report.table.map((row) => {
+    const attack_pct = (row.attack / attackAvg - 1) * 100;
+    const defence_pct = (1 - row.defence / defenceAvg) * 100;
+    // Normalised position in diverging ramp: -1 = league worst, 0 = avg, 1 = league best
+    const attack_k = attack_pct <= 0 && attackPctMin < 0 ? attack_pct / Math.abs(attackPctMin)
+      : attack_pct >= 0 && attackPctMax > 0 ? attack_pct / attackPctMax : 0;
+    const defence_k = defence_pct <= 0 && defencePctMin < 0 ? defence_pct / Math.abs(defencePctMin)
+      : defence_pct >= 0 && defencePctMax > 0 ? defence_pct / defencePctMax : 0;
+    return {
+      ...row,
+      up: promotion ? sum(row.position_probabilities.slice(0, 2)) : row.position_probabilities[0],
+      down: relegation
+        ? sum(row.position_probabilities.slice(relegation.first - 1, relegation.last))
+        : 0,
+      attack_pct,
+      defence_pct,
+      attack_k,
+      defence_k,
+    };
+  });
 }
 
 /* Position and club read naturally smallest-first; every other column is a
@@ -963,11 +987,15 @@ $('#head-last').textContent = t('table.relegation');
     expected_goal_difference: row.expected_goals_for - row.expected_goals_against,
   }));
 
-  // Fixture difficulty is read against the league's own mean run-in: with
-  // draws, even an average side's run-in is worth well under 1.5 points a
-  // match. Clubs with no fixtures left (0) are left out.
-  const runIns = rows.map((row) => row.fixture_difficulty).filter((value) => value > 0);
-  const neutralRunIn = runIns.reduce((sum, value) => sum + value, 0) / (runIns.length || 1);
+// Fixture difficulty is read against the league's own mean run-in: with
+   // draws, even an average side's run-in is worth well under 1.5 points a
+   // match. Clubs with no fixtures left (0) are left out.
+   const runIns = rows.map((row) => row.fixture_difficulty).filter((value) => value > 0);
+   const neutralRunIn = runIns.reduce((sum, value) => sum + value, 0) / (runIns.length || 1);
+   // Max absolute gap from mean across the league (for normalising fixture difficulty ramp)
+   const maxFixtureGap = runIns.length
+     ? Math.max(...runIns.map((v) => Math.abs(v - neutralRunIn)))
+     : 0;
 
   // Find the team with the highest rating rise for the champion-yellow arrow
   const trends = new Map();
@@ -1007,11 +1035,11 @@ $('#head-last').textContent = t('table.relegation');
   }
 
 // Build a divider row for a boundary
-   function dividerRow(boundary) {
-     const tr = el('tr', 'zone-divider');
-     tr.style.setProperty('--band-color', bandColor(boundary.band, count));
-     const td = el('td');
-     td.colSpan = 19;  // full table width (19 columns)
+function dividerRow(boundary) {
+      const tr = el('tr', 'zone-divider');
+      tr.style.setProperty('--band-color', bandColor(boundary.band, count));
+      const td = el('td');
+      td.colSpan = 21;  // full table width (21 columns)
      // Format: "======== Expected CL Threshold: 67p ========"
      const label = el('span', 'zone-divider__wrap',
        t('table.threshold', { band: boundary.label, points: boundary.cut }));
@@ -1092,6 +1120,20 @@ $('#head-last').textContent = t('table.relegation');
       ratingCell.appendChild(arrow);
     }
     tr.appendChild(ratingCell);
+    // Attack and Defence — model-derived stats like Elo, Current view only
+    // Percent vs division average; defence inverted so higher = better on both
+    const attackPct = row.attack_pct;
+    const defencePct = row.defence_pct;
+
+    const attackCell = el('td', 'num');
+    attackCell.dataset.tableView = 'current';
+    attackCell.appendChild(makePctPill(attackPct, row.attack_k));
+    tr.appendChild(attackCell);
+
+    const defenceCell = el('td', 'num');
+    defenceCell.dataset.tableView = 'current';
+    defenceCell.appendChild(makePctPill(defencePct, row.defence_k));
+    tr.appendChild(defenceCell);
     const xpTd = el('td', 'num muted', num(row.expected_points, 1));
     xpTd.dataset.tableView = 'prediction';
     tr.appendChild(xpTd);
@@ -1111,21 +1153,16 @@ $('#head-last').textContent = t('table.relegation');
     }
 
     // Fixture difficulty: expected points per remaining match for an average
-    // side. Red below the league mean (a harder run-in), green above.
+    // side. Red below the league mean (a harder run-in), gray at mean, green above.
     const fixtureCell = el('td', 'num', '');
     fixtureCell.dataset.tableView = 'prediction';
     if (row.fixture_difficulty > 0) {
       const value = row.fixture_difficulty;
-      const pill = el('span', 'fixture-difficulty-pill', num(value, 2));
       const gap = value - neutralRunIn;
-      if (Math.abs(gap) < 0.02) {
-        pill.classList.add('fixture-difficulty-pill--neutral');
-      } else {
-        // Run-ins spread about ±0.15 around the mean, so that is full colour.
-        // The CSS turns hue + strength into a tint that suits either theme.
-        pill.style.setProperty('--fd-hue', gap < 0 ? '0' : '135');
-        pill.style.setProperty('--fd-strength', Math.min(1, Math.abs(gap) / 0.15).toFixed(2));
-      }
+      const pill = el('span', 'fixture-difficulty-pill', num(value, 2));
+      // Normalised k: -1 = hardest in league, 0 = mean, 1 = easiest in league
+      const k = maxFixtureGap > 0 ? gap / maxFixtureGap : 0;
+      makeFixturePill(pill, k);
       fixtureCell.appendChild(pill);
     } else {
       // A finished season (or a club done early) has no run-in to rate.
@@ -1157,6 +1194,67 @@ body.appendChild(tr);
 
    // Apply the current view mode to the rendered cells.
    applyTableView();
+}
+
+/* Pill for attack/defence % — diverging red–gray–blue ramp.
+   k in [-1, 1]: -1 = league worst (red), 0 = avg (gray), 1 = league best (blue).
+   Hue fixed per side (0° red, 218° blue), S interpolated with sqrt curve for more mid-range chroma,
+   L/alpha linear. Flat background, alpha 0.1..0.45. Text hue-derived per fixture-pill pattern. */
+function makePctPill(pct, k) {
+  const pill = el('span', 'attack-defence-pill', `${signed(pct)}${percentSign()}`);
+  // Clamp k
+  const kk = Math.max(-1, Math.min(1, k));
+  // Red side (k < 0): hue 0, S 0→85% (sqrt), L 55→45%
+  // Blue side (k > 0): hue 218, S 0→92% (sqrt), L 55→42%
+  // Gray at k=0: S=0%, L=55%
+  if (kk < 0) {
+    const t = -kk; // 0..1
+    const s = Math.round(85 * Math.sqrt(t));   // 0% → 85% (sqrt curve for mid-range chroma)
+    const l = Math.round(55 - 10 * t);         // 55% → 45%
+    pill.style.setProperty('--ad-hue', '0');
+    pill.style.setProperty('--ad-sat', `${s}%`);
+    pill.style.setProperty('--ad-light', `${l}%`);
+  } else {
+    const t = kk; // 0..1
+    const s = Math.round(92 * Math.sqrt(t));   // 0% → 92% (sqrt curve for mid-range chroma)
+    const l = Math.round(55 - 13 * t);         // 55% → 42%
+    pill.style.setProperty('--ad-hue', '218');
+    pill.style.setProperty('--ad-sat', `${s}%`);
+    pill.style.setProperty('--ad-light', `${l}%`);
+  }
+  // Alpha: 0.1 at k=0, 0.45 at |k|=1
+  const alpha = 0.1 + 0.35 * Math.abs(kk);
+  pill.style.setProperty('--ad-alpha', alpha.toFixed(3));
+  return pill;
+}
+
+/* Pill for fixture difficulty — diverging red–gray–green ramp.
+   k in [-1, 1]: -1 = hardest (red), 0 = mean (gray), 1 = easiest (green).
+   Hue fixed per side (0° red, 135° green), S/L monotone for CVD safety.
+   Red end: darker (L=35%), Green end: lighter (L=49%), Gray middle: L=45%.
+   This ensures luminance separates the ends for protan/deutan viewers. */
+function makeFixturePill(pill, k) {
+  const kk = Math.max(-1, Math.min(1, k));
+  if (kk < 0) {
+    const t = -kk; // 0..1
+    // Red side: S 0→70%, L 45→35% (darker at extreme)
+    const s = Math.round(70 * t);
+    const l = Math.round(45 - 10 * t);
+    pill.style.setProperty('--fd-hue', '0');
+    pill.style.setProperty('--fd-sat', `${s}%`);
+    pill.style.setProperty('--fd-light', `${l}%`);
+  } else {
+    const t = kk; // 0..1
+    // Green side: S 0→70%, L 45→49% (lighter at extreme, CVD-safe with monotone L)
+    const s = Math.round(70 * t);
+    const l = Math.round(45 + 4 * t);
+    pill.style.setProperty('--fd-hue', '135');
+    pill.style.setProperty('--fd-sat', `${s}%`);
+    pill.style.setProperty('--fd-light', `${l}%`);
+  }
+  // Alpha: 0.1 at k=0, 0.45 at |k|=1
+  const alpha = 0.1 + 0.35 * Math.abs(kk);
+  pill.style.setProperty('--fd-alpha', alpha.toFixed(3));
 }
 
 const METER_DIGITS = 0;
@@ -1708,15 +1806,15 @@ function formChipsEl(form) {
   const holder = el('span', 'form__chips');
   const last5 = (form || []).slice(-5);
   if (!last5.length) return holder;
-  const pts = formPoints(last5);
-  const chip = el('span', 'form__chip', `${pts}/15`);
-  const ratio = pts / 15;
-  chip.style.background = `color-mix(in oklch, var(--outcome-good) ${Math.round(ratio * 100)}%, var(--outcome-bad))`;
+  for (const letter of last5) {
+    const chip = el('span', `form__chip form__chip--${letter.toLowerCase()}`, letter);
+    holder.appendChild(chip);
+  }
+  // Whole-form tooltip from i18n (e.g. "2W 1D 2L" / "2S 1U 2T")
   const w = last5.filter((r) => r === 'W').length;
   const d = last5.filter((r) => r === 'D').length;
   const l = last5.filter((r) => r === 'L').length;
-  chip.title = t('form.tooltip', { w, d, l });
-  holder.appendChild(chip);
+  holder.title = t('form.tooltip', { w, d, l });
   return holder;
 }
 

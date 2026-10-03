@@ -2,7 +2,9 @@
 
 Predictive model for Norwegian men's football: **Eliteserien** (tier 1) and
 **OBOS-ligaen** (tier 2). Uses an ELO rating system (elo-v12.0) to estimate team
-strength, match probabilities and season outcomes. Data comes from FotMob.
+strength, match probabilities and season outcomes. Fixtures and results come
+from FotMob (xG from FotMob for Eliteserien, Sofascore for OBOS-ligaen);
+benchmark odds from football-data.co.uk, squad values from Transfermarkt.
 
 Deployed at [elitetrackerno.web.app](https://elitetrackerno.web.app).
 
@@ -26,8 +28,8 @@ Or preview the static build:
 Each club carries one **ELO rating**. After a match, the winner gains points and
 the loser loses them -- more if the result was unexpected. The update uses xG
 (expected goals) to dampen lucky wins: a team that won but was outplayed gains
-less than one that dominated. Since Eliteserien 2022 the model uses a faster
-K-factor and higher xG weight (K=30, α=30 %); earlier seasons and OBOS-ligaen
+less than one that dominated. From 2022 on, in **both** divisions, the model
+uses a faster K-factor and a *lower* xG weight (K=30, α=30 %); earlier seasons
 use the legacy config (K=20, α=45 %).
 
 Two sets of odds are blended for each fixture:
@@ -41,7 +43,8 @@ from the attack/defence grid, conditioned on the blended outcome odds.
 
 ## Views
 
-The site has eight views, switchable from the top nav.
+Seven views switch from the top nav (a bottom bar plus a "More" sheet on
+phones); the eighth, Team Focus, opens from any club name or crest.
 
 ### Finish Grid
 
@@ -50,21 +53,27 @@ A 16x16 heat matrix. Each row is a team, each column a finishing position
 team finishing in that position. Teams are sorted by expected finish, not
 current position, so the high-probability cells sit on the diagonal.
 
-Colour scale: pale green (low) to deep navy (high). Cells below 0.5% are
+Colour scale: pale green (low) to deep navy (high) in light mode; dark mode
+inverts the ramp so the extremes keep their contrast. Cells below 0.5% are
 effectively blank. The band strip along the top marks title, European
-qualification and relegation zones.
+qualification and promotion/relegation zones for the division.
 
 ### Table
 
-Standard league table with additional model columns:
+Standard league table with additional model columns. A **Current / Prediction**
+toggle above the table swaps between the results so far and the season forecast;
+which columns belong to which view is noted below.
 
-| Column | What it means |
-|---|---|
-| **Rating** | Current ELO rating (integer). The arrow shows recent trend based on a weighted average of the last 6 matches. |
-| **xPts** | Expected final points -- the model's prediction of total season points. |
-| **Form** | Last 5 results as points out of 15, colour-coded green-to-red. |
-| **Title / Promotion** | Probability of finishing 1st. For OBOS-ligaen this includes both promoted spots. |
-| **Relegation** | Probability of finishing in the relegation zone. |
+| Column | View | What it means |
+|---|---|---|
+| **Rating** | both | Current ELO rating (integer). The arrow shows the recent trend: a weighted average of the last 6 matches' xG form (falls back to rating changes where a match has no xG). |
+| **Attack / Defence** | Current | Chances created and conceded per match against an average side, as ±% vs the division average (defence turned round, so higher is better). Colour-coded red→blue pill, sortable by either. |
+| **Form** | Current | Last 5 results as individual W/D/L blocks (blue / grey / red); the column sorts by the points those five total (out of 15). |
+| **xPts** | Prediction | Expected final points — the mean total across the season's simulations (goals so far plus the simulated rest). |
+| **GF / GA / GD** | Prediction | Projected final goals and goal difference, from the same simulations. |
+| **Fix Diff** | Prediction | Expected points per remaining match for a league-average team against this club's run-in, centred on the league's mean run-in (red = harder, green = easier). |
+| **Title / Promotion** | Prediction | Probability of finishing 1st (Title). For OBOS-ligaen the column is Promotion: the summed probability of the top 2 spots. |
+| **Relegation** | Prediction | Probability of finishing in the relegation zone. |
 
 Every column is sortable. The default sort is league position.
 
@@ -72,7 +81,8 @@ Every column is sortable. The default sort is league position.
 
 Both divisions on a single ELO rating axis. Team crests are positioned along
 the axis so you can see the rating gap between any two clubs, even across
-divisions. Horizontal on desktop, vertical on phones.
+divisions. A horizontal strip on wide screens; on phones a ranked list, one row
+per club, with its rating as a dot on a shared scale.
 
 ### Next Up
 
@@ -83,13 +93,16 @@ client-side from the model parameters shipped in the JSON report.
 ### Played Results
 
 Completed matches grouped by ISO week. Each card shows the score, both teams'
-ratings after the match, and the rating change from the previous match.
+ratings after the match, the rating change from the previous match, and the
+match's xG where the data has it.
 
 ### Compare Clubs
 
-Pick any two clubs from a dropdown. Shows a fictional head-to-head with odds
-and scorelines, plus a rating history chart overlaying both clubs' trajectories
-over time.
+Pick any two clubs from a dropdown. Three blocks: a **fictional match** with
+three-way odds and top scorelines (swap home/away with ⇄), a **rating history**
+chart overlaying both clubs' trajectories, and the **head-to-head** — the real
+record (wins–draws–wins and goals) with every meeting listed, newest first,
+paged five at a time.
 
 ### Model Card
 
@@ -104,13 +117,16 @@ Every tunable parameter in the shipped model:
 | Peak draw rate | 26% | Maximum draw probability from the draw model |
 | Outcome blend | 25/75 | ELO vs attack/defence weight for win/draw/loss odds |
 | Scorelines | attack/defence | Source of scoreline predictions (not ELO) |
-| Simulations | 50,000 | Monte Carlo runs per league |
+| Simulations | 50,000 | Monte Carlo runs per league (10,000 on rewound views) |
+| Strength shock | ±0.15 | Per-run club strength noise (log-odds), so finishing odds carry rating uncertainty |
 
 ### Team Focus
 
 Click any club name or crest to open a detailed view:
 
-- **Summary** -- rating, rank, points, attack/defence stats, form
+- **Summary** -- rating with trend arrow and cross-division rank, position,
+  points, goal difference and played, then attack/defence as ±% vs the
+  division average
 - **Finish row** -- single-row heat map of finishing position probabilities
 - **Pre-season vs live** -- how the prediction has changed since the season started
 - **Rating history** -- ELO trajectory across all seasons, with peak/trough
@@ -120,18 +136,31 @@ Click any club name or crest to open a detailed view:
 
 ## Key stats explained
 
-**Attack** and **Defence** are on the log-goals scale. Attack is expected goals
-scored per match against an average side; defence is expected goals conceded.
-Higher attack is better, lower defence is better. A team with attack 0.30 and
-defence -0.10 scores roughly 1.35 goals per match against an average opponent
-and concedes about 0.90.
+**Attack** and **Defence** are the readable form of the model's log-goals
+ratings: expected goals for and against per match against an average side (a
+team with 1.35 attack scores roughly 1.35 against an average opponent, one
+with 0.90 defence concedes roughly 0.90). Everywhere they appear -- the table's
+pill columns and the team view -- they are shown as a percentage of the
+division average, with defence turned round so higher is always better: `+20 %`
+attack means a fifth more than an average side, `+20 %` defence means a fifth
+fewer.
 
-**Expected points (xPts)** is the model's forecast of total season points,
-computed from the remaining fixtures and each team's current rating.
+**Expected points (xPts)** is the mean final points over the season's
+simulations: the goals and points already banked plus the simulated rest of the
+season, not a formula over the remaining fixtures.
 
-**Rating trend** uses a weighted average of the last 6 matches (weights
-[0.1, 0.2, 0.3, 0.4, 0.5, 0.6], oldest to newest), classified as:
-strong rise (>6), rising (>1.5), steady (≥-1.5), falling (≥-6), strong fall (below -6).
+**Fixture difficulty** (Fix Diff) is the one number computed directly from the
+odds: expected points per remaining match for a league-average team against
+this club's run-in, centred on the league's mean run-in rather than a fixed
+baseline.
+
+**Rating trend** takes a weighted average of the last 6 matches (weights
+[0.1, 0.2, 0.3, 0.4, 0.5, 0.6], oldest to newest). It prefers the per-match xG
+form -- how far the side played above its rating by the chances alone -- and
+falls back to raw rating changes where a match has no xG. Classified as:
+strong rise (>4 or >6), rising (>1 or >1.5), steady (within ±1 / ±1.5),
+falling, strong fall; the cut-offs differ slightly between the xG and
+rating-change scales.
 
 ## Rewind
 

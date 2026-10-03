@@ -1442,3 +1442,42 @@ stays elo-v12.0.
 The "Played Results" and "Next Up" tabs already showed crests only (no team names) on mobile, with 40px crests and invisible-but-accessible name buttons overlaid. The team view's match cards used the same render functions but rendered inside `#team-content` instead of the main tab containers, so the mobile-only CSS selector missed them.
 
 Extended the CSS selector from `:is(#played-results, #fixtures)` to `:is(#played-results, #fixtures, #team-content)` so the team view now matches the main tabs exactly: 40px crests, hidden names, accessible overlay. No JS changes needed — the existing `sideBlock`/`buildFixtureCard`/`playedCard` output already had the right classes.
+
+## 🎨 Standings attack/defence columns and pill ramps (October 2026) — shipped
+
+Frontend-only pass over the Table view (no `MODEL_VERSION` bump; `elo-v12.0` unchanged).
+
+**Attack/defence columns.** `rateRow` already carried `attack`/`defence` as
+`rates_against_average` (expected goals per match vs an average side); the table
+now renders them as ±% vs the division average (`attack_pct`, `defence_pct` —
+defence inverted so higher is always better) in red→gray→blue diverging pills
+(`makePctPill`), sortable. The `Math.abs()` sign bug on the saturation term is
+fixed (extremes now reach ~85 %/92 %), contrast verified AA at both ends
+(5.01 / 5.65). i18n gained `th.attack.desc`/`th.defence.desc` (team-view hints
+reused as `title=` tooltips).
+
+**Fixture-difficulty pill.** The coarse three-step chip became a granular
+monotone red→gray→green ramp (hue 0/135, flat background) scaled by the
+league's own max |gap|, so the run-in reads as one axis rather than three
+buckets — the extreme is now the league's hardest/easiest run-in, not an
+arbitrary cutoff.
+
+**Form.** Reverted to the git-history design (`9ebf7b5~1`): five W/D/L blocks
+blue/gray/red, whole-form tooltip from new `form.tooltip` i18n key
+(EN `{w}W {d}D {l}L`, NO `{w}S {d}U {l}T`). The column still sorts by the last
+five's points (`formPoints`, out of 15). Form stays Current-view only — the
+Prediction toggle drops it.
+
+**Copy.** `Kamptakt` → `Kampprogram` in NO/EN.
+
+**Validation.** `node --test tests/frontend.test.js` 13/13, `pytest` 276,
+`build_site --only-season 2026` 79 views — all green after the final CSS change.
+
+**Docs.** README audited line-by-line against the code and corrected: data
+sources (Sofascore/football-data/Transfermarkt), era config applies to both
+divisions from 2022 with xG weight *lower* not higher, 7 nav tabs + Team Focus,
+Finish Grid dark-mode ramp/bands, the new Current/Prediction table columns,
+ladder phone list, played-card xG, three Compare blocks incl. real head-to-head,
+Model Card strength-shock row, team-view summary bullets, and a rewritten
+"Key stats explained" (xPts = simulation mean, attack/defence = ±% display of
+the rates, xG-form trend thresholds).

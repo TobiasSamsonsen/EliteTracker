@@ -345,7 +345,9 @@ html { scroll-padding-top: 76px; }
     box-shadow: 0 1px 3px rgb(13 26 34 / 0.18), inset 0 0 0 1px var(--rule);
   }
 
-/* Fixture difficulty pill */
+/* Fixture difficulty pill — diverging red–gray–green ramp.
+   --fd-hue: 0 (red) or 135 (green); --fd-sat/--fd-light interpolated to gray at k=0.
+   --fd-alpha: 0.1 (mean) → 0.45 (league extreme). Flat bg, no gradient. */
 .fixture-difficulty-pill {
     padding: 0 6px;
     border: 1px solid transparent;
@@ -355,23 +357,13 @@ html { scroll-padding-top: 76px; }
     display: inline-block;
     min-width: 42px;
     text-align: center;
-    /* Red (hue 0) for a harder run-in, green (135) for an easier one; the
-       tint deepens with --fd-strength, 0..1, both set per pill from JS. */
-    background: hsl(var(--fd-hue, 0) 70% 45% / calc(0.1 + 0.35 * var(--fd-strength, 0)));
-    color: hsl(var(--fd-hue, 0) 65% 24%);
+    background: hsl(var(--fd-hue) var(--fd-sat) var(--fd-light) / var(--fd-alpha));
+    color: hsl(var(--fd-hue) var(--fd-sat) 24%);
     transition: background-color 0.15s var(--ease), color 0.15s var(--ease);
 }
 
 :root[data-resolved-theme="dark"] .fixture-difficulty-pill {
-    color: hsl(var(--fd-hue, 0) 80% 78%);
-}
-
-/* Within a hair of the league-mean run-in: no colour to read into. */
-/* :root keeps this level with the dark-theme colour rule above, which it follows. */
-:root .fixture-difficulty-pill.fixture-difficulty-pill--neutral {
-    background: transparent;
-    border-color: var(--rule);
-    color: var(--ink-muted);
+    color: hsl(var(--fd-hue) var(--fd-sat) 78%);
 }
 
 /* ---------- hero -------------------------------------------------- */
@@ -865,6 +857,27 @@ table.standings .pos { text-align: center; width: 2.6rem; color: var(--ink-muted
 table.standings .sep { border-left: 1px solid var(--rule); }
 table.standings .muted { color: var(--ink-muted); }
 
+/* Attack/Defence pill — diverging red–gray–blue ramp.
+   --ad-hue: 0 (red) or 218 (blue); --ad-sat/--ad-light interpolated to gray at k=0.
+   --ad-alpha: 0.1 (avg) → 0.45 (league extreme). Flat bg, no gradient. */
+.attack-defence-pill {
+  padding: 0 6px;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  display: inline-block;
+  min-width: 42px;
+  text-align: center;
+  background: hsl(var(--ad-hue) var(--ad-sat) var(--ad-light) / var(--ad-alpha));
+  color: hsl(var(--ad-hue) var(--ad-sat) 24%);
+}
+
+/* Dark mode: text lightens (same hue/sat, 78% light) */
+:root[data-resolved-theme="dark"] .attack-defence-pill {
+  color: hsl(var(--ad-hue) var(--ad-sat) 78%);
+}
+
 /* A zone starts at this row (first CL slot, first conference slot, relegation
    play-off). The band-mark stripe names a single position's block; this line
    carries the whole region's colour and separates it from the teams above. */
@@ -1310,13 +1323,16 @@ table.standings .zone-divider__wrap::after {
   .odds__seg { font-size: 0.625rem; white-space: nowrap; text-overflow: ellipsis; }
 }
 
-/* Recent-form chip in the table: single rectangle, color by points (0–15). */
-.form__chips { display: inline-flex; }
+/* Recent-form chips in the table: 5 blocks (W/D/L), colored by result. */
+.form__chips { display: inline-flex; gap: 2px; justify-content: flex-end; }
 .form__chip {
-  width: auto; min-width: 1.05rem; padding: 0 0.25rem; height: 1.05rem; border-radius: 3px;
+  width: 1.05rem; height: 1.05rem; border-radius: 3px;
   display: grid; place-items: center;
-  font-size: 0.6875rem; font-weight: 700; line-height: 1; color: #fff;
+  font-size: 0.625rem; font-weight: 700; line-height: 1; color: #fff;
 }
+.form__chip--w { background: var(--home); }
+.form__chip--d { background: var(--draw); color: #10171b; }
+.form__chip--l { background: var(--away); }
 
 /* Compare-clubs tool. Hidden <select>s hold state; the cards beneath show the
    chosen pair and open a custom popover picker with crests. */
