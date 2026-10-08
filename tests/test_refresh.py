@@ -9,6 +9,7 @@ from datetime import date
 
 import pytest
 
+from elitetracker import refresh
 from elitetracker.refresh import refresh_matches
 from elitetracker.sources.fotmob import FetchError
 
@@ -144,3 +145,71 @@ class TestRefreshFailsafe:
                 fetch=lambda *a, **k: [], today=TODAY,
             )
         assert not (tmp_path / "eliteserien_2026_matches.json").exists()
+
+
+class TestCiSkipsObosXg:
+    """Sofascore refuses runner IPs, so CI must not keep asking for it."""
+
+    def _stub(self, monkeypatch, called, tmp_path, pending=True):
+        # main() reads both league files, so they have to exist. The OBOS one
+        # needs a played match, or there is nothing to fetch and the pull is
+        # correctly skipped.
+        (tmp_path / "eliteserien_2026_matches.json").write_text("[]", encoding="utf-8")
+        rows = [{
+            "match_id": "77", "date": "2026-10-03", "time": "18:00",
+            "home": "Odds Ballklubb", "away": "Start",
+            "home_goals": 2, "away_goals": 1, "played": True,
+            "kickoff_utc": "2026-10-03T16:00:00Z",
+            "home_id": "h77", "away_id": "a77",
+        }]
+        (tmp_path / "obosligaen_2026_matches.json").write_text(
+            json.dumps(rows), encoding="utf-8")
+        monkeypatch.setattr(
+            refresh, "pending_obos_xg",
+            lambda m: list(m) if pending else [])
+        monkeypatch.setattr(refresh, "update_obos_xg", lambda *a, **k: called.append(a) or 0)
+        monkeypatch.setattr(refresh, "update_xg", lambda *a, **k: 0)
+        monkeypatch.setattr(refresh, "refresh_matches", lambda *a, **k: None)
+
+    def test_ci_does_not_call_sofascore(self, monkeypatch, tmp_path, capsys):
+        called = []
+        monkeypatch.setenv("GITHUB_ACTIONS", "true")
+        self._stub(monkeypatch, called, tmp_path)
+        refresh.main(["--root", str(tmp_path), "--season", "2026"])
+        assert called == []
+        assert "skipped in CI" in capsys.readouterr().out
+
+    def test_local_still_fetches(self, monkeypatch, tmp_path):
+        called = []
+        monkeypatch.delenv("GITHUB_ACTIONS", raising=False)
+        self._stub(monkeypatch, called, tmp_path)
+        refresh.main(["--root", str(tmp_path), "--season", "2026"])
+        assert len(called) == 1
+
+    def test_the_flag_forces_it_even_in_ci(self, monkeypatch, tmp_path):
+        called = []
+        monkeypatch.setenv("GITHUB_ACTIONS", "true")
+        self._stub(monkeypatch, called, tmp_path)
+        refresh.main(["--root", str(tmp_path), "--season", "2026", "--obos-xg"])
+        assert len(called) == 1
+
+    def test_nothing_pending_costs_no_request(self, monkeypatch, tmp_path, capsys):
+        called = []
+        monkeypatch.delenv("GITHUB_ACTIONS", raising=False)
+        self._stub(monkeypatch, called, tmp_path, pending=False)
+        refresh.main(["--root", str(tmp_path), "--season", "2026"])
+        assert called == []
+        assert "nothing outstanding" in capsys.readouterr().out
+
+    def test_the_target_set_is_passed_through(self, monkeypatch, tmp_path):
+        seen = {}
+
+        def fake(matches, season, *, only=None, **k):
+            seen["only"] = [m.match_id for m in only]
+            return 0
+
+        monkeypatch.delenv("GITHUB_ACTIONS", raising=False)
+        self._stub(monkeypatch, [], tmp_path)
+        monkeypatch.setattr(refresh, "update_obos_xg", fake)
+        refresh.main(["--root", str(tmp_path), "--season", "2026"])
+        assert seen["only"] == ["77"]

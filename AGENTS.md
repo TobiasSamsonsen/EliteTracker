@@ -35,9 +35,16 @@ Elo replay + attack/defence ratings (on xG in both divisions) -> blended odds, P
   `__NEXT_DATA__`, validates the count, archives it under `data/raw/`, returns it
 - `refresh.py` — one command pulls both divisions, normalizes, validates, writes atomically,
   then tops up `data/xg.json` for newly played matches in both (non-fatal). A guard
-  skips a league with no unplayed match whose kickoff has passed; `--force` overrides
+  skips a league with no unplayed match whose kickoff has passed; `--force` overrides.
+  The OBOS xG leg asks only about matches `pending_obos_xg` reports, so a settled season
+  costs no request. Sofascore refuses GitHub's runner IPs outright, so that leg is skipped
+  in CI unless `--obos-xg` is passed — run it locally instead.
 - `sources/sofascore.py` — expected goals for OBOS-ligaen, which fotmob has no shotmap
-  for. Events are joined to our fixtures by club name and checked against the score
+  for. Events are joined to our fixtures by club name and checked against the score.
+  `SETTLE_HOURS` governs re-fetching: a pull that lands less than that after kickoff is a
+  snapshot of an incomplete feed, so it is recorded under `xg.json`'s `pending` map and
+  re-fetched once the window passes; a later pull is kept forever. `DEFAULT_DELAY` paces
+  requests (Sofascore flags busy IPs) and a 403 raises `SofascoreBlocked` without retrying.
 - `normalize/` — canonical `Match` schema (`matches.py`) and the fotmob adapter; `Standing`
   is only read, from the 2014 seed tables
 - `validation/matches.py` — errors vs warnings; `refresh` refuses to write on an error
@@ -110,7 +117,10 @@ strings (`data-i18n` in the HTML, `t()` in JS). Tabbed views, default Finish Gri
 ### Deploy
 - `.github/workflows/deploy.yml` — every push to `main` builds **only the current season**
   and deploys live; a pull request from this repo gets a preview channel
-- `.github/workflows/refresh.yml` — every 30 minutes, refresh results and commit if changed
+- `.github/workflows/refresh.yml` — every 30 minutes, refresh results and commit if changed.
+  The OBOS xG leg is skipped here (Sofascore refuses runner IPs), so that is run on the
+  developer's machine: `python -m elitetracker.refresh`, then commit and push `data/xg.json`.
+  The push triggers a deploy like any other change to `main`.
 - `.github/workflows/past-seasons.yml` — manual: rebuild every past season in parallel jobs, replace the release asset, redeploy
 - Past seasons are simulated on the developer's machine and uploaded once as a release
   asset; CI downloads it
@@ -165,6 +175,7 @@ them every deploy. About 1,078 files, ~36 MB gzipped.
 ```bash
 python -m venv .venv && .venv/bin/pip install -e '.[dev]'   # one-time (Windows: .venv\Scripts\...)
 .venv/bin/python -m elitetracker.refresh                       # pull the latest results
+.venv/bin/python -m elitetracker.research xg-obos              # OBOS xG for older seasons, same rule
 .venv/bin/python -m elitetracker.api.server --port 8000        # live server, http://127.0.0.1:8000
 .venv/bin/python -m elitetracker.build_site --only-season 2026 # static build of one season
 .venv/bin/python -m http.server --directory public 8000        # preview the static build
@@ -173,7 +184,7 @@ python -m venv .venv && .venv/bin/pip install -e '.[dev]'   # one-time (Windows:
 
 ## Testing
 
-276 Python tests, plus a small Node suite over the pure frontend logic (form chips, the
+297 Python tests, plus a small Node suite over the pure frontend logic (form chips, the
 compare tool's odds port). Required coverage:
 * ELO initialization, expected result, actual score, update
 * Draw probability logic

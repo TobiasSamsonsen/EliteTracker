@@ -23,6 +23,7 @@ from elitetracker.model.backtest import Scorecard, paired, walk_forward
 from elitetracker.model.elo import EloConfig
 from elitetracker.pipeline import NORMALIZED_DIR, load_matches, load_slices, seed_ratings
 from elitetracker.sources.fotmob import FetchError, fetch_match_xg, load_xg, save_xg
+from elitetracker.sources.sofascore import DEFAULT_DELAY
 
 
 # ---------- data pulls -------------------------------------------------
@@ -79,18 +80,39 @@ def cmd_xg(args: argparse.Namespace) -> int:
 
 def cmd_xg_obos(args: argparse.Namespace) -> int:
     """OBOS-ligaen xG from Sofascore; fotmob has no shotmap for the second division."""
-    from elitetracker.sources.sofascore import FIRST_XG_SEASON, SEASON_IDS, update_obos_xg
+    from elitetracker.sources.sofascore import (
+        DEFAULT_DELAY, FIRST_XG_SEASON, SEASON_IDS, SofascoreBlocked,
+        pending_obos_xg, update_obos_xg,
+    )
 
-    first, last = (int(part) for part in args.seasons.split("-"))
+    # "--seasons 2026" is as natural as "2023-2026"; both mean one year or many.
+    parts = [int(part) for part in args.seasons.split("-")]
+    first, last = (parts[0], parts[0]) if len(parts) == 1 else parts
     total = 0
     for season in range(max(first, FIRST_XG_SEASON), last + 1):
         if season not in SEASON_IDS:
             print(f"OBOS {season}: no Sofascore season id, skipped")
             continue
         matches = load_matches(NORMALIZED_DIR / f"obosligaen_{season}_matches.json")
-        added = update_obos_xg(matches, season, delay=args.delay, verbose=True)
+        # Same rule as refresh: never fetched, or fetched inside the settle
+        # window and possibly revised since. Check before asking, because
+        # season_events() costs a request per page.
+        todo = pending_obos_xg(matches)
+        if not todo:
+            print(f"OBOS {season}: nothing outstanding, skipped")
+            continue
+        newest = max(m.date for m in todo)
+        print(f"OBOS {season}: {len(todo)} to fetch (newest {newest})")
+        try:
+            added = update_obos_xg(matches, season, delay=args.delay,
+                                   only=todo, verbose=True)
+        except SofascoreBlocked as exc:
+            print(f"OBOS {season}: {exc}")
+            return 1
         print(f"OBOS {season}: {added} match(es) recorded")
         total += added
+    if not total:
+        print("nothing to fetch")
     data = load_xg()
     print(f"done: {len(data['matches'])} with xG, {len(data['none'])} without")
     return 0
@@ -161,7 +183,8 @@ def main(argv: list[str] | None = None) -> int:
     xg.add_argument("--limit", type=int); xg.add_argument("--refresh", action="store_true", help="refetch matches already stored")
     xg.set_defaults(func=cmd_xg)
     obos = sub.add_parser("xg-obos"); obos.add_argument("--seasons", default="2023-2026")
-    obos.add_argument("--delay", type=float, default=0.3); obos.set_defaults(func=cmd_xg_obos)
+    obos.add_argument("--delay", type=float, default=DEFAULT_DELAY)
+    obos.set_defaults(func=cmd_xg_obos)
     run = sub.add_parser("run"); run.add_argument("--score-from", type=int, default=2022); run.set_defaults(func=cmd_run)
     args = parser.parse_args(argv)
     return args.func(args)

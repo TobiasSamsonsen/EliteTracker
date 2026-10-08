@@ -25,6 +25,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 from datetime import date, datetime, timezone
 from pathlib import Path
 from typing import Any, Callable, Iterable
@@ -33,7 +34,9 @@ from elitetracker.normalize.fotmob import normalize_matches
 from elitetracker.normalize.matches import dump
 from elitetracker.pipeline import NORMALIZED_DIR, current_season, load_matches
 from elitetracker.sources.fotmob import LEAGUES, FetchError, fetch_matches, update_xg
-from elitetracker.sources.sofascore import update_obos_xg
+from elitetracker.sources.sofascore import (
+    SofascoreBlocked, pending_obos_xg, update_obos_xg,
+)
 from elitetracker.validation.matches import validate
 
 
@@ -97,11 +100,17 @@ def refresh_matches(
         )
 
 
+def _in_ci() -> bool:
+    return bool(os.environ.get("GITHUB_ACTIONS"))
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument("--season", type=int, help="default: the latest season with data")
     parser.add_argument("--root", type=Path, default=NORMALIZED_DIR)
     parser.add_argument("--force", action="store_true", help="fetch even if no matches appear to have finished")
+    parser.add_argument("--obos-xg", action="store_true",
+                        help="fetch OBOS xG even in CI (only useful where Sofascore serves this network)")
     args = parser.parse_args(argv)
     refresh_matches(args.root, season=args.season, refresh_guard=not args.force)
     # The attack/defence ratings and the Elo update both run on xG where there
@@ -110,10 +119,32 @@ def main(argv: list[str] | None = None) -> int:
     # Non-fatal by design -- the model falls back to goals.
     season = args.season or current_season(args.root)
     added = update_xg(load_matches(args.root / f"eliteserien_{season}_matches.json"))
-    try:
-        added += update_obos_xg(load_matches(args.root / f"obosligaen_{season}_matches.json"), season)
-    except FetchError as exc:
-        print(f"OBOS xG skipped: {exc}")
+    if _in_ci() and not args.obos_xg:
+        # Sofascore refuses GitHub's runner ranges outright, so a scheduled run
+        # would ask, be told no, and ask again in half an hour -- 48 pointless
+        # requests a day against a site we want to stay welcome to. Skip it and
+        # let the local pull own OBOS xG; `--obos-xg` overrides when a runner
+        # range does get served.
+        print("OBOS xG: skipped in CI (Sofascore refuses runner IPs). "
+              "Run `python -m elitetracker.refresh --obos-xg` locally.")
+    else:
+        try:
+            obos = load_matches(args.root / f"obosligaen_{season}_matches.json")
+            # Ask only about matches that were never fetched, or were fetched
+            # inside the settle window and may have been revised since. A fully
+            # settled season costs no request at all.
+            todo = pending_obos_xg(obos)
+            if todo:
+                added += update_obos_xg(obos, season, only=todo)
+                print(f"OBOS xG: {added} recorded")
+            else:
+                print("OBOS xG: nothing outstanding")
+        except SofascoreBlocked as exc:
+            # Sofascore refuses this network outright; no request shape changes
+            # that. The model falls back to goals for OBOS, so not fatal.
+            print(f"OBOS xG unavailable: {exc}")
+        except FetchError as exc:
+            print(f"OBOS xG skipped: {exc}")
     if added:
         print(f"xG: {added} new match(es) recorded")
     return 0
