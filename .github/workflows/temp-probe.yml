@@ -1,0 +1,19 @@
+name: TEMP probe sofascore from a runner
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install curl-cffi
+      - name: Probe
+        run: python .github/temp_probe.py
