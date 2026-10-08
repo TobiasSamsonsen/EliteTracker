@@ -16,4 +16,4 @@ jobs:
           python-version: "3.12"
       - run: pip install curl-cffi
       - name: Probe
-        run: python .github/temp_probe.py
+        run: python .github/temp_probe2.py
