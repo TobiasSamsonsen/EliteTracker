@@ -272,6 +272,16 @@ def build_report(
     projection = simulate_season(
         matches, ratings, ad=ad, config=simulation, elo_config=elo_config
     )
+    high_stakes = _compute_high_stakes(
+        projection.conditionals,
+        # The conditionals' club axis is the live table's order,
+        # which is the order simulate_season works in.
+        [row.team_id for row in table_from_matches(matches)],
+        [game for game in matches if not game.played],
+        {team.team_id: team.position_probabilities for team in projection.teams},
+        bands_for(spec, season),
+        simulation,
+    )
 
     return {
         "league": {
@@ -329,15 +339,143 @@ def build_report(
                 },
             },
         },
-        "table": _table_payload(matches, ratings, projection, seeds, ad, spec.slug, season, era),
+        "table": _table_payload(matches, ratings, projection, seeds, ad, spec.slug, season, era, high_stakes),
         "fixtures": _fixtures_payload(matches, ratings, elo_config, ad),
         "results": _results_payload(matches, pre_match, era),
+        "high_stakes": high_stakes,
         "history": _history_payload(
             build_history(matches, all_matches, seeds, prior=prior, elo_config=elo_config,
                           config=history, shots=shot_table()),
             {row.team_id: row.team for row in table_from_matches(matches)},
         ),
     }
+
+
+# A club must already have at least this chance of finishing in a
+# band for a remaining match to be high-stakes in it, and the gap
+# between winning and losing the match must clear this bar to be
+# worth a badge.
+MIN_BAND_P = 0.10
+MIN_SWING = 0.30
+# A branch thinner than this is Monte Carlo noise rather than a
+# probability, so the fixture is left off instead of divided into.
+# The floor scales with the run count because noise falls as
+# 1/sqrt(runs); it is 1% of the runs for every shipped config.
+MIN_BRANCH = 500
+
+
+def _compute_high_stakes(
+    conditionals: list[list[list[list[int]]]] | None,
+    clubs: list[str],
+    fixtures: list[Match],
+    unconditional: dict[str, list[float]],
+    bands: tuple[Band, ...],
+    config: SimulationConfig | None = None,
+) -> list[dict[str, Any]]:
+    """The remaining fixtures that swing a contender's band chance most.
+
+    `conditionals` is `SeasonProjection.conditionals`: per unplayed
+    fixture (in `fixtures` order), per outcome (0 home win, 1 draw,
+    2 away win), per club, how many runs finished the club in each
+    position given that outcome. A fixture is high-stakes for a club
+    when the chance of its band differs between the club winning the
+    fixture and losing it. Relegation is the one band a loss brings
+    closer, so its favourable side is the loss. Per opponent pairing
+    the higher-swing leg is the one named, with both legs attached.
+    """
+    entries: list[dict[str, Any]] = []
+    if not conditionals or not clubs or not fixtures:
+        return entries
+    index_of = {team_id: index for index, team_id in enumerate(clubs)}
+    # The fixtures left per club, as (conditionals index, match).
+    remaining: dict[int, list[tuple[int, Match]]] = {index: [] for index in range(len(clubs))}
+    names: dict[str, str] = {}
+    for fixture_index, game in enumerate(fixtures):
+        home_id = game.home_id or game.home
+        away_id = game.away_id or game.away
+        names[home_id] = game.home
+        names[away_id] = game.away
+        home = index_of.get(home_id)
+        if home is not None:
+            remaining[home].append((fixture_index, game))
+        away = index_of.get(away_id)
+        if away is not None:
+            remaining[away].append((fixture_index, game))
+    min_branch = max(MIN_BRANCH, (config or SimulationConfig()).simulations // 100)
+
+    for club_index, team_id in enumerate(clubs):
+        chances = unconditional.get(team_id) or []
+        for band in bands:
+            span = slice(band.first - 1, band.last)
+            baseline = sum(chances[span])
+            if baseline < MIN_BAND_P:
+                continue  # not in contention for this band
+            relegation = band.tone == "relegation"
+            # One entry per opponent: the pairing collapses to its
+            # higher-swing leg, with both legs recorded.
+            pairings: dict[str, dict[str, Any]] = {}
+            for fixture_index, game in remaining[club_index]:
+                branches = conditionals[fixture_index]
+                is_home = index_of[game.home_id or game.home] == club_index
+                win_branch, loss_branch = (0, 2) if is_home else (2, 0)
+                wins = branches[win_branch][club_index]
+                losses = branches[loss_branch][club_index]
+                n_win = sum(wins)
+                n_loss = sum(losses)
+                if n_win < min_branch or n_loss < min_branch:
+                    continue  # branch too thin to divide into
+                win_band = sum(wins[span]) / n_win
+                loss_band = sum(losses[span]) / n_loss
+                # Relegation reads the other way round: the loss is
+                # what brings it closer, so it is the favourable side.
+                favourable, unfavourable = (
+                    (loss_band, win_band) if relegation else (win_band, loss_band)
+                )
+                swing = favourable - unfavourable
+                if swing < MIN_SWING:
+                    continue
+                opponent_id = (game.away_id or game.away) if is_home else (game.home_id or game.home)
+                leg = {
+                    "match_id": game.match_id,
+                    "date": game.date,
+                    "home_id": game.home_id or game.home,
+                    "away_id": game.away_id or game.away,
+                    "p_favourable": favourable,
+                    "p_unfavourable": unfavourable,
+                    "swing": swing,
+                }
+                pairing = pairings.get(opponent_id)
+                if pairing is None:
+                    pairings[opponent_id] = {"legs": [leg], "chosen": leg}
+                else:
+                    pairing["legs"].append(leg)
+                    if swing > pairing["chosen"]["swing"]:
+                        pairing["chosen"] = leg
+            for opponent_id, pairing in pairings.items():
+                chosen = pairing["chosen"]
+                entries.append(
+                    {
+                        "team_id": team_id,
+                        "team": names[team_id],
+                        "opponent_id": opponent_id,
+                        "opponent": names[opponent_id],
+                        "band_label": band.label,
+                        "band_first": band.first,
+                        "band_last": band.last,
+                        "band_tone": band.tone,
+                        "match_id": chosen["match_id"],
+                        "leg_match_ids": [leg["match_id"] for leg in pairing["legs"]],
+                        "date": chosen["date"],
+                        "home_id": chosen["home_id"],
+                        "away_id": chosen["away_id"],
+                        "p_baseline": round(baseline, 4),
+                        "p_favourable": round(chosen["p_favourable"], 4),
+                        "p_unfavourable": round(chosen["p_unfavourable"], 4),
+                        "swing": round(chosen["swing"], 4),
+                    }
+                )
+    entries.sort(key=lambda entry: -entry["swing"])
+    return entries
 
 
 def rewound_configs(asof: str | None) -> tuple[SimulationConfig, HistoryConfig]:
@@ -411,10 +549,15 @@ def _table_payload(
     slug: str,
     season: int,
     elo_config: EloConfig,
+    high_stakes: list[dict[str, Any]] | None = None,
 ) -> list[dict[str, Any]]:
     projections = {team.team_id: team for team in projection.teams}
     # League-average rating for this division (not hardcoded 1500)
     league_avg_rating = sum(p.rating for p in projections.values()) / len(projections) if projections else 1500.0
+    # The high-stakes matches each club has left, as match ids.
+    stakes_by_team: dict[str, list[str]] = {}
+    for entry in high_stakes or []:
+        stakes_by_team.setdefault(entry["team_id"], []).append(entry["match_id"])
     # Pre-compute remaining fixtures per team.
     remaining: dict[str, list[tuple[str, float]]] = {team_id: [] for team_id in ratings}
     for match in matches:
@@ -468,6 +611,9 @@ def _table_payload(
                 "expected_goals_against": round(team.expected_goals_against, 1),
                 "fixture_difficulty": round(expected_points, 2),  # Lower = harder fixtures
                 "position_probabilities": [round(value, 6) for value in team.position_probabilities],
+                # The high-stakes fixtures left for this club, so the
+                # team view can find its entries without scanning them.
+                "high_stakes_match_ids": stakes_by_team.get(row.team_id, []),
                 # Expected goals for and against per match, against an average
                 # side of the division: the readable form of the attack/defence ratings.
                 "attack": round(scored, 2),

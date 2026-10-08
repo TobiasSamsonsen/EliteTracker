@@ -79,6 +79,10 @@ function applyShortNames(reports) {
         match.away = shortName(match.away);
       }
     }
+    for (const stake of report.high_stakes || []) {
+      stake.team = shortName(stake.team);
+      stake.opponent = shortName(stake.opponent);
+    }
     for (const team of report.history?.teams || []) team.team = shortName(team.team);
   }
   return reports;
@@ -322,12 +326,13 @@ function bandName(band) {
   return t(key) === key ? band.label : t(key);
 }
 
-/* Short edge label for season-shape chart lines.
-   European bands map to CL/EL/ECL keys; others fall back to full bandName. */
+/* Short edge label for season-shape chart lines and stake badges.
+   European bands map to CL/EL/ECL keys; champion maps to Title; others fall back. */
 function bandEdgeName(band) {
   const label = band.label;
   let key;
-  if (label === 'Champions League qualification') key = 'band.edge.CL';
+  if (label === 'Champions') key = 'table.zone.good.champion'; // "Title"
+  else if (label === 'Champions League qualification') key = 'band.edge.CL';
   else if (label === 'Europa League qualification') key = 'band.edge.EL';
   else if (label === 'Conference League qualification') key = 'band.edge.ECL';
   else return bandName(band);
@@ -1575,9 +1580,112 @@ function sideBlock(name, id, away, nameClass = 'played-card__team-name') {
   return team;
 }
 
-function buildFixtureCard(fixture) {
+/* ---------- high stakes ------------------------------------------- */
+
+/* The report's `high_stakes` array names, per contender, the one remaining
+   fixture that swings its band chance most. All DOM-free, so the node suite
+   can pin them: keep every body indented (pick() slices to the first
+   column-zero `}`). */
+
+/* One decimal, always: a 0.04 swing reads "4.0%", never rounded up into
+   something bigger and never hidden as "—" the way pct() hides dust. */
+function stakePct(value, lang) {
+  if (!Number.isFinite(value)) return '—';
+  const clamped = Math.max(0, Math.min(1, value));
+  const locale = lang === 'no' ? 'nb-NO' : 'en-GB';
+  const figure = (clamped * 100).toLocaleString(locale, {
+    minimumFractionDigits: 1, maximumFractionDigits: 1,
+  });
+  return lang === 'no' ? `${figure} %` : `${figure}%`;
+}
+
+/* This club's entries, driven by its table row's high_stakes_match_ids.
+   Older reports without that key fall back to matching team_id; a report
+   without high_stakes at all yields nothing rather than throwing. */
+function teamStakes(report, teamId) {
+  const rows = (report && report.table) || [];
+  const row = rows.find((r) => String(r.team_id) === String(teamId));
+  const ids = row && Array.isArray(row.high_stakes_match_ids)
+    ? new Set(row.high_stakes_match_ids.map(String))
+    : null;
+  const all = (report && report.high_stakes) || [];
+  if (ids) {
+    // Match on the club too: two clubs can hold stakes on the same fixture
+    // (once per club, or one club twice for two bands), and the ids alone
+    // cannot tell their entries apart.
+    return all.filter((entry) => ids.has(String(entry.match_id)) && String(entry.team_id) === String(teamId));
+  }
+  return all.filter((entry) => String(entry.team_id) === String(teamId));
+}
+
+/* Every stake riding on one fixture: one club, or two, or one club twice
+   (two bands). Returns all of them so the card merges the reasons into a
+   single badge instead of dropping one or stacking two. */
+function stakesForFixture(entries, matchId) {
+  return (entries || []).filter((entry) => String(entry.match_id) === String(matchId));
+}
+
+/* Both legs of the pairing, oldest first, from the fixture list. Empty when
+   the legs are unknown, so the team view names the pairing only when it can
+   show both halves of it. */
+function stakeLegs(entry, fixtures) {
+  const legs = (entry && entry.leg_match_ids) || [];
+  if (!legs.length) return [];
+  const wanted = new Set(legs.map(String));
+  return (fixtures || [])
+    .filter((f) => wanted.has(String(f.match_id)))
+    .sort((a, b) => String(a.date).localeCompare(String(b.date)));
+}
+
+/* Plain-language consequence of an entry. The tone decides the verb: every
+   band but relegation is something to win toward, while relegation is what a
+   loss brings closer — never "a win seals relegation". Surfaces p_favourable
+   ("is 92%") and p_unfavourable ("falls to 31%") rather than the swing, which
+   reads as arithmetic where these read as what happens. */
+function stakeCopy(entry, lang) {
+  const loss = entry.band_tone === 'relegation';
+  const band = bandName({ label: entry.band_label });
+  if (loss) {
+    return {
+      main: t('stake.lose.main', { opponent: entry.opponent, band, fav: stakePct(entry.p_favourable, lang) }),
+      sub: t('stake.lose.sub', { unfav: stakePct(entry.p_unfavourable, lang) }),
+    };
+  }
+  return {
+    main: t('stake.win.main', { opponent: entry.opponent, band, fav: stakePct(entry.p_favourable, lang) }),
+    sub: t('stake.win.sub', { unfav: stakePct(entry.p_unfavourable, lang) }),
+  };
+}
+
+/* One merged badge for a fixture card, or null when nothing rides on it. The
+   text always names whose stake it is ("Decisive for Bodø/Glimt (Title)"),
+   never a bare "important match". The dots reuse the band palette, so the
+   flag reads as informative rather than alarming. */
+function stakeFlag(stakes, report) {
+  if (!stakes || !stakes.length) return null;
+  const count = (report.table || []).length || 16;
+  const flag = el('div', 'stake-flag');
+  const dots = el('span', 'stake-flag__dots');
+  dots.setAttribute('aria-hidden', 'true');
+  const items = [];
+  for (const entry of stakes) {
+    const band = { first: entry.band_first, last: entry.band_last, tone: entry.band_tone, label: entry.band_label };
+    const dot = el('span', 'stake-flag__dot');
+    dot.style.background = bandColor(band, count);
+    dots.appendChild(dot);
+    items.push(`${entry.team} (${bandEdgeName(band)})`);
+  }
+  flag.appendChild(dots);
+  flag.appendChild(el('span', 'stake-flag__text', t('stake.badge', { list: items.join(' · ') })));
+  return flag;
+}
+
+function buildFixtureCard(fixture, stakes, report) {
   const card = el('div', 'played-card');
   card.appendChild(el('div', 'played-card__date', formatDate(fixture.date) + (fixture.time ? ` \u00b7 ${fixture.time}` : '')));
+
+  const flag = report ? stakeFlag(stakes || [], report) : null;
+  if (flag) card.appendChild(flag);
 
   const matchup = el('div', 'played-card__matchup');
   const homeSide = el('div', 'played-card__side played-card__side--home');
@@ -1676,7 +1784,7 @@ function renderFixtures(report) {
     state.fixturesWeek > 0 ? go(state.fixturesWeek - 1) : null,
     state.fixturesWeek < weeks.length - 1 ? go(state.fixturesWeek + 1) : null,
   ));
-  for (const fixture of fixtures) holder.appendChild(buildFixtureCard(fixture));
+  for (const fixture of fixtures) holder.appendChild(buildFixtureCard(fixture, stakesForFixture(report.high_stakes, fixture.match_id), report));
 }
 
 /* Matches bucketed by ISO week, weeks in the order the list first meets them. */
@@ -2010,6 +2118,17 @@ function renderModelCard(report) {
     cell.appendChild(el('dt', '', name));
     cell.appendChild(el('dd', '', String(value)));
     grid.appendChild(cell);
+  }
+  /* The decisive-match note lives here rather than in the static HTML so an
+     empty high_stakes leaves no leftover explainer behind. */
+  const how = document.querySelector('#model-how');
+  if (how) {
+    how.querySelector('[data-stake-note]')?.remove();
+    if ((report.high_stakes || []).length) {
+      const note = el('li', '', t('model.how5'));
+      note.setAttribute('data-stake-note', 'true');
+      how.appendChild(note);
+    }
   }
 }
 
@@ -2438,6 +2557,7 @@ function renderTeamSummary(teamId, row, career, report, container) {
     xg.appendChild(xgStat(t('team.attack'), t('team.attackHint'), row.attack, report.table.map((r) => r.attack), true));
     xg.appendChild(xgStat(t('team.defence'), t('team.defenceHint'), row.defence, report.table.map((r) => r.defence), false));
     card.appendChild(xg);
+    renderTeamStakes(card, report, teamId);
   } else if (career) {
     const table = el('dl', 'team-stats');
     table.appendChild(summaryStat(t('team.matches'), String(career.points.length)));
@@ -2512,6 +2632,38 @@ function trendArrowSVG(direction) {
   }[direction];
 
   return `<svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="transform:rotate(${rotation}deg)"><path d="M12 19V5"/><polyline points="5 12 12 5 19 12"/></svg>`;
+}
+
+/* The club's own high-stakes entries: one compact line each, the band carried
+   by a dot in its palette colour and the consequence in words ("Win vs Brann
+   and the Champions chance is 92%. Lose and it falls to 31%."). Nothing is
+   rendered when the club has no entries, so mid-table clubs get no chrome. */
+function renderTeamStakes(card, report, teamId) {
+  const entries = teamStakes(report, teamId);
+  if (!entries.length) return;
+  const box = el('div', 'team-stakes');
+  box.appendChild(el('div', 'label', t('stake.title')));
+  const list = el('ul', 'team-stakes__list');
+  const count = (report.table || []).length || 16;
+  for (const entry of entries) {
+    const copy = stakeCopy(entry, currentLang);
+    const item = el('li', 'team-stakes__row');
+    const dot = el('span', 'team-stakes__dot');
+    dot.style.background = bandColor({ first: entry.band_first, tone: entry.band_tone }, count);
+    dot.setAttribute('aria-hidden', 'true');
+    item.appendChild(dot);
+    const text = el('span', 'team-stakes__text');
+    text.appendChild(el('span', 'team-stakes__main', `${copy.main} `));
+    text.appendChild(el('span', 'team-stakes__sub', copy.sub));
+    const legs = stakeLegs(entry, report.fixtures || []);
+    if (legs.length >= 2) {
+      text.appendChild(el('span', 'team-stakes__legs', t('stake.legs', { a: formatDate(legs[0].date), b: formatDate(legs[1].date) })));
+    }
+    item.appendChild(text);
+    list.appendChild(item);
+  }
+  box.appendChild(list);
+  card.appendChild(box);
 }
 
 /* One tile: the label comes first for screen readers (dt before dd) and the
@@ -2740,7 +2892,7 @@ function renderTeamFixtures(teamId, teamName, report, container) {
   }
 
   for (const fixture of fixtures) {
-    section.appendChild(buildFixtureCard(fixture));
+    section.appendChild(buildFixtureCard(fixture, stakesForFixture(report.high_stakes, fixture.match_id), report));
   }
   container.appendChild(section);
 }

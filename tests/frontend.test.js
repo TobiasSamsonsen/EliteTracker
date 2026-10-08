@@ -199,3 +199,118 @@ test('an empty range has no index, so the slider stays hidden', () => {
   assert.equal(matchdayIndex([], null), null);
   assert.equal(matchdayIndex([], '2026-03-08'), null);
 });
+
+/* --- high stakes: the decisive-match feature.
+     Pure helpers are sliced out like the rest; the sentence copy needs the
+     real i18n table, so that file is eval'd too (its top level only touches
+     localStorage, stubbed here). */
+globalThis.localStorage = globalThis.localStorage || { getItem: () => 'en', setItem: () => {} };
+globalThis.document = globalThis.document || { querySelectorAll: () => [], getElementById: () => null, documentElement: {} };
+const i18nSrc = fs.readFileSync(`${__dirname}/../public/i18n.js`, 'utf8');
+eval(i18nSrc + pick('bandName') + pick('stakePct') + pick('teamStakes') + pick('stakesForFixture') + pick('stakeLegs') + pick('stakeCopy'));
+
+const NBSP = String.fromCharCode(160);
+const titleStake = {
+  team_id: '1', team: 'Bodø/Glimt',
+  band_label: 'Champions', band_tone: 'champion', band_first: 1, band_last: 1,
+  match_id: 'm1', leg_match_ids: ['m1', 'm2'], date: '2026-10-19',
+  opponent_id: '2', opponent: 'Brann', home_id: '2', away_id: '1',
+  p_favourable: 0.92, p_unfavourable: 0.31, p_baseline: 0.6, swing: 0.61,
+};
+const relegationStake = {
+  team_id: '3', team: 'Haugesund',
+  band_label: 'Relegation', band_tone: 'relegation', band_first: 15, band_last: 16,
+  match_id: 'm3', leg_match_ids: ['m3', 'm4'], date: '2026-10-19',
+  opponent_id: '4', opponent: 'Bryne', home_id: '3', away_id: '4',
+  p_favourable: 0.78, p_unfavourable: 0.22, p_baseline: 0.5, swing: 0.56,
+};
+const smallSwingStake = { ...titleStake, p_favourable: 0.34, p_unfavourable: 0.3, swing: 0.04 };
+
+test('stake chances print honestly in both languages, small and large', () => {
+  assert.equal(stakePct(0.92, 'en'), '92.0%');
+  assert.equal(stakePct(0.04, 'en'), '4.0%');
+  assert.equal(stakePct(0.92, 'no'), '92,0' + NBSP + '%');
+  assert.equal(stakePct(0.04, 'no'), '4,0' + NBSP + '%');
+  // A 0.04 swing stays visibly small and never collapses to a dash.
+  assert.ok(stakePct(smallSwingStake.swing, 'en').startsWith('4.'));
+  assert.equal(stakePct(NaN, 'en'), '—');
+});
+
+test('title copy is win-oriented and names the consequence', () => {
+  setLang('en');
+  const copy = stakeCopy(titleStake, 'en');
+  assert.ok(copy.main.includes('Win vs Brann'));
+  assert.ok(copy.main.includes('92.0%'));
+  assert.ok(!copy.main.includes('Lose'));
+  assert.ok(copy.sub.includes('falls to 31.0%'));
+});
+
+test('relegation copy is loss-oriented, never win-oriented', () => {
+  setLang('en');
+  const copy = stakeCopy(relegationStake, 'en');
+  assert.ok(copy.main.includes('Lose vs Bryne'));
+  assert.ok(copy.main.includes('78.0%'));
+  assert.ok(!copy.main.includes('Win'));
+  assert.ok(copy.sub.includes('Win and it falls to 22.0%'));
+  setLang('no');
+  const no = stakeCopy(relegationStake, 'no');
+  assert.ok(no.main.includes('Tap mot Bryne'));
+  assert.ok(!no.main.includes('Seier'));
+  assert.ok(no.sub.includes('Med seier faller den til'));
+  const noTitle = stakeCopy(titleStake, 'no');
+  assert.ok(noTitle.main.includes('Seier mot Brann'));
+  assert.ok(!noTitle.main.includes('Tap'));
+  setLang('en');
+});
+
+test('two clubs stakes on one fixture merge instead of dropping or doubling', () => {
+  const other = { ...titleStake, team_id: '2', team: 'Brann', band_label: 'Conference League qualification', band_tone: 'europe' };
+  const entries = [titleStake, other, relegationStake];
+  const merged = stakesForFixture(entries, 'm1');
+  assert.equal(merged.length, 2);
+  assert.deepEqual(merged.map((e) => e.team).sort(), ['Bodø/Glimt', 'Brann']);
+  assert.equal(stakesForFixture(entries, 'm3').length, 1);
+  assert.deepEqual(stakesForFixture([], 'm1'), []);
+});
+
+test('team stakes follow high_stakes_match_ids and degrade without the keys', () => {
+  assert.deepEqual(teamStakes({ table: [] }, '1'), []);
+  assert.deepEqual(teamStakes({ table: [{ team_id: '1' }], high_stakes: [] }, '1'), []);
+  assert.deepEqual(teamStakes({}, '1'), []);
+  // Without high_stakes_match_ids (older reports) fall back to the club's own entries.
+  const legacy = { table: [{ team_id: '1' }], high_stakes: [titleStake, relegationStake] };
+  assert.deepEqual(teamStakes(legacy, '1').map((e) => e.match_id), ['m1']);
+  // With the key, only the club's own listed entries count — another club's
+  // entry on the same fixture must not leak into this club's view.
+  const otherClub = { ...titleStake, team_id: '2', team: 'Brann' };
+  const modern = {
+    table: [{ team_id: '1', high_stakes_match_ids: ['m1'] }],
+    high_stakes: [titleStake, otherClub, relegationStake],
+  };
+  assert.deepEqual(teamStakes(modern, '1').map((e) => e.team), ['Bodø/Glimt']);
+  assert.deepEqual(teamStakes(modern, '2').map((e) => e.team), ['Brann']);
+});
+
+test('legs resolve to the pairing oldest-first, or nothing when unknown', () => {
+  const fixtures = [
+    { match_id: 'm2', date: '2026-11-08' },
+    { match_id: 'm1', date: '2026-09-13' },
+    { match_id: 'zz', date: '2026-09-01' },
+  ];
+  assert.deepEqual(stakeLegs(titleStake, fixtures).map((f) => f.match_id), ['m1', 'm2']);
+  assert.deepEqual(stakeLegs({ ...titleStake, leg_match_ids: undefined }, fixtures), []);
+});
+
+test('every stake string exists in both languages', () => {
+  const keys = ['stake.title', 'stake.win.main', 'stake.win.sub', 'stake.lose.main', 'stake.lose.sub', 'stake.legs', 'stake.badge', 'model.how5'];
+  for (const key of keys) {
+    setLang('en');
+    const en = t(key);
+    setLang('no');
+    const no = t(key);
+    assert.notEqual(en, key);
+    assert.notEqual(no, key);
+    assert.notEqual(en, no);
+  }
+  setLang('en');
+});

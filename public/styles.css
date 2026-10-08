@@ -1268,6 +1268,28 @@ table.standings .zone-divider__wrap::after {
   white-space: nowrap;
 }
 
+/* High-stakes flag on a fixture card: one merged line naming whose race rides
+   on it. Panel-sunk, never tinted, so even a relegation decider reads as
+   informative rather than alarming; the dots carry the band colours. */
+.stake-flag {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  align-self: center;
+  max-width: 100%;
+  padding: 0.3rem 0.75rem;
+  background: var(--panel-sunk);
+  border: 1px solid var(--rule);
+  border-radius: var(--radius-sm);
+  font-size: 0.8125rem;
+  color: var(--ink-muted);
+  text-align: center;
+}
+.stake-flag__dots { display: inline-flex; gap: 3px; flex: none; }
+.stake-flag__dot { width: 0.55rem; height: 0.55rem; border-radius: 50%; flex: none; }
+.stake-flag__text { overflow-wrap: anywhere; }
+
 /* Stacked diverging bar: home | draw | away, with 2px surface gaps. */
 .odds { display: flex; gap: 2px; height: 1.5rem; }
 
@@ -2561,6 +2583,45 @@ footer a { color: var(--ink); }
   font-size: 0.6875rem;
   color: var(--ink-muted);
   text-align: center;
+}
+
+/* High-stakes lines in the team summary: one row per entry, the band carried
+   by a dot in its palette colour and the consequence in words. Restrained by
+   design — the numbers live in the sentence, not in a dashboard. */
+.team-stakes > .label { display: block; margin-bottom: 0.45rem; }
+.team-stakes__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+.team-stakes__row {
+  display: flex;
+  gap: 0.55rem;
+  align-items: flex-start;
+  font-size: 0.875rem;
+  line-height: 1.45;
+}
+.team-stakes__dot {
+  width: 0.6rem;
+  height: 0.6rem;
+  border-radius: 50%;
+  flex: none;
+  margin-top: 0.32rem;
+}
+.team-stakes__main { font-weight: 600; color: var(--ink); }
+.team-stakes__sub { color: var(--ink-muted); }
+.team-stakes__legs {
+  display: block;
+  font-size: 0.8125rem;
+  color: var(--ink-faint);
+}
+
+@media (max-width: 760px) {
+  .stake-flag { font-size: 0.75rem; padding: 0.25rem 0.6rem; }
+  .team-stakes__row { font-size: 0.8125rem; }
 }
 
 /* Rating chart stats (peak/worst) beneath the chart */

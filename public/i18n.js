@@ -145,6 +145,15 @@ const translations = {
     'next.awayWin': 'Away win',
     'next.count': '{n} of {total} remaining fixtures',
 
+    // High-stakes matches
+    'stake.title': 'Decisive matches',
+    'stake.win.main': 'Win vs {opponent} and the {band} chance is {fav}',
+    'stake.win.sub': 'Lose and it falls to {unfav}',
+    'stake.lose.main': 'Lose vs {opponent} and the {band} chance is {fav}',
+    'stake.lose.sub': 'Win and it falls to {unfav}',
+    'stake.legs': 'Home and away: {a} and {b}',
+    'stake.badge': 'Decisive for {list}',
+
     // Played results
     'played.title': 'Played results',
     'played.desc': 'Recently played matches with scores and rating changes.',
@@ -179,6 +188,7 @@ const translations = {
     'model.how2': 'Cross-season regression pulls every rating 12 % toward the division average during the off-season. This prevents one strong or weak year from carrying over unchanged, while still letting form carry momentum.',
     'model.how3': 'Simulations replay the remaining fixtures thousands of times. Each simulated match first picks an outcome (win, draw, or loss) from the pre-match probabilities, then draws a scoreline from the two clubs\' attack and defence ratings — the goals each side is expected to score and concede. Each run also nudges every club\'s strength up or down by a small random amount for the rest of that run, because a rating is an estimate and form drifts over a season; without it the finishing odds come out too sure of themselves.',
     'model.how4': 'Two OBOS-ligaen clubs were promoted from the third tier, which is outside this project\'s data. They start at the bottom of the ladder and are corrected only by results.',
+    'model.how5': 'When a club has a real shot at the title, qualification or survival, its decisive match is the remaining fixture that moves that chance the most. Even a large swing is only the gap between two simulated chances, not a guarantee, and the two legs of a pairing count almost the same, so the more decisive leg is the one named.',
     'model.version': 'Version',
     'model.kfactor': 'K-factor',
     'model.homeAdvantage': 'Home advantage',
@@ -467,6 +477,15 @@ const translations = {
     'next.awayWin': 'Borteseier',
     'next.count': '{n} av {total} gjenstående kamper',
 
+    // High-stakes matches
+    'stake.title': 'Avgjørende kamper',
+    'stake.win.main': 'Seier mot {opponent}, og {band}-sjansen er {fav}',
+    'stake.win.sub': 'Med tap faller den til {unfav}',
+    'stake.lose.main': 'Tap mot {opponent}, og {band}-sjansen er {fav}',
+    'stake.lose.sub': 'Med seier faller den til {unfav}',
+    'stake.legs': 'Hjemme og borte: {a} og {b}',
+    'stake.badge': 'Avgjørende for {list}',
+
     // Played results
     'played.title': 'Spilte kamper',
     'played.desc': 'Nylig spilte kamper med resultater og ratingendringer.',
@@ -501,6 +520,7 @@ const translations = {
     'model.how2': 'Kryssesongsregresjon drar hver rating 12 % mot divisjonsgjennomsnittet i pausen mellom sesonger. Dette forhindrer at ett sterkt eller svakt år videreføres uendret, samtidig som formen beholder momentum.',
     'model.how3': 'Simuleringer spiller gjennom de gjenværende kampene tusenvis av ganger. Hver simulert kamp velger først et utfall (seier, uavgjort eller tap) fra førkampssannsynlighetene, og trekker deretter et sluttresultat fra de to klubbenes angreps- og forsvarsratinger — målene hvert lag forventes å score og slippe inn. Hver simulering flytter også hver klubbs styrke litt opp eller ned, tilfeldig, for resten av den simuleringen, fordi en rating er et anslag og formen endrer seg gjennom en sesong; uten dette blir sluttplasseringsoddsene for skråsikre.',
     'model.how4': 'To OBOS-ligaen-klubber rykket opp fra tredje nivå, som er utenfor dette prosjekts data. De starter på bunnen av stigen og korrigeres kun av resultater.',
+    'model.how5': 'Når et lag har en reell sjanse til tittel, kvalik eller å berge plassen, er den avgjørende kampen det gjenstående oppgjøret som flytter den sjansen mest. Selv et stort utslag er bare gapet mellom to simulerte sjanser, ingen garanti, og de to oppgjørene i et par teller nesten likt, så det mest avgjørende oppgjøret er det som vises.',
     'model.version': 'Versjon',
     'model.kfactor': 'K-faktor',
     'model.homeAdvantage': 'Hjemmefordel',

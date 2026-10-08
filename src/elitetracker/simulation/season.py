@@ -108,6 +108,11 @@ class SeasonProjection:
     # position_points[0] is the median points of the team finishing 1st.
     position_points: list[int] | None = None
     strength_sd: float = 0.0
+    # conditionals[fixture][outcome][club][position] counts the runs in which that
+    # club finished in that position *given* that fixture came out that way
+    # (0 home win, 1 draw, 2 away win). Index order matches `_fixtures`, so
+    # fixture i here is the i-th unplayed match in `matches`.
+    conditionals: list[list[list[list[int]]]] | None = None
 
 
 # Per unplayed fixture: home index, away index, P(home), P(home)+P(draw), and
@@ -204,6 +209,22 @@ def simulate_season(
     index_width = count.bit_length()
     mask = (1 << index_width) - 1
 
+    # High-stakes tallies: per fixture, per outcome, per club, the finishing
+    # position it ended on. Fed by the outcome code the loop was already
+    # discarding, so the extra cost is two list writes per fixture per run rather
+    # than a second simulation pass.
+    conditionals = [[[[0] * count for _ in range(count)] for _ in range(3)] for _ in fixtures]
+    # The outcome's tally row per fixture, picked once in the
+    # fixture loop (where the outcome is known) instead of once per
+    # club in the finishing loop, where the position is known.
+    branch_rows: list[list[list[int]] | None] = [None] * len(fixtures)
+    # Fixtures each club plays in, so a run's finishing position -- known
+    # only once the run is sorted -- can be tallied against them.
+    club_fixtures = [[] for _ in range(count)]
+    for fixture_index, (home, away, *_rest) in enumerate(fixtures):
+        club_fixtures[home].append(fixture_index)
+        club_fixtures[away].append(fixture_index)
+
     counts = [[0] * count for _ in range(count)]
     points_total = [0] * count
     goals_for_total = [0] * count
@@ -225,7 +246,7 @@ def simulate_season(
         # exp(shock) per club: the fixture's win odds scale by boost[home] /
         # boost[away], its loss odds by the inverse, and the three renormalise.
         boost = [math.exp(rng.gauss(0.0, strength_sd)) for _ in range(count)] if strength_sd else None
-        for home, away, home_chance, home_or_draw_chance, tables in fixtures:
+        for fixture_index, (home, away, home_chance, home_or_draw_chance, tables) in enumerate(fixtures):
             if boost is not None:
                 ratio = boost[home] / boost[away]
                 home_weight = home_chance * ratio
@@ -244,6 +265,8 @@ def simulate_season(
             else:
                 outcome_code = 2
                 points[away] += POINTS_FOR_WIN
+
+            branch_rows[fixture_index] = conditionals[fixture_index][outcome_code]
 
             cumulative, scores = tables[outcome_code]
             home_goals, away_goals = scores[bisect_left(cumulative, random_value())]
@@ -272,6 +295,19 @@ def simulate_season(
             goals_for_total[index] += goals_for[index]
             goals_against_total[index] += goals_against[index]
             position_hist[position][points[index]] += 1
+            # The finishing position is only known once the run is
+            # sorted, so the conditional tallies are written here, once
+            # per club per run, against the outcome each fixture drew.
+            for fixture_index in club_fixtures[index]:
+                branch_rows[fixture_index][index][position] += 1
+
+    # Each run leaves a fixture's two clubs in exactly one outcome
+    # branch, so per club the three branches must sum to the run count.
+    for fixture_index, (home, away, *_rest) in enumerate(fixtures):
+        for club in (home, away):
+            assert sum(sum(branch[club]) for branch in conditionals[fixture_index]) == config.simulations, (
+                f"branch tally mismatch at fixture {fixture_index}"
+            )
 
     halfway = (config.simulations + 1) // 2
     position_points = []
@@ -310,4 +346,5 @@ def simulate_season(
         matches_played=sum(1 for match in matches if match.played),
         position_points=position_points,
         strength_sd=strength_sd,
+        conditionals=conditionals,
     )
