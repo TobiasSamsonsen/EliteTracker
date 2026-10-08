@@ -25,7 +25,7 @@ from __future__ import annotations
 import json
 import re
 import time
-from datetime import datetime, timezone
+from datetime import date, datetime, timezone
 from typing import Any, Iterable
 
 from curl_cffi import requests
@@ -78,6 +78,15 @@ DEFAULT_DELAY = 1.0
 # straight after kickoff is a snapshot of an incomplete feed. Six hours is past
 # the point where their numbers stop moving; a fetch after that is kept forever.
 SETTLE_HOURS = 6.0
+
+# How long after a fixture a match stays eligible for a second look when
+# Sofascore reported no xG for it. `none` is not a final verdict: it usually
+# means we asked within hours of kickoff, before Sofascore had published
+# anything. Seven OBOS fixtures from 2026-09-20 sat in `none` that way and did
+# have xG on Sofascore 18 days later. Thirty days is a generous ceiling; past
+# it, a fixture is treated as genuinely having none -- 19 matches in 2023 and
+# one in 2024 were re-checked and still had nothing.
+NONE_RECHECK_DAYS = 30
 
 # 429 and 5xx are worth another try; a 403 never is, so it is not in here.
 _RETRY_STATUSES = frozenset({429, 500, 502, 503, 504})
@@ -197,17 +206,18 @@ def _kickoff(match) -> datetime | None:
 
 
 def pending_obos_xg(matches: Iterable, *, settle_hours: float = SETTLE_HOURS,
+                    none_recheck_days: int = NONE_RECHECK_DAYS,
                     now: datetime | None = None) -> list:
     """Played matches worth asking Sofascore about.
 
-    Two cases, and only two:
+    Three cases:
 
-    * never fetched -- the id is in neither `matches` nor `none` of xg.json. An
-      id under `none` is a fixture Sofascore publishes no xG for, so asking
-      again changes nothing;
+    * never fetched -- the id is in neither `matches` nor `none` of xg.json;
     * fetched too early -- recorded under `pending`, meaning that fetch landed
       less than `settle_hours` after kickoff, so Sofascore may well have
-      revised it since. Re-fetch once the window has passed, then stop.
+      revised it since. Re-fetch once the window has passed, then stop;
+    * recorded as having no xG, but still inside `none_recheck_days` -- see
+      below, `none` is not a final verdict.
 
     Anything else is settled and never touched again. An entry with no
     `pending` record counts as settled, so the first run after this shipped
@@ -218,7 +228,8 @@ def pending_obos_xg(matches: Iterable, *, settle_hours: float = SETTLE_HOURS,
     """
     now = now or datetime.now(timezone.utc)
     data = load_xg()
-    known = set(data["matches"]) | set(data["none"])
+    none = set(data["none"])
+    known = set(data["matches"]) | none
     pending = data.get("pending") or {}
     out = []
     for m in matches:
@@ -232,7 +243,16 @@ def pending_obos_xg(matches: Iterable, *, settle_hours: float = SETTLE_HOURS,
             # leave it alone rather than refetching forever.
             if kickoff and (now - kickoff).total_seconds() >= settle_hours * 3600:
                 out.append(m)
+        elif m.match_id in none and _within_days(m.date, now.date(), none_recheck_days):
+            out.append(m)
     return out
+
+
+def _within_days(match_date: str, today, window: int) -> bool:
+    try:
+        return 0 <= (today - date.fromisoformat(match_date)).days <= window
+    except ValueError:
+        return False  # an unparseable matchday is not a reason to re-fetch
 
 
 def update_obos_xg(

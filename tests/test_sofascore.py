@@ -179,8 +179,9 @@ class TestPending:
         assert sofascore.pending_obos_xg(
             [match("77", "Odds Ballklubb", "Start", 2, 1)]) == []
 
-    def test_a_match_sofascore_has_no_xg_for_is_not_pending(self, monkeypatch):
-        # Under `none` means "asked, no xG published" -- asking again is wasted.
+    def test_an_old_match_sofascore_reported_no_xg_for_is_not_pending(self, monkeypatch):
+        # Under `none` past the recheck window means we asked, it had nothing,
+        # and we have stopped asking -- 19 matches in 2023 still have no xG.
         self._stub(monkeypatch, self._data([], none=["77"]))
         assert sofascore.pending_obos_xg(
             [match("77", "Odds Ballklubb", "Start", 2, 1)]) == []
@@ -192,6 +193,48 @@ class TestPending:
                          home_goals=None, away_goals=None, played=False,
                          home_id="h78", away_id="a78")
         assert sofascore.pending_obos_xg([upcoming]) == []
+
+
+class TestNoneRecheck:
+    """`none` is not a final verdict -- Sofascore backfills.
+
+    Seven OBOS fixtures from 2026-09-20 were asked within hours of kickoff,
+    filed under `none`, and did have xG on Sofascore 18 days later.
+    """
+
+    NOW = datetime(2026, 10, 8, 12, 0, tzinfo=timezone.utc)
+
+    def _run(self, monkeypatch, matchday):
+        data = {"matches": {}, "none": ["77"], "pending": {}}
+        monkeypatch.setattr(sofascore, "load_xg", lambda: data)
+        m = match("77", "Odds Ballklubb", "Start", 2, 1, date=matchday)
+        return [x.match_id for x in sofascore.pending_obos_xg([m], now=self.NOW)]
+
+    def test_a_recent_none_entry_is_asked_about_again(self, monkeypatch):
+        assert self._run(monkeypatch, "2026-09-20") == ["77"]
+
+    def test_a_none_entry_just_inside_the_window_is_still_asked_about(self, monkeypatch):
+        assert self._run(monkeypatch, "2026-09-10") == ["77"]
+
+    def test_a_none_entry_past_the_window_is_left_alone(self, monkeypatch):
+        assert self._run(monkeypatch, "2026-09-01") == []
+
+    def test_the_window_is_configurable(self, monkeypatch):
+        data = {"matches": {}, "none": ["77"], "pending": {}}
+        monkeypatch.setattr(sofascore, "load_xg", lambda: data)
+        m = match("77", "Odds Ballklubb", "Start", 2, 1, date="2026-01-01")
+        assert [x.match_id for x in sofascore.pending_obos_xg(
+            [m], now=self.NOW, none_recheck_days=400)] == ["77"]
+
+    def test_an_unparseable_matchday_is_not_a_reason_to_refetch(self, monkeypatch):
+        assert self._run(monkeypatch, "not-a-date") == []
+
+    def test_a_stored_match_is_not_rechecked_just_for_being_recent(self, monkeypatch):
+        # Only the `none` list gets a second look; a real value is never in doubt.
+        data = {"matches": {"77": [1.0, 1.0]}, "none": [], "pending": {}}
+        monkeypatch.setattr(sofascore, "load_xg", lambda: data)
+        m = match("77", "Odds Ballklubb", "Start", 2, 1, date="2026-09-20")
+        assert sofascore.pending_obos_xg([m], now=self.NOW) == []
 
 
 class TestSettleWindow:
