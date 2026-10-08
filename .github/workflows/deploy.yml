@@ -4,6 +4,11 @@
 # CI only ever simulates the CURRENT season. Past seasons are simulated on the
 # developer's machine and uploaded once as the `past-seasons` release asset --
 # see AGENTS.md, "Publishing past seasons".
+#
+# The current season's reports persist too, as the `current` release asset:
+# every deploy downloads them before building and re-uploads them after, so
+# build_site's per-view incremental rebuild can reuse the previous run's
+# output instead of re-simulating every unchanged view.
 
 name: Deploy to Firebase Hosting
 on:
@@ -14,7 +19,7 @@ on:
 
 permissions:
   checks: write
-  contents: read
+  contents: write   # re-upload the current-season release asset
   pull-requests: write
 
 jobs:
@@ -43,6 +48,18 @@ jobs:
           else
             echo "::warning::No past-seasons release asset -- only $CURRENT will be browsable."
           fi
+      - name: Fetch prebuilt current-season reports
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          # Absent on the first run after this change (and before the first
+          # push deploy); that just means one full build, then it exists.
+          if gh release download current --pattern current.tar.gz --dir "$RUNNER_TEMP"; then
+            tar -xzf "$RUNNER_TEMP/current.tar.gz" -C public/data
+            echo "current season: $(tar -tzf "$RUNNER_TEMP/current.tar.gz" | wc -l) prebuilt files"
+          else
+            echo "::warning::No current-season release asset -- building from scratch."
+          fi
       - name: Build the current season
         run: python -m elitetracker.build_site --only-season "$CURRENT"
       - uses: FirebaseExtended/action-hosting-deploy@v0
@@ -52,3 +69,25 @@ jobs:
           projectId: elitetrackerno
           # Empty on a pull request, which makes the action create a preview channel.
           channelId: ${{ github.event_name != 'pull_request' && 'live' || '' }}
+      - name: Publish prebuilt current-season reports
+        # Only a push to main may write the release: a PR run -- even one from
+        # this repo -- must not be able to plant files that the next deploy
+        # will trust as prebuilt. Preview-channel builds skip the upload, so
+        # the asset keeps the last push's output until the next push.
+        if: ${{ github.event_name == 'push' }}
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          mkdir -p "$RUNNER_TEMP/current-asset"
+          # A fully-reused build rewrites nothing, so the manifest may only be
+          # the one extracted from the asset. Every file here is optional for
+          # that reason: this step must not fail the deploy just because the
+          # build had nothing to do.
+          cp -n public/data/report-"$CURRENT"*.json public/data/report.json public/data/build-manifest.json "$RUNNER_TEMP/current-asset/" || true
+          tar -czf current.tar.gz -C "$RUNNER_TEMP/current-asset" .
+          ls -lh current.tar.gz
+          if gh release view current > /dev/null 2>&1; then
+            gh release upload current current.tar.gz --clobber
+          else
+            gh release create current current.tar.gz --title current --notes "Prebuilt current-season reports"
+          fi

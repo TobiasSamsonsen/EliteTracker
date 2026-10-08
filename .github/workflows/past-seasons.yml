@@ -43,10 +43,16 @@ jobs:
       - run: python -m elitetracker.build_site --only-season ${{ matrix.season }}
       # Only this season's reports: careers.json and report.json are rebuilt by
       # every deploy, and the other seasons come from their own jobs.
+      # build_site writes ONE manifest per invocation, so this job's manifest
+      # covers only this season; rename it, because a shared name would have
+      # every matrix job clobber the others in the artifact merge below.
+      - run: cp public/data/build-manifest.json public/data/build-manifest-${{ matrix.season }}.json
       - uses: actions/upload-artifact@v4
         with:
           name: season-${{ matrix.season }}
-          path: public/data/report-${{ matrix.season }}*.json
+          path: |
+            public/data/report-${{ matrix.season }}*.json
+            public/data/build-manifest-${{ matrix.season }}.json
           if-no-files-found: error
           retention-days: 1
 
@@ -64,6 +70,11 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
+          # Merge the per-season manifests into the one build-manifest.json
+          # the asset carries. Keys are per-season filenames, so merging
+          # cannot overwrite one season's entry with another's.
+          jq -s 'add // {}' out/build-manifest-*.json > out/build-manifest.json
+          rm out/build-manifest-*.json
           echo "files: $(ls out | wc -l)"
           tar -czf past-seasons.tar.gz -C out .
           ls -lh past-seasons.tar.gz

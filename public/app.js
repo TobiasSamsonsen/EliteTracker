@@ -545,7 +545,7 @@ function renderGrid(report) {
 /* ---------- finish-grid animation ---------------------------------- */
 
 async function prefetchAnimReports() {
-  const days = matchdays(state.reports[state.league]);
+  const days = liveMatchdaysFor(state.league);
   if (days.length < 2) return null;
   const fetched = await Promise.all(
     days.map((d) => fetch(reportUrl(state.season, d.date)).then((r) => (r.ok ? r.json().then(applyShortNames) : null))),
@@ -626,7 +626,7 @@ function animFrame(frac) {
 function animTick(now) {
   if (!anim.playing) return;
   const report = state.reports[state.league];
-  const days = matchdays(report);
+  const days = liveMatchdaysFor(state.league);
   const msPerDay = anim.interval / anim.speed;
 
   if (now - anim.lastTick >= msPerDay) {
@@ -662,7 +662,7 @@ function animView() {
 /* The progress bar follows the interpolated frame, not just whole matchdays,
    so it moves as smoothly as the cells do. */
 function animUpdateProgress(frac) {
-  const days = matchdays(state.reports[state.league]).length;
+  const days = liveMatchdaysFor(state.league).length;
   const done = days > 1 ? (anim.matchdayIndex + frac) / (days - 1) : 1;
   $(`#${animView()}-anim-fill`).style.transform = `scaleX(${Math.min(1, done).toFixed(4)})`;
 }
@@ -688,7 +688,7 @@ async function animStart() {
   if (anim.playing) { animStop(); return; }
 
   const report = state.reports[state.league];
-  const days = matchdays(report);
+  const days = liveMatchdaysFor(state.league);
   if (days.length < 2) return;
 
   const ladder = state.activeView === 'ladder';
@@ -3074,9 +3074,39 @@ function matchdays(report) {
   return report.league.matchdays || [];
 }
 
+/* A rewound payload carries only the matchdays played by the day it
+   was built for, so a range read from it shrinks as you rewind and
+   the slider could no longer slide forward. The live report -- the
+   one boot and the season picker load, which never carries an asof --
+   spans the whole season; keep its matchdays per league (the divisions
+   play on different days) and read the slider's range from those. */
+let liveMatchdays = {};
+
+function rememberLiveMatchdays(reports) {
+  liveMatchdays = {};
+  for (const [league, report] of Object.entries(reports)) {
+    liveMatchdays[league] = matchdays(report);
+  }
+}
+
+function liveMatchdaysFor(league) {
+  return liveMatchdays[league] || [];
+}
+
+/* Where the slider sits in the live matchdays: at live, on the last
+   one; rewound, on the last matchday on or before the date -- the
+   divisions play on different days, so the date may not be one of
+   this league's own. A range that has not loaded yet has no index,
+   which leaves the slider hidden. */
+function matchdayIndex(days, asof) {
+  if (!days.length) return null;
+  if (!asof) return days.length - 1;
+  return Math.max(0, days.findLastIndex((day) => day.date <= asof));
+}
+
 function renderTimeline(report) {
   const panel = $('#timeline');
-  const days = matchdays(report);
+  const days = liveMatchdaysFor(state.league);
   const range = $('#timeline-range');
 
   // A season with nothing played has nothing to rewind through.
@@ -3088,12 +3118,7 @@ function renderTimeline(report) {
     range.step = '1';
   }
 
-  // The divisions play on different days, so after a league switch the
-  // rewound date may not be one of this league's matchdays: sit on the last
-  // one on or before it, which is what the data is showing.
-  const index = state.asof
-    ? Math.max(0, days.findLastIndex((day) => day.date <= state.asof))
-    : days.length - 1;
+  const index = matchdayIndex(days, state.asof);
   range.value = String(index);
 
   const day = days[index];
@@ -3122,8 +3147,7 @@ function renderTimeline(report) {
 
 /* Dragging fires continuously; only the value you settle on is worth a fetch. */
 function onTimelineInput(event) {
-  const report = state.reports[state.league];
-  const days = matchdays(report);
+  const days = liveMatchdaysFor(state.league);
   const index = Number(event.target.value);
   const day = days[index];
   if (!day) return;
@@ -3326,13 +3350,13 @@ function render() {
       if (!anim.playing) {
         renderGrid(report);
         renderGridLegend();
-        $('#grid-anim-play').hidden = matchdays(report).length < 2;
+        $('#grid-anim-play').hidden = liveMatchdaysFor(state.league).length < 2;
       }
       break;
     case 'ladder':
       if (!anim.playing) {
         renderLadder(state.reports);
-        const days = matchdays(report);
+        const days = liveMatchdaysFor(state.league);
         $('#ladder-anim-play').hidden = days.length < 2;
       }
       break;
@@ -3689,6 +3713,7 @@ async function loadSeason(season) {
     const reports = applyShortNames(await response.json());
     if (token !== latestLoad) return;
     state.reports = reports;
+    rememberLiveMatchdays(reports);
     state.season = season;
     // Only now: a failed load leaves the old (possibly rewound) page up, and
     // state.asof must keep describing it.
@@ -4303,6 +4328,7 @@ async function boot() {
     }
     
     state.reports = applyShortNames(reports);
+    rememberLiveMatchdays(state.reports);
     state.careers = applyShortNamesToCareers(careers);
     state.season = reports[state.league].league.season;
     

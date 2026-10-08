@@ -165,3 +165,37 @@ test('spread stretches attack - defence the way model/attack_defence.py does', (
   // No spread in the payload (older reports) is the unstretched grid.
   assert.deepEqual(scoreGrid({ ...MODEL, attack_defence: { ...MODEL.attack_defence, spread: 1 } }, 'A', 'B'), scoreGrid(MODEL, 'A', 'B'));
 });
+
+/* --- season rewind: where the slider sits in the live matchdays.
+    The range comes from the live report, which spans the whole
+    season even when the displayed view is rewound. */
+eval(pick('matchdayIndex'));
+
+const DAYS = [
+  { date: '2026-03-01', matches_played: 2 },
+  { date: '2026-03-08', matches_played: 4 },
+  { date: '2026-03-15', matches_played: 6 },
+];
+
+test('at live the slider sits on the last matchday', () => {
+  assert.equal(matchdayIndex(DAYS, null), DAYS.length - 1);
+});
+
+test('a rewound date that is a matchday picks that one', () => {
+  assert.equal(matchdayIndex(DAYS, '2026-03-08'), 1);
+});
+
+test('a rewound date between matchdays picks the last one on or before it', () => {
+  // The divisions play on different days, so the rewound date can
+  // fall between this league's matchdays.
+  assert.equal(matchdayIndex(DAYS, '2026-03-10'), 1);
+});
+
+test('a date before the first matchday clamps to the first', () => {
+  assert.equal(matchdayIndex(DAYS, '2025-11-01'), 0);
+});
+
+test('an empty range has no index, so the slider stays hidden', () => {
+  assert.equal(matchdayIndex([], null), null);
+  assert.equal(matchdayIndex([], '2026-03-08'), null);
+});
