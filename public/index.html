@@ -30,9 +30,12 @@
 <script type="application/ld+json">
 {"@context":"https://schema.org","@type":"WebSite","name":"EliteTracker","url":"https://elitetracker.no/","inLanguage":"nb","description":"ELO-rating og simulert sluttplassering for Eliteserien og OBOS-ligaen."}
 </script>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Archivo:ital,wdth,wght@0,62..125,400..800&display=swap" rel="stylesheet">
+<!-- Archivo is served from here (styles.css @font-face) rather than Google
+     Fonts: one origin, no render-blocking third-party stylesheet. -->
+<link rel="preload" href="/fonts/archivo-latin.woff2" as="font" type="font/woff2" crossorigin>
+<!-- boot() fetches both before the first render; start them with the CSS. -->
+<link rel="preload" href="/data/report.json" as="fetch" crossorigin>
+<link rel="preload" href="/data/careers.json" as="fetch" crossorigin>
 <script>
   /* Resolve the theme before the stylesheet applies, so a dark choice never flashes light. */
   var choice = localStorage.getItem('elitetracker-theme');
@@ -388,7 +391,7 @@
   <select id="season-select" class="season-select"></select>
 </div>
 
-<script src="/i18n.js"></script>
-<script src="/app.js"></script>
+<script src="/i18n.js" defer></script>
+<script src="/app.js" defer></script>
 </body>
 </html>

@@ -123,7 +123,7 @@ const el = (tag, className, text) => {
 const teamLogo = (teamId, name) => {
   if (!teamId) return null;
   const img = el('img', 'team-logo');
-  img.src = `/logos/${teamId}.png`;
+  img.src = `/logos/${teamId}.webp`;
   img.alt = name;
   img.loading = 'lazy';
   img.title = name;
@@ -1449,7 +1449,7 @@ function ladderTeamEl(team) {
   wrap.dataset.team = team.team;
   wrap.appendChild(el('span', 'ladder__rank'));
   const img = el('img');
-  img.src = `logos/${team.teamId}.png`;
+  img.src = `logos/${team.teamId}.webp`;
   img.alt = team.team;
   wrap.appendChild(img);
   wrap.appendChild(el('span', 'ladder__name', team.team));
@@ -2575,6 +2575,8 @@ function renderTeamSummary(teamId, row, career, report, container) {
   const crest = teamLogo(teamId, row?.team || career?.team || '');
   if (crest) {
     crest.classList.add('team-logo--large');
+    // 72px is past what the 96px WebP stays sharp at; the 192px original is.
+    crest.src = `/logos/${teamId}.png`;
     header.appendChild(crest);
   }
 
@@ -4737,7 +4739,7 @@ function initMobileGestures() {
     }
     e.preventDefault(); // Prevent native scroll bounce
     const pullDistance = Math.min(delta * 0.5, 80); // Resistance
-    ptrIndicator.style.transform = `translateY(${-60 + pullDistance}px)`;
+    ptrIndicator.style.height = `${pullDistance}px`;
     ptrIndicator.style.opacity = '1';
     ptrIndicator.classList.toggle('pulling', pullDistance > 40);
     if (pullDistance > 60 && !ptrState.triggered) {
@@ -4756,6 +4758,7 @@ function initMobileGestures() {
     // Trigger refresh
     ptrIndicator.classList.remove('pulling');
     ptrIndicator.classList.add('loading');
+    ptrIndicator.style.height = '60px';
     ptrIndicator.querySelector('.ptr-text').textContent = t('ptr.loading');
     ptrIndicator.querySelector('.ptr-spinner').style.display = 'block';
 
@@ -4771,8 +4774,8 @@ function initMobileGestures() {
   function resetPullToRefresh() {
     ptrState.pulling = false;
     ptrState.triggered = false;
-    ptrIndicator.classList.remove('pulling', 'loading', 'visible');
-    ptrIndicator.style.transform = 'translateY(-100%)';
+    ptrIndicator.classList.remove('pulling', 'loading');
+    ptrIndicator.style.height = '';
     ptrIndicator.style.opacity = '0';
     ptrIndicator.querySelector('.ptr-spinner').style.display = 'none';
     ptrIndicator.querySelector('.ptr-text').textContent = t('ptr.pull');
