@@ -175,8 +175,9 @@ def main(argv: list[str] | None = None) -> int:
             # settled season costs no request at all.
             todo = pending_obos_xg(obos)
             if todo:
-                added += update_obos_xg(obos, season, only=todo)
-                print(f"OBOS xG: {added} recorded")
+                obos_added = update_obos_xg(obos, season, only=todo)
+                added += obos_added
+                print(f"OBOS xG: {obos_added} recorded")
             else:
                 print("OBOS xG: nothing outstanding")
         except SofascoreBlocked as exc:
