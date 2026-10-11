@@ -24,6 +24,8 @@ const state = {
   _prevActiveView: null,
   // Team focus: team_id when viewing the team tab, null otherwise.
   teamFocusId: null,
+  // Open group in the team view: 'overview', 'forecast' or 'history'.
+  teamTab: 'overview',
   // Week index on the Matches timeline; null opens on the current week.
   matchesWeek: null,
   // Pagination for team focus view.
@@ -2217,15 +2219,19 @@ function openTeamView(teamId, fallbackName, { push = true } = {}) {
   window.scrollTo({ top: 0, behavior: 'instant' });
 }
 
+/* The club header stays on top; everything else sits in three groups behind
+   a segmented control -- this season, the forecast, the club's history -- so
+   a phone shows one group at a time instead of eleven sections in a row.
+   Only the open group is drawn: the charts size themselves to their box,
+   which a hidden panel does not have. A finished season has no forecast. */
+const TEAM_TABS = [['overview', 'team.tab.overview'], ['forecast', 'team.tab.forecast'], ['history', 'team.tab.history']];
+
 function renderTeamView(report) {
-  
   const teamId = state.teamFocusId;
   const content = $('#team-content');
-  
   if (!content) { console.error('[TeamView] team-content not found in DOM'); return; }
   content.replaceChildren();
   if (!teamId) { console.warn('[TeamView] no teamId'); return; }
-  
 
   const back = el('button', 'team-back');
   back.type = 'button';
@@ -2235,82 +2241,81 @@ function renderTeamView(report) {
   content.appendChild(back);
 
   const row = report.table.find((t) => String(t.team_id) === String(teamId));
-  
   const career = careerById(teamId);
-  
   const teamName = row?.team || career?.team || fallbackNameById(teamId) || 'Unknown';
 
-  // Helper to safely render a section
   const safeRender = (fn, context = 'section') => {
     try { fn(); }
     catch (e) { console.error(`[TeamView] ${context} failed:`, e); }
   };
 
-  // 1. Summary card
   safeRender(() => renderTeamSummary(teamId, row, career, report, content), 'summary');
 
-  // 2. Finish grid row
-  safeRender(() => renderTeamGridRow(teamId, row, report, content), 'gridRow');
-
-  // 3. Rating history chart
-  if (career && career.points?.length >= 2) {
-    safeRender(() => {
-      
-      const chartSection = el('div', 'team-section');
-      chartSection.appendChild(el('div', 'label', t('team.ratingHistory')));
-      const chart = svgEl('svg', { class: 'chart', id: 'team-chart', role: 'img' });
-      chartSection.appendChild(chart);
-      const desc = el('p', 'visually-hidden');
-      desc.id = 'team-chart-desc';
-      chartSection.appendChild(desc);
-
-      // Peak and worst rating stats beneath the chart
-      const stats = el('div', 'team-chart-stats');
-      if (career.peak) {
-        const peakItem = el('span', 'team-chart-stat');
-        peakItem.appendChild(el('span', 'label', t('team.peak')));
-        peakItem.appendChild(el('span', '', `${num(career.peak[1])} (${career.peak[0].slice(0, 4)})`));
-        stats.appendChild(peakItem);
-      }
-      if (career.trough) {
-        const troughItem = el('span', 'team-chart-stat');
-        troughItem.appendChild(el('span', 'label', t('team.worst')));
-        troughItem.appendChild(el('span', '', `${num(career.trough[1])} (${career.trough[0].slice(0, 4)})`));
-        stats.appendChild(troughItem);
-      }
-      chartSection.appendChild(stats);
-      content.appendChild(chartSection);
-      drawTeamChart(career);
-      
-    }, 'ratingHistory');
-  } else {
-    
+  const tabs = TEAM_TABS.filter(([key]) => key !== 'forecast' || (row && report.model?.matches_remaining > 0));
+  if (!tabs.some(([key]) => key === state.teamTab)) state.teamTab = 'overview';
+  const bar = el('div', 'switch team-tabs');
+  bar.setAttribute('role', 'group');
+  bar.setAttribute('aria-label', t('team.tabs'));
+  for (const [key, label] of tabs) {
+    const button = el('button', '', t(label));
+    button.type = 'button';
+    button.setAttribute('aria-pressed', String(key === state.teamTab));
+    button.addEventListener('click', () => {
+      if (state.teamTab === key) return;
+      state.teamTab = key;
+      renderTeamView(report);
+      $('.team-tabs [aria-pressed="true"]')?.focus();
+    });
+    bar.appendChild(button);
   }
+  content.appendChild(bar);
 
-  // 4. Season shape + season-by-season (combined)
-  if (career && Array.isArray(career.seasons) && career.seasons.length) {
+  if (state.teamTab === 'overview') {
+    safeRender(() => renderTeamNow(row, career, report, content), 'now');
+    safeRender(() => renderTeamResults(teamId, teamName, report, content), 'results');
+  } else if (state.teamTab === 'forecast') {
     safeRender(() => {
-      
-      renderSeasonBySeason(career, teamId, content, report);
-      
-    }, 'seasonShape');
+      const section = renderTeamGridRow(teamId, row, report, content);
+      if (section) renderTeamOutlook(section, row, report, teamId);
+    }, 'outlook');
+    safeRender(() => {
+      const section = el('div', 'team-section');
+      renderTeamStakes(section, report, teamId);
+      if (section.childNodes.length) content.appendChild(section);
+    }, 'stakes');
+    safeRender(() => renderTeamFixtures(teamId, teamName, report, content), 'fixtures');
   } else {
-    
+    if (career?.points?.length >= 2) safeRender(() => renderTeamRatingHistory(career, content), 'ratingHistory');
+    if (career?.seasons?.length) safeRender(() => renderSeasonBySeason(career, teamId, content, report), 'seasons');
   }
+}
 
-  // 5. Upcoming fixtures for this team
-  safeRender(() => {
-    
-    renderTeamFixtures(teamId, teamName, report, content);
-    
-  }, 'fixtures');
+function renderTeamRatingHistory(career, content) {
+  const chartSection = el('div', 'team-section');
+  chartSection.appendChild(el('div', 'label', t('team.ratingHistory')));
+  const chart = svgEl('svg', { class: 'chart', id: 'team-chart', role: 'img' });
+  chartSection.appendChild(chart);
+  const desc = el('p', 'visually-hidden');
+  desc.id = 'team-chart-desc';
+  chartSection.appendChild(desc);
 
-  // 6. Recent results for this team
-  safeRender(() => {
-    
-    renderTeamResults(teamId, teamName, report, content);
-    
-  }, 'results');
+  // Peak and worst rating stats beneath the chart
+  const stats = el('div', 'team-chart-stats');
+  if (career.peak) {
+    const peakItem = el('span', 'team-chart-stat');
+    peakItem.appendChild(el('span', 'label', t('team.peak')));
+    peakItem.appendChild(el('span', '', `${num(career.peak[1])} (${career.peak[0].slice(0, 4)})`));
+    stats.appendChild(peakItem);
+  }
+  if (career.trough) {
+    const troughItem = el('span', 'team-chart-stat');
+    troughItem.appendChild(el('span', 'label', t('team.worst')));
+    troughItem.appendChild(el('span', '', `${num(career.trough[1])} (${career.trough[0].slice(0, 4)})`));
+    stats.appendChild(troughItem);
+  }
+  chartSection.appendChild(stats);
+  content.appendChild(chartSection);
+  drawTeamChart(career);
 }
 
 function renderSeasonBySeason(career, teamId, container, currentReport) {
@@ -2628,31 +2633,31 @@ function renderTeamSummary(teamId, row, career, report, container) {
   header.appendChild(ratingBlock);
 
   card.appendChild(header);
+  container.appendChild(card);
+}
 
-  // Two strips of tiles, big value over a small label: where the club stands,
-  // then how it plays. Four short numbers fit one row even on a phone, which
-  // the old run of label-value pairs never did.
+/* The overview tab's tiles, big value over a small label: where the club
+   stands, then how it plays. Four short numbers fit one row even on a phone. */
+function renderTeamNow(row, career, report, container) {
+  const section = el('div', 'team-section team-now');
   if (row) {
     const table = el('dl', 'team-stats');
     table.appendChild(summaryStat(t('team.position'), ordinalShort(row.position)));
     table.appendChild(summaryStat(t('team.points'), String(row.points)));
     table.appendChild(summaryStat(t('team.gd'), signed(row.goal_difference)));
     table.appendChild(summaryStat(t('team.played'), String(row.played)));
-    card.appendChild(table);
-    renderTeamOutlook(card, row, report, teamId);
+    section.appendChild(table);
 
     const xg = el('dl', 'team-stats team-stats--xg');
     xg.appendChild(xgStat(t('team.attack'), t('team.attackHint'), row.attack, report.table.map((r) => r.attack), true));
     xg.appendChild(xgStat(t('team.defence'), t('team.defenceHint'), row.defence, report.table.map((r) => r.defence), false));
-    card.appendChild(xg);
-    renderTeamStakes(card, report, teamId);
+    section.appendChild(xg);
   } else if (career) {
     const table = el('dl', 'team-stats');
     table.appendChild(summaryStat(t('team.matches'), String(career.points.length)));
-    card.appendChild(table);
-  }
-
-  container.appendChild(card);
+    section.appendChild(table);
+  } else return;
+  container.appendChild(section);
 }
 
 /* The arrow beside a rating: how far the rating moved over the club's last
@@ -2844,21 +2849,18 @@ function renderTeamGridRow(teamId, row, report, container) {
   }
   section.appendChild(wrap);
   container.appendChild(section);
+  return section;
 }
 
-/* Where the model has the club finishing, in tiles like the ones above: the
-   likeliest place, expected points, and the chance of each race it is in
-   (at least 1 %, top three in table order). The pre-season call and the
-   rating change since then sit underneath as one line; they used to fill a
-   card of their own. A finished season has nothing left to forecast. */
+/* Under the finish strip: expected points and the chance of each race the
+   club is in (at least 1 %, top three in table order), then the pre-season
+   call. The likeliest place is left to the strip, whose tallest cell it is,
+   and the rating change since the start to the season list. */
 function renderTeamOutlook(card, row, report, teamId) {
   const probs = row.position_probabilities || [];
   if (!probs.length || !report.model?.matches_remaining) return;
-  const best = probs.indexOf(Math.max(...probs));
   const box = el('div', 'team-outlook');
-  box.appendChild(el('div', 'label', t('team.outlook')));
   const tiles = el('dl', 'team-stats team-stats--outlook');
-  tiles.appendChild(summaryStat(t('team.likeliest', { pct: pct(probs[best], 0) }), ordinalShort(best + 1)));
   tiles.appendChild(summaryStat(t('team.xPts'), num(row.expected_points)));
   const races = report.league.bands
     .map((band) => ({ band, chance: probs.slice(band.first - 1, band.last).reduce((a, b) => a + b, 0) }))
@@ -2870,10 +2872,7 @@ function renderTeamOutlook(card, row, report, teamId) {
   const historyTeam = report.history?.teams?.find((team) => String(team.team_id) === String(teamId));
   if (historyTeam?.positions?.length >= 2) {
     const pre = historyTeam.positions[0];
-    const preRating = historyTeam.ratings?.[0];
-    const parts = [t('team.preSeason', { pos: ordinalShort(pre.indexOf(Math.max(...pre)) + 1) })];
-    if (preRating != null) parts.push(t('team.sinceStart', { n: signed(row.rating - preRating, 0) }));
-    box.appendChild(el('p', 'team-outlook__note', parts.join(' · ')));
+    box.appendChild(el('p', 'team-outlook__note', t('team.preSeason', { pos: ordinalShort(pre.indexOf(Math.max(...pre)) + 1) })));
   }
   card.appendChild(box);
 }
@@ -3013,6 +3012,12 @@ function teamMatchRow(match, teamId, report, ratingChanges) {
   row.appendChild(venue);
   const opponent = sideBlock(home ? match.away : match.home, home ? match.away_id : match.home_id, true, 'team-match__name');
   opponent.classList.add('team-match__opponent');
+  // The name and any stake dot share a box, so a narrow screen can stand the
+  // crest beside both lines while the dot stays with the name.
+  const label = el('span', 'team-match__label');
+  const name = opponent.querySelector('.team-match__name');
+  name.replaceWith(label);
+  label.appendChild(name);
   row.appendChild(opponent);
 
   if (match.home_goals != null) {
@@ -3050,7 +3055,7 @@ function teamMatchRow(match, teamId, report, ratingChanges) {
     row.appendChild(odds);
     const stake = (report.high_stakes || []).find((entry) =>
       String(entry.match_id) === String(match.match_id) && String(entry.team_id) === String(teamId));
-    if (stake) opponent.appendChild(stakeDot(stake, report, report.table.length));
+    if (stake) label.appendChild(stakeDot(stake, report, report.table.length));
   }
   return row;
 }

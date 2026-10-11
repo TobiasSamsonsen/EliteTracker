@@ -841,7 +841,7 @@ table.standings {
 
 table.standings th,
 table.standings td {
-  padding: 0.5rem 0.6rem;
+  padding: 0.35rem 0.6rem;
   text-align: right;
   border-bottom: 1px solid var(--rule);
   white-space: nowrap;
@@ -959,7 +959,7 @@ table.standings tr.zone-divider {
   pointer-events: none;   /* not a team row */
 }
 table.standings tr.zone-divider td {
-  padding: 0.5rem 0;
+  padding: 0.3rem 0;
   border: none;
   background: transparent;
   width: 100%;
@@ -1408,7 +1408,19 @@ table.standings .zone-divider__wrap::after {
     color: transparent;
     border-radius: 6px;
   }
-  :is(#played-results, #fixtures, #team-content) .played-card__side .team-logo { width: 44px; height: 44px; }
+  :is(#played-results, #fixtures, #team-content) .played-card__side .team-logo { width: 36px; height: 36px; }
+  /* The decisive-match dot beside the crest, on its inner side, rather than
+     on a line of its own under it. The DOM puts the dot on the inside of the
+     name, so row-reverse lands it inside the crest on both sides. Above the
+     name overlay, so a tap on it still brings up its tooltip. */
+  :is(#played-results, #fixtures, #team-content) .played-card__team,
+  :is(#played-results, #fixtures, #team-content) .played-card__side--home .played-card__team {
+    flex-direction: row-reverse;
+    align-items: center;
+    gap: 0.3rem;
+  }
+  :is(#played-results, #fixtures, #team-content) .played-card__team .stake-dot { z-index: 1; }
+  :is(#played-results, #fixtures, #team-content) .played-card { gap: 0.25rem; }
 }
 
 @media (max-width: 480px) {
@@ -2423,6 +2435,14 @@ footer a { color: var(--ink); }
 
 #team-content { padding: 0.5rem 1.25rem; }
 
+/* Overview / Forecast / History: the league switch's segmented pill,
+   stretched so each group is a wide target; the open group follows it
+   without a rule, since the pill already divides it from the header. */
+.team-tabs { display: flex; max-width: 30rem; margin: 0 auto 0.25rem; }
+.team-tabs button { flex: 1; }
+.team-tabs + .team-section { border-top: 0; }
+.team-now { display: grid; gap: 0.75rem; }
+
 .team-summary {
   padding: 1.25rem;
   display: flex;
@@ -2559,6 +2579,7 @@ footer a { color: var(--ink); }
   cursor: pointer;
 }
 .team-match__name:hover { text-decoration: underline; }
+.team-match__label { display: flex; align-items: center; gap: 0.4rem; min-width: 0; }
 .team-match__result { display: inline-flex; align-items: center; gap: 0.6rem; font-variant-numeric: tabular-nums; }
 .team-match__score { font-family: var(--display); font-weight: 800; min-width: 2.2rem; }
 .team-match__xg { font-size: 0.75rem; color: var(--ink-muted); min-width: 4.5rem; }
@@ -2567,9 +2588,21 @@ footer a { color: var(--ink); }
 .team-match__delta.down { color: var(--outcome-bad); }
 .team-match__odds { width: 13rem; height: 1.25rem; font-size: 0.6875rem; }
 .team-match__legend { padding: 0; border: 0; background: none; font-size: 0.75rem; }
-@media (max-width: 560px) {
-  .team-match { grid-template-columns: 1.5rem minmax(0, 1fr) auto; gap: 0.5rem 0.6rem; }
-  .team-match__date { grid-column: 1 / -1; margin-bottom: -0.35rem; font-size: 0.75rem; }
+/* Below desktop width the date moves under the opponent's name, so a row is
+   one block instead of a floating date line over it, and the crest stands
+   beside both lines, centred on the row and the larger for it. */
+@media (max-width: 760px) {
+  .team-match {
+    grid-template-columns: 1.25rem 2.25rem minmax(0, 1fr) auto;
+    grid-template-areas: "venue crest opp result" "venue crest date result";
+    gap: 0.1rem 0.6rem;
+  }
+  .team-match__venue { grid-area: venue; border: 0; font-size: 0.875rem; }
+  .team-match .team-match__opponent { display: contents; }
+  .team-match .team-match__opponent .team-logo { grid-area: crest; width: 2.25rem; height: 2.25rem; }
+  .team-match__label { grid-area: opp; align-self: end; }
+  .team-match__date { grid-area: date; align-self: start; font-size: 0.75rem; }
+  .team-match__result, .team-match__odds { grid-area: result; }
   .team-match__odds { width: 8.5rem; }
   .team-match__xg { display: none; }
   .team-section__header:has(.team-match__legend) { flex-wrap: wrap; row-gap: 0.4rem; }
@@ -2614,12 +2647,13 @@ footer a { color: var(--ink); }
   grid-auto-columns: minmax(0, 1fr);
   grid-auto-flow: column;
   margin: 0;
-  border: 1px solid var(--rule);
+  gap: 1px;
   border-radius: var(--radius);
-  background: var(--panel-sunk);
+  background: var(--rule);
   overflow: hidden;
 }
 .team-stats__tile {
+  background: var(--panel-sunk);
   display: flex;
   flex-direction: column-reverse; /* dt first in the markup, value on top */
   justify-content: flex-end;
@@ -2629,7 +2663,6 @@ footer a { color: var(--ink); }
   text-align: center;
   min-width: 0;
 }
-.team-stats__tile + .team-stats__tile { border-left: 1px solid var(--rule); }
 .team-stats__label {
   font-size: 0.6875rem;
   font-weight: 600;
@@ -2795,8 +2828,7 @@ footer a { color: var(--ink); }
 .seasons-list-compact {
   display: grid;
   grid-template-columns: 1fr;
-  gap: 0.4rem;
-  padding: 0.25rem 0.75rem 0.75rem;
+  padding-bottom: 0.5rem;
 }
 
 .season-row-compact {
@@ -2804,36 +2836,33 @@ footer a { color: var(--ink); }
   align-items: center;
   gap: 1rem;
   padding: 0.6rem 0.85rem;
-  background: var(--panel);
-  border: 1px solid var(--rule);
-  border-radius: var(--radius);
+  background: none;
+  border: 0;
+  border-bottom: 1px solid var(--rule);
+  color: inherit;
+  font: inherit;
   cursor: pointer;
-  transition: background 0.12s var(--ease), border-color 0.12s var(--ease), transform 0.1s var(--ease), box-shadow 0.12s var(--ease);
+  transition: background 0.12s var(--ease);
   position: relative;
   width: 100%;
   min-width: 0;
   text-align: left;
 }
+.season-row-compact:last-child { border-bottom: 0; }
 .season-row-compact:hover,
-.season-row-compact:focus-visible {
-  background: var(--panel-sunk);
-  border-color: var(--rule-strong);
-  box-shadow: var(--shadow);
-}
+.season-row-compact:focus-visible { background: var(--panel-sunk); }
 .season-row-compact:focus-visible {
   outline: 2px solid var(--tier-1);
-  outline-offset: 2px;
+  outline-offset: -2px;
 }
-.season-row-compact:active { transform: scale(0.99); }
 
 /* Active state - currently displayed season shape */
 .season-row-compact.is-active {
-  background: color-mix(in srgb, var(--tier-1) 8%, var(--panel));
-  border-color: var(--tier-1);
-  box-shadow: 0 0 0 1px var(--tier-1);
+  background: color-mix(in srgb, var(--tier-1) 12%, var(--panel));
+  box-shadow: inset 3px 0 0 var(--tier-1);
 }
 .season-row-compact.is-active:hover {
-  background: color-mix(in srgb, var(--tier-1) 12%, var(--panel));
+  background: color-mix(in srgb, var(--tier-1) 16%, var(--panel));
 }
 
 .season-row-compact__season {
@@ -2856,18 +2885,17 @@ footer a { color: var(--ink); }
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-width: 3.5rem;
-  height: 1.375rem;
-  padding: 0 0.45rem;
-  font-size: 0.625rem;
+  min-width: 3rem;
+  height: 1.25rem;
+  padding: 0 0.4rem;
+  font-size: 0.5625rem;
   font-weight: 700;
   letter-spacing: 0.06em;
   text-transform: uppercase;
   border-radius: 999px;
-  color: var(--panel);
 }
-.season-row-compact__badge--tier1 { background: var(--tier-1); }
-.season-row-compact__badge--tier2 { background: var(--tier-2); }
+.season-row-compact__badge--tier1 { background: color-mix(in srgb, var(--tier-1) 18%, transparent); color: color-mix(in srgb, var(--tier-1) 75%, var(--ink)); }
+.season-row-compact__badge--tier2 { background: color-mix(in srgb, var(--tier-2) 18%, transparent); color: color-mix(in srgb, var(--tier-2) 75%, var(--ink)); }
 
 .season-row-compact__main {
   display: flex;
@@ -2940,7 +2968,7 @@ footer a { color: var(--ink); }
   display: flex;
   align-items: center;
   gap: 1rem;
-  padding: 0 calc(0.85rem + 1px) 0.1rem;
+  padding: 0 0.85rem 0.1rem;
 }
 .team-seasons .season-row-head * {
   font: 600 0.6875rem/1.2 var(--body);
@@ -3014,9 +3042,8 @@ footer a { color: var(--ink); }
 
 /* Responsive adjustments for compact list */
 @media (max-width: 760px) {
-  .seasons-list-compact { padding: 0.25rem 0.5rem 0.5rem; }
   .season-row-compact { padding: 0.5rem 0.6rem; gap: 0.75rem; }
-  .season-row-head { padding-inline: calc(0.6rem + 1px); gap: 0.75rem; }
+  .season-row-head { padding-inline: 0.6rem; gap: 0.75rem; }
   .season-row-compact__season { width: 6.5rem; gap: 0.35rem; }
   .season-row-compact__year { font-size: 0.875rem; }
   .season-row-compact__main { gap: 0.5rem; }
@@ -3030,7 +3057,7 @@ footer a { color: var(--ink); }
 
 @media (max-width: 480px) {
   .season-row-compact { padding: 0.45rem 0.5rem; gap: 0.5rem; }
-  .season-row-head { padding-inline: calc(0.5rem + 1px); gap: 0.5rem; }
+  .season-row-head { padding-inline: 0.5rem; gap: 0.5rem; }
   .season-row-compact__season { width: 6rem; }
   .season-row-compact__year { font-size: 0.8125rem; }
   .season-row-compact__main { gap: 0.35rem; }
@@ -3055,7 +3082,9 @@ footer a { color: var(--ink); }
   color: inherit;
   cursor: pointer;
   text-align: left;
-  min-height: 44px;   /* WCAG 2.5.8 target minimum */
+  /* WCAG 2.5.8's 24px minimum. 44px set every row's height; the whole row
+     opens the club, so a finger already has the row's full width. */
+  min-height: 24px;
 }
 .club-btn:hover { text-decoration: underline; }
 
@@ -3234,8 +3263,26 @@ footer a { color: var(--ink); }
 @media (max-width: 760px) {
   /* Team summary: stack header elements */
   .team-summary__header { flex-wrap: wrap; gap: 0.5rem; }
-  .team-summary__rating-block { flex-basis: 100%; margin-left: 0; align-items: flex-start; }
-  .team-summary__rating-line { justify-content: flex-start; }
+  .team-summary { padding-top: 0.5rem; }
+  .team-back { margin-bottom: 0; }
+  .team-logo--large { width: 56px; height: 56px; }
+  .team-summary__rating-block {
+    flex-basis: 100%;
+    margin-left: 0;
+    display: grid;
+    grid-template-columns: auto 1fr;
+    column-gap: 0.85rem;
+    align-items: center;
+    justify-items: start;
+  }
+  .team-summary__rating-line { grid-row: span 2; }
+  .team-summary__trend { font-size: 2rem; }
+  /* Key and verdict wrap as wholes, never mid-phrase. */
+  .team-summary__form { margin-top: 0.1rem; flex-wrap: wrap; }
+  .team-summary__form > * { white-space: nowrap; }
+  /* Spaced capitals broke "Mest sannsynlig" into three lines in a tile;
+     sentence case fits two and reads quicker. */
+  .team-stats__label { font-size: 0.6875rem; letter-spacing: 0; text-transform: none; text-wrap: balance; }
 
   /* Team stats grid: 2 columns on mobile */
   .team-stats { grid-template-columns: 1fr 1fr; }
@@ -3251,7 +3298,7 @@ footer a { color: var(--ink); }
 
   /* Season by season: tighter rows */
   .season-row-compact { padding: 0.5rem 0.6rem; gap: 0.75rem; }
-  .season-row-head { padding-inline: calc(0.6rem + 1px); gap: 0.75rem; }
+  .season-row-head { padding-inline: 0.6rem; gap: 0.75rem; }
   .season-row-compact__season { width: 6.5rem; gap: 0.35rem; }
   .season-row-compact__year { font-size: 0.875rem; }
   .season-row-compact__main { gap: 0.5rem; }
@@ -3275,21 +3322,24 @@ footer a { color: var(--ink); }
   /* Team content and sections: single gutter layer */
   #team-content { padding: 0.5rem 0.25rem; }
   .team-section { padding: 1rem 0.75rem; }
+  .team-summary { padding-inline: 0.75rem; }
+  .team-tabs { max-width: none; margin-inline: 0.75rem; }
   .team-grid-row__cell { font-size: 0.5rem; letter-spacing: -0.04em; }
+  /* Start is end minus change: the phone keeps the two that carry news. */
+  .season-row-compact__rating-start { display: none; }
   .team-summary__name { font-size: 1.25rem; }
   .team-summary__rating { font-size: 2rem; }
   .team-stats__value { font-size: 1.25rem; }
-  .team-stats__label { font-size: 0.625rem; }
   .team-stats__tile { padding: 0.5rem 0.35rem; }
 
   /* Season by season: even tighter */
   .season-row-compact { padding: 0.45rem 0.5rem; gap: 0.5rem; }
-  .season-row-head { padding-inline: calc(0.5rem + 1px); gap: 0.5rem; }
+  .season-row-head { padding-inline: 0.5rem; gap: 0.5rem; }
   .season-row-compact__season { width: 6rem; }
   .season-row-compact__year { font-size: 0.8125rem; }
   .season-row-compact__main { gap: 0.35rem; }
   .season-row-compact__pos { font-size: 0.875rem; min-width: 1.75rem; }
-  .season-row-compact__rating { min-width: 5.5rem; }
+  .season-row-compact__rating { min-width: 0; }
   .season-row-compact__rating-start { min-width: 2.25rem; }
   .season-row-compact__change { min-width: 4.5rem; }
   .season-row-compact__change-val { min-width: 1.75rem; }
