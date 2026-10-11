@@ -323,7 +323,11 @@ const translations = {
   'season.shape.axis': 'Rating after every match played',
 
     // Footer
-    'footer.text': 'EliteTracker — Eliteserien and OBOS-ligaen, seasons 2015\u20132026. Match data from FotMob. Built by <a href="mailto:tobias.samsonsen@gmail.com">Tobias Samsonsen</a>.',
+    'footer.text': 'EliteTracker — Eliteserien and OBOS-ligaen, seasons 2015\u20132026. Built by Tobias Samsonsen.',
+    'meta.title': '{league} {season}: ratings, odds and predicted table — EliteTracker',
+    'meta.desc': 'ELO ratings and simulated finishing positions for {league} {season}: {chances}, match odds and every season since 2015.',
+    'meta.chances.eliteserien': 'title, Europe and relegation chances',
+    'meta.chances.obosligaen': 'promotion, play-off and relegation chances',
 
     // Aria / title attributes
     'aria.chooseDivision': 'Choose a division',
@@ -675,7 +679,11 @@ const translations = {
     'season.shape.axis': 'Rating etter hver kamp spilt',
 
     // Footer
-    'footer.text': 'EliteTracker — Eliteserien og OBOS-ligaen, sesongene 2015\u20132026. Kampdata fra FotMob. Utviklet av <a href="mailto:tobias.samsonsen@gmail.com">Tobias Samsonsen</a>.',
+    'footer.text': 'EliteTracker — Eliteserien og OBOS-ligaen, sesongene 2015\u20132026. Utviklet av Tobias Samsonsen.',
+    'meta.title': '{league} {season}: rating, odds og tabellprognose — EliteTracker',
+    'meta.desc': 'ELO-rating og simulert sluttplassering for {league} {season}: {chances}, kampodds og alle sesonger siden 2015.',
+    'meta.chances.eliteserien': 'sjansen for gull, Europa og nedrykk',
+    'meta.chances.obosligaen': 'sjansen for opprykk, kvalik og nedrykk',
 
     // Aria / title attributes
     'aria.chooseDivision': 'Velg divisjon',

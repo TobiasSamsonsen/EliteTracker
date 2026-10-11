@@ -6,6 +6,10 @@
       {
         "source": "**/*.@(html|js|css)",
         "headers": [{ "key": "Cache-Control", "value": "no-cache" }]
+      },
+      {
+        "source": "/data/**",
+        "headers": [{ "key": "X-Robots-Tag", "value": "noindex" }]
       }
     ]
   }

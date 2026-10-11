@@ -1756,7 +1756,9 @@ function buildFixtureCard(fixture, stakes, report) {
       const nameEl = isHome ? homeName : awayName;
       if (!nameEl) continue;
       const dot = stakeDot(entry, report, count);
-      nameEl.appendChild(dot);
+      // On the inside of the name: right of the home name, left of the away one.
+      const nameBtn = nameEl.querySelector('.played-card__team-name');
+      if (isHome) nameBtn.after(dot); else nameBtn.before(dot);
       attachTip(nameEl, dot.tip);
     }
   }
@@ -3705,9 +3707,22 @@ function render() {
   else params.delete('season');
   if (state.asof) params.set('asof', state.asof);
   else params.delete('asof');
+  if (state.league !== 'eliteserien') params.set('league', state.league);
+  else params.delete('league');
   window.history.replaceState(null, '', `${window.location.pathname}?${params.toString()}${window.location.hash}`);
 
-  document.title = `${report.league.name} ${report.league.season} — EliteTracker`;
+  // One search result per division: the canonical keeps only the league, so
+  // view, team, season and rewind links all fold into their division's page.
+  const meta = { league: report.league.name, season: report.league.season, chances: t(`meta.chances.${state.league}`) };
+  document.title = t('meta.title', meta);
+  document.querySelector('meta[name=description]').content = t('meta.desc', meta);
+  let canonical = document.querySelector('link[rel=canonical]');
+  if (!canonical) {
+    canonical = document.createElement('link');
+    canonical.rel = 'canonical';
+    document.head.appendChild(canonical);
+  }
+  canonical.href = `https://elitetrackerno.web.app/${state.league === 'eliteserien' ? '' : `?league=${state.league}`}`;
   state._prevActiveView = state.activeView;
 }
 

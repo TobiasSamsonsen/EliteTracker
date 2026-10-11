@@ -74,7 +74,7 @@
   --tier-2: #c94a1c;
 
   /* Reserved status hues for qualification bands. Each ships with a label. */
-  --band-champion: #f2b705;
+  --band-champion: #f2c600;   /* yellow, kept clear of the EL orange in hue */
 
   /* European qualification edges on the season-shape chart.
      CL reuses --outcome-good (blue). EL orange and ECL green chosen for
@@ -134,7 +134,7 @@
   --tier-1: #a78bfa;
   --tier-2: #d95926;
 
-  --band-champion: #eda100;
+  --band-champion: #facc15;
 
   /* European qualification edges on the season-shape chart (dark). */
   --edge-cl: var(--outcome-good);
@@ -1307,7 +1307,6 @@ table.standings .zone-divider__wrap::after {
   height: 0.55rem;
   border-radius: 50%;
   flex: none;
-  margin-left: 0.35rem;
   vertical-align: middle;
   cursor: help;
   position: relative;

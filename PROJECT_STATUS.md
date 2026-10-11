@@ -3,6 +3,14 @@ Model Card strength-shock row, team-view summary bullets, and a rewritten
 "Key stats explained" (xPts = simulation mean, attack/defence = �% display of
 the rates, xG-form trend thresholds).
 
+## Contact form - planned
+
+The footer's email link was taken out before the site went into Google Search
+Console, so the address is not harvested once the site is indexed. Replace it
+with a contact form (Firebase Hosting is static, so a hosted form service or a
+small function) and put a "Contact" link back in `footer.text` (both languages
+in `public/i18n.js`) and the static footer in `public/index.html`.
+
 ## ?? Matches view; team view rows; readable charts (October 2026) - shipped
 
 **Matches.** Next Up and Played Results are one view: a week a page on one
