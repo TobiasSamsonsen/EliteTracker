@@ -11,6 +11,30 @@ with a contact form (Firebase Hosting is static, so a hosted form service or a
 small function) and put a "Contact" link back in `footer.text` (both languages
 in `public/i18n.js`) and the static footer in `public/index.html`.
 
+## Fun-box: other ways to look at the data - idea
+
+A possible future view where users explore the model's output in less
+conventional visualisations. First candidate, built as a one-off prototype:
+the **season mountain** (`experiments/season_mountain/`). The floor is the
+site's position grid (team rows, places 1-16 across, bands along the top
+edge); each round stacks another layer of position probabilities on top, from
+a rewound pre-season report to the final table. Unlikely cells fade along the
+site's `--seq` ramp (blended smoothly between the `HEAT_STOPS`) and cells under
+a cut-off are dropped, so the stack narrows into the final table. Controls:
+season (2015 to now), league, rows by pre-season prediction or final table,
+build-up slider with play, cut-off, layer height, colour by probability or
+team, full or probability-sized blocks. three.js from jsDelivr, one
+self-contained page:
+`python experiments/season_mountain/build.py` -> `build/season-mountain.html`
+(needs `public/data` built).
+
+Layer k is the first matchday with 8k matches played, so it is "about round
+k": a postponed match counts when it was played, teams within a layer can have
+games in hand, and a busy weekend can overshoot the count. Kept as is; if this
+ships, label layers by matches played (or "~ round k") rather than as rounds.
+Not wired into the site; it would need the per-round layers from the build
+rather than its own extraction, and a lighter payload (1.2 MB for all seasons).
+
 ## ?? Matches view; team view rows; readable charts (October 2026) - shipped
 
 **Matches.** Next Up and Played Results are one view: a week a page on one

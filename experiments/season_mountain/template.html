@@ -1,0 +1,415 @@
+<title>Season Mountain</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@600;800&family=Barlow:wght@400;500;600&family=Barlow+Condensed:wght@500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: one tall 3D stage on top, a single strip of controls and a legend under it. */
+:root {
+  --bg: #e9eeec;
+  --panel: #f5f8f6;
+  --fg: #16201d;
+  --muted: #5b6a64;
+  --line: #c9d3cf;
+  --accent: #23506e;
+  /* The website's position-grid ramp (public/styles.css --seq-*). */
+  --seq-0: #f3f6f8; --seq-1: #d0edb3; --seq-2: #8bd1ba; --seq-3: #3db2c4; --seq-4: #1e8cbe; --seq-5: #2265ac; --seq-6: #253d98; --seq-7: #12246b;
+  --tone-top: #c9a227;
+  --tone-europe: #3f78b5;
+  --tone-playoff: #d4893a;
+  --tone-relegation: #c2493f;
+  --display: "Big Shoulders Display", "Arial Narrow", sans-serif;
+  --body: "Barlow", "Segoe UI", system-ui, sans-serif;
+  --cond: "Barlow Condensed", "Arial Narrow", sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0e1418; --panel: #141c21; --fg: #e6ece9; --muted: #8d9c97; --line: #26323a; --accent: #9cc7de;
+    --seq-0: #0f171c; --seq-1: #081d58; --seq-2: #22318d; --seq-3: #225aa6; --seq-4: #1d7aac; --seq-5: #36abc3; --seq-6: #80cdbb; --seq-7: #caeab4;
+
+    --tone-top: #d8b545; --tone-europe: #5d93cc; --tone-playoff: #e09a4e; --tone-relegation: #d9625a;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0e1418; --panel: #141c21; --fg: #e6ece9; --muted: #8d9c97; --line: #26323a; --accent: #9cc7de;
+    --seq-0: #0f171c; --seq-1: #081d58; --seq-2: #22318d; --seq-3: #225aa6; --seq-4: #1d7aac; --seq-5: #36abc3; --seq-6: #80cdbb; --seq-7: #caeab4;
+
+  --tone-top: #d8b545; --tone-europe: #5d93cc; --tone-playoff: #e09a4e; --tone-relegation: #d9625a;
+  color-scheme: dark;
+}
+html, body { height: 100%; }
+body { background: var(--bg); color: var(--fg); font-family: var(--body); font-size: 15px; }
+.wrap { max-width: 1200px; margin: 0 auto; padding-inline: 16px; padding-block: 20px 32px; display: grid; gap: 14px; }
+header { display: flex; flex-wrap: wrap; align-items: end; justify-content: space-between; gap: 8px 24px; }
+.eyebrow { font-family: var(--cond); font-weight: 600; text-transform: uppercase; letter-spacing: .12em; font-size: 12px; color: var(--muted); }
+h1 { font-family: var(--display); font-weight: 800; font-size: clamp(34px, 6vw, 56px); line-height: .95; margin: 2px 0 0; text-transform: uppercase; letter-spacing: .01em; text-wrap: balance; }
+.lede { max-width: 62ch; color: var(--muted); margin: 0; line-height: 1.45; }
+.picks { display: flex; flex-wrap: wrap; gap: 8px; align-items: stretch; }
+#season { font: 600 13px var(--cond); letter-spacing: .06em; padding: 6px 10px; border: 1px solid var(--line); border-radius: 6px; background: var(--panel); color: var(--fg); cursor: pointer; }
+.seg { display: inline-flex; border: 1px solid var(--line); border-radius: 6px; overflow: hidden; }
+.seg button { font: 600 13px var(--cond); text-transform: uppercase; letter-spacing: .06em; padding: 7px 12px; border: 0; background: transparent; color: var(--muted); cursor: pointer; }
+.seg button + button { border-left: 1px solid var(--line); }
+.seg button[aria-pressed="true"] { background: var(--fg); color: var(--bg); }
+button:focus-visible, input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.stage { position: relative; height: min(72vh, 760px); min-height: 380px; border: 1px solid var(--line); border-radius: 4px; overflow: hidden; background: var(--bg); touch-action: none; }
+.stage canvas { display: block; width: 100%; height: 100%; cursor: grab; }
+.stage canvas:active { cursor: grabbing; }
+.readout { position: absolute; left: 14px; top: 12px; pointer-events: none; display: grid; gap: 2px; }
+.readout .now { font-family: var(--display); font-weight: 800; font-size: 26px; text-transform: uppercase; line-height: 1; }
+.readout .sub { font: 12px var(--mono); color: var(--muted); font-variant-numeric: tabular-nums; }
+.hint { position: absolute; right: 12px; bottom: 10px; font: 11px var(--mono); color: var(--muted); pointer-events: none; }
+.tip { position: absolute; pointer-events: none; background: var(--panel); border: 1px solid var(--line); padding: 7px 9px; border-radius: 4px; font: 12px var(--mono); line-height: 1.4; white-space: nowrap; box-shadow: 0 4px 14px rgb(0 0 0 / .12); font-variant-numeric: tabular-nums; }
+.tip b { font: 600 14px var(--cond); text-transform: uppercase; letter-spacing: .04em; }
+.controls { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 14px 22px; background: var(--panel); border: 1px solid var(--line); border-radius: 4px; padding: 14px 16px; }
+.ctl { display: grid; gap: 6px; min-width: 0; }
+.ctl label, .ctl .lbl { font: 600 12px var(--cond); text-transform: uppercase; letter-spacing: .1em; color: var(--muted); display: flex; justify-content: space-between; gap: 8px; }
+.ctl output { font: 500 12px var(--mono); color: var(--fg); letter-spacing: 0; text-transform: none; }
+input[type="range"] { width: 100%; accent-color: var(--accent); }
+.row { display: flex; gap: 8px; align-items: center; }
+.play { font: 600 13px var(--cond); text-transform: uppercase; letter-spacing: .06em; padding: 6px 12px; border: 1px solid var(--fg); background: var(--fg); color: var(--bg); border-radius: 6px; cursor: pointer; flex: none; }
+.legend { display: flex; flex-wrap: wrap; gap: 10px 24px; align-items: center; font: 12px var(--mono); color: var(--muted); }
+.ramp { width: 280px; max-width: 100%; height: 10px; border-radius: 2px; }
+.rampwrap { display: grid; gap: 3px; }
+.rampticks { display: flex; justify-content: space-between; }
+.chip { display: inline-flex; align-items: center; gap: 6px; }
+.chip i { width: 10px; height: 10px; border-radius: 2px; display: inline-block; }
+</style>
+
+<div class="wrap">
+  <header>
+    <div>
+      <div class="eyebrow">Elitetracker · elo-v12.0 · 2015–2026</div>
+      <h1 id="title">The 2025 Mountain</h1>
+    </div>
+    <div class="picks">
+    <select id="season" aria-label="Season"></select>
+    <div class="seg" role="group" aria-label="League">
+      <button type="button" id="lg-eliteserien" aria-pressed="true">Eliteserien</button>
+      <button type="button" id="lg-obosligaen" aria-pressed="false">OBOS-ligaen</button>
+    </div>
+    </div>
+  </header>
+  <p class="lede">The floor is the position grid from the site: one row per team, which it keeps all season, and table position 1 to 16 across. Every block is one team's chance of finishing in that position, with pre-season at the bottom and one layer per round going up. Unlikely positions fade, and anything under the cut-off is removed, so the stack narrows into the final table.</p>
+
+  <div class="stage" id="stage">
+    <canvas id="c" aria-label="3D stack of finishing-position probabilities per round"></canvas>
+    <div class="readout"><span class="now" id="now">Round 30</span><span class="sub" id="nowsub"></span></div>
+    <div class="hint">drag to orbit · scroll to zoom · right-drag to pan</div>
+    <div class="tip" id="tip" hidden></div>
+  </div>
+
+  <div class="controls">
+    <div class="ctl">
+      <span class="lbl">Team rows ordered by</span>
+      <div class="seg" role="group" aria-label="Team order">
+        <button type="button" id="ord-predicted" aria-pressed="true">Pre-season prediction</button>
+        <button type="button" id="ord-final" aria-pressed="false">Final table</button>
+      </div>
+    </div>
+    <div class="ctl">
+      <label for="upto">Built up to <output id="upto-out"></output></label>
+      <div class="row"><button type="button" class="play" id="play">Play</button><input type="range" id="upto" min="0" max="30" step="1" value="30"></div>
+    </div>
+    <div class="ctl">
+      <label for="thr">Remove blocks below <output id="thr-out"></output></label>
+      <input type="range" id="thr" min="0" max="10" step="1" value="3">
+    </div>
+    <div class="ctl">
+      <label for="stretch">Layer height <output id="stretch-out"></output></label>
+      <input type="range" id="stretch" min="0.15" max="1" step="0.05" value="0.45">
+    </div>
+    <div class="ctl">
+      <span class="lbl">Colour</span>
+      <div class="seg" role="group" aria-label="Colour">
+        <button type="button" id="col-prob" aria-pressed="true">Probability</button>
+        <button type="button" id="col-team" aria-pressed="false">Team</button>
+      </div>
+    </div>
+    <div class="ctl">
+      <span class="lbl">Block footprint</span>
+      <div class="seg" role="group" aria-label="Block footprint">
+        <button type="button" id="size-fixed" aria-pressed="true">Full</button>
+        <button type="button" id="size-prob" aria-pressed="false">By probability</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="legend">
+    <div class="rampwrap"><canvas class="ramp" id="ramp" width="280" height="10"></canvas><div class="rampticks"><span>0.5%</span><span>2%</span><span>5%</span><span>10%</span><span>20%</span><span>35%</span><span>60%+</span></div></div>
+    <span class="chip"><i style="background:var(--tone-top)"></i>Title / top two</span>
+    <span class="chip"><i style="background:var(--tone-europe)"></i>Europe</span>
+    <span class="chip"><i style="background:var(--tone-playoff)"></i>Play-off</span>
+    <span class="chip"><i style="background:var(--tone-relegation)"></i>Relegation</span>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/three@0.147.0/build/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.147.0/examples/js/controls/OrbitControls.js"></script>
+<script>
+const DATA = /*DATA*/null;
+const league = () => DATA[state.season][state.league];
+const last = () => league().layers.length - 1;
+const THRESHOLDS = [0.001, 0.0025, 0.005, 0.01, 0.02, 0.03, 0.05, 0.075, 0.1, 0.15, 0.2];
+const state = { season: "2025", league: "eliteserien", order: "predicted", thr: 0.01, upto: 30, stretch: 0.45, color: "prob", size: "fixed" };
+const $ = (id) => document.getElementById(id);
+const pct = (p) => p >= 0.995 ? "100%" : p < 0.01 ? (p * 100).toFixed(1) + "%" : Math.round(p * 100) + "%";
+
+const stage = $("stage"), canvas = $("c");
+const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
+renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+const scene = new THREE.Scene();
+const camera = new THREE.PerspectiveCamera(32, 1, 0.1, 600);
+const controls = new THREE.OrbitControls(camera, canvas);
+controls.enableDamping = true;
+controls.dampingFactor = 0.08;
+scene.add(new THREE.HemisphereLight(0xffffff, 0x8a8f94, 0.75));
+const sun = new THREE.DirectionalLight(0xffffff, 0.65);
+sun.position.set(-12, 30, 18);
+scene.add(sun);
+
+const MAX = 31 * 16 * 16; // 30 rounds + pre-season, 16 teams, 16 places
+const mesh = new THREE.InstancedMesh(new THREE.BoxGeometry(1, 1, 1), new THREE.MeshLambertMaterial({ color: 0xffffff }), MAX);
+mesh.setColorAt(0, new THREE.Color());
+scene.add(mesh);
+const labels = new THREE.Group(), floor = new THREE.Group();
+scene.add(labels, floor);
+
+let theme = {}, meta = [];
+const css = (name) => getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+function readTheme() {
+  theme = {
+    bg: new THREE.Color(css("--bg")), fg: css("--fg"), muted: css("--muted"),
+    seq: [0, 1, 2, 3, 4, 5, 6, 7].map((i) => new THREE.Color(css("--seq-" + i))),
+    tones: { top: css("--tone-top"), europe: css("--tone-europe"), playoff: css("--tone-playoff"), relegation: css("--tone-relegation") },
+  };
+  scene.background = theme.bg;
+  scene.fog = new THREE.Fog(theme.bg, 70, 140);
+}
+
+// t in [0,1]: 0 sits just above the cut-off, 1 is certainty. sqrt spreads the long tail of small chances.
+function strength(p) {
+  const lo = Math.sqrt(state.thr);
+  return Math.max(0, Math.min(1, (Math.sqrt(p) - lo) / (1 - lo)));
+}
+// The website grid's stops (HEAT_STOPS in public/app.js), blended smoothly: level 1..7 lands
+// exactly on --seq-1..7 at each stop and interpolates (log scale) between them.
+const HEAT_STOPS = [0.005, 0.02, 0.05, 0.1, 0.2, 0.35, 0.6];
+function heatLevel(p) {
+  if (p < HEAT_STOPS[0]) return p / HEAT_STOPS[0];
+  for (let i = 1; i < HEAT_STOPS.length; i++) {
+    if (p < HEAT_STOPS[i]) return i + Math.log(p / HEAT_STOPS[i - 1]) / Math.log(HEAT_STOPS[i] / HEAT_STOPS[i - 1]);
+  }
+  return HEAT_STOPS.length;
+}
+function seqColor(level, out) {
+  const lo = Math.min(6, Math.floor(level));
+  return out.copy(theme.seq[lo]).lerp(theme.seq[lo + 1], Math.min(1, level - lo));
+}
+const tmpC = new THREE.Color(), teamC = new THREE.Color();
+function blockColor(p, team) {
+  const t = strength(p);
+  if (state.color === "prob") return seqColor(heatLevel(p), tmpC);
+  const dark = theme.bg.getHSL({}).l < 0.5;
+  teamC.setHSL(((team * 137.508) % 360) / 360, 0.62, dark ? 0.62 : 0.45);
+  return tmpC.copy(theme.bg).lerp(teamC, 0.12 + 0.88 * t);
+}
+
+function rows() {
+  const L = league();
+  return L.teams.map((t, i) => i).sort((a, b) => L.teams[a][state.order] - L.teams[b][state.order]);
+}
+
+const dummy = new THREE.Object3D();
+function rebuildBlocks() {
+  const L = league(), n = L.teams.length, H = state.stretch, order = rows(), half = (n - 1) / 2;
+  let k = 0;
+  meta = [];
+  for (let l = 0; l <= state.upto; l++) {
+    const layer = L.layers[l];
+    order.forEach((ti, r) => {
+      layer.p[ti].forEach((p, pos) => {
+        if (p <= 0 || p < state.thr) return;
+        const s = state.size === "prob" ? 0.22 + 0.78 * Math.sqrt(p) : 1;
+        dummy.position.set(pos - half, l * H + H / 2, r - half);
+        dummy.scale.set(s, H, s);
+        dummy.updateMatrix();
+        mesh.setMatrixAt(k, dummy.matrix);
+        mesh.setColorAt(k, blockColor(p, ti));
+        meta[k++] = [l, ti, pos, p];
+      });
+    });
+  }
+  mesh.count = k;
+  mesh.instanceMatrix.needsUpdate = true;
+  mesh.instanceColor.needsUpdate = true;
+  const layer = L.layers[state.upto];
+  $("now").textContent = layer.label.split(" · ")[0];
+  $("nowsub").textContent = (layer.label.split(" · ")[1] || "before round 1") + " · " + k.toLocaleString("en") + " blocks";
+}
+
+function textSprite(text, { size = 0.55, color, font = "600 64px 'Barlow Condensed', sans-serif", anchorX = 0.5 }) {
+  const c = document.createElement("canvas"), g = c.getContext("2d");
+  g.font = font;
+  const w = Math.ceil(g.measureText(text).width) + 8;
+  c.width = w; c.height = 84;
+  g.font = font; g.fillStyle = color; g.textBaseline = "middle";
+  g.fillText(text, 4, 44);
+  const tex = new THREE.CanvasTexture(c);
+  tex.anisotropy = 4;
+  const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: tex, transparent: true, depthWrite: false, fog: false }));
+  sp.scale.set(size * w / 84, size, 1);
+  sp.center.set(anchorX, 0.5);
+  return sp;
+}
+function clear(group) {
+  for (const o of [...group.children]) { o.material.map?.dispose(); o.material.dispose(); if (!o.isSprite) o.geometry.dispose(); group.remove(o); }
+}
+function toneAt(L, pos) {
+  let tone = null;
+  for (const b of L.bands) if (b.tone !== "champion" && pos >= b.first && pos <= b.last) tone = b.tone;
+  return tone;
+}
+function rebuildScenery() {
+  clear(labels); clear(floor);
+  const L = league(), n = L.teams.length, H = state.stretch, half = (n - 1) / 2, order = rows();
+  for (let pos = 1; pos <= n; pos++) {
+    const tone = toneAt(L, pos);
+    const strip = new THREE.Mesh(new THREE.PlaneGeometry(1, 0.5), new THREE.MeshBasicMaterial({ color: tone ? theme.tones[tone] : theme.muted, transparent: true, opacity: tone ? 0.9 : 0.25 }));
+    strip.rotation.x = -Math.PI / 2;
+    // As on the website grid: band strip and position numbers head the columns, at the top (back) edge.
+    strip.position.set(pos - 1 - half, 0.01, -half - 0.9);
+    floor.add(strip);
+    const sp = textSprite(String(pos), { color: theme.fg, size: 0.6 });
+    sp.position.set(pos - 1 - half, 0, -half - 1.8);
+    labels.add(sp);
+    // Repeated along the front edge, where the stack cannot hide them.
+    const front = textSprite(String(pos), { color: theme.fg, size: 0.6 });
+    front.position.set(pos - 1 - half, 0, half + 1);
+    labels.add(front);
+  }
+  const plate = new THREE.Mesh(new THREE.PlaneGeometry(n + 0.6, n + 0.6), new THREE.MeshBasicMaterial({ color: theme.muted, transparent: true, opacity: 0.08 }));
+  plate.rotation.x = -Math.PI / 2;
+  plate.position.y = -0.01;
+  floor.add(plate);
+  order.forEach((ti, r) => {
+    const t = L.teams[ti];
+    const sp = textSprite(`${t.name}  ${t.predicted}→${t.final}`, { color: theme.fg, size: 0.5, anchorX: 1 });
+    sp.position.set(-half - 0.9, 0.1, r - half);
+    labels.add(sp);
+  });
+  const marks = [0, 5, 10, 15, 20, 25, 30].filter((l) => l <= state.upto);
+  if (!marks.includes(state.upto)) marks.push(state.upto);
+  for (const l of marks) {
+    const sp = textSprite(league().layers[l].label.split(" · ")[0], { color: l === state.upto ? theme.fg : theme.muted, size: 0.5, anchorX: 0, font: "500 56px 'IBM Plex Mono', monospace" });
+    sp.position.set(half + 1, l * H + H / 2, half + 0.5);
+    labels.add(sp);
+  }
+}
+
+function frameCamera() {
+  const n = league().teams.length, top = 31 * state.stretch;
+  controls.target.set(0, top * 0.38, 0);
+  camera.position.set(n * 1.45, top * 0.75 + n * 0.9, n * 2.05);
+  controls.update();
+}
+
+function drawRamp() {
+  const c = $("ramp"), g = c.getContext("2d"), col = new THREE.Color();
+  // Ticks sit at the stops, evenly spaced, so the bar runs level 1 to 7 linearly.
+  for (let x = 0; x < c.width; x++) {
+    g.fillStyle = "#" + seqColor(1 + 6 * x / (c.width - 1), col).getHexString();
+    g.fillRect(x, 0, 1, c.height);
+  }
+}
+
+function syncUI() {
+  for (const id of ["eliteserien", "obosligaen"]) $("lg-" + id).setAttribute("aria-pressed", state.league === id);
+  for (const id of ["predicted", "final"]) $("ord-" + id).setAttribute("aria-pressed", state.order === id);
+  for (const id of ["prob", "team"]) $("col-" + id).setAttribute("aria-pressed", state.color === id);
+  for (const id of ["fixed", "prob"]) $("size-" + id).setAttribute("aria-pressed", state.size === id);
+  $("upto").max = last();
+  $("upto").value = state.upto;
+  $("season").value = state.season;
+  $("ord-final").textContent = league().done ? "Final table" : "Current table";
+  $("upto-out").textContent = league().layers[state.upto].label.split(" · ")[0].toLowerCase();
+  $("thr-out").textContent = pct(state.thr);
+  $("stretch-out").textContent = state.stretch.toFixed(2);
+  $("title").textContent = `The ${state.season} ${league().name} mountain`;
+}
+function refresh({ scenery = true, blocks = true } = {}) {
+  syncUI();
+  if (blocks) rebuildBlocks();
+  if (scenery) rebuildScenery();
+  drawRamp();
+}
+
+function bindSeg(prefix, key, values, after) {
+  for (const v of values) $(prefix + v).addEventListener("click", () => { state[key] = v; after?.(); refresh(); });
+}
+bindSeg("lg-", "league", ["eliteserien", "obosligaen"], () => { state.upto = last(); frameCamera(); });
+for (const s of Object.keys(DATA).sort().reverse()) {
+  $("season").add(new Option(DATA[s].eliteserien.done ? s : `${s} (in progress)`, s));
+}
+$("season").addEventListener("change", (e) => { stop(); state.season = e.target.value; state.upto = last(); refresh(); });
+bindSeg("ord-", "order", ["predicted", "final"]);
+bindSeg("col-", "color", ["prob", "team"]);
+bindSeg("size-", "size", ["fixed", "prob"]);
+$("upto").addEventListener("input", (e) => { stop(); state.upto = +e.target.value; refresh(); });
+$("thr").addEventListener("input", (e) => { state.thr = THRESHOLDS[+e.target.value]; refresh({ scenery: false }); });
+$("stretch").addEventListener("input", (e) => { state.stretch = +e.target.value; refresh(); });
+
+let timer = null;
+function stop() { clearInterval(timer); timer = null; $("play").textContent = "Play"; }
+$("play").addEventListener("click", () => {
+  if (timer) return stop();
+  if (state.upto >= last()) state.upto = 0;
+  $("play").textContent = "Pause";
+  const step = () => {
+    $("upto").value = state.upto;
+    refresh();
+    if (state.upto >= last()) return stop();
+    state.upto++;
+  };
+  step();
+  timer = setInterval(step, matchMedia("(prefers-reduced-motion: reduce)").matches ? 600 : 220);
+});
+
+const ray = new THREE.Raycaster(), ptr = new THREE.Vector2(), tip = $("tip");
+let downAt = null;
+canvas.addEventListener("pointerdown", (e) => { downAt = [e.clientX, e.clientY]; });
+canvas.addEventListener("pointerleave", () => { tip.hidden = true; });
+function hover(e) {
+  const r = canvas.getBoundingClientRect();
+  ptr.set(((e.clientX - r.left) / r.width) * 2 - 1, -((e.clientY - r.top) / r.height) * 2 + 1);
+  ray.setFromCamera(ptr, camera);
+  const hit = ray.intersectObject(mesh)[0];
+  if (!hit || hit.instanceId == null || !meta[hit.instanceId]) { tip.hidden = true; return; }
+  const [l, ti, pos, p] = meta[hit.instanceId], L = league(), t = L.teams[ti];
+  tip.innerHTML = `<b>${t.name}</b><br>${L.layers[l].label}<br>${pos + 1}. place · ${pct(p)}<br><span style="color:var(--muted)">predicted ${t.predicted} · ${L.done ? "finished" : "now"} ${t.final}</span>`;
+  tip.hidden = false;
+  const x = e.clientX - r.left + 14, y = e.clientY - r.top + 14;
+  tip.style.left = Math.min(x, r.width - tip.offsetWidth - 8) + "px";
+  tip.style.top = Math.min(y, r.height - tip.offsetHeight - 8) + "px";
+}
+canvas.addEventListener("pointermove", (e) => { if (e.buttons === 0) hover(e); else tip.hidden = true; });
+canvas.addEventListener("pointerup", (e) => { if (downAt && Math.hypot(e.clientX - downAt[0], e.clientY - downAt[1]) < 5) hover(e); });
+
+function resize() {
+  const w = stage.clientWidth, h = stage.clientHeight;
+  renderer.setSize(w, h, false);
+  camera.aspect = w / h;
+  camera.updateProjectionMatrix();
+}
+new ResizeObserver(resize).observe(stage);
+
+function retheme() { readTheme(); refresh(); }
+matchMedia("(prefers-color-scheme: dark)").addEventListener("change", retheme);
+new MutationObserver(retheme).observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
+
+readTheme();
+resize();
+frameCamera();
+refresh();
+(function loop() { controls.update(); renderer.render(scene, camera); requestAnimationFrame(loop); })();
+Promise.all(["600 64px 'Barlow Condensed'", "500 56px 'IBM Plex Mono'"].map((f) => document.fonts.load(f))).then(() => refresh({ blocks: false })).catch(() => {});
+</script>
