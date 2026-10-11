@@ -293,6 +293,14 @@ html { scroll-padding-top: 76px; }
 
 .masthead__views::-webkit-scrollbar { display: none; }
 
+/* Equal side columns keep the view switch centred on the page whatever the
+   wordmark and settings button weigh; the middle can still shrink and scroll. */
+@media (min-width: 761px) {
+  .masthead__inner { display: grid; grid-template-columns: 1fr minmax(0, auto) 1fr; }
+  .wordmark { justify-self: start; }
+  .settings-btn { justify-self: end; }
+}
+
 .wordmark {
   font-family: var(--display);
   font-variation-settings: "wdth" 125;
@@ -1491,7 +1499,7 @@ table.standings .zone-divider__wrap::after {
 .compare__option:hover, .compare__option:focus-visible { background: var(--panel-sunk); outline: none; }
 .compare__option:disabled { opacity: 0.4; cursor: default; }
 .compare__option .team-logo { width: 32px; height: 32px; flex: none; }
-.compare__option-name { font-size: 1rem; font-weight: 600; }
+.compare__option-name { font-size: 1rem; font-weight: 600; min-width: 0; overflow-wrap: anywhere; }
 
 .compare__h2h-record {
   display: flex;
@@ -3410,6 +3418,15 @@ footer a { color: var(--ink); }
   .popover-menu__btn { min-height: 44px; padding: 0.6rem 0.75rem; }
   .settings-btn { min-height: 44px; min-width: 44px; }
   .hero-title-part { min-height: 44px; display: inline-flex; align-items: center; padding: 0.25rem 0; }
+}
+
+/* The club menu is as wide as its half-width card: on a phone a 32px crest
+   and 1rem name pushed long names past it and scrolled it sideways. */
+@media (max-width: 760px) {
+  .compare__menu { overflow-x: hidden; padding: 0.3rem; }
+  .compare__option { gap: 0.45rem; padding: 0.5rem 0.4rem; }
+  .compare__option .team-logo { width: 22px; height: 22px; }
+  .compare__option-name { font-size: 0.8125rem; }
 }
 
 /* Focus visible styles for mobile keyboard navigation */
