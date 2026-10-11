@@ -39,6 +39,7 @@ from elitetracker.pipeline import (
     LEAGUE_SPECS,
     NORMALIZED_DIR,
     available_seasons,
+    bands_for,
     build_all_careers,
     build_report,
     careers_payload,
@@ -149,6 +150,9 @@ def view_stamp(
     ]
 
     extras.append(repr(rewound_configs(asof)))  # simulation settings differ live vs rewound
+    # The European places come from Norway's UEFA rank, which the refresh
+    # updates in a data file rather than in code; a new rank must rebuild.
+    extras.append(repr(bands_for(LEAGUE_SPECS["eliteserien"], season, root)))
     return _digest_records(records, extras)
 
 

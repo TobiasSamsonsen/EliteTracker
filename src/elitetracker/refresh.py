@@ -5,6 +5,9 @@ fixture feed from fotmob (which also carries results for played matches),
 normalizes it, runs the same consistency checks a hand-written file would get,
 and replaces ``data/normalized/<league>_<season>_matches.json``.
 
+It also stores Norway's UEFA association rank for the season
+(``uefa_ranks.json``), which decides the league places that lead into Europe.
+
 Nothing here touches the model; the rating replay, table and simulations read
 the normalized files on every run, so once the files are current the
 predictions are current too. A network failure or a file that fails validation
@@ -32,11 +35,14 @@ from typing import Any, Callable, Iterable
 
 from elitetracker.normalize.fotmob import normalize_matches
 from elitetracker.normalize.matches import dump
-from elitetracker.pipeline import NORMALIZED_DIR, current_season, load_matches
+from elitetracker.pipeline import (
+    NORMALIZED_DIR, UEFA_RANKS_FILE, _europe_by_rank, current_season, load_matches,
+)
 from elitetracker.sources.fotmob import LEAGUES, FetchError, fetch_matches, update_xg
 from elitetracker.sources.sofascore import (
     SofascoreBlocked, pending_obos_xg, update_obos_xg,
 )
+from elitetracker.sources.uefa import fetch_rank
 from elitetracker.validation.matches import validate
 
 
@@ -100,6 +106,39 @@ def refresh_matches(
         )
 
 
+def refresh_uefa_rank(
+    root: Path = NORMALIZED_DIR,
+    season: int | None = None,
+    *,
+    fetch: Callable[[int], int] = fetch_rank,
+    today: date | None = None,
+) -> None:
+    """Store Norway's UEFA rank for `season` in uefa_ranks.json.
+
+    The rank that decides a season's European places is provisional until
+    the European season ends in June, so it is refetched until a stored
+    rank has reached August. Non-fatal by design: on a failed fetch or a
+    rank the access-list rule does not cover, the stored ranks stand and
+    the season takes the newest one known.
+    """
+    root = Path(root)
+    season = season or current_season(root)
+    path = root / UEFA_RANKS_FILE
+    stored = json.loads(path.read_text(encoding="utf-8")) if path.exists() else {}
+    if str(season) in stored and (today or date.today()) >= date(season, 8, 1):
+        return  # final; no request needed
+    try:
+        rank = fetch(season)
+        _europe_by_rank(rank)
+    except (FetchError, ValueError) as exc:
+        print(f"UEFA rank skipped: {exc}")
+        return
+    if stored.get(str(season)) != rank:
+        stored[str(season)] = rank
+        path.write_text(json.dumps(dict(sorted(stored.items())), indent=2) + "\n", encoding="utf-8")
+        print(f"UEFA rank {season}: Norway {rank}")
+
+
 def _in_ci() -> bool:
     return bool(os.environ.get("GITHUB_ACTIONS"))
 
@@ -113,6 +152,7 @@ def main(argv: list[str] | None = None) -> int:
                         help="fetch OBOS xG even in CI (only useful where Sofascore serves this network)")
     args = parser.parse_args(argv)
     refresh_matches(args.root, season=args.season, refresh_guard=not args.force)
+    refresh_uefa_rank(args.root, args.season)
     # The attack/defence ratings and the Elo update both run on xG where there
     # is any: fotmob for Eliteserien, Sofascore for OBOS (fotmob has no shotmap
     # for the second division). Top up both for anything newly played.

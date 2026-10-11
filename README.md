@@ -1,7 +1,7 @@
 # EliteTracker
 
 Predictive model for Norwegian men's football: **Eliteserien** (tier 1) and
-**OBOS-ligaen** (tier 2). Uses an ELO rating system (elo-v12.0) to estimate team
+**OBOS-ligaen** (tier 2). Uses an ELO rating system (elo-v12.1) to estimate team
 strength, match probabilities and season outcomes. Fixtures and results come
 from FotMob (xG from FotMob for Eliteserien, Sofascore for OBOS-ligaen);
 benchmark odds from football-data.co.uk, squad values from Transfermarkt.
@@ -12,8 +12,9 @@ Deployed at [elitetrackerno.web.app](https://elitetrackerno.web.app).
 
 ```bash
 python -m venv .venv && .venv\Scripts\pip install -e '.[dev]'
-.venv\Scripts\python -m elitetracker.refresh          # pull latest results
-.venv\Scripts\python -m elitetracker.api.server        # live server at :8000
+.venv\Scripts\python -m elitetracker.refresh                       # pull latest results
+.venv\Scripts\python -m elitetracker.research xg-obos              # OBOS xG (Sofascore, skipped in CI)
+.venv\Scripts\python -m elitetracker.api.server                    # live server at :8000
 ```
 
 Or preview the static build:
@@ -43,8 +44,8 @@ from the attack/defence grid, conditioned on the blended outcome odds.
 
 ## Views
 
-Seven views switch from the top nav (a bottom bar plus a "More" sheet on
-phones); the eighth, Team Focus, opens from any club name or crest.
+Six views switch from the top nav (a bottom bar plus a "More" sheet on
+phones); the seventh, Team Focus, opens from any club name or crest.
 
 ### Finish Grid
 
@@ -66,7 +67,7 @@ which columns belong to which view is noted below.
 
 | Column | View | What it means |
 |---|---|---|
-| **Rating** | both | Current ELO rating (integer). The arrow shows the recent trend: a weighted average of the last 6 matches' xG form (falls back to rating changes where a match has no xG). |
+| **Rating** | both | Current ELO rating (integer). The arrow shows how far the rating moved over the last 5 matches -- the five in the form column. |
 | **Attack / Defence** | Current | Chances created and conceded per match against an average side, as ±% vs the division average (defence turned round, so higher is better). Colour-coded red→blue pill, sortable by either. |
 | **Form** | Current | Last 5 results as individual W/D/L blocks (blue / grey / red); the column sorts by the points those five total (out of 15). |
 | **xPts** | Prediction | Expected final points — the mean total across the season's simulations (goals so far plus the simulated rest). |
@@ -84,17 +85,14 @@ the axis so you can see the rating gap between any two clubs, even across
 divisions. A horizontal strip on wide screens; on phones a ranked list, one row
 per club, with its rating as a dot on a shared scale.
 
-### Next Up
+### Matches
 
-Upcoming fixtures with three-way odds (home win / draw / away win) shown as a
-proportional bar, plus the top 4 most likely scorelines. Odds are computed
-client-side from the model parameters shipped in the JSON report.
-
-### Played Results
-
-Completed matches grouped by ISO week. Each card shows the score, both teams'
-ratings after the match, the rating change from the previous match, and the
-match's xG where the data has it.
+Results and fixtures on one timeline, a week a page: Prev goes back in time and
+Next forward, as on FotMob, opening on the current week. Played matches show
+the score, both teams' ratings after the match, the rating change and the xG
+where the data has it; fixtures show three-way odds (home win / draw / away
+win) as a proportional bar plus the four likeliest scorelines, and a dot beside
+a club whose title, European or relegation race the match is decisive for.
 
 ### Compare Clubs
 
@@ -124,15 +122,23 @@ Every tunable parameter in the shipped model:
 
 Click any club name or crest to open a detailed view:
 
-- **Summary** -- rating with trend arrow and cross-division rank, position,
-  points, goal difference and played, then attack/defence as ±% vs the
-  division average
+- **Summary** -- rating with its 5-match trend arrow, cross-division rank and
+  xG form; position, points, goal difference and played
+- **Outlook** -- likeliest finish, expected points and the chance of each race
+  the club is in (title, Europe, promotion, relegation), with the pre-season
+  call and the rating change since as one line
+- **Attack/defence** -- as ±% vs the division average
+- **Next match and decisive matches** -- what the next result does to the
+  club's main race all season ("Title 31% → 35% with a win · 16% with a
+  loss"), plus, in the last ten rounds, the matches most likely to decide it
 - **Finish row** -- single-row heat map of finishing position probabilities
-- **Pre-season vs live** -- how the prediction has changed since the season started
 - **Rating history** -- ELO trajectory across all seasons, with peak/trough
-- **Season shape** -- how title/relegation chances shifted after every match
-- **Season-by-season** -- career table with rating start/end per season
-- **Fixtures & results** -- upcoming and completed matches for this team
+- **Seasons** -- each season's shape (the chance of every finishing place after
+  every match, coloured by what the place is worth) above a picker listing
+  position and rating start/change/end per season
+- **Fixtures & results** -- one row per match from the club's side: home or
+  away, the opponent, then win/draw/loss odds or the result with xG and rating
+  change
 
 ## Key stats explained
 
@@ -154,13 +160,14 @@ odds: expected points per remaining match for a league-average team against
 this club's run-in, centred on the league's mean run-in rather than a fixed
 baseline.
 
-**Rating trend** takes a weighted average of the last 6 matches (weights
-[0.1, 0.2, 0.3, 0.4, 0.5, 0.6], oldest to newest). It prefers the per-match xG
-form -- how far the side played above its rating by the chances alone -- and
-falls back to raw rating changes where a match has no xG. Classified as:
-strong rise (>4 or >6), rising (>1 or >1.5), steady (within ±1 / ±1.5),
-falling, strong fall; the cut-offs differ slightly between the xG and
-rating-change scales.
+**Rating trend** is the total rating change over the last 5 matches, the
+same five as the table's form column: steady within ±8 points, rising or
+falling beyond, fast beyond ±20. **xG form** (team view) is a weighted average
+of the last 6 matches (weights 0.1..0.6) of how far the side played above its
+rating by the chances alone; it is the one that looks ahead.
+
+**Table order** follows the league: points, goal difference, goals scored,
+then the head-to-head record between the clubs still level.
 
 ## Rewind
 
@@ -178,7 +185,7 @@ node --test tests/frontend.test.js          # Frontend logic tests
 ## Project structure
 
 ```
-src/elitetracker/        Python package (model, pipeline, API, data)
+src/elitetracker/        Python package (model, pipeline, API, normalize, simulation, sources, validation)
 public/                  Frontend (no build step, no framework)
 data/                    Match data, xG, odds, market values
 tests/                   Python + Node test suites

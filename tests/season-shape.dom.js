@@ -100,14 +100,9 @@ async function main() {
       viewBox: svg.getAttribute('viewBox'),
       modeLine: svg.querySelectorAll('polyline.shape-line').length,
       edges: svg.querySelectorAll('polyline.band-edge').length,
-      halos: svg.querySelectorAll('polyline.band-edge-halo').length,
-      firstY: Number(svg.querySelector('polyline.band-edge').getAttribute('points').split(' ')[0].split(',')[1]),
-      labelYs: [...svg.querySelectorAll('text.band-edge-label')].map((t) => Number(t.getAttribute('y'))),
-      goodEdges: svg.querySelectorAll('polyline.band-edge--good').length,
-      badEdges: svg.querySelectorAll('polyline.band-edge--bad').length,
-      edgeLabels: svg.querySelectorAll('text.band-edge-label').length,
-      goodLabels: svg.querySelectorAll('text.band-edge-label--good').length,
-      badLabels: svg.querySelectorAll('text.band-edge-label--bad').length,
+      bands: svg.querySelectorAll('polygon.band').length,
+      legend: document.querySelectorAll('#team-shape-container .shape-legend .legend__key').length,
+      leagueBands: state.reports[state.league].league.bands.length,
       pos: svg.querySelectorAll('text.band-pos').length,
       posTexts: [...svg.querySelectorAll('text.band-pos')].map((t) => t.textContent),
       posYs: [...svg.querySelectorAll('text.band-pos')].map((t) => Number(t.getAttribute('y'))),
@@ -117,20 +112,13 @@ async function main() {
       verticals, horizontals,
     });
   })()`));
-  // Aalesund's qualification edge never leaves 0.000-0.003: it must be
-  // dropped, leaving the relegation edge alone. The end dot/ordinal is gone --
-  // the in-band numerals name every band, including the final one.
-  check('no mode line or end marker; only the in-play band edge, haloed, labelled',
-    overlays.modeLine === 0 && overlays.edges === 1 && overlays.halos === 1 &&
-    overlays.goodEdges === 0 && overlays.badEdges === 1 &&
-    overlays.edgeLabels === 1 && overlays.goodLabels === 0 && overlays.badLabels === 1 &&
+  // The places are coloured by what they are worth, so no edge lines are
+  // drawn over them; a legend under the chart names every band.
+  check('one area per place, no edge lines, no mode line or end marker',
+    overlays.modeLine === 0 && overlays.edges === 0 && overlays.bands === 16 &&
     overlays.dot === 0 && overlays.end === '', JSON.stringify(overlays));
-  // pad.top = 10, plotHeight = 240, so the display inset keeps every edge
-  // point in [16, 244] and every label in [20, 246] -- a zero-probability
-  // line must not sit on the frame or spill below the plot.
-  check('edges are haloed and inset off the frame, labels inside the plot',
-    overlays.halos === overlays.edges && overlays.firstY >= 16 && overlays.firstY <= 244 &&
-    overlays.labelYs.every((v) => v >= 20 && v <= 246), JSON.stringify(overlays));
+  check('legend names every band of the league',
+    overlays.legend === overlays.leagueBands, JSON.stringify(overlays));
   // Position numerals: named inside the bands they belong to, never outside,
   // the final band named like any other, and none sitting on a plot edge
   // (pad.left = 40, plotWidth = 848, edge inset = 14).
@@ -144,10 +132,11 @@ async function main() {
 
   const axis = JSON.parse(ev(`(() => {
     const svg = document.querySelector('#team-shape-container svg.chart');
-    // The band edges are drawn from the same x() as everything else.
-    const pts = svg.querySelector('polyline.band-edge').getAttribute('points')
+    // A band's upper boundary is drawn from the same x() as everything else.
+    const all = svg.querySelector('polygon.band').getAttribute('points')
       .trim().split(' ').map((p) => p.split(',').map(Number));
-    const n = pts.length;
+    const n = all.length / 2;
+    const pts = all.slice(0, n);
     let worst = 0;
     for (let i = 0; i < n; i += 1) {
       const expected = 40 + (i / (n - 1 || 1)) * 848;
@@ -293,43 +282,25 @@ async function main() {
     fallback.hasChart && !/shape data/i.test(fallback.text) &&
     String(fallback.state.season) === '2026', JSON.stringify(fallback));
 
-  // --- Eliteserien's qualification line is the Conference League threshold
-  // --- (below the last qualifying place), for clubs in the race for it.
-  const contender = JSON.parse(ev(`(() => {
-    const report = state.reports[state.league];
-    const team = report.history.teams.find((t) => t.team === 'Viking');
-    const svg = document.querySelector('#team-shape-container svg.chart');
-    drawTeamShape(report, team, svg, 900);
-    const edge = report.league.bands.find((b) => b.tone === 'europe');
-    return JSON.stringify({
-      good: !!svg.querySelector('polyline.band-edge--good'),
-      label: (svg.querySelector('text.band-edge-label--good') || {}).textContent || '',
-      expected: edge.label,
-      belowLast: edge.last,
-    });
+  // --- Each place takes its band's colour: the title gold, the European
+  // --- places their competition's, the drop red, mid-table neutral and
+  // --- alternating so neighbours stay apart.
+  const fills = JSON.parse(ev(`(() => {
+    const bands = state.reports.eliteserien.league.bands;
+    return JSON.stringify([1, 3, 4, 8, 9, 15].map((p) => shapeColor(p, bands, 16)));
   })()`));
-  check('qualification line sits under the last Conference League place',
-    contender.good && contender.label === contender.expected &&
-    contender.belowLast === 4, JSON.stringify(contender));
+  check('places are coloured by what they are worth',
+    /band-champion/.test(fills[0]) && /edge-ecl/.test(fills[1]) && /edge-ecl/.test(fills[2]) &&
+    fills[1] !== fills[2] && /ink-faint/.test(fills[3]) && fills[3] !== fills[4] &&
+    /outcome-bad/.test(fills[5]), JSON.stringify(fills));
 
-  // --- 2025 splits Europa (3rd) from Conference (4th): the line belongs to
-  // --- the lowest European place, not the first europe band found.
+  // --- 2025 splits Europa (3rd) from Conference (4th): each keeps its colour.
   const y2025 = JSON.parse(await ev(`(async () => {
-    const report = (await loadSeasonReports(2025)).eliteserien;
-    const team = report.history.teams.find((t) => t.team === 'Rosenborg');
-    const svg = document.querySelector('#team-shape-container svg.chart');
-    drawTeamShape(report, team, svg, 900);
-    const eu = report.league.bands.filter((b) => b.tone === 'europe');
-    return JSON.stringify({
-      bands: eu.map((b) => b.first + '-' + b.last + ' ' + b.label),
-      label: (svg.querySelector('text.band-edge-label--good') || {}).textContent || '',
-      edges: [...svg.querySelectorAll('polyline.band-edge--good')].length,
-    });
+    const bands = (await loadSeasonReports(2025)).eliteserien.league.bands;
+    return JSON.stringify([shapeColor(3, bands, 16), shapeColor(4, bands, 16)]);
   })()`));
-  check('2025 shows the Conference League threshold, not Europa League',
-    y2025.edges === 1 && /Conference/.test(y2025.label) &&
-    !/Europa/.test(y2025.label) && y2025.bands.length === 2,
-    JSON.stringify(y2025));
+  check('2025 colours 3rd as Europa League and 4th as Conference League',
+    /edge-el\b/.test(y2025[0]) && /edge-ecl/.test(y2025[1]), JSON.stringify(y2025));
 
   const failed = results.filter((r) => !r.ok);
   console.log(`\n${results.length - failed.length}/${results.length} checks passed`);

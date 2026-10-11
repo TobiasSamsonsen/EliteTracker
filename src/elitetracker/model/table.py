@@ -1,8 +1,9 @@
 """Build a live league table from played matches.
 
 Norwegian league football ranks on points, then goal difference, then goals
-scored. Team name is the final tiebreak so the order is always deterministic
-rather than dependent on dictionary insertion order.
+scored, then the head-to-head record between the clubs still level. Team name
+is the final tiebreak so the order is always deterministic rather than
+dependent on dictionary insertion order.
 """
 
 from __future__ import annotations
@@ -66,4 +67,28 @@ def table_from_matches(matches: list[Match]) -> list[TableRow]:
             home.record(match.home_goals, match.away_goals)
             away.record(match.away_goals, match.home_goals)
 
-    return sorted(rows.values(), key=ranking_key)
+    return _break_ties(sorted(rows.values(), key=ranking_key), matches)
+
+
+def _break_ties(ordered: list[TableRow], matches: list[Match]) -> list[TableRow]:
+    """Clubs level on points, goal difference and goals scored, ordered by a
+    mini-table of the matches among them: points, goal difference, goals."""
+    out: list[TableRow] = []
+    start = 0
+    while start < len(ordered):
+        level = ranking_key(ordered[start])[:3]
+        end = start
+        while end < len(ordered) and ranking_key(ordered[end])[:3] == level:
+            end += 1
+        group = ordered[start:end]
+        if len(group) > 1:
+            mini = {row.team_id: TableRow(team_id=row.team_id, team=row.team) for row in group}
+            for match in matches:
+                home, away = match.home_id or match.home, match.away_id or match.away
+                if match.played and home in mini and away in mini:
+                    mini[home].record(match.home_goals, match.away_goals)
+                    mini[away].record(match.away_goals, match.home_goals)
+            group.sort(key=lambda row: (*ranking_key(mini[row.team_id])[:3], row.team))
+        out += group
+        start = end
+    return out

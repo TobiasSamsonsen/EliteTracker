@@ -18,16 +18,14 @@ const state = {
   rewindTimer: null,
   // Key of the league+season the compare pickers were last populated for.
   compareKey: '',
-  // Active view tab: 'grid', 'table', 'ladder', 'next-up', 'played', 'compare', 'team', 'model'
+  // Active view tab: 'grid', 'table', 'ladder', 'matches', 'compare', 'team', 'model'
   // ?view= still wins -- see applyViewParameter.
   activeView: 'grid',
   _prevActiveView: null,
   // Team focus: team_id when viewing the team tab, null otherwise.
   teamFocusId: null,
-  // Pagination for played results.
-  playedWeek: 0,
-  // Next Up is paged by ISO week too; 0 is the nearest week.
-  fixturesWeek: 0,
+  // Week index on the Matches timeline; null opens on the current week.
+  matchesWeek: null,
   // Pagination for team focus view.
   teamFixturesPage: 0,
   teamResultsPage: 0,
@@ -286,6 +284,19 @@ function hideTooltip() {
   tooltipTrigger = null;
 }
 
+/* A hover readout that also works on touch. A tap fires pointerenter and then
+   pointerleave straight away, which cleared the readout before it could be
+   read; on touch it now stays until the next tap lands somewhere else. */
+function attachTip(target, html) {
+  target.addEventListener('pointerenter', (event) => showTooltip(event, typeof html === 'function' ? html() : html, target));
+  target.addEventListener('pointermove', (event) => { if (event.pointerType !== 'touch') moveTooltip(event); });
+  target.addEventListener('pointerleave', (event) => { if (event.pointerType !== 'touch') hideTooltip(); });
+}
+
+document.addEventListener('pointerdown', (event) => {
+  if (event.pointerType === 'touch' && tooltipTrigger && !tooltipTrigger.contains(event.target)) hideTooltip();
+}, { passive: true });
+
 /* ---------- bands ------------------------------------------------- */
 
 /* The most specific band wins, so "Champions" beats the broader
@@ -348,6 +359,8 @@ function shortBandLabel(band, report) {
   const good = band.first < (count + 1) / 2;
   let key = `table.zone.${good ? 'good' : 'bad'}.${band.tone}`;
   if (band.tone === 'top' && report.league.slug === 'obosligaen') key = 'table.zone.good.promotion';
+  if (band.label === 'Europa League qualification') key = 'table.zone.good.EL';
+  if (band.label === 'Conference League qualification') key = 'table.zone.good.ECL';
   return t(key) === key ? bandName(band) : t(key);
 }
 
@@ -784,13 +797,20 @@ function updateLadderAnimFrame(reports) {
 }
 
 /* Marker colour for a qualification band.
-
-   Winning the league keeps its own gold; everything else takes the outcome
-   family, so a marker never disagrees with the cells beneath it. The tone
-   alone is not enough: a play-off is a good thing in OBOS-ligaen (promotion)
-   and a bad one in Eliteserien (relegation). */
+   Each band gets its own distinct hue so the decisive-match dot is
+   instantly recognisable without text. Tone alone is not enough:
+   a play-off is a good thing in OBOS-ligaen (promotion) and a bad
+   one in Eliteserien (relegation). */
 function bandColor(band, count) {
-  if (band.tone === 'champion') return 'var(--band-champion)';
+  const label = band.label;
+  if (label === 'Champions') return 'var(--band-champion)';
+  if (label === 'Champions League qualification') return 'var(--outcome-good)';
+  if (label === 'Europa League qualification') return 'var(--edge-el)';
+  if (label === 'Conference League qualification') return 'var(--edge-ecl)';
+  if (label === 'Relegation' || label === 'Relegation play-off') return 'var(--outcome-bad)';
+  if (label === 'Promotion') return 'var(--band-champion)';
+  if (label === 'Promotion play-off') return 'var(--edge-el)';
+  // Fallback: good vs bad based on table half
   return outcomeClass(band.first, [band], count) === 'good'
     ? 'var(--outcome-good)'
     : 'var(--outcome-bad)';
@@ -843,7 +863,7 @@ function renderBandLegend(report) {
   }
 }
 
-function renderOddsLegend() {
+function renderOddsLegend(report) {
   const legend = $('#odds-legend');
   legend.replaceChildren();
   legend.appendChild(el('span', 'label', t('next.result')));
@@ -853,6 +873,18 @@ function renderOddsLegend() {
     swatch.style.background = `var(--${outcome})`;
     entry.appendChild(swatch);
     entry.appendChild(el('span', '', t(key)));
+    legend.appendChild(entry);
+  }
+  // The dots beside a club are otherwise explained only on hover.
+  if (report?.high_stakes?.length) {
+    const entry = el('span', 'legend__key');
+    const dots = el('span', 'stake-flag__dots');
+    for (const colour of ['--band-champion', '--outcome-good', '--outcome-bad']) {
+      const dot = el('span', 'stake-flag__dot');
+      dot.style.background = `var(${colour})`;
+      dots.appendChild(dot);
+    }
+    entry.append(dots, el('span', '', t('next.decisive')));
     legend.appendChild(entry);
   }
 }
@@ -1301,14 +1333,6 @@ function meterCell(value, kind) {
 
 /* ---------- season shape: stacked area over the season ------------- */
 
-/* Finishing position on the same sequential ramp. First place sits furthest
-   from the surface and last place nearest it, so a club's chart darkens as it
-   climbs. Band boundaries are carried by the tooltip and the table's own
-   markers rather than by a hue change, which keeps this one ordered scale. */
-function positionColor(position, count) {
-  return seqColor(count > 1 ? (count - position) / (count - 1) : 1);
-}
-
 /* Career points are dated by matchday, not by clock time. Midday UTC keeps a
    point on its own day in every timezone the page is read in. */
 const pointTime = (point) => Date.parse(`${point[0]}T12:00:00Z`);
@@ -1618,6 +1642,12 @@ function teamStakes(report, teamId) {
   return all.filter((entry) => String(entry.team_id) === String(teamId));
 }
 
+/* The stake of the club's next match, or null. Unlike the decisive entries
+   this is there all season (reports without next_stakes simply have none). */
+function nextStake(report, teamId) {
+  return ((report && report.next_stakes) || []).find((entry) => String(entry.team_id) === String(teamId)) || null;
+}
+
 /* Every stake riding on one fixture: one club, or two, or one club twice
    (two bands). Returns all of them so the card merges the reasons into a
    single badge instead of dropping one or stacking two. */
@@ -1637,24 +1667,39 @@ function stakeLegs(entry, fixtures) {
     .sort((a, b) => String(a.date).localeCompare(String(b.date)));
 }
 
-/* Plain-language consequence of an entry. The tone decides the verb: every
-   band but relegation is something to win toward, while relegation is what a
-   loss brings closer — never "a win seals relegation". Surfaces p_favourable
-   ("is 92%") and p_unfavourable ("falls to 31%") rather than the swing, which
-   reads as arithmetic where these read as what happens. */
+/* Plain-language consequence of an entry: the race, its chance now, and where
+   the result takes it ("Title 31% → 35% with a win vs Fredrikstad" / "17% with
+   a loss"). The tone decides the verb: every band but relegation is something
+   to win toward, while relegation is what a loss brings closer -- never "a win
+   seals relegation". */
 function stakeCopy(entry, lang) {
   const loss = entry.band_tone === 'relegation';
-  const band = bandName({ label: entry.band_label });
-  if (loss) {
-    return {
-      main: t('stake.lose.main', { opponent: entry.opponent, band, fav: stakePct(entry.p_favourable, lang) }),
-      sub: t('stake.lose.sub', { unfav: stakePct(entry.p_unfavourable, lang) }),
-    };
-  }
-  return {
-    main: t('stake.win.main', { opponent: entry.opponent, band, fav: stakePct(entry.p_favourable, lang) }),
-    sub: t('stake.win.sub', { unfav: stakePct(entry.p_unfavourable, lang) }),
+  const args = {
+    band: bandEdgeName({ label: entry.band_label }),
+    opponent: entry.opponent,
+    base: stakePct(entry.p_baseline, lang),
+    fav: stakePct(entry.p_favourable, lang),
+    unfav: stakePct(entry.p_unfavourable, lang),
   };
+  const kind = loss ? 'lose' : 'win';
+  return { main: t(`stake.${kind}.main`, args), sub: t(`stake.${kind}.sub`, args) };
+}
+
+/* The coloured dot that marks a decisive match, in its band's colour, with the
+   stake as its readout. On touch the club name beside it opens the club, so
+   the dot is its own tap target and explains itself without navigating. */
+function stakeDot(entry, report, count) {
+  const band = { first: entry.band_first, last: entry.band_last, tone: entry.band_tone, label: entry.band_label };
+  const dot = el('span', 'stake-dot');
+  dot.style.background = bandColor(band, count);
+  dot.setAttribute('aria-hidden', 'true');
+  const copy = stakeCopy(entry, currentLang);
+  const legs = stakeLegs(entry, report.fixtures || []);
+  const legsHtml = legs.length >= 2 ? `<div class="stake-dot__legs">${t('stake.legs', { a: formatDate(legs[0].date), b: formatDate(legs[1].date) })}</div>` : '';
+  dot.tip = () => `<div class="stake-dot__tooltip"><strong>${entry.team} (${bandEdgeName(band)})</strong><br>${copy.main}<br>${copy.sub}${legsHtml}</div>`;
+  attachTip(dot, dot.tip);
+  dot.addEventListener('click', (event) => event.stopPropagation());
+  return dot;
 }
 
 /* One merged badge for a fixture card, or null when nothing rides on it. The
@@ -1684,13 +1729,11 @@ function buildFixtureCard(fixture, stakes, report) {
   const card = el('div', 'played-card');
   card.appendChild(el('div', 'played-card__date', formatDate(fixture.date) + (fixture.time ? ` \u00b7 ${fixture.time}` : '')));
 
-  const flag = report ? stakeFlag(stakes || [], report) : null;
-  if (flag) card.appendChild(flag);
-
   const matchup = el('div', 'played-card__matchup');
   const homeSide = el('div', 'played-card__side played-card__side--home');
   homeSide.appendChild(el('span', 'played-card__rating-value', num(fixture.home_rating)));
-  homeSide.appendChild(sideBlock(fixture.home, fixture.home_id, false));
+  const homeName = sideBlock(fixture.home, fixture.home_id, false);
+  homeSide.appendChild(homeName);
   matchup.appendChild(homeSide);
 
   const oddsCol = el('div', 'fixture__odds-col');
@@ -1698,11 +1741,25 @@ function buildFixtureCard(fixture, stakes, report) {
   matchup.appendChild(oddsCol);
 
   const awaySide = el('div', 'played-card__side played-card__side--away');
-  awaySide.appendChild(sideBlock(fixture.away, fixture.away_id, true));
+  const awayName = sideBlock(fixture.away, fixture.away_id, true);
+  awaySide.appendChild(awayName);
   awaySide.appendChild(el('span', 'played-card__rating-value', num(fixture.away_rating)));
   matchup.appendChild(awaySide);
   card.appendChild(matchup);
 
+  // Decisive-match dots: one per team that has a stake on this fixture.
+  // Attached to the team name element with a tooltip on hover.
+  if (stakes && stakes.length && report) {
+    const count = report.table.length;
+    for (const entry of stakes) {
+      const isHome = entry.team_id === fixture.home_id;
+      const nameEl = isHome ? homeName : awayName;
+      if (!nameEl) continue;
+      const dot = stakeDot(entry, report, count);
+      nameEl.appendChild(dot);
+      attachTip(nameEl, dot.tip);
+    }
+  }
   if (fixture.scorelines && fixture.scorelines.length) {
     const lines = el('div', 'fixture__lines');
     for (const line of fixture.scorelines.slice(0, 4)) {
@@ -1763,28 +1820,50 @@ function playedCard(match, ratingChanges) {
   return card;
 }
 
-function renderFixtures(report) {
+/* Results and fixtures on one timeline, a week a page: Prev goes back in time
+   and Next forward, as on FotMob. It opens on the week of the next fixture --
+   which in mid-round also holds the results already in -- or, once the season
+   is over, on its last week. */
+function renderMatches(report) {
   const holder = $('#fixtures');
   holder.replaceChildren();
-
-  // Paged by ISO week like Played Results, nearest week first.
-  const { weeks, byWeek } = groupByWeek([...report.fixtures].sort((a, b) => a.date.localeCompare(b.date)));
-  if (!weeks.length) {
+  const played = (report.results || []).map((match) => ({ match, played: true }));
+  const upcoming = (report.fixtures || []).map((match) => ({ match, played: false }));
+  const timeline = [...played, ...upcoming].sort((a, b) =>
+    `${a.match.date} ${a.match.time || ''}`.localeCompare(`${b.match.date} ${b.match.time || ''}`));
+  if (!timeline.length) {
     $('#fixture-count').textContent = '';
+    holder.appendChild(el('p', 'muted', t('played.empty')));
     return;
   }
-  state.fixturesWeek = Math.max(0, Math.min(state.fixturesWeek, weeks.length - 1));
-  const week = weeks[state.fixturesWeek];
-  const fixtures = byWeek.get(week);
-  $('#fixture-count').textContent = t('next.count', { n: fixtures.length, total: report.fixtures.length });
+  const { weeks, byWeek } = groupByWeek(timeline.map((item) => ({ ...item, date: item.match.date })));
+  const firstUpcoming = timeline.find((item) => !item.played);
+  const current = firstUpcoming ? weeks.indexOf(isoWeek(firstUpcoming.match.date)) : weeks.length - 1;
+  if (state.matchesWeek == null) state.matchesWeek = current;
+  state.matchesWeek = Math.max(0, Math.min(state.matchesWeek, weeks.length - 1));
+  const items = byWeek.get(weeks[state.matchesWeek]);
+  const results = items.filter((item) => item.played).map((item) => item.match);
+  const fixtures = items.filter((item) => !item.played).map((item) => item.match);
+  $('#fixture-count').textContent = t('matches.count', { played: results.length, upcoming: fixtures.length });
 
-  const go = (index) => () => { state.fixturesWeek = index; renderFixtures(report); };
+  const go = (index) => () => { state.matchesWeek = index; renderMatches(report); };
   holder.appendChild(pageNav(
-    t('played.week', { n: week }),
-    state.fixturesWeek > 0 ? go(state.fixturesWeek - 1) : null,
-    state.fixturesWeek < weeks.length - 1 ? go(state.fixturesWeek + 1) : null,
+    t('played.week', { n: weeks[state.matchesWeek] }) + (state.matchesWeek === current && firstUpcoming ? ` · ${t('matches.thisWeek')}` : ''),
+    state.matchesWeek > 0 ? go(state.matchesWeek - 1) : null,
+    state.matchesWeek < weeks.length - 1 ? go(state.matchesWeek + 1) : null,
   ));
-  for (const fixture of fixtures) holder.appendChild(buildFixtureCard(fixture, stakesForFixture(report.high_stakes, fixture.match_id), report));
+  // A week that is part played gets a heading over each half.
+  const both = results.length && fixtures.length;
+  if (results.length) {
+    if (both) holder.appendChild(el('div', 'label matches__group', t('matches.results')));
+    const ratingChanges = buildRatingChanges(state.careers);
+    for (const match of results) holder.appendChild(playedCard(match, ratingChanges));
+  }
+  if (fixtures.length) {
+    if (both) holder.appendChild(el('div', 'label matches__group', t('matches.upcoming')));
+    for (const fixture of fixtures) holder.appendChild(buildFixtureCard(fixture, stakesForFixture(report.high_stakes, fixture.match_id), report));
+  }
+  $('#odds-legend').hidden = !fixtures.length;
 }
 
 /* Matches bucketed by ISO week, weeks in the order the list first meets them. */
@@ -1802,13 +1881,13 @@ function groupByWeek(matches) {
   return { weeks, byWeek };
 }
 
-/* The one pagination control on the site, modelled on Played Results: Prev,
+/* The one pagination control on the site, modelled on Matches: Prev,
    what is on show, Next. Prev always goes back in time and Next forward; a
    missing handler disables that side. */
-function pageNav(label, onPrev, onNext) {
+function pageNav(label, onPrev, onNext, [prevText, nextText] = [t('played.prev'), t('played.next')]) {
   const nav = el('div', 'played-nav');
-  const prev = el('button', 'played-nav__btn', t('played.prev'));
-  const next = el('button', 'played-nav__btn', t('played.next'));
+  const prev = el('button', 'played-nav__btn', prevText);
+  const next = el('button', 'played-nav__btn', nextText);
   for (const [button, handler] of [[prev, onPrev], [next, onNext]]) {
     button.type = 'button';
     button.disabled = !handler;
@@ -1858,35 +1937,6 @@ function isoWeek(dateStr) {
   d.setUTCDate(d.getUTCDate() + 4 - day);
   const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
   return Math.ceil(((d - yearStart) / 86400000 + 1) / 7);
-}
-
-function renderPlayedResults(report) {
-  const holder = $('#played-results');
-  holder.replaceChildren();
-
-  const results = report.results || [];
-  if (!results.length) {
-    holder.appendChild(el('p', 'muted', t('played.empty')));
-    return;
-  }
-
-  const ratingChanges = buildRatingChanges(state.careers);
-  const sorted = [...results].sort((a, b) => b.date.localeCompare(a.date));
-
-  // Most recent week first, so Prev (back in time) is the next index up.
-  const { weeks, byWeek } = groupByWeek(sorted);
-  state.playedWeek = Math.min(state.playedWeek || 0, weeks.length - 1);
-  const currentWeek = weeks[state.playedWeek];
-  const weekMatches = byWeek.get(currentWeek);
-
-  const go = (index) => () => { state.playedWeek = index; renderPlayedResults(report); };
-  holder.appendChild(pageNav(
-    t('played.week', { n: currentWeek }),
-    state.playedWeek < weeks.length - 1 ? go(state.playedWeek + 1) : null,
-    state.playedWeek > 0 ? go(state.playedWeek - 1) : null,
-  ));
-
-  for (const match of weekMatches) holder.appendChild(playedCard(match, ratingChanges));
 }
 
 function formatDate(iso) {
@@ -2200,9 +2250,6 @@ function renderTeamView(report) {
   // 2. Finish grid row
   safeRender(() => renderTeamGridRow(teamId, row, report, content), 'gridRow');
 
-  // 2b. Pre-season vs live prediction
-  safeRender(() => renderPreSeasonComparison(teamId, row, report, content), 'preSeason');
-
   // 3. Rating history chart
   if (career && career.points?.length >= 2) {
     safeRender(() => {
@@ -2314,6 +2361,20 @@ function renderSeasonBySeason(career, teamId, container, currentReport) {
 
   // The list is the picker: its rows swap the chart above. Paging re-renders
   // the list alone, so a page turn no longer tears down and rebuilds the chart.
+  // Column names once above the rows, which carry bare numbers.
+  const head = el('div', 'season-row-head');
+  head.setAttribute('aria-hidden', 'true');
+  const headRating = el('div', 'season-row-compact__rating');
+  headRating.append(
+    el('div', 'season-row-compact__rating-start', t('team.ratingStartShort')),
+    el('div', 'season-row-compact__change', t('team.change')),
+    el('div', 'season-row-compact__rating-end', t('team.ratingEndShort')),
+  );
+  const headMain = el('div', 'season-row-compact__main');
+  headMain.appendChild(el('div', 'season-row-compact__pos', '#'));
+  head.append(el('div', 'season-row-compact__season', t('team.season')), headMain, headRating);
+  section.appendChild(head);
+
   const list = el('div', 'seasons-list-compact');
   section.appendChild(list);
   const pagerBox = el('div', 'seasons-pager');
@@ -2363,6 +2424,11 @@ function createCompactSeasonRow(record, teamId, container, currentReport, active
   // Position only (league shown via badge)
   const mainCell = el('div', 'season-row-compact__main');
   mainCell.appendChild(el('div', 'season-row-compact__pos', `#${record.position}`));
+  // The season still being played: its place is today's, not a final one.
+  const live = String(record.season) === String(currentReport.league.current_season)
+    && state.reports?.[record.league]?.league?.season === record.season
+    && state.reports[record.league].model?.matches_remaining > 0;
+  if (live) mainCell.appendChild(el('span', 'season-row-compact__live', t('team.now')));
   row.appendChild(mainCell);
 
   // Rating: start -> end with change indicator
@@ -2438,7 +2504,8 @@ function renderSeasonShapeInContainer(season, league, teamId, container, current
     drawTeamShape(report, team, chart, container.clientWidth);
     container.replaceChildren(
       el('div', 'label', t('team.seasonShapeYear', { year: season })),
-      chart
+      chart,
+      shapeLegend(report)
     );
     // The rows highlight what is on show, so both branches record it.
     state.activeSeasonShape = { season, league };
@@ -2487,10 +2554,13 @@ function paginator(page, totalPages, go, reversed = false) {
   const earlier = reversed ? page + 1 : page - 1;
   const later = reversed ? page - 1 : page + 1;
   const valid = (p) => p >= 0 && p < totalPages;
+  // Named for time rather than page order: on a newest-first list, page 1
+  // with "Prev" live and "Next" dead read as the last page.
   return pageNav(
     t('page.of', { n: page + 1, total: totalPages }),
     valid(earlier) ? () => go(earlier) : null,
     valid(later) ? () => go(later) : null,
+    reversed ? [t('page.older'), t('page.newer')] : [t('page.earlier'), t('page.later')],
   );
 }
 
@@ -2514,17 +2584,17 @@ function renderTeamSummary(teamId, row, career, report, container) {
   // Rating block: [arrow + rating] / position
   const ratingBlock = el('div', 'team-summary__rating-block');
   const ratingLine = el('div', 'team-summary__rating-line');
-  const trend = computeRatingTrend(row?.team || career?.team, report);
+  const teamName = row?.team || career?.team;
+  const trend = computeRatingTrend(teamName, report);
   if (trend) {
     const trendEl = el('span', `team-summary__trend team-summary__trend--${trend.direction}`);
     trendEl.innerHTML = trend.svg;
     trendEl.setAttribute('role', 'img');
     trendEl.setAttribute('aria-label', trend.detail);
+    trendEl.tabIndex = 0;
     // The site's own tooltip rather than a title: it shows at once, takes
     // the extra lines, and a tap brings it up on a phone.
-    trendEl.addEventListener('pointerenter', (event) => showTooltip(event, trend.tip));
-    trendEl.addEventListener('pointermove', moveTooltip);
-    trendEl.addEventListener('pointerleave', hideTooltip);
+    attachTip(trendEl, trend.tip);
     ratingLine.appendChild(trendEl);
   }
   const rating = Math.round(row?.rating || career?.current_rating || 0);
@@ -2537,7 +2607,20 @@ function renderTeamSummary(teamId, row, career, report, container) {
   allTeams.sort((a, b) => b.rating - a.rating);
   const crossRank = allTeams.findIndex((t) => String(t.team_id) === String(teamId));
   const totalTeams = allTeams.length || report.table.length;
-  ratingBlock.appendChild(el('span', 'team-summary__rating-pos', t('team.rankOf', { rank: ordinal(crossRank >= 0 ? crossRank + 1 : (row?.position ?? 0)), total: totalTeams })));
+  ratingBlock.appendChild(el('span', 'team-summary__rating-pos', t('team.rankOf', { rank: ordinalShort(crossRank >= 0 ? crossRank + 1 : (row?.position ?? 0)), total: totalTeams })));
+  // How the club has played by its chances, labelled: an unlabelled second
+  // arrow would read as a second opinion on the rating.
+  const form = computeXgForm(teamName, report);
+  if (form) {
+    const formEl = el('span', 'team-summary__form');
+    formEl.tabIndex = 0;
+    formEl.setAttribute('aria-label', form.detail);
+    const icon = el('span', `team-summary__form-icon team-summary__trend--${form.direction}`);
+    icon.innerHTML = form.svg;
+    formEl.append(el('span', 'team-summary__form-key', t('team.xgForm')), icon, el('span', '', form.label));
+    attachTip(formEl, form.tip);
+    ratingBlock.appendChild(formEl);
+  }
   header.appendChild(ratingBlock);
 
   card.appendChild(header);
@@ -2552,6 +2635,7 @@ function renderTeamSummary(teamId, row, career, report, container) {
     table.appendChild(summaryStat(t('team.gd'), signed(row.goal_difference)));
     table.appendChild(summaryStat(t('team.played'), String(row.played)));
     card.appendChild(table);
+    renderTeamOutlook(card, row, report, teamId);
 
     const xg = el('dl', 'team-stats team-stats--xg');
     xg.appendChild(xgStat(t('team.attack'), t('team.attackHint'), row.attack, report.table.map((r) => r.attack), true));
@@ -2567,28 +2651,26 @@ function renderTeamSummary(teamId, row, career, report, container) {
   container.appendChild(card);
 }
 
-/* The arrow beside a rating: which way recent performances are pushing it.
+/* The arrow beside a rating: how far the rating moved over the club's last
+   five matches -- the five the table's form column shows, which it tracks
+   best (r 0.85 against the points in them; 3 matches 0.65, 8 matches 0.73).
+   A plain total reads at once ("+12 over the last 5") and swings between
+   rising and falling from one match to the next only 2.5 % of the time.
+   Cut-offs from every club-season since 2015: steady within ±8 (about 30 %
+   of matches), fast beyond ±20 (about 30 %). */
+const TREND_MATCHES = 5;
+const TREND_CUTS = { mild: 8, strong: 20 };
 
-   Built on xG form -- per match, K * (xG-implied score - expected score), the
-   rating change the chances alone would have produced (`xg_form` in the
-   results, from pipeline.xg_form). Measured on every club-season with xG, a
-   recent average of it tracks the next few matches (r ~0.17), where an average
-   of actual rating changes, which are mostly result luck, does not (~0.05).
+/* xG form, the team view's second line: per match, K * (xG-implied score -
+   expected score), the rating change the chances alone would have produced
+   (`xg_form` in the results, from pipeline.xg_form). It is the signal that
+   looks ahead -- a recent average tracks the next few matches (r ~0.17) where
+   rating changes, mostly result luck, do not (~0.05). Weights 0.1..0.6 over
+   the last 6 matches, so the latest three carry 71 %. */
+const FORM_WEIGHTS = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6];
+const FORM_CUTS = { mild: 1, strong: 4 };
 
-   Weights 0.1..0.6 over the last 6 matches: the latest three carry 71 %, so
-   the information is on average under two weeks old.
-
-   Seasons or clubs without xG fall back to the actual rating changes, on
-   their own cut-offs (that signal is about 1.5x as spread). */
-const TREND_WEIGHTS = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6];
-const TREND_KINDS = {
-  //       cut-offs: steady inside ±mild, strong beyond ±strong; label keys; digits
-  xg: { mild: 1, strong: 4, prefix: 'form', digits: 1 },
-  rating: { mild: 1.5, strong: 6, prefix: 'trend', digits: 0 },
-};
-
-function computeRatingTrend(teamName, report) {
-  if (!teamName) return null;
+function teamMatchSeries(teamName, report) {
   const results = [...(report.results || [])].sort((a, b) => a.date.localeCompare(b.date));
   const ratingChanges = buildRatingChanges(state.careers);
   const xgForm = [];
@@ -2601,25 +2683,43 @@ function computeRatingTrend(teamName, report) {
     const info = ratingChanges.get(`${isHome ? r.home_id : r.away_id}|${r.date}`);
     if (info) changes.push(info.change);
   }
-  const kind = xgForm.length >= 6 ? 'xg' : 'rating';
-  const values = (kind === 'xg' ? xgForm : changes).slice(-6);
-  if (values.length < 6) return null;
-  const { mild, strong, prefix, digits } = TREND_KINDS[kind];
+  return { xgForm, changes };
+}
 
-  const diff = values.reduce((sum, v, i) => sum + v * TREND_WEIGHTS[i], 0)
-    / TREND_WEIGHTS.reduce((a, b) => a + b, 0);
+/* Five degrees: strong rise, rise, steady, fall, strong fall. */
+function trendDegree(value, { mild, strong }) {
+  const key = value > strong ? 'strongRise' : value > mild ? 'rise' : value >= -mild ? 'steady' : value >= -strong ? 'fall' : 'strongFall';
+  return { key, direction: key.replace('strongR', 'strong-r').replace('strongF', 'strong-f') };
+}
 
-  // 5 degrees: strong rise, rise, steady, fall, strong fall
-  const key = diff > strong ? 'strongRise' : diff > mild ? 'rise' : diff >= -mild ? 'steady' : diff >= -strong ? 'fall' : 'strongFall';
-  const direction = key.replace('strongR', 'strong-r').replace('strongF', 'strong-f');
-  const label = t(`${prefix}.${key}`);
-  const perMatch = signed(diff, digits);
+function computeRatingTrend(teamName, report) {
+  if (!teamName) return null;
+  const values = teamMatchSeries(teamName, report).changes.slice(-TREND_MATCHES);
+  if (values.length < TREND_MATCHES) return null;
+  const diff = values.reduce((sum, v) => sum + v, 0);
+  const { key, direction } = trendDegree(diff, TREND_CUTS);
+  const label = t(`trend.${key}`);
+  const total = signed(diff, 0);
   // One line for the table's arrow and for screen readers; the team view
   // shows `tip`, which adds the matches behind the number.
-  const detail = t(`${prefix}.detail`, { label, n: perMatch });
-  const tip = `<b>${label}</b><br>${t(`${prefix}.tipPerMatch`, { n: perMatch })}`
-    + `<br><span class="tooltip__muted">${t('trend.tipMatches', { list: values.map((v) => signed(v, digits)).join(' ') })}</span>`;
+  const detail = t('trend.detail', { label, n: total });
+  const tip = `<b>${label}</b><br>${t('trend.tipTotal', { n: total })}`
+    + `<br><span class="tooltip__muted">${t('trend.tipMatches', { count: values.length, list: values.map((v) => signed(v, 0)).join(' ') })}</span>`;
   return { direction, svg: trendArrowSVG(direction), detail, tip, diff };
+}
+
+function computeXgForm(teamName, report) {
+  if (!teamName) return null;
+  const values = teamMatchSeries(teamName, report).xgForm.slice(-FORM_WEIGHTS.length);
+  if (values.length < FORM_WEIGHTS.length) return null;
+  const diff = values.reduce((sum, v, i) => sum + v * FORM_WEIGHTS[i], 0)
+    / FORM_WEIGHTS.reduce((a, b) => a + b, 0);
+  const { key, direction } = trendDegree(diff, FORM_CUTS);
+  const label = t(`form.${key}`);
+  const perMatch = signed(diff, 1);
+  const tip = `<b>${label}</b><br>${t('form.tipPerMatch', { n: perMatch })}`
+    + `<br><span class="tooltip__muted">${t('trend.tipMatches', { count: values.length, list: values.map((v) => signed(v, 1)).join(' ') })}</span>`;
+  return { direction, svg: trendArrowSVG(direction), label, detail: t('form.detail', { label, n: perMatch }), tip };
 }
 
 function trendArrowSVG(direction) {
@@ -2637,33 +2737,45 @@ function trendArrowSVG(direction) {
 /* The club's own high-stakes entries: one compact line each, the band carried
    by a dot in its palette colour and the consequence in words ("Win vs Brann
    and the Champions chance is 92%. Lose and it falls to 31%."). Nothing is
-   rendered when the club has no entries, so mid-table clubs get no chrome. */
+   rendered when the club has no entries, so mid-table clubs get no chrome.
+   Above them, the next match's stake in the same words, all season; it is
+   left out when that match is already listed as decisive for the band. */
 function renderTeamStakes(card, report, teamId) {
   const entries = teamStakes(report, teamId);
-  if (!entries.length) return;
+  let next = nextStake(report, teamId);
+  if (next && entries.some((e) => String(e.match_id) === String(next.match_id) && e.band_label === next.band_label)) next = null;
+  if (!entries.length && !next) return;
   const box = el('div', 'team-stakes');
-  box.appendChild(el('div', 'label', t('stake.title')));
-  const list = el('ul', 'team-stakes__list');
   const count = (report.table || []).length || 16;
-  for (const entry of entries) {
-    const copy = stakeCopy(entry, currentLang);
-    const item = el('li', 'team-stakes__row');
-    const dot = el('span', 'team-stakes__dot');
-    dot.style.background = bandColor({ first: entry.band_first, tone: entry.band_tone }, count);
-    dot.setAttribute('aria-hidden', 'true');
-    item.appendChild(dot);
-    const text = el('span', 'team-stakes__text');
-    text.appendChild(el('span', 'team-stakes__main', `${copy.main} `));
-    text.appendChild(el('span', 'team-stakes__sub', copy.sub));
-    const legs = stakeLegs(entry, report.fixtures || []);
-    if (legs.length >= 2) {
-      text.appendChild(el('span', 'team-stakes__legs', t('stake.legs', { a: formatDate(legs[0].date), b: formatDate(legs[1].date) })));
-    }
-    item.appendChild(text);
-    list.appendChild(item);
-  }
-  box.appendChild(list);
+  const section = (label, items, dated = false) => {
+    box.appendChild(el('div', 'label', label));
+    const list = el('ul', 'team-stakes__list');
+    for (const entry of items) list.appendChild(stakeRow(entry, report, count, dated));
+    box.appendChild(list);
+  };
+  if (next) section(t('stake.next', { date: formatDate(next.date) }), [next]);
+  if (entries.length) section(t('stake.title'), entries, true);
   card.appendChild(box);
+}
+
+function stakeRow(entry, report, count, dated = false) {
+  const copy = stakeCopy(entry, currentLang);
+  const item = el('li', 'team-stakes__row');
+  const dot = el('span', 'team-stakes__dot');
+  dot.style.background = bandColor({ first: entry.band_first, last: entry.band_last, tone: entry.band_tone, label: entry.band_label }, count);
+  dot.setAttribute('aria-hidden', 'true');
+  item.appendChild(dot);
+  const text = el('span', 'team-stakes__text');
+  text.appendChild(el('span', 'team-stakes__main', `${copy.main} · `));
+  text.appendChild(el('span', 'team-stakes__sub', copy.sub));
+  const legs = stakeLegs(entry, report.fixtures || []);
+  if (legs.length >= 2) {
+    text.appendChild(el('span', 'team-stakes__legs', t('stake.legs', { a: formatDate(legs[0].date), b: formatDate(legs[1].date) })));
+  } else if (dated) {
+    text.appendChild(el('span', 'team-stakes__legs', formatDate(entry.date)));
+  }
+  item.appendChild(text);
+  return item;
 }
 
 /* One tile: the label comes first for screen readers (dt before dd) and the
@@ -2730,47 +2842,55 @@ function renderTeamGridRow(teamId, row, report, container) {
   container.appendChild(section);
 }
 
-function renderPreSeasonComparison(teamId, row, report, container) {
-  const historyTeam = report.history?.teams?.find((t) => String(t.team_id) === String(teamId));
-  if (!historyTeam || historyTeam.positions.length < 2 || !row) return;
+/* Where the model has the club finishing, in tiles like the ones above: the
+   likeliest place, expected points, and the chance of each race it is in
+   (at least 1 %, top three in table order). The pre-season call and the
+   rating change since then sit underneath as one line; they used to fill a
+   card of their own. A finished season has nothing left to forecast. */
+function renderTeamOutlook(card, row, report, teamId) {
+  const probs = row.position_probabilities || [];
+  if (!probs.length || !report.model?.matches_remaining) return;
+  const best = probs.indexOf(Math.max(...probs));
+  const box = el('div', 'team-outlook');
+  box.appendChild(el('div', 'label', t('team.outlook')));
+  const tiles = el('dl', 'team-stats team-stats--outlook');
+  tiles.appendChild(summaryStat(t('team.likeliest', { pct: pct(probs[best], 0) }), ordinalShort(best + 1)));
+  tiles.appendChild(summaryStat(t('team.xPts'), num(row.expected_points)));
+  const races = report.league.bands
+    .map((band) => ({ band, chance: probs.slice(band.first - 1, band.last).reduce((a, b) => a + b, 0) }))
+    .filter(({ chance }) => chance >= 0.01)
+    .slice(0, 3);
+  for (const { band, chance } of races) tiles.appendChild(summaryStat(bandEdgeName(band), pct(chance, 0), bandName(band)));
+  box.appendChild(tiles);
 
-  const prePositions = historyTeam.positions[0];
-  const preBest = prePositions.indexOf(Math.max(...prePositions));
-  const liveBest = row.position_probabilities.indexOf(Math.max(...row.position_probabilities));
-  const preRating = historyTeam.ratings[0];
-  const delta = preRating != null ? Math.round(row.rating - preRating) : null;
-
-  const section = el('div', 'team-section');
-  section.appendChild(el('div', 'label', t('team.prediction')));
-
-  const box = el('div', 'pred-box');
-  const from = el('div', 'pred-box__from');
-  from.appendChild(el('div', 'pred-box__sub', t('team.predPreSeason')));
-  from.appendChild(el('div', 'pred-box__pos', ordinal(preBest + 1)));
-  box.appendChild(from);
-  const mid = el('div', 'pred-box__mid');
-  if (delta != null) {
-    const cls = delta > 0 ? 'up' : delta < 0 ? 'down' : '';
-    mid.appendChild(el('span', `pred-box__delta ${cls}`, delta > 0 ? `+${delta}` : String(delta)));
+  const historyTeam = report.history?.teams?.find((team) => String(team.team_id) === String(teamId));
+  if (historyTeam?.positions?.length >= 2) {
+    const pre = historyTeam.positions[0];
+    const preRating = historyTeam.ratings?.[0];
+    const parts = [t('team.preSeason', { pos: ordinalShort(pre.indexOf(Math.max(...pre)) + 1) })];
+    if (preRating != null) parts.push(t('team.sinceStart', { n: signed(row.rating - preRating, 0) }));
+    box.appendChild(el('p', 'team-outlook__note', parts.join(' · ')));
   }
-  mid.appendChild(el('div', 'pred-box__arrow', '\u2192'));
-  box.appendChild(mid);
-  const to = el('div', 'pred-box__to');
-  to.appendChild(el('div', 'pred-box__sub', t('team.predCurrent')));
-  to.appendChild(el('div', 'pred-box__pos', ordinal(liveBest + 1)));
-  box.appendChild(to);
-  section.appendChild(box);
-  container.appendChild(section);
+  card.appendChild(box);
 }
+
+/* Like the season shape, a narrow container gets a viewBox of its own width:
+   the 940-wide desktop box read at a phone's ~0.35 scale left 4px text. The
+   narrow box ticks every 100 points and labels seasons as '16, skipping one
+   that would crowd the last. */
+let lastTeamChart = null;
 
 function drawTeamChart(career) {
   const chart = $('#team-chart');
   if (!chart) return;
   const points = career.points;
 
-  const width = 940;
-  const height = 260;
-  const pad = { top: 14, right: 16, bottom: 30, left: 46 };
+  const box = chart.getBoundingClientRect().width || 940;
+  const narrow = box < SHAPE_NARROW;
+  lastTeamChart = { career, chart, narrow };
+  const width = narrow ? Math.round(box) : 940;
+  const height = narrow ? 220 : 260;
+  const pad = narrow ? { top: 14, right: 8, bottom: 28, left: 36 } : { top: 14, right: 16, bottom: 30, left: 46 };
   const plotWidth = width - pad.left - pad.right;
   const plotHeight = height - pad.top - pad.bottom;
 
@@ -2796,6 +2916,7 @@ function drawTeamChart(career) {
   const y = (rating) => pad.top + (1 - (rating - low) / (high - low || 1)) * plotHeight;
 
   for (let value = low; value <= high; value += 50) {
+    if (narrow && value % 100) continue;
     chart.appendChild(
       svgEl('line', { class: 'grid-line', x1: pad.left, x2: width - pad.right, y1: y(value), y2: y(value) })
     );
@@ -2804,14 +2925,17 @@ function drawTeamChart(career) {
     chart.appendChild(label);
   }
 
+  let lastSeasonX = -Infinity;
   for (const record of career.seasons) {
     const start = Date.parse(`${record.season}-01-01T12:00:00Z`);
     if (start < first || start > times[times.length - 1]) continue;
     chart.appendChild(
       svgEl('line', { class: 'season-split', x1: x(start), x2: x(start), y1: pad.top, y2: pad.top + plotHeight })
     );
+    if (x(start) - lastSeasonX < (narrow ? 24 : 30)) continue;
+    lastSeasonX = x(start);
     const label = svgEl('text', { class: 'season-label', x: x(start) + 3, y: pad.top + 10 });
-    label.textContent = String(record.season);
+    label.textContent = narrow ? `’${String(record.season).slice(2)}` : String(record.season);
     chart.appendChild(label);
   }
 
@@ -2871,13 +2995,82 @@ function drawTeamChart(career) {
     t('chart.ratingMoved', { team: career.team, from: points[0][1], to: career.current_rating, seasons: career.seasons.length });
 }
 
+/* The team view's fixtures and results, one compact row each from the club's
+   side: date, home or away, the opponent, then the three-way odds as win /
+   draw / loss, or the result with its score the club's way round, the xG and
+   what it did to the rating. The league-wide cards, centred on both clubs,
+   repeated this club's own name and rating in every row. */
+function teamMatchRow(match, teamId, report, ratingChanges) {
+  const home = String(match.home_id) === String(teamId);
+  const row = el('div', 'team-match');
+  row.appendChild(el('span', 'team-match__date', formatDate(match.date)));
+  const venue = el('span', 'team-match__venue', t(home ? 'team.homeShort' : 'team.awayShort'));
+  venue.title = t(home ? 'team.home' : 'team.away');
+  row.appendChild(venue);
+  const opponent = sideBlock(home ? match.away : match.home, home ? match.away_id : match.home_id, true, 'team-match__name');
+  opponent.classList.add('team-match__opponent');
+  row.appendChild(opponent);
+
+  if (match.home_goals != null) {
+    const [scored, conceded] = home ? [match.home_goals, match.away_goals] : [match.away_goals, match.home_goals];
+    const letter = scored > conceded ? 'W' : scored < conceded ? 'L' : 'D';
+    const result = el('span', 'team-match__result');
+    result.appendChild(el('span', `form__chip form__chip--${letter.toLowerCase()}`, letter));
+    result.appendChild(el('span', 'team-match__score', `${scored}–${conceded}`));
+    if (match.xg) {
+      const [xgFor, xgAgainst] = home ? match.xg : [match.xg[1], match.xg[0]];
+      const xg = el('span', 'team-match__xg', `xG ${num(xgFor, 1)}–${num(xgAgainst, 1)}`);
+      xg.title = t('played.xgHint');
+      result.appendChild(xg);
+    }
+    const info = ratingChanges.get(`${teamId}|${match.date}`);
+    if (info) {
+      const delta = el('span', `team-match__delta${info.change > 0 ? ' up' : info.change < 0 ? ' down' : ''}`, signed(info.change));
+      delta.title = t('team.ratingAfter', { n: info.rating });
+      result.appendChild(delta);
+    }
+    row.appendChild(result);
+  } else {
+    const [win, loss] = home ? [match.home_win, match.away_win] : [match.away_win, match.home_win];
+    const odds = el('div', 'odds team-match__odds');
+    odds.setAttribute('role', 'img');
+    odds.setAttribute('aria-label', t('aria.teamOdds', { w: pct(win), d: pct(match.draw), l: pct(loss) }));
+    for (const [outcome, value, key] of [['home', win, 'team.oddsWin'], ['draw', match.draw, 'next.draw'], ['away', loss, 'team.oddsLoss']]) {
+      const segment = el('div', 'odds__seg');
+      segment.dataset.outcome = outcome;
+      segment.style.flex = `${Math.max(value, 0.001)}`;
+      segment.textContent = value >= 0.15 ? pct(value, 0) : '';
+      attachTip(segment, `<b>${t(key)}</b><br>${pct(value, 1)}`);
+      odds.appendChild(segment);
+    }
+    row.appendChild(odds);
+    const stake = (report.high_stakes || []).find((entry) =>
+      String(entry.match_id) === String(match.match_id) && String(entry.team_id) === String(teamId));
+    if (stake) opponent.appendChild(stakeDot(stake, report, report.table.length));
+  }
+  return row;
+}
+
+/* Win, draw and loss in the odds bars' colours, said once above the rows. */
+function teamOddsLegend() {
+  const legend = el('div', 'legend team-match__legend');
+  for (const [outcome, key] of [['home', 'team.oddsWin'], ['draw', 'next.draw'], ['away', 'team.oddsLoss']]) {
+    const entry = el('span', 'legend__key');
+    const swatch = el('span', 'legend__swatch');
+    swatch.style.background = `var(--${outcome})`;
+    entry.append(swatch, el('span', '', t(key)));
+    legend.appendChild(entry);
+  }
+  return legend;
+}
+
 function renderTeamFixtures(teamId, teamName, report, container) {
   const allFixtures = (report.fixtures || []).filter(
     (f) => String(f.home_id) === String(teamId) || String(f.away_id) === String(teamId)
   );
   if (!allFixtures.length) return;
 
-  const PAGE = 5;
+  const PAGE = 6;
   const totalPages = Math.ceil(allFixtures.length / PAGE);
   state.teamFixturesPage = Math.min(state.teamFixturesPage, totalPages - 1);
   const page = state.teamFixturesPage;
@@ -2886,13 +3079,13 @@ function renderTeamFixtures(teamId, teamName, report, container) {
   const section = el('div', 'team-section');
   const header = el('div', 'team-section__header');
   header.appendChild(el('div', 'label', t('team.upcomingFixtures', { n: allFixtures.length })));
+  header.appendChild(teamOddsLegend());
   section.appendChild(header);
+  const list = el('div', 'team-matches');
+  for (const fixture of fixtures) list.appendChild(teamMatchRow(fixture, teamId, report));
+  section.appendChild(list);
   if (totalPages > 1) {
     section.appendChild(paginator(page, totalPages, (p) => { state.teamFixturesPage = p; renderTeamView(report); }));
-  }
-
-  for (const fixture of fixtures) {
-    section.appendChild(buildFixtureCard(fixture, stakesForFixture(report.high_stakes, fixture.match_id), report));
   }
   container.appendChild(section);
 }
@@ -2906,7 +3099,7 @@ function renderTeamResults(teamId, teamName, report, container) {
   const ratingChanges = buildRatingChanges(state.careers);
   const sorted = [...allResults].sort((a, b) => b.date.localeCompare(a.date));
 
-  const PAGE = 5;
+  const PAGE = 8;
   const totalPages = Math.ceil(sorted.length / PAGE);
   state.teamResultsPage = Math.min(state.teamResultsPage, totalPages - 1);
   const page = state.teamResultsPage;
@@ -2916,11 +3109,12 @@ function renderTeamResults(teamId, teamName, report, container) {
   const header = el('div', 'team-section__header');
   header.appendChild(el('div', 'label', t('team.recentResults', { n: allResults.length })));
   section.appendChild(header);
+  const list = el('div', 'team-matches');
+  for (const match of matches) list.appendChild(teamMatchRow(match, teamId, report, ratingChanges));
+  section.appendChild(list);
   if (totalPages > 1) {
     section.appendChild(paginator(page, totalPages, (p) => { state.teamResultsPage = p; renderTeamView(report); }, true));
   }
-
-  for (const match of matches) section.appendChild(playedCard(match, ratingChanges));
   container.appendChild(section);
 }
 
@@ -2930,6 +3124,42 @@ function renderTeamResults(teamId, teamName, report, container) {
    crosses that width. */
 const SHAPE_NARROW = 640;
 let lastShape = null;
+
+/* Season-shape fills: each place in the colour of what it is worth -- the
+   band colours of the table's markers -- so the title, Europe and the drop
+   read as areas, where sixteen steps of one blue left 1st and 2nd alike.
+   Places sharing a band fade away from its best place (for the bottom bands,
+   towards the drop); play-offs are a paler version of the band beside them,
+   and mid-table is neutral, alternating so neighbours stay apart. */
+function shapeColor(position, bands, count) {
+  const band = bandFor(bands, position);
+  if (!band) return `color-mix(in srgb, var(--ink-faint) ${position % 2 ? 34 : 22}%, var(--panel))`;
+  const bottom = band.first > count / 2;
+  let step = 0;
+  for (let p = bottom ? band.last : band.first; p !== position; p += bottom ? -1 : 1) {
+    if (bandFor(bands, p) === band) step += 1;
+  }
+  const strength = band.tone === 'playoff' ? 55 : 100;
+  return `color-mix(in srgb, ${bandColor(band, count)} ${Math.max(35, strength - step * 22)}%, var(--panel))`;
+}
+
+/* What the season-shape colours mean, under the chart. */
+function shapeLegend(report) {
+  const legend = el('div', 'legend shape-legend');
+  const bands = report.league.bands;
+  const count = report.table.length;
+  for (const band of bands) {
+    const best = band.first > count / 2 ? band.last : band.first;
+    const position = [best, band.first, band.last].find((p) => bandFor(bands, p) === band);
+    if (position == null) continue;
+    const entry = el('span', 'legend__key');
+    const swatch = el('span', 'legend__swatch');
+    swatch.style.background = shapeColor(position, bands, count);
+    entry.append(swatch, el('span', '', bandName(band)));
+    legend.appendChild(entry);
+  }
+  return legend;
+}
 
 function drawTeamShape(report, team, chart, boxWidth) {
   const history = report.history;
@@ -2992,8 +3222,8 @@ function drawTeamShape(report, team, chart, boxWidth) {
     const band = svgEl('polygon', {
       class: 'band',
       points: [...upper, ...lower.reverse()].join(' '),
-      fill: positionColor(position, count),
     });
+    band.style.fill = shapeColor(position, report.league.bands, count);
 
     const bandLabel = bandFor(report.league.bands, position);
     band.setAttribute('role', 'img');
@@ -3022,75 +3252,6 @@ function drawTeamShape(report, team, chart, boxWidth) {
     svgEl('line', { class: 'axis-line', x1: pad.left, x2: width - pad.right, y1: y(1), y2: y(1) })
   );
 
-  // Threshold edges: every European band (CL/EL/ECL) + OBOS Promotion (tone 'top') + Relegation.
-  // Each edge is the band boundary: band.last for good, band.first-1 for bad.
-  // Lines that stay outside the visible frame (<0.1 or >0.9 prob) are dropped.
-  // European bands map to specific keys (cl/el/ecl) for per-league colours; OBOS Promotion uses 'good',
-  // Relegation uses 'bad'. Labels on the line use short i18n keys for European bands,
-  // full bandName for Promotion/Relegation (already short).
-  const edges = [];
-  const goodBands = report.league.bands.filter((b) => b.tone === 'europe' || b.tone === 'top');
-  const relegBand = report.league.bands.find((b) => b.tone === 'relegation');
-  for (const band of goodBands) {
-    const edge = band.last;
-    const values = cumulative.map((run) => run[edge]);
-    if (Math.max(...values) < 0.1 || Math.min(...values) > 0.9) continue;
-    const edgeY = (cum) => Math.min(Math.max(y(cum), pad.top + 6), pad.top + plotHeight - 6);
-    const labelY = Math.min(
-      Math.max(edgeY(values[0]) + 12, pad.top + 10),
-      pad.top + plotHeight - 4
-    );
-    // Map European band labels to edge keys for per-league colours
-    let key;
-    if (band.label === 'Champions League qualification') key = 'cl';
-    else if (band.label === 'Europa League qualification') key = 'el';
-    else if (band.label === 'Conference League qualification') key = 'ecl';
-    else key = 'good'; // OBOS Promotion
-    edges.push({
-      key,
-      points: cumulative.map((run, index) => `${x(index)},${edgeY(run[edge])}`),
-      label: bandEdgeName(band),
-      labelY,
-    });
-  }
-  if (relegBand) {
-    const edge = relegBand.first - 1;
-    const values = cumulative.map((run) => run[edge]);
-    if (!(Math.max(...values) < 0.1 || Math.min(...values) > 0.9)) {
-      const edgeY = (cum) => Math.min(Math.max(y(cum), pad.top + 6), pad.top + plotHeight - 6);
-      edges.push({
-        key: 'bad',
-        points: cumulative.map((run, index) => `${x(index)},${edgeY(run[edge])}`),
-        label: bandName(relegBand),
-        labelY: Math.min(
-          Math.max(edgeY(values[0]) - 5, pad.top + 10),
-          pad.top + plotHeight - 4
-        ),
-      });
-    }
-  }
-  // Simple label collision avoidance for good edges: stack with 10px min gap,
-  // CL (usually highest) on top, then EL, then ECL, then Promotion.
-  const goodEdges = edges.filter((e) => e.key !== 'bad').sort((a, b) => a.labelY - b.labelY);
-  let lastY = -Infinity;
-  for (const e of goodEdges) {
-    if (lastY !== -Infinity && e.labelY - lastY < 10) e.labelY = lastY + 10;
-    lastY = e.labelY;
-  }
-  // Halos first: each line knocks out the frame, the gridlines and the blue
-  // cells underneath (paper is what the chart sits on), so the colour shows.
-  for (const e of edges) chart.appendChild(svgEl('polyline', { class: 'band-edge-halo', points: e.points.join(' ') }));
-  for (const e of edges) {
-    chart.appendChild(svgEl('polyline', { class: `band-edge band-edge--${e.key}`, points: e.points.join(' ') }));
-    const tag = svgEl('text', {
-      class: `band-edge-label band-edge-label--${e.key}`,
-      x: pad.left + 4,
-      y: e.labelY,
-    });
-    tag.textContent = e.label;
-    chart.appendChild(tag);
-  }
-
   // Position numbers inside the bands, at each band's thickest snapshot, so
   // the reader can name a band without a boundary line drawn across it. Bands
   // too thin to hold the text are left to the tooltip. Ink flips with the ramp
@@ -3104,13 +3265,12 @@ function drawTeamShape(report, team, chart, boxWidth) {
       if (probability > best) { best = probability; bestAt = index; }
     }
     if (best * plotHeight < MIN_BAND_LABEL) continue;
-    const step = Math.round(((count - position) / (count - 1)) * (SEQ_STEPS - 1)) + 1;
     const centre = cumulative[bestAt][position] - best / 2;
     // A band that peaks on the first or last snapshot would otherwise centre
     // its numeral half off the plot; hold it a little inside the edge.
     const NUMERAL_EDGE = 14;
     const label = svgEl('text', {
-      class: `band-pos${step >= 5 ? ' band-pos--invert' : ''}`,
+      class: 'band-pos',
       x: Math.min(Math.max(x(bestAt), pad.left + NUMERAL_EDGE), pad.left + plotWidth - NUMERAL_EDGE),
       y: y(centre),
       'text-anchor': 'middle',
@@ -3132,6 +3292,8 @@ function drawTeamShape(report, team, chart, boxWidth) {
   // Snapshots as timestamps for interpolation
   const snapTimes = history.dates.map((iso) => Date.parse(`${iso}T12:00:00Z`));
 
+  const MONTH_GAP = narrow ? 26 : 30;
+  let lastMonthX = -Infinity;
   for (let m = 0; m < totalMonths; m += 1) {
     const monthIdx = (firstMonthIdx + m) % 12;
     const year = firstMonthYear + Math.floor((firstMonthIdx + m) / 12);
@@ -3152,6 +3314,8 @@ function drawTeamShape(report, team, chart, boxWidth) {
     const fraction = beforeTime === afterTime ? 0
       : Math.max(0, Math.min(1, (firstOfMonth - beforeTime) / (afterTime - beforeTime)));
     const xPos = x(beforeIdx) + fraction * (x(afterIdx) - x(beforeIdx));
+    if (xPos - lastMonthX < MONTH_GAP) continue;
+    lastMonthX = xPos;
 
     const label = svgEl('text', { class: 'tick', x: xPos, y: height - pad.bottom + 12, 'text-anchor': 'middle' });
     label.textContent = monthName;
@@ -3390,7 +3554,6 @@ function showSkeleton(view) {
   const scroller = panel.querySelector('.scroller');
   const legend = panel.querySelector('.legend');
   const fixtures = panel.querySelector('.fixtures');
-  const playedResults = panel.querySelector('.played-results');
   const compareOutput = panel.querySelector('#compare-output');
   const modelGrid = panel.querySelector('.model-grid');
   const caveats = panel.querySelector('.caveats');
@@ -3436,20 +3599,12 @@ function showSkeleton(view) {
         ladderTrack.appendChild(div);
       }
     }
-  } else if (view === 'next-up') {
+  } else if (view === 'matches') {
     if (fixtures) {
       for (let i = 0; i < 5; i++) {
         const div = document.createElement('div');
         div.className = 'skeleton skeleton-fixture';
         fixtures.appendChild(div);
-      }
-    }
-  } else if (view === 'played') {
-    if (playedResults) {
-      for (let i = 0; i < 6; i++) {
-        const div = document.createElement('div');
-        div.className = 'skeleton skeleton-played-card';
-        playedResults.appendChild(div);
       }
     }
   }
@@ -3466,6 +3621,9 @@ function clearSkeleton(view) {
 
 function render() {
   const report = state.reports[state.league];
+  // A readout raised on the old view would float over the new one: a tap on
+  // a club name both raises the stake readout and opens the club.
+  hideTooltip();
 
   // Always render these (they're either always visible or quick)
   renderSeasonOptions(report);
@@ -3479,9 +3637,11 @@ function render() {
   }
 
   // Hide the rewind timeline on views where it isn't relevant
-  const noRewind = new Set(['next-up', 'compare', 'played', 'model', 'team']);
+  const noRewind = new Set(['matches', 'compare', 'model', 'team']);
   const timelineSection = document.querySelector('.timeline-section');
   if (timelineSection) timelineSection.hidden = noRewind.has(state.activeView);
+  // Lets the stylesheet slim the league hero down in a club's view.
+  document.body.dataset.view = state.activeView;
 
   // Team view requires a selected team; fall back to table if none
   if (state.activeView === 'team' && !state.teamFocusId) {
@@ -3512,18 +3672,14 @@ function render() {
         $('#ladder-anim-play').hidden = days.length < 2;
       }
       break;
-    case 'next-up':
-      if (state._prevActiveView !== 'next-up') state.fixturesWeek = 0;
-      renderFixtures(report);
-      renderOddsLegend();
+    case 'matches':
+      if (state._prevActiveView !== 'matches') state.matchesWeek = null;
+      renderMatches(report);
+      renderOddsLegend(report);
       break;
     case 'compare':
       populateCompare(report);
       renderCompare(report);
-      break;
-    case 'played':
-      if (state._prevActiveView !== 'played') state.playedWeek = 0;
-      renderPlayedResults(report);
       break;
     case 'team':
       renderTeamView(report);
@@ -3833,8 +3989,10 @@ function closeSheet() {
 /* ?view=grid makes any view linkable. Applied early so the first render
    shows the requested view instead of the default table. */
 function applyViewParameter() {
-  const view = new URLSearchParams(window.location.search).get('view');
-  const validViews = new Set(['table', 'grid', 'ladder', 'next-up', 'compare', 'played', 'team', 'model']);
+  const asked = new URLSearchParams(window.location.search).get('view');
+  // Next Up and Played Results were merged into Matches; old links still land.
+  const view = asked === 'next-up' || asked === 'played' ? 'matches' : asked;
+  const validViews = new Set(['table', 'grid', 'ladder', 'matches', 'compare', 'team', 'model']);
   if (view && validViews.has(view)) {
     state.activeView = view;
     markActiveView();
@@ -4307,7 +4465,7 @@ function renderCompare(report) {
     h2hBlock.appendChild(goalsBlock);
     const PAGE_SIZE = 5;
     const totalPages = Math.ceil(h2h.length / PAGE_SIZE);
-    // The shared page control sits above the list, as on Played Results;
+    // The shared page control sits above the list, as on Matches;
     // meetings run newest first, so Prev goes back in time.
     const navSlot = el('div');
     const list = el('div', 'compare__h2h-list');
@@ -4744,8 +4902,6 @@ function addTouchRipple() {
     '.settings-btn',
     '.popover-menu__btn',
     '.compare__option',
-    '.pred-box__from',
-    '.pred-box__to',
     '.team-grid-row__cell-wrap',
   ];
 
@@ -4821,6 +4977,10 @@ window.addEventListener('resize', () => {
   // a resize crosses the narrow/desktop split, and not on every pixel.
   clearTimeout(shapeResizeTimer);
   shapeResizeTimer = setTimeout(() => {
+    if (lastTeamChart?.chart.isConnected) {
+      const width = lastTeamChart.chart.getBoundingClientRect().width;
+      if (width && (width < SHAPE_NARROW) !== lastTeamChart.narrow) drawTeamChart(lastTeamChart.career);
+    }
     if (!lastShape || !lastShape.chart.isConnected) return;
     const box = lastShape.chart.getBoundingClientRect().width;
     if (!box) return;

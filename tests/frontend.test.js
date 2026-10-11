@@ -207,7 +207,7 @@ test('an empty range has no index, so the slider stays hidden', () => {
 globalThis.localStorage = globalThis.localStorage || { getItem: () => 'en', setItem: () => {} };
 globalThis.document = globalThis.document || { querySelectorAll: () => [], getElementById: () => null, documentElement: {} };
 const i18nSrc = fs.readFileSync(`${__dirname}/../public/i18n.js`, 'utf8');
-eval(i18nSrc + pick('bandName') + pick('stakePct') + pick('teamStakes') + pick('stakesForFixture') + pick('stakeLegs') + pick('stakeCopy'));
+eval(i18nSrc + pick('bandName') + pick('bandEdgeName') + pick('stakePct') + pick('teamStakes') + pick('nextStake') + pick('stakesForFixture') + pick('stakeLegs') + pick('stakeCopy'));
 
 const NBSP = String.fromCharCode(160);
 const titleStake = {
@@ -236,30 +236,26 @@ test('stake chances print honestly in both languages, small and large', () => {
   assert.equal(stakePct(NaN, 'en'), '—');
 });
 
-test('title copy is win-oriented and names the consequence', () => {
+test('title copy is win-oriented: the race, its chance now, then each result', () => {
   setLang('en');
   const copy = stakeCopy(titleStake, 'en');
-  assert.ok(copy.main.includes('Win vs Brann'));
-  assert.ok(copy.main.includes('92.0%'));
-  assert.ok(!copy.main.includes('Lose'));
-  assert.ok(copy.sub.includes('falls to 31.0%'));
+  assert.equal(copy.main, 'Title 60.0% → 92.0% with a win vs Brann');
+  assert.equal(copy.sub, '31.0% with a loss');
 });
 
 test('relegation copy is loss-oriented, never win-oriented', () => {
   setLang('en');
   const copy = stakeCopy(relegationStake, 'en');
-  assert.ok(copy.main.includes('Lose vs Bryne'));
-  assert.ok(copy.main.includes('78.0%'));
-  assert.ok(!copy.main.includes('Win'));
-  assert.ok(copy.sub.includes('Win and it falls to 22.0%'));
+  assert.equal(copy.main, 'Relegation 50.0% → 78.0% with a loss vs Bryne');
+  assert.equal(copy.sub, '22.0% with a win');
   setLang('no');
   const no = stakeCopy(relegationStake, 'no');
-  assert.ok(no.main.includes('Tap mot Bryne'));
-  assert.ok(!no.main.includes('Seier'));
-  assert.ok(no.sub.includes('Med seier faller den til'));
+  assert.ok(no.main.startsWith('Nedrykk'));
+  assert.ok(no.main.endsWith('med tap mot Bryne'));
+  assert.ok(no.sub.endsWith('med seier'));
   const noTitle = stakeCopy(titleStake, 'no');
-  assert.ok(noTitle.main.includes('Seier mot Brann'));
-  assert.ok(!noTitle.main.includes('Tap'));
+  assert.ok(noTitle.main.startsWith('Tittel'));
+  assert.ok(noTitle.main.endsWith('med seier mot Brann'));
   setLang('en');
 });
 
@@ -301,8 +297,33 @@ test('legs resolve to the pairing oldest-first, or nothing when unknown', () => 
   assert.deepEqual(stakeLegs({ ...titleStake, leg_match_ids: undefined }, fixtures), []);
 });
 
+test('the next-match stake is found per club and degrades without the key', () => {
+  const report = { next_stakes: [titleStake, relegationStake] };
+  assert.equal(nextStake(report, '3'), relegationStake);
+  assert.equal(nextStake(report, '9'), null);
+  // Reports built before next_stakes existed have none to show.
+  assert.equal(nextStake({ high_stakes: [titleStake] }, '1'), null);
+  assert.equal(nextStake(null, '1'), null);
+});
+
+/* --- rating trend: total over the last five matches, five degrees. */
+eval(pick('trendDegree'));
+
+test('rating trend: steady within ±8 over five matches, fast beyond ±20', () => {
+  const cuts = { mild: 8, strong: 20 };
+  const key = (v) => trendDegree(v, cuts).key;
+  assert.equal(key(8), 'steady');
+  assert.equal(key(-8), 'steady');
+  assert.equal(key(9), 'rise');
+  assert.equal(key(20), 'rise');
+  assert.equal(key(21), 'strongRise');
+  assert.equal(key(-21), 'strongFall');
+  assert.equal(trendDegree(-12, cuts).direction, 'fall');
+  assert.equal(trendDegree(30, cuts).direction, 'strong-rise');
+});
+
 test('every stake string exists in both languages', () => {
-  const keys = ['stake.title', 'stake.win.main', 'stake.win.sub', 'stake.lose.main', 'stake.lose.sub', 'stake.legs', 'stake.badge', 'model.how5'];
+  const keys = ['stake.title', 'stake.win.main', 'stake.win.sub', 'stake.lose.main', 'stake.lose.sub', 'stake.legs', 'stake.badge', 'stake.next', 'next.decisive', 'team.outlook', 'team.likeliest', 'team.xPts', 'team.preSeason', 'team.sinceStart', 'team.xgForm', 'team.now', 'trend.tipTotal', 'page.older', 'page.newer', 'page.earlier', 'page.later', 'model.how5'];
   for (const key of keys) {
     setLang('en');
     const en = t(key);

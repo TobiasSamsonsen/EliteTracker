@@ -23,7 +23,7 @@ from typing import Callable, Iterator
 
 from elitetracker.model.elo import EloConfig, era_config, updated_pair
 from elitetracker.model.initial_ratings import TeamRating, rating_for_unseeded_team
-from elitetracker.model.table import ranking_key, table_from_matches
+from elitetracker.model.table import table_from_matches
 from elitetracker.normalize.matches import Match
 
 
@@ -211,7 +211,7 @@ def build_careers(
                 careers[team_id].points.append((match.date, round(ratings[team_id], 1)))
 
         for slice_ in in_season:
-            for position, row in enumerate(sorted(table_from_matches(slice_.matches), key=ranking_key), 1):
+            for position, row in enumerate(table_from_matches(slice_.matches), 1):
                 careers[row.team_id].seasons.append(
                     SeasonRecord(
                         season=slice_.season,

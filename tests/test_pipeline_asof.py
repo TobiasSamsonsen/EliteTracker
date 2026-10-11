@@ -6,7 +6,10 @@ import pytest
 
 from elitetracker.normalize.matches import Match, dump
 from elitetracker import pipeline
-from elitetracker.pipeline import LEAGUE_SPECS, _matchdays, bands_for, build_all_careers, build_report
+from elitetracker.pipeline import (
+    LEAGUE_SPECS, UEFA_RANKS_FILE, _europe_by_rank, _matchdays, bands_for, build_all_careers,
+    build_report, uefa_ranks,
+)
 from elitetracker.simulation.history import HistoryConfig
 from elitetracker.simulation.season import SimulationConfig
 
@@ -267,12 +270,13 @@ class TestFixtureScorelines:
 
 class TestBands:
     def test_eliteserien_bands_per_season(self):
-        """Pins the per-season European allocation as it was hand-written."""
+        """Pins the per-season European places, checked against each final
+        table: league places only, never a cup spot passed down."""
         cl, el, conf = ("Champions League qualification", "Europa League qualification",
                         "Conference League qualification")
         europe = {
-            2015: [(cl, 1, 1), (el, 2, 3)], 2016: [(cl, 1, 1), (el, 2, 4)],
-            2017: [(cl, 1, 1), (el, 2, 3)], 2018: [(cl, 1, 1), (el, 2, 4)],
+            2015: [(cl, 1, 1), (el, 2, 3)], 2016: [(cl, 1, 1), (el, 2, 3)],
+            2017: [(cl, 1, 1), (el, 2, 3)], 2018: [(cl, 1, 1), (el, 2, 3)],
             2019: [(cl, 1, 1), (el, 2, 3)], 2020: [(cl, 1, 1), (conf, 2, 4)],
             2021: [(cl, 1, 1), (conf, 2, 3)], 2022: [(cl, 1, 1), (conf, 2, 3)],
             2023: [(cl, 1, 1), (conf, 2, 3)], 2024: [(cl, 1, 2), (conf, 3, 4)],
@@ -288,3 +292,29 @@ class TestBands:
         assert bands_for(spec, 2030) == bands_for(spec, 2026)
         assert [b.label for b in bands_for(LEAGUE_SPECS["obosligaen"], 2020)] == [
             "Champions", "Promotion", "Promotion play-off", "Relegation play-off", "Relegation"]
+
+    def test_the_access_list_rule_by_rank(self):
+        """Rank boundaries of the access list in force since 2024-25."""
+        cl, el, conf = ("Champions League qualification", "Europa League qualification",
+                        "Conference League qualification")
+        assert _europe_by_rank(12) == ((cl, 1, 2), (el, 3, 3), (conf, 4, 4))
+        assert _europe_by_rank(13) == _europe_by_rank(15) == ((cl, 1, 2), (conf, 3, 4))
+        assert _europe_by_rank(16) == _europe_by_rank(50) == ((cl, 1, 1), (conf, 2, 3))
+        for rank in (6, 51):
+            with pytest.raises(ValueError):
+                _europe_by_rank(rank)
+
+    def test_a_ranks_file_extends_and_overrides_the_built_in_ranks(self, tmp_path):
+        """The refresh writes new seasons' ranks to a file; a season with no
+        rank yet takes the newest one known."""
+        spec = LEAGUE_SPECS["eliteserien"]
+        (tmp_path / UEFA_RANKS_FILE).write_text('{"2026": 20, "2027": 9}', encoding="utf-8")
+        assert uefa_ranks(tmp_path)[2025] == 11  # built in
+        europe = lambda season: [(b.label, b.first, b.last) for b in bands_for(spec, season, tmp_path)
+                                 if b.tone in ("top", "europe")]
+        assert europe(2026) == [("Champions League qualification", 1, 1),
+                                ("Conference League qualification", 2, 3)]
+        assert europe(2027) == [("Champions League qualification", 1, 2),
+                                ("Europa League qualification", 3, 3),
+                                ("Conference League qualification", 4, 4)]
+        assert europe(2028) == europe(2027)

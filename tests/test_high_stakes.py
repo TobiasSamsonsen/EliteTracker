@@ -15,7 +15,7 @@ import pytest
 from elitetracker.model.table import table_from_matches
 from elitetracker.normalize.matches import Match
 from elitetracker.pipeline import (
-    Band, _compute_high_stakes, build_all_careers, build_report,
+    RUN_IN_ROUNDS, Band, _compute_high_stakes, _next_stakes, build_all_careers, build_report,
 )
 from elitetracker.simulation.history import HistoryConfig
 from elitetracker.simulation.season import SimulationConfig, simulate_season
@@ -200,6 +200,76 @@ class TestFilters:
         ) == []
 
 
+# A full swing for A: certain top on a win, certain second on a loss.
+DECIDER = tallies({
+    0: {0: [1000, 0], 1: [0, 1000]},
+    1: {0: [500, 500], 1: [500, 500]},
+    2: {0: [0, 1000], 1: [1000, 0]},
+})
+
+
+class TestRunIn:
+    def test_badges_wait_for_the_run_in(self):
+        """Before the last RUN_IN_ROUNDS rounds no fixture is knowably
+        decisive, so none is badged however big its swing. A
+        two-club league plays one match a round."""
+        clubs = ["A", "B"]
+        unconditional = {"A": [0.5, 0.5], "B": [0.5, 0.5]}
+        config = SimulationConfig(simulations=3000)
+
+        def stakes(rounds):
+            fixtures = [match(f"f{i}", "A", "B", day=i + 1) for i in range(rounds)]
+            return _compute_high_stakes([DECIDER] * rounds, clubs, fixtures, unconditional, TITLE, config)
+
+        assert stakes(RUN_IN_ROUNDS)
+        assert stakes(RUN_IN_ROUNDS + 1) == []
+
+
+class TestNextStakes:
+    def test_the_next_fixture_is_named_all_season(self):
+        """The line names the club's next fixture by date, not its
+        biggest one, and holds before the run-in too. A club whose
+        next result moves nothing gets no line."""
+        # A's next match only nudges the title; every later one is a
+        # decider. B's counts in the next match are flat.
+        nudge = tallies({
+            0: {0: [750, 250], 1: [500, 500]},
+            1: {0: [500, 500], 1: [500, 500]},
+            2: {0: [500, 500], 1: [500, 500]},
+        })
+        rounds = RUN_IN_ROUNDS + 1
+        # The next fixture is listed last: order comes from the date.
+        fixtures = [match(f"f{i}", "A", "B", day=i + 2) for i in range(rounds - 1)]
+        fixtures.append(match("next", "A", "B", day=1))
+        conditionals = [DECIDER] * (rounds - 1) + [nudge]
+        args = (conditionals, ["A", "B"], fixtures, {"A": [0.5, 0.5], "B": [0.5, 0.5]},
+                TITLE, SimulationConfig(simulations=3000))
+        assert _compute_high_stakes(*args) == []
+        entries = _next_stakes(*args)
+        assert [e["team_id"] for e in entries] == ["A"]
+        assert entries[0]["match_id"] == "next"
+        assert entries[0]["leg_match_ids"] == ["next"]
+        assert entries[0]["swing"] == 0.25
+
+    def test_the_band_with_most_at_stake_is_named(self):
+        """A club riding on two bands gets the one its next result
+        moves most: here the drop, not the title."""
+        # Three clubs, three places: A wins and is never bottom,
+        # loses and is bottom half the time; the title barely moves.
+        fixture = tallies({
+            0: {0: [600, 400, 0]},
+            2: {0: [500, 0, 500]},
+        }, clubs=3, positions=3)
+        bands = (Band("Champions", 1, 1, "champion"), Band("Relegation", 3, 3, "relegation"))
+        entries = _next_stakes(
+            [fixture], ["A", "B", "C"], [match("f0", "A", "B")],
+            {"A": [0.5, 0.2, 0.3]}, bands, SimulationConfig(simulations=3000),
+        )
+        assert [(e["team_id"], e["band_tone"]) for e in entries] == [("A", "relegation")]
+        assert entries[0]["p_favourable"] == 0.5
+        assert entries[0]["p_unfavourable"] == 0.0
+
+
 class TestSimulation:
     def test_the_three_outcome_branches_sum_to_the_run_count(self):
         """The tally invariant: for any fixture and either club in
@@ -334,6 +404,20 @@ class TestReport:
             own = [e for e in entries if e["team_id"] == row["team_id"]]
             assert row["high_stakes_match_ids"] == [e["match_id"] for e in own]
 
+    def test_the_report_carries_each_clubs_next_stake(self, tiny_league):
+        careers = build_all_careers(tiny_league)
+        report = build_report(
+            "eliteserien", 2016, root=tiny_league, careers=careers,
+            simulation=SimulationConfig(simulations=2000, seed=4),
+            history=HistoryConfig(simulations=60, max_snapshots=4),
+        )
+        # The decider is both clubs' next match, and it settles the title.
+        entries = {e["team_id"]: e for e in report["next_stakes"]}
+        assert set(entries) == {"A", "B"}
+        for entry in entries.values():
+            assert entry["match_id"] == "e20163"
+            assert entry["band_tone"] == "champion"
+
     def test_a_finished_season_has_no_stakes(self, tiny_league):
         careers = build_all_careers(tiny_league)
         report = build_report(
@@ -343,6 +427,7 @@ class TestReport:
         )
         assert report["model"]["matches_remaining"] == 0
         assert report["high_stakes"] == []
+        assert report["next_stakes"] == []
         for row in report["table"]:
             assert row["high_stakes_match_ids"] == []
 

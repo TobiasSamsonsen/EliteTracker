@@ -32,7 +32,7 @@ from dataclasses import dataclass
 from elitetracker.model.attack_defence import AttackDefence, blend_outcomes, conditional_scorelines, gap_blend_weight
 from elitetracker.model.elo import EloConfig, effective_home_advantage, _RATING_SCALE
 from elitetracker.model.probabilities import AWAY_WIN, DRAW, HOME_WIN, match_probabilities
-from elitetracker.model.table import TableRow, ranking_key, table_from_matches
+from elitetracker.model.table import TableRow, table_from_matches
 from elitetracker.normalize.matches import Match
 from elitetracker.normalize.standings import POINTS_FOR_DRAW, POINTS_FOR_WIN
 

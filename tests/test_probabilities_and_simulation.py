@@ -150,6 +150,18 @@ class TestLiveTable:
         )
         assert [row.team for row in rows][:2] == ["B", "A"]
 
+    def test_level_clubs_are_separated_head_to_head(self):
+        """A and Z finish level on points, goal difference and goals scored;
+        Z won their meeting, so Z ranks first though A sorts first by name."""
+        rows = table_from_matches(
+            [
+                match(1, "Z", "A", score=(2, 1)),
+                match(2, "A", "C", day=2, score=(2, 1)),
+                match(3, "D", "Z", day=3, score=(2, 1)),
+            ]
+        )
+        assert [row.team for row in rows][:3] == ["D", "Z", "A"]
+
     def test_teams_with_no_played_matches_still_appear(self):
         rows = table_from_matches([match(1, "A", "B")])
         assert {row.team for row in rows} == {"A", "B"}

@@ -127,7 +127,11 @@ from dataclasses import dataclass
 #     (`simulation.season.STRENGTH_SD` 0.15), so finishing odds carry the
 #     uncertainty of the ratings.
 # See PROJECT_STATUS.md, "elo-v12.0".
-MODEL_VERSION = "elo-v12.0"
+#
+# elo-v12.1: clubs level on points, goal difference and goals scored are
+# separated head-to-head (`model.table`), as the league does. Ratings and match
+# odds are unchanged; the simulation's last tiebreak follows the live table.
+MODEL_VERSION = "elo-v12.1"
 
 # A 400-point rating gap means the stronger side is expected to score 10 times
 # as often as the weaker one; this is the constant that defines the ELO scale.

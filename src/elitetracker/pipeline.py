@@ -66,24 +66,63 @@ _BOTTOM = (Band("Relegation play-off", 14, 14, "playoff"), Band("Relegation", 15
 _CL = "Champions League qualification"
 _EL = "Europa League qualification"
 _CONF = "Conference League qualification"
+# Seasons that fed older access lists, written out by hand and checked against
+# each season's final table. 2016 and 2018 were Rosenborg doubles, so 4th
+# reached Europe only through the cup spot passing down -- left out, like 2015
+# and 2021. 2020 had no cup, so its 4th was a league place outright.
 _ELITESERIEN_EUROPE: dict[int, tuple[tuple[str, int, int], ...]] = {
     2015: ((_CL, 1, 1), (_EL, 2, 3)),
-    2016: ((_CL, 1, 1), (_EL, 2, 4)),
+    2016: ((_CL, 1, 1), (_EL, 2, 3)),
     2017: ((_CL, 1, 1), (_EL, 2, 3)),
-    2018: ((_CL, 1, 1), (_EL, 2, 4)),
+    2018: ((_CL, 1, 1), (_EL, 2, 3)),
     2019: ((_CL, 1, 1), (_EL, 2, 3)),
     2020: ((_CL, 1, 1), (_CONF, 2, 4)),
     2021: ((_CL, 1, 1), (_CONF, 2, 3)),
     2022: ((_CL, 1, 1), (_CONF, 2, 3)),
-    2023: ((_CL, 1, 1), (_CONF, 2, 3)),
-    2024: ((_CL, 1, 2), (_CONF, 3, 4)),
-    2025: ((_CL, 1, 2), (_EL, 3, 3), (_CONF, 4, 4)),
-    2026: ((_CL, 1, 2), (_CONF, 3, 4)),
 }
 
+# From 2023 on (the 2024-25 access list) the places follow from Norway's UEFA
+# association rank alone: the ranking at the end of the European season that
+# finishes in the same year (Eliteserien 2026 -> June 2026 -> 2027-28). It is
+# provisional until then. These are UEFA's final ranks; `refresh` fetches the
+# current season's into uefa_ranks.json beside the match files, which wins.
+_UEFA_RANKS = {2023: 16, 2024: 14, 2025: 11, 2026: 14}
+UEFA_RANKS_FILE = "uefa_ranks.json"
 
-def _eliteserien_bands(season: int) -> tuple[Band, ...]:
-    europe = _ELITESERIEN_EUROPE.get(season, _ELITESERIEN_EUROPE[max(_ELITESERIEN_EUROPE)])
+
+def _europe_by_rank(rank: int) -> tuple[tuple[str, int, int], ...]:
+    """The league places a UEFA association rank leads into Europe.
+
+    Access list in force since 2024-25: champions and runners-up of ranks
+    7-15 enter the Champions League, third-placed teams of 7-12 the Europa
+    League, fourth-placed of 7-15 and third-placed of 13-50 the Conference
+    League, as do runners-up from 16 down. Ranks outside 7-50 are out of
+    Norway's reach and not modelled. Revisit when UEFA changes the list.
+    """
+    if 7 <= rank <= 12:
+        return ((_CL, 1, 2), (_EL, 3, 3), (_CONF, 4, 4))
+    if 13 <= rank <= 15:
+        return ((_CL, 1, 2), (_CONF, 3, 4))
+    if 16 <= rank <= 50:
+        return ((_CL, 1, 1), (_CONF, 2, 3))
+    raise ValueError(f"no access-list rule for UEFA association rank {rank}")
+
+
+def uefa_ranks(root: Path = NORMALIZED_DIR) -> dict[int, int]:
+    """Norway's rank per league season: the built-in table, then the file."""
+    ranks = dict(_UEFA_RANKS)
+    path = Path(root) / UEFA_RANKS_FILE
+    if path.exists():
+        ranks.update({int(season): int(rank) for season, rank in json.loads(path.read_text(encoding="utf-8")).items()})
+    return ranks
+
+
+def _eliteserien_bands(season: int, ranks: dict[int, int] = _UEFA_RANKS) -> tuple[Band, ...]:
+    if season in _ELITESERIEN_EUROPE:
+        europe = _ELITESERIEN_EUROPE[season]
+    else:
+        # A season UEFA has not ranked yet takes the newest rank known.
+        europe = _europe_by_rank(ranks.get(season, ranks[max(ranks)]))
     return (
         _CHAMPIONS,
         *(Band(label, first, last, "top" if label == _CL else "europe") for label, first, last in europe),
@@ -95,7 +134,7 @@ LEAGUE_SPECS: dict[str, LeagueSpec] = {
     "eliteserien": LeagueSpec(
         slug="eliteserien",
         name="Eliteserien",
-        bands=_eliteserien_bands(max(_ELITESERIEN_EUROPE)),
+        bands=_eliteserien_bands(max(_UEFA_RANKS)),
     ),
     "obosligaen": LeagueSpec(
         slug="obosligaen",
@@ -112,14 +151,14 @@ LEAGUE_SPECS: dict[str, LeagueSpec] = {
 _MATCH_FILE = re.compile(r"^(?P<league>[a-z]+)_(?P<season>\d{4})_matches\.json$")
 
 
-def bands_for(spec: LeagueSpec, season: int) -> tuple[Band, ...]:
+def bands_for(spec: LeagueSpec, season: int, root: Path = NORMALIZED_DIR) -> tuple[Band, ...]:
     """The position blocks that applied to `spec` in `season`.
 
     OBOS-ligaen's promotion structure has been constant, so it reuses its
-    static spec bands. Eliteserien's European allocation drifts year to year;
-    unknown future seasons fall back to the newest known layout.
+    static spec bands. Eliteserien's European allocation drifts year to year
+    with Norway's UEFA rank; a season not yet ranked takes the newest rank.
     """
-    return _eliteserien_bands(season) if spec.slug == "eliteserien" else spec.bands
+    return _eliteserien_bands(season, uefa_ranks(root)) if spec.slug == "eliteserien" else spec.bands
 
 
 def _matches_path(slug: str, season: int, root: Path) -> Path:
@@ -272,16 +311,17 @@ def build_report(
     projection = simulate_season(
         matches, ratings, ad=ad, config=simulation, elo_config=elo_config
     )
-    high_stakes = _compute_high_stakes(
+    stakes_inputs = (
         projection.conditionals,
         # The conditionals' club axis is the live table's order,
         # which is the order simulate_season works in.
         [row.team_id for row in table_from_matches(matches)],
         [game for game in matches if not game.played],
         {team.team_id: team.position_probabilities for team in projection.teams},
-        bands_for(spec, season),
+        bands_for(spec, season, root),
         simulation,
     )
+    high_stakes = _compute_high_stakes(*stakes_inputs)
 
     return {
         "league": {
@@ -294,7 +334,7 @@ def build_report(
             "asof": asof,
             "bands": [
                 {"label": band.label, "first": band.first, "last": band.last, "tone": band.tone}
-                for band in bands_for(spec, season)
+                for band in bands_for(spec, season, root)
             ],
         },
         # The card shows the config this season is actually rated with, which
@@ -343,6 +383,7 @@ def build_report(
         "fixtures": _fixtures_payload(matches, ratings, elo_config, ad),
         "results": _results_payload(matches, pre_match, era),
         "high_stakes": high_stakes,
+        "next_stakes": _next_stakes(*stakes_inputs),
         "history": _history_payload(
             build_history(matches, all_matches, seeds, prior=prior, elo_config=elo_config,
                           config=history, shots=shot_table()),
@@ -356,7 +397,15 @@ def build_report(
 # between winning and losing the match must clear this bar to be
 # worth a badge.
 MIN_BAND_P = 0.10
-MIN_SWING = 0.30
+MIN_SWING = 0.25
+# Badges are a run-in feature. Backtested over 2015-2025 (490 rewound
+# snapshots), a swing told nothing about which fixture would end up
+# deciding a band until about ten rounds were left: before that, the
+# badged fixtures were decisive no more often than any other.
+RUN_IN_ROUNDS = 10
+# The team view's next-match line is left off below this swing: a
+# line saying the chance is 99% either way says nothing.
+MIN_NEXT_SWING = 0.05
 # A branch thinner than this is Monte Carlo noise rather than a
 # probability, so the fixture is left off instead of divided into.
 # The floor scales with the run count because noise falls as
@@ -364,28 +413,26 @@ MIN_SWING = 0.30
 MIN_BRANCH = 500
 
 
-def _compute_high_stakes(
+def _contender_legs(
     conditionals: list[list[list[list[int]]]] | None,
     clubs: list[str],
     fixtures: list[Match],
     unconditional: dict[str, list[float]],
     bands: tuple[Band, ...],
     config: SimulationConfig | None = None,
-) -> list[dict[str, Any]]:
-    """The remaining fixtures that swing a contender's band chance most.
+):
+    """Per contender and band, its swing on every fixture it has left.
 
     `conditionals` is `SeasonProjection.conditionals`: per unplayed
     fixture (in `fixtures` order), per outcome (0 home win, 1 draw,
     2 away win), per club, how many runs finished the club in each
-    position given that outcome. A fixture is high-stakes for a club
-    when the chance of its band differs between the club winning the
-    fixture and losing it. Relegation is the one band a loss brings
-    closer, so its favourable side is the loss. Per opponent pairing
-    the higher-swing leg is the one named, with both legs attached.
+    position given that outcome. Yields (team_id, band, baseline,
+    legs), one leg per fixture with the band's chance given the
+    favourable and the unfavourable result. Relegation is the one
+    band a loss brings closer, so its favourable side is the loss.
     """
-    entries: list[dict[str, Any]] = []
     if not conditionals or not clubs or not fixtures:
-        return entries
+        return
     index_of = {team_id: index for index, team_id in enumerate(clubs)}
     # The fixtures left per club, as (conditionals index, match).
     remaining: dict[int, list[tuple[int, Match]]] = {index: [] for index in range(len(clubs))}
@@ -411,9 +458,7 @@ def _compute_high_stakes(
             if baseline < MIN_BAND_P:
                 continue  # not in contention for this band
             relegation = band.tone == "relegation"
-            # One entry per opponent: the pairing collapses to its
-            # higher-swing leg, with both legs recorded.
-            pairings: dict[str, dict[str, Any]] = {}
+            legs: list[dict[str, Any]] = []
             for fixture_index, game in remaining[club_index]:
                 branches = conditionals[fixture_index]
                 is_home = index_of[game.home_id or game.home] == club_index
@@ -431,51 +476,109 @@ def _compute_high_stakes(
                 favourable, unfavourable = (
                     (loss_band, win_band) if relegation else (win_band, loss_band)
                 )
-                swing = favourable - unfavourable
-                if swing < MIN_SWING:
-                    continue
                 opponent_id = (game.away_id or game.away) if is_home else (game.home_id or game.home)
-                leg = {
+                legs.append({
+                    "team": names[team_id],
+                    "opponent_id": opponent_id,
+                    "opponent": names[opponent_id],
                     "match_id": game.match_id,
                     "date": game.date,
                     "home_id": game.home_id or game.home,
                     "away_id": game.away_id or game.away,
                     "p_favourable": favourable,
                     "p_unfavourable": unfavourable,
-                    "swing": swing,
-                }
-                pairing = pairings.get(opponent_id)
-                if pairing is None:
-                    pairings[opponent_id] = {"legs": [leg], "chosen": leg}
-                else:
-                    pairing["legs"].append(leg)
-                    if swing > pairing["chosen"]["swing"]:
-                        pairing["chosen"] = leg
-            for opponent_id, pairing in pairings.items():
-                chosen = pairing["chosen"]
-                entries.append(
-                    {
-                        "team_id": team_id,
-                        "team": names[team_id],
-                        "opponent_id": opponent_id,
-                        "opponent": names[opponent_id],
-                        "band_label": band.label,
-                        "band_first": band.first,
-                        "band_last": band.last,
-                        "band_tone": band.tone,
-                        "match_id": chosen["match_id"],
-                        "leg_match_ids": [leg["match_id"] for leg in pairing["legs"]],
-                        "date": chosen["date"],
-                        "home_id": chosen["home_id"],
-                        "away_id": chosen["away_id"],
-                        "p_baseline": round(baseline, 4),
-                        "p_favourable": round(chosen["p_favourable"], 4),
-                        "p_unfavourable": round(chosen["p_unfavourable"], 4),
-                        "swing": round(chosen["swing"], 4),
-                    }
-                )
+                    "swing": favourable - unfavourable,
+                })
+            yield team_id, band, baseline, legs
+
+
+def _stake_entry(
+    team_id: str, band: Band, baseline: float, chosen: dict[str, Any], legs: list[dict[str, Any]],
+) -> dict[str, Any]:
+    return {
+        "team_id": team_id,
+        "team": chosen["team"],
+        "opponent_id": chosen["opponent_id"],
+        "opponent": chosen["opponent"],
+        "band_label": band.label,
+        "band_first": band.first,
+        "band_last": band.last,
+        "band_tone": band.tone,
+        "match_id": chosen["match_id"],
+        "leg_match_ids": [leg["match_id"] for leg in legs],
+        "date": chosen["date"],
+        "home_id": chosen["home_id"],
+        "away_id": chosen["away_id"],
+        "p_baseline": round(baseline, 4),
+        "p_favourable": round(chosen["p_favourable"], 4),
+        "p_unfavourable": round(chosen["p_unfavourable"], 4),
+        "swing": round(chosen["swing"], 4),
+    }
+
+
+def _compute_high_stakes(
+    conditionals: list[list[list[list[int]]]] | None,
+    clubs: list[str],
+    fixtures: list[Match],
+    unconditional: dict[str, list[float]],
+    bands: tuple[Band, ...],
+    config: SimulationConfig | None = None,
+) -> list[dict[str, Any]]:
+    """The remaining fixtures that swing a contender's band chance most.
+
+    A fixture is high-stakes for a club when the chance of its band
+    differs between the club winning the fixture and losing it by at
+    least MIN_SWING, and only once the season is in its last
+    RUN_IN_ROUNDS rounds. Per opponent pairing the higher-swing leg
+    is the one named, with both legs attached.
+    """
+    if len(fixtures) > RUN_IN_ROUNDS * max(1, len(clubs) // 2):
+        return []  # before the run-in no fixture is knowably decisive
+    entries: list[dict[str, Any]] = []
+    for team_id, band, baseline, legs in _contender_legs(
+        conditionals, clubs, fixtures, unconditional, bands, config
+    ):
+        # One entry per opponent: the pairing collapses to its
+        # higher-swing leg, with both legs recorded.
+        pairings: dict[str, list[dict[str, Any]]] = {}
+        for leg in legs:
+            if leg["swing"] >= MIN_SWING:
+                pairings.setdefault(leg["opponent_id"], []).append(leg)
+        for pairing in pairings.values():
+            chosen = max(pairing, key=lambda leg: leg["swing"])
+            entries.append(_stake_entry(team_id, band, baseline, chosen, pairing))
     entries.sort(key=lambda entry: -entry["swing"])
     return entries
+
+
+def _next_stakes(
+    conditionals: list[list[list[list[int]]]] | None,
+    clubs: list[str],
+    fixtures: list[Match],
+    unconditional: dict[str, list[float]],
+    bands: tuple[Band, ...],
+    config: SimulationConfig | None = None,
+) -> list[dict[str, Any]]:
+    """Per club, what its next fixture does to the band it rides on most.
+
+    Unlike the badges this holds all season: it claims only the two
+    conditional chances, not that the match will decide anything.
+    Same entry shape as `_compute_high_stakes`, one per club at most.
+    """
+    first: dict[str, str] = {}
+    for game in sorted(fixtures, key=Match.sort_key):
+        first.setdefault(game.home_id or game.home, game.match_id)
+        first.setdefault(game.away_id or game.away, game.match_id)
+    best: dict[str, tuple[float, dict[str, Any]]] = {}
+    for team_id, band, baseline, legs in _contender_legs(
+        conditionals, clubs, fixtures, unconditional, bands, config
+    ):
+        for leg in legs:
+            if leg["match_id"] != first.get(team_id) or leg["swing"] < MIN_NEXT_SWING:
+                continue
+            if team_id not in best or leg["swing"] > best[team_id][0]:
+                best[team_id] = (leg["swing"], _stake_entry(team_id, band, baseline, leg, [leg]))
+    return sorted((entry for _, entry in best.values()), key=lambda entry: -entry["swing"])
 
 
 def rewound_configs(asof: str | None) -> tuple[SimulationConfig, HistoryConfig]:
