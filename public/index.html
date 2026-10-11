@@ -3,6 +3,14 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<script>
+  /* Firebase keeps serving the project's own addresses; send readers (and
+     crawlers) on to the real domain. Exact names, so PR preview channels
+     (elitetrackerno--pr-….web.app) still work. */
+  if (location.hostname === 'elitetrackerno.web.app' || location.hostname === 'elitetrackerno.firebaseapp.com') {
+    location.replace('https://elitetracker.no' + location.pathname + location.search + location.hash);
+  }
+</script>
 <title>Eliteserien 2026: rating, odds og tabellprognose — EliteTracker</title>
 <meta name="theme-color" content="#e9edf1">
 <!-- The page ships its own dark theme and its colours carry data (the heat
@@ -15,12 +23,12 @@
 <meta property="og:locale" content="nb_NO">
 <meta property="og:title" content="EliteTracker — rating, odds og tabellprognose for Eliteserien og OBOS-ligaen">
 <meta property="og:description" content="ELO-rating og simulert sluttplassering for Eliteserien og OBOS-ligaen 2026.">
-<meta property="og:image" content="https://elitetrackerno.web.app/og.png">
+<meta property="og:image" content="https://elitetracker.no/og.png">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
 <meta name="twitter:card" content="summary_large_image">
 <script type="application/ld+json">
-{"@context":"https://schema.org","@type":"WebSite","name":"EliteTracker","url":"https://elitetrackerno.web.app/","inLanguage":"nb","description":"ELO-rating og simulert sluttplassering for Eliteserien og OBOS-ligaen."}
+{"@context":"https://schema.org","@type":"WebSite","name":"EliteTracker","url":"https://elitetracker.no/","inLanguage":"nb","description":"ELO-rating og simulert sluttplassering for Eliteserien og OBOS-ligaen."}
 </script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>

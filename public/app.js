@@ -3722,7 +3722,7 @@ function render() {
     canonical.rel = 'canonical';
     document.head.appendChild(canonical);
   }
-  canonical.href = `https://elitetrackerno.web.app/${state.league === 'eliteserien' ? '' : `?league=${state.league}`}`;
+  canonical.href = `https://elitetracker.no/${state.league === 'eliteserien' ? '' : `?league=${state.league}`}`;
   state._prevActiveView = state.activeView;
 }
 

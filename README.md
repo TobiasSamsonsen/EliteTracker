@@ -6,7 +6,7 @@ strength, match probabilities and season outcomes. Fixtures and results come
 from FotMob (xG from FotMob for Eliteserien, Sofascore for OBOS-ligaen);
 benchmark odds from football-data.co.uk, squad values from Transfermarkt.
 
-Deployed at [elitetrackerno.web.app](https://elitetrackerno.web.app).
+Deployed at [elitetracker.no](https://elitetracker.no).
 
 ## Quick start
 
