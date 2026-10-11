@@ -13,5 +13,6 @@ build/
 scripts/
 .slim/deepwork/
 experiments/data/*.log
+.pi
 
 experiments/mobile-audit/shots-*/
