@@ -5068,13 +5068,8 @@
       "id": "8417"
     },
     "status": {
-      "utcTime": "2026-09-20T12:30:00.000Z",
-      "numberOfAwayRedCards": 1,
-      "halfs": {
-        "firstHalfStarted": "20.09.2026 14:30:53",
-        "secondHalfStarted": "20.09.2026 15:33:03"
-      },
-      "periodLength": 45,
+      "utcTime": "2026-09-20T12:30:00Z",
+      "timezone": "UTC",
       "finished": true,
       "started": true,
       "cancelled": false,
@@ -5104,13 +5099,8 @@
       "id": "9919"
     },
     "status": {
-      "utcTime": "2026-09-20T15:00:00.000Z",
-      "numberOfAwayRedCards": 1,
-      "halfs": {
-        "firstHalfStarted": "20.09.2026 17:01:15",
-        "secondHalfStarted": "20.09.2026 18:02:53"
-      },
-      "periodLength": 45,
+      "utcTime": "2026-09-20T15:00:00Z",
+      "timezone": "UTC",
       "finished": true,
       "started": true,
       "cancelled": false,
@@ -5140,12 +5130,8 @@
       "id": "8448"
     },
     "status": {
-      "utcTime": "2026-09-20T15:00:00.000Z",
-      "halfs": {
-        "firstHalfStarted": "20.09.2026 17:00:42",
-        "secondHalfStarted": "20.09.2026 18:02:37"
-      },
-      "periodLength": 45,
+      "utcTime": "2026-09-20T15:00:00Z",
+      "timezone": "UTC",
       "finished": true,
       "started": true,
       "cancelled": false,
@@ -5175,12 +5161,8 @@
       "id": "8476"
     },
     "status": {
-      "utcTime": "2026-09-20T15:00:00.000Z",
-      "halfs": {
-        "firstHalfStarted": "20.09.2026 17:00:11",
-        "secondHalfStarted": "20.09.2026 18:02:19"
-      },
-      "periodLength": 45,
+      "utcTime": "2026-09-20T15:00:00Z",
+      "timezone": "UTC",
       "finished": true,
       "started": true,
       "cancelled": false,
@@ -5210,13 +5192,8 @@
       "id": "8402"
     },
     "status": {
-      "utcTime": "2026-09-20T17:15:00.000Z",
-      "numberOfHomeRedCards": 1,
-      "halfs": {
-        "firstHalfStarted": "20.09.2026 19:16:23",
-        "secondHalfStarted": "20.09.2026 20:20:03"
-      },
-      "periodLength": 45,
+      "utcTime": "2026-09-20T17:15:00Z",
+      "timezone": "UTC",
       "finished": true,
       "started": true,
       "cancelled": false,
@@ -5248,9 +5225,17 @@
     "status": {
       "utcTime": "2026-10-09T17:00:00Z",
       "timezone": "UTC",
-      "started": false,
+      "finished": true,
+      "started": true,
       "cancelled": false,
-      "finished": false
+      "awarded": false,
+      "scoreStr": "0 - 2",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
     }
   },
   {
@@ -5271,9 +5256,17 @@
     "status": {
       "utcTime": "2026-10-10T14:00:00Z",
       "timezone": "UTC",
-      "started": false,
+      "finished": true,
+      "started": true,
       "cancelled": false,
-      "finished": false
+      "awarded": false,
+      "scoreStr": "3 - 1",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
     }
   },
   {
@@ -5294,9 +5287,17 @@
     "status": {
       "utcTime": "2026-10-10T16:00:00Z",
       "timezone": "UTC",
-      "started": false,
+      "finished": true,
+      "started": true,
       "cancelled": false,
-      "finished": false
+      "awarded": false,
+      "scoreStr": "1 - 1",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
     }
   },
   {
@@ -5315,11 +5316,24 @@
       "id": "8608"
     },
     "status": {
-      "utcTime": "2026-10-11T12:30:00Z",
-      "timezone": "UTC",
-      "started": false,
+      "utcTime": "2026-10-11T12:30:00.000Z",
+      "numberOfAwayRedCards": 1,
+      "halfs": {
+        "firstHalfStarted": "11.10.2026 14:30:17",
+        "secondHalfStarted": "11.10.2026 15:37:04"
+      },
+      "periodLength": 45,
+      "finished": true,
+      "started": true,
       "cancelled": false,
-      "finished": false
+      "awarded": false,
+      "scoreStr": "1 - 1",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
     }
   },
   {
@@ -5338,11 +5352,23 @@
       "id": "8509"
     },
     "status": {
-      "utcTime": "2026-10-11T15:00:00Z",
-      "timezone": "UTC",
-      "started": false,
+      "utcTime": "2026-10-11T15:00:00.000Z",
+      "halfs": {
+        "firstHalfStarted": "11.10.2026 17:00:07",
+        "secondHalfStarted": "11.10.2026 18:02:08"
+      },
+      "periodLength": 45,
+      "finished": true,
+      "started": true,
       "cancelled": false,
-      "finished": false
+      "awarded": false,
+      "scoreStr": "2 - 4",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
     }
   },
   {
@@ -5361,11 +5387,23 @@
       "id": "8448"
     },
     "status": {
-      "utcTime": "2026-10-11T15:00:00Z",
-      "timezone": "UTC",
-      "started": false,
+      "utcTime": "2026-10-11T15:00:00.000Z",
+      "halfs": {
+        "firstHalfStarted": "11.10.2026 17:01:15",
+        "secondHalfStarted": "11.10.2026 18:08:30"
+      },
+      "periodLength": 45,
+      "finished": true,
+      "started": true,
       "cancelled": false,
-      "finished": false
+      "awarded": false,
+      "scoreStr": "2 - 4",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
     }
   },
   {
@@ -5384,11 +5422,25 @@
       "id": "9917"
     },
     "status": {
-      "utcTime": "2026-10-11T17:15:00Z",
-      "timezone": "UTC",
-      "started": false,
+      "utcTime": "2026-10-11T17:15:00.000Z",
+      "halfs": {
+        "firstHalfStarted": "11.10.2026 19:16:37"
+      },
+      "periodLength": 45,
+      "finished": false,
+      "started": true,
       "cancelled": false,
-      "finished": false
+      "ongoing": true,
+      "scoreStr": "1 - 2",
+      "liveTime": {
+        "short": "35‎’‎",
+        "shortKey": "",
+        "long": "34:58",
+        "longKey": "",
+        "maxTime": 45,
+        "basePeriod": 45,
+        "addedTime": 0
+      }
     }
   },
   {
