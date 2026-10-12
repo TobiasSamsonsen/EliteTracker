@@ -1806,6 +1806,8 @@ footer a { color: var(--ink); }
 .consent[hidden] { display: none; }
 .consent p { margin: 0; flex: 1 1 16rem; color: var(--ink-muted); }
 .consent a { color: var(--ink); }
+/* The two answers wrap as one: never one on the text's line, one below. */
+.consent__actions { display: flex; flex: none; gap: 0.5rem; margin-left: auto; }
 .consent button {
   appearance: none;
   border: 1px solid var(--rule);
@@ -1819,6 +1821,9 @@ footer a { color: var(--ink); }
 }
 @media (max-width: 760px) {
   .consent { bottom: calc(52px + env(safe-area-inset-bottom, 0px) + 0.75rem); }
+  /* On a phone they get a line of their own, side by side, half each. */
+  .consent__actions { flex: 1 1 100%; }
+  .consent__actions button { flex: 1; min-height: 44px; }
 }
 
 /* ---------- tooltip ----------------------------------------------- */
@@ -2378,6 +2383,7 @@ footer a { color: var(--ink); }
 
 .settings-btn {
   appearance: none;
+  margin-left: auto; /* the right edge, also on a phone where the views are hidden */
   border: 0;
   background: none;
   color: var(--ink-muted);
