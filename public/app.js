@@ -710,6 +710,7 @@ async function animStart() {
   const report = state.reports[state.league];
   const days = liveMatchdaysFor(state.league);
   if (days.length < 2) return;
+  track('play_animation', { view: state.activeView });
 
   const ladder = state.activeView === 'ladder';
   const holder = $(ladder ? '#ladder-lanes' : '#grid').parentElement;
@@ -2263,6 +2264,7 @@ function renderTeamView(report) {
     button.addEventListener('click', () => {
       if (state.teamTab === key) return;
       state.teamTab = key;
+      track('select_team_tab', { tab: key });
       renderTeamView(report);
       $('.team-tabs [aria-pressed="true"]')?.focus();
     });
@@ -3766,6 +3768,7 @@ function wire() {
       else localStorage.setItem('elitetracker-theme', choice);
       resolveTheme();
       render();
+      track('set_theme', { theme: localStorage.getItem('elitetracker-theme') || 'system' });
     });
   }
 
@@ -3773,6 +3776,7 @@ function wire() {
     button.addEventListener('click', () => {
       const lang = button.dataset.lang;
       setLang(lang);
+      track('set_language', { language: lang });
       for (const other of document.querySelectorAll('[data-lang]')) {
         other.setAttribute('aria-pressed', String(other === button));
       }
@@ -3857,8 +3861,12 @@ function wire() {
   $('#timeline-range').addEventListener('input', onTimelineInput);
   $('#timeline-now').addEventListener('click', () => { if (anim.playing) animStop(); rewindTo(null); });
 
-  $('#compare-a').addEventListener('change', () => renderCompare(state.reports[state.league]));
-  $('#compare-b').addEventListener('change', () => renderCompare(state.reports[state.league]));
+  for (const select of [$('#compare-a'), $('#compare-b')]) {
+    select.addEventListener('change', () => {
+      renderCompare(state.reports[state.league]);
+      track('compare_clubs', { club_a: $('#compare-a').selectedOptions[0]?.text, club_b: $('#compare-b').selectedOptions[0]?.text });
+    });
+  }
 
   document.addEventListener('keydown', (event) => {
     if (event.key !== 'Escape') return;
@@ -4639,6 +4647,7 @@ async function boot() {
   }
   applyTranslations();
   wire();
+  initConsent();
   
   try {
     const reports = await fetch(reportUrl(null)).then((r) => {
@@ -4655,6 +4664,7 @@ async function boot() {
       
     } catch (error) {
       console.warn('[Boot] careers.json unavailable', error);
+      track('load_error', { file: 'careers', message: error.message });
       $('#status').hidden = false;
       $('#status').textContent = t('status.couldNotLoad', { season: 'careers', error: error.message });
     }
@@ -4690,9 +4700,60 @@ async function boot() {
     }
   } catch (error) {
     console.error('[Boot] ERROR:', error);
+    track('load_error', { file: 'report', message: error.message });
     $('#status').textContent =
       t('status.couldNotLoadSeason', { error: error.message });
   }
+}
+
+/* ---------- analytics ----------------------------------------------- */
+
+/* Google Analytics (the Firebase project's GA4 stream) loads only after the
+   reader says yes: Norwegian law wants consent before non-essential cookies.
+   Production only, so local runs and PR previews don't count. GA4's enhanced
+   measurement turns the replaceState in render() into page views. */
+const GA_ID = 'G-RCMKSGYDSJ';
+
+function loadAnalytics() {
+  if (location.hostname !== 'elitetracker.no' || window.gtag) return;
+  window.dataLayer = window.dataLayer || [];
+  window.gtag = function gtag() { dataLayer.push(arguments); };
+  gtag('js', new Date());
+  gtag('config', GA_ID);
+  const script = document.createElement('script');
+  script.async = true;
+  script.src = `https://www.googletagmanager.com/gtag/js?id=${GA_ID}`;
+  document.head.append(script);
+}
+
+/* Stored as 'yes:<ms>' or 'no:<ms>'; an answer older than a year counts as
+   none, so the reader is asked again (public/personvern.html promises this). */
+function initConsent() {
+  const bar = $('#consent');
+  const [choice, at] = (localStorage.getItem('elitetracker-analytics') || '').split(':');
+  const fresh = Date.now() - Number(at) < 365 * 24 * 3600 * 1000;
+  if (choice === 'yes' && fresh) loadAnalytics();
+  else if (!fresh) bar.hidden = false;
+  bar.addEventListener('click', (event) => {
+    const answer = event.target.closest('[data-consent]')?.dataset.consent;
+    if (!answer) return;
+    localStorage.setItem('elitetracker-analytics', `${answer}:${Date.now()}`);
+    bar.hidden = true;
+    if (answer === 'yes') return loadAnalytics();
+    if (!window.gtag) return;
+    // Withdrawn after saying yes: drop GA's cookies and reload without it.
+    for (const name of document.cookie.split('; ').map((c) => c.split('=')[0]).filter((n) => n.startsWith('_ga'))) {
+      document.cookie = `${name}=; Max-Age=0; path=/; domain=.${location.hostname}`;
+    }
+    location.reload();
+  });
+  $('#consent-open').addEventListener('click', () => { bar.hidden = false; });
+}
+
+/* What a page view can't show: which in-page tools get used. A no-op until
+   the reader has said yes. Params need a custom dimension in GA to report. */
+function track(name, params) {
+  window.gtag?.('event', name, params);
 }
 
 /* ---------- mobile gestures ----------------------------------------- */
@@ -4839,6 +4900,7 @@ function initMobileGestures() {
       const nextIndex = (currentIndex + direction + viewsInBar.length) % viewsInBar.length;
       const nextView = viewsInBar[nextIndex];
       switchView(nextView);
+      track('swipe_view', { view: nextView });
       if (navigator.vibrate) navigator.vibrate(15);
     }
     clearBarHighlight();

@@ -327,6 +327,12 @@ const translations = {
   'season.shape.axis': 'Rating after every match played',
 
     // Footer
+    'consent.text': 'We would like to use Google Analytics to see how the site is used. It sets cookies and sends data about your visit to Google. OK?',
+    'consent.more': 'Read more',
+    'consent.privacy': 'Privacy',
+    'consent.yes': 'Yes, fine',
+    'consent.no': 'No thanks',
+    'consent.settings': 'Cookies',
     'footer.text': 'EliteTracker — Eliteserien and OBOS-ligaen, seasons 2015\u20132026. Built by Tobias Samsonsen.',
     'meta.title': '{league} {season}: ratings, odds and predicted table — EliteTracker',
     'meta.desc': 'ELO ratings and simulated finishing positions for {league} {season}: {chances}, match odds and every season since 2015.',
@@ -687,6 +693,12 @@ const translations = {
     'season.shape.axis': 'Rating etter hver kamp spilt',
 
     // Footer
+    'consent.text': 'Vi vil bruke Google Analytics for å se hvordan siden brukes. Det setter informasjonskapsler og sender data om besøket til Google. Greit?',
+    'consent.more': 'Les mer',
+    'consent.privacy': 'Personvern',
+    'consent.yes': 'Ja, greit',
+    'consent.no': 'Nei takk',
+    'consent.settings': 'Informasjonskapsler',
     'footer.text': 'EliteTracker — Eliteserien og OBOS-ligaen, sesongene 2015\u20132026. Utviklet av Tobias Samsonsen.',
     'meta.title': '{league} {season}: rating, odds og tabellprognose — EliteTracker',
     'meta.desc': 'ELO-rating og simulert sluttplassering for {league} {season}: {chances}, kampodds og alle sesonger siden 2015.',

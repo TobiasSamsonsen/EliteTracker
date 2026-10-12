@@ -1772,6 +1772,55 @@ footer {
 }
 footer a { color: var(--ink); }
 
+.footer__links { margin-top: 0.5rem; }
+
+.footer__consent {
+  appearance: none;
+  border: 0;
+  background: none;
+  padding: 0;
+  color: inherit;
+  font: inherit;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+/* Both answers get the same weight: consent nudged toward yes isn't consent. */
+.consent {
+  position: fixed;
+  inset: auto 1rem 1rem;
+  z-index: 45;
+  max-width: 36rem;
+  margin-inline: auto;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 0.75rem;
+  padding: 0.75rem 1rem;
+  background: var(--panel);
+  border: 1px solid var(--rule);
+  border-radius: var(--radius-sm);
+  box-shadow: 0 6px 24px rgb(0 0 0 / 0.18);
+  font-size: 0.8125rem;
+}
+.consent[hidden] { display: none; }
+.consent p { margin: 0; flex: 1 1 16rem; color: var(--ink-muted); }
+.consent a { color: var(--ink); }
+.consent button {
+  appearance: none;
+  border: 1px solid var(--rule);
+  border-radius: var(--radius-sm);
+  background: var(--panel-sunk);
+  color: var(--ink);
+  font: inherit;
+  font-weight: 600;
+  padding: 0.4rem 0.9rem;
+  cursor: pointer;
+}
+@media (max-width: 760px) {
+  .consent { bottom: calc(52px + env(safe-area-inset-bottom, 0px) + 0.75rem); }
+}
+
 /* ---------- tooltip ----------------------------------------------- */
 
 #tooltip {
