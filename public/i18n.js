@@ -327,11 +327,11 @@ const translations = {
   'season.shape.axis': 'Rating after every match played',
 
     // Footer
-    'consent.text': 'We would like to use Google Analytics to see how the site is used. It sets cookies and sends data about your visit to Google. OK?',
+    'consent.text': 'We use cookies for statistics via Google Analytics. Data about your visit is shared with Google. You can change your choice at any time under “Cookies” at the bottom of the page.',
     'consent.more': 'Read more',
     'consent.privacy': 'Privacy',
-    'consent.yes': 'Yes, fine',
-    'consent.no': 'No thanks',
+    'consent.yes': 'Accept',
+    'consent.no': 'Reject',
     'consent.settings': 'Cookies',
     'footer.text': 'EliteTracker — Eliteserien and OBOS-ligaen, seasons 2015\u20132026. Built by Tobias Samsonsen.',
     'meta.title': '{league} {season}: ratings, odds and predicted table — EliteTracker',
@@ -693,11 +693,11 @@ const translations = {
     'season.shape.axis': 'Rating etter hver kamp spilt',
 
     // Footer
-    'consent.text': 'Vi vil bruke Google Analytics for å se hvordan siden brukes. Det setter informasjonskapsler og sender data om besøket til Google. Greit?',
+    'consent.text': 'Vi bruker informasjonskapsler (cookies) til statistikk via Google Analytics. Data om besøket ditt deles med Google. Du kan når som helst endre valget under «Informasjonskapsler» nederst på siden.',
     'consent.more': 'Les mer',
     'consent.privacy': 'Personvern',
-    'consent.yes': 'Ja, greit',
-    'consent.no': 'Nei takk',
+    'consent.yes': 'Godta',
+    'consent.no': 'Avvis',
     'consent.settings': 'Informasjonskapsler',
     'footer.text': 'EliteTracker — Eliteserien og OBOS-ligaen, sesongene 2015\u20132026. Utviklet av Tobias Samsonsen.',
     'meta.title': '{league} {season}: rating, odds og tabellprognose — EliteTracker',
