@@ -45,6 +45,7 @@ from elitetracker.pipeline import (
     careers_payload,
     current_season,
     load_matches,
+    preseason_date,
     rewound_configs,
 )
 from elitetracker.sources.fotmob import load_xg
@@ -267,10 +268,13 @@ def build_site(
     candidates: list[tuple[int, str | None, bool]] = [
         (season, None, season == current) for season in seasons
     ]
+    # Each season's pre-season view (the slider's first stop), then a view
+    # for every matchday.
     candidates += [
         (season, asof, False)
         for season in seasons
-        for asof in matchday_dates(root, season)
+        for asof in [preseason_date(season, root), *matchday_dates(root, season)]
+        if asof
     ]
 
     # Drop the views whose inputs have not moved since they were last written.

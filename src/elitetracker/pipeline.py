@@ -14,6 +14,7 @@ import functools
 import json
 import re
 from dataclasses import dataclass
+from datetime import date, timedelta
 from pathlib import Path
 from typing import Any
 
@@ -174,6 +175,22 @@ def load_matches(path: Path) -> list[Match]:
         return [Match(**record) for record in json.load(handle)]
 
 
+def preseason_date(season: int, root: Path = NORMALIZED_DIR) -> str | None:
+    """The day before either division's first played match: the date of the
+    season's pre-season view, the prediction before a ball was kicked in
+    either league (a rewound report is per date and carries both). None
+    while nothing has been played, when the live view is the pre-season."""
+    played = [
+        match.date
+        for slug in LEAGUE_SPECS
+        for match in load_matches(_matches_path(slug, season, root))
+        if match.played
+    ]
+    if not played:
+        return None
+    return (date.fromisoformat(min(played)) - timedelta(days=1)).isoformat()
+
+
 def available_seasons(root: Path = NORMALIZED_DIR) -> list[int]:
     """Seasons with match data for every league, oldest first."""
     per_league: dict[str, set[int]] = {slug: set() for slug in LEAGUE_SPECS}
@@ -331,6 +348,8 @@ def build_report(
             "seasons": available_seasons(root),
             "current_season": current_season(root),
             "matchdays": matchdays,
+            # The slider's first stop, before its matchdays (see preseason_date).
+            "preseason": preseason_date(season, root),
             "asof": asof,
             "bands": [
                 {"label": band.label, "first": band.first, "last": band.last, "tone": band.tone}

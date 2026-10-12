@@ -3592,3 +3592,228 @@ html { scroll-behavior: smooth; }
   font-weight: 500;
   color: var(--ink-muted);
 }
+
+/* ---------- explore ----------------------------------------------- */
+
+/* The gallery: a card per visualisation, thumbnail on top, name and a
+   short description under it. Two across, one on a phone. */
+.explore-gallery {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1.75rem 1.25rem;
+  padding: 1.25rem;
+}
+
+.explore-card {
+  appearance: none;
+  display: grid;
+  align-content: start;
+  gap: 0.35rem;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.explore-card__thumb {
+  display: block;
+  width: 100%;
+  height: auto;
+  aspect-ratio: 16 / 9;
+  margin-bottom: 0.4rem;
+  background: var(--panel-sunk);
+  border: 1px solid var(--rule);
+  border-radius: 12px;
+  transition: transform 0.15s var(--ease), box-shadow 0.15s var(--ease);
+}
+
+.explore-card:hover .explore-card__thumb { transform: translateY(-2px); box-shadow: var(--shadow); }
+.explore-card:focus-visible { outline: none; }
+.explore-card:focus-visible .explore-card__thumb { outline: 2px solid var(--ink); outline-offset: 3px; }
+.explore-card__title { font-weight: 700; font-size: 1rem; }
+.explore-card__desc { color: var(--ink-muted); font-size: 0.875rem; line-height: 1.4; }
+.explore-thumb__avg { stroke: var(--rule-strong); stroke-width: 1; stroke-dasharray: 3 3; }
+
+/* Back to the gallery: the team view's back button (.team-back). */
+.explore-back { margin-bottom: 0.75rem; }
+.explore-back[hidden] { display: none; }
+
+.explore-empty { margin: 0; padding: 1.25rem; color: var(--ink-muted); }
+
+/* Key figures: a number, what it is, and a sentence on reading it. */
+.explore-facts { margin-top: 1rem; padding-top: 1rem; border-top: 1px solid var(--rule); }
+.mountain__facts .explore-facts { margin: 0; padding: 1rem 1.25rem 1.25rem; }
+.explore-facts__title { margin: 0 0 0.75rem; color: var(--ink-muted); font-size: 0.75rem; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; }
+.explore-facts__grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 0.75rem; }
+.explore-fact { display: grid; align-content: start; gap: 0.2rem; padding: 0.8rem 0.9rem; background: var(--panel-sunk); border-radius: 10px; }
+.explore-fact__value { font-size: 1.25rem; font-weight: 700; font-variant-numeric: tabular-nums; }
+.explore-fact__label { font-size: 0.8125rem; font-weight: 600; }
+.explore-fact__text { margin: 0; color: var(--ink-muted); font-size: 0.8125rem; line-height: 1.4; }
+
+/* The figures again, on demand: a pill on the mountain's stage and a dialog. */
+.mountain__info {
+  position: absolute;
+  top: 0.6rem;
+  right: 0.75rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  height: 2rem;
+  padding: 0 0.85rem 0 0.6rem;
+  border: 1px solid var(--rule);
+  border-radius: 999px;
+  background: color-mix(in oklab, var(--panel) 85%, transparent);
+  color: var(--ink);
+  font: inherit;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+.mountain__info:hover { background: var(--panel-sunk); border-color: var(--rule-strong); }
+.mountain__info svg { color: var(--ink-muted); }
+@media (pointer: coarse) { .mountain__info { height: 40px; } }
+
+.facts-dialog {
+  width: min(640px, calc(100vw - 2rem));
+  max-height: calc(100dvh - 2rem);
+  padding: 0;
+  overflow: auto;
+  border: 1px solid var(--rule);
+  border-radius: var(--radius);
+  background: var(--panel);
+  color: var(--ink);
+  box-shadow: var(--shadow);
+}
+.facts-dialog::backdrop { background: rgb(0 0 0 / 0.45); }
+.facts-dialog__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.85rem 1rem 0.85rem 1.1rem;
+  border-bottom: 1px solid var(--rule);
+}
+.facts-dialog__head h2 { margin: 0; font-size: 1.1rem; }
+.facts-dialog__close {
+  width: 2.25rem;
+  height: 2.25rem;
+  flex: none;
+  border: 0;
+  border-radius: 999px;
+  background: var(--panel-sunk);
+  color: var(--ink);
+  font-size: 1.35rem;
+  line-height: 1;
+  cursor: pointer;
+}
+.facts-dialog__close:hover { background: color-mix(in oklab, var(--ink) 11%, var(--panel)); }
+.facts-dialog .explore-facts { margin: 0; padding: 1rem 1.1rem 1.2rem; border: 0; }
+
+@media (max-width: 760px) {
+  .explore-gallery { grid-template-columns: 1fr; padding: 1rem; gap: 1.5rem; }
+}
+
+/* Attack vs defence */
+.attack-map { padding: 0.75rem 1rem 1rem; }
+.attack-map .chart { display: block; width: 100%; height: auto; overflow: visible; }
+.attack-map__avg { stroke: var(--rule-strong); stroke-width: 1.5; stroke-dasharray: 5 4; }
+.attack-map__quad { fill: var(--ink-faint); font-size: 12px; font-weight: 600; paint-order: stroke; stroke: var(--panel); stroke-width: 4px; stroke-linejoin: round; }
+.chart .attack-map__guide { fill: var(--ink); font-size: 12px; font-weight: 700; }
+.attack-map__even { stroke: var(--ink-muted); stroke-width: 1.25; }
+.attack-map__band { stroke: var(--ink-faint); stroke-width: 1; stroke-dasharray: 2 4; }
+.attack-map__diag { fill: var(--ink-muted); font-size: 11px; }
+@media (max-width: 480px) {
+  .attack-map__quad { font-size: 10px; }
+  .chart .attack-map__guide { font-size: 11px; }
+}
+.attack-map__club { cursor: pointer; outline: none; }
+.attack-map__club circle { fill: var(--panel); stroke: var(--rule-strong); stroke-width: 1; }
+.attack-map__club:hover circle,
+.attack-map__club:focus-visible circle { stroke: var(--ink); stroke-width: 2; }
+
+/* Season mountain */
+.mountain__stage {
+  position: relative;
+  height: min(70vh, 720px);
+  min-height: 360px;
+  background: var(--panel);
+  touch-action: none;
+}
+.mountain__stage canvas { display: block; width: 100%; height: 100%; cursor: grab; }
+.mountain__stage canvas:active { cursor: grabbing; }
+.mountain__readout { position: absolute; left: 1rem; top: 0.75rem; display: grid; gap: 0.15rem; pointer-events: none; }
+.mountain__readout b { font-size: 1.375rem; font-stretch: 112%; line-height: 1; }
+.mountain__readout span { color: var(--ink-muted); font-size: 0.75rem; font-variant-numeric: tabular-nums; }
+.mountain__status { position: absolute; inset: 0; display: grid; place-items: center; margin: 0; padding: 1rem; color: var(--ink-muted); text-align: center; background: var(--panel); }
+.mountain__status[hidden] { display: none; }
+.mountain__hint { position: absolute; right: 0.75rem; bottom: 0.6rem; color: var(--ink-faint); font-size: 0.6875rem; pointer-events: none; }
+
+/* The sort pill keeps its natural width; the other controls share the rest
+   and wrap onto a new line when the row runs out. */
+.mountain__controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem 1.5rem;
+  padding: 1rem 1.25rem;
+  border-top: 1px solid var(--rule);
+}
+.mountain__ctl { display: grid; gap: 0.4rem; align-content: start; min-width: 0; }
+.mountain__ctl { flex: 1 1 220px; }
+.mountain__ctl:first-child { flex: 0 0 auto; }
+.mountain__ctl .table-controls { justify-self: start; }
+.mountain__ctl .table-control-btn { white-space: nowrap; }
+.mountain__label { display: flex; justify-content: space-between; gap: 0.5rem; color: var(--ink-muted); font-size: 0.75rem; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; }
+.mountain__label output { color: var(--ink); letter-spacing: 0; text-transform: none; font-variant-numeric: tabular-nums; }
+.mountain__row { display: flex; gap: 0.5rem; align-items: center; }
+.mountain__play { flex: none; }
+.mountain__controls input[type="range"] { width: 100%; accent-color: var(--seq-5); }
+.mountain__select {
+  flex: 1;
+  min-width: 0;
+  height: 2rem;
+  padding: 0 0.6rem;
+  border: 1px solid var(--rule);
+  border-radius: 999px;
+  background: var(--panel);
+  color: var(--ink);
+  font: inherit;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+.mountain__select:hover { border-color: var(--rule-strong); }
+@media (pointer: coarse) { .mountain__select { height: 44px; } }
+
+@media (max-width: 760px) {
+  .mountain__stage { height: min(62vh, 115vw); min-height: 320px; }
+  .mountain__hint { display: none; }
+
+  /* The mountain fills the phone's screen between the bars (fitMountain
+     sets the stage height): the page is locked, and everything that only
+     repeats something on screen goes -- the lede, the description, the
+     footer, and the control labels the controls or the readout already say. */
+  html:has(> body[data-viz="mountain"]) { overflow: hidden; overscroll-behavior: none; }
+  body[data-viz="mountain"] > footer,
+  body[data-viz="mountain"] #hero-lede,
+  body[data-viz="mountain"] #explore-desc,
+  body[data-viz="mountain"] .mountain__ctl:first-child > .mountain__label,
+  body[data-viz="mountain"] .mountain__ctl:last-child > .mountain__label,
+  body[data-viz="mountain"] label[for="mountain-upto"],
+  body[data-viz="mountain"] .mountain__facts { display: none; }
+  body[data-viz="mountain"] .hero { padding-bottom: 0.25rem; }
+  body[data-viz="mountain"] [data-section="explore"] { margin-block: 0.5rem 0; }
+  body[data-viz="mountain"] [data-section="explore"] .panel__head { padding: 0.6rem 0.875rem; }
+  body[data-viz="mountain"] [data-section="explore"] .panel__head > div { display: flex; align-items: center; gap: 0.75rem; }
+  body[data-viz="mountain"] .explore-back { margin: 0; }
+  body[data-viz="mountain"] #explore-title { font-size: 1.05rem; }
+  body[data-viz="mountain"] .mountain__stage { min-height: 0; }
+  body[data-viz="mountain"] .mountain__readout { left: 0.75rem; top: 0.5rem; }
+  body[data-viz="mountain"] .mountain__readout b { font-size: 1.1rem; }
+  body[data-viz="mountain"] .mountain__controls { gap: 0.6rem 1rem; padding: 0.7rem 0.875rem; }
+  body[data-viz="mountain"] .mountain__ctl:first-child { flex-basis: 100%; }
+  body[data-viz="mountain"] .mountain__ctl:first-child .table-controls { display: flex; }
+  body[data-viz="mountain"] .mountain__ctl:first-child .table-control-btn { flex: 1; padding-inline: 0.5rem; }
+}

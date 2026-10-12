@@ -62,6 +62,7 @@ def stubbed(monkeypatch, tmp_path):
     monkeypatch.setattr(
         build_site, "matchday_dates", lambda root, season: ["2026-05-01", "2026-05-08"]
     )
+    monkeypatch.setattr(build_site, "preseason_date", lambda season, root: "2026-04-30")
     monkeypatch.setattr(build_site, "build_all_careers", lambda root, **kw: {})
     monkeypatch.setattr(build_site, "careers_payload", lambda careers, **kw: {})
     monkeypatch.setattr(build_site, "Pool", _SyncPool)
@@ -77,6 +78,7 @@ def test_only_season_builds_just_that_season(stubbed, tmp_path):
     assert stubbed == [
         "report-2026.json",
         "report.json",
+        "report-2026-2026-04-30.json",
         "report-2026-2026-05-01.json",
         "report-2026-2026-05-08.json",
         "careers.json",
@@ -103,6 +105,15 @@ def test_live_views_are_queued_before_the_rewinds(stubbed, tmp_path):
     rewinds = [name for name in stubbed if name.count("-") > 1]
     live = [name for name in stubbed if name.startswith("report-") and name not in rewinds]
     assert stubbed.index(live[-1]) < stubbed.index(rewinds[0])
+
+
+def test_a_season_not_yet_started_has_no_preseason_view(stubbed, monkeypatch, tmp_path):
+    """Before the first match the live view already is the pre-season."""
+    monkeypatch.setattr(build_site, "preseason_date", lambda season, root: None)
+    build_site.build_site(out_dir=tmp_path, only_season=2026)
+
+    assert "report-2026-2026-04-30.json" not in stubbed
+    assert "report-2026-2026-05-01.json" in stubbed
 
 
 def test_only_season_rejects_unknown_season(stubbed, tmp_path):

@@ -34,6 +34,34 @@ def match(match_id, home, away, date, played=True, score=(1, 0), round_number=1)
     )
 
 
+class TestPreseasonDate:
+    """The pre-season view's date: the day before either division kicks off."""
+
+    def write(self, root, eliteserien, obosligaen):
+        dump(eliteserien, root / "eliteserien_2026_matches.json")
+        dump(obosligaen, root / "obosligaen_2026_matches.json")
+
+    def test_day_before_the_earlier_division_starts(self, tmp_path):
+        self.write(
+            tmp_path,
+            [match(1, "A", "B", "2026-03-14"), match(2, "A", "B", "2026-03-21")],
+            [match(3, "C", "D", "2026-03-08")],
+        )
+        assert pipeline.preseason_date(2026, tmp_path) == "2026-03-07"
+
+    def test_crosses_month_boundaries(self, tmp_path):
+        self.write(tmp_path, [match(1, "A", "B", "2026-04-01")], [match(2, "C", "D", "2026-04-02")])
+        assert pipeline.preseason_date(2026, tmp_path) == "2026-03-31"
+
+    def test_none_before_anything_is_played(self, tmp_path):
+        self.write(
+            tmp_path,
+            [match(1, "A", "B", "2026-03-14", played=False)],
+            [match(2, "C", "D", "2026-03-08", played=False)],
+        )
+        assert pipeline.preseason_date(2026, tmp_path) is None
+
+
 class TestMatchdays:
     def test_one_entry_per_played_date(self):
         days = _matchdays([

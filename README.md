@@ -44,8 +44,8 @@ from the attack/defence grid, conditioned on the blended outcome odds.
 
 ## Views
 
-Six views switch from the top nav (a bottom bar plus a "More" sheet on
-phones); the seventh, Team Focus, opens from any club name or crest.
+Seven views switch from the top nav (a bottom bar plus a "More" sheet on
+phones); the eighth, Team Focus, opens from any club name or crest.
 
 ### Finish Grid
 
@@ -101,6 +101,31 @@ three-way odds and top scorelines (swap home/away with ⇄), a **rating history*
 chart overlaying both clubs' trajectories, and the **head-to-head** — the real
 record (wins–draws–wins and goals) with every meeting listed, newest first,
 paged five at a time.
+
+### Explore
+
+A gallery of other ways to look at the model's numbers: a card per
+visualisation (thumbnail, name, short description) that opens it in place,
+with `?view=explore&viz=<id>` links. Each one ends with **key figures** -- a
+number, what it is, and one sentence on how to read it.
+
+- **Attack vs defence** (`viz=attack`) -- every club placed by its attack and
+  defence ratings (expected goals for and against per match against an average
+  side), with a best-fit trend line through the division. Above the line a club
+  defends better than its attack would suggest, below it the other way round;
+  the tooltip says by how much. Key figures: the trend's slope (how many fewer
+  goals a club concedes per extra goal it creates), the correlation, and the
+  most attack-led and defence-led clubs. Follows the rewind slider.
+- **Season mountain** (`viz=mountain`) -- the finish grid in 3D. The pre-season
+  prediction is flat ground; every round stacks another layer of
+  finishing-place chances on top, so the stack narrows into the table. Drag to
+  turn, scroll or pinch to zoom; build it up round by round or press play;
+  hide chances below a cut-off; order the rows by predicted finish, pre-season
+  prediction or table; cut it down to one club's row and/or one place's column
+  (the camera follows the cut). Key figures compare pre-season with the top
+  layer built; on a finished season they become a scorecard for the
+  pre-season prediction (hit rate, biggest climber, faller and surprise). The
+  ⓘ button shows them in a popup. On phones the mountain fills the screen.
 
 ### Model Card
 
@@ -171,9 +196,12 @@ then the head-to-head record between the clubs still level.
 
 ## Rewind
 
-A slider on the grid, table and ladder views lets you scrub to any matchday.
-Every view rebuilds from only the results known on that date, so you can see
-how the predictions evolved through the season.
+A slider on the grid, table and ladder views (and the attack vs defence map)
+lets you scrub to any matchday. Every view rebuilds from only the results known
+on that date, so you can see how the predictions evolved through the season.
+The first stop is the **pre-season prediction**, dated the day before either
+division's first match; the grid and ladder playback start from it, and it is
+the season mountain's ground.
 
 ## Tests
 
@@ -187,6 +215,7 @@ node --test tests/frontend.test.js          # Frontend logic tests
 ```
 src/elitetracker/        Python package (model, pipeline, API, normalize, simulation, sources, validation)
 public/                  Frontend (no build step, no framework)
+public/vendor/three/     three.js r147, vendored; loaded only when the season mountain opens
 data/                    Match data, xG, odds, market values
 tests/                   Python + Node test suites
 .github/workflows/       CI: deploy on push, refresh cron every hour
