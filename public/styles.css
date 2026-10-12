@@ -487,12 +487,34 @@ html { scroll-padding-top: 76px; }
   }
 }
 
-/* In a club's view the league's story and vitals are someone else's
-   headline; the title stays, since its league and season pickers still
-   navigate. On a phone the vitals repeat the lede and push the content down. */
+/* The league hero only where it is the page's own story. In a club's view,
+   the ladder, the compare tool, the model card and the attack map, the
+   league's story and vitals are someone else's headline; the title stays,
+   since its pickers still navigate. On a phone the vitals repeat the lede
+   and push the content down. */
 body[data-view="team"] #hero-lede,
-body[data-view="team"] .hero__meta { display: none; }
-body[data-view="team"] .hero { padding-bottom: 0.5rem; }
+body[data-view="team"] .hero__meta,
+body[data-view="ladder"] #hero-lede,
+body[data-view="ladder"] .hero__meta,
+body[data-view="compare"] #hero-lede,
+body[data-view="compare"] .hero__meta,
+body[data-view="model"] #hero-lede,
+body[data-view="model"] .hero__meta,
+body[data-viz="attack"] #hero-lede,
+body[data-viz="attack"] .hero__meta { display: none; }
+body[data-view="team"] .hero,
+body[data-view="ladder"] .hero,
+body[data-view="compare"] .hero,
+body[data-view="model"] .hero,
+body[data-viz="attack"] .hero { padding-bottom: 0.5rem; }
+/* The ladder and the compare tool take both divisions, and the model card
+   holds for both, so only the season is a choice there. */
+body[data-view="ladder"] .hero-title-part[data-role="division"],
+body[data-view="compare"] .hero-title-part[data-role="division"],
+body[data-view="model"] .hero-title-part[data-role="division"] { display: none; }
+/* The explore gallery shows no league's numbers, and the season mountain
+   has its own division and season pickers: no hero at all. */
+body[data-view="explore"]:not([data-viz="attack"]) .hero { display: none; }
 @media (max-width: 760px) {
   .hero__meta { display: none; }
 }
@@ -3838,7 +3860,6 @@ html { scroll-behavior: smooth; }
   body[data-viz="mountain"] > footer,
   body[data-viz="mountain"] #hero-lede,
   body[data-viz="mountain"] #explore-desc,
-  body[data-viz="mountain"] .hero,
   body[data-viz="mountain"] .mountain__ctl--where > .mountain__label,
   body[data-viz="mountain"] .mountain__ctl--order > .mountain__label,
   body[data-viz="mountain"] .mountain__ctl--cut > .mountain__label,
