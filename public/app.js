@@ -1951,6 +1951,12 @@ function formatDate(iso) {
   return date.toLocaleDateString(localeDate(), { weekday: 'short', day: 'numeric', month: 'short' });
 }
 
+/* The rewind status's date: in full on a wide screen; on a phone without the
+   year (the hero names the season), so the line keeps to its reserved room. */
+function whenDate(iso) {
+  return window.matchMedia('(max-width: 760px)').matches ? formatDate(iso) : longDate(iso);
+}
+
 function longDate(iso) {
   return new Date(`${iso}T12:00:00Z`).toLocaleDateString(localeDate(), {
     weekday: 'short', day: 'numeric', month: 'long', year: 'numeric',
@@ -2122,6 +2128,19 @@ function renderHero(report) {
         remaining: model.matches_remaining,
         simulations: num(model.simulations),
       });
+  }
+  // Scrubbing the rewind slider rewrites this sentence for every date. A
+  // longer one may add a line, but a shorter one never takes it away again,
+  // so the slider below does not bob up and down under the thumb. The hold
+  // starts over with the league, season, language or width.
+  const lede = $('#hero-lede');
+  if (lede.offsetHeight) {
+    const hold = `${state.league}|${report.league.season}|${currentLang}|${window.innerWidth}`;
+    if (lede.dataset.hold !== hold) {
+      lede.dataset.hold = hold;
+      lede.style.minHeight = '';
+    }
+    lede.style.minHeight = `${lede.offsetHeight}px`;
   }
 
   const meta = $('#hero-meta');
@@ -4407,11 +4426,11 @@ function rememberLiveMatchdays(reports) {
 
 /* The pre-season stop has no matchday to name, so it reads as what it is. */
 function dayLabel(day) {
-  return day.preseason ? t('timeline.preseason') : longDate(day.date);
+  return day.preseason ? t('timeline.preseason') : whenDate(day.date);
 }
 
 function dayText(day, key) {
-  return day.preseason ? t('timeline.preseason') : t(key, { when: longDate(day.date) });
+  return day.preseason ? t('timeline.preseason') : t(key, { when: whenDate(day.date) });
 }
 
 function dayShort(day) {
@@ -4459,7 +4478,7 @@ function renderTimeline(report) {
   const total = report.model.matches_played + report.model.matches_remaining;
   $('#timeline-when').textContent = live ? t('timeline.liveCount', { n: day.matches_played })
     : day.preseason ? t('timeline.preseason')
-      : t('timeline.asOf', { when: longDate(day.date), n: day.matches_played, total });
+      : t('timeline.asOf', { when: whenDate(day.date), n: day.matches_played, total });
 
   $('#timeline-back').disabled = index <= 0;
   $('#timeline-forward').disabled = index >= days.length - 1;

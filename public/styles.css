@@ -2294,8 +2294,6 @@ footer a { color: var(--ink); }
   .wordmark { font-size: 0.95rem; }
   .masthead__views .switch button { padding: 0.3rem 0.5rem; font-size: 0.75rem; }
 
-  /* Let the rewind button fall onto its own line if the title is long. */
-  .timeline__head { flex-wrap: wrap; }
 }
 
 @media (max-width: 480px) {
@@ -3193,6 +3191,32 @@ footer a { color: var(--ink); }
 }
 
 .timeline__now:hover { border-color: var(--ink-faint); }
+/* Hidden, the back-to-live button keeps its room, so its appearing as you
+   leave live never moves the slider. */
+.timeline__now[hidden] { display: block; visibility: hidden; }
+.timeline__now-short { display: none; }
+
+/* On a phone, a fixed shape while you scrub: the eyebrow and the
+   back-to-live button on one row, the state on two reserved lines below, so
+   neither the button nor a longer date moves the slider under the thumb.
+   The hero sentence above keeps room for its usual length too (and
+   renderHero never lets it shrink while you scrub). After the base rules
+   above, which it must override. */
+@media (max-width: 760px) {
+  .timeline__head { display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 0.25rem 0.75rem; }
+  .timeline__head > div:first-child { display: contents; }
+  .timeline__head .label { grid-column: 1; grid-row: 1; }
+  .timeline__now { grid-column: 2; grid-row: 1; }
+  .timeline__head p { grid-column: 1 / -1; grid-row: 2; min-height: 2lh; margin: 0; }
+  /* "Live" rather than "Back to live", so the eyebrow beside it keeps to one line. */
+  .timeline__now-long { display: none; }
+  .timeline__now-short { display: inline; }
+  #hero-lede { min-height: 3lh; }
+}
+
+@media (max-width: 370px) {
+  #hero-lede { min-height: 4lh; }
+}
 
 .timeline__control { position: relative; }
 
