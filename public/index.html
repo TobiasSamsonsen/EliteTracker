@@ -65,6 +65,7 @@
         <button type="button" data-view="compare" aria-pressed="false"><span data-i18n="tab.compare">Compare Clubs</span></button>
         <button type="button" data-view="explore" aria-pressed="false"><span data-i18n="tab.explore">Explore</span></button>
         <button type="button" data-view="model" aria-pressed="false"><span data-i18n="tab.model">Model Card</span></button>
+        <button type="button" class="views-more" id="views-more" aria-pressed="false" aria-expanded="false" aria-controls="views-more-menu" hidden><span data-i18n="mob.more">More</span><svg viewBox="0 0 12 12" width="10" height="10" aria-hidden="true" focusable="false"><path d="M2.5 4.5 6 8l3.5-3.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
       </div>
     </div>
     <button type="button" id="settings-btn" class="settings-btn" aria-label="Settings" aria-expanded="false" aria-controls="settings-menu">
@@ -107,6 +108,17 @@
         </div>
       </div>
   </div>
+</div>
+
+<!-- The views the masthead has no room for (fitViews), as on a phone's More sheet. -->
+<div id="views-more-menu" class="popover-menu" role="group" data-i18n="aria.moreViews" data-i18n-attr="aria-label" aria-label="More views" hidden>
+  <button type="button" class="popover-menu__btn" data-view="grid" aria-pressed="false" hidden><span data-i18n="tab.grid">Finish Grid</span></button>
+  <button type="button" class="popover-menu__btn" data-view="table" aria-pressed="false" hidden><span data-i18n="tab.table">Table</span></button>
+  <button type="button" class="popover-menu__btn" data-view="ladder" aria-pressed="false" hidden><span data-i18n="tab.ladder">Ladder</span></button>
+  <button type="button" class="popover-menu__btn" data-view="matches" aria-pressed="false" hidden><span data-i18n="tab.matches">Matches</span></button>
+  <button type="button" class="popover-menu__btn" data-view="compare" aria-pressed="false" hidden><span data-i18n="tab.compare">Compare Clubs</span></button>
+  <button type="button" class="popover-menu__btn" data-view="explore" aria-pressed="false" hidden><span data-i18n="tab.explore">Explore</span></button>
+  <button type="button" class="popover-menu__btn" data-view="model" aria-pressed="false" hidden><span data-i18n="tab.model">Model Card</span></button>
 </div>
 
 <div id="settings-menu" class="popover-menu" role="group" data-i18n="aria.settings" data-i18n-attr="aria-label" aria-label="Settings" hidden>

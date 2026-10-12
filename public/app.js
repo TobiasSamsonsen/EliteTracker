@@ -4680,6 +4680,9 @@ function render() {
   // the season mountain to a phone's screen.
   document.body.dataset.view = state.activeView;
   document.body.dataset.viz = state.activeView === 'explore' ? state.exploreItem || '' : '';
+  // The hero just set the model badge beside the wordmark, which can take
+  // room from the tabs.
+  fitViews();
 
   // Team view requires a selected team; fall back to table if none
   if (state.activeView === 'team' && !state.teamFocusId) {
@@ -4848,6 +4851,28 @@ function wire() {
     }
   });
 
+  // Masthead More tab: the views the strip has no room for.
+  const viewsMore = $('#views-more');
+  const viewsMenu = $('#views-more-menu');
+  viewsMore.addEventListener('click', (event) => {
+    event.stopPropagation();
+    const open = !viewsMenu.hidden;
+    closeAllMenus();
+    if (open) return;
+    viewsMenu.hidden = false;
+    viewsMore.setAttribute('aria-expanded', 'true');
+    positionPopover(viewsMenu, viewsMore);
+    menuFocusCleanup = trapFocus(viewsMenu);
+  });
+  viewsMenu.addEventListener('click', (event) => {
+    if (event.target.closest('[data-view]')) closeAllMenus();
+  });
+  window.addEventListener('resize', () => {
+    if (!viewsMenu.hidden) closeAllMenus();
+    fitViews();
+  });
+  document.fonts?.ready.then(fitViews);
+
   // Mobile More button: toggle the sheet.
   const moreButton = $('#more-button');
   const moreSheet = $('#more-sheet');
@@ -4913,6 +4938,13 @@ function wire() {
     const settingsBtn = $('#settings-btn');
     const leagueMenu = $('#hero-league-menu');
     const seasonMenu = $('#hero-season-menu');
+    const viewsMenu = $('#views-more-menu');
+    if (!viewsMenu.hidden && !viewsMenu.contains(event.target) && !event.target.closest('#views-more')) {
+      viewsMenu.hidden = true;
+      $('#views-more').setAttribute('aria-expanded', 'false');
+      menuFocusCleanup?.();
+      menuFocusCleanup = null;
+    }
     if (!settingsMenu.hidden && !settingsMenu.contains(event.target) && event.target !== settingsBtn) {
       settingsMenu.hidden = true;
       settingsBtn.setAttribute('aria-expanded', 'false');
@@ -4986,6 +5018,34 @@ function applyTeamParameter() {
    so its active tab is pulled back into sight. On mobile the fixed bar shows
    four views; when the current one lives in the sheet, More carries the mark
    so the bar is never blank. */
+/* The masthead's tabs that do not fit go behind a "More" tab, last first, as
+   the phone's More sheet holds what its bottom bar has no room for; More is
+   marked when the open view is among them. Measured rather than set by a
+   breakpoint, since the labels' width differs by language. A phone hides the
+   whole strip for its bottom bar. */
+function fitViews() {
+  const holder = $('.masthead__views');
+  const more = $('#views-more');
+  if (!holder || !more) return;
+  const tabs = [...holder.querySelectorAll('.switch [data-view]')];
+  const items = new Map([...document.querySelectorAll('#views-more-menu [data-view]')].map((item) => [item.dataset.view, item]));
+  for (const tab of tabs) {
+    tab.hidden = false;
+    items.get(tab.dataset.view).hidden = true;
+  }
+  more.hidden = true;
+  const fits = () => holder.scrollWidth <= holder.clientWidth + 1;
+  if (holder.offsetParent && !fits()) {
+    more.hidden = false;
+    for (const tab of [...tabs].reverse()) {
+      if (fits()) break;
+      tab.hidden = true;
+      items.get(tab.dataset.view).hidden = false;
+    }
+  }
+  more.setAttribute('aria-pressed', String(tabs.some((tab) => tab.hidden && tab.dataset.view === state.activeView)));
+}
+
 function markActiveView() {
   for (const button of document.querySelectorAll('[data-view]')) {
     const active = button.dataset.view === state.activeView;
@@ -5000,6 +5060,7 @@ function markActiveView() {
     .some((button) => button.dataset.view === state.activeView);
   const moreBtn = $('#more-button');
   if (moreBtn) moreBtn.setAttribute('aria-pressed', String(!inBar));
+  fitViews();
 }
 
 /* Focus trap cleanup for whichever popover is open; only one can be, since
@@ -5011,6 +5072,7 @@ function closeAllMenus() {
   for (const part of document.querySelectorAll('.hero-title-part')) part.setAttribute('aria-expanded', 'false');
   const btn = $('#settings-btn');
   if (btn) btn.setAttribute('aria-expanded', 'false');
+  $('#views-more')?.setAttribute('aria-expanded', 'false');
   menuFocusCleanup?.();
   menuFocusCleanup = null;
   closeSheet();

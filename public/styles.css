@@ -313,6 +313,7 @@ html { scroll-padding-top: 76px; }
   display: flex;
   align-items: baseline;
   gap: 0.5rem;
+  white-space: nowrap; /* the model badge stays beside the name */
 }
 
 .wordmark span {
@@ -2407,6 +2408,11 @@ footer a { color: var(--ink); }
 .popover-menu[hidden] { display: none; }
 .popover-menu--scroll { max-height: 50vh; overflow-y: auto; }
 #settings-menu { min-width: 200px; }
+#views-more-menu { min-width: 180px; }
+#views-more-menu .popover-menu__btn { display: block; }
+#views-more-menu .popover-menu__btn[hidden] { display: none; }
+.views-more { display: inline-flex; align-items: center; gap: 0.3rem; }
+.views-more[hidden] { display: none; }
 
 .popover-menu__item {
   display: flex;
