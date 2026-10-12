@@ -2576,7 +2576,14 @@ function mountainRoot() {
       <button type="button" class="mountain__info"><svg viewBox="0 0 16 16" width="15" height="15" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="8" cy="8" r="6.5"/><path d="M8 7.2v4" stroke-linecap="round"/><circle cx="8" cy="4.9" r="0.9" fill="currentColor" stroke="none"/></svg><span data-i18n="explore.facts"></span></button>
     </div>
     <div class="mountain__controls">
-      <div class="mountain__ctl">
+      <div class="mountain__ctl mountain__ctl--where">
+        <span class="mountain__label" data-i18n="mountain.where"></span>
+        <div class="mountain__row">
+          <select class="mountain__select" id="mountain-league"></select>
+          <select class="mountain__select" id="mountain-season"></select>
+        </div>
+      </div>
+      <div class="mountain__ctl mountain__ctl--order">
         <span class="mountain__label" data-i18n="mountain.order"></span>
         <div class="table-controls">
           <button type="button" class="table-control-btn" data-order="finish" data-i18n="mountain.byFinish"></button>
@@ -2584,18 +2591,18 @@ function mountainRoot() {
           <button type="button" class="table-control-btn" data-order="now" data-i18n="mountain.byTable"></button>
         </div>
       </div>
-      <div class="mountain__ctl">
+      <div class="mountain__ctl mountain__ctl--build">
         <label class="mountain__label" for="mountain-upto"><span data-i18n="mountain.builtUp"></span> <output></output></label>
         <div class="mountain__row">
           <button type="button" class="grid-anim-btn mountain__play" aria-pressed="false"><span class="grid-anim-btn__icon" aria-hidden="true">▶</span><span data-i18n="mountain.play"></span></button>
           <input type="range" id="mountain-upto" min="0" step="1">
         </div>
       </div>
-      <div class="mountain__ctl">
+      <div class="mountain__ctl mountain__ctl--cutoff">
         <label class="mountain__label" for="mountain-cutoff"><span data-i18n="mountain.cutoff"></span> <output></output></label>
         <input type="range" id="mountain-cutoff" min="0" max="${MOUNTAIN_CUTOFFS.length - 1}" step="1" value="${mountain.cutoff}">
       </div>
-      <div class="mountain__ctl">
+      <div class="mountain__ctl mountain__ctl--cut">
         <span class="mountain__label" data-i18n="mountain.cut"></span>
         <div class="mountain__row">
           <select class="mountain__select" id="mountain-cut-team"></select>
@@ -2620,6 +2627,15 @@ function mountainRoot() {
     mountainStop();
     mountain.upto = Number(event.target.value);
     redraw();
+  });
+  // Division and season go through the hero's own switches, so the rest of
+  // the page follows as it would from there.
+  root.querySelector('#mountain-league').addEventListener('change', (event) => {
+    document.querySelector(`#hero-league-menu [data-league="${event.target.value}"]`)?.click();
+  });
+  root.querySelector('#mountain-season').addEventListener('change', (event) => {
+    const season = Number(event.target.value);
+    if (season !== state.season) loadSeason(season);
   });
   root.querySelector('#mountain-cut-team').addEventListener('change', (event) => {
     mountain.cutTeam = event.target.value;
@@ -3144,9 +3160,27 @@ function fitMountain() {
   stage.style.height = `${Math.max(160, Math.floor(bottom - box.top - below - 10))}px`;
 }
 
+/* The division and season pickers, refilled from the report each render
+   (the names, the seasons on offer and the language can all change). */
+function syncMountainWhere(report) {
+  const root = mountain.root;
+  const league = root.querySelector('#mountain-league');
+  league.replaceChildren(...Object.entries(state.reports).map(([slug, r]) => new Option(r.league.name, slug)));
+  league.value = state.league;
+  league.setAttribute('aria-label', t('mountain.league'));
+  const season = root.querySelector('#mountain-season');
+  const seasons = report.league.seasons || [report.league.season];
+  season.replaceChildren(...[...seasons].reverse().map((s) => new Option(
+    s === report.league.current_season ? t('season.live', { season: s }) : String(s), String(s),
+  )));
+  season.value = String(report.league.season);
+  season.setAttribute('aria-label', t('mountain.season'));
+}
+
 async function renderMountain(report, body) {
   const root = mountainRoot();
   if (body.firstChild !== root) body.replaceChildren(root);
+  syncMountainWhere(report);
   fitMountain(); // before the camera is framed, which reads the stage's shape
   for (const node of root.querySelectorAll('[data-i18n]')) node.textContent = t(node.dataset.i18n);
   root.querySelector('canvas').setAttribute('aria-label', t('mountain.aria'));

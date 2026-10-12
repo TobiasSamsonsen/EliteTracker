@@ -40,7 +40,9 @@ across, one on phones) that each open a visualisation in the same panel, with
   open to the air) with baked per-corner ambient occlusion (`MOUNTAIN_AO`);
   layers 0.3 high; club names printed flat on the floor so they never swing
   into each other. three.js r147 is vendored in `public/vendor/three/` and
-  fetched only when the mountain opens. Controls: row order (predicted finish
+  fetched only when the mountain opens. Controls: division and season pickers
+  (through the hero's own switches; on phones they replace the hero row), row
+  order (predicted finish
   by default / pre-season / table; "Sluttabell" and no table button once a
   season is over), build-up slider with play, cut-off (0.5 % by default),
   vertical cut to one club and/or one place. The camera glides to the middle

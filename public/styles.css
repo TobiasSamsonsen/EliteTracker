@@ -3798,7 +3798,10 @@ html { scroll-behavior: smooth; }
 }
 .mountain__ctl { display: grid; gap: 0.4rem; align-content: start; min-width: 0; }
 .mountain__ctl { flex: 1 1 220px; }
-.mountain__ctl:first-child { flex: 0 0 auto; }
+.mountain__ctl--order,
+.mountain__ctl--where { flex: 0 0 auto; }
+.mountain__ctl--where .mountain__select { flex: none; }
+.mountain__ctl--cut { max-width: 26rem; }
 .mountain__ctl .table-controls { justify-self: start; }
 .mountain__ctl .table-control-btn { white-space: nowrap; }
 .mountain__label { display: flex; justify-content: space-between; gap: 0.5rem; color: var(--ink-muted); font-size: 0.75rem; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; }
@@ -3835,8 +3838,10 @@ html { scroll-behavior: smooth; }
   body[data-viz="mountain"] > footer,
   body[data-viz="mountain"] #hero-lede,
   body[data-viz="mountain"] #explore-desc,
-  body[data-viz="mountain"] .mountain__ctl:first-child > .mountain__label,
-  body[data-viz="mountain"] .mountain__ctl:last-child > .mountain__label,
+  body[data-viz="mountain"] .hero,
+  body[data-viz="mountain"] .mountain__ctl--where > .mountain__label,
+  body[data-viz="mountain"] .mountain__ctl--order > .mountain__label,
+  body[data-viz="mountain"] .mountain__ctl--cut > .mountain__label,
   body[data-viz="mountain"] label[for="mountain-upto"],
   body[data-viz="mountain"] .mountain__facts { display: none; }
   body[data-viz="mountain"] .hero { padding-bottom: 0.25rem; }
@@ -3849,7 +3854,10 @@ html { scroll-behavior: smooth; }
   body[data-viz="mountain"] .mountain__readout { left: 0.75rem; top: 0.5rem; }
   body[data-viz="mountain"] .mountain__readout b { font-size: 1.1rem; }
   body[data-viz="mountain"] .mountain__controls { gap: 0.6rem 1rem; padding: 0.7rem 0.875rem; }
-  body[data-viz="mountain"] .mountain__ctl:first-child { flex-basis: 100%; }
-  body[data-viz="mountain"] .mountain__ctl:first-child .table-controls { display: flex; }
-  body[data-viz="mountain"] .mountain__ctl:first-child .table-control-btn { flex: 1; padding-inline: 0.5rem; }
+  body[data-viz="mountain"] .mountain__ctl--order,
+  body[data-viz="mountain"] .mountain__ctl--where { flex-basis: 100%; }
+  body[data-viz="mountain"] .mountain__ctl--where .mountain__select { flex: 1; }
+  body[data-viz="mountain"] .mountain__ctl--cut { max-width: none; }
+  body[data-viz="mountain"] .mountain__ctl--order .table-controls { display: flex; }
+  body[data-viz="mountain"] .mountain__ctl--order .table-control-btn { flex: 1; padding-inline: 0.5rem; }
 }
