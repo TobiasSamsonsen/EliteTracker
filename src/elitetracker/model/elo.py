@@ -131,7 +131,12 @@ from dataclasses import dataclass
 # elo-v12.1: clubs level on points, goal difference and goals scored are
 # separated head-to-head (`model.table`), as the league does. Ratings and match
 # odds are unchanged; the simulation's last tiebreak follows the live table.
-MODEL_VERSION = "elo-v12.1"
+#
+# elo-v12.2: the season Monte Carlo runs on NumPy arrays (`simulation.season`).
+# Same model and the same draws per run, from a different random stream, so
+# every finishing chance moves by Monte Carlo noise only (measured at 200,000
+# runs against the pure-Python loop: worst cell 0.34 pp, median 0.01 pp).
+MODEL_VERSION = "elo-v12.2"
 
 # A 400-point rating gap means the stronger side is expected to score 10 times
 # as often as the weaker one; this is the constant that defines the ELO scale.

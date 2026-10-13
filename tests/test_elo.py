@@ -130,7 +130,7 @@ class TestConfig:
         assert config.season_regression == pytest.approx(0.88)
 
     def test_model_version_is_declared(self):
-        assert MODEL_VERSION == "elo-v12.1"
+        assert MODEL_VERSION == "elo-v12.2"
 
     def test_xg_alpha_default(self):
         config = EloConfig()

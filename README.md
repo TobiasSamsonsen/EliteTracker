@@ -1,7 +1,7 @@
 # EliteTracker
 
 Predictive model for Norwegian men's football: **Eliteserien** (tier 1) and
-**OBOS-ligaen** (tier 2). Uses an ELO rating system (elo-v12.1) to estimate team
+**OBOS-ligaen** (tier 2). Uses an ELO rating system (elo-v12.2) to estimate team
 strength, match probabilities and season outcomes. Fixtures and results come
 from FotMob (xG from FotMob for Eliteserien, Sofascore for OBOS-ligaen);
 benchmark odds from football-data.co.uk, squad values from Transfermarkt.

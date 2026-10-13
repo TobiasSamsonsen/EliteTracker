@@ -346,14 +346,31 @@ class TestSimulation:
         # The outcome odds are Elo's either way, so the title split is level;
         # what differs is the goals, which the projection does not expose --
         # so check the fixture tables directly.
-        from elitetracker.simulation.season import _fixtures
+        from elitetracker.simulation.season import SCORELINE_TABLES, _fixtures
         calm = _fixtures(args[0], args[1], {"A": 0, "B": 1}, EloConfig(), AttackDefence())
         loud = _fixtures(args[0], args[1], {"A": 0, "B": 1}, EloConfig(), wild)
-        expected_total = lambda tables: sum(
-            (cum[k] - (cum[k - 1] if k else 0.0)) * (hg + ag)
-            for cum, scores in tables for k, (hg, ag) in enumerate(scores)
-        ) / 3
-        assert expected_total(loud[0][4]) > expected_total(calm[0][4]) + 1.0
+        # Fixture 0's expected goals, averaged over its three result tables.
+        expected_total = lambda fixtures: float((fixtures.chances[0] * SCORELINE_TABLES.sum(axis=2)).sum()) / 3
+
+        assert expected_total(loud) > expected_total(calm) + 1.0
+
+    def test_alias_tables_reproduce_their_chances(self):
+        """Each column's own kept share plus what other columns hand it is its
+        chance; padding (chance 0) is never kept."""
+        import numpy as np
+        from elitetracker.simulation.season import TABLE_WIDTH, _alias_tables
+        rng = np.random.default_rng(3)
+        chances = rng.random((50, TABLE_WIDTH))
+        chances[:, 9:] *= rng.random((50, TABLE_WIDTH - 9)) < 0.5  # zero columns, as in padding
+        chances /= chances.sum(axis=1, keepdims=True)
+        accept, alias = _alias_tables(chances)
+        rebuilt = np.zeros_like(chances)
+        for row in range(len(chances)):
+            for column in range(TABLE_WIDTH):
+                share = min(accept[row, column], 1.0)
+                rebuilt[row, column] += share / TABLE_WIDTH
+                rebuilt[row, alias[row, column]] += (1.0 - share) / TABLE_WIDTH
+        assert np.allclose(rebuilt, chances, atol=1e-12)
 
     def test_counts_of_played_and_remaining(self):
         projection = simulate_season(

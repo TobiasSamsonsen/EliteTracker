@@ -172,6 +172,49 @@ skip one that would overlap. The rating history gets a phone-width viewBox
 (100-point ticks, '16 labels) like the season shape. The jsdom smoke test
 (`tests/season-shape.dom.js`) checks colours and legend instead of edges.
 
+## elo-v12.2: the season simulation on NumPy (October 2026) - shipped
+
+The Monte Carlo in `simulation.season` was ~98% of building a report (profiled:
+12.8 s of 13.0 s for a rewound view under cProfile). It now runs a chunk of
+1,000 runs at a time as arrays: strength shocks per run and club, outcome rolls
+per run and fixture, scorelines drawn from Walker alias tables (two lookups
+per draw; built for every fixture's three tables at once, padded to one width
+of 36), per-club points and goals by a matrix
+product with a fixture-club incidence matrix (float, so it runs on BLAS; the
+integer product was half the time), one sort per run on the same packed key,
+and the tallies by `bincount`. The scoring grids (`_fixtures`) are arrays too:
+every fixture's Poisson grid with the Dixon-Coles correction, blend and
+per-outcome tables at once (the 9x9 grid splits into the same 36 home-win, 9
+draw and 36 away-win cells for every fixture, so the tables need no padding).
+The season-shape snapshots skip the per-fixture
+branch tallies (`tally_conditionals=False`), which only the high-stakes swings
+read. `build_site` pins BLAS to one thread per worker.
+
+Same model and same draws per run, different random stream: at 200,000 runs
+against the pure-Python loop the worst of 256 cells differed by 0.34 pp
+(median 0.01 pp) in Eliteserien and 0.30 pp in OBOS-ligaen, expected points by
+at most 0.10, i.e. Monte Carlo noise. Hence the version bump with no model
+change. Speed, on an 8-core/16-thread Ryzen AI 7 350:
+
+| | pure Python | NumPy |
+|---|---|---|
+| rewound view, one process | 6.5 s | 1.0 s |
+| 200,000 runs, one league | 9.5 s | 1.7 s |
+| season 2025 (96 views), 16 workers | 91 s | 45 s |
+| same, 8 workers | | 38 s |
+
+The parallel gain is smaller than the single-process one because the second
+hardware thread per core helped the interpreter loop and does nothing for
+array code; `--jobs 8` is the better setting on this machine. With every core
+busy a view costs about 2.5x what it does alone (clocks drop, memory bandwidth
+is shared); recycling workers less often (25 views instead of 2) changed
+nothing, so it stays. The alias tables took a quarter off a single view
+(1.3 s -> 1.0 s) but not off this parallel build, for the same reason; on
+fewer cores (CI) the single-view gain is what counts.
+
+NumPy is the first dependency added under the new rule that each one is
+justified where it is declared (`pyproject.toml`; see AGENTS.md).
+
 ## ?? elo-v12.1: head-to-head tiebreak; team view pass (October 2026) - shipped
 
 **Tiebreak.** Eliteserien ranks on points, goal difference, goals scored, then

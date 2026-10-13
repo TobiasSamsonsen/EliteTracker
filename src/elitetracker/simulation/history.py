@@ -134,6 +134,7 @@ def build_history(
             ad=prior.copy().replay(rewound_all),
             config=SimulationConfig(simulations=config.simulations, seed=config.seed),
             elo_config=elo_config,
+            tally_conditionals=False,  # a snapshot keeps only the finishing odds
         )
         snapshots.append(
             HistorySnapshot(

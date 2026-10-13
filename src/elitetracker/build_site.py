@@ -33,6 +33,13 @@ from multiprocessing import Pool
 from pathlib import Path
 from typing import Any
 
+# One BLAS thread per worker: the pool already runs a worker per core, and
+# NumPy's own threads on top of that only contend (measured: 72 s -> 63 s for
+# a season). Set before numpy is first imported, below; the spawned workers
+# inherit the environment.
+for _threads in ("OPENBLAS_NUM_THREADS", "OMP_NUM_THREADS", "MKL_NUM_THREADS"):
+    os.environ.setdefault(_threads, "1")
+
 
 from elitetracker.model.elo import MODEL_VERSION, EloConfig
 from elitetracker.pipeline import (

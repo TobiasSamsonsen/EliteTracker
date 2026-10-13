@@ -9,9 +9,15 @@ requires-python = ">=3.11"
 # tzdata is the exception: Windows ships no IANA tz database, and
 # zoneinfo.ZoneInfo("Europe/Oslo") needs it to assign kickoffs to a matchday.
 # curl_cffi is needed for Sofascore which blocks non-browser TLS fingerprints.
+# numpy runs the season Monte Carlo as arrays (simulation.season): the
+# simulation is ~98% of building a report, and as a pure-Python loop it made a
+# rewound view 6.6 s; vectorised it is 1.7 s, and a past season builds in
+# 40-45 s instead of 91 s here. Standard-library Python cannot vectorise; numpy
+# is one widely used package with wheels for every platform CI runs on.
 dependencies = [
     "tzdata; sys_platform == 'win32'",
     "curl-cffi>=0.7",
+    "numpy>=2.0",
 ]
 
 [project.optional-dependencies]

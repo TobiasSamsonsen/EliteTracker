@@ -25,13 +25,13 @@ Two deliberate simplifications, both documented rather than hidden:
 from __future__ import annotations
 
 import math
-import random
-from bisect import bisect_left
 from dataclasses import dataclass
 
-from elitetracker.model.attack_defence import AttackDefence, blend_outcomes, conditional_scorelines, gap_blend_weight
+import numpy as np
+
+from elitetracker.model.attack_defence import GOAL_CAP, AttackDefence, gap_blend_weight
 from elitetracker.model.elo import EloConfig, effective_home_advantage, _RATING_SCALE
-from elitetracker.model.probabilities import AWAY_WIN, DRAW, HOME_WIN, match_probabilities
+from elitetracker.model.probabilities import match_probabilities
 from elitetracker.model.table import TableRow, table_from_matches
 from elitetracker.normalize.matches import Match
 from elitetracker.normalize.standings import POINTS_FOR_DRAW, POINTS_FOR_WIN
@@ -41,7 +41,9 @@ from elitetracker.normalize.standings import POINTS_FOR_DRAW, POINTS_FOR_WIN
 # has a calibration error of 1.54 percentage points, so sampling error well
 # under a fifth of that is already invisible.
 #
-# Measured against a 4,000,000-run reference, worst single cell in the grid:
+# Measured against a 4,000,000-run reference, worst single cell in the grid
+# (times from the pure-Python loop this replaced; NumPy runs them about 5x
+# faster, which leaves the trade-off where it was):
 #
 #      10,000   1.31 pp    0.07 s per league
 #      50,000   0.50 pp    0.37 s     <- here
@@ -54,6 +56,8 @@ from elitetracker.normalize.standings import POINTS_FOR_DRAW, POINTS_FOR_WIN
 # further buys precision beneath both the display and the model.
 DEFAULT_SIMULATIONS = 50_000
 DEFAULT_SEED = 20260809
+# Runs drawn per batch of arrays (see simulate_season).
+SIMULATION_CHUNK = 1_000
 
 # Per-run strength shock, in log-odds of home win against away win: a club
 # drawn +0.15 has every remaining fixture's win odds multiplied by exp(0.15)
@@ -115,44 +119,135 @@ class SeasonProjection:
     conditionals: list[list[list[list[int]]]] | None = None
 
 
-# Per unplayed fixture: home index, away index, P(home), P(home)+P(draw), and
-# for each outcome (home win, draw, away win) the scorelines of that outcome
-# with their cumulative probability, ready for one bisect in the hot loop.
-Fixture = tuple[int, int, float, float, list[tuple[list[float], list[tuple[int, int]]]]]
+# The score grid's cells, row-major (home goals i, away goals j), split by the
+# result each one is: the same 36 home wins, 9 draws and 36 away wins for every
+# fixture, so every fixture's three scoreline tables have the same lengths.
+_CELLS = [(i, j) for i in range(GOAL_CAP + 1) for j in range(GOAL_CAP + 1)]
+_BY_OUTCOME = [
+    np.array([k for k, (i, j) in enumerate(_CELLS) if keep(i, j)])
+    for keep in (lambda i, j: i > j, lambda i, j: i == j, lambda i, j: i < j)
+]
+# One width for every table (the 9 draws padded with scorelines of chance 0,
+# which an alias table never keeps), and each table's scorelines in order.
+TABLE_WIDTH = max(len(cells) for cells in _BY_OUTCOME)
+SCORELINE_TABLES = np.zeros((3, TABLE_WIDTH, 2))
+for _code, _cells in enumerate(_BY_OUTCOME):
+    SCORELINE_TABLES[_code, :len(_cells)] = [_CELLS[k] for k in _cells]
+_FACTORIAL = np.array([math.factorial(n) for n in range(GOAL_CAP + 1)], dtype=float)
+
+
+@dataclass
+class Fixtures:
+    """Everything the simulation needs per unplayed fixture, as arrays.
+
+    Each fixture has a scoreline table per result (home win, draw, away win):
+    `chances[fixture, outcome, column]` is the chance of the scoreline in
+    `SCORELINE_TABLES[outcome, column]` given that result. `accept` and
+    `alias` are the same tables as alias tables (Walker's method), flat by
+    (fixture * 3 + outcome) * TABLE_WIDTH + column: a draw lands on a column
+    uniformly, keeps it with chance `accept`, and otherwise takes the
+    column's `alias`, so a scoreline costs two lookups instead of a search."""
+    home: np.ndarray
+    away: np.ndarray
+    home_win: np.ndarray
+    home_or_draw: np.ndarray
+    chances: np.ndarray
+    accept: np.ndarray
+    alias: np.ndarray
+
+    def __len__(self) -> int:
+        return len(self.home)
 
 
 def _fixtures(
     matches: list[Match], ratings: dict[str, float], index_of: dict[str, int], config: EloConfig,
     ad: AttackDefence, blend: bool = True,
-) -> list[Fixture]:
-    """Everything the hot loop needs per fixture, computed once."""
-    fixtures: list[Fixture] = []
-    for match in matches:
-        if match.played:
-            continue
+) -> Fixtures:
+    """Every unplayed fixture's outcome odds and scoreline tables, computed
+    once and all together: the scoring grids of `model.attack_defence`
+    (score_grid, blend_outcomes, conditional_scorelines) as arrays, one row
+    per fixture, rather than a Python grid each."""
+    unplayed = [match for match in matches if not match.played]
+    home, away, lam, mu, elo, weight = [], [], [], [], [], []
+    for match in unplayed:
         home_id = match.home_id or match.home
         away_id = match.away_id or match.away
         gap = (ratings[home_id] + effective_home_advantage(config, ratings[home_id], ratings[away_id]) - ratings[away_id]) / _RATING_SCALE
-        grid = ad.grid(home_id, away_id, match.date, elo_gap=gap)
-        probabilities = match_probabilities(ratings[home_id], ratings[away_id], config)
-        if blend:
-            blend_weight = gap_blend_weight(gap, ad.config.blend_gamma)
-            probabilities = blend_outcomes(probabilities, grid, weight=blend_weight)
-        cells = conditional_scorelines(grid, probabilities)
-        tables = []
-        for outcome, keep in ((HOME_WIN, lambda i, j: i > j), (DRAW, lambda i, j: i == j), (AWAY_WIN, lambda i, j: i < j)):
-            scores = [(i, j) for (i, j) in cells if keep(i, j)]
-            total = sum(cells[s] for s in scores) or 1.0
-            running, cumulative = 0.0, []
-            for s in scores:
-                running += cells[s] / total
-                cumulative.append(running)
-            cumulative[-1] = 1.0  # guard against float drift at the top end
-            tables.append((cumulative, scores))
-        fixtures.append(
-            (index_of[home_id], index_of[away_id], probabilities.home_win, probabilities.home_win + probabilities.draw, tables)
-        )
-    return fixtures
+        rates = ad.rates(home_id, away_id, match.date, elo_gap=gap)
+        odds = match_probabilities(ratings[home_id], ratings[away_id], config)
+        home.append(index_of[home_id])
+        away.append(index_of[away_id])
+        lam.append(rates[0])
+        mu.append(rates[1])
+        elo.append((odds.home_win, odds.draw, odds.away_win))
+        weight.append(gap_blend_weight(gap, ad.config.blend_gamma))
+    count = len(unplayed)
+    lam = np.array(lam, dtype=float).reshape(count, 1)
+    mu = np.array(mu, dtype=float).reshape(count, 1)
+    goals = np.arange(GOAL_CAP + 1)
+    # score_grid: Poisson for each side, the Dixon-Coles correction on the
+    # four low scores (clipped at zero), renormalised.
+    grid = (np.exp(-lam) * lam ** goals / _FACTORIAL)[:, :, None] * (np.exp(-mu) * mu ** goals / _FACTORIAL)[:, None, :]
+    rho = ad.config.rho
+    lam, mu = lam[:, 0], mu[:, 0]
+    grid[:, 0, 0] *= np.maximum(1.0 - lam * mu * rho, 0.0)
+    grid[:, 0, 1] *= np.maximum(1.0 + lam * rho, 0.0)
+    grid[:, 1, 0] *= np.maximum(1.0 + mu * rho, 0.0)
+    grid[:, 1, 1] *= max(1.0 - rho, 0.0)
+    grid = grid.reshape(count, (GOAL_CAP + 1) ** 2)
+    grid /= grid.sum(axis=1, keepdims=True)
+    # The grid's own result odds, and blend_outcomes: a geometric blend with
+    # the Elo odds.
+    own = np.stack([grid[:, cells].sum(axis=1) for cells in _BY_OUTCOME], axis=1)
+    elo = np.array(elo, dtype=float).reshape(count, 3)
+    if blend:
+        weight = np.array(weight, dtype=float).reshape(count, 1)
+        odds = elo ** weight * own ** (1.0 - weight)
+        odds /= odds.sum(axis=1, keepdims=True)
+    else:
+        odds = elo
+    # conditional_scorelines then the per-outcome tables: within an outcome the
+    # cells keep the grid's own proportions, so each table is the grid's cells
+    # of that result over their total (an outcome the grid gives no mass, which
+    # Poisson cells never quite are, falls back to its last scoreline).
+    chances = np.zeros((count, 3, TABLE_WIDTH))
+    for code, cells in enumerate(_BY_OUTCOME):
+        total = own[:, code:code + 1]
+        chances[:, code, :len(cells)] = grid[:, cells] / np.where(total > 0, total, 1.0)
+        chances[total[:, 0] <= 0, code, len(cells) - 1] = 1.0
+    accept, alias = _alias_tables(chances.reshape(count * 3, TABLE_WIDTH))
+    return Fixtures(
+        home=np.array(home, dtype=np.intp),
+        away=np.array(away, dtype=np.intp),
+        home_win=odds[:, 0].copy(),
+        home_or_draw=odds[:, 0] + odds[:, 1],
+        chances=chances,
+        accept=accept.ravel(),
+        alias=alias.ravel(),
+    )
+
+
+def _alias_tables(chances: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
+    """Walker alias tables for every row of `chances` at once (rows sum to 1).
+
+    Robin Hood pairing, in lockstep across the rows: each round closes the
+    smallest open column of every row, keeping its own scaled chance and
+    handing the rest of its slot to the row's largest open column. A column
+    of chance 0 always hands over, so padding is never drawn."""
+    rows, width = chances.shape
+    scaled = chances * width
+    accept = np.ones((rows, width))
+    alias = np.tile(np.arange(width), (rows, 1))
+    open_ = np.ones((rows, width), dtype=bool)
+    every = np.arange(rows)
+    for _ in range(width - 1):
+        small = np.argmin(np.where(open_, scaled, np.inf), axis=1)
+        large = np.argmax(np.where(open_, scaled, -np.inf), axis=1)
+        accept[every, small] = scaled[every, small]
+        alias[every, small] = large
+        scaled[every, large] -= 1.0 - scaled[every, small]
+        open_[every, small] = False
+    return accept, alias
 
 
 def simulate_season(
@@ -162,10 +257,14 @@ def simulate_season(
     ad: AttackDefence | None = None,
     config: SimulationConfig | None = None,
     elo_config: EloConfig | None = None,
+    tally_conditionals: bool = True,
 ) -> SeasonProjection:
     """`ad` is the attack/defence state as of the matches given; the outcome odds
     are its blend with the Elo odds. Without one every club is an average side,
-    the Elo odds stand alone and only shape the scorelines."""
+    the Elo odds stand alone and only shape the scorelines. With
+    `tally_conditionals` off the per-fixture branch tallies (`conditionals`,
+    for the high-stakes swings) are skipped and left None: a fifth of the work,
+    which the season-shape snapshots never read."""
     config = config or SimulationConfig()
     elo_config = elo_config or EloConfig()
     blend = ad is not None
@@ -180,18 +279,33 @@ def simulate_season(
     if missing:
         raise KeyError(f"no rating for {missing}")
 
-    # The hot loop works on integer indices rather than team ids: a list slice
-    # per simulation instead of a dict rebuild, and one packed integer per club
-    # instead of a lambda that builds a tuple. Same maths, same seed, same
-    # numbers -- about 1.5x the throughput, which is 1.5x the accuracy for the
-    # same wait.
+    # Runs are drawn a chunk at a time as arrays -- runs down, fixtures or
+    # clubs across -- rather than one run at a time in Python: the same draws
+    # and the same arithmetic per run, about 30x the throughput. A chunk keeps
+    # each array to a few megabytes whatever the run count.
     count = len(team_ids)
     index_of = {team_id: index for index, team_id in enumerate(team_ids)}
     rows = [by_id[team_id] for team_id in team_ids]
     fixtures = _fixtures(matches, ratings, index_of, elo_config, ad, blend)
-    base_points = [row.points for row in rows]
-    base_goals_for = [row.goals_for for row in rows]
-    base_goals_against = [row.goals_against for row in rows]
+    fixture_count = len(fixtures)
+    home, away = fixtures.home, fixtures.away
+    home_chance, home_or_draw_chance = fixtures.home_win, fixtures.home_or_draw
+    # Fixture -> club incidence, so a chunk's per-fixture points and goals
+    # become per-club totals with one matrix product each. Floats, which the
+    # product runs on BLAS for (integer products do not, and were half the
+    # time); the sums are small whole numbers, so they come back exact.
+    at_home = np.zeros((fixture_count, count))
+    at_home[np.arange(fixture_count), home] = 1.0
+    away_side = np.zeros((fixture_count, count))
+    away_side[np.arange(fixture_count), away] = 1.0
+    to_clubs = lambda per_fixture, incidence: np.rint(per_fixture @ incidence).astype(np.int64)
+    accept, alias = fixtures.accept, fixtures.alias
+    scoreline_tables = SCORELINE_TABLES.reshape(3 * TABLE_WIDTH, 2)
+    home_points = np.array([POINTS_FOR_WIN, POINTS_FOR_DRAW, 0], dtype=float)
+    away_points = np.array([0, POINTS_FOR_DRAW, POINTS_FOR_WIN], dtype=float)
+    base_points = np.array([row.points for row in rows], dtype=np.int64)
+    base_goals_for = np.array([row.goals_for for row in rows], dtype=np.int64)
+    base_goals_against = np.array([row.goals_against for row in rows], dtype=np.int64)
 
     # Clubs level on simulated points are separated on simulated goal
     # difference, then simulated goals scored. Both accrue from the scorelines
@@ -204,120 +318,92 @@ def simulate_season(
     # season (current GD plus at most 8 * remaining matches either way).
     goals_width = 10  # 1024 slots: covers GD +/- ~500 and goals_for up to ~1000
     offset_gd = 1 << (goals_width - 1)  # 512, keeps signed GD inside [0, 1024)
-    scale_gd = 1 << goals_width
-    scale_gf = 1 << goals_width
     index_width = count.bit_length()
-    mask = (1 << index_width) - 1
+    club_index = np.arange(count, dtype=np.int64)
 
-    # High-stakes tallies: per fixture, per outcome, per club, the finishing
-    # position it ended on. Fed by the outcome code the loop was already
-    # discarding, so the extra cost is two list writes per fixture per run rather
-    # than a second simulation pass.
-    conditionals = [[[[0] * count for _ in range(count)] for _ in range(3)] for _ in fixtures]
-    # The outcome's tally row per fixture, picked once in the
-    # fixture loop (where the outcome is known) instead of once per
-    # club in the finishing loop, where the position is known.
-    branch_rows: list[list[list[int]] | None] = [None] * len(fixtures)
-    # Fixtures each club plays in, so a run's finishing position -- known
-    # only once the run is sorted -- can be tallied against them.
-    club_fixtures = [[] for _ in range(count)]
-    for fixture_index, (home, away, *_rest) in enumerate(fixtures):
-        club_fixtures[home].append(fixture_index)
-        club_fixtures[away].append(fixture_index)
+    # Tallies. counts[club][position]; conditionals[fixture][outcome][club]
+    # [position] counts the runs in which that club finished there *given*
+    # that fixture came out that way (the high-stakes swings); position_hist
+    # [position][points] gives the median points per finishing position, which
+    # the frontend states as a band's threshold.
+    counts = np.zeros(count * count, dtype=np.int64)
+    points_total = np.zeros(count, dtype=np.int64)
+    goals_for_total = np.zeros(count, dtype=np.int64)
+    goals_against_total = np.zeros(count, dtype=np.int64)
+    max_points = int(base_points.max(initial=0)) + 3 * fixture_count
+    position_hist = np.zeros(count * (max_points + 1), dtype=np.int64)
+    conditionals = np.zeros(fixture_count * 3 * count * count if tally_conditionals else 0, dtype=np.int64)
+    fixture_slot = np.arange(fixture_count, dtype=np.int64) * 3
 
-    counts = [[0] * count for _ in range(count)]
-    points_total = [0] * count
-    goals_for_total = [0] * count
-    goals_against_total = [0] * count
-    # Median points per finishing position, so the frontend can state a band's
-    # expected threshold. Points are bounded small integers, so a histogram per
-    # position beats sorting 50,000 samples per position per report.
-    max_points = max(row.points for row in rows) + 3 * len(fixtures)
-    position_hist = [[0] * (max_points + 1) for _ in range(count)]
-
-    rng = random.Random(config.seed)
-    random_value = rng.random  # bound once; this is the hot path
+    rng = np.random.default_rng(config.seed)
     strength_sd = config.strength_sd
+    done = 0
+    while done < config.simulations:
+        runs = min(SIMULATION_CHUNK, config.simulations - done)
+        done += runs
+        home_win = np.broadcast_to(home_chance, (runs, fixture_count))
+        home_or_draw = np.broadcast_to(home_or_draw_chance, (runs, fixture_count))
+        if strength_sd:
+            # exp(shock) per club: a fixture's win odds scale by boost[home] /
+            # boost[away], its loss odds by the inverse, and the three renormalise.
+            boost = np.exp(rng.normal(0.0, strength_sd, (runs, count)))
+            ratio = boost[:, home] / boost[:, away]
+            home_weight = home_win * ratio
+            draw_weight = home_or_draw - home_win
+            total = home_weight + draw_weight + (1.0 - home_or_draw) / ratio
+            home_win = home_weight / total
+            home_or_draw = (home_weight + draw_weight) / total
+        roll = rng.random((runs, fixture_count))
+        # 0 home win, 1 draw, 2 away win.
+        outcome = (roll >= home_win).astype(np.int64) + (roll >= home_or_draw)
+        # The scoreline, from the fixture's alias table for that outcome: the
+        # draw's whole part picks a column, its fraction keeps it or takes the
+        # alias.
+        slot = rng.random((runs, fixture_count)) * TABLE_WIDTH
+        column = slot.astype(np.int64)
+        table = (fixture_slot + outcome) * TABLE_WIDTH
+        column = np.where(slot - column < accept[table + column], column, alias[table + column])
+        home_goals = scoreline_tables[outcome * TABLE_WIDTH + column, 0]
+        away_goals = scoreline_tables[outcome * TABLE_WIDTH + column, 1]
 
-    for _ in range(config.simulations):
-        points = base_points[:]
-        goals_for = base_goals_for[:]
-        goals_against = base_goals_against[:]
-        # exp(shock) per club: the fixture's win odds scale by boost[home] /
-        # boost[away], its loss odds by the inverse, and the three renormalise.
-        boost = [math.exp(rng.gauss(0.0, strength_sd)) for _ in range(count)] if strength_sd else None
-        for fixture_index, (home, away, home_chance, home_or_draw_chance, tables) in enumerate(fixtures):
-            if boost is not None:
-                ratio = boost[home] / boost[away]
-                home_weight = home_chance * ratio
-                draw_weight = home_or_draw_chance - home_chance
-                total = home_weight + draw_weight + (1.0 - home_or_draw_chance) / ratio
-                home_chance = home_weight / total
-                home_or_draw_chance = (home_weight + draw_weight) / total
-            roll = random_value()
-            if roll < home_chance:
-                outcome_code = 0
-                points[home] += POINTS_FOR_WIN
-            elif roll < home_or_draw_chance:
-                outcome_code = 1
-                points[home] += POINTS_FOR_DRAW
-                points[away] += POINTS_FOR_DRAW
-            else:
-                outcome_code = 2
-                points[away] += POINTS_FOR_WIN
+        points = base_points + to_clubs(home_points[outcome], at_home) + to_clubs(away_points[outcome], away_side)
+        goals_for = base_goals_for + to_clubs(home_goals, at_home) + to_clubs(away_goals, away_side)
+        goals_against = base_goals_against + to_clubs(away_goals, at_home) + to_clubs(home_goals, away_side)
+        packed = (
+            ((points << goals_width) + (goals_for - goals_against + offset_gd)) << goals_width
+        ) + goals_for
+        packed = (packed << index_width) + club_index
+        order = np.argsort(-packed, axis=1)  # club per finishing position, best first
+        position = np.empty_like(order)
+        position[np.arange(runs)[:, None], order] = club_index
 
-            branch_rows[fixture_index] = conditionals[fixture_index][outcome_code]
+        counts += np.bincount((club_index * count + position).ravel(), minlength=count * count)
+        points_total += points.sum(axis=0)
+        goals_for_total += goals_for.sum(axis=0)
+        goals_against_total += goals_against.sum(axis=0)
+        position_hist += np.bincount((position * (max_points + 1) + points).ravel(), minlength=position_hist.size)
+        if tally_conditionals:
+            branch = (fixture_slot + outcome) * count
+            for side in (home, away):
+                cells = (branch + side) * count + position[:, side]
+                conditionals += np.bincount(cells.ravel(), minlength=conditionals.size)
 
-            cumulative, scores = tables[outcome_code]
-            home_goals, away_goals = scores[bisect_left(cumulative, random_value())]
-            goals_for[home] += home_goals
-            goals_against[home] += away_goals
-            goals_for[away] += away_goals
-            goals_against[away] += home_goals
-
-        packed = [
-            (
-                (
-                    (points[index] * scale_gd + (goals_for[index] - goals_against[index] + offset_gd))
-                * scale_gf
-                + goals_for[index]
-            )
-            * (1 << index_width)
-            + index
-        )
-            for index in range(count)
-        ]
-        packed.sort(reverse=True)
-        for position, value in enumerate(packed):
-            index = value & mask
-            counts[index][position] += 1
-            points_total[index] += points[index]
-            goals_for_total[index] += goals_for[index]
-            goals_against_total[index] += goals_against[index]
-            position_hist[position][points[index]] += 1
-            # The finishing position is only known once the run is
-            # sorted, so the conditional tallies are written here, once
-            # per club per run, against the outcome each fixture drew.
-            for fixture_index in club_fixtures[index]:
-                branch_rows[fixture_index][index][position] += 1
-
-    # Each run leaves a fixture's two clubs in exactly one outcome
-    # branch, so per club the three branches must sum to the run count.
-    for fixture_index, (home, away, *_rest) in enumerate(fixtures):
-        for club in (home, away):
-            assert sum(sum(branch[club]) for branch in conditionals[fixture_index]) == config.simulations, (
-                f"branch tally mismatch at fixture {fixture_index}"
-            )
+    counts = counts.reshape(count, count)
+    if tally_conditionals:
+        conditionals = conditionals.reshape(fixture_count, 3, count, count)
+        # Each run leaves a fixture's two clubs in exactly one outcome branch,
+        # so per club the three branches must sum to the run count.
+        for fixture_index in range(fixture_count):
+            for club in (home[fixture_index], away[fixture_index]):
+                assert conditionals[fixture_index, :, club].sum() == config.simulations, (
+                    f"branch tally mismatch at fixture {fixture_index}"
+                )
 
     halfway = (config.simulations + 1) // 2
-    position_points = []
-    for hist in position_hist:
-        seen = 0
-        for pts, occ in enumerate(hist):
-            seen += occ
-            if seen >= halfway:
-                position_points.append(pts)
-                break
+    position_points = [
+        int(np.searchsorted(np.cumsum(hist), halfway))
+        for hist in position_hist.reshape(count, max_points + 1)
+    ]
 
     simulations = config.simulations
     projections = [
@@ -329,10 +415,10 @@ def simulate_season(
             current_points=rows[index].points,
             current_goal_difference=rows[index].goal_difference,
             played=rows[index].played,
-            position_probabilities=[value / simulations for value in counts[index]],
-            expected_points=points_total[index] / simulations,
-            expected_goals_for=goals_for_total[index] / simulations,
-            expected_goals_against=goals_against_total[index] / simulations,
+            position_probabilities=(counts[index] / simulations).tolist(),
+            expected_points=float(points_total[index] / simulations),
+            expected_goals_for=float(goals_for_total[index] / simulations),
+            expected_goals_against=float(goals_against_total[index] / simulations),
         )
         for index, team_id in enumerate(team_ids)
     ]
@@ -346,5 +432,5 @@ def simulate_season(
         matches_played=sum(1 for match in matches if match.played),
         position_points=position_points,
         strength_sd=strength_sd,
-        conditionals=conditionals,
+        conditionals=conditionals.tolist() if tally_conditionals else None,
     )
