@@ -3703,7 +3703,6 @@ html { scroll-behavior: smooth; }
 
 /* Key figures: a number, what it is, and a sentence on reading it. */
 .explore-facts { margin-top: 1rem; padding-top: 1rem; border-top: 1px solid var(--rule); }
-.mountain__facts .explore-facts { margin: 0; padding: 1rem 1.25rem 1.25rem; }
 .explore-facts__title { margin: 0 0 0.75rem; color: var(--ink-muted); font-size: 0.75rem; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; }
 .explore-facts__grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 0.75rem; }
 .explore-fact { display: grid; align-content: start; gap: 0.2rem; padding: 0.8rem 0.9rem; background: var(--panel-sunk); border-radius: 10px; }
@@ -3711,28 +3710,7 @@ html { scroll-behavior: smooth; }
 .explore-fact__label { font-size: 0.8125rem; font-weight: 600; }
 .explore-fact__text { margin: 0; color: var(--ink-muted); font-size: 0.8125rem; line-height: 1.4; }
 
-/* The figures again, on demand: a pill on the mountain's stage and a dialog. */
-.mountain__info {
-  position: absolute;
-  top: 0.6rem;
-  right: 0.75rem;
-  display: inline-flex;
-  align-items: center;
-  gap: 0.35rem;
-  height: 2rem;
-  padding: 0 0.85rem 0 0.6rem;
-  border: 1px solid var(--rule);
-  border-radius: 999px;
-  background: color-mix(in oklab, var(--panel) 85%, transparent);
-  color: var(--ink);
-  font: inherit;
-  font-size: 0.8125rem;
-  font-weight: 600;
-  cursor: pointer;
-}
-.mountain__info:hover { background: var(--panel-sunk); border-color: var(--rule-strong); }
-.mountain__info svg { color: var(--ink-muted); }
-@media (pointer: coarse) { .mountain__info { height: 40px; } }
+/* The figures again, on demand: a dialog. */
 
 .facts-dialog {
   width: min(640px, calc(100vw - 2rem));
@@ -3792,44 +3770,143 @@ html { scroll-behavior: smooth; }
 .attack-map__club:hover circle,
 .attack-map__club:focus-visible circle { stroke: var(--ink); stroke-width: 2; }
 
-/* Season mountain */
+/* Season mountain: pinned to the window between the masthead and, on a
+   phone, the bottom bar (fitMountain measures them), the page locked behind
+   it so a drag on the stack never scrolls or pulls to refresh. */
+html:has(> body[data-viz="mountain"]) { overflow: hidden; overscroll-behavior: none; }
+body[data-viz="mountain"] > footer { display: none; }
+.mountain {
+  position: fixed;
+  inset: var(--mountain-top, 61px) 0 var(--mountain-bottom, 0px);
+  z-index: 15;
+}
 .mountain__stage {
   position: relative;
-  height: min(70vh, 720px);
-  min-height: 360px;
+  height: 100%;
   background: var(--panel);
   touch-action: none;
 }
 .mountain__stage canvas { display: block; width: 100%; height: 100%; cursor: grab; }
 .mountain__stage canvas:active { cursor: grabbing; }
-.mountain__readout { position: absolute; left: 1rem; top: 0.75rem; display: grid; gap: 0.15rem; pointer-events: none; }
-.mountain__readout b { font-size: 1.375rem; font-stretch: 112%; line-height: 1; }
-.mountain__readout span { color: var(--ink-muted); font-size: 0.75rem; font-variant-numeric: tabular-nums; }
 .mountain__status { position: absolute; inset: 0; display: grid; place-items: center; margin: 0; padding: 1rem; color: var(--ink-muted); text-align: center; background: var(--panel); }
 .mountain__status[hidden] { display: none; }
-.mountain__hint { position: absolute; right: 0.75rem; bottom: 0.6rem; color: var(--ink-faint); font-size: 0.6875rem; pointer-events: none; }
 
-/* The sort pill keeps its natural width; the other controls share the rest
-   and wrap onto a new line when the row runs out. */
-.mountain__controls {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 1rem 1.5rem;
-  padding: 1rem 1.25rem;
-  border-top: 1px solid var(--rule);
+/* Floating over the stage: back, the division and season, and the key
+   figures along the top; the readout bottom left, settings bottom right. */
+.mountain__top {
+  position: absolute;
+  inset: 0.75rem 0.75rem auto;
+  display: grid;
+  grid-template-columns: 1fr minmax(0, auto) 1fr;
+  align-items: center;
+  gap: 0.5rem;
+  pointer-events: none;
 }
-.mountain__ctl { display: grid; gap: 0.4rem; align-content: start; min-width: 0; }
-.mountain__ctl { flex: 1 1 220px; }
-.mountain__ctl--order,
-.mountain__ctl--where { flex: 0 0 auto; }
-.mountain__ctl--where .mountain__select { flex: none; }
-.mountain__ctl--cut { max-width: 26rem; }
-.mountain__ctl .table-controls { justify-self: start; }
-.mountain__ctl .table-control-btn { white-space: nowrap; }
+.mountain__top > * { pointer-events: auto; }
+.mountain__back { justify-self: start; }
+.mountain__info { justify-self: end; }
+.mountain__where { display: flex; gap: 0.5rem; min-width: 0; }
+.mountain__chip,
+.mountain__transport,
+.mountain__where .mountain__select {
+  height: 2.25rem;
+  border: 1px solid var(--rule);
+  border-radius: 999px;
+  background: color-mix(in oklab, var(--panel) 85%, transparent);
+  backdrop-filter: blur(8px);
+  box-shadow: var(--shadow);
+}
+.mountain__chip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  padding: 0 0.85rem 0 0.6rem;
+  color: var(--ink);
+  font: inherit;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+.mountain__chip:hover { background: var(--panel-sunk); border-color: var(--rule-strong); }
+.mountain__chip svg { flex: none; color: var(--ink-muted); }
+.mountain__where .mountain__select { flex: 0 1 auto; }
+.mountain__gear {
+  position: absolute;
+  right: 1rem;
+  bottom: 1rem;
+  width: 3.25rem;
+  height: 3.25rem;
+  padding: 0;
+}
+.mountain__gear svg { color: var(--ink); }
+.mountain__gear[aria-expanded="true"] { background: var(--ink); border-color: var(--ink); }
+.mountain__gear[aria-expanded="true"] svg { color: var(--paper); }
+.mountain__readout { position: absolute; left: 1rem; bottom: 5rem; display: grid; gap: 0.15rem; pointer-events: none; }
+.mountain__readout b { font-size: 1.375rem; font-stretch: 112%; line-height: 1; }
+.mountain__readout span { color: var(--ink-muted); font-size: 0.75rem; font-variant-numeric: tabular-nums; }
+.mountain__hint { position: absolute; right: 1rem; bottom: 5.25rem; color: var(--ink-faint); font-size: 0.6875rem; white-space: nowrap; pointer-events: none; }
+
+/* The settings popup, standing just above the button that opens it. */
+.mountain__controls {
+  position: fixed;
+  inset: auto 1rem calc(var(--mountain-bottom, 0px) + 5rem) auto;
+  width: min(24rem, calc(100vw - 2rem));
+  max-height: calc(100dvh - var(--mountain-top, 61px) - var(--mountain-bottom, 0px) - 6rem);
+  margin: 0;
+  padding: 1rem 1.1rem 1.1rem;
+  overflow: auto;
+  border: 1px solid var(--rule);
+  border-radius: var(--radius);
+  background: var(--panel);
+  color: var(--ink);
+  box-shadow: var(--shadow);
+}
+.mountain__controls:popover-open { display: grid; gap: 1rem; }
+/* A slider held in the popup: the rest fades and the card goes clear, so
+   the slider floats over the mountain it is changing. */
+.mountain__controls { transition: background-color 0.15s var(--ease), border-color 0.15s var(--ease), box-shadow 0.15s var(--ease); }
+.mountain__controls > * { transition: opacity 0.15s var(--ease); }
+.mountain__controls.is-peeking { background-color: transparent; border-color: transparent; box-shadow: none; }
+.mountain__controls.is-peeking > :not(.is-held) { opacity: 0; }
+
+/* Time sits outside the popup, as on a video player: play and the round
+   slider in a bar along the bottom, clear of the stack while it grows. */
+.mountain__transport {
+  position: absolute;
+  left: 50%;
+  bottom: 1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+  width: min(34rem, calc(100% - 10rem));
+  height: 3.25rem;
+  padding: 0 1.1rem 0 0.4rem;
+  transform: translateX(-50%);
+}
+.mountain__transport input[type="range"] { flex: 1; min-width: 0; accent-color: var(--seq-5); }
+.mountain__play {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 2.5rem;
+  height: 2.5rem;
+  padding: 0;
+  border: 0;
+  border-radius: 999px;
+  background: var(--ink);
+  color: var(--paper);
+  cursor: pointer;
+}
+.mountain__play:hover { background: color-mix(in oklab, var(--ink) 85%, var(--panel)); }
+.mountain__play[aria-pressed="true"] .mountain__icon-play,
+.mountain__play:not([aria-pressed="true"]) .mountain__icon-pause { display: none; }
+.mountain__ctl { display: grid; gap: 0.4rem; min-width: 0; }
+.mountain__ctl .table-controls { display: flex; }
+.mountain__ctl .table-control-btn { flex: 1; padding-inline: 0.5rem; white-space: nowrap; }
 .mountain__label { display: flex; justify-content: space-between; gap: 0.5rem; color: var(--ink-muted); font-size: 0.75rem; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; }
 .mountain__label output { color: var(--ink); letter-spacing: 0; text-transform: none; font-variant-numeric: tabular-nums; }
 .mountain__row { display: flex; gap: 0.5rem; align-items: center; }
-.mountain__play { flex: none; }
 .mountain__controls input[type="range"] { width: 100%; accent-color: var(--seq-5); }
 .mountain__select {
   flex: 1;
@@ -3846,39 +3923,28 @@ html { scroll-behavior: smooth; }
   cursor: pointer;
 }
 .mountain__select:hover { border-color: var(--rule-strong); }
-@media (pointer: coarse) { .mountain__select { height: 44px; } }
+@media (pointer: coarse) {
+  .mountain__select,
+  .mountain__chip:not(.mountain__gear) { height: 44px; }
+}
 
+/* A phone: back and key figures shrink to their icons so the division and
+   season keep the room between them. */
 @media (max-width: 760px) {
-  .mountain__stage { height: min(62vh, 115vw); min-height: 320px; }
+  .mountain__top { inset: 0.6rem 0.6rem auto; gap: 0.4rem; }
+  .mountain__back,
+  .mountain__info { aspect-ratio: 1; padding: 0; }
+  .mountain__back span,
+  .mountain__info span { display: none; }
+  .mountain__where { gap: 0.4rem; }
+  .mountain__where .mountain__select { flex: 1 1 auto; }
   .mountain__hint { display: none; }
-
-  /* The mountain fills the phone's screen between the bars (fitMountain
-     sets the stage height): the page is locked, and everything that only
-     repeats something on screen goes -- the lede, the description, the
-     footer, and the control labels the controls or the readout already say. */
-  html:has(> body[data-viz="mountain"]) { overflow: hidden; overscroll-behavior: none; }
-  body[data-viz="mountain"] > footer,
-  body[data-viz="mountain"] #hero-lede,
-  body[data-viz="mountain"] #explore-desc,
-  body[data-viz="mountain"] .mountain__ctl--where > .mountain__label,
-  body[data-viz="mountain"] .mountain__ctl--order > .mountain__label,
-  body[data-viz="mountain"] .mountain__ctl--cut > .mountain__label,
-  body[data-viz="mountain"] label[for="mountain-upto"],
-  body[data-viz="mountain"] .mountain__facts { display: none; }
-  body[data-viz="mountain"] .hero { padding-bottom: 0.25rem; }
-  body[data-viz="mountain"] [data-section="explore"] { margin-block: 0.5rem 0; }
-  body[data-viz="mountain"] [data-section="explore"] .panel__head { padding: 0.6rem 0.875rem; }
-  body[data-viz="mountain"] [data-section="explore"] .panel__head > div { display: flex; align-items: center; gap: 0.75rem; }
-  body[data-viz="mountain"] .explore-back { margin: 0; }
-  body[data-viz="mountain"] #explore-title { font-size: 1.05rem; }
-  body[data-viz="mountain"] .mountain__stage { min-height: 0; }
-  body[data-viz="mountain"] .mountain__readout { left: 0.75rem; top: 0.5rem; }
-  body[data-viz="mountain"] .mountain__readout b { font-size: 1.1rem; }
-  body[data-viz="mountain"] .mountain__controls { gap: 0.6rem 1rem; padding: 0.7rem 0.875rem; }
-  body[data-viz="mountain"] .mountain__ctl--order,
-  body[data-viz="mountain"] .mountain__ctl--where { flex-basis: 100%; }
-  body[data-viz="mountain"] .mountain__ctl--where .mountain__select { flex: 1; }
-  body[data-viz="mountain"] .mountain__ctl--cut { max-width: none; }
-  body[data-viz="mountain"] .mountain__ctl--order .table-controls { display: flex; }
-  body[data-viz="mountain"] .mountain__ctl--order .table-control-btn { flex: 1; padding-inline: 0.5rem; }
+  .mountain__readout { left: 0.75rem; bottom: 4.6rem; }
+  .mountain__transport { left: 0.75rem; right: 4.6rem; bottom: 0.75rem; width: auto; padding-right: 0.9rem; transform: none; }
+  .mountain__readout b { font-size: 1.1rem; }
+  .mountain__gear { right: 0.75rem; bottom: 0.75rem; }
+  .mountain__controls {
+    inset: auto 0.75rem calc(var(--mountain-bottom, 0px) + 4.5rem) auto;
+    width: min(24rem, calc(100vw - 1.5rem));
+  }
 }

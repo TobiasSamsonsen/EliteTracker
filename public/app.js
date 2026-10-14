@@ -2242,22 +2242,6 @@ function openExplore(id) {
   state.exploreItem = id;
   render();
   window.scrollTo({ top: 0, behavior: 'instant' });
-  if (id === 'mountain') scrollToMountain();
-}
-
-/* The mountain is a tall stage: on a wide screen glide down to it, so the
-   stage and its controls fill the window under the masthead (76px of scroll
-   padding), keeping the controls in view if it all cannot fit. A phone fits
-   the mountain to the screen instead (fitMountain). */
-function scrollToMountain() {
-  if (window.matchMedia('(max-width: 760px)').matches) return;
-  const box = $('[data-section="explore"] .panel').getBoundingClientRect();
-  const stage = $('.mountain__stage').getBoundingClientRect();
-  // Panel top under the masthead if it all fits; otherwise far enough that
-  // the controls show, but never so far the stage's top slides under it.
-  const top = Math.min(stage.top - 84, Math.max(box.top - 84, box.bottom - window.innerHeight + 16));
-  const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-  window.scrollTo({ top: window.scrollY + Math.max(0, top), behavior: reduced ? 'instant' : 'smooth' });
 }
 
 function renderExplore(report) {
@@ -2567,35 +2551,35 @@ function heatLevel(p) {
 function mountainRoot() {
   if (mountain.root) return mountain.root;
   const root = el('div', 'mountain');
+  // The stage fills the window; the division and season float along its
+  // top, and everything else sits in a popup behind the settings button.
   root.innerHTML = `
     <div class="mountain__stage">
       <canvas></canvas>
-      <div class="mountain__readout"><b></b><span></span></div>
       <p class="mountain__status"></p>
-      <span class="mountain__hint" data-i18n="mountain.hint"></span>
-      <button type="button" class="mountain__info"><svg viewBox="0 0 16 16" width="15" height="15" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="8" cy="8" r="6.5"/><path d="M8 7.2v4" stroke-linecap="round"/><circle cx="8" cy="4.9" r="0.9" fill="currentColor" stroke="none"/></svg><span data-i18n="explore.facts"></span></button>
-    </div>
-    <div class="mountain__controls">
-      <div class="mountain__ctl mountain__ctl--where">
-        <span class="mountain__label" data-i18n="mountain.where"></span>
-        <div class="mountain__row">
+      <div class="mountain__top">
+        <button type="button" class="mountain__chip mountain__back"><svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg><span data-i18n="explore.back"></span></button>
+        <div class="mountain__where">
           <select class="mountain__select" id="mountain-league"></select>
           <select class="mountain__select" id="mountain-season"></select>
         </div>
+        <button type="button" class="mountain__chip mountain__info"><svg viewBox="0 0 16 16" width="15" height="15" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="8" cy="8" r="6.5"/><path d="M8 7.2v4" stroke-linecap="round"/><circle cx="8" cy="4.9" r="0.9" fill="currentColor" stroke="none"/></svg><span data-i18n="explore.facts"></span></button>
       </div>
+      <div class="mountain__readout"><b></b><span></span></div>
+      <span class="mountain__hint" data-i18n="mountain.hint"></span>
+      <div class="mountain__transport">
+        <button type="button" class="mountain__play" aria-pressed="false"><svg class="mountain__icon-play" viewBox="0 0 16 16" width="14" height="14" aria-hidden="true" focusable="false" fill="currentColor"><path d="M4.5 2.6v10.8L13.5 8z"/></svg><svg class="mountain__icon-pause" viewBox="0 0 16 16" width="14" height="14" aria-hidden="true" focusable="false" fill="currentColor"><rect x="3.5" y="2.5" width="3.2" height="11" rx="1"/><rect x="9.3" y="2.5" width="3.2" height="11" rx="1"/></svg><span class="visually-hidden" data-i18n="mountain.play"></span></button>
+        <input type="range" id="mountain-upto" min="0" step="1">
+      </div>
+      <button type="button" class="mountain__chip mountain__gear" popovertarget="mountain-settings" aria-expanded="false"><svg viewBox="0 0 20 20" width="20" height="20" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M3 5h8M3 10h2M9 10h8M3 15h10"/><circle cx="13" cy="5" r="2"/><circle cx="7" cy="10" r="2"/><circle cx="15" cy="15" r="2"/></svg></button>
+    </div>
+    <div class="mountain__controls" id="mountain-settings" popover>
       <div class="mountain__ctl mountain__ctl--order">
         <span class="mountain__label" data-i18n="mountain.order"></span>
         <div class="table-controls">
           <button type="button" class="table-control-btn" data-order="finish" data-i18n="mountain.byFinish"></button>
           <button type="button" class="table-control-btn" data-order="predicted" data-i18n="mountain.byPrediction"></button>
           <button type="button" class="table-control-btn" data-order="now" data-i18n="mountain.byTable"></button>
-        </div>
-      </div>
-      <div class="mountain__ctl mountain__ctl--build">
-        <label class="mountain__label" for="mountain-upto"><span data-i18n="mountain.builtUp"></span> <output></output></label>
-        <div class="mountain__row">
-          <button type="button" class="grid-anim-btn mountain__play" aria-pressed="false"><span class="grid-anim-btn__icon" aria-hidden="true">▶</span><span data-i18n="mountain.play"></span></button>
-          <input type="range" id="mountain-upto" min="0" step="1">
         </div>
       </div>
       <div class="mountain__ctl mountain__ctl--cutoff">
@@ -2610,11 +2594,14 @@ function mountainRoot() {
         </div>
       </div>
     </div>
-    <div class="mountain__facts"></div>
     <span class="mountain__probe" hidden></span>`;
   const redraw = () => drawMountain();
+  root.querySelector('.mountain__back').addEventListener('click', () => openExplore(null));
   root.querySelector('.mountain__info').addEventListener('click', () => {
     if (mountain.facts) openFacts(t('explore.mountain.title'), mountain.facts);
+  });
+  root.querySelector('#mountain-settings').addEventListener('toggle', (event) => {
+    root.querySelector('.mountain__gear').setAttribute('aria-expanded', String(event.newState === 'open'));
   });
   for (const button of root.querySelectorAll('[data-order]')) {
     button.addEventListener('click', () => {
@@ -2651,6 +2638,21 @@ function mountainRoot() {
     mountain.cutoff = Number(event.target.value);
     redraw();
   });
+  // While a slider in the popup is held, the popup thins to that slider
+  // alone, so the mountain it is changing shows through.
+  const settings = root.querySelector('#mountain-settings');
+  for (const range of settings.querySelectorAll('input[type="range"]')) {
+    range.addEventListener('pointerdown', () => {
+      range.closest('.mountain__ctl').classList.add('is-held');
+      settings.classList.add('is-peeking');
+    });
+  }
+  const release = () => {
+    settings.classList.remove('is-peeking');
+    for (const held of settings.querySelectorAll('.is-held')) held.classList.remove('is-held');
+  };
+  window.addEventListener('pointerup', release);
+  window.addEventListener('pointercancel', release);
   root.querySelector('.mountain__play').addEventListener('click', () => {
     if (mountain.timer || !mountain.layers) { mountainStop(); return; }
     const last = mountain.layers.length - 1;
@@ -2963,7 +2965,6 @@ function drawMountain() {
 
   const top = layers[mountain.upto];
   mountain.facts = mountainFacts(layers[0], top, teams, finished && mountain.upto === last);
-  root.querySelector('.mountain__facts').replaceChildren(exploreFacts(mountain.facts));
   root.querySelector('.mountain__readout b').textContent = mountainLabel(top);
   root.querySelector('.mountain__readout span').textContent = `${formatDate(top.date)} · ${t('mountain.blocks', { n: num(k) })}`;
   for (const button of root.querySelectorAll('[data-order]')) {
@@ -2972,7 +2973,7 @@ function drawMountain() {
   const upto = root.querySelector('#mountain-upto');
   upto.max = last;
   upto.value = mountain.upto;
-  upto.labels[0].querySelector('output').textContent = mountainLabel(top);
+  upto.setAttribute('aria-valuetext', mountainLabel(top));
   root.querySelector('#mountain-cutoff').labels[0].querySelector('output').textContent = pct(cutoff, cutoff < 0.01 ? 2 : 1);
 }
 
@@ -3079,6 +3080,8 @@ function mountainLoop() {
   if (!s || state.activeView !== 'explore' || state.exploreItem !== 'mountain' || !s.renderer.domElement.isConnected) {
     mountain.raf = null;
     mountainStop();
+    // Left by the back button or a tab: the settings popup goes with it.
+    mountain.root?.querySelector('.mountain__controls:popover-open')?.hidePopover();
     return;
   }
   const glide = mountain.glide;
@@ -3141,23 +3144,16 @@ function frameMountain({ home = false } = {}) {
   };
 }
 
-/* On a phone the mountain takes the whole screen between the top and bottom
-   bars, so there is nothing to scroll and no swipe lands on the page instead
-   of the stack (the stylesheet locks the page and drops the extras; this
-   gives the stage whatever height is left). Elsewhere the stylesheet's
-   height stands. */
+/* The mountain takes the whole window between the masthead and, on a phone,
+   the bottom bar: the stylesheet pins it there and locks the page, so no
+   swipe lands on the page instead of the stack. This measures the bars. */
 function fitMountain() {
-  const stage = mountain.root && mountain.root.querySelector('.mountain__stage');
-  if (!stage) return;
-  const fit = stage.isConnected && document.body.dataset.viz === 'mountain'
-    && window.matchMedia('(max-width: 760px)').matches;
-  if (!fit) { stage.style.height = ''; return; }
+  const root = mountain.root;
+  if (!root || !root.isConnected || document.body.dataset.viz !== 'mountain') return;
   window.scrollTo(0, 0);
   const bar = $('#mobilebar');
-  const bottom = window.innerHeight - (bar ? bar.getBoundingClientRect().height : 0);
-  const box = stage.getBoundingClientRect();
-  const below = stage.closest('.panel').getBoundingClientRect().bottom - box.bottom;
-  stage.style.height = `${Math.max(160, Math.floor(bottom - box.top - below - 10))}px`;
+  root.style.setProperty('--mountain-top', `${Math.round($('.masthead').getBoundingClientRect().bottom)}px`);
+  root.style.setProperty('--mountain-bottom', `${bar ? Math.round(bar.getBoundingClientRect().height) : 0}px`);
 }
 
 /* The division and season pickers, refilled from the report each render
@@ -3184,6 +3180,11 @@ async function renderMountain(report, body) {
   fitMountain(); // before the camera is framed, which reads the stage's shape
   for (const node of root.querySelectorAll('[data-i18n]')) node.textContent = t(node.dataset.i18n);
   root.querySelector('canvas').setAttribute('aria-label', t('mountain.aria'));
+  // The floating buttons go icon-only on a phone, so they carry their names.
+  root.querySelector('.mountain__back').setAttribute('aria-label', t('explore.back'));
+  root.querySelector('.mountain__info').setAttribute('aria-label', t('explore.facts'));
+  root.querySelector('.mountain__gear').setAttribute('aria-label', t('mountain.settings'));
+  root.querySelector('#mountain-upto').setAttribute('aria-label', t('mountain.builtUp'));
   const status = root.querySelector('.mountain__status');
   const key = `${report.league.season}|${report.league.slug}|${state.asof}|${report.model.matches_played}`;
   const token = ++mountainToken;
@@ -3215,11 +3216,6 @@ async function renderMountain(report, body) {
   status.hidden = true;
   drawMountain();
   fitMountain();
-  // Only once, and not if the reader has already scrolled while it loaded.
-  if (mountain.scrollOnLoad) {
-    mountain.scrollOnLoad = false;
-    if (window.scrollY === 0) scrollToMountain();
-  }
   if (!mountain.raf) mountain.raf = requestAnimationFrame(mountainLoop);
 }
 
@@ -5157,10 +5153,6 @@ function applyViewParameter() {
   if (view && validViews.has(view)) {
     state.activeView = view;
     if (EXPLORE_ITEMS.includes(params.get('viz'))) state.exploreItem = params.get('viz');
-    // A link straight to the mountain glides down to it once it has loaded.
-    // Not on a reload or back/forward, where the browser restores the scroll.
-    const arrival = performance.getEntriesByType('navigation')[0];
-    mountain.scrollOnLoad = state.exploreItem === 'mountain' && (!arrival || arrival.type === 'navigate');
     markActiveView();
   }
 }
@@ -5922,6 +5914,9 @@ function initMobileGestures() {
   // --- Pull to Refresh ---
   content.addEventListener('touchstart', (e) => {
     if (window.scrollY > 0) return; // Only at top of page
+    // The mountain locks the page at the top, so every downward drag that
+    // turns it would otherwise pull to refresh.
+    if (document.body.dataset.viz === 'mountain') return;
     if (ptrState.pulling) return;
     ptrState.startY = e.touches[0].clientY;
     ptrState.pulling = true;
