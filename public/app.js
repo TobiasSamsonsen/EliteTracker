@@ -2913,9 +2913,9 @@ function drawMountain() {
   mesh.geometry.dispose();
   mesh.geometry = geometry;
 
-  // Scenery: band strips and place numbers along the top edge, as on the
-  // grid, the numbers again along the front, club names down the side and
-  // round marks up the right.
+  // Scenery: band strips and place numbers along the back and front edges,
+  // as on the grid, club names with their expected finish down both sides
+  // and round marks up the right.
   for (const child of [...labels.children]) {
     if (child.material.map) child.material.map.dispose();
     child.material.dispose();
@@ -2925,14 +2925,17 @@ function drawMountain() {
   const bands = report.league.bands || [];
   for (let place = 1; place <= n; place += 1) {
     const band = bands.filter((b) => b.label !== 'Champions' && place >= b.first && place <= b.last).pop();
-    const strip = new THREE.Mesh(
-      new THREE.PlaneGeometry(1, 0.5),
-      new THREE.MeshBasicMaterial({ color: new THREE.Color(css(band ? bandColor(band, n) : 'var(--ink-muted)')), transparent: true, opacity: band ? 0.9 : 0.25 }),
-    );
-    strip.rotation.x = -Math.PI / 2;
-    strip.position.set(place - 1 - half, 0.01, -half - 0.9);
-    labels.add(strip);
-    for (const z of [-half - 1.8, half + 1]) {
+    const color = new THREE.Color(css(band ? bandColor(band, n) : 'var(--ink-muted)'));
+    for (const z of [-half - 0.9, half + 0.9]) {
+      const strip = new THREE.Mesh(
+        new THREE.PlaneGeometry(1, 0.5),
+        new THREE.MeshBasicMaterial({ color, transparent: true, opacity: band ? 0.9 : 0.25 }),
+      );
+      strip.rotation.x = -Math.PI / 2;
+      strip.position.set(place - 1 - half, 0.01, z);
+      labels.add(strip);
+    }
+    for (const z of [-half - 1.8, half + 1.8]) {
       const number = textSprite(s, String(place), ink, 0.6);
       number.position.set(place - 1 - half, 0, z);
       labels.add(number);
@@ -2945,18 +2948,23 @@ function drawMountain() {
   plate.rotation.x = -Math.PI / 2;
   plate.position.y = -0.01;
   labels.add(plate);
+  // The expected finish sits on the grid side of the name on both sides.
   order.forEach((team, row) => {
-    const name = textSprite(s, `${team.name}  ${team.predicted}→${team.now}`, ink, 0.65, 1, true);
-    name.position.set(-half - 0.9, 0.02, row - half);
-    labels.add(name);
+    for (const [text, x, anchor] of [[`${team.name}  ${team.finish}`, -half - 0.9, 1], [`${team.finish}  ${team.name}`, half + 0.9, 0]]) {
+      const name = textSprite(s, text, ink, 0.65, anchor, true);
+      name.position.set(x, 0.02, row - half);
+      labels.add(name);
+    }
   });
   const marks = [0, 5, 10, 15, 20, 25, 30].filter((l) => l <= mountain.upto);
   if (!marks.includes(mountain.upto)) marks.push(mountain.upto);
-  // Round marks stand at the front-right corner of what the cut leaves, so a
-  // back row or a middle column keeps them beside its blocks, not in front.
+  // Round marks stand at the end of the back place numbers, above the club
+  // names rather than over them, or at the front-right corner of what the
+  // cut leaves, so a back row or a middle column keeps them beside its
+  // blocks, not in front.
   const wall = (mountain.cutTeam || mountain.cutPlace) && mountain.bounds;
   const markX = (wall ? wall.x1 : half + 0.5) + 0.5;
-  const markZ = wall ? wall.z1 : half + 0.5;
+  const markZ = wall ? wall.z1 : -half - 1.8;
   for (const l of marks) {
     const mark = textSprite(s, mountainLabel(layers[l]), l === mountain.upto ? ink : muted, 0.5, 0);
     mark.position.set(markX, l < ground ? 0.15 : (l - ground) * H + H / 2, markZ);
@@ -3114,7 +3122,7 @@ function frameMountain({ home = false } = {}) {
   // backs off so the whole stack and its labels stay in view.
   const canvas = s.renderer.domElement;
   const aspect = canvas.clientWidth / canvas.clientHeight || 1.5;
-  const opening = new THREE.Vector3(n * 1.45, height * 0.37 + n * 0.9, n * 2.05).multiplyScalar(Math.max(1, 1.25 / aspect));
+  const opening = new THREE.Vector3(n * 1.45, height * 0.37 + n * 0.9, n * 2.05).multiplyScalar(Math.max(1, 1.6 / aspect));
   // A vertical cut aims at the middle of the wall it leaves (its blocks'
   // extent, as drawn), sized to that wall; the whole mountain at the grid.
   const wall = (mountain.cutTeam || mountain.cutPlace) && mountain.bounds;
@@ -3123,10 +3131,14 @@ function frameMountain({ home = false } = {}) {
   const scale = Math.max(0.45, size(across, deep, tall) / size(n, n, height));
   // The smaller the cut, the more of it is height, so the aim climbs from
   // the whole mountain's 38 % towards the middle of a lone stack.
+  // On a narrow stage the whole mountain is aimed a little back and right,
+  // towards the club names and round marks the view from the front-right
+  // pushes out past the right edge.
+  const lean = !wall && aspect < 1 ? n * 0.15 : 0;
   const target = new THREE.Vector3(
-    wall ? (wall.x0 + wall.x1) / 2 : 0,
+    wall ? (wall.x0 + wall.x1) / 2 : lean,
     tall * (0.5 - 0.12 * scale),
-    wall ? (wall.z0 + wall.z1) / 2 : 0,
+    wall ? (wall.z0 + wall.z1) / 2 : -lean,
   );
   const direction = home ? opening.clone() : camera.position.clone().sub(controls.target);
   const position = target.clone().addScaledVector(direction.normalize(), opening.length() * scale);
