@@ -2593,6 +2593,12 @@ function mountainRoot() {
           <select class="mountain__select" id="mountain-cut-place"></select>
         </div>
       </div>
+      <div class="mountain__ctl mountain__ctl--reset">
+        <span class="mountain__label" data-i18n="mountain.reset"></span>
+        <div class="table-controls">
+          <button type="button" class="table-control-btn" data-action="reset-view" data-i18n="mountain.resetView"></button>
+        </div>
+      </div>
     </div>
     <span class="mountain__probe" hidden></span>`;
   const redraw = () => drawMountain();
@@ -2637,6 +2643,17 @@ function mountainRoot() {
   root.querySelector('#mountain-cutoff').addEventListener('input', (event) => {
     mountain.cutoff = Number(event.target.value);
     redraw();
+  });
+  root.querySelector('[data-action="reset-view"]').addEventListener('click', () => {
+    mountain.order = 'finish';
+    mountain.cutoff = 2;
+    mountain.cutTeam = '';
+    mountain.cutPlace = 0;
+    root.querySelector('#mountain-cutoff').value = String(mountain.cutoff);
+    root.querySelector('#mountain-cut-team').value = '';
+    root.querySelector('#mountain-cut-place').value = '0';
+    drawMountain();
+    frameMountain({ home: true });
   });
   // While a slider in the popup is held, the popup thins to that slider
   // alone, so the mountain it is changing shows through.
@@ -2694,6 +2711,9 @@ function mountainScene(canvas) {
   const controls = new THREE.OrbitControls(camera, canvas);
   controls.enableDamping = true;
   controls.dampingFactor = 0.08;
+  // Orbit around the mountain and zoom in/out only; no panning the view
+  // around, on desktop or mobile alike.
+  controls.enablePan = false;
   scene.add(new THREE.HemisphereLight(0xffffff, 0x8a8f94, 0.75));
   const sun = new THREE.DirectionalLight(0xffffff, 0.65);
   sun.position.set(-12, 30, 18);
@@ -3131,14 +3151,10 @@ function frameMountain({ home = false } = {}) {
   const scale = Math.max(0.45, size(across, deep, tall) / size(n, n, height));
   // The smaller the cut, the more of it is height, so the aim climbs from
   // the whole mountain's 38 % towards the middle of a lone stack.
-  // On a narrow stage the whole mountain is aimed a little back and right,
-  // towards the club names and round marks the view from the front-right
-  // pushes out past the right edge.
-  const lean = !wall && aspect < 1 ? n * 0.15 : 0;
   const target = new THREE.Vector3(
-    wall ? (wall.x0 + wall.x1) / 2 : lean,
+    wall ? (wall.x0 + wall.x1) / 2 : 0,
     tall * (0.5 - 0.12 * scale),
-    wall ? (wall.z0 + wall.z1) / 2 : -lean,
+    wall ? (wall.z0 + wall.z1) / 2 : 0,
   );
   const direction = home ? opening.clone() : camera.position.clone().sub(controls.target);
   const position = target.clone().addScaledVector(direction.normalize(), opening.length() * scale);
