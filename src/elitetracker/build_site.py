@@ -254,11 +254,10 @@ def build_site(
     workflow runs: past seasons come from the published archive instead.
     """
     out_dir.mkdir(parents=True, exist_ok=True)
-    # Cap the default worker count: on Windows multiprocessing uses spawn, so
-    # every worker re-imports numpy and reloads the data. Using all logical
-    # cores (20 here) means heavy startup and memory contention with little
-    # benefit over a smaller pool. The --jobs help already documents this cap.
-    jobs = jobs or min(8, os.cpu_count() or 1)
+    # Use all available CPU cores. BIOS update (0x12B microcode) fixed the
+    # Raptor Lake CLOCK_WATCHDOG_TIMEOUT instability under sustained all-core load.
+    # --jobs still overrides.
+    jobs = jobs or (os.cpu_count() or 1)
 
     all_seasons = available_seasons(root)
     if not all_seasons:
