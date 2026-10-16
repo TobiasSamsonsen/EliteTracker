@@ -2230,7 +2230,7 @@ function renderModelCard(report) {
 /* ---------- explore: other ways to look at the numbers -------------- */
 
 /* A gallery of cards, each opening one visualisation in the same panel. */
-const EXPLORE_ITEMS = ['mountain', 'attack'];
+const EXPLORE_ITEMS = ['mountain', 'attack', 'calibration'];
 /* The visualisations that follow the rewind slider: they read one day's
    report. The rest take a whole season or every season, or carry time along
    an axis of their own, which the slider would only cut short. */
@@ -2247,6 +2247,12 @@ function exploreThumb(id) {
           style: `fill: var(--seq-${Math.min(SEQ_STEPS, level + 1)})`,
         }));
       }
+    });
+  } else if (id === 'calibration') {
+    // Dots hugging the diagonal, as a reliability diagram does.
+    svg.appendChild(svgEl('line', { class: 'explore-thumb__avg', x1: 30, y1: 82, x2: 130, y2: 8 }));
+    [[38, 77, 3], [52, 64, 5], [66, 57, 6], [80, 44, 6], [94, 37, 5], [108, 24, 4], [122, 17, 3]].forEach(([cx, cy, r], i) => {
+      svg.appendChild(svgEl('circle', { cx, cy: cy + (i % 2 ? 3 : -2), r, style: `fill: ${seqColor(0.35 + i / 10)}` }));
     });
   } else {
     svg.appendChild(svgEl('line', { class: 'explore-thumb__avg', x1: 82, x2: 82, y1: 10, y2: 80 }));
@@ -2275,6 +2281,7 @@ function renderExplore(report) {
   if (item !== 'mountain') mountainStop();
   if (item === 'mountain') return renderMountain(report, body);
   if (item === 'attack') return renderAttackMap(report, body);
+  if (item === 'calibration') return renderCalibration(report, body);
   const gallery = el('div', 'explore-gallery');
   for (const id of EXPLORE_ITEMS) {
     const card = el('button', 'explore-card');
@@ -2517,6 +2524,169 @@ async function renderTimeAxis(item, report, body, draw, runIn) {
     body.firstChild.prepend(el('p', 'explore-note explore-note--lead', t('explore.runInFrom', { date: whenDate(from) })));
   }
 }
+
+/* ---------- explore: match-odds calibration (viz=calibration) --------- */
+
+/* Written by build_site from a walk-forward backtest (research.calibration_payload):
+   the shipped odds for every match since 2016 against what happened, and
+   against the bookmakers' closing line on the matches it prices. */
+let calibrationData = null;
+function loadCalibration() {
+  calibrationData = calibrationData || fetch('/data/calibration.json')
+    .then((res) => { if (!res.ok) throw new Error(`HTTP ${res.status}`); return res.json(); })
+    .catch((error) => { calibrationData = null; throw error; });
+  return calibrationData;
+}
+
+/* The bins at or above `from` pooled into one: how many predictions, their
+   mean chance and how often they came true. */
+function calibrationPool(bins, from) {
+  const top = bins.filter((bin) => bin.lo >= from - 1e-9);
+  const n = top.reduce((sum, bin) => sum + bin.n, 0);
+  if (!n) return null;
+  return {
+    n,
+    predicted: top.reduce((sum, bin) => sum + bin.predicted * bin.n, 0) / n,
+    observed: top.reduce((sum, bin) => sum + bin.observed * bin.n, 0) / n,
+  };
+}
+
+const CALIBRATION_SERIES = [
+  ['home_win', 'next.homeWin', 'var(--outcome-good)'],
+  ['draw', 'next.draw', 'var(--draw)'],
+  ['away_win', 'next.awayWin', 'var(--outcome-bad)'],
+];
+// A bin with fewer predictions than this is drawn faint: its rate is noise.
+const CALIBRATION_MIN_N = 30;
+
+async function renderCalibration(report, body) {
+  body.replaceChildren(el('p', 'explore-empty', t('calib.loading')));
+  let data;
+  try {
+    data = await loadCalibration();
+  } catch {
+    body.replaceChildren(el('p', 'explore-empty', t('calib.empty')));
+    return;
+  }
+  if (state.exploreItem !== 'calibration') return;
+  const wrap = el('div', 'calibration');
+  const svg = svgEl('svg', { class: 'chart', role: 'group', 'aria-label': t('calib.aria') });
+  wrap.appendChild(svg);
+  body.replaceChildren(wrap);
+
+  const box = wrap.getBoundingClientRect().width || 600;
+  const size = Math.min(560, Math.round(box));
+  const pad = { top: 16, right: 14, bottom: 40, left: 44 };
+  svg.setAttribute('viewBox', `0 0 ${size} ${size}`);
+  const span = size - pad.left - pad.right;
+  const x = (p) => pad.left + p * span;
+  const y = (p) => size - pad.bottom - p * (size - pad.top - pad.bottom);
+  const text = (className, content, attrs) => {
+    const node = svgEl('text', { class: className, ...attrs });
+    node.textContent = content;
+    svg.appendChild(node);
+  };
+  for (let i = 0; i <= 5; i += 1) {
+    const p = i / 5;
+    svg.appendChild(svgEl('line', { class: 'grid-line', x1: x(p), x2: x(p), y1: y(0), y2: y(1) }));
+    svg.appendChild(svgEl('line', { class: 'grid-line', x1: x(0), x2: x(1), y1: y(p), y2: y(p) }));
+    const label = `${num(p * 100)}${percentSign()}`; // pct() would print 0 as a dash
+    text('tick', label, { x: x(p), y: y(0) + 14, 'text-anchor': 'middle' });
+    text('tick', label, { x: x(0) - 6, y: y(p) + 3.5, 'text-anchor': 'end' });
+  }
+  svg.appendChild(svgEl('line', { class: 'calibration__diagonal', x1: x(0), y1: y(0), x2: x(1), y2: y(1) }));
+  text('axis-title', t('calib.x'), { x: x(1), y: size - 6, 'text-anchor': 'end' });
+  text('axis-title', t('calib.y'), { x: x(0), y: pad.top - 4 });
+
+  const biggest = Math.max(...CALIBRATION_SERIES.flatMap(([key]) => data.reliability[key].map((bin) => bin.n)));
+  for (const [key, labelKey, colour] of CALIBRATION_SERIES) {
+    const bins = data.reliability[key];
+    const solid = bins.filter((bin) => bin.n >= CALIBRATION_MIN_N);
+    if (solid.length > 1) {
+      svg.appendChild(svgEl('polyline', {
+        class: 'calibration__line',
+        points: solid.map((bin) => `${x(bin.predicted)},${y(bin.observed)}`).join(' '),
+        style: `stroke: ${colour}`,
+      }));
+    }
+    for (const bin of bins) {
+      const dot = svgEl('circle', {
+        class: `calibration__dot${bin.n < CALIBRATION_MIN_N ? ' calibration__dot--thin' : ''}`,
+        cx: x(bin.predicted), cy: y(bin.observed), r: 3 + 7 * Math.sqrt(bin.n / biggest),
+        style: `fill: ${colour}`, tabindex: 0,
+      });
+      const tip = t('calib.tip', {
+        outcome: t(labelKey), lo: pct(bin.lo, 0), hi: pct(bin.hi, 0), n: num(bin.n),
+        predicted: pct(bin.predicted, 1), observed: pct(bin.observed, 1),
+      });
+      dot.setAttribute('aria-label', tip);
+      attachTip(dot, tip);
+      svg.appendChild(dot);
+    }
+  }
+  const legend = el('div', 'calibration__legend');
+  for (const [, labelKey, colour] of CALIBRATION_SERIES) {
+    const item = el('span', 'calibration__key');
+    const swatch = el('i', 'calibration__swatch');
+    swatch.style.background = colour;
+    item.append(swatch, t(labelKey));
+    legend.appendChild(item);
+  }
+  wrap.appendChild(legend);
+
+  if (data.market) {
+    const table = el('table', 'calibration__table');
+    const head = el('tr');
+    for (const label of ['', t('calib.ll'), t('calib.brier'), t('calib.rps')]) head.appendChild(el('th', '', label));
+    table.appendChild(head);
+    for (const [key, labelKey] of [['model', 'calib.model'], ['elo', 'calib.elo'], ['proportional', 'calib.proportional'], ['power', 'calib.power'], ['shin', 'calib.shin']]) {
+      const row = data.market[key];
+      if (!row) continue;
+      const tr = el('tr', key === 'model' ? 'calibration__ours' : '');
+      tr.appendChild(el('th', '', t(labelKey)));
+      for (const metric of ['log_loss', 'brier', 'rps']) tr.appendChild(el('td', '', num(row[metric], 4)));
+      table.appendChild(tr);
+    }
+    const caption = el('caption', '', t('calib.tableCaption', { n: num(data.market.model.n) }));
+    table.prepend(caption);
+    wrap.appendChild(table);
+  }
+  wrap.appendChild(exploreFacts(calibrationFacts(data)));
+}
+
+function calibrationFacts(data) {
+  const all = data.scores.all;
+  const facts = [{
+    value: pct(all.calibration, 1),
+    label: t('calib.fact.error'),
+    text: t('calib.fact.errorText', { n: num(all.n), from: data.first_season, to: data.last_season }),
+  }];
+  const favourites = calibrationPool(data.reliability.all, 0.7);
+  if (favourites) {
+    facts.push({
+      value: `${pct(favourites.predicted, 0)} → ${pct(favourites.observed, 0)}`,
+      label: t('calib.fact.favourites'),
+      text: t('calib.fact.favouritesText', { n: num(favourites.n) }),
+    });
+  }
+  const market = data.market;
+  if (market && market.power) {
+    facts.push({
+      value: signed(market.model.log_loss - market.power.log_loss, 3),
+      label: t('calib.fact.market'),
+      text: t('calib.fact.marketText', { n: num(market.model.n), t: num(market.power.paired_t, 1) }),
+    });
+  }
+  if (data.kelly && data.kelly.bets) {
+    facts.push({
+      value: `${signed(data.kelly.roi * 100, 1)}${percentSign()}`,
+      label: t('calib.fact.kelly'),
+      text: t('calib.fact.kellyText', { bets: num(data.kelly.bets) }),
+    });
+  }
+  return facts;
+}
+
 
 /* The season mountain, ported from experiments/season_mountain: the finish
    grid is the floor, and every round stacks another layer of finishing-place

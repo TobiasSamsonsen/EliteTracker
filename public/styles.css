@@ -514,8 +514,9 @@ body[data-view="compare"] .hero-title-part[data-role="division"],
 body[data-view="model"] .hero-title-part[data-role="division"] { display: none; }
 /* Explore: a visualisation of one division and season keeps the hero's
    title, whose two pickers change them. The gallery shows no league's
-   numbers and the season mountain has pickers of its own: no hero there. */
-body[data-view="explore"]:is([data-viz=""], [data-viz="mountain"]) .hero { display: none; }
+   numbers, the season mountain has pickers of its own and the calibration
+   pools both divisions and every season: no hero there. */
+body[data-view="explore"]:is([data-viz=""], [data-viz="mountain"], [data-viz="calibration"]) .hero { display: none; }
 @media (max-width: 760px) {
   .hero__meta { display: none; }
 }
@@ -3953,3 +3954,21 @@ body[data-viz="mountain"] > footer { display: none; }
 /* Explore: a note above or under a view. */
 .explore-note { margin: 0.75rem 0 0; color: var(--ink-muted); font-size: 0.8125rem; line-height: 1.45; }
 .explore-note--lead { margin: 0 0 0.6rem; }
+
+/* Match-odds calibration: a reliability diagram, the market table, a legend. */
+.calibration { padding: 0.75rem 1rem 1rem; }
+.calibration .chart { max-width: 600px; margin: 0 auto; }
+.chart .calibration__diagonal { stroke: var(--rule-strong); stroke-width: 1.5; stroke-dasharray: 5 4; }
+.chart .calibration__line { fill: none; stroke-width: 1.5; opacity: 0.55; }
+.chart .calibration__dot { stroke: var(--panel); stroke-width: 1.5; }
+.chart .calibration__dot--thin { opacity: 0.35; }
+.chart .calibration__dot:focus-visible { outline: none; stroke: var(--ink); stroke-width: 2; }
+.calibration__legend { display: flex; flex-wrap: wrap; justify-content: center; gap: 0.5rem 1.25rem; margin: 0.5rem 0 1rem; font-size: 0.8125rem; color: var(--ink-muted); }
+.calibration__key { display: inline-flex; align-items: center; gap: 0.4rem; }
+.calibration__swatch { width: 0.7rem; height: 0.7rem; border-radius: 999px; }
+.calibration__table { width: 100%; max-width: 600px; margin: 0 auto; border-collapse: collapse; font-size: 0.875rem; font-variant-numeric: tabular-nums; }
+.calibration__table caption { padding-bottom: 0.4rem; color: var(--ink-muted); font-size: 0.8125rem; text-align: left; caption-side: top; }
+.calibration__table th, .calibration__table td { padding: 0.35rem 0.5rem; border-bottom: 1px solid var(--rule); text-align: right; }
+.calibration__table th:first-child { text-align: left; font-weight: 500; }
+.calibration__table tr:first-of-type th { color: var(--ink-muted); font-size: 0.75rem; font-weight: 600; }
+.calibration__ours th, .calibration__ours td { font-weight: 700; }

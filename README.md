@@ -141,6 +141,11 @@ slider too; the ones with time along an axis of their own take none.
   layer built; on a finished season they become a scorecard for the
   pre-season prediction (hit rate, biggest climber, faller and surprise). The
   ⓘ button shows them in a popup. On phones the mountain fills the screen.
+- **Match-odds calibration** (`viz=calibration`) -- when the model gives an
+  outcome 40 %, does it happen 40 % of the time? A reliability diagram of the
+  pre-match odds of every match since 2016, the scores against the
+  bookmakers' closing odds (three ways of removing their margin), and what
+  quarter-Kelly betting on the model's edges would have returned.
 
 ### Model Card
 

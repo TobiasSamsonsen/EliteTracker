@@ -398,3 +398,27 @@ test('the time-axis note exists in both languages', () => {
     'explore.runInFrom',
   ]);
 });
+
+eval(pick('calibrationPool'));
+
+test('calibration pools the bins at the top of the range', () => {
+  const bins = [
+    { lo: 0.6, hi: 0.7, n: 10, predicted: 0.65, observed: 0.6 },
+    { lo: 0.7, hi: 0.8, n: 30, predicted: 0.74, observed: 0.8 },
+    { lo: 0.8, hi: 0.9, n: 10, predicted: 0.84, observed: 0.9 },
+  ];
+  const top = calibrationPool(bins, 0.7);
+  assert.equal(top.n, 40);
+  assert.ok(Math.abs(top.predicted - 0.765) < 1e-12 && Math.abs(top.observed - 0.825) < 1e-12);
+  assert.equal(calibrationPool(bins, 0.95), null);
+});
+
+test('every calibration string exists in both languages', () => {
+  assertBothLanguages([
+    'explore.calibration.title', 'explore.calibration.desc', 'calib.loading', 'calib.empty', 'calib.aria',
+    'calib.x', 'calib.y', 'calib.tip', 'calib.model', 'calib.elo',
+    'calib.proportional', 'calib.power', 'calib.shin', 'calib.tableCaption', 'calib.fact.error',
+    'calib.fact.errorText', 'calib.fact.favourites', 'calib.fact.favouritesText', 'calib.fact.market', 'calib.fact.marketText',
+    'calib.fact.kelly', 'calib.fact.kellyText',
+  ]);
+});
