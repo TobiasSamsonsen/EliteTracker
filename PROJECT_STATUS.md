@@ -2116,6 +2116,13 @@ calibration -- beside the attack map and the season mountain. The lift, the
 rating river and the scorelines are stored in `experiments/explore-later/`
 (code, styles, strings, tests, and what each needs before it returns).
 
+The prediction scorecard and the match-odds calibration became one view on
+2026-10-17, **Model accuracy** (`viz=accuracy`, branch `explore/accuracy`,
+which merged both branches): every look at how accurate the model is in one
+place, before the season (the scorecard) and match by match (the
+calibration), one section each with its own key figures. The hero offers the
+division, which the first part follows; the second pools both divisions.
+
 The luck table was the first released (2026-10-16, after elo-v14.0), which
 brought `explore/base` to `main`. Each of the other six waits on a branch of
 its own, `explore/<id>`, off `explore/base`, which holds what they share (the hero
@@ -2137,8 +2144,8 @@ day (the owner: it only cut short what the chart already shows over time).
 | race lines | both | no | time runs along the chart; the lines always run the whole season so far |
 | run-in heatmap, stakes calendar | both | no | the fixtures ahead in date order; a finished season shows them as they stood with ten rounds left, where the stakes start (`runInStart`; a line above says so) |
 | head to head | both | no | the season sets the clubs; the record now runs from 2015 to the end of that season |
-| prediction scorecard | division | no | it spans every season |
-| match-odds calibration, season mountain | -- | no | the calibration pools everything; the mountain has pickers of its own |
+| model accuracy | division | no | the scorecard spans every season; the calibration pools both divisions and every season |
+| season mountain | -- | no | the mountain has pickers of its own |
 
 `EXPLORE_REWIND` in `app.js` lists the views that follow the slider (attack,
 luck); the time-axis views read the season's latest report even when the URL
@@ -2225,7 +2232,7 @@ below that name a branch wait on it (see "Explore: which views stay").
   climber and faller as predicted -> finished, and the biggest surprise (the
   final place with the smallest pre-season chance). The mountain's ⓘ button
   opens them in a `<dialog>`; the phone layout has no other way to them.
-- **Prediction scorecard** (`viz=scorecard`, candidate #1; branch `explore/scorecard`): every finished
+- **Prediction scorecard** (candidate #1; since 2026-10-17 the first part of model accuracy, `viz=accuracy`, branch `explore/accuracy`): every finished
   club-season of the division, the place the pre-season view called (the
   order of the expected finishes) against its final place, one circle a cell
   sized by its count, the y = x line and the two-place band the hit rate
@@ -2371,7 +2378,7 @@ below that name a branch wait on it (see "Explore: which views stay").
   hardest first (the Fix Diff column, match by match). Scrolls sideways on
   phones with the club column pinned. Facts: hardest and easiest run-in, the
   gap between them, the surest win left.
-- **Match-odds calibration** (`viz=calibration`, #10; branch `explore/calibration`): a reliability diagram of
+- **Match-odds calibration** (#10; since 2026-10-17 the second part of model accuracy, `viz=accuracy`, branch `explore/accuracy`): a reliability diagram of
   the shipped odds over every match since 2016 (home, draw, away; dot size by
   count, bins under 30 faint), the scores against the closing line three ways
   de-vigged, and facts (calibration error, favourites priced 70 %+, the gap to

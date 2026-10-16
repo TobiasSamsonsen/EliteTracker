@@ -157,14 +157,20 @@ slider too; the ones with time along an axis of their own take none.
   the trend line, and facts on the champions, the top quarter by xG points,
   the luckiest and unluckiest seasons and how much luck is left the season
   after.
-- **Prediction scorecard** (`viz=scorecard`) -- every finished club-season of
-  the division since 2015: where the model put it before the season (the
-  order its expected finishes give) against where it finished, one circle a
-  cell sized by how many land there, with the y = x line and the two-place
-  band the hit rate counts. A strip of seasons under it, each with its hit
-  rate and last season's table's, picks one season's clubs out by name. Key
-  figures: hit rate, last season's table as a benchmark, average miss, best-
-  and hardest-called season, biggest over- and under-achiever.
+- **Model accuracy** (`viz=accuracy`) -- how accurate the model is, in two
+  parts. *Before the season*: every finished club-season of the division
+  since 2015, where the model put it before the season (the order its
+  expected finishes give) against where it finished, one circle a cell sized
+  by how many land there, with the y = x line and the two-place band the hit
+  rate counts; a strip of seasons under it, each with its hit rate and last
+  season's table's, picks one season's clubs out by name. Key figures: hit
+  rate, last season's table as a benchmark, average miss, best- and
+  hardest-called season, biggest over- and under-achiever. *Match by match*:
+  when the model gives an outcome 40 %, does it happen 40 % of the time? A
+  reliability diagram of the pre-match odds of every match since 2016 (both
+  divisions), the scores against the bookmakers' closing odds (three ways of
+  removing their margin), and what quarter-Kelly betting on the model's
+  edges would have returned.
 
 ### Model Card
 

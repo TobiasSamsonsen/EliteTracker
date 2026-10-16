@@ -622,10 +622,35 @@ test('last season’s table calls the clubs coming down first and those coming u
 
 test('every scorecard string exists in both languages', () => {
   assertBothLanguages([
-    'explore.scorecard.title', 'explore.scorecard.desc', 'scorecard.loading', 'scorecard.empty', 'scorecard.aria',
+    'explore.accuracy.title', 'explore.accuracy.desc', 'accuracy.table', 'accuracy.tableLead', 'accuracy.matches',
+    'accuracy.matchesLead', 'scorecard.loading', 'scorecard.empty', 'scorecard.aria',
     'scorecard.x', 'scorecard.y', 'scorecard.tip', 'scorecard.fact.hits', 'scorecard.fact.hitsText',
     'scorecard.fact.miss', 'scorecard.fact.missText', 'scorecard.fact.best', 'scorecard.fact.bestText', 'scorecard.fact.over',
     'scorecard.fact.under', 'scorecard.fact.movedText', 'scorecard.cellTip', 'scorecard.pick', 'scorecard.season',
     'scorecard.seasonFirst', 'scorecard.fact.last', 'scorecard.fact.lastText', 'scorecard.fact.missLast',
+  ]);
+});
+
+eval(pick('calibrationPool'));
+
+test('calibration pools the bins at the top of the range', () => {
+  const bins = [
+    { lo: 0.6, hi: 0.7, n: 10, predicted: 0.65, observed: 0.6 },
+    { lo: 0.7, hi: 0.8, n: 30, predicted: 0.74, observed: 0.8 },
+    { lo: 0.8, hi: 0.9, n: 10, predicted: 0.84, observed: 0.9 },
+  ];
+  const top = calibrationPool(bins, 0.7);
+  assert.equal(top.n, 40);
+  assert.ok(Math.abs(top.predicted - 0.765) < 1e-12 && Math.abs(top.observed - 0.825) < 1e-12);
+  assert.equal(calibrationPool(bins, 0.95), null);
+});
+
+test('every calibration string exists in both languages', () => {
+  assertBothLanguages([
+    'calib.loading', 'calib.empty', 'calib.aria',
+    'calib.x', 'calib.y', 'calib.tip', 'calib.model', 'calib.elo',
+    'calib.proportional', 'calib.power', 'calib.shin', 'calib.tableCaption', 'calib.fact.error',
+    'calib.fact.errorText', 'calib.fact.favourites', 'calib.fact.favouritesText', 'calib.fact.market', 'calib.fact.marketText',
+    'calib.fact.kelly', 'calib.fact.kellyText',
   ]);
 });

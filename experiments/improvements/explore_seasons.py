@@ -66,6 +66,7 @@ try:
             ("h2h", 2019, None, ".h2h__cell", True, True, False),
             ("scorecard", 2019, None, ".scorecard__dot", True, False, False),
             ("calibration", 2019, None, ".calibration__dot", False, False, False),
+            ("accuracy", 2019, None, ".scorecard__dot", True, False, False),
         ]
         for viz, season, asof, ready, hero, picker, slider in cases:
             if viz not in live:
@@ -82,7 +83,7 @@ try:
                   f"marks {page.locator(ready).count():<4} title {title.split(',')[0]!r}")
             if got != (hero, picker, slider):
                 problems.append(f"{viz}: hero/picker/slider {got}, expected {(hero, picker, slider)}")
-            if hero and str(season) not in title and viz != "scorecard":
+            if hero and str(season) not in title and viz not in ("scorecard", "accuracy"):
                 problems.append(f"{viz}: hero title {title!r} does not show {season}")
             if viz in ("runin", "stakes"):
                 lead = page.locator(".explore-note--lead")
