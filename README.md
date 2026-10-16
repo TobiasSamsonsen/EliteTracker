@@ -141,6 +141,10 @@ slider too; the ones with time along an axis of their own take none.
   layer built; on a finished season they become a scorecard for the
   pre-season prediction (hit rate, biggest climber, faller and surprise). The
   ⓘ button shows them in a popup. On phones the mountain fills the screen.
+- **Run-in heatmap** (`viz=runin`) -- every club's remaining fixtures in date
+  order, each cell its chance of winning that match, hardest run-in at the
+  top: the fixture-difficulty column, match by match. A finished season shows
+  it as it stood with ten rounds left.
 
 ### Model Card
 

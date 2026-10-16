@@ -398,3 +398,27 @@ test('the time-axis note exists in both languages', () => {
     'explore.runInFrom',
   ]);
 });
+
+eval(pick('runInRows'));
+
+test('run-in rows read each fixture from both sides, hardest run-in first', () => {
+  const table = [{ team_id: 'A', team: 'A' }, { team_id: 'B', team: 'B' }, { team_id: 'C', team: 'C' }, { team_id: 'D', team: 'D' }];
+  const fixtures = [
+    { date: '2026-10-25', home_id: 'B', away_id: 'A', home: 'B', away: 'A', home_win: 0.2, draw: 0.3, away_win: 0.5 },
+    { date: '2026-10-18', home_id: 'A', away_id: 'C', home: 'A', away: 'C', home_win: 0.6, draw: 0.25, away_win: 0.15 },
+  ];
+  const rows = runInRows(table, fixtures);
+  assert.deepEqual(rows.map((row) => row.team_id), ['C', 'B', 'A']);  // D has nothing left
+  const a = rows.find((row) => row.team_id === 'A');
+  assert.deepEqual(a.games.map((g) => [g.date, g.home, g.win]), [['2026-10-18', true, 0.6], ['2026-10-25', false, 0.5]]);
+  assert.ok(Math.abs(a.points - (3 * 0.6 + 0.25 + 3 * 0.5 + 0.3) / 2) < 1e-12);
+});
+
+test('every run-in string exists in both languages', () => {
+  assertBothLanguages([
+    'explore.runin.title', 'explore.runin.desc', 'runin.empty', 'runin.aria', 'runin.club',
+    'runin.next', 'runin.homeLong', 'runin.awayLong', 'runin.tip', 'runin.fact.hardest',
+    'runin.fact.easiest', 'runin.fact.runText', 'runin.fact.gap', 'runin.fact.gapText', 'runin.fact.surest',
+    'runin.fact.surestText',
+  ]);
+});

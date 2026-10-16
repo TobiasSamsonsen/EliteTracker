@@ -3953,3 +3953,21 @@ body[data-viz="mountain"] > footer { display: none; }
 /* Explore: a note above or under a view. */
 .explore-note { margin: 0.75rem 0 0; color: var(--ink-muted); font-size: 0.8125rem; line-height: 1.45; }
 .explore-note--lead { margin: 0 0 0.6rem; }
+
+/* Run-in heatmap: remaining fixtures across, the club's win chance per cell. */
+.runin { padding: 0.75rem 1rem 1rem; }
+.runin__scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+.runin__table { border-collapse: separate; border-spacing: 2px; font-size: 0.75rem; font-variant-numeric: tabular-nums; }
+.runin__table th { padding: 0.2rem 0.35rem; color: var(--ink-muted); font-weight: 600; white-space: nowrap; }
+.runin__club { position: sticky; left: 0; z-index: 1; display: flex; align-items: center; gap: 0.35rem; min-width: 8.5rem; background: var(--panel); color: var(--ink); text-align: left; cursor: pointer; }
+.runin__club:hover span { text-decoration: underline; }
+.runin__club .team-logo, .runin__cell .team-logo { width: 16px; height: 16px; }
+.runin__avg { padding: 0 0.4rem; color: var(--ink-muted); text-align: right; }
+.runin__cell { min-width: 3.1rem; height: 1.9rem; padding: 0 0.25rem; border-radius: 4px; color: var(--ink); text-align: center; white-space: nowrap; }
+.runin__cell > * { vertical-align: middle; }
+.runin__cell b { margin-left: 0.15rem; font-weight: 600; }
+.runin__venue { margin-left: 0.15rem; font-size: 0.625rem; opacity: 0.8; }
+.runin__cell:focus-visible { outline: 2px solid var(--ink); outline-offset: 1px; }
+.runin__none { background: transparent; }
+/* The cell sets its own ink, so the grid's invert class has to win over it. */
+.runin__cell.cell--invert { color: var(--cell-ink-invert); }

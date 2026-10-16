@@ -2230,7 +2230,7 @@ function renderModelCard(report) {
 /* ---------- explore: other ways to look at the numbers -------------- */
 
 /* A gallery of cards, each opening one visualisation in the same panel. */
-const EXPLORE_ITEMS = ['mountain', 'attack'];
+const EXPLORE_ITEMS = ['mountain', 'attack', 'runin'];
 /* The visualisations that follow the rewind slider: they read one day's
    report. The rest take a whole season or every season, or carry time along
    an axis of their own, which the slider would only cut short. */
@@ -2248,6 +2248,16 @@ function exploreThumb(id) {
         }));
       }
     });
+  } else if (id === 'runin') {
+    // Rows of cells, darker where a win is likelier.
+    for (let r = 0; r < 5; r += 1) {
+      for (let c = 0; c < 9; c += 1) {
+        svg.appendChild(svgEl('rect', {
+          x: 20 + c * 13.5, y: 10 + r * 14.5, width: 12, height: 12.5, rx: 2,
+          style: `fill: ${seqColor(((r * 7 + c * 5) % 9) / 9 * 0.8 + 0.1)}`,
+        }));
+      }
+    }
   } else {
     svg.appendChild(svgEl('line', { class: 'explore-thumb__avg', x1: 82, x2: 82, y1: 10, y2: 80 }));
     svg.appendChild(svgEl('line', { class: 'explore-thumb__avg', x1: 16, x2: 144, y1: 46, y2: 46 }));
@@ -2275,6 +2285,7 @@ function renderExplore(report) {
   if (item !== 'mountain') mountainStop();
   if (item === 'mountain') return renderMountain(report, body);
   if (item === 'attack') return renderAttackMap(report, body);
+  if (item === 'runin') return renderTimeAxis(item, report, body, renderRunIn, true);
   const gallery = el('div', 'explore-gallery');
   for (const id of EXPLORE_ITEMS) {
     const card = el('button', 'explore-card');
@@ -2516,6 +2527,83 @@ async function renderTimeAxis(item, report, body, draw, runIn) {
   if (from && !body.firstChild.matches('.explore-empty')) {
     body.firstChild.prepend(el('p', 'explore-note explore-note--lead', t('explore.runInFrom', { date: whenDate(from) })));
   }
+}
+
+/* ---------- explore: run-in heatmap (viz=runin) ------------------------ */
+
+/* Each club's remaining fixtures in date order, from its own side, and the
+   points those odds are worth a match on average; hardest run-in first. */
+function runInRows(table, fixtures) {
+  const rows = new Map(table.map((row) => [row.team_id, { team_id: row.team_id, team: row.team, games: [] }]));
+  const ordered = [...fixtures].sort((a, b) => a.date.localeCompare(b.date) || String(a.time || '').localeCompare(String(b.time || '')));
+  for (const f of ordered) {
+    rows.get(f.home_id)?.games.push({ date: f.date, opponent_id: f.away_id, opponent: f.away, home: true, win: f.home_win, draw: f.draw, loss: f.away_win });
+    rows.get(f.away_id)?.games.push({ date: f.date, opponent_id: f.home_id, opponent: f.home, home: false, win: f.away_win, draw: f.draw, loss: f.home_win });
+  }
+  return [...rows.values()]
+    .filter((row) => row.games.length)
+    .map((row) => ({ ...row, points: row.games.reduce((sum, g) => sum + 3 * g.win + g.draw, 0) / row.games.length }))
+    .sort((a, b) => a.points - b.points || a.team.localeCompare(b.team));
+}
+
+function renderRunIn(report, body) {
+  const rows = runInRows(report.table, report.fixtures || []);
+  if (!rows.length) {
+    body.replaceChildren(el('p', 'explore-empty', t('runin.empty')));
+    return;
+  }
+  const wrap = el('div', 'runin');
+  const scroller = el('div', 'runin__scroll');
+  const table = el('table', 'runin__table');
+  table.setAttribute('aria-label', t('runin.aria'));
+  const most = Math.max(...rows.map((row) => row.games.length));
+  const head = el('tr');
+  head.appendChild(el('th', 'runin__corner', t('runin.club')));
+  head.appendChild(el('th', 'runin__avg', t('runin.avg')));
+  for (let i = 1; i <= most; i += 1) head.appendChild(el('th', '', i === 1 ? t('runin.next') : String(i)));
+  table.appendChild(head);
+  for (const row of rows) {
+    const tr = el('tr');
+    const name = el('th', 'runin__club');
+    const crest = teamLogo(row.team_id, row.team);
+    if (crest) name.appendChild(crest);
+    name.appendChild(el('span', '', row.team));
+    name.addEventListener('click', () => openTeamView(row.team_id, row.team));
+    tr.appendChild(name);
+    tr.appendChild(el('td', 'runin__avg', num(row.points, 2)));
+    for (const game of row.games) {
+      const cell = el('td', `runin__cell${game.win >= 0.55 ? ' cell--invert' : ''}`);
+      cell.style.background = seqColor(game.win);
+      const logo = teamLogo(game.opponent_id, game.opponent);
+      if (logo) cell.appendChild(logo);
+      cell.appendChild(el('span', 'runin__venue', t(game.home ? 'runin.home' : 'runin.away')));
+      cell.appendChild(el('b', '', pctShort(game.win) || '0'));
+      const tip = t('runin.tip', {
+        team: row.team, opponent: game.opponent, venue: t(game.home ? 'runin.homeLong' : 'runin.awayLong'),
+        date: game.date, win: pct(game.win, 0), draw: pct(game.draw, 0), loss: pct(game.loss, 0),
+      });
+      cell.tabIndex = 0;
+      cell.setAttribute('aria-label', tip);
+      attachTip(cell, tip);
+      tr.appendChild(cell);
+    }
+    for (let i = row.games.length; i < most; i += 1) tr.appendChild(el('td', 'runin__none'));
+    table.appendChild(tr);
+  }
+  scroller.appendChild(table);
+  wrap.appendChild(scroller);
+  body.replaceChildren(wrap);
+
+  const games = rows.flatMap((row) => row.games.map((game) => ({ ...game, team: row.team })));
+  const hardest = rows[0];
+  const easiest = rows[rows.length - 1];
+  const surest = [...games].sort((a, b) => b.win - a.win)[0];
+  wrap.appendChild(exploreFacts([
+    { value: hardest.team, label: t('runin.fact.hardest'), text: t('runin.fact.runText', { points: num(hardest.points, 2), n: hardest.games.length }) },
+    { value: easiest.team, label: t('runin.fact.easiest'), text: t('runin.fact.runText', { points: num(easiest.points, 2), n: easiest.games.length }) },
+    { value: num(easiest.points - hardest.points, 2), label: t('runin.fact.gap'), text: t('runin.fact.gapText', { points: num((easiest.points - hardest.points) * Math.min(hardest.games.length, easiest.games.length), 1) }) },
+    { value: pct(surest.win, 0), label: t('runin.fact.surest'), text: t('runin.fact.surestText', { team: surest.team, opponent: surest.opponent, date: surest.date }) },
+  ]));
 }
 
 /* The season mountain, ported from experiments/season_mountain: the finish
