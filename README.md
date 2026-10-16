@@ -141,6 +141,8 @@ slider too; the ones with time along an axis of their own take none.
   layer built; on a finished season they become a scorecard for the
   pre-season prediction (hit rate, biggest climber, faller and surprise). The
   ⓘ button shows them in a popup. On phones the mountain fills the screen.
+- **Race lines** (`viz=races`) -- every club's chance of one race (pick it)
+  through the season, from the season-shape snapshots.
 
 ### Model Card
 

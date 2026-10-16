@@ -3953,3 +3953,14 @@ body[data-viz="mountain"] > footer { display: none; }
 /* Explore: a note above or under a view. */
 .explore-note { margin: 0.75rem 0 0; color: var(--ink-muted); font-size: 0.8125rem; line-height: 1.45; }
 .explore-note--lead { margin: 0 0 0.6rem; }
+
+/* Race lines: every club's chance of the picked race through the season. */
+.races { padding: 0.75rem 1rem 1rem; }
+.races__picker { display: flex; flex-wrap: wrap; gap: 0.4rem; margin-bottom: 0.75rem; }
+.races__race { padding: 0.35rem 0.75rem; border: 1px solid var(--rule); border-radius: 999px; background: var(--panel); color: var(--ink); font: inherit; font-size: 0.8125rem; cursor: pointer; }
+.races__race[aria-pressed="true"] { border-color: var(--ink); background: var(--ink); color: var(--panel); }
+.chart .races__line { fill: none; stroke-width: 2; stroke-linejoin: round; stroke-linecap: round; }
+.chart .races__club:hover .races__line, .chart .races__club:focus-visible .races__line { stroke-width: 4; }
+.chart .races__club:focus-visible { outline: none; }
+.chart .races__label { font-size: 11px; font-weight: 600; }
+.chart .races__none { fill: var(--ink-muted); font-size: 13px; }

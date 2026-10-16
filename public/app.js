@@ -2230,7 +2230,7 @@ function renderModelCard(report) {
 /* ---------- explore: other ways to look at the numbers -------------- */
 
 /* A gallery of cards, each opening one visualisation in the same panel. */
-const EXPLORE_ITEMS = ['mountain', 'attack'];
+const EXPLORE_ITEMS = ['mountain', 'attack', 'races'];
 /* The visualisations that follow the rewind slider: they read one day's
    report. The rest take a whole season or every season, or carry time along
    an axis of their own, which the slider would only cut short. */
@@ -2247,6 +2247,11 @@ function exploreThumb(id) {
           style: `fill: var(--seq-${Math.min(SEQ_STEPS, level + 1)})`,
         }));
       }
+    });
+  } else if (id === 'races') {
+    // A few lines crossing on their way up and down.
+    [[70, 62, 40, 22, 14], [20, 30, 48, 60, 72], [50, 44, 50, 66, 80], [80, 76, 72, 74, 78]].forEach((ys, i) => {
+      svg.appendChild(svgEl('polyline', { points: ys.map((v, k) => `${20 + k * 30},${v}`).join(' '), style: `fill: none; stroke: ${lineColour(i)}; stroke-width: 3; stroke-linejoin: round` }));
     });
   } else {
     svg.appendChild(svgEl('line', { class: 'explore-thumb__avg', x1: 82, x2: 82, y1: 10, y2: 80 }));
@@ -2275,6 +2280,7 @@ function renderExplore(report) {
   if (item !== 'mountain') mountainStop();
   if (item === 'mountain') return renderMountain(report, body);
   if (item === 'attack') return renderAttackMap(report, body);
+  if (item === 'races') return renderTimeAxis(item, report, body, renderRaces, false);
   const gallery = el('div', 'explore-gallery');
   for (const id of EXPLORE_ITEMS) {
     const card = el('button', 'explore-card');
@@ -2517,6 +2523,136 @@ async function renderTimeAxis(item, report, body, draw, runIn) {
     body.firstChild.prepend(el('p', 'explore-note explore-note--lead', t('explore.runInFrom', { date: whenDate(from) })));
   }
 }
+
+/* ---------- explore: shared bits for the line charts -------------------- */
+
+/* Distinct line colours, one per club: hues a golden angle apart, at a
+   lightness that reads on both themes. */
+const lineColour = (index) => `oklch(0.62 0.14 ${Math.round((index * 137.508) % 360)})`;
+
+/* Labels at the right end of a chart's lines, nudged apart so none overlap:
+   `items` are {y, text, colour}; returns them with `y` spread by `gap`. */
+function spreadLabels(items, gap, top, bottom) {
+  const sorted = [...items].sort((a, b) => a.y - b.y);
+  for (let i = 1; i < sorted.length; i += 1) sorted[i].y = Math.max(sorted[i].y, sorted[i - 1].y + gap);
+  const overflow = sorted.length ? sorted[sorted.length - 1].y - bottom : 0;
+  if (overflow > 0) for (const item of sorted) item.y -= overflow;
+  for (let i = sorted.length - 2; i >= 0; i -= 1) sorted[i].y = Math.min(sorted[i].y, sorted[i + 1].y - gap);
+  for (const item of sorted) item.y = Math.max(item.y, top);
+  return sorted;
+}
+
+
+/* ---------- explore: race lines (viz=races) ---------------------------- */
+
+/* Each club's chance of one race at every season-shape snapshot
+   (report.history): the band's places summed. The snapshots count places
+   only, so promotion and relegation here leave the play-offs out. */
+function raceSeries(history, band) {
+  return (history.teams || []).map((team) => ({
+    team_id: team.team_id,
+    team: team.team,
+    values: team.positions.map((p) => p.slice(band.first - 1, band.last).reduce((a, b) => a + b, 0)),
+  }));
+}
+
+let raceBand = null;
+
+function renderRaces(report, body) {
+  const history = report.history || {};
+  const bands = report.league.bands || [];
+  if (!history.dates || history.dates.length < 2 || !bands.length) {
+    body.replaceChildren(el('p', 'explore-empty', t('races.empty')));
+    return;
+  }
+  const band = bands.find((b) => b.label === raceBand) || bands[0];
+  const wrap = el('div', 'races');
+  const picker = el('div', 'races__picker');
+  picker.setAttribute('role', 'group');
+  picker.setAttribute('aria-label', t('races.pick'));
+  for (const option of bands) {
+    const button = el('button', 'races__race', bandEdgeName(option));
+    button.type = 'button';
+    button.setAttribute('aria-pressed', String(option === band));
+    button.addEventListener('click', () => { raceBand = option.label; renderRaces(report, body); });
+    picker.appendChild(button);
+  }
+  wrap.appendChild(picker);
+  const series = raceSeries(history, band)
+    .filter((s) => Math.max(...s.values) >= 0.05)
+    .sort((a, b) => b.values[b.values.length - 1] - a.values[a.values.length - 1]);
+  const svg = svgEl('svg', { class: 'chart', role: 'group', 'aria-label': t('races.aria', { race: bandName(band) }) });
+  wrap.appendChild(svg);
+  body.replaceChildren(wrap);
+
+  const box = wrap.getBoundingClientRect().width || 940;
+  const narrow = box < SHAPE_NARROW;
+  const width = narrow ? Math.round(box) : 940;
+  const height = narrow ? 320 : 400;
+  const pad = { top: 14, right: narrow ? 92 : 130, bottom: 28, left: 40 };
+  svg.setAttribute('viewBox', `0 0 ${width} ${height}`);
+  const times = history.dates.map((d) => Date.parse(d));
+  const [t0, t1] = [times[0], times[times.length - 1]];
+  const x = (time) => pad.left + ((time - t0) / (t1 - t0 || 1)) * (width - pad.left - pad.right);
+  const y = (p) => pad.top + (1 - p) * (height - pad.top - pad.bottom);
+  const text = (className, content, attrs) => {
+    const node = svgEl('text', { class: className, ...attrs });
+    node.textContent = content;
+    svg.appendChild(node);
+    return node;
+  };
+  for (const p of [0, 0.25, 0.5, 0.75, 1]) {
+    svg.appendChild(svgEl('line', { class: p ? 'grid-line' : 'axis-line', x1: pad.left, x2: width - pad.right, y1: y(p), y2: y(p) }));
+    text('tick', `${num(p * 100)}${percentSign()}`, { x: pad.left - 6, y: y(p) + 3.5, 'text-anchor': 'end' });
+  }
+  const months = new Set();
+  history.dates.forEach((date, i) => {
+    const month = date.slice(0, 7);
+    if (months.has(month) || (i && i < history.dates.length - 1 && months.size % (narrow ? 2 : 1))) return;
+    months.add(month);
+    text('tick', monthLabel(date), { x: x(times[i]), y: height - 8, 'text-anchor': 'middle' });
+  });
+  if (!series.length) {
+    text('races__none', t('races.none'), { x: (pad.left + width - pad.right) / 2, y: height / 2, 'text-anchor': 'middle' });
+  }
+  const labels = [];
+  series.forEach((s, index) => {
+    const colour = lineColour(index);
+    const g = svgEl('g', { class: 'races__club', tabindex: 0 });
+    g.appendChild(svgEl('polyline', {
+      class: 'races__line', style: `stroke: ${colour}`,
+      points: s.values.map((value, i) => `${x(times[i])},${y(value)}`).join(' '),
+    }));
+    const last = s.values[s.values.length - 1];
+    const tip = t('races.tip', { team: s.team, race: bandName(band), first: shareText(s.values[0]), now: shareText(last), high: shareText(Math.max(...s.values)) });
+    g.setAttribute('aria-label', tip);
+    attachTip(g, tip);
+    svg.appendChild(g);
+    labels.push({ y: y(last), text: `${s.team} ${shareText(last)}`, colour });
+  });
+  for (const label of spreadLabels(labels.slice(0, 12), 13, pad.top + 4, height - pad.bottom)) {
+    text('races__label', label.text, { x: width - pad.right + 6, y: label.y + 4, style: `fill: ${label.colour}` });
+  }
+
+  if (series.length) {
+    const move = (s) => s.values[s.values.length - 1] - s.values[0];
+    const [riser, faller] = [[...series].sort((a, b) => move(b) - move(a))[0], [...series].sort((a, b) => move(a) - move(b))[0]];
+    const alive = series.filter((s) => s.values[s.values.length - 1] >= 0.05).length;
+    const moved = (s) => t('races.fact.movedText', { first: shareText(s.values[0]), now: shareText(s.values[s.values.length - 1]) });
+    wrap.appendChild(exploreFacts([
+      { value: series[0].team, label: t('races.fact.leader'), text: t('races.fact.leaderText', { pct: shareText(series[0].values[series[0].values.length - 1]) }) },
+      { value: riser.team, label: t('races.fact.riser'), text: moved(riser) },
+      { value: faller.team, label: t('races.fact.faller'), text: moved(faller) },
+      { value: String(alive), label: t('races.fact.alive'), text: t('races.fact.aliveText') },
+    ]));
+  }
+  wrap.appendChild(el('p', 'explore-note', t('races.note')));
+}
+
+function monthLabel(date) {
+  return new Date(`${date}T12:00:00`).toLocaleDateString(localeNumber(), { month: 'short' });
+}
+
 
 /* The season mountain, ported from experiments/season_mountain: the finish
    grid is the floor, and every round stacks another layer of finishing-place

@@ -398,3 +398,25 @@ test('the time-axis note exists in both languages', () => {
     'explore.runInFrom',
   ]);
 });
+
+eval(pick('raceSeries') + pick('spreadLabels'));
+
+test('race series sum a band per snapshot', () => {
+  const history = { teams: [{ team_id: 'A', team: 'A', positions: [[0.5, 0.3, 0.2], [0.9, 0.1, 0]] }] };
+  const [a] = raceSeries(history, { first: 1, last: 2 });
+  assert.deepEqual(a.values.map((v) => Math.round(v * 100) / 100), [0.8, 1]);
+});
+
+test('end labels are spread at least a gap apart and kept inside the chart', () => {
+  const out = spreadLabels([{ y: 50 }, { y: 51 }, { y: 52 }, { y: 200 }], 12, 10, 205);
+  const ys = out.map((label) => label.y).sort((a, b) => a - b);
+  for (let i = 1; i < ys.length; i += 1) assert.ok(ys[i] - ys[i - 1] >= 12 - 1e-9);
+  assert.ok(ys[0] >= 10 && ys[ys.length - 1] <= 205);
+});
+
+test('every race-lines string exists in both languages', () => {
+  assertBothLanguages([
+    'explore.races.title', 'explore.races.desc', 'races.empty', 'races.aria', 'races.tip',
+    'races.fact.leader', 'races.note',
+  ]);
+});
