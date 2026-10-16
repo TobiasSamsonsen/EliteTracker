@@ -500,21 +500,22 @@ body[data-view="compare"] #hero-lede,
 body[data-view="compare"] .hero__meta,
 body[data-view="model"] #hero-lede,
 body[data-view="model"] .hero__meta,
-body[data-viz="attack"] #hero-lede,
-body[data-viz="attack"] .hero__meta { display: none; }
+body[data-view="explore"] #hero-lede,
+body[data-view="explore"] .hero__meta { display: none; }
 body[data-view="team"] .hero,
 body[data-view="ladder"] .hero,
 body[data-view="compare"] .hero,
 body[data-view="model"] .hero,
-body[data-viz="attack"] .hero { padding-bottom: 0.5rem; }
+body[data-view="explore"] .hero { padding-bottom: 0.5rem; }
 /* The ladder and the compare tool take both divisions, and the model card
    holds for both, so only the season is a choice there. */
 body[data-view="ladder"] .hero-title-part[data-role="division"],
 body[data-view="compare"] .hero-title-part[data-role="division"],
 body[data-view="model"] .hero-title-part[data-role="division"] { display: none; }
-/* The explore gallery shows no league's numbers, and the season mountain
-   has its own division and season pickers: no hero at all. */
-body[data-view="explore"]:not([data-viz="attack"]) .hero { display: none; }
+/* Explore: a visualisation of one division and season keeps the hero's
+   title, whose two pickers change them. The gallery shows no league's
+   numbers and the season mountain has pickers of its own: no hero there. */
+body[data-view="explore"]:is([data-viz=""], [data-viz="mountain"]) .hero { display: none; }
 @media (max-width: 760px) {
   .hero__meta { display: none; }
 }
@@ -3948,3 +3949,7 @@ body[data-viz="mountain"] > footer { display: none; }
     width: min(24rem, calc(100vw - 1.5rem));
   }
 }
+
+/* Explore: a note above or under a view. */
+.explore-note { margin: 0.75rem 0 0; color: var(--ink-muted); font-size: 0.8125rem; line-height: 1.45; }
+.explore-note--lead { margin: 0 0 0.6rem; }

@@ -2231,6 +2231,10 @@ function renderModelCard(report) {
 
 /* A gallery of cards, each opening one visualisation in the same panel. */
 const EXPLORE_ITEMS = ['mountain', 'attack'];
+/* The visualisations that follow the rewind slider: they read one day's
+   report. The rest take a whole season or every season, or carry time along
+   an axis of their own, which the slider would only cut short. */
+const EXPLORE_REWIND = new Set(['attack']);
 
 function exploreThumb(id) {
   const svg = svgEl('svg', { class: 'explore-card__thumb', viewBox: '0 0 160 90', 'aria-hidden': 'true' });
@@ -2464,6 +2468,56 @@ function renderAttackMap(report, body) {
   ]));
 }
 
+/* ---------- explore: shared by the further views ---------------------- */
+
+/* One fetch per report file, kept for the page's life: the season mountain's
+   layers, the scorecard's seasons and the time-axis views' other days. */
+const fetchedReport = (url) => {
+  if (!mountainReports.has(url)) {
+    mountainReports.set(url, fetch(url)
+      .then((res) => { if (!res.ok) throw new Error(`HTTP ${res.status}`); return res.json(); })
+      .catch((error) => { mountainReports.delete(url); throw error; }));
+  }
+  return mountainReports.get(url);
+};
+
+/* The views with a time axis of their own carry time across the chart, so
+   they take no rewind: they read the season's latest report, not a rewound
+   one. A finished season has nothing left to run in, so the ones that look
+   ahead (`runIn`) stand where its last RUN_IN_ROUNDS rounds began, the point
+   from which pipeline.py marks the decisive matches. */
+const RUN_IN_ROUNDS = 10;
+let timeAxisToken = 0;
+
+/* The first matchday with at most RUN_IN_ROUNDS rounds' worth of matches
+   left, or null. */
+function runInStart(report) {
+  const total = report.model.matches_played + report.model.matches_remaining;
+  const left = RUN_IN_ROUNDS * Math.floor(report.table.length / 2);
+  const day = (report.league.matchdays || []).find((d) => !d.preseason && total - d.matches_played <= left);
+  return day ? day.date : null;
+}
+
+async function renderTimeAxis(item, report, body, draw, runIn) {
+  const token = ++timeAxisToken;
+  const { season, slug } = report.league;
+  let shown = report;
+  let from = null;
+  try {
+    if (state.asof) shown = applyShortNames(await fetchedReport(reportUrl(season)))[slug];
+    from = runIn && !shown.model.matches_remaining ? runInStart(shown) : null;
+    if (from) shown = applyShortNames(await fetchedReport(reportUrl(season, from)))[slug];
+  } catch (error) {
+    if (token === timeAxisToken) body.replaceChildren(el('p', 'explore-empty', t('status.couldNotLoad', { season, error: error.message })));
+    return;
+  }
+  if (token !== timeAxisToken || state.activeView !== 'explore' || state.exploreItem !== item) return;
+  draw(shown, body);
+  if (from && !body.firstChild.matches('.explore-empty')) {
+    body.firstChild.prepend(el('p', 'explore-note explore-note--lead', t('explore.runInFrom', { date: whenDate(from) })));
+  }
+}
+
 /* The season mountain, ported from experiments/season_mountain: the finish
    grid is the floor, and every round stacks another layer of finishing-place
    chances on top until the stack narrows into the table. three.js is vendored
@@ -2503,15 +2557,7 @@ async function mountainLayers(report) {
   const days = report.league.matchdays || [];
   const lastDate = days.length ? days[days.length - 1].date : null;
   const probs = (r) => new Map(r.table.map((row) => [row.team_id, row.position_probabilities]));
-  const reportOn = (date) => {
-    const url = reportUrl(season, date);
-    if (!mountainReports.has(url)) {
-      mountainReports.set(url, fetch(url)
-        .then((res) => { if (!res.ok) throw new Error(`HTTP ${res.status}`); return res.json(); })
-        .catch((error) => { mountainReports.delete(url); throw error; }));
-    }
-    return mountainReports.get(url);
-  };
+  const reportOn = (date) => fetchedReport(reportUrl(season, date));
   const layers = [];
   const preseason = report.league.preseason;
   const history = report.history || {};
@@ -4749,10 +4795,11 @@ function render() {
   // Hide the rewind timeline on views where it isn't relevant
   const noRewind = new Set(['matches', 'compare', 'model', 'team']);
   const timelineSection = document.querySelector('.timeline-section');
-  // In explore only the attack map follows the rewind; the mountain has its own build-up.
+  // In explore only the views of one rewound report follow it (EXPLORE_REWIND);
+  // the mountain has its own build-up.
   if (timelineSection) {
     timelineSection.hidden = noRewind.has(state.activeView)
-      || (state.activeView === 'explore' && state.exploreItem !== 'attack');
+      || (state.activeView === 'explore' && !EXPLORE_REWIND.has(state.exploreItem));
   }
   // Lets the stylesheet slim the league hero down in a club's view, and fit
   // the season mountain to a phone's screen.

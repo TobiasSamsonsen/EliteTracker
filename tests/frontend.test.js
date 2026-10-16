@@ -372,3 +372,29 @@ test('the play-off and surface strings exist in both languages', () => {
     'team.playoffIncluded', 'model.surfaceEdge',
   ]);
 });
+
+eval(pick('runInStart'));
+const RUN_IN_ROUNDS = 10;
+
+test('a finished season runs in from the first day with ten rounds left', () => {
+  // 16 clubs, 240 matches: ten rounds are 80, so the run-in starts at 160 played.
+  const report = {
+    model: { matches_played: 240, matches_remaining: 0 },
+    table: Array.from({ length: 16 }, () => ({})),
+    league: { matchdays: [
+      { date: '2019-03-30', matches_played: 0, preseason: true },
+      { date: '2019-08-31', matches_played: 152 },
+      { date: '2019-09-14', matches_played: 160 },
+      { date: '2019-09-15', matches_played: 161 },
+    ] },
+  };
+  assert.equal(runInStart(report), '2019-09-14');
+  report.league.matchdays = report.league.matchdays.slice(0, 2);
+  assert.equal(runInStart(report), null);
+});
+
+test('the time-axis note exists in both languages', () => {
+  assertBothLanguages([
+    'explore.runInFrom',
+  ]);
+});

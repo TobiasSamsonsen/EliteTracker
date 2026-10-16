@@ -120,6 +120,10 @@ visualisation (thumbnail, name, short description) that opens it in place,
 with `?view=explore&viz=<id>` links. Each one ends with **key figures** -- a
 number, what it is, and one sentence on how to read it.
 
+A visualisation of one division and season follows the division and season
+picked in the title above it. The ones read off a single day follow the rewind
+slider too; the ones with time along an axis of their own take none.
+
 - **Attack vs defence** (`viz=attack`) -- every club placed by its attack and
   defence ratings (expected goals for and against per match against an average
   side), with a best-fit trend line through the division. Above the line a club
