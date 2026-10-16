@@ -189,3 +189,15 @@ def test_rps_orders_outcomes_so_a_draw_is_a_smaller_miss():
     assert ranked_probability_score(favourite, "draw") < ranked_probability_score(favourite, "away_win")
     assert ranked_probability_score(MatchProbabilities(1.0, 0.0, 0.0), "home_win") == 0.0
     assert ranked_probability_score(MatchProbabilities(1.0, 0.0, 0.0), "away_win") == 1.0
+
+
+def test_reliability_bins_predicted_against_realised():
+    from elitetracker.model.backtest import Scorecard, reliability
+    from elitetracker.model.probabilities import MatchProbabilities
+    card = Scorecard()
+    card.observe(MatchProbabilities(0.72, 0.18, 0.10), "home_win", "a")
+    card.observe(MatchProbabilities(0.75, 0.15, 0.10), "draw", "b")
+    bins = reliability(card)
+    home = {round(b["lo"], 1): b for b in bins["home_win"]}
+    assert home[0.7]["n"] == 2 and home[0.7]["observed"] == 0.5 and abs(home[0.7]["predicted"] - 0.735) < 1e-9
+    assert sum(b["n"] for b in bins["all"]) == 6  # three outcomes per match, pooled

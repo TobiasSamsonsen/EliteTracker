@@ -130,7 +130,7 @@ class TestConfig:
         assert config.season_regression == pytest.approx(0.88)
 
     def test_model_version_is_declared(self):
-        assert MODEL_VERSION == "elo-v12.2"
+        assert MODEL_VERSION == "elo-v13.0"
 
     def test_xg_alpha_default(self):
         config = EloConfig()
@@ -138,15 +138,27 @@ class TestConfig:
 
     def test_xg_margin_rewards_a_deserved_win_more(self):
         base = EloConfig(xg_margin=0.0)
-        margin = EloConfig(xg_margin=0.05)
+        margin = EloConfig(xg_margin=0.10)
         # A 1-0 win on 2.5 xG to 0.3 moves more with the margin term...
         assert updated_pair(1500, 1500, 1, 0, margin, 2.5, 0.3)[0] > updated_pair(1500, 1500, 1, 0, base, 2.5, 0.3)[0]
-        # ...a draw is untouched, and without xG the term never applies.
-        assert updated_pair(1500, 1500, 1, 1, margin, 2.5, 0.3) == updated_pair(1500, 1500, 1, 1, base, 2.5, 0.3)
+        # ...and without xG the term never applies.
         assert updated_pair(1500, 1500, 1, 0, margin) == updated_pair(1500, 1500, 1, 0, base)
         # Ratings stay zero-sum.
         home, away = updated_pair(1500, 1500, 0, 2, margin, 0.4, 1.9)
         assert home + away == pytest.approx(3000)
+
+    def test_xg_margin_follows_the_xg_not_the_scoreline(self):
+        """elo-v12.0 signed the term by the goals winner, so a 1-0 win on 0.25
+        xG to 2.5 gained *more* the worse the winner was outplayed."""
+        base = EloConfig(xg_margin=0.0)
+        margin = EloConfig(xg_margin=0.10)
+        lucky = updated_pair(1500, 1500, 1, 0, margin, 0.25, 2.5)[0]
+        assert lucky < updated_pair(1500, 1500, 1, 0, base, 0.25, 2.5)[0]
+        # A dominant draw moves toward the side that created more...
+        assert updated_pair(1500, 1500, 1, 1, margin, 2.8, 0.2)[0] > updated_pair(1500, 1500, 1, 1, base, 2.8, 0.2)[0]
+        # ...and a 0.0 xG side is no special case (smoothed, finite).
+        shut_out = updated_pair(1500, 1500, 2, 0, margin, 1.9, 0.0)[0]
+        assert updated_pair(1500, 1500, 2, 0, base, 1.9, 0.0)[0] < shut_out < 1500 + margin.k_factor
 
 
 class TestFittedDefaults:
@@ -191,8 +203,22 @@ class TestCalibration:
 class TestXgImpliedScore:
     def test_equal_xg_gives_half(self):
         """Equal xG means an even match: P(win) + 0.5*P(draw) = 0.5."""
-        # Tolerance accounts for the Poisson summation capping at 10 goals.
-        assert xg_implied_score(1.5, 1.5) == pytest.approx(0.5, abs=1e-3)
+        assert xg_implied_score(1.5, 1.5) == pytest.approx(0.5, abs=1e-12)
+
+    def test_matches_the_full_poisson_sum(self):
+        """The recurrence, normalised at 12 goals, is the untruncated sum to
+        within 1e-6 at ordinary xG and 2e-4 at 4+ a side (the double loop it
+        replaced stopped at 9 goals and put 5.0 v 0.3 at 0.957)."""
+        def full(h, a, cap=60):
+            ph = [math.exp(-h) * h ** k / math.factorial(k) for k in range(cap)]
+            pa = [math.exp(-a) * a ** k / math.factorial(k) for k in range(cap)]
+            return sum(ph[i] * pa[j] * (1.0 if i > j else 0.5 if i == j else 0.0)
+                       for i in range(cap) for j in range(cap))
+        for h, a in ((0.0, 0.0), (0.0, 2.0), (1.2, 0.8), (2.4, 1.1)):
+            assert xg_implied_score(h, a) == pytest.approx(full(h, a), abs=1e-6)
+        for h, a in ((5.0, 0.3), (4.4, 3.9)):
+            assert xg_implied_score(h, a) == pytest.approx(full(h, a), abs=2e-4)
+        assert xg_implied_score(5.0, 0.3) == pytest.approx(0.9887, abs=1e-4)
 
     def test_higher_home_xg_gives_advantage(self):
         assert xg_implied_score(2.0, 1.0) > 0.5
@@ -205,7 +231,7 @@ class TestXgImpliedScore:
         assert xg_implied_score(5.0, 0.1) > 0.95
 
     def test_symmetric(self):
-        assert xg_implied_score(1.0, 2.0) == pytest.approx(1.0 - xg_implied_score(2.0, 1.0), abs=1e-3)
+        assert xg_implied_score(1.0, 2.0) == pytest.approx(1.0 - xg_implied_score(2.0, 1.0), abs=1e-12)
 
     def test_bounded(self):
         assert 0.0 < xg_implied_score(1.0, 1.0) < 1.0

@@ -8,9 +8,9 @@ Core model: Elo + xG attack/defence Poisson grid (version in `MODEL_VERSION`, `m
 ## 1. Hard Constraints & Invariants
 
 - **Dependencies Need a Case**: Third-party dependencies (Python or frontend) are allowed, but each one needs a stated justification when it is proposed or added: what it is for, why the standard library or plain JS is not enough, and what it costs (install, size, CI, upkeep). Record the case where the dependency is declared (`pyproject.toml` comment, or a note next to vendored files). Current ones: `numpy` (vectorised season simulation), `curl-cffi` (Sofascore), `tzdata` (Windows only), and three.js vendored for the season mountain.
-- **Model Versioning**: Any change affecting prediction or simulation output MUST bump `MODEL_VERSION` in `model/elo.py`.
+- **Model Versioning**: `MODEL_VERSION` in `model/elo.py` is `elo-vMAJOR.MINOR`, bumped once per release (a deployed change set), never per working step; rejected or unreleased work takes no number. MAJOR when the ratings or the match odds change (a model term, a refit constant, new data the model reads); MINOR when only the season simulation's published chances move (a simulation rule, the strength shock, play-offs, run count, random stream); no bump when nothing the model publishes changes. A release takes the largest bump any of its changes needs. The version table is in `PROJECT_STATUS.md`, "Model versions".
 - **Design Philosophy**: Keep diffs focused; do not add speculative abstractions or unrequested refactors.
-- **Historical Decision Log**: Do not re-attempt rejected statistical models (ordered-logit, Dixon-Coles standalone, squad value priors). Check `PROJECT_STATUS.md` before proposing model changes.
+- **Historical Decision Log**: Every tested model idea, shipped or rejected, is recorded in `PROJECT_STATUS.md` with its numbers; check it before proposing a model change and log each new test there. A logged rejection is a baseline, not a veto: decide whether a re-test is worth running, with a low threshold (the model, the data or the method has moved since; elo-v13.0's squad-value prior and xG-margin fix both came from re-tests), and report the new numbers beside the old.
 
 ---
 

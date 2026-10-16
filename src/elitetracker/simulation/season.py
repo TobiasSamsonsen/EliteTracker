@@ -35,6 +35,8 @@ from elitetracker.model.probabilities import match_probabilities
 from elitetracker.model.table import TableRow, table_from_matches
 from elitetracker.normalize.matches import Match
 from elitetracker.normalize.standings import POINTS_FOR_DRAW, POINTS_FOR_WIN
+from elitetracker.normalize.surfaces import surface_edge
+from elitetracker.simulation.playoffs import Knockout, Opponent, Playoffs, PlayoffTally
 
 # Chosen by measurement, not taste. Monte Carlo error falls as 1/sqrt(N), and
 # the point of diminishing returns is set by the model's own accuracy: elo-v3
@@ -74,7 +76,21 @@ SIMULATION_CHUNK = 1_000
 #
 # Negative on both halves (2016-2020, 2021-2025) and in both divisions; 0.15
 # is the middle of the basin. The shock does not touch single-match odds.
-STRENGTH_SD = 0.15
+#
+# Re-fit for elo-v13.0 the same way (10,000 runs; against sd 0.15 on the same
+# model, which the correctly signed xG margin had made slightly over-sure:
+# log loss of the place +0.0015, t +2.8, with no shock change):
+#
+#     sd     RPS over positions      log loss of the actual position
+#     0.20   -0.00051 (t -3.2)       -0.0125 (t -2.6)
+#     0.25   -0.00077 (t -2.4)       -0.0177 (t -2.2)
+#     0.30   -0.00071 (t -1.5)       -0.0127 (t -1.2)
+#
+# 0.20 already beat 0.15 on elo-v12.2 with the seasons since (RPS t -2.6), so
+# part of the move is the data. Against elo-v12.2 as shipped (sd 0.15), the
+# whole of elo-v13.0 is RPS -0.00097 (t -2.5), log loss -0.0098 (t -2.6),
+# negative in both halves and both divisions. 0.20 is the shrunk value.
+STRENGTH_SD = 0.20
 
 
 @dataclass(frozen=True)
@@ -100,6 +116,12 @@ class TeamProjection:
     # simulated scorelines of the remaining fixtures.
     expected_goals_for: float = 0.0
     expected_goals_against: float = 0.0
+    # With play-offs (`simulation.playoffs`): the chance of winning the
+    # promotion bracket, of going up through its final, and of going down
+    # through the survival tie.
+    playoff_win: float = 0.0
+    promoted_via_playoff: float = 0.0
+    relegated_via_playoff: float = 0.0
 
 
 @dataclass
@@ -117,6 +139,10 @@ class SeasonProjection:
     # (0 home win, 1 draw, 2 away win). Index order matches `_fixtures`, so
     # fixture i here is the i-th unplayed match in `matches`.
     conditionals: list[list[list[list[int]]]] | None = None
+    # Run by run, for the other division's play-off tie: the bracket winner
+    # (with a bracket) and the club at `keep_position`, each with its shock.
+    bracket_winners: Opponent | None = None
+    kept: Opponent | None = None
 
 
 # The score grid's cells, row-major (home goals i, away goals j), split by the
@@ -161,20 +187,22 @@ class Fixtures:
 
 def _fixtures(
     matches: list[Match], ratings: dict[str, float], index_of: dict[str, int], config: EloConfig,
-    ad: AttackDefence, blend: bool = True,
+    ad: AttackDefence, blend: bool = True, surface: bool = False,
 ) -> Fixtures:
     """Every unplayed fixture's outcome odds and scoreline tables, computed
     once and all together: the scoring grids of `model.attack_defence`
     (score_grid, blend_outcomes, conditional_scorelines) as arrays, one row
-    per fixture, rather than a Python grid each."""
+    per fixture, rather than a Python grid each. With `surface` (Eliteserien)
+    each fixture's Elo odds carry the surface edge (`normalize.surfaces`)."""
     unplayed = [match for match in matches if not match.played]
     home, away, lam, mu, elo, weight = [], [], [], [], [], []
     for match in unplayed:
         home_id = match.home_id or match.home
         away_id = match.away_id or match.away
-        gap = (ratings[home_id] + effective_home_advantage(config, ratings[home_id], ratings[away_id]) - ratings[away_id]) / _RATING_SCALE
+        home_rating = ratings[home_id] + (surface_edge(home_id, away_id, match.date) if surface else 0.0)
+        gap = (home_rating + effective_home_advantage(config, home_rating, ratings[away_id]) - ratings[away_id]) / _RATING_SCALE
         rates = ad.rates(home_id, away_id, match.date, elo_gap=gap)
-        odds = match_probabilities(ratings[home_id], ratings[away_id], config)
+        odds = match_probabilities(home_rating, ratings[away_id], config)
         home.append(index_of[home_id])
         away.append(index_of[away_id])
         lam.append(rates[0])
@@ -258,13 +286,22 @@ def simulate_season(
     config: SimulationConfig | None = None,
     elo_config: EloConfig | None = None,
     tally_conditionals: bool = True,
+    playoffs: Playoffs | None = None,
+    keep_position: int | None = None,
+    surface: bool = False,
 ) -> SeasonProjection:
     """`ad` is the attack/defence state as of the matches given; the outcome odds
     are its blend with the Elo odds. Without one every club is an average side,
     the Elo odds stand alone and only shape the scorelines. With
     `tally_conditionals` off the per-fixture branch tallies (`conditionals`,
     for the high-stakes swings) are skipped and left None: a fifth of the work,
-    which the season-shape snapshots never read."""
+    which the season-shape snapshots never read.
+
+    `playoffs` plays the post-season ties in every run, on a random stream of
+    their own, so the finishing chances are the same with them as without;
+    `keep_position` records that place's club and shock per run, for the
+    division whose play-off it meets. `surface` (Eliteserien) adds the
+    surface edge to its fixtures' odds; the play-off ties go without."""
     config = config or SimulationConfig()
     elo_config = elo_config or EloConfig()
     blend = ad is not None
@@ -286,7 +323,7 @@ def simulate_season(
     count = len(team_ids)
     index_of = {team_id: index for index, team_id in enumerate(team_ids)}
     rows = [by_id[team_id] for team_id in team_ids]
-    fixtures = _fixtures(matches, ratings, index_of, elo_config, ad, blend)
+    fixtures = _fixtures(matches, ratings, index_of, elo_config, ad, blend, surface)
     fixture_count = len(fixtures)
     home, away = fixtures.home, fixtures.away
     home_chance, home_or_draw_chance = fixtures.home_win, fixtures.home_or_draw
@@ -337,16 +374,30 @@ def simulate_season(
 
     rng = np.random.default_rng(config.seed)
     strength_sd = config.strength_sd
+    knockout = tally = None
+    # A league too small for a play-off place (test fixtures) plays none.
+    if playoffs is not None and max((*playoffs.bracket, playoffs.survival_position or 0), default=0) > count:
+        playoffs = None
+    if keep_position is not None and keep_position > count:
+        keep_position = None
+    if playoffs is not None:
+        knockout = Knockout(playoffs, team_ids, ratings, ad, elo_config, max(match.date for match in matches),
+                            blend, np.random.default_rng([config.seed, 1]))
+        tally = PlayoffTally(*(np.zeros(count, dtype=np.int64) for _ in range(3)), [], [])
+    kept_club: list[np.ndarray] = []
+    kept_shock: list[np.ndarray] = []
     done = 0
     while done < config.simulations:
         runs = min(SIMULATION_CHUNK, config.simulations - done)
         done += runs
         home_win = np.broadcast_to(home_chance, (runs, fixture_count))
         home_or_draw = np.broadcast_to(home_or_draw_chance, (runs, fixture_count))
+        shock = np.zeros((runs, count))
         if strength_sd:
             # exp(shock) per club: a fixture's win odds scale by boost[home] /
             # boost[away], its loss odds by the inverse, and the three renormalise.
-            boost = np.exp(rng.normal(0.0, strength_sd, (runs, count)))
+            shock = rng.normal(0.0, strength_sd, (runs, count))
+            boost = np.exp(shock)
             ratio = boost[:, home] / boost[:, away]
             home_weight = home_win * ratio
             draw_weight = home_or_draw - home_win
@@ -377,6 +428,11 @@ def simulate_season(
         position = np.empty_like(order)
         position[np.arange(runs)[:, None], order] = club_index
 
+        if knockout is not None:
+            knockout.play(order, shock, done - runs, tally)
+        if keep_position is not None:
+            kept_club.append(order[:, keep_position - 1])
+            kept_shock.append(shock[np.arange(runs), order[:, keep_position - 1]])
         counts += np.bincount((club_index * count + position).ravel(), minlength=count * count)
         points_total += points.sum(axis=0)
         goals_for_total += goals_for.sum(axis=0)
@@ -419,6 +475,11 @@ def simulate_season(
             expected_points=float(points_total[index] / simulations),
             expected_goals_for=float(goals_for_total[index] / simulations),
             expected_goals_against=float(goals_against_total[index] / simulations),
+            **({} if tally is None else {
+                "playoff_win": float(tally.bracket_wins[index] / simulations),
+                "promoted_via_playoff": float(tally.promoted[index] / simulations),
+                "relegated_via_playoff": float(tally.relegated[index] / simulations),
+            }),
         )
         for index, team_id in enumerate(team_ids)
     ]
@@ -433,4 +494,7 @@ def simulate_season(
         position_points=position_points,
         strength_sd=strength_sd,
         conditionals=conditionals.tolist() if tally_conditionals else None,
+        bracket_winners=Opponent(tuple(team_ids), np.concatenate(tally.winner_club), np.concatenate(tally.winner_shock))
+        if tally is not None and tally.winner_club else None,
+        kept=Opponent(tuple(team_ids), np.concatenate(kept_club), np.concatenate(kept_shock)) if kept_club else None,
     )

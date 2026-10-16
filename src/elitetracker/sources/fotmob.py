@@ -129,9 +129,44 @@ def fetch_matches(slug: str, season: int, *, cache_dir: Path = RAW_DIR) -> list[
     return payload
 
 
-def fetch_match_xg(match_id: str) -> tuple[float, float, float, float] | None:
-    """(home_xg, away_xg, home_xgot, away_xgot) from the match-details endpoint,
-    or None without shot data.
+def parse_match_details(data: dict[str, Any]) -> tuple[float, ...] | None:
+    """(home_xg, away_xg, home_xgot, away_xgot, home_npxg, away_npxg,
+    red_minute) from one match-details payload, or None without shot data.
+
+    The last three ride on the same response (IMPROVEMENTS 2.1): xG without
+    penalties (a penalty is ~0.79 xG) and the minute of the first red card in
+    the match, 90 when there was none. The model reads neither -- both were
+    re-measured and rejected (PROJECT_STATUS.md, elo-v13.0, "Scrapers") -- they
+    are kept so a later season can test them again without a backfill.
+    """
+    content = data.get("content") or {}
+    shots = (content.get("shotmap") or {}).get("shots") or []
+    if not shots:
+        return None
+    home_team = str((data.get("general") or {}).get("homeTeam", {}).get("id"))
+
+    def is_home(shot: dict[str, Any]) -> bool:
+        return bool(shot["isHome"]) if shot.get("isHome") is not None else str(shot.get("teamId")) == home_team
+
+    def total(key: str, home: bool, penalties: bool = True) -> float:
+        return round(sum(shot.get(key) or 0.0 for shot in shots
+                         if is_home(shot) == home and (penalties or shot.get("situation") != "Penalty")), 3)
+
+    events = ((content.get("matchFacts") or {}).get("events") or {}).get("events") or []
+    reds = [event["time"] for event in events
+            if event.get("type") == "Card" and event.get("card") in ("Red", "YellowRed")
+            and isinstance(event.get("time"), (int, float))]
+    return (
+        total("expectedGoals", True), total("expectedGoals", False),
+        total("expectedGoalsOnTarget", True), total("expectedGoalsOnTarget", False),
+        total("expectedGoals", True, penalties=False), total("expectedGoals", False, penalties=False),
+        min(reds) if reds else 90,
+    )
+
+
+def fetch_match_xg(match_id: str) -> tuple[float, ...] | None:
+    """The match-details endpoint, parsed by `parse_match_details`: one
+    request per match, as `refresh` has always made.
 
     fotmob carries per-shot xG and xG-on-target for Eliteserien from 2020;
     OBOS-ligaen and earlier seasons have no shotmap and return None.
@@ -141,26 +176,16 @@ def fetch_match_xg(match_id: str) -> tuple[float, float, float, float] | None:
         data = json.loads(_download(url))
     except json.JSONDecodeError as exc:
         raise FetchError(f"{url}: not JSON ({exc})") from exc
-    content = data.get("content") or {}
-    shots = (content.get("shotmap") or {}).get("shots") or []
-    if not shots:
-        return None
-    home_team = str((data.get("general") or {}).get("homeTeam", {}).get("id"))
-
-    def is_home(shot: dict[str, Any]) -> bool:
-        return bool(shot["isHome"]) if "isHome" in shot else str(shot.get("teamId")) == home_team
-
-    def total(key: str, home: bool) -> float:
-        return round(sum(shot.get(key) or 0.0 for shot in shots if is_home(shot) == home), 3)
-
-    return (
-        total("expectedGoals", True), total("expectedGoals", False),
-        total("expectedGoalsOnTarget", True), total("expectedGoalsOnTarget", False),
-    )
+    return parse_match_details(data)
 
 
 def load_xg(path: Path = XG_PATH) -> dict[str, Any]:
-    """{"matches": {match_id: [home_xg, away_xg, home_xgot, away_xgot]}, "none": [ids without shot data]}."""
+    """{"matches": {match_id: values}, "none": [ids without shot data]}.
+
+    `values` is [home_xg, away_xg] from Sofascore (OBOS-ligaen); from fotmob
+    [home_xg, away_xg, home_xgot, away_xgot], and from October 2026 on also
+    [..., home_npxg, away_npxg, red_minute] (`parse_match_details`). Readers
+    take the first two, xGOT the next two where there are four or more."""
     if path.exists():
         return json.loads(path.read_text(encoding="utf-8"))
     return {"matches": {}, "none": []}

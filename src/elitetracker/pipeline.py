@@ -18,19 +18,26 @@ from datetime import date, timedelta
 from pathlib import Path
 from typing import Any
 
+import numpy as np
+
 from elitetracker.model.attack_defence import ADConfig, AttackDefence, OUTCOME_BLEND, blend_outcomes, top_scorelines
 from elitetracker.model.career import SeasonSlice, TeamCareer, build_careers
 from elitetracker.model.elo import (
     MODEL_VERSION, EloConfig, effective_home_advantage, era_config, expected_score, xg_implied_score,
 )
-from elitetracker.model.initial_ratings import SeedingConfig, TeamRating, initial_ratings
+from elitetracker.model.initial_ratings import SeedingConfig, TeamRating, initial_ratings, rating_for_unseeded_team
 from elitetracker.model.probabilities import match_probabilities
 from elitetracker.model.ratings import build_rating_table
 from elitetracker.model.table import table_from_matches
 from elitetracker.normalize.matches import Match
 from elitetracker.normalize.standings import load_standings
+from elitetracker.normalize.surfaces import SURFACE_EDGE, is_grass, surface_edge
 from elitetracker.sources.fotmob import load_xg
+# Transfermarkt squad values per club-season, for the goals model's offseason
+# pull (`ADConfig.value_pull`); `research market-values` adds a season by hand.
+from elitetracker.sources.transfermarkt import MARKET_VALUES_PATH
 from elitetracker.simulation.history import HistoryConfig, as_of_date, build_history
+from elitetracker.simulation.playoffs import LADDER_FROM, Opponent, Playoffs
 from elitetracker.simulation.season import SeasonProjection, SimulationConfig, simulate_season
 
 NORMALIZED_DIR = Path("data/normalized")
@@ -248,10 +255,24 @@ def build_all_careers(
 def shot_table() -> dict[str, tuple[float, ...]]:
     """match_id -> expected goals: fotmob for Eliteserien, Sofascore for OBOS.
 
-    Entries are (home_xg, away_xg) and, where the source has it, xG on target
-    after them; everything downstream reads the first two.
+    Entries are (home_xg, away_xg) and, where the source has it, xG on target,
+    npxG and the first red card's minute after them (`load_xg`); everything
+    downstream reads the first two.
     """
     return {match_id: tuple(values) for match_id, values in load_xg()["matches"].items()}
+
+
+@functools.cache
+def market_values(path: Path = MARKET_VALUES_PATH) -> dict[int, dict[str, float]]:
+    """season -> team_id -> squad value in EUR, as Transfermarkt listed it that
+    season. A season's pull reads the season before, so a missing file or
+    season only switches the value pull off."""
+    if not path.exists():
+        return {}
+    with path.open(encoding="utf-8") as handle:
+        raw = json.load(handle)
+    return {int(season): {team_id: entry["total"] for team_id, entry in clubs.items() if entry.get("total")}
+            for season, clubs in raw.items()}
 
 
 @functools.cache
@@ -262,7 +283,7 @@ def prior_attack_defence(root: Path, season: int) -> AttackDefence:
     state before replaying the season they are reporting on.
     """
     slices = load_slices(root)
-    return AttackDefence.from_slices(slices, ADConfig(), shots=shot_table()).replay(
+    return AttackDefence.from_slices(slices, ADConfig(), shots=shot_table(), values=market_values()).replay(
         [match for slice_ in slices if slice_.season < season for match in slice_.matches]
     )
 
@@ -305,19 +326,18 @@ def build_report(
     seeds = _season_seeds(careers, season)
 
     # Both divisions feed the rating replay so promoted and relegated sides
-    # stay on one scale; only this league is tabled and simulated.
-    all_matches: list[Match] = []
-    for other in LEAGUE_SPECS:
-        all_matches.extend(load_matches(_matches_path(other, season, root)))
-    matches = load_matches(_matches_path(slug, season, root))
+    # stay on one scale; only this league is tabled and simulated (the other
+    # one only as far as its side of the play-off).
+    by_league = {other: load_matches(_matches_path(other, season, root)) for other in LEAGUE_SPECS}
 
     # The slider spans every day this league actually played, taken from the
     # full fixture list so the range does not shrink as you rewind.
-    matchdays = _matchdays(matches)
+    matchdays = _matchdays(by_league[slug])
 
     if asof:
-        all_matches = as_of_date(all_matches, asof)
-        matches = as_of_date(matches, asof)
+        by_league = {other: as_of_date(league_matches, asof) for other, league_matches in by_league.items()}
+    all_matches = [match for league_matches in by_league.values() for match in league_matches]
+    matches = by_league[slug]
 
     era = era_config(season, elo_config)
     pre_match: dict[str, tuple[float, float]] = {}
@@ -325,8 +345,11 @@ def build_report(
     prior = prior_attack_defence(root, season)
     ad = prior.copy().replay(all_matches)
     ad.start_season(season)
+    playoffs, sim_ratings, sim_ad = _playoffs(slug, season, root, by_league, ratings, ad, simulation, elo_config)
+    surface = slug == "eliteserien"  # the surface edge is measured on Eliteserien only
     projection = simulate_season(
-        matches, ratings, ad=ad, config=simulation, elo_config=elo_config
+        matches, sim_ratings, ad=sim_ad, config=simulation, elo_config=elo_config, playoffs=playoffs,
+        surface=surface,
     )
     stakes_inputs = (
         projection.conditionals,
@@ -360,6 +383,12 @@ def build_report(
         # from the boundary season on is the modern one, not the base defaults.
         "model": {
             "version": MODEL_VERSION,
+            # The compare tool adds the surface edge to a fictional Eliteserien
+            # match: the edge and which of the division's clubs play on grass.
+            **({"surface": {"edge": SURFACE_EDGE, "grass": sorted(
+                row.team_id for row in table_from_matches(matches)
+                if is_grass(row.team_id, max((m.date for m in matches), default=f"{season}-12-31")))}}
+               if surface else {}),
             "k_factor": era.k_factor,
             "home_advantage": era.home_advantage,
             "home_advantage_beta": era.home_advantage_beta,
@@ -391,6 +420,8 @@ def build_report(
                 "alpha": ad.config.alpha,
                 "outcome_blend": OUTCOME_BLEND,
                 "blend_gamma": ad.config.blend_gamma,
+                "value_pull": ad.config.value_pull,
+                "early_boost": ad.config.early_boost,
                 "teams": {
                     team_id: [round(ad.attack[team_id], 4), round(ad.defence[team_id], 4),
                               round(ad.finishing.get(team_id, 0.0), 4)]
@@ -398,17 +429,97 @@ def build_report(
                 },
             },
         },
-        "table": _table_payload(matches, ratings, projection, seeds, ad, spec.slug, season, era, high_stakes),
-        "fixtures": _fixtures_payload(matches, ratings, elo_config, ad),
+        "table": _table_payload(matches, ratings, projection, seeds, ad, spec.slug, season, era, high_stakes,
+                                bands=bands_for(spec, season, root)),
+        "fixtures": _fixtures_payload(matches, ratings, elo_config, ad, surface=surface),
         "results": _results_payload(matches, pre_match, era),
         "high_stakes": high_stakes,
         "next_stakes": _next_stakes(*stakes_inputs),
         "history": _history_payload(
             build_history(matches, all_matches, seeds, prior=prior, elo_config=elo_config,
-                          config=history, shots=shot_table()),
+                          config=history, shots=shot_table(), surface=surface),
             {row.team_id: row.team for row in table_from_matches(matches)},
         ),
     }
+
+
+# The second-tier side OBOS-ligaen's 14th plays to stay up. It is outside the
+# data, so it is rated as the model rates any club arriving from that tier: at
+# the ladder floor, and its division's attack and defence less `newcomer`.
+SECOND_TIER = "second-tier"
+
+
+def _playoff_bands(slug: str, season: int, root: Path) -> tuple[Band | None, Band | None]:
+    """(promotion bracket, survival tie): the play-off bands above mid-table
+    and just above the relegation places."""
+    bands = bands_for(LEAGUE_SPECS[slug], season, root)
+    relegation = next(band for band in bands if band.tone == "relegation")
+    playoff = [band for band in bands if band.tone == "playoff"]
+    bracket = next((band for band in playoff if band.last < relegation.first - 1), None)
+    survival = next((band for band in playoff if band.last == relegation.first - 1), None)
+    return bracket, survival
+
+
+def _playoffs(
+    slug: str,
+    season: int,
+    root: Path,
+    by_league: dict[str, list[Match]],
+    ratings: dict[str, float],
+    ad: AttackDefence,
+    simulation: SimulationConfig | None,
+    elo_config: EloConfig,
+) -> tuple[Playoffs, dict[str, float], AttackDefence]:
+    """The post-season ties this league's simulation plays, and the ratings
+    and goals model it plays them with (the second-tier side added).
+
+    A tie with the other division takes that division's side run by run from
+    a simulation of it (the same seed and inputs as its own report, so the
+    same tables), so a promotion final is against the club that finished
+    14th in that run, with the strength it finished there with."""
+    simulation = simulation or SimulationConfig()
+    bracket, survival = _playoff_bands(slug, season, root)
+    ladder = season >= LADDER_FROM
+    places = lambda band: tuple(range(band.first, band.last + 1)) if band else ()
+    opponent_of_bracket = opponent_of_survival = None
+    for other in LEAGUE_SPECS:
+        if other == slug or not by_league.get(other):
+            continue
+        other_bracket, other_survival = _playoff_bands(other, season, root)
+        if bracket and other_survival:
+            # Our bracket winner meets their survival place: keep it per run.
+            opponent_of_bracket = simulate_season(
+                by_league[other], ratings, ad=ad, config=simulation, elo_config=elo_config,
+                tally_conditionals=False, keep_position=other_survival.first, surface=other == "eliteserien",
+            ).kept
+        if survival and other_bracket:
+            # Our survival place meets their bracket winner.
+            opponent_of_survival = simulate_season(
+                by_league[other], ratings, ad=ad, config=simulation, elo_config=elo_config,
+                tally_conditionals=False, playoffs=Playoffs(bracket=places(other_bracket), ladder=ladder),
+                surface=other == "eliteserien",
+            ).bracket_winners
+    sim_ratings, sim_ad = ratings, ad
+    if survival and bracket and opponent_of_survival is None:
+        # The bottom division (the one with a promotion bracket): its survival
+        # tie is against the tier below. A top division whose partner has no
+        # fixture list simply plays no survival tie.
+        sim_ratings = {**ratings, SECOND_TIER: rating_for_unseeded_team()}
+        sim_ad = ad.copy()
+        peers = [team for (year, team), league in ad.divisions.items() if year == season and league == slug]
+        for ratings_of in (sim_ad.attack, sim_ad.defence):
+            ratings_of[SECOND_TIER] = sum(ratings_of[team] for team in peers) / len(peers) - ad.config.newcomer
+        sim_ad.finishing[SECOND_TIER] = 0.0
+        rng = np.random.default_rng([simulation.seed, 2])
+        opponent_of_survival = Opponent(
+            (SECOND_TIER,), np.zeros(simulation.simulations, dtype=np.intp),
+            rng.normal(0.0, simulation.strength_sd, simulation.simulations),
+        )
+    playoffs = Playoffs(
+        bracket=places(bracket), ladder=ladder, final=opponent_of_bracket,
+        survival_position=survival.first if survival else None, survival=opponent_of_survival,
+    )
+    return playoffs, sim_ratings, sim_ad
 
 
 # A club must already have at least this chance of finishing in a
@@ -672,8 +783,15 @@ def _table_payload(
     season: int,
     elo_config: EloConfig,
     high_stakes: list[dict[str, Any]] | None = None,
+    bands: tuple[Band, ...] = (),
 ) -> list[dict[str, Any]]:
     projections = {team.team_id: team for team in projection.teams}
+    # Promotion and relegation counted to the end, play-offs included: the
+    # places that go straight up or down, plus the runs a club goes through
+    # the final or out through the survival tie.
+    top = next((band for band in bands if band.tone == "top"), None) if slug == "obosligaen" else None
+    down = next((band for band in bands if band.tone == "relegation"), None)
+    within = lambda team, band: sum(team.position_probabilities[band.first - 1:band.last])
     # League-average rating for this division (not hardcoded 1500)
     league_avg_rating = sum(p.rating for p in projections.values()) / len(projections) if projections else 1500.0
     # The high-stakes matches each club has left, as match ids.
@@ -741,13 +859,17 @@ def _table_payload(
                 "attack": round(scored, 2),
                 "defence": round(conceded, 2),
                 "finishing": round(ad.finishing.get(row.team_id, 0.0), 4),
+                **({"promotion_probability": round(within(team, top) + team.promoted_via_playoff, 6),
+                    "playoff_win_probability": round(team.playoff_win, 6)} if top else {}),
+                **({"relegation_probability": round(within(team, down) + team.relegated_via_playoff, 6)} if down else {}),
             }
         )
     return payload
 
 
 def _fixtures_payload(
-    matches: list[Match], ratings: dict[str, float], elo_config: EloConfig, ad: AttackDefence
+    matches: list[Match], ratings: dict[str, float], elo_config: EloConfig, ad: AttackDefence,
+    *, surface: bool = False,
 ) -> list[dict[str, Any]]:
     """Upcoming fixtures with three-way odds and the most likely scorelines."""
     payload = []
@@ -757,7 +879,8 @@ def _fixtures_payload(
         home_id = match.home_id or match.home
         away_id = match.away_id or match.away
         grid = ad.grid(home_id, away_id, match.date)
-        probabilities = blend_outcomes(match_probabilities(ratings[home_id], ratings[away_id], elo_config), grid)
+        edge = surface_edge(home_id, away_id, match.date) if surface else 0.0
+        probabilities = blend_outcomes(match_probabilities(ratings[home_id] + edge, ratings[away_id], elo_config), grid)
         scorelines = top_scorelines(grid, probabilities)
         payload.append(
             {

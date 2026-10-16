@@ -335,3 +335,40 @@ test('every stake string exists in both languages', () => {
   }
   setLang('en');
 });
+
+/* Every key has a text of its own in both languages. */
+function assertBothLanguages(keys) {
+  for (const key of keys) {
+    setLang('en');
+    const en = t(key);
+    setLang('no');
+    const no = t(key);
+    assert.notEqual(en, key);
+    assert.notEqual(no, key);
+    assert.notEqual(en, no, key);
+  }
+  setLang('en');
+}
+
+eval(pick('bandChance') + pick('bandWithPlayoff'));
+
+test('promotion and relegation count the play-offs where the report has them', () => {
+  const top = { tone: 'top', first: 1, last: 2 };
+  const down = { tone: 'relegation', first: 15, last: 16 };
+  const playoff = { tone: 'playoff', first: 3, last: 6 };
+  const probs = Array.from({ length: 16 }, () => 1 / 16);
+  const row = { position_probabilities: probs, promotion_probability: 0.3, relegation_probability: 0.2 };
+  assert.equal(bandChance(row, top, 'obosligaen'), 0.3);
+  assert.equal(bandChance(row, down, 'eliteserien'), 0.2);
+  assert.ok(Math.abs(bandChance(row, playoff, 'obosligaen') - 4 / 16) < 1e-12);
+  // Eliteserien's top band is a European place, not promotion; an old report has no play-off fields.
+  assert.ok(Math.abs(bandChance(row, top, 'eliteserien') - 2 / 16) < 1e-12);
+  assert.ok(Math.abs(bandChance({ position_probabilities: probs }, down, 'eliteserien') - 2 / 16) < 1e-12);
+  assert.ok(bandWithPlayoff(row, down, 'eliteserien') && !bandWithPlayoff(row, playoff, 'obosligaen'));
+});
+
+test('the play-off and surface strings exist in both languages', () => {
+  assertBothLanguages([
+    'team.playoffIncluded', 'model.surfaceEdge',
+  ]);
+});

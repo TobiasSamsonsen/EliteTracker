@@ -1,0 +1,103 @@
+== 1.4 xG / xGOT convex blend ==
+1.4 AD beta=0.15 blend [all16]     n=5183  LL +0.00002 (t +0.24)  Br +0.00003 (t +0.40)  RPS +0.00002 (t +0.58)  halves t -0.25/+0.37  ece 0.0084/0.0084
+1.4 AD beta=0.15 blend [xg]        n=2523  LL +0.00002 (t +0.10)  Br +0.00004 (t +0.27)  RPS +0.00003 (t +0.44)  halves t +0.03/+0.11  ece 0.0108/0.0104
+1.4 Elo beta=0.15 elo [xg]         n=2523  LL -0.00004 (t -0.58)  Br -0.00002 (t -0.39)  RPS -0.00001 (t -0.23)  halves t -0.81/+0.05  ece 0.0073/0.0072
+1.4 both beta=0.15 blend [xg]      n=2523  LL +0.00002 (t +0.08)  Br +0.00004 (t +0.25)  RPS +0.00003 (t +0.42)  halves t -0.00/+0.12  ece 0.0108/0.0104
+1.4 AD beta=0.25 blend [all16]     n=5183  LL +0.00007 (t +0.41)  Br +0.00006 (t +0.56)  RPS +0.00004 (t +0.74)  halves t -0.18/+0.52  ece 0.0088/0.0084
+1.4 AD beta=0.25 blend [xg]        n=2523  LL +0.00009 (t +0.26)  Br +0.00010 (t +0.43)  RPS +0.00006 (t +0.60)  halves t +0.17/+0.21  ece 0.0110/0.0104
+1.4 Elo beta=0.25 elo [xg]         n=2523  LL -0.00004 (t -0.37)  Br -0.00002 (t -0.18)  RPS -0.00000 (t -0.03)  halves t -0.65/+0.19  ece 0.0072/0.0072
+1.4 both beta=0.25 blend [xg]      n=2523  LL +0.00009 (t +0.26)  Br +0.00010 (t +0.43)  RPS +0.00007 (t +0.60)  halves t +0.15/+0.23  ece 0.0110/0.0104
+1.4 AD beta=0.35 blend [all16]     n=5183  LL +0.00013 (t +0.58)  Br +0.00011 (t +0.73)  RPS +0.00007 (t +0.91)  halves t -0.12/+0.68  ece 0.0098/0.0084
+1.4 AD beta=0.35 blend [xg]        n=2523  LL +0.00020 (t +0.43)  Br +0.00019 (t +0.59)  RPS +0.00011 (t +0.75)  halves t +0.30/+0.31  ece 0.0118/0.0104
+1.4 Elo beta=0.35 elo [xg]         n=2523  LL -0.00002 (t -0.15)  Br +0.00000 (t +0.03)  RPS +0.00001 (t +0.17)  halves t -0.48/+0.34  ece 0.0065/0.0072
+1.4 both beta=0.35 blend [xg]      n=2523  LL +0.00022 (t +0.45)  Br +0.00021 (t +0.61)  RPS +0.00012 (t +0.77)  halves t +0.30/+0.34  ece 0.0120/0.0104
+1.4 AD beta=0.5 blend [all16]      n=5183  LL +0.00026 (t +0.82)  Br +0.00021 (t +0.96)  RPS +0.00012 (t +1.14)  halves t -0.06/+0.91  ece 0.0090/0.0084
+1.4 AD beta=0.5 blend [xg]         n=2523  LL +0.00044 (t +0.67)  Br +0.00037 (t +0.82)  RPS +0.00021 (t +0.99)  halves t +0.49/+0.46  ece 0.0120/0.0104
+1.4 Elo beta=0.5 elo [xg]          n=2523  LL +0.00003 (t +0.15)  Br +0.00005 (t +0.31)  RPS +0.00003 (t +0.44)  halves t -0.22/+0.50  ece 0.0065/0.0072
+1.4 both beta=0.5 blend [xg]       n=2523  LL +0.00050 (t +0.71)  Br +0.00042 (t +0.86)  RPS +0.00023 (t +1.02)  halves t +0.51/+0.50  ece 0.0123/0.0104
+1.4 AD OOS picks: 2021:0.5 2022:0.15 2023:0.0 2024:0.0 2025:0.0 2026:0.0
+1.4 AD OOS [all16 2021+]           n=2783  LL +0.00027 (t +1.13)  Br +0.00020 (t +1.18)  RPS +0.00010 (t +1.38)  halves t +1.13/+0.00  ece 0.0090/0.0091
+1.4 AD OOS [xg 2021+]              n=2283  LL +0.00032 (t +1.12)  Br +0.00024 (t +1.19)  RPS +0.00012 (t +1.37)  halves t +1.12/+0.00  ece 0.0095/0.0100
+1.4 Elo OOS picks: 2021:0.5 2022:0.5 2023:0.25 2024:0.35 2025:0.15 2026:0.15
+1.4 Elo OOS [all16 2021+]          n=2783  LL +0.00017 (t +1.18)  Br +0.00014 (t +1.36)  RPS +0.00007 (t +1.44)  halves t +1.06/+0.52  ece 0.0079/0.0077
+1.4 Elo OOS [xg 2021+]             n=2283  LL +0.00018 (t +1.03)  Br +0.00015 (t +1.24)  RPS +0.00008 (t +1.31)  halves t +0.96/+0.39  ece 0.0069/0.0072
+
+== 1.5 provider calibration ==
+  eliteserien: goals/xG 1.025 over 1616 matches; 2020:0.997 2021:1.019 2022:1.201 2023:1.038 2024:0.973 2025:1.015 2026:0.937
+  obosligaen: goals/xG 0.987 over 907 matches; 2023:0.922 2024:1.011 2025:1.068 2026:0.947
+1.5 OBOS xG x0.94 blend [ob xg]    n=907   LL +0.00117 (t +1.92)  Br +0.00079 (t +1.93)  RPS +0.00031 (t +1.90)  halves t +2.27/+0.62  ece 0.0120/0.0090
+1.5 OBOS xG x0.97 blend [ob xg]    n=907   LL +0.00053 (t +1.78)  Br +0.00037 (t +1.79)  RPS +0.00014 (t +1.78)  halves t +2.17/+0.51  ece 0.0099/0.0090
+1.5 OBOS xG x1.03 blend [ob xg]    n=907   LL -0.00044 (t -1.50)  Br -0.00031 (t -1.53)  RPS -0.00012 (t -1.55)  halves t -1.99/-0.31  ece 0.0111/0.0090
+1.5 OBOS xG x1.06 blend [ob xg]    n=907   LL -0.00080 (t -1.36)  Br -0.00056 (t -1.40)  RPS -0.00023 (t -1.43)  halves t -1.90/-0.21  ece 0.0110/0.0090
+1.5 provider scalar OOS picks: 2024:1.06 2025:1.06 2026:1.06
+1.5 provider scalar OOS [all16 2024+] n=1343  LL -0.00022 (t -0.53)  Br -0.00014 (t -0.51)  RPS -0.00007 (t -0.63)  halves t -0.76/+0.01  ece 0.0115/0.0120
+1.5 provider scalar OOS [xg 2024+] n=1342  LL -0.00021 (t -0.53)  Br -0.00014 (t -0.50)  RPS -0.00007 (t -0.63)  halves t -0.74/+0.01  ece 0.0117/0.0122
+  ES matches with both providers: 886; fotmob xG/match 3.082, Sofascore 3.173, corr 0.857
+1.5 ES sofa weight 0.25 blend [es xg] n=1616  LL +0.00010 (t +0.46)  Br +0.00011 (t +0.73)  RPS +0.00008 (t +1.04)  halves t -0.25/+0.54  ece 0.0129/0.0142
+1.5 ES sofa weight 0.5 blend [es xg] n=1616  LL +0.00030 (t +0.65)  Br +0.00029 (t +0.91)  RPS +0.00018 (t +1.21)  halves t -0.19/+0.72  ece 0.0115/0.0142
+1.5 provider average OOS picks: 2024:0.25 2025:0.0 2026:0.0
+1.5 provider average OOS [all16 2024+] n=1343  LL -0.00000 (t -0.00)  Br -0.00000 (t -0.04)  RPS +0.00000 (t +0.01)  halves t -0.00/+0.00  ece 0.0118/0.0120
+1.5 provider average OOS [xg 2024+] n=1342  LL -0.00000 (t -0.00)  Br -0.00000 (t -0.04)  RPS +0.00000 (t +0.01)  halves t -0.00/+0.00  ece 0.0121/0.0122
+
+== 1.6A finishing in the learning rates ==
+1.6A finishing log blend [all16]   n=5183  LL +0.00023 (t +0.52)  Br +0.00027 (t +0.87)  RPS +0.00016 (t +1.17)  halves t +1.21/+0.33  ece 0.0080/0.0084
+1.6A finishing log blend [xg]      n=2523  LL +0.00036 (t +0.41)  Br +0.00048 (t +0.78)  RPS +0.00032 (t +1.13)  halves t -0.59/+1.10  ece 0.0063/0.0104
+1.6A finishing mixture blend [all16] n=5183  LL +0.00024 (t +0.55)  Br +0.00027 (t +0.89)  RPS +0.00016 (t +1.17)  halves t +1.19/+0.37  ece 0.0079/0.0084
+1.6A finishing mixture blend [xg]  n=2523  LL +0.00039 (t +0.44)  Br +0.00049 (t +0.80)  RPS +0.00032 (t +1.14)  halves t -0.63/+1.15  ece 0.0064/0.0104
+1.6A OOS picks: 2021:base 2022:mixture 2023:mixture 2024:mixture 2025:base 2026:log
+1.6A OOS [all16 2021+]             n=2783  LL +0.00128 (t +1.86)  Br +0.00100 (t +2.10)  RPS +0.00053 (t +2.45)  halves t +0.62/+1.90  ece 0.0089/0.0091
+1.6A OOS [xg 2021+]                n=2283  LL +0.00144 (t +1.75)  Br +0.00115 (t +2.02)  RPS +0.00064 (t +2.44)  halves t +0.32/+2.20  ece 0.0084/0.0100
+
+== 1.6B the attack - defence level, per division ==
+  2015 elit predicted goals/match 3.242 actual 3.225  2015 obos predicted goals/match 3.052 actual 2.925
+  2016 elit predicted goals/match 2.942 actual 2.721  2016 obos predicted goals/match 2.948 actual 2.900
+  2017 elit predicted goals/match 2.765 actual 2.842  2017 obos predicted goals/match 2.969 actual 3.067
+  2018 elit predicted goals/match 2.863 actual 2.800  2018 obos predicted goals/match 3.063 actual 3.033
+  2019 elit predicted goals/match 2.806 actual 2.913  2019 obos predicted goals/match 2.984 actual 3.008
+  2020 elit predicted goals/match 3.116 actual 3.158  2020 obos predicted goals/match 3.140 actual 3.254
+  2021 elit predicted goals/match 2.990 actual 3.050  2021 obos predicted goals/match 3.108 actual 3.188
+  2022 elit predicted goals/match 2.882 actual 3.254  2022 obos predicted goals/match 3.262 actual 3.288
+  2023 elit predicted goals/match 3.071 actual 3.117  2023 obos predicted goals/match 3.023 actual 2.779
+  2024 elit predicted goals/match 2.872 actual 2.837  2024 obos predicted goals/match 3.091 actual 3.192
+  2025 elit predicted goals/match 3.031 actual 3.175  2025 obos predicted goals/match 3.029 actual 3.196
+  2026 elit predicted goals/match 3.336 actual 3.182  2026 obos predicted goals/match 3.862 actual 3.812
+1.6B centre level x0.25 blend [all16] n=5183  LL +0.00002 (t +0.25)  Br -0.00000 (t -0.09)  RPS -0.00001 (t -0.73)  halves t +0.71/-0.72  ece 0.0087/0.0084
+1.6B centre level x0.25 blend [xg] n=2523  LL -0.00003 (t -0.47)  Br -0.00002 (t -0.41)  RPS -0.00000 (t -0.09)  halves t +0.63/-1.72  ece 0.0104/0.0104
+   1.6B centre level x0.25 exact   d=+0.00019 t=+0.52
+   1.6B centre level x0.25 o/u2.5  d=+0.00029 t=+0.98
+1.6B centre level x0.5 blend [all16] n=5183  LL +0.00004 (t +0.34)  Br +0.00000 (t +0.00)  RPS -0.00001 (t -0.65)  halves t +0.80/-0.66  ece 0.0090/0.0084
+1.6B centre level x0.5 blend [xg]  n=2523  LL -0.00006 (t -0.41)  Br -0.00003 (t -0.34)  RPS -0.00000 (t -0.04)  halves t +0.68/-1.68  ece 0.0093/0.0104
+   1.6B centre level x0.5 exact   d=+0.00099 t=+1.40
+   1.6B centre level x0.5 o/u2.5  d=+0.00094 t=+1.67
+1.6B centre level x1.0 blend [all16] n=5183  LL +0.00010 (t +0.50)  Br +0.00002 (t +0.16)  RPS -0.00002 (t -0.50)  halves t +0.94/-0.53  ece 0.0110/0.0084
+1.6B centre level x1.0 blend [xg]  n=2523  LL -0.00008 (t -0.30)  Br -0.00003 (t -0.22)  RPS +0.00000 (t +0.07)  halves t +0.79/-1.60  ece 0.0098/0.0104
+   1.6B centre level x1.0 exact   d=+0.00388 t=+2.98
+   1.6B centre level x1.0 o/u2.5  d=+0.00305 t=+2.89
+1.6B OOS picks: 2019:0.0 2020:0.0 2021:0.0 2022:0.0 2023:0.0 2024:0.0 2025:0.0 2026:0.0
+1.6B OOS [all16 2019+]             n=3743  LL +0.00000 (t +0.00)  Br +0.00000 (t +0.00)  RPS +0.00000 (t +0.00)  halves t +0.00/+0.00  ece 0.0103/0.0103
+1.6B OOS [xg 2019+]                n=2523  LL +0.00000 (t +0.00)  Br +0.00000 (t +0.00)  RPS +0.00000 (t +0.00)  halves t +0.00/+0.00  ece 0.0104/0.0104
+
+== 1.6C tempo interaction ==
+1.6C tempo tau=-1.0 blend [all16]  n=5183  LL +0.00008 (t +0.74)  Br +0.00006 (t +0.94)  RPS +0.00002 (t +1.21)  halves t +0.62/+0.50  ece 0.0091/0.0084
+1.6C tempo tau=-1.0 blend [xg]     n=2523  LL +0.00012 (t +0.59)  Br +0.00009 (t +0.74)  RPS +0.00003 (t +0.93)  halves t +0.01/+0.79  ece 0.0092/0.0104
+   1.6C tempo tau=-1.0 exact   d=+0.00033 t=+0.51
+   1.6C tempo tau=-1.0 o/u2.5  d=+0.00051 t=+0.94
+1.6C tempo tau=-0.5 blend [all16]  n=5183  LL +0.00003 (t +0.59)  Br +0.00003 (t +0.78)  RPS +0.00001 (t +1.08)  halves t +0.55/+0.36  ece 0.0093/0.0084
+1.6C tempo tau=-0.5 blend [xg]     n=2523  LL +0.00004 (t +0.44)  Br +0.00004 (t +0.58)  RPS +0.00001 (t +0.80)  halves t -0.08/+0.67  ece 0.0098/0.0104
+   1.6C tempo tau=-0.5 exact   d=-0.00013 t=-0.41
+   1.6C tempo tau=-0.5 o/u2.5  d=+0.00009 t=+0.33
+1.6C tempo tau=0.5 blend [all16]   n=5183  LL -0.00001 (t -0.27)  Br -0.00001 (t -0.44)  RPS -0.00001 (t -0.81)  halves t -0.41/-0.07  ece 0.0077/0.0084
+1.6C tempo tau=0.5 blend [xg]      n=2523  LL -0.00001 (t -0.13)  Br -0.00002 (t -0.25)  RPS -0.00001 (t -0.54)  halves t +0.26/-0.42  ece 0.0103/0.0104
+   1.6C tempo tau=0.5 exact   d=+0.00072 t=+2.25
+   1.6C tempo tau=0.5 o/u2.5  d=+0.00024 t=+0.89
+1.6C tempo tau=1.0 blend [all16]   n=5183  LL -0.00001 (t -0.10)  Br -0.00002 (t -0.27)  RPS -0.00001 (t -0.66)  halves t -0.34/+0.08  ece 0.0074/0.0084
+1.6C tempo tau=1.0 blend [xg]      n=2523  LL +0.00001 (t +0.03)  Br -0.00001 (t -0.08)  RPS -0.00001 (t -0.40)  halves t +0.36/-0.29  ece 0.0096/0.0104
+   1.6C tempo tau=1.0 exact   d=+0.00202 t=+3.15
+   1.6C tempo tau=1.0 o/u2.5  d=+0.00079 t=+1.51
+1.6C tempo tau=2.0 blend [all16]   n=5183  LL +0.00005 (t +0.23)  Br +0.00001 (t +0.09)  RPS -0.00001 (t -0.37)  halves t -0.20/+0.38  ece 0.0078/0.0084
+1.6C tempo tau=2.0 blend [xg]      n=2523  LL +0.00014 (t +0.35)  Br +0.00007 (t +0.27)  RPS -0.00001 (t -0.11)  halves t +0.54/-0.02  ece 0.0095/0.0104
+   1.6C tempo tau=2.0 exact   d=+0.00634 t=+4.86
+   1.6C tempo tau=2.0 o/u2.5  d=+0.00283 t=+2.71
+1.6C OOS picks: 2019:-1.0 2020:-0.5 2021:2.0 2022:2.0 2023:2.0 2024:0.0 2025:0.0 2026:0.0
+1.6C OOS [all16 2019+]             n=3743  LL +0.00016 (t +0.95)  Br +0.00011 (t +1.06)  RPS +0.00004 (t +1.40)  halves t -0.23/+1.60  ece 0.0098/0.0103
+1.6C OOS [xg 2019+]                n=2523  LL +0.00013 (t +0.59)  Br +0.00011 (t +0.75)  RPS +0.00004 (t +1.16)  halves t +0.59/+0.00  ece 0.0096/0.0104

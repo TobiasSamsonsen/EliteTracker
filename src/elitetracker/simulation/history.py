@@ -110,6 +110,7 @@ def build_history(
     elo_config: EloConfig | None = None,
     config: HistoryConfig | None = None,
     shots: dict[str, tuple[float, ...]] | None = None,
+    surface: bool = False,
 ) -> list[HistorySnapshot]:
     """One snapshot per sampled date, oldest first.
 
@@ -135,6 +136,7 @@ def build_history(
             config=SimulationConfig(simulations=config.simulations, seed=config.seed),
             elo_config=elo_config,
             tally_conditionals=False,  # a snapshot keeps only the finishing odds
+            surface=surface,
         )
         snapshots.append(
             HistorySnapshot(

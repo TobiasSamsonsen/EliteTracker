@@ -20,9 +20,14 @@ import statistics
 from dataclasses import dataclass, field
 from typing import Callable, Iterable
 
-from elitetracker.model.career import SeasonSlice, replay
+from elitetracker.model.attack_defence import (
+    ADConfig, AttackDefence, blend_outcomes, conditional_scorelines, gap_blend_weight,
+)
+from elitetracker.model.career import SeasonSlice, replay, team_ids
 from elitetracker.model.elo import EloConfig, era_config
 from elitetracker.model.probabilities import AWAY_WIN, DRAW, HOME_WIN, MatchProbabilities, match_probabilities, outcome_of
+from elitetracker.normalize.matches import Match
+from elitetracker.normalize.surfaces import surface_edge
 
 # Guards log(0) when a model is certain and wrong.
 _FLOOR = 1e-12
@@ -156,11 +161,76 @@ def walk_forward(
         for match, (home_before, away_before) in matches:
             match_in = match_league.get(match.match_id, "")
             if season >= score_from_season and (league is None or match_in == league):
+                # The surface edge is a prediction-time term for Eliteserien
+                # (normalize.surfaces); the ratings never carry it.
+                edge = surface_edge(*team_ids(match), match.date) if match_in == "eliteserien" else 0.0
                 card.observe(
-                    match_probabilities(home_before, away_before, config_for(match_in, season)),
+                    match_probabilities(home_before + edge, away_before, config_for(match_in, season)),
                     outcome_of(match), match.match_id,
                 )
     return card
+
+
+def shipped_cards(
+    slices: list[SeasonSlice],
+    seeds: dict[str, float],
+    *,
+    score_from_season: int,
+    shots: dict[str, tuple[float, ...]] | None = None,
+    values: dict[int, dict[str, float]] | None = None,
+    league: str | None = None,
+    scorelines: dict[tuple[int, int], list[float]] | None = None,
+) -> tuple[Scorecard, Scorecard]:
+    """Elo alone and the odds the site shows (Elo blended with the
+    attack/defence grid), walk-forward on the same matches.
+
+    `scorelines`, when given, collects per scoreline (goals capped at
+    SCORELINE_CAP a side, "4" meaning 4 or more) [the summed predicted chance,
+    the times it happened] over the scored matches: the site's scoreline
+    model (`conditional_scorelines`) against the results."""
+    elo = walk_forward(slices, seeds, EloConfig(), score_from_season=score_from_season, name="elo",
+                       shots=shots, league=league)
+    shipped = Scorecard(name="elo + attack/defence")
+    ad = AttackDefence.from_slices(slices, ADConfig(), shots=shots, values=values)
+    for match in sorted((m for s in slices for m in s.matches if m.played), key=Match.sort_key):
+        if match.match_id in elo.predictions:
+            home, away = team_ids(match)
+            elo_odds = elo.predictions[match.match_id][0]
+            weight = gap_blend_weight(elo_odds.rating_gap, ad.config.blend_gamma)
+            grid = ad.grid(home, away, match.date, elo_gap=elo_odds.rating_gap)
+            odds = blend_outcomes(elo_odds, grid, weight=weight)
+            shipped.observe(odds, outcome_of(match), match.match_id)
+            if scorelines is not None:
+                for (i, j), chance in conditional_scorelines(grid, odds).items():
+                    scorelines.setdefault((min(i, SCORELINE_CAP), min(j, SCORELINE_CAP)), [0.0, 0])[0] += chance
+                happened = (min(match.home_goals, SCORELINE_CAP), min(match.away_goals, SCORELINE_CAP))
+                scorelines.setdefault(happened, [0.0, 0])[1] += 1
+        ad.observe(match)
+    return elo, shipped
+
+
+# Goals per side beyond which scorelines are pooled in the scoreline check.
+SCORELINE_CAP = 4
+
+
+def reliability(card: Scorecard, bins: int = 10) -> dict[str, list[dict[str, float]]]:
+    """Predicted against realised frequency, per outcome and pooled, in equal
+    bins of predicted probability; empty bins are left out."""
+    out: dict[str, list[dict[str, float]]] = {}
+    for key in (HOME_WIN, DRAW, AWAY_WIN, "all"):
+        cells = [[0, 0.0, 0.0] for _ in range(bins)]
+        for probabilities, outcome in card.predictions.values():
+            for name in ((HOME_WIN, DRAW, AWAY_WIN) if key == "all" else (key,)):
+                p = probabilities.of(name)
+                cell = cells[min(bins - 1, int(p * bins))]
+                cell[0] += 1
+                cell[1] += p
+                cell[2] += 1.0 if outcome == name else 0.0
+        out[key] = [
+            {"lo": i / bins, "hi": (i + 1) / bins, "n": n, "predicted": round(p / n, 4), "observed": round(o / n, 4)}
+            for i, (n, p, o) in enumerate(cells) if n
+        ]
+    return out
 
 
 def restrict(card: Scorecard, keep: set[str], name: str | None = None) -> Scorecard:

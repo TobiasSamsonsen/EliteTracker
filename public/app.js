@@ -896,13 +896,30 @@ function renderOddsLegend(report) {
 
 /* ---------- standings --------------------------------------------- */
 
+/* One club's chance of a band. Promotion (OBOS-ligaen's top band) and
+   relegation count the play-offs where the report has them: the places that
+   go straight up or down, plus the runs in which the club goes through the
+   final or out through the survival tie (pipeline._table_payload). Older
+   reports fall back to the places alone. */
+function bandChance(row, band, slug) {
+  if (band.tone === 'relegation' && row.relegation_probability != null) return row.relegation_probability;
+  if (band.tone === 'top' && slug === 'obosligaen' && row.promotion_probability != null) return row.promotion_probability;
+  return row.position_probabilities.slice(band.first - 1, band.last).reduce((a, b) => a + b, 0);
+}
+
+/* Whether bandChance counted the play-offs for this band. */
+function bandWithPlayoff(row, band, slug) {
+  return (band.tone === 'relegation' && row.relegation_probability != null)
+    || (band.tone === 'top' && slug === 'obosligaen' && row.promotion_probability != null);
+}
+
 /* Rows with the two derived probability columns folded in, so sorting can see
    the same values the table shows. */
 function standingsRows(report) {
   const bands = report.league.bands;
   const relegation = bands.find((band) => band.tone === 'relegation');
+  const top = bands.find((band) => band.tone === 'top');
   const promotion = report.league.slug === 'obosligaen';
-  const sum = (values) => values.reduce((total, value) => total + value, 0);
 
   const attackVals = report.table.map((r) => r.attack);
   const defenceVals = report.table.map((r) => r.defence);
@@ -926,10 +943,8 @@ function standingsRows(report) {
       : defence_pct >= 0 && defencePctMax > 0 ? defence_pct / defencePctMax : 0;
     return {
       ...row,
-      up: promotion ? sum(row.position_probabilities.slice(0, 2)) : row.position_probabilities[0],
-      down: relegation
-        ? sum(row.position_probabilities.slice(relegation.first - 1, relegation.last))
-        : 0,
+      up: promotion && top ? bandChance(row, top, report.league.slug) : row.position_probabilities[0],
+      down: relegation ? bandChance(row, relegation, report.league.slug) : 0,
       attack_pct,
       defence_pct,
       attack_k,
@@ -2174,6 +2189,7 @@ function renderModelCard(report) {
   if (model.home_advantage_beta) {
     rows.push([t('model.homeAdvantageBeta'), model.home_advantage_beta]);
   }
+  if (model.surface) rows.push([t('model.surfaceEdge'), `${model.surface.edge} ${t('model.pts')}`]);
   rows.push(
     [t('model.xgAlpha'), pct(model.xg_alpha, 0)],
     [t('model.crossRegression'), `${pct(1 - model.season_regression, 0)} ${t('model.towardMean')}`],
@@ -3924,11 +3940,15 @@ function renderTeamOutlook(card, row, report, teamId) {
   const box = el('div', 'team-outlook');
   const tiles = el('dl', 'team-stats team-stats--outlook');
   tiles.appendChild(summaryStat(t('team.xPts'), num(row.expected_points)));
+  const slug = report.league.slug;
   const races = report.league.bands
-    .map((band) => ({ band, chance: probs.slice(band.first - 1, band.last).reduce((a, b) => a + b, 0) }))
+    .map((band) => ({ band, chance: bandChance(row, band, slug) }))
     .filter(({ chance }) => chance >= 0.01)
     .slice(0, 3);
-  for (const { band, chance } of races) tiles.appendChild(summaryStat(bandEdgeName(band), pct(chance, 0), bandName(band)));
+  for (const { band, chance } of races) {
+    const name = bandWithPlayoff(row, band, slug) ? `${bandName(band)} (${t('team.playoffIncluded')})` : bandName(band);
+    tiles.appendChild(summaryStat(bandEdgeName(band), pct(chance, 0), name));
+  }
   box.appendChild(tiles);
 
   const historyTeam = report.history?.teams?.find((team) => String(team.team_id) === String(teamId));
@@ -5280,6 +5300,16 @@ function ratingById(id) {
    Both divisions share one rating scale, so any two clubs can meet. Working it
    out here costs a few lines and saves shipping a 32x31 matrix of every
    possible pairing in every report file. */
+/* Eliteserien only (report.model.surface): a home side whose visitor plays on
+   the other surface gets `edge` rating points on the prediction, as
+   normalize/surfaces.py does on the server. */
+function surfaceEdge(model, homeId, awayId) {
+  const surface = model.surface;
+  if (!surface) return 0;
+  const grass = new Set(surface.grass.map(String));
+  return grass.has(String(homeId)) !== grass.has(String(awayId)) ? surface.edge : 0;
+}
+
 function matchOdds(model, homeRating, awayRating) {
   const gap = (homeRating - awayRating) / 400;
   const beta = model.home_advantage_beta || 0;
@@ -5539,7 +5569,8 @@ function renderCompare(report) {
 
   const homeRating = ratingById(homeId);
   const awayRating = ratingById(awayId);
-  const odds = blendOdds(report.model, matchOdds(report.model, homeRating, awayRating), homeId, awayId);
+  const edge = surfaceEdge(report.model, homeId, awayId);
+  const odds = blendOdds(report.model, matchOdds(report.model, homeRating + edge, awayRating), homeId, awayId);
   const entry = { ...odds, scorelines: topScorelines(report.model, odds, homeId, awayId) };
 
   // Fictional match: the two clubs, who hosts, and the model's odds + scorelines.

@@ -1,0 +1,65 @@
+turf home v grass visitor: 1170 matches; grass home v turf visitor: 1177
+1.10 turf-home/grass-away g=-30 elo [touched] n=1059  LL +0.00427 (t +2.37)  Br +0.00309 (t +2.40)  RPS +0.00145 (t +2.33)  halves t +2.67/+0.63  ece 0.0165/0.0141
+1.10 turf-home/grass-away g=-30 blend [all16] n=5183  LL +0.00029 (t +2.59)  Br +0.00020 (t +2.46)  RPS +0.00010 (t +2.45)  halves t +2.72/+0.99  ece 0.0075/0.0084
+1.10 turf-home/grass-away g=-15 elo [touched] n=1059  LL +0.00171 (t +1.90)  Br +0.00124 (t +1.93)  RPS +0.00058 (t +1.86)  halves t +2.31/+0.32  ece 0.0171/0.0141
+1.10 turf-home/grass-away g=-15 blend [all16] n=5183  LL +0.00014 (t +2.45)  Br +0.00009 (t +2.31)  RPS +0.00004 (t +2.31)  halves t +2.61/+0.89  ece 0.0076/0.0084
+1.10 turf-home/grass-away g=15 elo [touched] n=1059  LL -0.00086 (t -0.95)  Br -0.00064 (t -0.99)  RPS -0.00028 (t -0.92)  halves t -1.60/+0.31  ece 0.0132/0.0141
+1.10 turf-home/grass-away g=15 blend [all16] n=5183  LL -0.00012 (t -2.16)  Br -0.00008 (t -2.02)  RPS -0.00004 (t -2.02)  halves t -2.41/-0.69  ece 0.0084/0.0084
+1.10 turf-home/grass-away g=30 elo [touched] n=1059  LL -0.00087 (t -0.48)  Br -0.00068 (t -0.53)  RPS -0.00028 (t -0.45)  halves t -1.25/+0.62  ece 0.0076/0.0141
+1.10 turf-home/grass-away g=30 blend [all16] n=5183  LL -0.00023 (t -2.02)  Br -0.00015 (t -1.88)  RPS -0.00007 (t -1.87)  halves t -2.30/-0.59  ece 0.0076/0.0084
+1.10 turf-home/grass-away g=50 elo [touched] n=1059  LL +0.00042 (t +0.14)  Br +0.00018 (t +0.09)  RPS +0.00017 (t +0.17)  halves t -0.78/+1.03  ece 0.0104/0.0141
+1.10 turf-home/grass-away g=50 blend [all16] n=5183  LL -0.00034 (t -1.83)  Br -0.00023 (t -1.69)  RPS -0.00011 (t -1.68)  halves t -2.17/-0.46  ece 0.0066/0.0084
+1.10 turf-home/grass-away blend OOS picks: 2019:50 2020:50 2021:50 2022:50 2023:50 2024:50 2025:50 2026:50
+1.10 turf-home/grass-away blend OOS [all16 2019+] n=3743  LL -0.00014 (t -0.63)  Br -0.00008 (t -0.48)  RPS -0.00003 (t -0.41)  halves t -0.05/-0.82  ece 0.0089/0.0103
+1.10 turf-home/grass-away blend OOS [xg 2019+] n=2523  LL -0.00030 (t -1.11)  Br -0.00019 (t -0.96)  RPS -0.00008 (t -0.84)  halves t -1.08/-0.48  ece 0.0094/0.0104
+1.10 AD turf-home/grass-away g=-0.1 blend [all16] n=5183  LL +0.00089 (t +2.58)  Br +0.00061 (t +2.48)  RPS +0.00029 (t +2.44)  halves t +2.55/+1.16  ece 0.0073/0.0084
+1.10 AD turf-home/grass-away g=0.1 blend [all16] n=5183  LL -0.00028 (t -0.80)  Br -0.00017 (t -0.70)  RPS -0.00008 (t -0.64)  halves t -1.31/+0.11  ece 0.0068/0.0084
+1.10 AD turf-home/grass-away g=0.2 blend [all16] n=5183  LL +0.00007 (t +0.09)  Br +0.00009 (t +0.18)  RPS +0.00006 (t +0.25)  halves t -0.68/+0.75  ece 0.0051/0.0084
+1.10 AD turf-home/grass-away OOS picks: 2019:0.2 2020:0.2 2021:0.1 2022:0.2 2023:0.1 2024:0.1 2025:0.1 2026:0.1
+1.10 AD turf-home/grass-away OOS [all16 2019+] n=3743  LL +0.00074 (t +1.20)  Br +0.00053 (t +1.25)  RPS +0.00028 (t +1.37)  halves t +1.67/-0.46  ece 0.0091/0.0103
+1.10 AD turf-home/grass-away OOS [xg 2019+] n=2523  LL -0.00011 (t -0.17)  Br -0.00007 (t -0.16)  RPS +0.00000 (t +0.00)  halves t -0.05/-0.23  ece 0.0107/0.0104
+1.10 grass-home/turf-away g=-30 elo [touched] n=1066  LL +0.00309 (t +1.73)  Br +0.00217 (t +1.69)  RPS +0.00113 (t +1.84)  halves t +1.87/+0.51  ece 0.0093/0.0079
+1.10 grass-home/turf-away g=-30 blend [all16] n=5183  LL +0.00032 (t +2.87)  Br +0.00022 (t +2.71)  RPS +0.00011 (t +2.75)  halves t +2.78/+1.30  ece 0.0082/0.0084
+1.10 grass-home/turf-away g=-15 elo [touched] n=1066  LL +0.00111 (t +1.24)  Br +0.00078 (t +1.21)  RPS +0.00042 (t +1.36)  halves t +1.52/+0.18  ece 0.0087/0.0079
+1.10 grass-home/turf-away g=-15 blend [all16] n=5183  LL +0.00015 (t +2.72)  Br +0.00010 (t +2.56)  RPS +0.00005 (t +2.61)  halves t +2.67/+1.20  ece 0.0075/0.0084
+1.10 grass-home/turf-away g=15 elo [touched] n=1066  LL -0.00025 (t -0.28)  Br -0.00017 (t -0.26)  RPS -0.00012 (t -0.40)  halves t -0.81/+0.48  ece 0.0108/0.0079
+1.10 grass-home/turf-away g=15 blend [all16] n=5183  LL -0.00014 (t -2.42)  Br -0.00009 (t -2.27)  RPS -0.00004 (t -2.31)  halves t -2.46/-0.99  ece 0.0081/0.0084
+1.10 grass-home/turf-away g=30 elo [touched] n=1066  LL +0.00036 (t +0.20)  Br +0.00027 (t +0.21)  RPS +0.00004 (t +0.07)  halves t -0.45/+0.80  ece 0.0114/0.0079
+1.10 grass-home/turf-away g=30 blend [all16] n=5183  LL -0.00026 (t -2.28)  Br -0.00017 (t -2.12)  RPS -0.00008 (t -2.17)  halves t -2.35/-0.89  ece 0.0072/0.0084
+1.10 grass-home/turf-away g=50 elo [touched] n=1066  LL +0.00252 (t +0.84)  Br +0.00177 (t +0.84)  RPS +0.00070 (t +0.69)  halves t +0.02/+1.24  ece 0.0239/0.0079
+1.10 grass-home/turf-away g=50 blend [all16] n=5183  LL -0.00039 (t -2.08)  Br -0.00026 (t -1.93)  RPS -0.00013 (t -1.97)  halves t -2.21/-0.75  ece 0.0064/0.0084
+1.10 grass-home/turf-away blend OOS picks: 2019:50 2020:50 2021:50 2022:50 2023:50 2024:50 2025:50 2026:50
+1.10 grass-home/turf-away blend OOS [all16 2019+] n=3743  LL -0.00026 (t -1.18)  Br -0.00016 (t -1.04)  RPS -0.00008 (t -0.99)  halves t -0.66/-1.00  ece 0.0089/0.0103
+1.10 grass-home/turf-away blend OOS [xg 2019+] n=2523  LL -0.00033 (t -1.21)  Br -0.00022 (t -1.12)  RPS -0.00009 (t -1.00)  halves t -1.13/-0.58  ece 0.0087/0.0104
+1.10 AD grass-home/turf-away g=-0.1 blend [all16] n=5183  LL +0.00098 (t +2.82)  Br +0.00067 (t +2.69)  RPS +0.00033 (t +2.77)  halves t +2.60/+1.44  ece 0.0094/0.0084
+1.10 AD grass-home/turf-away g=0.1 blend [all16] n=5183  LL -0.00034 (t -0.98)  Br -0.00022 (t -0.87)  RPS -0.00011 (t -0.95)  halves t -1.35/-0.09  ece 0.0082/0.0084
+1.10 AD grass-home/turf-away g=0.2 blend [all16] n=5183  LL -0.00004 (t -0.06)  Br +0.00002 (t +0.03)  RPS -0.00001 (t -0.05)  halves t -0.73/+0.58  ece 0.0094/0.0084
+1.10 AD grass-home/turf-away OOS picks: 2019:0.2 2020:0.2 2021:0.2 2022:0.2 2023:0.1 2024:0.1 2025:0.1 2026:0.1
+1.10 AD grass-home/turf-away OOS [all16 2019+] n=3743  LL +0.00003 (t +0.05)  Br +0.00010 (t +0.21)  RPS +0.00003 (t +0.13)  halves t -0.00/+0.11  ece 0.0128/0.0103
+1.10 AD grass-home/turf-away OOS [xg 2019+] n=2523  LL +0.00019 (t +0.27)  Br +0.00019 (t +0.39)  RPS +0.00009 (t +0.39)  halves t +0.28/+0.06  ece 0.0096/0.0104
+
+== one term for any mismatch ==
+1.10 any mismatch g=10 blend [all16] n=5183  LL -0.00017 (t -2.33)  Br -0.00011 (t -2.18)  RPS -0.00006 (t -2.20)  halves t -2.52/-0.83  ece 0.0081/0.0084
+1.10 any mismatch g=10 elo [all16] n=5183  LL -0.00020 (t -0.68)  Br -0.00014 (t -0.67)  RPS -0.00007 (t -0.72)  halves t -1.36/+0.34  ece 0.0099/0.0101
+1.10 any mismatch g=15 blend [all16] n=5183  LL -0.00024 (t -2.24)  Br -0.00016 (t -2.09)  RPS -0.00008 (t -2.11)  halves t -2.46/-0.77  ece 0.0075/0.0084
+1.10 any mismatch g=15 elo [all16] n=5183  LL -0.00013 (t -0.30)  Br -0.00009 (t -0.30)  RPS -0.00005 (t -0.34)  halves t -1.10/+0.61  ece 0.0080/0.0101
+1.10 any mismatch g=20 blend [all16] n=5183  LL -0.00031 (t -2.15)  Br -0.00021 (t -2.00)  RPS -0.00010 (t -2.01)  halves t -2.39/-0.70  ece 0.0071/0.0084
+1.10 any mismatch g=20 elo [all16] n=5183  LL +0.00004 (t +0.08)  Br +0.00003 (t +0.07)  RPS +0.00001 (t +0.03)  halves t -0.84/+0.88  ece 0.0072/0.0101
+1.10 any mismatch g=25 blend [all16] n=5183  LL -0.00037 (t -2.05)  Br -0.00025 (t -1.90)  RPS -0.00012 (t -1.92)  halves t -2.32/-0.64  ece 0.0065/0.0084
+1.10 any mismatch g=25 elo [all16] n=5183  LL +0.00033 (t +0.45)  Br +0.00023 (t +0.44)  RPS +0.00010 (t +0.39)  halves t -0.58/+1.15  ece 0.0058/0.0101
+1.10 any mismatch g=30 blend [all16] n=5183  LL -0.00043 (t -1.96)  Br -0.00028 (t -1.81)  RPS -0.00014 (t -1.83)  halves t -2.26/-0.57  ece 0.0066/0.0084
+1.10 any mismatch g=30 elo [all16] n=5183  LL +0.00072 (t +0.82)  Br +0.00050 (t +0.80)  RPS +0.00023 (t +0.76)  halves t -0.32/+1.41  ece 0.0073/0.0101
+1.10 any mismatch g=40 blend [all16] n=5183  LL -0.00051 (t -1.78)  Br -0.00034 (t -1.62)  RPS -0.00016 (t -1.64)  halves t -2.12/-0.44  ece 0.0069/0.0084
+1.10 any mismatch g=40 elo [all16] n=5183  LL +0.00182 (t +1.56)  Br +0.00125 (t +1.53)  RPS +0.00058 (t +1.49)  halves t +0.20/+1.94  ece 0.0103/0.0101
+1.10 any mismatch g=50 blend [all16] n=5183  LL -0.00058 (t -1.59)  Br -0.00037 (t -1.44)  RPS -0.00018 (t -1.45)  halves t -1.99/-0.31  ece 0.0067/0.0084
+1.10 any mismatch g=50 elo [all16] n=5183  LL +0.00334 (t +2.29)  Br +0.00229 (t +2.24)  RPS +0.00108 (t +2.20)  halves t +0.71/+2.47  ece 0.0124/0.0101
+1.10 any mismatch blend OOS picks: 2019:50 2020:50 2021:50 2022:50 2023:50 2024:50 2025:50 2026:50
+1.10 any mismatch blend OOS [all16 2019+] n=3743  LL -0.00024 (t -0.55)  Br -0.00012 (t -0.40)  RPS -0.00005 (t -0.34)  halves t -0.07/-0.69  ece 0.0101/0.0103
+1.10 any mismatch blend OOS [es16 2019+] n=1856  LL -0.00093 (t -1.53)  Br -0.00061 (t -1.41)  RPS -0.00028 (t -1.35)  halves t -0.69/-1.48  ece 0.0140/0.0139
+1.10 any mismatch blend OOS [ob16 2019+] n=1887  LL +0.00044 (t +0.73)  Br +0.00036 (t +0.81)  RPS +0.00018 (t +0.83)  halves t +0.61/+0.43  ece 0.0078/0.0095
+1.10 any mismatch blend OOS [xg 2019+] n=2523  LL -0.00047 (t -0.88)  Br -0.00029 (t -0.75)  RPS -0.00011 (t -0.62)  halves t -0.91/-0.32  ece 0.0100/0.0104
+1.10 any mismatch elo OOS picks: 2019:25 2020:20 2021:15 2022:20 2023:10 2024:15 2025:10 2026:10
+1.10 any mismatch elo OOS [all16 2019+] n=3743  LL +0.00059 (t +1.05)  Br +0.00044 (t +1.09)  RPS +0.00021 (t +1.08)  halves t +1.08/+0.24  ece 0.0129/0.0119
+1.10 any mismatch elo OOS [es16 2019+] n=1856  LL -0.00005 (t -0.06)  Br +0.00005 (t +0.08)  RPS +0.00001 (t +0.02)  halves t +0.32/-0.66  ece 0.0153/0.0145
+1.10 any mismatch elo OOS [ob16 2019+] n=1887  LL +0.00123 (t +1.56)  Br +0.00082 (t +1.49)  RPS +0.00041 (t +1.53)  halves t +1.23/+0.97  ece 0.0109/0.0121
+1.10 any mismatch elo OOS [xg 2019+] n=2523  LL +0.00026 (t +0.43)  Br +0.00021 (t +0.49)  RPS +0.00012 (t +0.57)  halves t +0.37/+0.23  ece 0.0093/0.0072

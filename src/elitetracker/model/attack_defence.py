@@ -26,6 +26,10 @@ step.  Finishing quality is computed at the season level: each team's
 cumulative log(goals / xG) over the full season is stored and carried into
 the next season with regression, avoiding the noise of match-level updates.
 
+Two season-start corrections (elo-v13.0): the offseason pull aims at the
+division mean shifted by the club's squad market value from the season
+before, and a club's first matches of a season take a bigger step.
+
 Scorelines come from the three rates through a Poisson grid with Dixon and
 Coles' low-score correction.  The grid's own win/draw/loss odds are blended
 75/25 with the Elo odds for the shipped outcome probabilities.
@@ -77,6 +81,23 @@ class ADConfig:
     # 1.10 from prior seasons, grid capped there): -0.0011 log loss out of sample
     # (t -3.0), Brier t -2.6, RPS t -2.3, negative in both halves. 1.0 is elo-v11.
     spread: float = 1.10
+    # The offseason pull aims at the division mean shifted by value_pull * v,
+    # v = log(squad value / the division's geometric mean) from Transfermarkt's
+    # page for the season before (set before the season starts, so no
+    # hindsight); clubs without one (up from the third tier) keep the plain
+    # mean. Walk-forward over 0.05-0.3: -0.00127 log loss out of sample
+    # (t -2.84), Brier t -2.74, RPS t -2.62, both halves negative; nearly all of
+    # it in OBOS-ligaen seasons without xG (Eliteserien +0.0004). The pick sits
+    # at 0.3-0.4; 0.2 is the shrunk value. 0.0 is elo-v12. The same pull on the
+    # Elo ratings added nothing on top (-0.0003, t -1.7, null on xG matches).
+    value_pull: float = 0.2
+    # A club's n-th match of a season steps by k * (1 + early_boost *
+    # exp(-n / early_tau)), so its ratings catch up with a winter of transfers
+    # sooner. Walk-forward over 0.2-1.0 x 3-5 matches: -0.0008 (t -1.5), Brier
+    # and RPS negative, both halves; on top of value_pull -0.0004 (t -1.8).
+    # Shipped at half the pick (1.0). 0.0 is elo-v12.
+    early_boost: float = 0.5
+    early_tau: float = 3.0
 
 
 def tau(home_goals: int, away_goals: int, lam: float, mu: float, rho: float) -> float:
@@ -159,6 +180,8 @@ class AttackDefence:
     divisions: dict[tuple[int, str], str] = field(default_factory=dict)
     # match_id -> (home_xg, away_xg, home_xgot, away_xgot) where fotmob has shot data.
     shots: dict[str, tuple[float, ...]] = field(default_factory=dict)
+    # season -> team_id -> Transfermarkt squad value (EUR), for `value_pull`.
+    values: dict[int, dict[str, float]] = field(default_factory=dict)
     attack: dict[str, float] = field(default_factory=dict)
     defence: dict[str, float] = field(default_factory=dict)
     # Season-level finishing: log(total goals / total xG) per team, carried across seasons.
@@ -167,11 +190,15 @@ class AttackDefence:
     _season_goals: dict[str, float] = field(default_factory=dict)
     _season_xg: dict[str, float] = field(default_factory=dict)
     season: int | None = None
+    # Matches each club has played this season, for `early_boost`.
+    _played: dict[str, int] = field(default_factory=dict)
 
     @classmethod
-    def from_slices(cls, slices: list[SeasonSlice], config: ADConfig | None = None, shots=None) -> "AttackDefence":
+    def from_slices(cls, slices: list[SeasonSlice], config: ADConfig | None = None, shots=None,
+                    values=None) -> "AttackDefence":
         divisions = {(s.season, t): s.league for s in slices for m in s.matches for t in team_ids(m)}
-        return cls(config=config or ADConfig(), divisions=divisions, shots=dict(shots or {}))
+        return cls(config=config or ADConfig(), divisions=divisions, shots=dict(shots or {}),
+                   values=dict(values or {}))
 
     def replay(self, matches: list[Match]) -> "AttackDefence":
         """Apply every played match in kickoff order; returns self."""
@@ -182,9 +209,10 @@ class AttackDefence:
     def copy(self) -> "AttackDefence":
         """An independent state to replay a different continuation from."""
         return AttackDefence(
-            self.config, self.divisions, self.shots,
-            dict(self.attack), dict(self.defence), dict(self.finishing),
-            dict(self._season_goals), dict(self._season_xg), self.season,
+            config=self.config, divisions=self.divisions, shots=self.shots, values=self.values,
+            attack=dict(self.attack), defence=dict(self.defence), finishing=dict(self.finishing),
+            _season_goals=dict(self._season_goals), _season_xg=dict(self._season_xg),
+            season=self.season, _played=dict(self._played),
         )
 
     def rates_against_average(self, team_id: str, league: str, season: int) -> tuple[float, float]:
@@ -209,6 +237,7 @@ class AttackDefence:
         prev_season = self.season
         first = prev_season is None
         self.season = season
+        self._played = {}
 
         # Compute season-level finishing from the previous season's accumulators.
         # Skip when finishing_regression >= 1.0 (disabled — the elo-v8 baseline).
@@ -246,6 +275,24 @@ class AttackDefence:
                         self.attack[t] = level
                         self.defence[t] = level
                     self.finishing.setdefault(t, 0.0)
+            if known and not first and cfg.value_pull:
+                self._pull_toward_value(season, teams)
+
+    def _pull_toward_value(self, season: int, teams: list[str]) -> None:
+        """Move the pull's target by `value_pull` * relative squad value. Each
+        club with last season's value is shifted by (1 - regression) *
+        value_pull * v after the pull toward the mean, which is the same as
+        pulling it toward mean + value_pull * v in the first place."""
+        cfg = self.config
+        page = self.values.get(season - 1, {})
+        logs = {t: math.log(page[t]) for t in teams if page.get(t) and t in self.attack}
+        if not logs:
+            return
+        mean = sum(logs.values()) / len(logs)
+        for t, value in logs.items():
+            shift = (1.0 - cfg.season_regression) * cfg.value_pull * (value - mean)
+            self.attack[t] += shift
+            self.defence[t] += shift
 
     def start_season(self, season: int) -> None:
         """Apply the offseason pull and place newcomers, once, for `season`."""
@@ -297,9 +344,15 @@ class AttackDefence:
         cfg = self.config
         if not shots or cfg.alpha == 0.0:
             return goals[0], goals[1], cfg.k
-        signal = shots[2:4] if cfg.signal == "xgot" and len(shots) == 4 else shots[0:2]
+        signal = shots[2:4] if cfg.signal == "xgot" and len(shots) >= 4 else shots[0:2]
         a = cfg.alpha
         return (1 - a) * goals[0] + a * signal[0], (1 - a) * goals[1] + a * signal[1], cfg.k_shots or cfg.k
+
+    def _early(self, team_id: str) -> float:
+        cfg = self.config
+        if not cfg.early_boost:
+            return 1.0
+        return 1.0 + cfg.early_boost * math.exp(-self._played.get(team_id, 0) / cfg.early_tau)
 
     def observe(self, match: Match) -> None:
         home, away = team_ids(match)
@@ -308,10 +361,14 @@ class AttackDefence:
         cfg = self.config
         home_surprise = max(-cfg.cap, min(cfg.cap, obs_home - lam))
         away_surprise = max(-cfg.cap, min(cfg.cap, obs_away - mu))
-        self.attack[home] += k * home_surprise
-        self.defence[away] -= k * home_surprise
-        self.attack[away] += k * away_surprise
-        self.defence[home] -= k * away_surprise
+        # Each club's own two ratings take its own step (see `early_boost`).
+        k_home, k_away = k * self._early(home), k * self._early(away)
+        self.attack[home] += k_home * home_surprise
+        self.defence[away] -= k_away * home_surprise
+        self.attack[away] += k_away * away_surprise
+        self.defence[home] -= k_home * away_surprise
+        self._played[home] = self._played.get(home, 0) + 1
+        self._played[away] = self._played.get(away, 0) + 1
         # Accumulate season-level goals and xG for finishing calculation.
         if cfg.finishing_regression < 1.0:
             shots = self.shots.get(match.match_id)

@@ -52,9 +52,11 @@ from elitetracker.pipeline import (
     careers_payload,
     current_season,
     load_matches,
+    market_values,
     preseason_date,
     rewound_configs,
 )
+from elitetracker.research import calibration_payload
 from elitetracker.sources.fotmob import load_xg
 
 MANIFEST_NAME = "build-manifest.json"
@@ -155,6 +157,13 @@ def view_stamp(
         {"match_id": match_id, "xg": values}
         for match_id, values in sorted(shots.items())
         if asof is None or shot_dates.get(match_id, "") <= asof
+    ]
+
+    # The goals model's offseason pull reads each season's squad values from
+    # the season before, so only the pages before this season count.
+    records += [
+        {"values": year, "clubs": clubs}
+        for year, clubs in sorted(market_values().items()) if year < season
     ]
 
     extras.append(repr(rewound_configs(asof)))  # simulation settings differ live vs rewound
@@ -335,6 +344,10 @@ def build_site(
     if previous.get("careers.json") != careers_digest or not (out_dir / "careers.json").exists():
         write_payload(out_dir / "careers.json", careers_payload(careers, root=root))
     stamps["careers.json"] = careers_digest
+
+    # The Explore view's match-odds calibration: one walk-forward over every
+    # season (about a second), so it is simply rewritten each build.
+    write_payload(out_dir / "calibration.json", calibration_payload(root=root))
 
     # Only written once the build succeeded: a manifest that claimed a view was
     # written when it was not would let the next run skip a missing file.

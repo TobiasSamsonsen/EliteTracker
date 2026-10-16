@@ -27,7 +27,28 @@ from __future__ import annotations
 import math
 from dataclasses import dataclass
 
-# Bump on any change that alters produced ratings or probabilities.
+# Versions are elo-vMAJOR.MINOR, bumped once per release (a change set that is
+# deployed), never per working step; rejected or unreleased work takes no
+# number. A release takes the largest bump any of its changes needs:
+#
+#   MAJOR (elo-v14.0)  the ratings or the match odds change: a new model term,
+#                      a refit constant, new data the model reads.
+#   MINOR (elo-v13.1)  ratings and match odds are unchanged, but the season
+#                      simulation's published chances move: a simulation rule
+#                      (tiebreak, play-offs, strength shock), the run count, the
+#                      random stream.
+#   none               nothing the model publishes changes: new fields derived
+#                      from unchanged numbers, presentation, documentation, data
+#                      parsed but not read.
+#
+# The rules were written down in October 2026; the numbers before them are kept
+# as published (they are in archived reports and careers.json). Where the
+# history departs from the rules -- elo-v4 never shipped, elo-v11.1 refit K and
+# was numbered as a minor, three early run-count changes were never bumped --
+# see PROJECT_STATUS.md, "Model versions".
+#
+# elo-v1: seeded from the final tables, Elo replay, match odds, season Monte
+# Carlo.
 #
 # elo-v2: ratings are no longer seeded from the previous season's table each
 # year. They are seeded once, from the 2014 final tables, and every played
@@ -136,7 +157,32 @@ from dataclasses import dataclass
 # Same model and the same draws per run, from a different random stream, so
 # every finishing chance moves by Monte Carlo noise only (measured at 200,000
 # runs against the pure-Python loop: worst cell 0.34 pp, median 0.01 pp).
-MODEL_VERSION = "elo-v12.2"
+#
+# elo-v13.0: the IMPROVEMENTS.md sweep (October 2026), each change chosen
+# walk-forward and shipped shrunk toward no change; see PROJECT_STATUS.md,
+# "elo-v13.0".
+#   * the xG margin is signed by the xG ratio, not by who won: the old term
+#     paid a lucky 1-0 winner more the worse it was outplayed. It is smoothed
+#     (`xg_margin_smoothing`) and now applies to every xG match, draws and
+#     0.0 xG included (`xg_margin` 0.10),
+#   * `xg_implied_score` sums the Poisson grid to 12 goals by a recurrence and
+#     normalises it, instead of a double loop that stopped at 9 goals and lost
+#     up to 3 points of the score at 4-5 xG,
+#   * the goals model's offseason pull aims at a target shifted by squad
+#     market value from the season before (`ADConfig.value_pull`), and a
+#     club's first matches of a season take a bigger step (`early_boost`),
+#   * the season Monte Carlo's strength shock is re-fit, 0.15 -> 0.20
+#     (`simulation.season.STRENGTH_SD`),
+#   * an Eliteserien home side whose visitor plays on the other surface gets 10
+#     rating points on the prediction (`normalize.surfaces`): -0.00031 log loss
+#     on Eliteserien (t -2.98), both halves; the ratings never see it,
+#   * the play-offs are simulated in every run (`simulation.playoffs`):
+#     OBOS-ligaen's 3rd-6th for a two-legged final against Eliteserien's 14th,
+#     OBOS-ligaen's 14th against a second-tier side, so the promotion and
+#     relegation chances count them.
+# (Worked on as "elo-v13.0" and "elo-v13.1" before the version rules above; one
+# release, so one number.)
+MODEL_VERSION = "elo-v13.0"
 
 # A 400-point rating gap means the stronger side is expected to score 10 times
 # as often as the weaker one; this is the constant that defines the ELO scale.
@@ -180,16 +226,21 @@ class EloConfig:
     # log loss (t=-2.58) and stacks on elo-v7's attack/defence blend for -0.00580
     # vs plain Elo (t=-3.38).
     xg_alpha: float = 0.45
-    # Margin of victory measured in xG, added to the winner's side of the
-    # observed score where there is xG: gamma * ln(1 + |ln(home_xg / away_xg)|),
-    # the 538 damped-log form on the xG ratio, clamped to [0, 1], nothing on a
-    # draw. Goal margins were rejected in elo-v3 (Norwegian margins are mostly
-    # noise); the xG ratio says how deserved a win was. Judged on Elo's own
-    # odds (the displayed ratings), selected walk-forward from 0/0.05/0.1:
-    # -0.0007 log loss out of sample (t -2.0), Brier t -1.8, RPS t -1.7,
-    # negative in both halves. Walk-forward picked 0.1; 0.05 keeps ~90 % of the
-    # in-sample gain (-0.00055, t -3.2) and is the value shrunk toward none.
-    xg_margin: float = 0.05
+    # Margin of victory measured in xG, added to the observed score of the side
+    # that created more wherever there is xG, draws included:
+    # gamma * ln(1 + |r|) toward the side r favours, r = ln((home_xg + c) /
+    # (away_xg + c)), clamped to [0, 1]. The 538 damped-log form on the xG
+    # ratio; goal margins were rejected in elo-v3 (Norwegian margins are mostly
+    # noise). elo-v12.0 signed it by the goals winner, which paid a lucky 1-0
+    # win more the worse the winner was outplayed, and skipped draws and 0.0 xG.
+    # Signed by xG, judged on Elo's own odds (the displayed ratings),
+    # walk-forward over gamma 0.03-0.12 x c 0.15-0.35: -0.00105 log loss out of
+    # sample (t -2.91), Brier t -2.95, RPS t -2.79, both halves negative. The
+    # pick drifts to 0.12 (0.3-0.4 on a wider grid, t -1.85); 0.10 is the
+    # shrunk value. See PROJECT_STATUS.md, "elo-v13.0".
+    xg_margin: float = 0.10
+    # c above: keeps r finite at 0.0 xG and damps the ratio of two small values.
+    xg_margin_smoothing: float = 0.25
 
 
 # Era-switch constants.  Warmup seasons use the legacy config above; from the
@@ -240,23 +291,34 @@ def expected_score(rating: float, opponent_rating: float) -> float:
     return 1.0 / (1.0 + 10.0 ** ((opponent_rating - rating) / _RATING_SCALE))
 
 
+# Goals counted per side in `xg_implied_score`; the mass beyond is divided out.
+_XG_GOAL_CAP = 12
+
+
 def xg_implied_score(home_xg: float, away_xg: float) -> float:
     """P(home_win) + 0.5*P(draw) under independent Poisson(home_xg) vs Poisson(away_xg).
 
     This is the expected points a side would earn if the match were replayed
     many times at the two xG rates. Used by elo-v8 to blend into the rating
     update so a lucky win moves ratings less than a deserved one.
+
+    One pass over k = 0..12 with the Poisson recurrence p(k) = p(k-1) * xg / k,
+    keeping P(away < k) as it goes, then normalised by the mass the cap keeps:
+    within 1e-6 of the untruncated sum at ordinary xG, 2e-4 at 4+ a side
+    (elo-v13.0; the double loop it replaced stopped at 9 goals unnormalised and
+    put 5.0 v 0.3 xG at 0.957 instead of 0.989).
     """
-    p_draw = 0.0
-    p_home = 0.0
-    for k in range(10):
-        p_hk = math.exp(-home_xg) * home_xg ** k / math.factorial(k)
-        p_ak = math.exp(-away_xg) * away_xg ** k / math.factorial(k)
-        p_draw += p_hk * p_ak
-        for j in range(k):
-            p_aj = math.exp(-away_xg) * away_xg ** j / math.factorial(j)
-            p_home += p_hk * p_aj
-    return p_home + 0.5 * p_draw
+    p_home_k, p_away_k = math.exp(-home_xg), math.exp(-away_xg)
+    away_below = home = draw = home_mass = 0.0
+    for k in range(_XG_GOAL_CAP + 1):
+        if k:
+            p_home_k *= home_xg / k
+            p_away_k *= away_xg / k
+        home += p_home_k * away_below
+        draw += p_home_k * p_away_k
+        away_below += p_away_k
+        home_mass += p_home_k
+    return (home + 0.5 * draw) / (home_mass * away_below)
 
 
 def actual_score(home_goals: int, away_goals: int) -> float:
@@ -286,17 +348,19 @@ def updated_pair(
 
     Ratings are zero-sum: whatever the home side gains, the away side loses.
     When xG data is provided and config.xg_alpha > 0, the observation blends
-    the binary result with the xG-implied expected score (elo-v8).
+    the binary result with the xG-implied expected score (elo-v8) and moves
+    toward the side the xG ratio favours (`xg_margin`, elo-v13.0).
     """
     expected_home = expected_score(home_rating + effective_home_advantage(config, home_rating, away_rating), away_rating)
     scored_home = actual_score(home_goals, away_goals)
     if home_xg is not None and away_xg is not None and config.xg_alpha > 0.0:
         xg_score = xg_implied_score(home_xg, away_xg)
         scored_home = (1.0 - config.xg_alpha) * scored_home + config.xg_alpha * xg_score
-        if config.xg_margin and home_goals != away_goals and home_xg > 0 and away_xg > 0:
-            winner = 1.0 if home_goals > away_goals else -1.0
-            bonus = config.xg_margin * math.log(1.0 + abs(math.log(home_xg / away_xg)))
-            scored_home = min(1.0, max(0.0, scored_home + winner * bonus))
+        if config.xg_margin:
+            c = config.xg_margin_smoothing
+            ratio = math.log((home_xg + c) / (away_xg + c))
+            bonus = math.copysign(config.xg_margin * math.log(1.0 + abs(ratio)), ratio)
+            scored_home = min(1.0, max(0.0, scored_home + bonus))
     change = config.k_factor * (scored_home - expected_home)
     return home_rating + change, away_rating - change
 

@@ -45,7 +45,7 @@ def test_conditioning_keeps_the_elo_odds_and_only_reshapes_within_outcomes():
 
 
 def test_update_moves_attack_and_defence_together_and_caps_a_rout():
-    model = AttackDefence(config=ADConfig(k=0.1, cap=2.0), divisions={(2020, "A"): "l", (2020, "B"): "l"})
+    model = AttackDefence(config=ADConfig(k=0.1, cap=2.0, early_boost=0.0), divisions={(2020, "A"): "l", (2020, "B"): "l"})
     lam, mu = model.rates("A", "B", "2020-03-01")
     model.observe(match("1", "2020-03-01", "A", "B", 9, 0))
     assert abs(model.attack["A"] - 0.1 * 2.0) < 1e-12      # capped at 2 goals of surprise
@@ -84,6 +84,48 @@ def test_season_start_pulls_toward_the_division_and_places_newcomers():
     assert model.attack["D"] == model.defence["D"] == -0.3                                     # a first-season division is placed, not learned
     model.start_season(2021)  # idempotent
     assert abs(model.attack["C"] - (model.attack["A"] + model.attack["B"]) / 2 + 0.2) < 1e-12
+
+
+def test_the_offseason_pull_aims_at_squad_value_from_the_season_before():
+    data = slices(
+        (2020, "eliteserien", [match("1", "2020-05-01", "A", "B", 1, 1), match("2", "2020-05-08", "B", "C", 1, 1)]),
+        (2021, "eliteserien", [match("3", "2021-04-01", "A", "B", 1, 1), match("4", "2021-04-08", "B", "C", 1, 1)]),
+    )
+    # A's squad is worth 4x C's in 2020; B's value is missing (no shift).
+    values = {2020: {"A": 8e6, "C": 2e6}, 2021: {"A": 1e6, "C": 9e6}}
+    cfg = ADConfig(k=0.1, season_regression=0.5, value_pull=0.2, early_boost=0.0)
+    plain = AttackDefence.from_slices(data, ADConfig(k=0.1, season_regression=0.5, value_pull=0.0, early_boost=0.0))
+    priced = AttackDefence.from_slices(data, cfg, values=values)
+    for model in (plain, priced):
+        model.replay(data[0].matches)
+        model.start_season(2021)
+    v = 0.5 * math.log(4.0)   # A's log value above the (A, C) geometric mean
+    for ratings in ("attack", "defence"):
+        a, p = getattr(plain, ratings), getattr(priced, ratings)
+        assert abs(p["A"] - a["A"] - 0.5 * 0.2 * v) < 1e-12   # (1 - regression) * value_pull * v
+        assert abs(p["C"] - a["C"] + 0.5 * 0.2 * v) < 1e-12
+        assert p["B"] == a["B"]
+    # The 2021 page (same season) is never read for 2021, and the first season is never shifted.
+    assert priced.attack["A"] - plain.attack["A"] > 0
+
+
+def test_a_clubs_first_matches_of_a_season_take_a_bigger_step():
+    divisions = {(2020, "A"): "l", (2020, "B"): "l", (2021, "A"): "l", (2021, "B"): "l"}
+    flat = AttackDefence(config=ADConfig(k=0.1, early_boost=0.0, season_regression=1.0), divisions=divisions)
+    early = AttackDefence(config=ADConfig(k=0.1, early_boost=0.5, early_tau=3.0, season_regression=1.0), divisions=divisions)
+    first = match("0", "2020-04-10", "A", "B", 2, 0)
+    flat.observe(first)
+    early.observe(first)
+    assert abs(early.attack["A"] - 1.5 * flat.attack["A"]) < 1e-12   # same surprise, 1 + 0.5 * exp(0)
+    multipliers = [early._early("A")]
+    for i in range(1, 6):
+        early.observe(match(str(i), f"2020-04-{i + 10:02d}", "A", "B", 2, 0))
+        multipliers.append(early._early("A"))
+    assert abs(multipliers[0] - (1 + 0.5 * math.exp(-1 / 3))) < 1e-12
+    assert multipliers == sorted(multipliers, reverse=True) and multipliers[-1] > 1.0  # it fades
+    early.observe(match("9", "2021-04-01", "A", "B", 2, 0))  # a new season starts the count again
+    assert early._played == {"A": 1, "B": 1}
+    assert early.copy()._played == early._played
 
 
 def test_copy_is_independent_and_rates_against_average_are_readable():

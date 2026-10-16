@@ -166,6 +166,7 @@ class TestManifest:
         monkeypatch.setattr(build_site, "matchday_dates", lambda root, season: ["2026-05-08"])
         monkeypatch.setattr(build_site, "build_all_careers", lambda root, **kw: {})
         monkeypatch.setattr(build_site, "careers_payload", lambda careers, **kw: {})
+        monkeypatch.setattr(build_site, "calibration_payload", lambda **kw: {})
         monkeypatch.setattr(build_site, "Pool", _SyncPool)
         try:
             build_site.build_site(root=two_matches, out_dir=out, jobs=1, only_season=2026)

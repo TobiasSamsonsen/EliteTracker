@@ -1,7 +1,7 @@
 # EliteTracker
 
 Predictive model for Norwegian men's football: **Eliteserien** (tier 1) and
-**OBOS-ligaen** (tier 2). Uses an ELO rating system (elo-v12.2) to estimate team
+**OBOS-ligaen** (tier 2). Uses an ELO rating system (elo-v13.0) to estimate team
 strength, match probabilities and season outcomes. Fixtures and results come
 from FotMob (xG from FotMob for Eliteserien, Sofascore for OBOS-ligaen);
 benchmark odds from football-data.co.uk, squad values from Transfermarkt.
@@ -29,18 +29,29 @@ Or preview the static build:
 Each club carries one **ELO rating**. After a match, the winner gains points and
 the loser loses them -- more if the result was unexpected. The update uses xG
 (expected goals) to dampen lucky wins: a team that won but was outplayed gains
-less than one that dominated. From 2022 on, in **both** divisions, the model
-uses a faster K-factor and a *lower* xG weight (K=30, α=30 %); earlier seasons
-use the legacy config (K=20, α=45 %).
+less than one that dominated, and a match one side dominated on xG moves the
+ratings its way even when it ends level. From 2022 on, in **both** divisions,
+the model uses a faster K-factor and a *lower* xG weight (K=30, α=30 %);
+earlier seasons use the legacy config (K=20, α=45 %).
 
 Two sets of odds are blended for each fixture:
 
 - **ELO odds** -- derived from the rating gap, home advantage and draw model
 - **Attack/defence odds** -- from a Poisson goals model with Dixon-Coles
-  correction, updated match-by-match on goals and xG
+  correction, updated match-by-match on goals and xG. Each offseason it is
+  pulled toward its division's average shifted by the club's squad market
+  value the season before, and a club's first matches of a season move it
+  further, so it catches up with the winter's transfers sooner
 
 The shipped prediction is a 25/75 blend (ELO/attack-defence). Scorelines come
-from the attack/defence grid, conditioned on the blended outcome odds.
+from the attack/defence grid, conditioned on the blended outcome odds. In
+Eliteserien a home side whose visitor normally plays on the other surface
+(grass or artificial turf) gets a small edge on the prediction
+(`normalize/surfaces.py`).
+
+The season simulation also plays the play-offs in every run (OBOS-ligaen 3rd-6th
+for a two-legged final against Eliteserien's 14th, OBOS-ligaen's 14th against a
+second-tier side), so the promotion and relegation chances count them.
 
 ## Views
 
@@ -141,7 +152,8 @@ Every tunable parameter in the shipped model:
 | Outcome blend | 25/75 | ELO vs attack/defence weight for win/draw/loss odds |
 | Scorelines | attack/defence | Source of scoreline predictions (not ELO) |
 | Simulations | 50,000 | Monte Carlo runs per league (10,000 on rewound views) |
-| Strength shock | ±0.15 | Per-run club strength noise (log-odds), so finishing odds carry rating uncertainty |
+| Strength shock | ±0.20 | Per-run club strength noise (log-odds), so finishing odds carry rating uncertainty |
+| Surface edge | 10 pts (Eliteserien) | Home side's extra rating when its visitor plays on the other surface (prediction only) |
 
 ### Team Focus
 
@@ -209,6 +221,28 @@ the season mountain's ground.
 .venv\Scripts\python -m pytest              # Python tests
 node --test tests/frontend.test.js          # Frontend logic tests
 ```
+
+## Backtests
+
+```bash
+.venv\Scripts\python -m elitetracker.backtest_cli --market --score-from 2016   # vs the closing line, Kelly
+.venv\Scripts\python -m elitetracker.backtest_cli --calibration out.json       # the Explore calibration file
+.venv\Scripts\python -m elitetracker.research odds --refresh                  # closing odds + raw prices
+```
+
+`--market` scores the shipped odds, Elo alone and the closing line (de-vigged
+proportionally, by the power method and by Shin's method) match by match, and
+stakes quarter Kelly on the model's edges at the closing prices.
+`data/market_values.json` (Transfermarkt squad values, one entry per
+club-season) gets the new season once a year, after it ends:
+
+```bash
+.venv\Scripts\python -m elitetracker.research market-values --season 2027 --dry-run   # check the join
+.venv\Scripts\python -m elitetracker.research market-values --season 2027             # write it
+```
+
+Two pages, 4-8 seconds apart, stopping at the first 403/429. Never run it from
+CI or the hourly refresh.
 
 ## Project structure
 

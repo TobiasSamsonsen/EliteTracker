@@ -100,3 +100,26 @@ class TestFetchMatches:
         with pytest.raises(FetchError, match="expected 240"):
             fetch_matches("eliteserien", 2026, cache_dir=tmp_path)
         assert list(tmp_path.iterdir()) == []
+
+
+def test_match_details_carry_npxg_and_the_first_red_card_on_the_same_request():
+    """IMPROVEMENTS 2.1: parsed from the response refresh already fetches."""
+    from elitetracker.sources.fotmob import parse_match_details
+
+    shot = lambda team, xg, xgot, situation="RegularPlay": {
+        "teamId": team, "expectedGoals": xg, "expectedGoalsOnTarget": xgot, "situation": situation}
+    payload = {
+        "general": {"homeTeam": {"id": 1}},
+        "content": {
+            "shotmap": {"shots": [shot(1, 0.3, 0.5), shot(1, 0.79, 0.9, "Penalty"), shot(2, 0.2, 0.0)]},
+            "matchFacts": {"events": {"events": [
+                {"type": "Card", "card": "Yellow", "time": 10},
+                {"type": "Card", "card": "YellowRed", "time": 70},
+                {"type": "Card", "card": "Red", "time": 55},
+            ]}},
+        },
+    }
+    assert parse_match_details(payload) == (1.09, 0.2, 1.4, 0.0, 0.3, 0.2, 55)
+    payload["content"]["matchFacts"]["events"]["events"] = []
+    assert parse_match_details(payload)[-1] == 90  # no red card
+    assert parse_match_details({"content": {"shotmap": {"shots": []}}}) is None

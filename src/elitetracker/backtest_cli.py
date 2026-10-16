@@ -11,20 +11,27 @@ Run:
     python -m elitetracker.backtest_cli --k-min 16 --k-max 32 --k-step 2 \\
         --home-min 55 --home-max 95 --home-step 10 --regression 1.0 0.9 0.8
     python -m elitetracker.backtest_cli --blend --split-season 2023
+    python -m elitetracker.backtest_cli --market --score-from 2016
+    python -m elitetracker.backtest_cli --calibration public/data/calibration.json
 
 The grid is exhaustive and deterministic; no randomness enters the scoring.
 The --blend flag runs a forward-split sweep of the blend_gamma parameter:
-fit on [score_from, split_season), test on [split_season, ...].
+fit on [score_from, split_season), test on [split_season, ...]. --market
+scores the shipped odds against the closing line (proportional, power and
+Shin de-vigging) and stakes quarter Kelly on them; --calibration writes the
+Explore view's calibration file (build_site writes the same one).
 """
 
 from __future__ import annotations
 
 import argparse
+import json
 from dataclasses import replace
+from pathlib import Path
 
 from elitetracker.model.backtest import Scorecard, compare, paired, walk_forward
 from elitetracker.model.elo import EloConfig, MODERN_CONFIG, era_config
-from elitetracker.pipeline import load_slices, seed_ratings, shot_table
+from elitetracker.pipeline import load_slices, market_values, seed_ratings, shot_table
 
 
 def _frange(start: float, stop: float, step: float) -> list[float]:
@@ -48,7 +55,7 @@ def _blend_forward_split(slices, seeds, shots, score_from, split_season, gamma_v
     cards = []
     for gamma in gamma_values:
         ad_config = replace(ADConfig(), blend_gamma=gamma)
-        ad = AttackDefence.from_slices(slices, ad_config, shots=shots)
+        ad = AttackDefence.from_slices(slices, ad_config, shots=shots, values=market_values())
         card = Scorecard(name=f"g={gamma:.2f}")
         for match in sorted((m for s in slices for m in s.matches if m.played), key=Match.sort_key):
             home, away = team_ids(match)
@@ -116,7 +123,19 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--gamma-min", type=float, default=0.0)
     parser.add_argument("--gamma-max", type=float, default=1.0)
     parser.add_argument("--gamma-step", type=float, default=0.1)
+    parser.add_argument("--market", action="store_true",
+                        help="the shipped odds against the de-vigged closing line, plus quarter-Kelly staking")
+    parser.add_argument("--calibration", type=Path, metavar="PATH",
+                        help="write the Explore view's match-odds calibration JSON (scored from 2016) to PATH")
     args = parser.parse_args(argv)
+
+    if args.market or args.calibration:
+        from elitetracker.research import calibration_payload, market_comparison
+        if args.calibration:
+            args.calibration.write_text(json.dumps(calibration_payload(), ensure_ascii=False), encoding="utf-8")
+            print(f"wrote {args.calibration}")
+            return 0
+        return market_comparison(args.score_from)
 
     slices = load_slices()
     seeds = {team_id: seed.rating for team_id, seed in seed_ratings().items()}
