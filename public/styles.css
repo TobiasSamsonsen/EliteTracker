@@ -3953,3 +3953,16 @@ body[data-viz="mountain"] > footer { display: none; }
 /* Explore: a note above or under a view. */
 .explore-note { margin: 0.75rem 0 0; color: var(--ink-muted); font-size: 0.8125rem; line-height: 1.45; }
 .explore-note--lead { margin: 0 0 0.6rem; }
+
+/* Head to head: every pairing of the division, from the row club's side. */
+.h2h { padding: 0.75rem 1rem 1rem; }
+.h2h__scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+.h2h__table { border-collapse: separate; border-spacing: 2px; font-size: 0.75rem; font-variant-numeric: tabular-nums; }
+.h2h__table th { padding: 0.15rem 0.3rem; color: var(--ink-muted); font-weight: 600; white-space: nowrap; }
+.h2h__row { position: sticky; left: 0; z-index: 1; display: flex; align-items: center; gap: 0.35rem; min-width: 8rem; background: var(--panel); color: var(--ink); text-align: left; }
+.h2h__table .team-logo { width: 16px; height: 16px; }
+.h2h__cell { min-width: 2.2rem; height: 1.8rem; border-radius: 4px; color: var(--ink); text-align: center; }
+.h2h__cell--self { background: var(--panel-sunk); }
+.h2h__cell:focus-visible { outline: 2px solid var(--ink); outline-offset: 1px; }
+/* The cell sets its own ink, so the grid's invert class has to win over it. */
+.h2h__cell.cell--invert { color: var(--cell-ink-invert); }

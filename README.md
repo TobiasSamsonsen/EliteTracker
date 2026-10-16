@@ -141,6 +141,9 @@ slider too; the ones with time along an axis of their own take none.
   layer built; on a finished season they become a scorecard for the
   pre-season prediction (hit rate, biggest climber, faller and surprise). The
   ⓘ button shows them in a popup. On phones the mountain fills the screen.
+- **Head to head** (`viz=h2h`) -- the record of every pairing among the
+  division's clubs, 2015 up to the season shown, as points a match for the row
+  club.
 
 ### Model Card
 

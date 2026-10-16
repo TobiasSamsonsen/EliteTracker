@@ -2230,7 +2230,7 @@ function renderModelCard(report) {
 /* ---------- explore: other ways to look at the numbers -------------- */
 
 /* A gallery of cards, each opening one visualisation in the same panel. */
-const EXPLORE_ITEMS = ['mountain', 'attack'];
+const EXPLORE_ITEMS = ['mountain', 'attack', 'h2h'];
 /* The visualisations that follow the rewind slider: they read one day's
    report. The rest take a whole season or every season, or carry time along
    an axis of their own, which the slider would only cut short. */
@@ -2248,6 +2248,17 @@ function exploreThumb(id) {
         }));
       }
     });
+  } else if (id === 'h2h') {
+    // A grid of cells shaded either side of even.
+    for (let r = 0; r < 6; r += 1) {
+      for (let c = 0; c < 6; c += 1) {
+        const lean = r === c ? 0 : Math.sin(r * 3.1 + c * 1.7);
+        svg.appendChild(svgEl('rect', {
+          x: 44 + c * 12.5, y: 8 + r * 12.5, width: 11, height: 11, rx: 1.5,
+          style: r === c ? 'fill: var(--panel-sunk)' : `fill: color-mix(in oklab, var(${lean >= 0 ? '--outcome-good' : '--outcome-bad'}) ${Math.round(Math.abs(lean) * 75)}%, var(--panel))`,
+        }));
+      }
+    }
   } else {
     svg.appendChild(svgEl('line', { class: 'explore-thumb__avg', x1: 82, x2: 82, y1: 10, y2: 80 }));
     svg.appendChild(svgEl('line', { class: 'explore-thumb__avg', x1: 16, x2: 144, y1: 46, y2: 46 }));
@@ -2275,6 +2286,7 @@ function renderExplore(report) {
   if (item !== 'mountain') mountainStop();
   if (item === 'mountain') return renderMountain(report, body);
   if (item === 'attack') return renderAttackMap(report, body);
+  if (item === 'h2h') return renderHeadToHead(report, body);
   const gallery = el('div', 'explore-gallery');
   for (const id of EXPLORE_ITEMS) {
     const card = el('button', 'explore-card');
@@ -2517,6 +2529,112 @@ async function renderTimeAxis(item, report, body, draw, runIn) {
     body.firstChild.prepend(el('p', 'explore-note explore-note--lead', t('explore.runInFrom', { date: whenDate(from) })));
   }
 }
+
+/* ---------- explore: head-to-head matrix (viz=h2h) --------------------- */
+
+/* Every pairing's record among `ids` (careers.head_to_head), from the row
+   club's side: played, points, goals for and against; with `upTo`, only the
+   seasons up to and including that one. */
+function headToHeadGrid(ids, h2h, upTo = Infinity) {
+  const grid = new Map(ids.map((id) => [String(id), new Map()]));
+  for (const games of Object.values(h2h || {})) {
+    for (const game of games) {
+      if (game.season > upTo) continue;
+      const [home, away] = [String(game.home_id), String(game.away_id)];
+      if (!grid.has(home) || !grid.has(away)) continue;
+      for (const [own, other, gf, ga] of [[home, away, game.home_goals, game.away_goals], [away, home, game.away_goals, game.home_goals]]) {
+        const cell = grid.get(own).get(other) || { played: 0, points: 0, wins: 0, draws: 0, losses: 0, gf: 0, ga: 0 };
+        cell.played += 1;
+        cell.gf += gf;
+        cell.ga += ga;
+        if (gf > ga) { cell.points += 3; cell.wins += 1; } else if (gf === ga) { cell.points += 1; cell.draws += 1; } else cell.losses += 1;
+        grid.get(own).set(other, cell);
+      }
+    }
+  }
+  return grid;
+}
+
+function renderHeadToHead(report, body) {
+  const rows = report.table || [];
+  const h2h = state.careers?.head_to_head;
+  if (!rows.length || !h2h) {
+    body.replaceChildren(el('p', 'explore-empty', t('h2h.empty')));
+    return;
+  }
+  const ids = rows.map((row) => String(row.team_id));
+  const names = new Map(rows.map((row) => [String(row.team_id), row.team]));
+  const season = report.league.season;
+  const grid = headToHeadGrid(ids, h2h, season);
+  const wrap = el('div', 'h2h');
+  const scroller = el('div', 'h2h__scroll');
+  const table = el('table', 'h2h__table');
+  table.setAttribute('aria-label', t('h2h.aria'));
+  const head = el('tr');
+  head.appendChild(el('th', 'h2h__corner', t('h2h.corner')));
+  for (const id of ids) {
+    const th = el('th', 'h2h__col');
+    const logo = teamLogo(id, names.get(id));
+    if (logo) th.appendChild(logo);
+    th.title = names.get(id);
+    head.appendChild(th);
+  }
+  table.appendChild(head);
+  for (const id of ids) {
+    const tr = el('tr');
+    const th = el('th', 'h2h__row');
+    const logo = teamLogo(id, names.get(id));
+    if (logo) th.appendChild(logo);
+    th.appendChild(el('span', '', names.get(id)));
+    tr.appendChild(th);
+    for (const other of ids) {
+      const cell = grid.get(id).get(other);
+      const td = el('td', 'h2h__cell');
+      if (id === other) td.classList.add('h2h__cell--self');
+      else if (cell) {
+        const ppm = cell.points / cell.played;
+        const lean = Math.max(-1, Math.min(1, (ppm - 1.5) / 1.5));
+        td.style.background = `color-mix(in oklab, var(${lean >= 0 ? '--outcome-good' : '--outcome-bad'}) ${Math.round(Math.abs(lean) * 70)}%, var(--panel))`;
+        if (Math.abs(lean) > 0.55) td.classList.add('cell--invert');
+        td.textContent = num(ppm, 1);
+        const tip = t('h2h.tip', { team: names.get(id), other: names.get(other), w: cell.wins, d: cell.draws, l: cell.losses, gf: cell.gf, ga: cell.ga, ppm: num(ppm, 2), n: cell.played });
+        td.tabIndex = 0;
+        td.setAttribute('aria-label', tip);
+        attachTip(td, tip);
+      }
+      tr.appendChild(td);
+    }
+    table.appendChild(tr);
+  }
+  scroller.appendChild(table);
+  wrap.appendChild(scroller);
+  body.replaceChildren(wrap);
+
+  const pairs = [];
+  ids.forEach((id, i) => ids.slice(i + 1).forEach((other) => {
+    const cell = grid.get(id).get(other);
+    if (cell) pairs.push({ id, other, cell, ppm: cell.points / cell.played });
+  }));
+  if (!pairs.length) return;
+  const mostPlayed = [...pairs].sort((a, b) => b.cell.played - a.cell.played)[0];
+  const lopsided = pairs.filter((p) => p.cell.played >= 6).sort((a, b) => Math.abs(b.ppm - 1.5) - Math.abs(a.ppm - 1.5))[0];
+  const drawn = pairs.filter((p) => p.cell.played >= 6).sort((a, b) => b.cell.draws / b.cell.played - a.cell.draws / a.cell.played)[0];
+  const facts = [{
+    value: `${names.get(mostPlayed.id)} – ${names.get(mostPlayed.other)}`,
+    label: t('h2h.fact.most'),
+    text: t('h2h.fact.mostText', { n: mostPlayed.cell.played, w: mostPlayed.cell.wins, d: mostPlayed.cell.draws, l: mostPlayed.cell.losses, season }),
+  }];
+  if (lopsided) {
+    const [lead, trail] = lopsided.ppm >= 1.5 ? [lopsided.id, lopsided.other] : [lopsided.other, lopsided.id];
+    const cell = grid.get(lead).get(trail);
+    facts.push({ value: names.get(lead), label: t('h2h.fact.lopsided'), text: t('h2h.fact.lopsidedText', { other: names.get(trail), ppm: num(cell.points / cell.played, 2), n: cell.played }) });
+  }
+  if (drawn) {
+    facts.push({ value: `${names.get(drawn.id)} – ${names.get(drawn.other)}`, label: t('h2h.fact.draws'), text: t('h2h.fact.drawsText', { d: drawn.cell.draws, n: drawn.cell.played }) });
+  }
+  wrap.appendChild(exploreFacts(facts));
+}
+
 
 /* The season mountain, ported from experiments/season_mountain: the finish
    grid is the floor, and every round stacks another layer of finishing-place

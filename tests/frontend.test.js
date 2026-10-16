@@ -398,3 +398,29 @@ test('the time-axis note exists in both languages', () => {
     'explore.runInFrom',
   ]);
 });
+
+eval(pick('headToHeadGrid'));
+
+test('head to head reads every meeting from both sides, among the given clubs only', () => {
+  const h2h = { 'A\tB': [
+    { home_id: 'A', away_id: 'B', home_goals: 2, away_goals: 0 },
+    { home_id: 'B', away_id: 'A', home_goals: 1, away_goals: 1 },
+  ], 'A\tZ': [{ home_id: 'A', away_id: 'Z', home_goals: 0, away_goals: 3 }] };
+  const grid = headToHeadGrid(['A', 'B'], h2h);
+  assert.deepEqual(grid.get('A').get('B'), { played: 2, points: 4, wins: 1, draws: 1, losses: 0, gf: 3, ga: 1 });
+  assert.deepEqual(grid.get('B').get('A'), { played: 2, points: 1, wins: 0, draws: 1, losses: 1, gf: 1, ga: 3 });
+  assert.equal(grid.get('A').has('Z'), false);
+  // Up to a season: the meetings after it are left out.
+  const seasoned = { 'A\tB': [
+    { home_id: 'A', away_id: 'B', home_goals: 2, away_goals: 0, season: 2019 },
+    { home_id: 'B', away_id: 'A', home_goals: 1, away_goals: 1, season: 2021 },
+  ] };
+  assert.equal(headToHeadGrid(['A', 'B'], seasoned, 2020).get('A').get('B').played, 1);
+  assert.equal(headToHeadGrid(['A', 'B'], seasoned).get('A').get('B').played, 2);
+});
+
+test('every head-to-head string exists in both languages', () => {
+  assertBothLanguages([
+    'explore.h2h.title', 'explore.h2h.desc', 'h2h.aria', 'h2h.tip', 'h2h.fact.lopsided',
+  ]);
+});
