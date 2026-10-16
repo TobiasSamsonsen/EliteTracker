@@ -2230,7 +2230,7 @@ function renderModelCard(report) {
 /* ---------- explore: other ways to look at the numbers -------------- */
 
 /* A gallery of cards, each opening one visualisation in the same panel. */
-const EXPLORE_ITEMS = ['mountain', 'attack'];
+const EXPLORE_ITEMS = ['mountain', 'attack', 'stakes'];
 /* The visualisations that follow the rewind slider: they read one day's
    report. The rest take a whole season or every season, or carry time along
    an axis of their own, which the slider would only cut short. */
@@ -2248,6 +2248,14 @@ function exploreThumb(id) {
         }));
       }
     });
+  } else if (id === 'stakes') {
+    // Races down, dates across, a few hot cells late on.
+    for (let r = 0; r < 4; r += 1) {
+      for (let c = 0; c < 8; c += 1) {
+        const hot = (c > 3 && (r + c) % 3 === 0) || (c === 7 && r < 3);
+        svg.appendChild(svgEl('rect', { x: 22 + c * 15, y: 14 + r * 16, width: 13, height: 13, rx: 2, style: `fill: ${hot ? seqColor(0.5 + c / 16) : 'var(--panel-sunk)'}` }));
+      }
+    }
   } else {
     svg.appendChild(svgEl('line', { class: 'explore-thumb__avg', x1: 82, x2: 82, y1: 10, y2: 80 }));
     svg.appendChild(svgEl('line', { class: 'explore-thumb__avg', x1: 16, x2: 144, y1: 46, y2: 46 }));
@@ -2275,6 +2283,7 @@ function renderExplore(report) {
   if (item !== 'mountain') mountainStop();
   if (item === 'mountain') return renderMountain(report, body);
   if (item === 'attack') return renderAttackMap(report, body);
+  if (item === 'stakes') return renderTimeAxis(item, report, body, renderStakes, true);
   const gallery = el('div', 'explore-gallery');
   for (const id of EXPLORE_ITEMS) {
     const card = el('button', 'explore-card');
@@ -2516,6 +2525,84 @@ async function renderTimeAxis(item, report, body, draw, runIn) {
   if (from && !body.firstChild.matches('.explore-empty')) {
     body.firstChild.prepend(el('p', 'explore-note explore-note--lead', t('explore.runInFrom', { date: whenDate(from) })));
   }
+}
+
+/* ---------- explore: stakes calendar (viz=stakes) ---------------------- */
+
+/* report.high_stakes as races down and dates across: per cell the largest
+   swing a decisive match that day carries for that race, and the matches. */
+function stakesGrid(entries) {
+  const races = new Map();
+  const dates = new Set();
+  for (const entry of entries || []) {
+    dates.add(entry.date);
+    const race = races.get(entry.band_label) || {
+      band: { label: entry.band_label, tone: entry.band_tone, first: entry.band_first, last: entry.band_last },
+      cells: new Map(),
+    };
+    const cell = race.cells.get(entry.date) || { swing: 0, entries: [] };
+    cell.swing = Math.max(cell.swing, entry.swing);
+    cell.entries.push(entry);
+    race.cells.set(entry.date, cell);
+    races.set(entry.band_label, race);
+  }
+  return {
+    dates: [...dates].sort(),
+    races: [...races.values()].sort((a, b) => a.band.first - b.band.first),
+  };
+}
+
+function renderStakes(report, body) {
+  const { dates, races } = stakesGrid(report.high_stakes);
+  if (!dates.length) {
+    body.replaceChildren(el('p', 'explore-empty', t(report.model?.matches_remaining ? 'stakes.early' : 'stakes.over')));
+    return;
+  }
+  const wrap = el('div', 'stakes');
+  const scroller = el('div', 'stakes__scroll');
+  const table = el('table', 'stakes__table');
+  table.setAttribute('aria-label', t('stakes.aria'));
+  const head = el('tr');
+  head.appendChild(el('th', 'stakes__corner', t('stakes.race')));
+  for (const date of dates) head.appendChild(el('th', '', shortDate(date)));
+  table.appendChild(head);
+  for (const race of races) {
+    const tr = el('tr');
+    tr.appendChild(el('th', 'stakes__race', bandEdgeName(race.band)));
+    for (const date of dates) {
+      const cell = race.cells.get(date);
+      const td = el('td', 'stakes__cell');
+      if (cell) {
+        td.style.background = seqColor(Math.min(1, cell.swing / 0.8));
+        if (cell.swing >= 0.5) td.classList.add('cell--invert');
+        td.textContent = pct(cell.swing, 0);
+        const lines = cell.entries.map((e) => t('stakes.tipLine', { team: e.team, opponent: e.opponent, swing: pct(e.swing, 0) }));
+        const tip = `${bandName(race.band)}, ${date}: ${lines.join('; ')}`;
+        td.tabIndex = 0;
+        td.setAttribute('aria-label', tip);
+        attachTip(td, `<b>${bandName(race.band)}</b> ${date}<br>${lines.join('<br>')}`);
+      }
+      tr.appendChild(td);
+    }
+    table.appendChild(tr);
+  }
+  scroller.appendChild(table);
+  wrap.appendChild(scroller);
+  wrap.appendChild(el('p', 'explore-note', t('stakes.note')));
+  body.replaceChildren(wrap);
+
+  const byDate = dates.map((date) => ({ date, total: races.reduce((sum, race) => sum + (race.cells.get(date)?.swing || 0), 0) }));
+  const busiest = [...byDate].sort((a, b) => b.total - a.total)[0];
+  const biggest = [...(report.high_stakes || [])].sort((a, b) => b.swing - a.swing)[0];
+  wrap.appendChild(exploreFacts([
+    { value: shortDate(busiest.date), label: t('stakes.fact.busiest'), text: t('stakes.fact.busiestText') },
+    { value: pct(biggest.swing, 0), label: t('stakes.fact.biggest'), text: t('stakes.fact.biggestText', { team: biggest.team, opponent: biggest.opponent, race: bandEdgeName({ label: biggest.band_label }) }) },
+    { value: String((report.high_stakes || []).length), label: t('stakes.fact.count'), text: t('stakes.fact.countText') },
+  ]));
+}
+
+function shortDate(date) {
+  return new Date(`${date}T12:00:00`).toLocaleDateString(localeNumber(), { day: 'numeric', month: 'short' });
 }
 
 /* The season mountain, ported from experiments/season_mountain: the finish

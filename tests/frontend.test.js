@@ -398,3 +398,24 @@ test('the time-axis note exists in both languages', () => {
     'explore.runInFrom',
   ]);
 });
+
+eval(pick('stakesGrid'));
+
+test('the stakes calendar indexes its data', () => {
+  const entries = [
+    { date: '2026-10-25', band_label: 'Relegation', band_tone: 'relegation', band_first: 15, band_last: 16, swing: 0.3, team: 'A' },
+    { date: '2026-10-25', band_label: 'Relegation', band_tone: 'relegation', band_first: 15, band_last: 16, swing: 0.5, team: 'B' },
+    { date: '2026-10-18', band_label: 'Champions', band_tone: 'champion', band_first: 1, band_last: 1, swing: 0.4, team: 'C' },
+  ];
+  const { dates, races } = stakesGrid(entries);
+  assert.deepEqual(dates, ['2026-10-18', '2026-10-25']);
+  assert.deepEqual(races.map((race) => race.band.label), ['Champions', 'Relegation']);
+  assert.equal(races[1].cells.get('2026-10-25').swing, 0.5);
+  assert.equal(races[1].cells.get('2026-10-25').entries.length, 2);
+});
+
+test('every stakes-calendar string exists in both languages', () => {
+  assertBothLanguages([
+    'explore.stakes.title', 'explore.stakes.desc', 'stakes.early', 'stakes.note', 'stakes.fact.biggest',
+  ]);
+});

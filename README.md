@@ -141,6 +141,9 @@ slider too; the ones with time along an axis of their own take none.
   layer built; on a finished season they become a scorecard for the
   pre-season prediction (hit rate, biggest climber, faller and surprise). The
   ⓘ button shows them in a popup. On phones the mountain fills the screen.
+- **Stakes calendar** (`viz=stakes`) -- the run-in's decisive matches by race
+  and date, each cell the biggest swing that day; a finished season's as they
+  stood with ten rounds left.
 
 ### Model Card
 
