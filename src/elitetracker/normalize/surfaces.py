@@ -21,9 +21,11 @@ both divisions 2016+ (experiments/improvements/surface2.py, surface3.py):
     walk-forward over 0-20, Eliteserien 2019+:     -0.00045 (t -1.88), both halves
     OBOS-ligaen (24 % of matches mismatched):       +0.00022 (worse), so not there
 
-The pick runs to 20-60 with the gain growing and t falling; 10 is the shrunk
-value. It moves the prediction only: the rating update and the displayed
-ratings do not see it.
+The pick runs to 20-60 with the gain growing and t falling; elo-v13.0 shipped
+10, the shrunk value. elo-v14.0's re-sweep on 2021-2026 asked for 20-40 again
+(20: -0.00014, t -2.08; walk-forward 20 every season), so 20 from then. It
+moves the prediction only: the rating update and the displayed ratings do
+not see it.
 """
 
 from __future__ import annotations
@@ -46,7 +48,7 @@ GRASS_UNTIL: dict[str, str] = {
 
 # Elo points added to the home side's rating when the two surfaces differ
 # (Eliteserien league matches only; see the module docstring).
-SURFACE_EDGE = 10.0
+SURFACE_EDGE = 20.0
 
 
 def is_grass(team_id: str, on: str) -> bool:

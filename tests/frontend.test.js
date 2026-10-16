@@ -166,6 +166,16 @@ test('spread stretches attack - defence the way model/attack_defence.py does', (
   assert.deepEqual(scoreGrid({ ...MODEL, attack_defence: { ...MODEL.attack_defence, spread: 1 } }, 'A', 'B'), scoreGrid(MODEL, 'A', 'B'));
 });
 
+test("the other side's keeping lowers a side's expected goals, as model/attack_defence.py does", () => {
+  const home = (grid) => grid.reduce((sum, row, i) => sum + row.slice(0, i).reduce((a, b) => a + b, 0), 0);
+  const teams = { ...MODEL.attack_defence.teams, B: [...MODEL.attack_defence.teams.B, 0, 0.2] };
+  const kept = { ...MODEL, attack_defence: { ...MODEL.attack_defence, teams } };
+  assert.ok(home(scoreGrid(kept, 'A', 'B')) < home(scoreGrid(MODEL, 'A', 'B')));
+  // A keeping of 0 (or none: reports before elo-v14.0) is the grid without it.
+  const zero = { ...MODEL, attack_defence: { ...MODEL.attack_defence, teams: { ...teams, B: [...MODEL.attack_defence.teams.B, 0, 0] } } };
+  assert.deepEqual(scoreGrid(zero, 'A', 'B'), scoreGrid(MODEL, 'A', 'B'));
+});
+
 /* --- season rewind: where the slider sits in the live matchdays.
     The range comes from the live report, which spans the whole
     season even when the displayed view is rewound. */

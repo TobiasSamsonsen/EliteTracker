@@ -2190,6 +2190,9 @@ function renderModelCard(report) {
     rows.push([t('model.homeAdvantageBeta'), model.home_advantage_beta]);
   }
   if (model.surface) rows.push([t('model.surfaceEdge'), `${model.surface.edge} ${t('model.pts')}`]);
+  if (model.attack_defence.keeping_window) {
+    rows.push([t('model.keeping'), t('model.keepingValue', { n: model.attack_defence.keeping_window })]);
+  }
   rows.push(
     [t('model.xgAlpha'), pct(model.xg_alpha, 0)],
     [t('model.crossRegression'), `${pct(1 - model.season_regression, 0)} ${t('model.towardMean')}`],
@@ -5332,13 +5335,14 @@ function matchOdds(model, homeRating, awayRating) {
    each way, renormalised. */
 function scoreGrid(model, homeId, awayId, eloGap) {
   const ad = model.attack_defence;
-  const [homeAttack, homeDefence, homeFinishing] = ad.teams[homeId] || [0, 0, 0];
-  const [awayAttack, awayDefence, awayFinishing] = ad.teams[awayId] || [0, 0, 0];
+  // [attack, defence, finishing, keeping]; reports before elo-v14.0 carry no keeping.
+  const [homeAttack, homeDefence, homeFinishing, homeKeeping] = ad.teams[homeId] || [0, 0, 0, 0];
+  const [awayAttack, awayDefence, awayFinishing, awayKeeping] = ad.teams[awayId] || [0, 0, 0, 0];
   const gap = eloGap || 0;
   const effective_home = ad.home * (1 + (ad.home_beta || 0) * gap);
   const spread = ad.spread ?? 1;
-  const lam = Math.exp(ad.base + effective_home + spread * (homeAttack - awayDefence + (homeFinishing || 0)));
-  const mu = Math.exp(ad.base + spread * (awayAttack - homeDefence + (awayFinishing || 0)));
+  const lam = Math.exp(ad.base + effective_home + spread * (homeAttack - awayDefence + (homeFinishing || 0) - (awayKeeping || 0)));
+  const mu = Math.exp(ad.base + spread * (awayAttack - homeDefence + (awayFinishing || 0) - (homeKeeping || 0)));
   const fact = [1, 1, 2, 6, 24, 120, 720, 5040, 40320];
   const pois = (k, rate) => Math.exp(-rate) * rate ** k / fact[k];
   const tau = (i, j) => (i === 0 && j === 0 ? 1 - lam * mu * ad.rho

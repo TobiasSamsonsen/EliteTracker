@@ -1,7 +1,7 @@
 # EliteTracker
 
 Predictive model for Norwegian men's football: **Eliteserien** (tier 1) and
-**OBOS-ligaen** (tier 2). Uses an ELO rating system (elo-v13.0) to estimate team
+**OBOS-ligaen** (tier 2). Uses an ELO rating system (elo-v14.0) to estimate team
 strength, match probabilities and season outcomes. Fixtures and results come
 from FotMob (xG from FotMob for Eliteserien, Sofascore for OBOS-ligaen);
 benchmark odds from football-data.co.uk, squad values from Transfermarkt.
@@ -150,10 +150,13 @@ Every tunable parameter in the shipped model:
 | Cross-season regression | 12% | How much ratings regress toward the mean each offseason |
 | Peak draw rate | 26% | Maximum draw probability from the draw model |
 | Outcome blend | 25/75 | ELO vs attack/defence weight for win/draw/loss odds |
+| Goals model: xG weight | 90% | How much of the attack/defence update is xG rather than goals, where there is xG |
+| Goals model: offseason pull | 12% / 25% | How far attack/defence regress toward the division each offseason (Eliteserien / OBOS-ligaen), aimed by squad value (0.2 / 0.3) |
+| Goals model: keeping | last 45 matches | The keeper: goals let in against the xG on target faced, against the division (x 0.75), off the other side's expected goals (Eliteserien, where there is xG on target) |
 | Scorelines | attack/defence | Source of scoreline predictions (not ELO) |
 | Simulations | 50,000 | Monte Carlo runs per league (10,000 on rewound views) |
 | Strength shock | ±0.20 | Per-run club strength noise (log-odds), so finishing odds carry rating uncertainty |
-| Surface edge | 10 pts (Eliteserien) | Home side's extra rating when its visitor plays on the other surface (prediction only) |
+| Surface edge | 20 pts (Eliteserien) | Home side's extra rating when its visitor plays on the other surface (prediction only) |
 
 ### Team Focus
 

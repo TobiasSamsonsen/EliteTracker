@@ -408,7 +408,7 @@ def build_report(
             "position_points": projection.position_points,
             # The compare tool works out a fictional match in the browser, so it
             # needs the same ingredients the server uses: the draw model's
-            # parameters above and both divisions' attack/defence/finishing ratings.
+            # parameters above and both divisions' attack/defence/finishing/keeping ratings.
             "attack_defence": {
                 "home": ad.config.home,
                 "home_beta": ad.config.home_beta,
@@ -421,10 +421,16 @@ def build_report(
                 "outcome_blend": OUTCOME_BLEND,
                 "blend_gamma": ad.config.blend_gamma,
                 "value_pull": ad.config.value_pull,
+                "obos_season_regression": ad.config.obos_season_regression,
+                "obos_value_pull": ad.config.obos_value_pull,
                 "early_boost": ad.config.early_boost,
+                "keeping_window": ad.config.keeping_window,
+                "keeping_weight": ad.config.keeping_weight,
+                # [attack, defence, finishing, keeping]: the compare tool lowers
+                # a side's expected goals by the other side's keeping.
                 "teams": {
                     team_id: [round(ad.attack[team_id], 4), round(ad.defence[team_id], 4),
-                              round(ad.finishing.get(team_id, 0.0), 4)]
+                              round(ad.finishing.get(team_id, 0.0), 4), round(ad.keeping(team_id), 4)]
                     for (year, team_id) in ad.divisions if year == season and team_id in ad.attack
                 },
             },
@@ -944,6 +950,10 @@ def _results_payload(
         shots = shot_table().get(match.match_id)
         if shots:
             result["xg"] = [round(shots[0], 2), round(shots[1], 2)]
+            # xG on target (fotmob, Eliteserien), for the luck table's keeping:
+            # goals let in against the xG on target faced.
+            if len(shots) >= 4:
+                result["xgot"] = [round(shots[2], 2), round(shots[3], 2)]
             if match.match_id in pre_match:
                 form = xg_form(*pre_match[match.match_id], shots[0], shots[1], config)
                 result["xg_form"] = [round(form, 2), round(-form, 2)]

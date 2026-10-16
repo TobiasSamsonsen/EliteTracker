@@ -1,16 +1,19 @@
-"""Online attack, defence and finishing ratings on the log-goals scale.
+"""Online attack, defence, finishing and keeping ratings on the log-goals scale.
 
-Each club carries three ratings:
+Each club carries four ratings:
 
     attack   -- ability to create chances (updated via the blended signal)
     defence  -- ability to prevent chances (updated via the blended signal)
     finishing -- conversion quality: season-level log(total goals / total xG),
                  carried forward with regression, not updated match-by-match
+    keeping  -- the keeper: log(xG on target faced / goals let in) over the
+                club's last matches with xG on target, against its division
+                (elo-v14.0)
 
 A fixture's expected goals are
 
-    home: exp(base + home_advantage + attack[home] - defence[away] + finishing[home])
-    away: exp(base                  + attack[away] - defence[home] + finishing[away])
+    home: exp(base + home_advantage + attack[home] - defence[away] + finishing[home] - keeping[away])
+    away: exp(base                  + attack[away] - defence[home] + finishing[away] - keeping[home])
 
 After the match, attack and defence move by a step proportional to the
 observed signal above or below expectation: the scorer's attack and the
@@ -28,7 +31,13 @@ the next season with regression, avoiding the noise of match-level updates.
 
 Two season-start corrections (elo-v13.0): the offseason pull aims at the
 division mean shifted by the club's squad market value from the season
-before, and a club's first matches of a season take a bigger step.
+before, and a club's first matches of a season take a bigger step. From
+elo-v14.0 each division has its own pull (OBOS-ligaen's is stronger).
+
+Keeping (elo-v14.0) is the fourth part: the chances are learnt mostly from xG
+(alpha 0.9), so the goals a keeper lets in are left out of the defence rating
+and carried by the keeping term instead, over a window that forgets a keeper
+who has left.
 
 Scorelines come from the three rates through a Poisson grid with Dixon and
 Coles' low-score correction.  The grid's own win/draw/loss odds are blended
@@ -38,6 +47,7 @@ Coles' low-score correction.  The grid's own win/draw/loss odds are blended
 from __future__ import annotations
 
 import math
+from collections import deque
 from dataclasses import dataclass, field
 
 from elitetracker.model.career import SeasonSlice, team_ids
@@ -46,6 +56,7 @@ from elitetracker.normalize.matches import Match
 
 GOAL_CAP = 8  # P(9+) is under 1e-4 at Norwegian scoring rates; the grid is renormalised
 OUTCOME_BLEND = 0.25  # weight on the Elo odds when the two models' outcome odds are blended
+KEEPING_LEAGUE_ROWS = 240  # the division's last club matches with xG on target that keeping is set against
 
 
 @dataclass(frozen=True)
@@ -64,7 +75,10 @@ class ADConfig:
     division_gap: float = 0.25   # OBOS clubs start this far below in both ratings
     newcomer: float = 0.15       # a club with no history starts this far below its division
     rho: float = -0.05           # Dixon-Coles low-score correction
-    alpha: float = 0.75          # weight on the shot-based signal where fotmob has it
+    # Weight on the shot-based signal where there is one. 0.9 from elo-v14.0
+    # (0.75 before): with the chances learnt mostly from xG, the goals a keeper
+    # lets in stay out of the defence rating and `keeping` carries them.
+    alpha: float = 0.9
     signal: str = "xg"           # "xg" or "xgot" (xG on target measured worse)
     k_shots: float | None = 0.05 # step for xG-backed matches: a cleaner signal earns a bigger move
     # Season-level finishing quality.  Regressed toward 0 at each offseason.
@@ -98,6 +112,29 @@ class ADConfig:
     # Shipped at half the pick (1.0). 0.0 is elo-v12.
     early_boost: float = 0.5
     early_tau: float = 3.0
+    # OBOS-ligaen's own offseason pull (elo-v14.0): its squads turn over more
+    # between seasons and the squad value says more, so its ratings regress
+    # further and lean harder on value; Eliteserien keeps season_regression
+    # and value_pull. Swept per division on 2021-2026: OBOS-ligaen better in
+    # every cell of 0.70-0.88 x 0.2-0.5, -0.00227 at (0.75, 0.3) (t -3.00; the
+    # walk-forward wants 0.70 / 0.4); Eliteserien flat within +-0.0001.
+    obos_season_regression: float = 0.75
+    obos_value_pull: float = 0.3
+    # The other side's keeper (elo-v14.0): log(xG on target faced / goals let
+    # in) over a club's last `keeping_window` matches with xG on target
+    # (fotmob: Eliteserien from 2020), against its division's last
+    # KEEPING_LEAGUE_ROWS, times `keeping_weight`, once the window is half
+    # full; it lowers the other side's expected goals. Eliteserien 2021-2026
+    # -0.00256 log loss (t -2.86) with alpha 0.9; the flat window beats a
+    # decayed or tapered one (it forgets a keeper who has left). 0 is elo-v13.
+    keeping_window: int = 45
+    keeping_weight: float = 0.75
+
+    def offseason(self, league: str) -> tuple[float, float]:
+        """(season regression, value pull) for one division's offseason pull."""
+        if league == "obosligaen":
+            return self.obos_season_regression, self.obos_value_pull
+        return self.season_regression, self.value_pull
 
 
 def tau(home_goals: int, away_goals: int, lam: float, mu: float, rho: float) -> float:
@@ -192,6 +229,12 @@ class AttackDefence:
     season: int | None = None
     # Matches each club has played this season, for `early_boost`.
     _played: dict[str, int] = field(default_factory=dict)
+    # Keeping: each club's last `keeping_window` (goals let in, xG on target
+    # faced), each division's last KEEPING_LEAGUE_ROWS, and the division a
+    # club last played a match with xG in (its reference).
+    _keeping: dict[str, deque] = field(default_factory=dict)
+    _keeping_league: dict[str, deque] = field(default_factory=dict)
+    _keeping_division: dict[str, str] = field(default_factory=dict)
 
     @classmethod
     def from_slices(cls, slices: list[SeasonSlice], config: ADConfig | None = None, shots=None,
@@ -213,6 +256,9 @@ class AttackDefence:
             attack=dict(self.attack), defence=dict(self.defence), finishing=dict(self.finishing),
             _season_goals=dict(self._season_goals), _season_xg=dict(self._season_xg),
             season=self.season, _played=dict(self._played),
+            _keeping={t: deque(rows, maxlen=rows.maxlen) for t, rows in self._keeping.items()},
+            _keeping_league={lg: deque(rows, maxlen=rows.maxlen) for lg, rows in self._keeping_league.items()},
+            _keeping_division=dict(self._keeping_division),
         )
 
     def rates_against_average(self, team_id: str, league: str, season: int) -> tuple[float, float]:
@@ -224,7 +270,8 @@ class AttackDefence:
         mean_defence = sum(self.defence[t] for t in peers) / len(peers) if peers else 0.0
         scored = math.exp(cfg.base + cfg.spread * (self.attack.get(team_id, mean_attack) - mean_defence
                                                    + self.finishing.get(team_id, 0.0)))
-        conceded = math.exp(cfg.base + cfg.spread * (mean_attack - self.defence.get(team_id, mean_defence)))
+        conceded = math.exp(cfg.base + cfg.spread * (mean_attack - self.defence.get(team_id, mean_defence)
+                                                     - self.keeping(team_id)))
         return scored, conceded
 
     # -- seasons ---------------------------------------------------------
@@ -252,11 +299,12 @@ class AttackDefence:
 
         for league, teams in active.items():
             known = [t for t in teams if t in self.attack]
-            if known and not first and cfg.season_regression < 1.0:
+            regression, pull = cfg.offseason(league)
+            if known and not first and regression < 1.0:
                 for ratings in (self.attack, self.defence):
                     mean = sum(ratings[t] for t in known) / len(known)
                     for t in known:
-                        ratings[t] = mean + cfg.season_regression * (ratings[t] - mean)
+                        ratings[t] = mean + regression * (ratings[t] - mean)
                 # Finishing regresses toward 0 (log-space average = 1.0x multiplier).
                 fin_known = [t for t in teams if t in self.finishing]
                 if fin_known:
@@ -275,22 +323,21 @@ class AttackDefence:
                         self.attack[t] = level
                         self.defence[t] = level
                     self.finishing.setdefault(t, 0.0)
-            if known and not first and cfg.value_pull:
-                self._pull_toward_value(season, teams)
+            if known and not first and pull:
+                self._pull_toward_value(season, teams, regression, pull)
 
-    def _pull_toward_value(self, season: int, teams: list[str]) -> None:
-        """Move the pull's target by `value_pull` * relative squad value. Each
-        club with last season's value is shifted by (1 - regression) *
-        value_pull * v after the pull toward the mean, which is the same as
-        pulling it toward mean + value_pull * v in the first place."""
-        cfg = self.config
+    def _pull_toward_value(self, season: int, teams: list[str], regression: float, pull: float) -> None:
+        """Move the pull's target by `pull` * relative squad value (the
+        division's value_pull). Each club with last season's value is shifted
+        by (1 - regression) * pull * v after the pull toward the mean, which is
+        the same as pulling it toward mean + pull * v in the first place."""
         page = self.values.get(season - 1, {})
         logs = {t: math.log(page[t]) for t in teams if page.get(t) and t in self.attack}
         if not logs:
             return
         mean = sum(logs.values()) / len(logs)
         for t, value in logs.items():
-            shift = (1.0 - cfg.season_regression) * cfg.value_pull * (value - mean)
+            shift = (1.0 - regression) * pull * (value - mean)
             self.attack[t] += shift
             self.defence[t] += shift
 
@@ -307,14 +354,29 @@ class AttackDefence:
             self.finishing.setdefault(t, 0.0)
 
     # -- prediction ------------------------------------------------------
+    def keeping(self, team_id: str) -> float:
+        """The club's keeping on the log-goals scale (positive: lets in fewer
+        than the xG on target it faces, against its division); 0 until its
+        window is half full or without xG on target."""
+        cfg = self.config
+        rows = self._keeping.get(team_id)
+        reference = self._keeping_league.get(self._keeping_division.get(team_id, ""))
+        if not cfg.keeping_weight or not rows or len(rows) < cfg.keeping_window // 2 or not reference:
+            return 0.0
+        let_in, faced = sum(r[0] for r in rows), sum(r[1] for r in rows)
+        league_let_in, league_faced = sum(r[0] for r in reference), sum(r[1] for r in reference)
+        if min(let_in, faced, league_let_in, league_faced) <= 0:
+            return 0.0
+        return cfg.keeping_weight * (math.log(faced / let_in) - math.log(league_faced / league_let_in))
+
     def rates(self, home_id: str, away_id: str, on: str, elo_gap: float = 0.0) -> tuple[float, float]:
         self._ensure(on, home_id, away_id)
         cfg = self.config
         effective_home = cfg.home * (1.0 + cfg.home_beta * elo_gap)
         lam = math.exp(cfg.base + effective_home + cfg.spread * (
-            self.attack[home_id] - self.defence[away_id] + self.finishing.get(home_id, 0.0)))
+            self.attack[home_id] - self.defence[away_id] + self.finishing.get(home_id, 0.0) - self.keeping(away_id)))
         mu = math.exp(cfg.base + cfg.spread * (
-            self.attack[away_id] - self.defence[home_id] + self.finishing.get(away_id, 0.0)))
+            self.attack[away_id] - self.defence[home_id] + self.finishing.get(away_id, 0.0) - self.keeping(home_id)))
         return lam, mu
 
     def _learning_rates(self, home_id: str, away_id: str, on: str) -> tuple[float, float]:
@@ -323,9 +385,9 @@ class AttackDefence:
         self._ensure(on, home_id, away_id)
         cfg = self.config
         lam = math.exp(cfg.base + cfg.home + self.attack[home_id] - self.defence[away_id]
-                        + self.finishing.get(home_id, 0.0))
+                        + self.finishing.get(home_id, 0.0) - self.keeping(away_id))
         mu = math.exp(cfg.base + self.attack[away_id] - self.defence[home_id]
-                       + self.finishing.get(away_id, 0.0))
+                       + self.finishing.get(away_id, 0.0) - self.keeping(home_id))
         return lam, mu
 
     def grid(self, home_id: str, away_id: str, on: str, elo_gap: float = 0.0) -> list[list[float]]:
@@ -378,3 +440,20 @@ class AttackDefence:
                 self._season_xg[home] = self._season_xg.get(home, 0.0) + home_xg
                 self._season_goals[away] = self._season_goals.get(away, 0.0) + match.away_goals
                 self._season_xg[away] = self._season_xg.get(away, 0.0) + away_xg
+        self._record_keeping(match)
+
+    def _record_keeping(self, match: Match) -> None:
+        """After a match with xG: each side's division, and where there is xG
+        on target, the goals it let in against what it faced."""
+        shots = self.shots.get(match.match_id)
+        if not shots:
+            return
+        home, away = team_ids(match)
+        league = self.divisions.get((int(match.date[:4]), home), "")
+        for team, let_in, faced in ((home, match.away_goals, shots[3] if len(shots) >= 4 else None),
+                                    (away, match.home_goals, shots[2] if len(shots) >= 4 else None)):
+            self._keeping_division[team] = league
+            if faced is None:
+                continue
+            self._keeping.setdefault(team, deque(maxlen=self.config.keeping_window)).append((let_in, faced))
+            self._keeping_league.setdefault(league, deque(maxlen=KEEPING_LEAGUE_ROWS)).append((let_in, faced))
