@@ -166,6 +166,16 @@ test('spread stretches attack - defence the way model/attack_defence.py does', (
   assert.deepEqual(scoreGrid({ ...MODEL, attack_defence: { ...MODEL.attack_defence, spread: 1 } }, 'A', 'B'), scoreGrid(MODEL, 'A', 'B'));
 });
 
+test("the other side's keeping lowers a side's expected goals, as model/attack_defence.py does", () => {
+  const home = (grid) => grid.reduce((sum, row, i) => sum + row.slice(0, i).reduce((a, b) => a + b, 0), 0);
+  const teams = { ...MODEL.attack_defence.teams, B: [...MODEL.attack_defence.teams.B, 0, 0.2] };
+  const kept = { ...MODEL, attack_defence: { ...MODEL.attack_defence, teams } };
+  assert.ok(home(scoreGrid(kept, 'A', 'B')) < home(scoreGrid(MODEL, 'A', 'B')));
+  // A keeping of 0 (or none: reports before elo-v14.0) is the grid without it.
+  const zero = { ...MODEL, attack_defence: { ...MODEL.attack_defence, teams: { ...teams, B: [...MODEL.attack_defence.teams.B, 0, 0] } } };
+  assert.deepEqual(scoreGrid(zero, 'A', 'B'), scoreGrid(MODEL, 'A', 'B'));
+});
+
 /* --- season rewind: where the slider sits in the live matchdays.
     The range comes from the live report, which spans the whole
     season even when the displayed view is rewound. */
@@ -396,6 +406,183 @@ test('a finished season runs in from the first day with ten rounds left', () => 
 test('the time-axis note exists in both languages', () => {
   assertBothLanguages([
     'explore.runInFrom',
+  ]);
+});
+
+/* The luck table's xG points are model.elo.xg_implied_score's Poisson sum
+   (12 goals, normalised), as points; golden values from Python. */
+eval(pick('xgPoints') + pick('luckChances') + pick('luckRows') + pick('luckSeasons') + pick('luckSummary')
+  + pick('seasonSpan') + pick('luckTrend') + pick('withTrend'));
+const LUCK_XG_SHARE = 0.9;
+const LUCK_CARRY = 3;  // the app has 5; these seasons are three matches a club
+const [LUCK_FINISHING, LUCK_KEEPING, LUCK_LEAGUE] = [20, 10, 240];
+
+test('xG points match the Python recurrence', () => {
+  const close = (a, b) => assert.ok(Math.abs(a - b) < 1e-12, `${a} vs ${b}`);
+  const [home, away] = xgPoints(1.8, 0.9);
+  close(home, 1.9871806765821036);
+  close(away, 0.7838523908999595);
+  close(xgPoints(0.4, 2.6)[1], 2.650998624587426);
+  const [even1, even2] = xgPoints(1.2, 1.2);
+  close(even1, even2);
+});
+
+/* One division's matches, a day apart from 1 March 2026. */
+const fixture = (i, home_id, away_id, hg, ag, xg, xgot = null) => ({
+  match_id: String(i), date: new Date(Date.UTC(2026, 2, 1 + i)).toISOString().slice(0, 10),
+  home_id, away_id, home: home_id, away: away_id, home_goals: hg, away_goals: ag, xg, xgot,
+});
+
+test('the chances take a side\'s recent finishing, against the division, from 10 matches on', () => {
+  // A scores 2 from every 1.0 xG; everyone else scores their xG.
+  const results = [];
+  for (let i = 0; i < 12; i += 1) {
+    results.push(fixture(2 * i, 'A', 'B', 2, 1, [1.0, 1.0]), fixture(2 * i + 1, 'C', 'D', 1, 1, [1.0, 1.0]));
+  }
+  results.push(fixture(24, 'A', 'C', 1, 1, [1.0, 1.0]));
+  const chances = luckChances(results);
+  const plain = xgPoints(1.0, 1.0);
+  // Under 10 matches (half the window) nothing is scaled.
+  assert.deepEqual(chances.get('10'), plain);
+  // After 12, A's chances are worth more, C's (below the division) less.
+  const [home, away] = chances.get('24');
+  assert.ok(home > plain[0] + 0.1 && away < plain[1]);
+});
+
+test('finishing at the division\'s own rate scales nothing', () => {
+  const results = [];
+  for (let i = 0; i < 15; i += 1) results.push(fixture(i, i % 2 ? 'A' : 'B', i % 2 ? 'B' : 'A', 2, 1, [2.0, 1.0]));
+  const plain = xgPoints(2.0, 1.0);
+  for (const [home, away] of luckChances(results).values()) {
+    assert.ok(Math.abs(home - plain[0]) < 1e-12 && Math.abs(away - plain[1]) < 1e-12);
+  }
+});
+
+test('a keeper letting in less than the xG on target faced lowers the other side\'s chances', () => {
+  // A's keeper lets in 1 from 6.0 xG on target over six matches; the other
+  // keepers let in what they faced. The same matches without xG on target
+  // leave keeping out.
+  const season = (withGot) => {
+    const got = (pair) => (withGot ? pair : null);
+    const out = [];
+    for (let i = 0; i < 6; i += 1) {
+      out.push(fixture(2 * i, 'A', 'B', 1, i === 0 ? 1 : 0, [1.0, 1.0], got([1.0, 1.0])));
+      out.push(fixture(2 * i + 1, 'C', 'D', 1, 1, [1.0, 1.0], got([1.0, 1.0])));
+    }
+    out.push(fixture(12, 'B', 'A', 1, 1, [1.0, 1.0]));
+    return out;
+  };
+  const kept = luckChances(season(true)).get('12');
+  const blind = luckChances(season(false)).get('12');
+  assert.ok(kept[0] < blind[0] - 0.05);
+});
+
+test('luck rows sum points, xG points and the scaled chances per club', () => {
+  const r = (id, home_id, away_id, hg, ag, xg) => ({ match_id: id, home_id, away_id, home: home_id, away: away_id, home_goals: hg, away_goals: ag, xg });
+  const results = [
+    r('1', 'A', 'B', 1, 0, [0.3, 2.4]),   // A steals it
+    r('2', 'B', 'A', 0, 0, [1.9, 0.2]),
+    r('3', 'A', 'B', 2, 2, null),          // no xG: left out on both sides
+    r('4', 'A', 'B', null, null, null),
+  ];
+  const plain = luckRows(results);
+  assert.deepEqual(plain.map((row) => row.team_id), ['A', 'B']);
+  assert.equal(plain[0].matches, 2);
+  assert.equal(plain[0].points, 4);
+  // Without scaled chances they are the xG points.
+  for (const row of plain) assert.ok(row.chances === row.xpts && row.form === 0 && row.gap === row.above);
+  assert.ok(plain[0].gap > 3 && plain[1].gap < -2);
+  // With them: form is the difference, the gap is to the scaled chances.
+  const scaled = luckRows(results, new Map([['1', [1.0, 1.0]], ['2', [1.5, 0.5]]]));
+  const a = scaled.find((row) => row.team_id === 'A');
+  assert.ok(Math.abs(a.chances - 1.5) < 1e-12);
+  assert.ok(Math.abs(a.form - (1.5 - a.xpts)) < 1e-12);
+  assert.ok(Math.abs(a.gap - (4 - 1.5)) < 1e-12 && Math.abs(a.above - (4 - a.xpts)) < 1e-12);
+});
+
+/* A division's seasons: A has the chances and beats them, B is level, C and
+   D fall short. Each season is one double round, with fixed xG per pairing. */
+const luckSeason = (season, results, { remaining = 0, table } = {}) => ({
+  league: { season },
+  model: { matches_remaining: remaining },
+  table: (table || ['A', 'B', 'C', 'D']).map((id, i) => ({ team_id: id, position: i + 1 })),
+  results: results.map(([home_id, away_id, hg, ag, xg], i) => ({
+    match_id: `${season}-${i}`, home_id, away_id, home: home_id, away: away_id, home_goals: hg, away_goals: ag, xg,
+  })),
+});
+const strongSeason = (season, extra = []) => luckSeason(season, [
+  ['A', 'B', 2, 0, [1.4, 1.2]], ['A', 'C', 2, 0, [1.5, 1.0]], ['A', 'D', 1, 0, [1.6, 0.9]],
+  ['B', 'C', 1, 1, [1.2, 1.2]], ['B', 'D', 1, 0, [1.3, 1.1]], ['C', 'D', 0, 1, [1.2, 1.0]],
+  ...extra,
+]);
+
+test('luck seasons count finished seasons with xG for most matches', () => {
+  const noXg = luckSeason(2019, [['A', 'B', 1, 0, null], ['C', 'D', 1, 0, null]]);
+  const running = luckSeason(2026, [['A', 'B', 1, 0, [1, 1]]], { remaining: 5 });
+  const partial = strongSeason(2023, [['A', 'B', 0, 0, null]]);           // 6 of 7 with xG: under 90 %
+  const { counted, rows } = luckSeasons([noXg, partial, strongSeason(2024), running]);
+  assert.deepEqual(counted, [{ season: 2024, matches: 6, of: 6 }]);
+  assert.equal(rows.length, 4);
+  assert.deepEqual(rows.map((row) => [row.team_id, row.season, row.place]).sort(), [['A', 2024, 1], ['B', 2024, 2], ['C', 2024, 3], ['D', 2024, 4]]);
+});
+
+test('luck summary: champions, quarters by xG points, extremes and what lasts', () => {
+  const { rows } = luckSeasons([strongSeason(2024), strongSeason(2025), luckSeason(2026, [
+    ['A', 'B', 0, 1, [2.0, 0.5]], ['C', 'D', 2, 0, [0.6, 1.8]],
+  ], { table: ['C', 'B', 'A', 'D'] })]);
+  const lucky = rows.map((row) => withTrend(row, luckTrend(rows)));
+  const summary = luckSummary(lucky);
+  assert.equal(summary.quarter, 1);
+  assert.deepEqual(summary.champions.map((c) => [c.team_id, c.season, c.mostChances]), [['A', 2024, true], ['A', 2025, true], ['C', 2026, false]]);
+  assert.ok(summary.top > 0 && summary.bottom < summary.top);
+  // Points above xG points = finishing and keeping + the trend + luck.
+  const { form, trendPoints, luck } = summary.topSplit;
+  assert.ok(Math.abs(form + trendPoints + luck - summary.top) < 1e-12);
+  assert.equal(summary.luckiest.luck, Math.max(...lucky.map((row) => row.luck)));
+  assert.equal(summary.unluckiest.luck, Math.min(...lucky.map((row) => row.luck)));
+});
+
+test('luck is measured against the scaled chances plus the trend of the gap on xG points', () => {
+  const row = (xpts, gap, matches = 10) => ({ xpts, chances: xpts, gap, matches, points: xpts + gap });
+  // Gap a match = -0.5 + 0.4 * xG points a match, exactly.
+  const rows = [row(10, -1), row(15, 1), row(20, 3)];
+  const trend = luckTrend(rows);
+  assert.ok(Math.abs(trend.a + 0.5) < 1e-12 && Math.abs(trend.b - 0.4) < 1e-12);
+  for (const r of rows.map((x) => withTrend(x, trend))) assert.ok(Math.abs(r.luck) < 1e-12);
+  // Over 5 matches with 10 xG points, such chances usually earn 10 - 2.5 + 4.
+  const half = withTrend(row(10, 3, 5), trend);
+  assert.ok(Math.abs(half.usual - 11.5) < 1e-12 && Math.abs(half.luck - 1.5) < 1e-12);
+  assert.ok(Math.abs(half.trendPoints - 1.5) < 1e-12);
+  // The trend sits on the scaled chances, not the plain xG points.
+  const scaled = withTrend({ ...row(10, 3, 5), chances: 12, points: 13 }, trend);
+  assert.ok(Math.abs(scaled.usual - 13.5) < 1e-12 && Math.abs(scaled.luck + 0.5) < 1e-12);
+  // Without a trend, luck is the gap to the scaled chances.
+  assert.equal(withTrend(row(10, 3), null).luck, 3);
+  assert.equal(luckTrend(rows.slice(0, 2)), null);
+});
+
+test('seasons read as spans', () => {
+  assert.equal(seasonSpan([2020, 2021, 2022]), '2020–2022');
+  assert.equal(seasonSpan([2018, 2020, 2021]), '2018, 2020–2021');
+  assert.equal(seasonSpan([2023]), '2023');
+});
+
+test('every luck-table string exists in both languages', () => {
+  assertBothLanguages([
+    'explore.luck.title', 'explore.luck.desc', 'luck.empty', 'luck.aria', 'luck.x', 'luck.xShort',
+    'luck.lucky', 'luck.unlucky', 'luck.luckyShort', 'luck.unluckyShort', 'luck.place', 'luck.tip', 'luck.tipUsual',
+    'luck.fact.lucky', 'luck.fact.unlucky', 'luck.fact.luckyText', 'luck.fact.unluckyText',
+    'luck.fact.chances', 'luck.fact.chancesLead', 'luck.fact.chancesBehind',
+    'luck.fact.coverage', 'luck.fact.coverageValue', 'luck.fact.coverageText',
+    'luck.how.title', 'luck.how.chances', 'luck.how.form', 'luck.how.formNoKeeping', 'luck.how.trend',
+    'luck.how.noTrend', 'luck.how.luck',
+    'luck.all.title', 'luck.all.loading', 'luck.all.seasons', 'luck.all.partial', 'luck.all.partialSeason', 'luck.all.why.eliteserien',
+    'luck.all.why.obosligaen', 'luck.all.whyAny', 'luck.all.running', 'luck.all.empty', 'luck.all.aria',
+    'luck.all.x', 'luck.all.y', 'luck.all.tip', 'luck.all.champion', 'luck.all.finished',
+    'luck.all.legend', 'luck.all.legendShown', 'luck.all.facts', 'luck.all.fact.champions',
+    'luck.all.fact.championsValue', 'luck.all.fact.championsText', 'luck.all.fact.behind', 'luck.all.fact.allAhead',
+    'luck.all.fact.top', 'luck.all.fact.topText', 'luck.all.fact.luckiest', 'luck.all.fact.unluckiest',
+    'luck.all.fact.seasonText', 'luck.all.fact.next', 'luck.all.fact.nextText',
   ]);
 });
 

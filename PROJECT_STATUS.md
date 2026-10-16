@@ -75,8 +75,9 @@ reports and `careers.json` carry them).
 | elo-v11.1 | 2026-09-16 | 1b73aa0 | major, numbered minor | modern K 35 -> 30, alpha 0.50 -> 0.30: every rating moved |
 | elo-v12.0 | 2026-09-25 | 9724223 | major | xG margin in the Elo update, goals-model spread 1.10, strength shock 0.15 |
 | elo-v12.1 | 2026-10-11 | 8e7c30c | minor | head-to-head tiebreak in the table and the simulation |
-| elo-v12.2 | 2026-10-13 | fbbc061 | minor | season simulation on NumPy (a new random stream) -- **the deployed version** |
-| **elo-v13.0** | not yet | working tree | major | xG margin signed by xG; exact xG-implied score; squad-value offseason pull; early-season step; strength shock 0.20; surface edge in Eliteserien; play-offs simulated |
+| elo-v12.2 | 2026-10-13 | fbbc061 | minor | season simulation on NumPy (a new random stream) |
+| elo-v13.0 | 2026-10-16 | 28e49b1 | major | xG margin signed by xG; exact xG-implied score; squad-value offseason pull; early-season step; strength shock 0.20; surface edge in Eliteserien; play-offs simulated |
+| elo-v14.0 | 2026-10-16 | 3909841 | major | keeping (xG on target, a club's last 45 matches) as the goals model's fourth part, its chances learnt 90 % from xG; the offseason pull per division (OBOS-ligaen 0.75 / 0.3); surface edge 10 -> 20 -- **the deployed version** |
 
 Unbumped commits that only added output fields (`position_points`, projected
 goals, high-stakes swings, the pre-season view) or touched presentation were
@@ -1909,7 +1910,205 @@ the surface edge) until the version rules were written down ("Model versions"):
 nothing between them was released, so the whole pass is one release, elo-v13.0.
 The passive parsing changes no output and needs no bump.
 
-## 🔭 Explore: which views stay, and a season in each (October 2026) - on branches
+## 🧪 Keeping and finishing from xG on target, in the goals model (October 2026) - elo-v14.0
+
+The owner's idea: rate shooting (xG to xGoT) and keeping (xGoT to goals
+conceded) and match them up, so a good finisher against a poor keeper is
+expected to score more. In log goals the parts add: a side's rate gets
+`shoot + beat - keep[opponent]` on top of attack - defence, each a
+season-level term from last season (as elo-v9's finishing), measured against
+its division that season and shrunk to w of itself:
+`shoot = log(xGoT / xG)`, `beat = log(goals / xGoT)`,
+`keep = log(xGoT faced / goals conceded)`. FotMob's xGoT, so Eliteserien from
+2020 only; a club without xGoT last season keeps the shipped finishing. In the
+predicted rates and the learning rates alike (the way finishing is), scored as
+the shipped grid/Elo blend, paired against the shipped model;
+`experiments/improvements/keeping.py` (identity to the shipped model: 0.0).
+
+| variant | Eliteserien 2021+ LL (t) | all 2016+ LL (t) |
+|---|---|---|
+| keeping on top of finishing, w 0.25 | -0.00013 (-0.44) | -0.00004 (-0.40) |
+| keeping, w 0.5 | -0.00013 (-0.22) | -0.00003 (-0.14) |
+| keeping, w 1.0 | +0.00024 (+0.21) | +0.00013 (+0.36) |
+| keeping, walk-forward pick | -0.00005 (-0.20) | +0.00000 (+0.00) |
+| split, shooting 0.7 / beating 0.35 | +0.00022 (+0.41) | -0.00001 (-0.04) |
+| split, shooting 0.35 / beating 0.7 | +0.00062 (+1.08) | +0.00031 (+1.64) |
+| split, shooting 0 / beating 0.7 | +0.00140 (+1.59) | +0.00067 (+2.35) |
+| split, walk-forward pick | -0.00007 (-0.17) | -0.00001 (-0.03) |
+| full: shooting 0.7, beating 0.7, keeping 0.5 | -0.00012 (-0.17) | -0.00002 (-0.11) |
+| full: shooting 0.35, beating 0.7, keeping 0.5 | +0.00049 (+0.63) | +0.00027 (+1.10) |
+| full, walk-forward pick | +0.00045 (+1.23) | +0.00028 (+1.14) |
+| keeping 0.5, predictions only (not learnt) | +0.00148 (+1.23) | +0.00066 (+1.90) |
+| shipped finishing centred on its division, w 0.9 | -0.00052 (-0.79) | +0.00004 (+0.15) |
+| centred, walk-forward pick | -0.00039 (-0.61) | +0.00026 (+0.55) |
+
+Nothing beats the shipped model. Keeping adds nothing on top of finishing at
+any weight. Splitting finishing does not help either: shrinking the shooting
+part harder than the rest makes it worse (to t +2.35), so xG to xGoT carries
+as much of the lasting signal as xGoT to goals, which is what the single
+log(goals / xG) term already uses. Measuring finishing against the division
+(so 2022's league-wide goals over xG is not carried into 2023) leans the right
+way on Eliteserien (-0.0004 walk-forward) but is noise (t -0.6). The same
+answer as the luck view's points test (Explore, "Luck: can finishing and
+goalkeeping take the trend out?"): last season's keeping does not predict this
+season. Club-level keeping mixes keepers, who change between seasons; a
+keeper-level rating would need line-ups, which the data does not have. No
+version bump.
+
+**Re-test over a rolling window (the owner: squads change between seasons).**
+Each term over the club's last N matches with the data, across season
+boundaries, against its division's last ~240 such matches, shrunk to w, from
+`max(5, N/2)` matches on; `experiments/improvements/keeping_rolling.py`
+(identity 0.0). elo-v9 had rejected a rolling finishing window unshrunk
+(rolling 20: +0.015); these are shrunk.
+
+| variant | all 2016+ LL (t) | Eliteserien 2021+ LL (t) |
+|---|---|---|
+| keeping, N 15, w 1.0 | +0.00226 (+2.74) | +0.00735 (+2.59) |
+| keeping, N 20, w 0.5 | +0.00048 (+1.48) | +0.00173 (+1.57) |
+| keeping, N 30, w 0.25 | -0.00006 (-0.51) | -0.00008 (-0.20) |
+| **keeping, N 45, w 0.25** | **-0.00014 (-1.77)** | **-0.00034 (-1.31)** |
+| keeping, N 45, w 0.5 | -0.00025 (-1.54) | -0.00058 (-1.11) |
+| keeping, N 60, w 0.25 | -0.00008 (-1.18) | -0.00035 (-1.46) |
+| keeping, N 90, w 0.5 | -0.00003 (-0.30) | -0.00026 (-0.65) |
+| keeping, N 120, w 0.5 | +0.00003 (+0.36) | -0.00014 (-0.51) |
+| keeping, walk-forward pick (N 45, w 1.0 every season) | -0.00037 (-0.68) | -0.00074 (-0.71) |
+| finishing in place of the season-level term, N 45, w 0.25 | +0.00084 (+2.20) | +0.00259 (+2.53) |
+| finishing, N 15, w 1.0 | +0.00899 (+6.76) | +0.02114 (+6.01) |
+| split, N 45, shooting 0.5 / beating 0.25 | +0.00069 (+2.15) | +0.00245 (+2.34) |
+| full, N 45, s 0.5 / b 0.5 / k 1.0 | +0.00057 (+1.23) | +0.00259 (+1.71) |
+
+Rolling finishing, split or not, is worse than the season-level term at every
+window and weight (t +2 to +7), and the shorter the worse: the attack rating
+already learns this season's goals (a quarter of its observation), so a
+window over the same matches counts them twice; last season's finishing does
+not overlap. Rolling keeping is the first keeping term to lean the right way:
+short windows hurt, it turns at about 30 matches, peaks at 45-60 (a season
+and a half to two) and fades by 90-120. At N 45, w 0.25 it is negative on log
+loss, Brier (t -1.55) and RPS (t -1.74) and in both halves (t -1.46/-1.19),
+but -0.00014 overall, short of the |t| 2 bar, and the walk-forward pick is
+t -0.7. Not shipped; worth re-testing at N 45-60 once 2026 is over, with a
+seventh season of xGoT.
+
+**A finishing / chances / defence / keeping model (the owner's idea).** The
+luck view gained from rolling finishing and keeping (Explore, "Luck:
+finishing and keeping in the chances"), so the goals model was rebuilt the
+same way: attack and defence learn chances (alpha, the xG share of the
+observation, up from 0.75; at 1.0 against rates without finishing and
+keeping), and rolling finishing (N, w) and keeping (M, w) carry the goals;
+`experiments/improvements/fcdk.py` (identity 0.0). Paired against the shipped
+model; Eliteserien 2021+ is where xGoT exists.
+
+| variant | all 2016+ LL (t) | Eliteserien 2021+ LL (t) |
+|---|---|---|
+| alpha 0.9, nothing else | -0.00019 (-0.68) | -0.00118 (-1.60) |
+| alpha 1.0, nothing else | -0.00009 (-0.20) | -0.00156 (-1.27) |
+| f/c/d/k grid, best (alpha 0.9, finishing 45 x 0.5, keeping 45 x 0.5) | +0.00046 (+0.98) | +0.00105 (+0.84) |
+| f/c/d/k grid, walk-forward pick | +0.00160 (+2.16) | +0.00192 (+1.45) |
+| alpha 0.9, finishing 90 x 0.25 | +0.00058 (+1.07) | +0.00102 (+0.72) |
+| alpha 0.9, keeping 45 x 0.5, season-level finishing kept | -0.00055 (-1.92) | -0.00221 (-2.92) |
+| **alpha 0.9, keeping 45 x 0.75, season-level finishing kept** | **-0.00068 (-2.06)** | **-0.00256 (-2.86)** |
+| alpha 0.9, keeping 45 x 1.0 | -0.00076 (-1.98) | -0.00281 (-2.58) |
+| alpha 0.95, keeping 60 x 0.75 | -0.00048 (-1.26) | -0.00290 (-2.93) |
+| alpha / keeping, walk-forward pick (keeping 45 x 0.75 every season; alpha 0.75 -> 0.95) | -0.00090 (-1.46) | -0.00199 (-2.15) |
+
+Rolling finishing hurts the model in every form (every window, weight and
+alpha in the grid, t up to +3), even with chances learnt from xG alone: the
+season-level term stays. The luck view gains from it because it has no
+ratings, only the match's own xG; the model's ratings already carry a club's
+level. Keeping is the part that transfers: a club's keeping over its last 45
+matches, with the chances learnt mostly from xG (so goals let in are not
+already in the defence rating), is the first goals-model change from xGoT to
+clear the bar on Eliteserien: Brier (t -2.75) and RPS (t -3.02) agree, both
+halves of the walk-forward pick are negative (t -1.48/-1.58), OBOS-ligaen
+(no xGoT, so alpha only) +0.0007 (t +0.4). The weight's t peaks at 0.75; the
+step for xG matches (k_shots) stays best at 0.05. Candidate for elo-v14.0
+(alpha 0.9, keeping 45 matches x 0.75); not shipped yet.
+
+**Every setting re-swept on 2021-2026 (October 2026, the owner's request).**
+`experiments/improvements/sweep2021.py`: each setting moved alone around the
+elo-v14.0 candidate, scored on every match 2021-2026 and per division,
+paired, with a walk-forward pick (seasons from 2016 before each); then the
+movers together (`sweep2021_joint.py`), the offseason pull per division
+(`sweep2021_division.py`, identity 0.0 at today's values) and the lot
+(`sweep2021_final.py`). The Elo settings swept are the modern era's (2022 on).
+
+Flat, kept (best single move, all 2021+ LL, t; walk-forward): goals-model
+k (-0.00009, -0.32; +0.00026), k_shots (-0.00006; +0.00037), alpha (0.95:
+-0.00013, -0.79; 1.0 +0.00168, t +2.24), home, base, cap, division_gap,
+newcomer, rho, finishing_regression (0.6-0.9 flat; 1.0 = off +0.00146),
+early_boost, early_tau, keeping window (45 picked every season) and weight
+(1.0: -0.00009, -0.66); Elo k_factor, home_advantage, xg_alpha, xg_margin,
+draw_base (0.22-0.24: -0.0002, t -0.6/-0.9), draw_scale, season_regression;
+the Elo weight in the blend (0.20-0.25). spread 1.15-1.2 leans better
+(-0.00024, t -1.08; walk-forward -0.00017, t -0.40): kept at 1.10.
+
+Movers:
+- **The goals model's offseason pull, per division.** One season regression
+  and value pull for both divisions could not serve both: lower regression
+  and a stronger pull helped OBOS-ligaen (t -3) and cost Eliteserien a little.
+  Per division, Eliteserien flat over regression 0.84-0.92 x pull 0.1-0.3
+  (within ±0.0001); OBOS-ligaen better in every cell of 0.70-0.88 x 0.2-0.5
+  (t -2 to -3, Brier and RPS too), walk-forward 0.70 / 0.4 every season,
+  -0.00174 all 2021+ (t -2.40). Kept at **OBOS-ligaen (0.75, 0.3)**, the
+  highest t (-0.00227 on OBOS-ligaen 2021+, t -3.00), Eliteserien (0.88, 0.2).
+  Squads turn over more there between seasons, and the squad value says more.
+- **The surface edge, 20 Elo points.** Better all the way to 40 (20: -0.00014,
+  t -2.08; 40: -0.00039, t -1.91), walk-forward 20 then 40 every season.
+  elo-v13.0 shipped 10 as the shrunk value of a walk-forward pick of 20-60; a
+  second, later look asks for 20-40 again.
+
+| final (candidate + per-division pull + edge 20) vs shipped | LL (t) | Brier t | RPS t | halves t |
+|---|---|---|---|---|
+| all 2021+ | -0.00262 (-3.74) | -3.69 | -3.73 | -3.82 / -1.62 |
+| Eliteserien 2021+ | -0.00289 (-3.16) | -3.05 | -3.29 | -2.86 / -1.65 |
+| OBOS-ligaen 2021+ | -0.00236 (-2.23) | -2.25 | -2.14 | -2.60 / -0.72 |
+| all 2016+ | -0.00190 (-4.05) | -4.08 | -3.99 | -2.48 / -3.20 |
+
+Final vs the candidate alone: -0.00130 on all 2021+ (t -3.34), -0.00122 on
+2016+ (t -3.73). A walk-forward pick among shipped, candidate and final picks
+final in every season 2021-2026. Candidate for elo-v14.0: the goals model's
+alpha 0.9, keeping over the last 45 matches x 0.75 (xGoT), the offseason pull
+per division (Eliteserien 0.88 / 0.2, OBOS-ligaen 0.75 / 0.3), the surface
+edge 20. Shipped as elo-v14.0 (below).
+
+Rolling finishing re-tested on the final model (in place of last season's;
+the owner asked whether the full F/C/D/K had been tried): worse at every
+setting, more clearly than on the candidate. All 2021+: 20 matches x 0.5
++0.00427 (t +3.81), x 1.0 +0.00925 (t +4.90); 45 x 0.5 +0.00210 (t +2.98);
+90 x 0.25 +0.00150 (t +1.93); Eliteserien worst throughout (20 x 1.0
++0.01507, t +5.47). So the four parts stay as: chances (attack/defence, 90 %
+from xG), last season's finishing, the defence, and keeping over the last 45
+matches.
+
+Recent matches weighted more (the owner: a match a season and a half ago
+should count less), on the final model, `experiments/improvements/fcdk_decay.py`
+(identity 0.0 for the flat window through the same hooks):
+- Keeping as a decayed average (each match's weight halving every h
+  matches), h 10-60 x w 0.5-1.0: worse than the flat 45 x 0.75 at every
+  setting, all 2021+ +0.00058 to +0.00163 (t +1.8 to +2.1), 2016+ t +2.6 to
+  +2.9; the walk-forward picks the flat window every season. Long half-lives
+  lose too, so what the flat window has is its cut-off: a keeper from two
+  seasons ago drops out entirely, where a decayed average keeps a long tail.
+- Keeping tapered inside a window (newest 1, the window's oldest 1 / N, older
+  none), N 45-120: no better either, +0.00016 (t +0.41) at 90 x 1.0 to
+  +0.00056 (t +1.26) at 45 x 1.0.
+- Finishing as a decayed average in place of last season's, h 10-90 x
+  0.25-0.5: worse throughout, +0.00179 (t +2.38) at best.
+The flat 45-match keeping window stays.
+
+**Shipped as elo-v14.0.** `ADConfig.alpha` 0.9, `keeping_window` 45,
+`keeping_weight` 0.75 (`AttackDefence.keeping`, in the predicted and the
+learning rates, and in `rates_against_average`'s goals against),
+`obos_season_regression` 0.75 and `obos_value_pull` 0.3 (`ADConfig.offseason`),
+`normalize.surfaces.SURFACE_EDGE` 20. The report carries each club's keeping
+as the fourth number in `model.attack_defence.teams`, so the compare tool
+prices a fictional match the same way, and `results[].xgot` for the luck
+table. Checked against the sweep: with elo-v14.0's `src` the harness's
+shipped model is the experiment's final model to 2e-16 (Elo odds exact), and
+`harness.identity()` holds.
+
+## 🔭 Explore: which views stay, and a season in each (October 2026) - luck table released, six on branches
 
 The owner kept seven of the ten new views -- race lines, prediction scorecard,
 luck table, run-in heatmap, stakes calendar, head to head, match-odds
@@ -1917,8 +2116,9 @@ calibration -- beside the attack map and the season mountain. The lift, the
 rating river and the scorelines are stored in `experiments/explore-later/`
 (code, styles, strings, tests, and what each needs before it returns).
 
-None of the seven is on `main` yet. Each waits on a branch of its own,
-`explore/<id>`, off `explore/base`, which holds what they share (the hero
+The luck table was the first released (2026-10-16, after elo-v14.0), which
+brought `explore/base` to `main`. Each of the other six waits on a branch of
+its own, `explore/<id>`, off `explore/base`, which holds what they share (the hero
 rules for a season per view, `EXPLORE_REWIND`, `fetchedReport`,
 `renderTimeAxis` and `runInStart`, `.explore-note`, the two browser checks). A
 view reaches the site when its branch is merged into `main`; the first one
@@ -1978,8 +2178,8 @@ the link in `footer.text` and the static footer, a privacy line in
 across, one on phones) that each open a visualisation in the same panel, with
 `?viz=` for links. Adding one = an id in `EXPLORE_ITEMS`, a thumbnail in
 `exploreThumb`, a render function and its `explore.<id>.*` strings. On the
-site: attack vs defence and the season mountain; the views below that name a
-branch wait on it (see "Explore: which views stay").
+site: attack vs defence, the season mountain and the luck table; the views
+below that name a branch wait on it (see "Explore: which views stay").
 
 - **Attack vs defence** (`viz=attack`): crests placed by `table[].attack`
   against `defence` (fewest at the top). These are the model's ratings as
@@ -2033,11 +2233,121 @@ branch wait on it (see "Explore: which views stay").
   to the season shape's first snapshot when that predates the first match.
   Facts: hit rate, average miss in places, best and hardest season, biggest
   over- and under-achiever.
-- **Luck table** (`viz=luck`, #3; branch `explore/luck`): per club, points against the points its
+- **Luck table** (`viz=luck`, #3; released 2026-10-16): per club, points against the points its
   matches' xG would have earned on average (both sides Poisson at their xG,
   the same sum as `xg_implied_score`), as a diverging bar; follows the rewind
   slider; only matches with xG count on both sides. Facts: luckiest,
-  unluckiest, the correlation of points with xG points, coverage.
+  unluckiest, the club with the most xG points against the table leader,
+  coverage. Under it, every club season of the finished xG seasons
+  (`luckSeasons`: over, and xG for at least 90 % of the matches; the note
+  names the seasons, why the earlier ones are missing and the matches left
+  out). What it shows (October 2026, elo-v13.0 data): good teams do beat
+  their chances. Eliteserien 2020-2025 (96 club seasons): every champion,
+  6 of 6, above its xG points, +12.9 on average; Molde 2022 (+19.2) and
+  Viking 2025 (+15.7, third on xG points) won without the most; the top four
+  by xG points +5.6 a season, the middle -2.0, the bottom four -1.9; luck
+  against xG points per match r 0.42, against the pre-season rating 0.29. It
+  mostly does not last: the 19 clubs 5+ above their chances were +9.8, the
+  season after +2.8 (year-to-year r 0.14). OBOS-ligaen 2023-2025 (48): 3 of
+  3 champions, +13.9; top four +4.2, bottom four -3.3. Each club's luck
+  splits in three in points (`luckRows`: its own match xG scaled by its
+  season's goals/xG, then the xG against by goals against/xG against, the
+  rest left over), in the tooltips and the top-four fact; see "Luck: can
+  finishing and goalkeeping take the trend out?" below.
+
+  **Luck: can finishing and goalkeeping take the trend out? (October 2026)**
+  The owner's idea: track finishing (goals vs xG, tried before as elo-v9's
+  season-level stat) and goalkeeping (goals against vs xG on target against,
+  FotMob, so Eliteserien only) to take the "good teams have more luck" trend
+  out of the luck. Eliteserien 2020-2025, 96 club seasons; scripts in the
+  session scratchpad, not kept.
+  - xG points themselves are calibrated: every match side 2020-2025 (2,140
+    matches, both divisions) binned by xG points, actual minus expected is
+    within ±0.13 points in every bin, favourites included. So the trend is
+    not the Poisson-on-match-xG method, as first guessed above.
+  - In points, top four by xG points: luck +5.6 = finishing +2.5, on-target
+    against (xG to xGoT) +0.7, keeping (xGoT to goals against) -1.3, the
+    rest +3.7. Middle -2.0, bottom four -1.9; keeping is about -1.3 to -1.7
+    everywhere (own goals carry no xGoT). OBOS-ligaen (no xGoT, so keeping
+    and defending together): top four +4.2 = finishing +1.7, conceding
+    +1.5, rest +1.1.
+  - Correlation with quality (xG points a match): luck +0.42, finishing
+    +0.32, keeping -0.03, on target -0.07, rest +0.46. Keeping explains a
+    lot of a single season's luck (r +0.42 with it) but none of the trend.
+    Luck minus finishing: r +0.31; minus finishing and keeping: +0.39.
+  - Year to year, same club, per match (n 81, se ~0.11): finishing +0.26,
+    keeping +0.25, on target -0.08, rest +0.02, luck +0.20.
+  - Out of sample, 2021-2025 (80 club seasons): each match's xG scaled by
+    last season's finishing and keeping relative to the league, weighted w
+    toward 1, then the luck recounted. Finishing helps: w 0.25, mean squared
+    luck -3.5 (t -2.6), w 0.5 -5.7 (t -2.3), quality trend r 0.38 to 0.33;
+    w 1.0, r 0.21 but t -1.5. Keeping hurts at every weight (w 0.5 +1.8,
+    t +1.1; w 1.0 +6.9, t +2.0) and adds nothing on top of finishing.
+  - Verdict: finishing is a real, lasting part of the edge (about 45 % of
+    it, in both divisions) and the view now shows it. Goalkeeping by xGoT is
+    not the answer: unrelated to how good a side is, and last season's does
+    not predict this season's points. The largest part, the rest, goes with
+    quality within a season but not with the club from one season to the
+    next. No model change follows; a goalkeeping term in the attack/defence
+    model was not backtested, as the out-of-sample points test above
+    already finds no carry-over to use.
+
+  **Luck against the trend (October 2026, the owner's idea).** Since better
+  sides beat their xG points, luck is now measured against the trend:
+  `luckTrend` fits the gap a match on xG points a match over the counted
+  club seasons, least squares (Eliteserien: -0.476 + 0.340 x xG points a
+  match; OBOS-ligaen -0.616 + 0.433), and a club's luck is its points minus
+  its xG points minus that over its matches (`withTrend`). Eliteserien
+  2020-2025: luck against quality r 0.42 to 0.00, spread 7.40 to 6.70;
+  fitted without the season itself, 6.76 and -0.01, so the in-sample fit
+  stands. Year to year r 0.17 to 0.05; clubs 5+ above it were +8.7, the
+  season after -0.9 (against xG points alone +9.8 to +2.8). All 6 champions
+  are still above the trend, +7.5 on average (+12.9 above xG points);
+  OBOS-ligaen 3 of 3, +7.7. Without a finished xG season the view falls back
+  to xG points alone and says so.
+
+  **Luck: finishing and keeping in the chances (October 2026, the owner's
+  idea).** Before each match its xG is scaled by each side's finishing over
+  its last N matches (log goals / xG) and the other side's keeping over its
+  last M (log xGoT faced / goals let in), each against the division's last 240
+  club matches, shrunk to w, from N/2 matches on; luck is then points minus
+  the xG points of those chances minus the trend (refitted on them). Scored on
+  Eliteserien club seasons 2021-2025 (80): the change in mean squared gap a
+  club season, paired, against the plain xG points; and a leave-one-season-out
+  pick against overfitting the grid.
+  - Last season's terms first (w 0.7 finishing, as elo-v9): -6.85 (t -2.02);
+    keeping on top (45 matches, 0.25) adds little: -7.61 (t -2.22).
+  - Finishing alone, N 10-120 x w 0.25-1.0: flat at N 10-30 (w 1.0: -9.3,
+    t -1.9), fading from 45 (-7.3) to 120 (-0.9); leave-one-season-out -7.22
+    (t -1.42).
+  - Finishing + keeping, N and M 10-90, w and keeping weight swept: keeping
+    over the last 10 is best and adds -8.0 on top of finishing (t -2.28;
+    15: -7.1, 20: -6.7, 30: -4.5, 45: -2.0, 90: -0.2). Best fin 10 + keep 10
+    -17.31 (t -3.03), fin 20 + keep 10 -17.30 (t -3.01); leave-one-season-out
+    -15.61 (t -2.61), keep 10 picked every season. Shipped: finishing 20,
+    keeping 10, both at full weight (the edge of the grid); 20 for a steadier
+    finishing at no cost. Unlike the goals model (keeping.py,
+    keeping_rolling.py), short windows work here: the luck view has no rating
+    that already learns this season's goals, so nothing is counted twice.
+  - With the shipped finishing 20 + keeping 10: the trend slope 0.287 to
+    0.248 (finishing 20 alone: 0.196; keeping is unrelated to quality), luck
+    sd 6.59 to 5.29; with 20 + 20, year-to-year r of luck -0.09 to -0.07
+    (still none). The browser's scaled xG points match this Python to 0.052 a
+    club season over Eliteserien 2020-2026 (the report rounds xG to 2
+    decimals).
+  - OBOS-ligaen has no xGoT, so finishing only; 2024-2025 (32 club seasons),
+    finishing 20: -5.67 (t -0.93), 10: -11.91 (t -1.96). The same rule in
+    both divisions, so luck means the same thing; the view says keeping is
+    left out there.
+  - Data: `results[].xgot` in the report (pipeline.py, fotmob's xGoT where the
+    shot table has it). No model change, no version bump.
+  - What it moves (2026 so far, fin 20 + keep 20 against the trend):
+    Viking +7.1 to +1.0, Sarpsborg 08 -4.6 to +0.3, Fredrikstad +8.4 to +4.9;
+    Bodø/Glimt 2021 +6.2 to +1.7, Viking 2025 +11.9 to +8.1, Molde 2022 +14.4
+    to +13.0.
+  The view opens with "How luck is measured" (chances, finishing and keeping,
+  the trend, luck), and the tooltip splits a club's usual points into xG
+  points, finishing and keeping, and the trend.
 - **Run-in heatmap** (`viz=runin`, #4; branch `explore/runin`): clubs down, their remaining fixtures
   across in date order, each cell the opponent's crest, H/A and the club's win
   chance on the `--seq` ramp; rows by points a match the odds are worth,

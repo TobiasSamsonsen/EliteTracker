@@ -215,3 +215,55 @@ def test_spread_stretches_predictions_but_not_what_the_ratings_learn():
     assert math.isclose(math.log(lam_wide) - cfg.base - cfg.home, 1.5 * (math.log(lam_plain) - cfg.base - cfg.home))
     assert math.isclose(math.log(mu_wide) - cfg.base, 1.5 * (math.log(mu_plain) - cfg.base))
     assert wide.predict("A", "B", "2020-03-02").home_win > plain.predict("A", "B", "2020-03-02").home_win
+
+
+def test_keeping_lowers_the_other_sides_rate_once_its_window_is_half_full():
+    """The keeper (elo-v14.0): log(xG on target faced / goals let in) over a
+    club's last `keeping_window` matches, against its division's, times the
+    weight; it comes off the other side's expected goals. Ratings held still
+    (k 0) so the rates show keeping alone."""
+    cfg = ADConfig(k=0.0, k_shots=0.0, keeping_window=4, keeping_weight=1.0, spread=1.0, early_boost=0.0)
+    divisions = {(2020, t): "eliteserien" for t in "ABCD"}
+    # A v B 1-1: B faces 2.0 xG on target, A 1.0; C v D 1-1, each faces 1.0.
+    shots = {f"{side}{i}": xg for i in range(2) for side, xg in (("ab", (1.0, 1.0, 2.0, 1.0)), ("cd", (1.0, 1.0, 1.0, 1.0)))}
+    model = AttackDefence(config=cfg, divisions=divisions, shots=shots)
+    model.observe(match("ab0", "2020-04-01", "A", "B", 1, 1))
+    model.observe(match("cd0", "2020-04-01", "C", "D", 1, 1))
+    assert model.keeping("B") == 0.0          # one match: under half the window
+    model.observe(match("ab1", "2020-04-08", "A", "B", 1, 1))
+    model.observe(match("cd1", "2020-04-08", "C", "D", 1, 1))
+    # B let in 2 from 4.0; the division 8 from 10.0.
+    assert abs(model.keeping("B") - (math.log(4 / 2) - math.log(10 / 8))) < 1e-12
+    assert abs(model.keeping("A") - (math.log(2 / 2) - math.log(10 / 8))) < 1e-12
+    lam, mu = model.rates("A", "B", "2020-04-15")
+    assert abs(lam - math.exp(cfg.base + cfg.home) / 1.6) < 1e-12
+    assert abs(mu - math.exp(cfg.base) * 1.25) < 1e-12
+    # A copy carries it; matches without xG on target add nothing to it.
+    copy = model.copy()
+    copy.shots["ab2"] = (1.0, 1.0)
+    copy.observe(match("ab2", "2020-04-22", "A", "B", 0, 5))
+    assert copy.keeping("B") == model.keeping("B")
+
+
+def test_each_division_has_its_own_offseason_pull():
+    cfg = ADConfig(k=0.1, season_regression=0.5, obos_season_regression=0.25,
+                   value_pull=0.0, obos_value_pull=0.0, early_boost=0.0)
+    assert cfg.offseason("eliteserien") == (0.5, 0.0) and cfg.offseason("obosligaen") == (0.25, 0.0)
+    data = slices(
+        (2020, "eliteserien", [match("1", "2020-05-01", "A", "B", 3, 0)]),
+        (2020, "obosligaen", [match("2", "2020-05-01", "C", "D", 3, 0)]),
+        (2021, "eliteserien", [match("3", "2021-04-01", "A", "B", 1, 1)]),
+        (2021, "obosligaen", [match("4", "2021-04-01", "C", "D", 1, 1)]),
+    )
+    model = AttackDefence.from_slices(data, cfg)
+    model.replay(data[0].matches + data[1].matches)
+    before = (model.attack["A"] - model.attack["B"], model.attack["C"] - model.attack["D"])
+    model.start_season(2021)
+    assert abs(model.attack["A"] - model.attack["B"] - 0.5 * before[0]) < 1e-12
+    assert abs(model.attack["C"] - model.attack["D"] - 0.25 * before[1]) < 1e-12
+
+
+def test_elo_v14_defaults():
+    cfg = ADConfig()
+    assert (cfg.alpha, cfg.keeping_window, cfg.keeping_weight) == (0.9, 45, 0.75)
+    assert cfg.offseason("eliteserien") == (0.88, 0.2) and cfg.offseason("obosligaen") == (0.75, 0.3)

@@ -3954,6 +3954,37 @@ body[data-viz="mountain"] > footer { display: none; }
 .explore-note { margin: 0.75rem 0 0; color: var(--ink-muted); font-size: 0.8125rem; line-height: 1.45; }
 .explore-note--lead { margin: 0 0 0.6rem; }
 
+/* Luck table: points against xG points, one diverging bar per club. */
+.luck { padding: 0.75rem 1rem 1rem; }
+.chart .luck__row { cursor: pointer; }
+.chart .luck__row:focus-visible { outline: none; }
+.chart .luck__row:hover .luck__name, .chart .luck__row:focus-visible .luck__name { text-decoration: underline; }
+.chart .luck__bar--up { fill: var(--outcome-good); }
+.chart .luck__bar--down { fill: var(--outcome-bad); }
+.chart .luck__name { fill: var(--ink); font-size: 12px; }
+.chart .luck__value { fill: var(--ink-muted); font-size: 11px; font-variant-numeric: tabular-nums; }
+.chart .luck__side { fill: var(--ink-faint); font-size: 11px; font-weight: 600; }
+.chart .luck__place { fill: var(--ink-faint); font-size: 11px; font-variant-numeric: tabular-nums; }
+/* Luck across the seasons: every club season, champions as crests. */
+.luck-all { margin-top: 1.25rem; padding-top: 1rem; border-top: 1px solid var(--rule); }
+.luck-all__title { margin: 0 0 0.4rem; font-size: 1.05rem; }
+.luck-all .explore-empty { padding: 0.5rem 0; }
+.chart .luck-all__trend { stroke: var(--ink-muted); stroke-width: 1.5; stroke-dasharray: 6 4; }
+.chart .luck-all__trend-label { fill: var(--ink-muted); font-size: 11px; font-weight: 600; paint-order: stroke; stroke: var(--panel); stroke-width: 4px; stroke-linejoin: round; }
+.chart .luck-all__dot { outline: none; }
+.chart .luck-all__hit { fill: transparent; }
+.chart .luck-all__mark { fill: var(--ink-faint); fill-opacity: 0.35; stroke: var(--panel); stroke-width: 1; }
+.chart .luck-all__dot--shown .luck-all__mark { fill: var(--ink); fill-opacity: 0.9; }
+.chart .luck-all__dot--champion .luck-all__mark { fill: var(--panel); fill-opacity: 1; stroke: var(--rule-strong); stroke-width: 1.5; }
+.chart .luck-all__dot--champion.luck-all__dot--shown .luck-all__mark { stroke: var(--ink); stroke-width: 2; }
+.chart .luck-all__dot:hover .luck-all__mark,
+.chart .luck-all__dot:focus-visible .luck-all__mark { stroke: var(--ink); stroke-width: 2; }
+/* Luck table: how the luck is measured, step by step, above the chart. */
+.luck-how { margin: 0 0 1rem; padding: 0.7rem 0.9rem; background: var(--panel-sunk); border-radius: 10px; color: var(--ink-muted); font-size: 0.8125rem; line-height: 1.5; }
+.luck-how__title { cursor: pointer; color: var(--ink); font-size: 0.875rem; font-weight: 600; }
+.luck-how__steps { display: grid; gap: 0.35rem; margin: 0.55rem 0 0; padding-left: 1.25rem; }
+.luck-how__steps b { color: var(--ink); font-weight: 600; }
+
 /* Prediction scorecard: expected finish against final place, the two-place
    band. It spans every season, so the hero offers only the division. */
 body[data-viz="scorecard"] .hero-title-part[data-role="season"] { display: none; }

@@ -1,7 +1,7 @@
 # EliteTracker
 
 Predictive model for Norwegian men's football: **Eliteserien** (tier 1) and
-**OBOS-ligaen** (tier 2). Uses an ELO rating system (elo-v13.0) to estimate team
+**OBOS-ligaen** (tier 2). Uses an ELO rating system (elo-v14.0) to estimate team
 strength, match probabilities and season outcomes. Fixtures and results come
 from FotMob (xG from FotMob for Eliteserien, Sofascore for OBOS-ligaen);
 benchmark odds from football-data.co.uk, squad values from Transfermarkt.
@@ -141,6 +141,22 @@ slider too; the ones with time along an axis of their own take none.
   layer built; on a finished season they become a scorecard for the
   pre-season prediction (hit rate, biggest climber, faller and surprise). The
   ⓘ button shows them in a popup. On phones the mountain fills the screen.
+- **Luck table** (`viz=luck`) -- each club's points against what its chances
+  usually earn, as a bar either side of zero, with each club's table place.
+  The chances are each match's xG as points (both sides' goals Poisson at
+  their xG), scaled before the match by the side's finishing over its last 20
+  matches (goals against xG) and the other side's keeping over its last 10
+  (goals let in against xG on target; Eliteserien only), both against the
+  division; on top comes the trend below, since better sides still beat their
+  chances. A "How luck is measured" box above the chart says so step by step,
+  and the tooltip splits a club's usual points into those parts. Only matches
+  with xG count. Follows the rewind slider; a click opens the club. Under it,
+  "Do good teams have more luck?": every club season of the division's
+  finished xG seasons (Eliteserien from 2020, OBOS-ligaen from 2023) as xG
+  points against points above the scaled chances, champions as crests, with
+  the trend line, and facts on the champions, the top quarter by xG points,
+  the luckiest and unluckiest seasons and how much luck is left the season
+  after.
 - **Prediction scorecard** (`viz=scorecard`) -- every finished club-season of
   the division since 2015: where the pre-season prediction expected it to
   finish against where it did, with the y = x line and the two-place band the
@@ -159,10 +175,13 @@ Every tunable parameter in the shipped model:
 | Cross-season regression | 12% | How much ratings regress toward the mean each offseason |
 | Peak draw rate | 26% | Maximum draw probability from the draw model |
 | Outcome blend | 25/75 | ELO vs attack/defence weight for win/draw/loss odds |
+| Goals model: xG weight | 90% | How much of the attack/defence update is xG rather than goals, where there is xG |
+| Goals model: offseason pull | 12% / 25% | How far attack/defence regress toward the division each offseason (Eliteserien / OBOS-ligaen), aimed by squad value (0.2 / 0.3) |
+| Goals model: keeping | last 45 matches | The keeper: goals let in against the xG on target faced, against the division (x 0.75), off the other side's expected goals (Eliteserien, where there is xG on target) |
 | Scorelines | attack/defence | Source of scoreline predictions (not ELO) |
 | Simulations | 50,000 | Monte Carlo runs per league (10,000 on rewound views) |
 | Strength shock | ±0.20 | Per-run club strength noise (log-odds), so finishing odds carry rating uncertainty |
-| Surface edge | 10 pts (Eliteserien) | Home side's extra rating when its visitor plays on the other surface (prediction only) |
+| Surface edge | 20 pts (Eliteserien) | Home side's extra rating when its visitor plays on the other surface (prediction only) |
 
 ### Team Focus
 
