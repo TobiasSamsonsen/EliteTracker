@@ -2037,7 +2037,117 @@ branch wait on it (see "Explore: which views stay").
   matches' xG would have earned on average (both sides Poisson at their xG,
   the same sum as `xg_implied_score`), as a diverging bar; follows the rewind
   slider; only matches with xG count on both sides. Facts: luckiest,
-  unluckiest, the correlation of points with xG points, coverage.
+  unluckiest, the club with the most xG points against the table leader,
+  coverage. Under it, every club season of the finished xG seasons
+  (`luckSeasons`: over, and xG for at least 90 % of the matches; the note
+  names the seasons, why the earlier ones are missing and the matches left
+  out). What it shows (October 2026, elo-v13.0 data): good teams do beat
+  their chances. Eliteserien 2020-2025 (96 club seasons): every champion,
+  6 of 6, above its xG points, +12.9 on average; Molde 2022 (+19.2) and
+  Viking 2025 (+15.7, third on xG points) won without the most; the top four
+  by xG points +5.6 a season, the middle -2.0, the bottom four -1.9; luck
+  against xG points per match r 0.42, against the pre-season rating 0.29. It
+  mostly does not last: the 19 clubs 5+ above their chances were +9.8, the
+  season after +2.8 (year-to-year r 0.14). OBOS-ligaen 2023-2025 (48): 3 of
+  3 champions, +13.9; top four +4.2, bottom four -3.3. Each club's luck
+  splits in three in points (`luckRows`: its own match xG scaled by its
+  season's goals/xG, then the xG against by goals against/xG against, the
+  rest left over), in the tooltips and the top-four fact; see "Luck: can
+  finishing and goalkeeping take the trend out?" below.
+
+  **Luck: can finishing and goalkeeping take the trend out? (October 2026)**
+  The owner's idea: track finishing (goals vs xG, tried before as elo-v9's
+  season-level stat) and goalkeeping (goals against vs xG on target against,
+  FotMob, so Eliteserien only) to take the "good teams have more luck" trend
+  out of the luck. Eliteserien 2020-2025, 96 club seasons; scripts in the
+  session scratchpad, not kept.
+  - xG points themselves are calibrated: every match side 2020-2025 (2,140
+    matches, both divisions) binned by xG points, actual minus expected is
+    within ±0.13 points in every bin, favourites included. So the trend is
+    not the Poisson-on-match-xG method, as first guessed above.
+  - In points, top four by xG points: luck +5.6 = finishing +2.5, on-target
+    against (xG to xGoT) +0.7, keeping (xGoT to goals against) -1.3, the
+    rest +3.7. Middle -2.0, bottom four -1.9; keeping is about -1.3 to -1.7
+    everywhere (own goals carry no xGoT). OBOS-ligaen (no xGoT, so keeping
+    and defending together): top four +4.2 = finishing +1.7, conceding
+    +1.5, rest +1.1.
+  - Correlation with quality (xG points a match): luck +0.42, finishing
+    +0.32, keeping -0.03, on target -0.07, rest +0.46. Keeping explains a
+    lot of a single season's luck (r +0.42 with it) but none of the trend.
+    Luck minus finishing: r +0.31; minus finishing and keeping: +0.39.
+  - Year to year, same club, per match (n 81, se ~0.11): finishing +0.26,
+    keeping +0.25, on target -0.08, rest +0.02, luck +0.20.
+  - Out of sample, 2021-2025 (80 club seasons): each match's xG scaled by
+    last season's finishing and keeping relative to the league, weighted w
+    toward 1, then the luck recounted. Finishing helps: w 0.25, mean squared
+    luck -3.5 (t -2.6), w 0.5 -5.7 (t -2.3), quality trend r 0.38 to 0.33;
+    w 1.0, r 0.21 but t -1.5. Keeping hurts at every weight (w 0.5 +1.8,
+    t +1.1; w 1.0 +6.9, t +2.0) and adds nothing on top of finishing.
+  - Verdict: finishing is a real, lasting part of the edge (about 45 % of
+    it, in both divisions) and the view now shows it. Goalkeeping by xGoT is
+    not the answer: unrelated to how good a side is, and last season's does
+    not predict this season's points. The largest part, the rest, goes with
+    quality within a season but not with the club from one season to the
+    next. No model change follows; a goalkeeping term in the attack/defence
+    model was not backtested, as the out-of-sample points test above
+    already finds no carry-over to use.
+
+  **Luck against the trend (October 2026, the owner's idea).** Since better
+  sides beat their xG points, luck is now measured against the trend:
+  `luckTrend` fits the gap a match on xG points a match over the counted
+  club seasons, least squares (Eliteserien: -0.476 + 0.340 x xG points a
+  match; OBOS-ligaen -0.616 + 0.433), and a club's luck is its points minus
+  its xG points minus that over its matches (`withTrend`). Eliteserien
+  2020-2025: luck against quality r 0.42 to 0.00, spread 7.40 to 6.70;
+  fitted without the season itself, 6.76 and -0.01, so the in-sample fit
+  stands. Year to year r 0.17 to 0.05; clubs 5+ above it were +8.7, the
+  season after -0.9 (against xG points alone +9.8 to +2.8). All 6 champions
+  are still above the trend, +7.5 on average (+12.9 above xG points);
+  OBOS-ligaen 3 of 3, +7.7. Without a finished xG season the view falls back
+  to xG points alone and says so.
+
+  **Luck: finishing and keeping in the chances (October 2026, the owner's
+  idea).** Before each match its xG is scaled by each side's finishing over
+  its last N matches (log goals / xG) and the other side's keeping over its
+  last M (log xGoT faced / goals let in), each against the division's last 240
+  club matches, shrunk to w, from N/2 matches on; luck is then points minus
+  the xG points of those chances minus the trend (refitted on them). Scored on
+  Eliteserien club seasons 2021-2025 (80): the change in mean squared gap a
+  club season, paired, against the plain xG points; and a leave-one-season-out
+  pick against overfitting the grid.
+  - Last season's terms first (w 0.7 finishing, as elo-v9): -6.85 (t -2.02);
+    keeping on top (45 matches, 0.25) adds little: -7.61 (t -2.22).
+  - Finishing alone, N 10-120 x w 0.25-1.0: flat at N 10-30 (w 1.0: -9.3,
+    t -1.9), fading from 45 (-7.3) to 120 (-0.9); leave-one-season-out -7.22
+    (t -1.42).
+  - Finishing + keeping, N and M 10-90, w and keeping weight swept: keeping
+    over the last 10 is best and adds -8.0 on top of finishing (t -2.28;
+    15: -7.1, 20: -6.7, 30: -4.5, 45: -2.0, 90: -0.2). Best fin 10 + keep 10
+    -17.31 (t -3.03), fin 20 + keep 10 -17.30 (t -3.01); leave-one-season-out
+    -15.61 (t -2.61), keep 10 picked every season. Shipped: finishing 20,
+    keeping 10, both at full weight (the edge of the grid); 20 for a steadier
+    finishing at no cost. Unlike the goals model (keeping.py,
+    keeping_rolling.py), short windows work here: the luck view has no rating
+    that already learns this season's goals, so nothing is counted twice.
+  - With the shipped finishing 20 + keeping 10: the trend slope 0.287 to
+    0.248 (finishing 20 alone: 0.196; keeping is unrelated to quality), luck
+    sd 6.59 to 5.29; with 20 + 20, year-to-year r of luck -0.09 to -0.07
+    (still none). The browser's scaled xG points match this Python to 0.052 a
+    club season over Eliteserien 2020-2026 (the report rounds xG to 2
+    decimals).
+  - OBOS-ligaen has no xGoT, so finishing only; 2024-2025 (32 club seasons),
+    finishing 20: -5.67 (t -0.93), 10: -11.91 (t -1.96). The same rule in
+    both divisions, so luck means the same thing; the view says keeping is
+    left out there.
+  - Data: `results[].xgot` in the report (pipeline.py, fotmob's xGoT where the
+    shot table has it). No model change, no version bump.
+  - What it moves (2026 so far, fin 20 + keep 20 against the trend):
+    Viking +7.1 to +1.0, Sarpsborg 08 -4.6 to +0.3, Fredrikstad +8.4 to +4.9;
+    Bodø/Glimt 2021 +6.2 to +1.7, Viking 2025 +11.9 to +8.1, Molde 2022 +14.4
+    to +13.0.
+  The view opens with "How luck is measured" (chances, finishing and keeping,
+  the trend, luck), and the tooltip splits a club's usual points into xG
+  points, finishing and keeping, and the trend.
 - **Run-in heatmap** (`viz=runin`, #4; branch `explore/runin`): clubs down, their remaining fixtures
   across in date order, each cell the opponent's crest, H/A and the club's win
   chance on the `--seq` ramp; rows by points a match the odds are worth,

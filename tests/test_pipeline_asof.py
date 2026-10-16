@@ -159,7 +159,15 @@ class TestRewind:
             [match(1, "A", "B", "2026-03-01"), match(2, "C", "D", "2026-03-01")]
         )
         assert with_xg["xg"] == [1.23, 0.5]
-        assert "xg" not in without
+        assert with_xg["xgot"] == [0.9, 0.2]
+        assert "xg" not in without and "xgot" not in without
+
+    def test_results_leave_out_xgot_the_source_lacks(self, monkeypatch):
+        """Sofascore (OBOS-ligaen) has xG but no xG on target: no xgot key."""
+        monkeypatch.setattr(pipeline, "shot_table", lambda: {"1": (1.4, 0.7)})
+        (result,) = pipeline._results_payload([match(1, "A", "B", "2026-03-01")])
+        assert result["xg"] == [1.4, 0.7]
+        assert "xgot" not in result
 
     def test_xg_form_is_the_rating_change_the_chances_alone_would_give(self, monkeypatch):
         """The trend arrow's signal: K * (xG-implied score - expected score), and

@@ -944,6 +944,10 @@ def _results_payload(
         shots = shot_table().get(match.match_id)
         if shots:
             result["xg"] = [round(shots[0], 2), round(shots[1], 2)]
+            # xG on target (fotmob, Eliteserien), for the luck table's keeping:
+            # goals let in against the xG on target faced.
+            if len(shots) >= 4:
+                result["xgot"] = [round(shots[2], 2), round(shots[3], 2)]
             if match.match_id in pre_match:
                 form = xg_form(*pre_match[match.match_id], shots[0], shots[1], config)
                 result["xg_form"] = [round(form, 2), round(-form, 2)]

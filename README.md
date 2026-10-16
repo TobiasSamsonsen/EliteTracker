@@ -141,10 +141,22 @@ slider too; the ones with time along an axis of their own take none.
   layer built; on a finished season they become a scorecard for the
   pre-season prediction (hit rate, biggest climber, faller and surprise). The
   ⓘ button shows them in a popup. On phones the mountain fills the screen.
-- **Luck table** (`viz=luck`) -- each club's points against the points its
-  chances would have earned on average (both sides' goals Poisson at their xG,
-  match by match), as a bar either side of zero. Only matches with xG count.
-  Follows the rewind slider; a click opens the club.
+- **Luck table** (`viz=luck`) -- each club's points against what its chances
+  usually earn, as a bar either side of zero, with each club's table place.
+  The chances are each match's xG as points (both sides' goals Poisson at
+  their xG), scaled before the match by the side's finishing over its last 20
+  matches (goals against xG) and the other side's keeping over its last 10
+  (goals let in against xG on target; Eliteserien only), both against the
+  division; on top comes the trend below, since better sides still beat their
+  chances. A "How luck is measured" box above the chart says so step by step,
+  and the tooltip splits a club's usual points into those parts. Only matches
+  with xG count. Follows the rewind slider; a click opens the club. Under it,
+  "Do good teams have more luck?": every club season of the division's
+  finished xG seasons (Eliteserien from 2020, OBOS-ligaen from 2023) as xG
+  points against points above the scaled chances, champions as crests, with
+  the trend line, and facts on the champions, the top quarter by xG points,
+  the luckiest and unluckiest seasons and how much luck is left the season
+  after.
 
 ### Model Card
 
