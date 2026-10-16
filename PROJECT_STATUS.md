@@ -76,8 +76,8 @@ reports and `careers.json` carry them).
 | elo-v12.0 | 2026-09-25 | 9724223 | major | xG margin in the Elo update, goals-model spread 1.10, strength shock 0.15 |
 | elo-v12.1 | 2026-10-11 | 8e7c30c | minor | head-to-head tiebreak in the table and the simulation |
 | elo-v12.2 | 2026-10-13 | fbbc061 | minor | season simulation on NumPy (a new random stream) |
-| elo-v13.0 | 2026-10-16 | 28e49b1 | major | xG margin signed by xG; exact xG-implied score; squad-value offseason pull; early-season step; strength shock 0.20; surface edge in Eliteserien; play-offs simulated -- **the deployed version** |
-| **elo-v14.0** | not yet | branch elo-v14.0 | major | keeping (xG on target, a club's last 45 matches) as the goals model's fourth part, its chances learnt 90 % from xG; the offseason pull per division (OBOS-ligaen 0.75 / 0.3); surface edge 10 -> 20 |
+| elo-v13.0 | 2026-10-16 | 28e49b1 | major | xG margin signed by xG; exact xG-implied score; squad-value offseason pull; early-season step; strength shock 0.20; surface edge in Eliteserien; play-offs simulated |
+| elo-v14.0 | 2026-10-16 | 3909841 | major | keeping (xG on target, a club's last 45 matches) as the goals model's fourth part, its chances learnt 90 % from xG; the offseason pull per division (OBOS-ligaen 0.75 / 0.3); surface edge 10 -> 20 -- **the deployed version** |
 
 Unbumped commits that only added output fields (`position_points`, projected
 goals, high-stakes swings, the pre-season view) or touched presentation were
@@ -2108,7 +2108,7 @@ table. Checked against the sweep: with elo-v14.0's `src` the harness's
 shipped model is the experiment's final model to 2e-16 (Elo odds exact), and
 `harness.identity()` holds.
 
-## 🔭 Explore: which views stay, and a season in each (October 2026) - on branches
+## 🔭 Explore: which views stay, and a season in each (October 2026) - luck table released, six on branches
 
 The owner kept seven of the ten new views -- race lines, prediction scorecard,
 luck table, run-in heatmap, stakes calendar, head to head, match-odds
@@ -2116,8 +2116,9 @@ calibration -- beside the attack map and the season mountain. The lift, the
 rating river and the scorelines are stored in `experiments/explore-later/`
 (code, styles, strings, tests, and what each needs before it returns).
 
-None of the seven is on `main` yet. Each waits on a branch of its own,
-`explore/<id>`, off `explore/base`, which holds what they share (the hero
+The luck table was the first released (2026-10-16, after elo-v14.0), which
+brought `explore/base` to `main`. Each of the other six waits on a branch of
+its own, `explore/<id>`, off `explore/base`, which holds what they share (the hero
 rules for a season per view, `EXPLORE_REWIND`, `fetchedReport`,
 `renderTimeAxis` and `runInStart`, `.explore-note`, the two browser checks). A
 view reaches the site when its branch is merged into `main`; the first one
@@ -2177,8 +2178,8 @@ the link in `footer.text` and the static footer, a privacy line in
 across, one on phones) that each open a visualisation in the same panel, with
 `?viz=` for links. Adding one = an id in `EXPLORE_ITEMS`, a thumbnail in
 `exploreThumb`, a render function and its `explore.<id>.*` strings. On the
-site: attack vs defence and the season mountain; the views below that name a
-branch wait on it (see "Explore: which views stay").
+site: attack vs defence, the season mountain and the luck table; the views
+below that name a branch wait on it (see "Explore: which views stay").
 
 - **Attack vs defence** (`viz=attack`): crests placed by `table[].attack`
   against `defence` (fewest at the top). These are the model's ratings as
@@ -2232,7 +2233,7 @@ branch wait on it (see "Explore: which views stay").
   to the season shape's first snapshot when that predates the first match.
   Facts: hit rate, average miss in places, best and hardest season, biggest
   over- and under-achiever.
-- **Luck table** (`viz=luck`, #3; branch `explore/luck`): per club, points against the points its
+- **Luck table** (`viz=luck`, #3; released 2026-10-16): per club, points against the points its
   matches' xG would have earned on average (both sides Poisson at their xG,
   the same sum as `xg_implied_score`), as a diverging bar; follows the rewind
   slider; only matches with xG count on both sides. Facts: luckiest,

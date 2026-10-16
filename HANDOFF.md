@@ -9,10 +9,10 @@ released alone when it is finished. The owner decides what each one needs next.
 ## The branches
 
 ```
-main                       the site: Explore shows attack vs defence and the season mountain
-└─ explore/base            what the views share (reaches main with the first view released)
+main                       the site: Explore shows attack vs defence, the season mountain and the luck table
+└─ explore/base            what the views share (on main since the luck table's release)
    ├─ explore/scorecard    prediction scorecard
-   ├─ explore/luck         luck table
+   ├─ explore/luck         luck table -- released 2026-10-16 (merged into main)
    ├─ explore/runin        run-in heatmap
    ├─ explore/races        race lines
    ├─ explore/stakes       stakes calendar
@@ -72,8 +72,8 @@ git commit -am "Explore luck: ..." && git push
 ## Releasing a view
 
 1. On its branch, take in `main`: `git switch explore/<id> && git merge main`.
-   The first view released merges cleanly. Every later one conflicts where each
-   view adds a line at the same spot. A dry run (race lines released, then the
+   The luck table went first (2026-10-16), so every later one conflicts where
+   each view adds a line at the same spot. A dry run (race lines released, then the
    luck table) gave 10 conflicts in 5 files: `EXPLORE_ITEMS`, the
    `exploreThumb` branches, the `renderExplore` routes and the view sections in
    `app.js`; the strings in `i18n.js` (both languages); the end of
@@ -95,7 +95,7 @@ git commit -am "Explore luck: ..." && git push
 | view | season controls | known limits |
 |---|---|---|
 | scorecard | division only | every finished season at once; archives before the pre-season view fall back to the first season-shape snapshot |
-| luck | division, season, rewind | xG only from 2020 (Eliteserien) and 2023 (OBOS-ligaen); earlier seasons say so |
+| luck (released) | division, season, rewind | xG only from 2020 (Eliteserien) and 2023 (OBOS-ligaen); earlier seasons say so; keeping only where there is xG on target (Eliteserien) |
 | runin | division, season | a finished season shows the run-in as it stood with ten rounds left |
 | races | division, season | the snapshots count places only, so promotion and relegation leave out the play-offs (the note says so) |
 | stakes | division, season | decisive matches are marked only in the last ten rounds |
