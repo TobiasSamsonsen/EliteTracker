@@ -182,7 +182,22 @@ from dataclasses import dataclass
 #     relegation chances count them.
 # (Worked on as "elo-v13.0" and "elo-v13.1" before the version rules above; one
 # release, so one number.)
-MODEL_VERSION = "elo-v13.0"
+#
+# elo-v14.0: keeping, and every setting re-swept on 2021-2026 (October 2026);
+# see PROJECT_STATUS.md, "Keeping and finishing from xG on target".
+#   * the goals model has a fourth part, the keeper: log(xG on target faced /
+#     goals let in) over a club's last 45 matches, against its division,
+#     x 0.75, lowering the other side's expected goals
+#     (`ADConfig.keeping_window`, `keeping_weight`), with the chances learnt
+#     90 % from xG (`alpha`, 0.75 before) so the defence rating leaves the
+#     keeper to it: Eliteserien 2021+ -0.00256 log loss (t -2.86),
+#   * the goals model's offseason pull per division: OBOS-ligaen's ratings
+#     regress further and lean harder on squad value (0.75 / 0.3; Eliteserien
+#     keeps 0.88 / 0.2),
+#   * the surface edge 10 -> 20 rating points.
+#   Together: all matches 2021-2026 -0.00262 log loss (t -3.74), 2016-2026
+#   -0.00190 (t -4.05), both divisions, Brier and RPS alike.
+MODEL_VERSION = "elo-v14.0"
 
 # A 400-point rating gap means the stronger side is expected to score 10 times
 # as often as the weaker one; this is the constant that defines the ELO scale.

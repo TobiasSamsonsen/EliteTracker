@@ -18,6 +18,9 @@ elo-v12.2, which `src` was when they ran. elo-v13.0 changed the defaults
 underneath (xG margin, implied score, value pull, early step), so to reproduce
 out/ exactly put a worktree of commit ed7b2b0's `src` first on PYTHONPATH.
 `verify_src.py` checks elo-v13.0 against the bundle built from these hooks.
+Likewise keeping.py, keeping_rolling.py, fcdk*.py and sweep2021*.py measured
+against elo-v13.0 (commit 9b6d720's `src`); elo-v14.0 is their final
+candidate, so on its `src` their "shipped" baseline is elo-v14.0 itself.
 """
 
 from __future__ import annotations
@@ -230,6 +233,7 @@ class ADX(AttackDefence):
                 self._season_xg[home] = self._season_xg.get(home, 0.0) + shots[0]
                 self._season_goals[away] = self._season_goals.get(away, 0.0) + match.away_goals
                 self._season_xg[away] = self._season_xg.get(away, 0.0) + shots[1]
+        self._record_keeping(match)
 
 
 @dataclass
