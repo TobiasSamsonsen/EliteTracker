@@ -586,7 +586,7 @@ test('every luck-table string exists in both languages', () => {
   ]);
 });
 
-eval(pick('expectedFinish') + pick('scorecardRows') + pick('scorecardHits'));
+eval(pick('expectedFinish') + pick('scorecardRows') + pick('scorecardLastSeason') + pick('scorecardHits'));
 
 test('scorecard rows put the pre-season call against the final place', () => {
   const pre = [
@@ -598,9 +598,26 @@ test('scorecard rows put the pre-season call against the final place', () => {
   const final = [{ team_id: 'C', team: 'C', position: 1 }, { team_id: 'A', team: 'A', position: 2 }, { team_id: 'B', team: 'B', position: 3 }];
   const rows = scorecardRows(2019, pre, final);
   assert.deepEqual(rows.map((row) => [row.team_id, row.finished]), [['A', 2], ['B', 3], ['C', 1]]);
-  assert.ok(Math.abs(rows[0].expected - 1.3) < 1e-12 && Math.abs(rows[2].miss + 1.9) < 1e-12);
+  assert.ok(Math.abs(rows[0].expected - 1.3) < 1e-12);
+  // The call is the order the expected finishes put the clubs in.
+  assert.deepEqual(rows.map((row) => [row.called, row.miss]), [[1, 1], [2, 1], [3, -2]]);
   assert.equal(scorecardHits(rows), 3);
   assert.equal(scorecardHits([{ miss: 2.5 }, { miss: -2 }]), 1);
+  assert.equal(scorecardHits([{ lastMiss: 3 }, { lastMiss: 0 }], 'lastMiss'), 1);
+});
+
+test('last season’s table calls the clubs coming down first and those coming up last', () => {
+  const previous = {
+    eliteserien: { table: [{ team_id: 'TOP', position: 1 }, { team_id: 'DOWN', position: 16 }] },
+    obosligaen: { table: [{ team_id: 'UP', position: 1 }, { team_id: 'MID', position: 8 }] },
+  };
+  // OBOS-ligaen: DOWN from above first, then UP and MID by last season's
+  // places; the two clubs from neither table share the 4th and 5th place.
+  const rows = ['MID', 'NEW1', 'DOWN', 'NEW2', 'UP'].map((team_id, i) => ({ team_id, finished: i + 1 }));
+  assert.deepEqual(scorecardLastSeason(rows, previous).map((row) => row.lastMiss), [1 - 3, 2 - 4.5, 3 - 1, 4 - 4.5, 5 - 2]);
+  // Eliteserien: the club up from OBOS-ligaen goes after every club that stayed.
+  const top = scorecardLastSeason([{ team_id: 'UP', finished: 1 }, { team_id: 'TOP', finished: 2 }], previous);
+  assert.deepEqual(top.map((row) => row.lastMiss), [1 - 2, 2 - 1]);
 });
 
 test('every scorecard string exists in both languages', () => {
@@ -608,6 +625,7 @@ test('every scorecard string exists in both languages', () => {
     'explore.scorecard.title', 'explore.scorecard.desc', 'scorecard.loading', 'scorecard.empty', 'scorecard.aria',
     'scorecard.x', 'scorecard.y', 'scorecard.tip', 'scorecard.fact.hits', 'scorecard.fact.hitsText',
     'scorecard.fact.miss', 'scorecard.fact.missText', 'scorecard.fact.best', 'scorecard.fact.bestText', 'scorecard.fact.over',
-    'scorecard.fact.under', 'scorecard.fact.movedText',
+    'scorecard.fact.under', 'scorecard.fact.movedText', 'scorecard.cellTip', 'scorecard.pick', 'scorecard.season',
+    'scorecard.seasonFirst', 'scorecard.fact.last', 'scorecard.fact.lastText', 'scorecard.fact.missLast',
   ]);
 });

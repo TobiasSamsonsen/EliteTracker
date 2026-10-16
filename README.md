@@ -158,10 +158,13 @@ slider too; the ones with time along an axis of their own take none.
   the luckiest and unluckiest seasons and how much luck is left the season
   after.
 - **Prediction scorecard** (`viz=scorecard`) -- every finished club-season of
-  the division since 2015: where the pre-season prediction expected it to
-  finish against where it did, with the y = x line and the two-place band the
-  hit rate counts. Key figures: hit rate, average miss, best- and
-  hardest-called season, biggest over- and under-achiever.
+  the division since 2015: where the model put it before the season (the
+  order its expected finishes give) against where it finished, one circle a
+  cell sized by how many land there, with the y = x line and the two-place
+  band the hit rate counts. A strip of seasons under it, each with its hit
+  rate and last season's table's, picks one season's clubs out by name. Key
+  figures: hit rate, last season's table as a benchmark, average miss, best-
+  and hardest-called season, biggest over- and under-achiever.
 
 ### Model Card
 

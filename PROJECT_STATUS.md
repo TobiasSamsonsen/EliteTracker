@@ -2226,13 +2226,30 @@ below that name a branch wait on it (see "Explore: which views stay").
   final place with the smallest pre-season chance). The mountain's ⓘ button
   opens them in a `<dialog>`; the phone layout has no other way to them.
 - **Prediction scorecard** (`viz=scorecard`, candidate #1; branch `explore/scorecard`): every finished
-  club-season of the division, its expected finish in the pre-season view
-  against its final place, the y = x line and the two-place band the hit rate
+  club-season of the division, the place the pre-season view called (the
+  order of the expected finishes) against its final place, one circle a cell
+  sized by its count, the y = x line and the two-place band the hit rate
   counts. Fetches each season's live report and pre-season view (the
   mountain's cache); an archive built before the pre-season view falls back
   to the season shape's first snapshot when that predates the first match.
-  Facts: hit rate, average miss in places, best and hardest season, biggest
-  over- and under-achiever.
+  A strip of seasons (hit rate, last season's table's as a tick) picks one
+  season's clubs out by name. Facts: hit rate, last season's table as a
+  benchmark, average miss in places, best and hardest season, biggest over-
+  and under-achiever.
+  **The call is the order, not the average (October 2026).** The first
+  version counted hits against the expected finish itself. An average bunches
+  towards the middle (no club expected better than about 1.3 or worse than
+  14.5), so the clubs at the ends missed by more than the model did, and the
+  view showed the model losing to last season's table. 2016-2025, elo-v13.0
+  data, within two places / Spearman rank correlation per season:
+
+  | call | Eliteserien | OBOS-ligaen |
+  |---|---|---|
+  | expected finish | 39 % / 0.55 | 31 % / 0.50 |
+  | the model's order | 52 % / 0.55 | 49 % / 0.50 |
+  | last season's table (clubs coming down first, up last) | 48 % / 0.49 | 48 % / 0.46 |
+
+  The view now calls by the order, and shows last season's table beside it.
 - **Luck table** (`viz=luck`, #3; released 2026-10-16): per club, points against the points its
   matches' xG would have earned on average (both sides Poisson at their xG,
   the same sum as `xg_implied_score`), as a diverging bar; follows the rewind
