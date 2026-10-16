@@ -1,0 +1,28 @@
+/* Stored with views.js; append to public/styles.css to bring the views back.
+   Also restore .lift/.river/.scorelines in the shared padding rule and the
+   river/lift/scorelines selectors in the races and h2h rules (see README.md). */
+@media (max-width: 640px) {
+  .scorelines__cell { min-width: 3.3rem; height: 2.8rem; }
+  .scorelines__cell b { font-size: 0.8125rem; }
+}
+.chart .lift__lane { fill: var(--panel-sunk); opacity: 0.6; }
+.chart .lift__lane--elite { fill: color-mix(in oklab, var(--outcome-good) 8%, var(--panel)); opacity: 1; }
+.chart .lift__lane-name { fill: var(--ink-muted); font-size: 10px; dominant-baseline: middle; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; }
+.chart .lift__step { stroke-width: 1.2; opacity: 0.35; }
+.chart .lift__step--stay { stroke: var(--rule-strong); }
+.chart .lift__step--up { stroke: var(--outcome-good); opacity: 0.7; }
+.chart .lift__step--down { stroke: var(--outcome-bad); opacity: 0.7; }
+.chart .lift__dot { fill: var(--rule-strong); opacity: 0.5; }
+.chart .lift__club--now .lift__dot { fill: var(--ink-muted); opacity: 0.9; }
+.chart .lift__club { cursor: pointer; }
+.chart .lift__club:hover .lift__step, .chart .lift__club:focus-visible .lift__step { stroke-width: 3; opacity: 1; }
+.chart .lift__club:hover .lift__dot, .chart .lift__club:focus-visible .lift__dot { fill: var(--ink); opacity: 1; r: 3.5; }
+.chart .river__club .river__line { stroke: var(--rule); stroke-width: 1; }
+.chart .river__club--now .river__line { stroke-width: 1.8; }
+.chart .river__club { cursor: pointer; }
+.chart .river__club:hover .river__line, .chart .river__club:focus-visible .river__line { stroke: var(--ink); stroke-width: 3; }
+.scorelines__table { margin: 0 auto; font-size: 0.8125rem; }
+.scorelines__table th { padding: 0.25rem 0.5rem; color: var(--ink-muted); font-weight: 600; }
+.scorelines__cell { min-width: 4.2rem; height: 3.1rem; border-radius: 6px; color: var(--ink); text-align: center; }
+.scorelines__cell b { display: block; font-size: 0.95rem; }
+.scorelines__predicted { color: var(--ink-muted); font-size: 0.6875rem; }
