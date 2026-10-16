@@ -3953,3 +3953,15 @@ body[data-viz="mountain"] > footer { display: none; }
 /* Explore: a note above or under a view. */
 .explore-note { margin: 0.75rem 0 0; color: var(--ink-muted); font-size: 0.8125rem; line-height: 1.45; }
 .explore-note--lead { margin: 0 0 0.6rem; }
+
+/* Prediction scorecard: expected finish against final place, the two-place
+   band. It spans every season, so the hero offers only the division. */
+body[data-viz="scorecard"] .hero-title-part[data-role="season"] { display: none; }
+.scorecard { padding: 0.75rem 1rem 1rem; }
+.scorecard .chart { max-width: 600px; margin: 0 auto; }
+.chart .scorecard__diagonal { stroke: var(--rule-strong); stroke-width: 1.5; stroke-dasharray: 5 4; }
+.chart .scorecard__dot:focus-visible { outline: none; stroke: var(--ink); stroke-width: 2; }
+.scorecard__band { fill: var(--seq-2); opacity: 0.45; }
+.chart .scorecard__dot { fill: var(--seq-6); stroke: var(--panel); stroke-width: 1; opacity: 0.8; }
+.chart .scorecard__dot--miss { fill: var(--seq-4); }
+.chart .scorecard__dot:hover { opacity: 1; stroke: var(--ink); }

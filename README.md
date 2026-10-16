@@ -141,6 +141,11 @@ slider too; the ones with time along an axis of their own take none.
   layer built; on a finished season they become a scorecard for the
   pre-season prediction (hit rate, biggest climber, faller and surprise). The
   ⓘ button shows them in a popup. On phones the mountain fills the screen.
+- **Prediction scorecard** (`viz=scorecard`) -- every finished club-season of
+  the division since 2015: where the pre-season prediction expected it to
+  finish against where it did, with the y = x line and the two-place band the
+  hit rate counts. Key figures: hit rate, average miss, best- and
+  hardest-called season, biggest over- and under-achiever.
 
 ### Model Card
 

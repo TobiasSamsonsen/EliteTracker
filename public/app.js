@@ -2230,7 +2230,7 @@ function renderModelCard(report) {
 /* ---------- explore: other ways to look at the numbers -------------- */
 
 /* A gallery of cards, each opening one visualisation in the same panel. */
-const EXPLORE_ITEMS = ['mountain', 'attack'];
+const EXPLORE_ITEMS = ['mountain', 'attack', 'scorecard'];
 /* The visualisations that follow the rewind slider: they read one day's
    report. The rest take a whole season or every season, or carry time along
    an axis of their own, which the slider would only cut short. */
@@ -2248,6 +2248,12 @@ function exploreThumb(id) {
         }));
       }
     });
+  } else if (id === 'scorecard') {
+    // Expected against final place: a band along the diagonal, a few misses.
+    svg.appendChild(svgEl('polygon', { class: 'scorecard__band', points: '24,8 46,8 136,82 114,82' }));
+    for (const [cx, cy] of [[30, 12], [44, 22], [52, 18], [62, 34], [74, 38], [80, 52], [92, 46], [100, 62], [112, 66], [124, 76], [58, 64], [118, 30]]) {
+      svg.appendChild(svgEl('circle', { cx, cy, r: 4, style: `fill: ${seqColor(0.6)}` }));
+    }
   } else {
     svg.appendChild(svgEl('line', { class: 'explore-thumb__avg', x1: 82, x2: 82, y1: 10, y2: 80 }));
     svg.appendChild(svgEl('line', { class: 'explore-thumb__avg', x1: 16, x2: 144, y1: 46, y2: 46 }));
@@ -2275,6 +2281,7 @@ function renderExplore(report) {
   if (item !== 'mountain') mountainStop();
   if (item === 'mountain') return renderMountain(report, body);
   if (item === 'attack') return renderAttackMap(report, body);
+  if (item === 'scorecard') return renderScorecard(report, body);
   const gallery = el('div', 'explore-gallery');
   for (const id of EXPLORE_ITEMS) {
     const card = el('button', 'explore-card');
@@ -2516,6 +2523,117 @@ async function renderTimeAxis(item, report, body, draw, runIn) {
   if (from && !body.firstChild.matches('.explore-empty')) {
     body.firstChild.prepend(el('p', 'explore-note explore-note--lead', t('explore.runInFrom', { date: whenDate(from) })));
   }
+}
+
+/* ---------- explore: prediction scorecard (viz=scorecard) -------------- */
+
+/* One season's call before a ball was kicked against how it ended: each
+   club's expected finish in the pre-season view and its final place. */
+function scorecardRows(season, pre, final) {
+  const placed = new Map(final.map((row) => [row.team_id, row]));
+  return pre
+    .filter((row) => placed.has(row.team_id))
+    .map((row) => {
+      const end = placed.get(row.team_id);
+      const expected = expectedFinish(row);
+      return { season, team_id: row.team_id, team: end.team, expected, finished: end.position, miss: end.position - expected };
+    });
+}
+
+/* Clubs that finished within two places of the call, as the mountain counts it. */
+function scorecardHits(rows) {
+  return rows.filter((row) => Math.abs(row.miss) <= 2).length;
+}
+
+/* A finished season's rows: the pre-season view where the build has one,
+   else the season shape's first snapshot when it predates the first match
+   (archives built before the pre-season view), else nothing. */
+async function scorecardSeason(season, slug) {
+  // The live view, fetched here rather than through loadSeasonReports, which
+  // hands back the rewound copy when the reader has rewound this season.
+  const live = (await fetchedReport(reportUrl(season)))[slug];
+  if (!live || live.model.matches_remaining) return [];
+  const preseason = live.league.preseason;
+  let pre = null;
+  if (preseason) {
+    pre = await fetchedReport(reportUrl(season, preseason)).then((r) => r[slug].table, () => null);
+  }
+  const history = live.history || {};
+  if (!pre && history.teams && history.latest_rounds && history.latest_rounds[0] == null) {
+    pre = history.teams.map((team) => ({ team_id: team.team_id, position_probabilities: team.positions[0] }));
+  }
+  return pre ? scorecardRows(season, pre, live.table).map((row) => ({ ...row, team: shortName(row.team) })) : [];
+}
+
+async function renderScorecard(report, body) {
+  const slug = report.league.slug;
+  body.replaceChildren(el('p', 'explore-empty', t('scorecard.loading')));
+  const seasons = report.league.seasons || [];
+  const settled = await Promise.all(seasons.map((season) => scorecardSeason(season, slug).catch(() => [])));
+  if (state.exploreItem !== 'scorecard' || report.league.slug !== slug) return;
+  const rows = settled.flat();
+  if (!rows.length) {
+    body.replaceChildren(el('p', 'explore-empty', t('scorecard.empty')));
+    return;
+  }
+  const wrap = el('div', 'scorecard');
+  const svg = svgEl('svg', { class: 'chart', role: 'group', 'aria-label': t('scorecard.aria') });
+  wrap.appendChild(svg);
+  body.replaceChildren(wrap);
+  const places = Math.max(...rows.map((row) => row.finished), 16);
+  const box = wrap.getBoundingClientRect().width || 600;
+  const size = Math.min(600, Math.round(box));
+  const pad = { top: 18, right: 14, bottom: 40, left: 40 };
+  svg.setAttribute('viewBox', `0 0 ${size} ${size}`);
+  const x = (place) => pad.left + ((place - 0.5) / places) * (size - pad.left - pad.right);
+  const y = (place) => pad.top + ((place - 0.5) / places) * (size - pad.top - pad.bottom);
+  const text = (className, content, attrs) => {
+    const node = svgEl('text', { class: className, ...attrs });
+    node.textContent = content;
+    svg.appendChild(node);
+  };
+  // Within two places of the call: the band the hit rate counts.
+  svg.appendChild(svgEl('polygon', {
+    class: 'scorecard__band',
+    points: [[1 - 2, 1], [places, places + 2], [places, places - 2], [1 + 2, 1]]
+      .map(([e, f]) => `${x(Math.max(0.5, Math.min(places + 0.5, e)))},${y(Math.max(0.5, Math.min(places + 0.5, f)))}`).join(' '),
+  }));
+  for (let place = 1; place <= places; place += 1) {
+    if (place !== 1 && place % (places > 12 ? 3 : 2) !== 1 && place !== places) continue;
+    text('tick', `${place}.`, { x: x(place), y: size - pad.bottom + 14, 'text-anchor': 'middle' });
+    text('tick', `${place}.`, { x: pad.left - 6, y: y(place) + 3.5, 'text-anchor': 'end' });
+  }
+  svg.appendChild(svgEl('line', { class: 'scorecard__diagonal', x1: x(0.5), y1: y(0.5), x2: x(places + 0.5), y2: y(places + 0.5) }));
+  text('axis-title', t('scorecard.x'), { x: size - pad.right, y: size - 6, 'text-anchor': 'end' });
+  text('axis-title', t('scorecard.y'), { x: pad.left, y: pad.top - 6 });
+  for (const row of rows) {
+    const dot = svgEl('circle', {
+      class: `scorecard__dot${Math.abs(row.miss) <= 2 ? '' : ' scorecard__dot--miss'}`,
+      cx: x(row.expected), cy: y(row.finished), r: 4.5, tabindex: 0,
+    });
+    const tip = t('scorecard.tip', { team: row.team, season: row.season, expected: num(row.expected, 1), finished: row.finished });
+    dot.setAttribute('aria-label', tip);
+    attachTip(dot, tip);
+    svg.appendChild(dot);
+  }
+
+  const bySeason = new Map();
+  for (const row of rows) bySeason.set(row.season, [...(bySeason.get(row.season) || []), row]);
+  const rates = [...bySeason].map(([season, list]) => ({ season, hits: scorecardHits(list), n: list.length }));
+  const best = [...rates].sort((a, b) => b.hits / b.n - a.hits / a.n || b.season - a.season)[0];
+  const worst = [...rates].sort((a, b) => a.hits / a.n - b.hits / b.n || b.season - a.season)[0];
+  const ranked = [...rows].sort((a, b) => a.miss - b.miss);
+  const [over, under] = [ranked[0], ranked[ranked.length - 1]];
+  const hits = scorecardHits(rows);
+  const meanMiss = rows.reduce((sum, row) => sum + Math.abs(row.miss), 0) / rows.length;
+  const moved = (row) => t('scorecard.fact.movedText', { season: row.season, expected: num(row.expected, 1), finished: row.finished });
+  wrap.appendChild(exploreFacts([
+    { value: pct(hits / rows.length, 0), label: t('scorecard.fact.hits'), text: t('scorecard.fact.hitsText', { hits, n: rows.length, seasons: rates.length }) },
+    { value: num(meanMiss, 1), label: t('scorecard.fact.miss'), text: t('scorecard.fact.missText') },
+    { value: `${best.season}: ${best.hits}/${best.n}`, label: t('scorecard.fact.best'), text: t('scorecard.fact.bestText', { season: worst.season, hits: worst.hits, n: worst.n }) },
+    { value: over.team, label: t('scorecard.fact.over'), text: moved(over) },
+    { value: under.team, label: t('scorecard.fact.under'), text: moved(under) },
+  ]));
 }
 
 /* The season mountain, ported from experiments/season_mountain: the finish

@@ -398,3 +398,29 @@ test('the time-axis note exists in both languages', () => {
     'explore.runInFrom',
   ]);
 });
+
+eval(pick('expectedFinish') + pick('scorecardRows') + pick('scorecardHits'));
+
+test('scorecard rows put the pre-season call against the final place', () => {
+  const pre = [
+    { team_id: 'A', position_probabilities: [0.7, 0.3, 0] },
+    { team_id: 'B', position_probabilities: [0.3, 0.6, 0.1] },
+    { team_id: 'C', position_probabilities: [0, 0.1, 0.9] },
+    { team_id: 'X', position_probabilities: [0, 0, 1] },   // not in the final table: dropped
+  ];
+  const final = [{ team_id: 'C', team: 'C', position: 1 }, { team_id: 'A', team: 'A', position: 2 }, { team_id: 'B', team: 'B', position: 3 }];
+  const rows = scorecardRows(2019, pre, final);
+  assert.deepEqual(rows.map((row) => [row.team_id, row.finished]), [['A', 2], ['B', 3], ['C', 1]]);
+  assert.ok(Math.abs(rows[0].expected - 1.3) < 1e-12 && Math.abs(rows[2].miss + 1.9) < 1e-12);
+  assert.equal(scorecardHits(rows), 3);
+  assert.equal(scorecardHits([{ miss: 2.5 }, { miss: -2 }]), 1);
+});
+
+test('every scorecard string exists in both languages', () => {
+  assertBothLanguages([
+    'explore.scorecard.title', 'explore.scorecard.desc', 'scorecard.loading', 'scorecard.empty', 'scorecard.aria',
+    'scorecard.x', 'scorecard.y', 'scorecard.tip', 'scorecard.fact.hits', 'scorecard.fact.hitsText',
+    'scorecard.fact.miss', 'scorecard.fact.missText', 'scorecard.fact.best', 'scorecard.fact.bestText', 'scorecard.fact.over',
+    'scorecard.fact.under', 'scorecard.fact.movedText',
+  ]);
+});
