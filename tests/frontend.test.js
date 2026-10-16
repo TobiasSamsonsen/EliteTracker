@@ -398,3 +398,43 @@ test('the time-axis note exists in both languages', () => {
     'explore.runInFrom',
   ]);
 });
+
+/* The luck table's xG points are model.elo.xg_implied_score's Poisson sum
+   (12 goals, normalised), as points; golden values from Python. */
+eval(pick('xgPoints') + pick('luckRows') + pick('correlation'));
+
+test('xG points match the Python recurrence', () => {
+  const close = (a, b) => assert.ok(Math.abs(a - b) < 1e-12, `${a} vs ${b}`);
+  const [home, away] = xgPoints(1.8, 0.9);
+  close(home, 1.9871806765821036);
+  close(away, 0.7838523908999595);
+  close(xgPoints(0.4, 2.6)[1], 2.650998624587426);
+  const [even1, even2] = xgPoints(1.2, 1.2);
+  close(even1, even2);
+});
+
+test('luck rows sum points and xG points per club, luckiest first', () => {
+  const r = (home_id, away_id, hg, ag, xg) => ({ home_id, away_id, home: home_id, away: away_id, home_goals: hg, away_goals: ag, xg });
+  const rows = luckRows([
+    r('A', 'B', 1, 0, [0.3, 2.4]),   // A steals it
+    r('B', 'A', 0, 0, [1.9, 0.2]),
+    r('A', 'B', 2, 2, null),          // no xG: left out on both sides
+    { ...r('A', 'B', null, null, null) },
+  ]);
+  assert.deepEqual(rows.map((row) => row.team_id), ['A', 'B']);
+  assert.equal(rows[0].matches, 2);
+  assert.equal(rows[0].points, 4);
+  assert.ok(Math.abs(rows[0].luck + rows[1].luck - (4 + 1 - rows[0].xpts - rows[1].xpts)) < 1e-12);
+  assert.ok(rows[0].luck > 3 && rows[1].luck < -2);
+  assert.equal(correlation([1, 2, 3], [2, 4, 6]), 1);
+  assert.equal(correlation([1, 1, 1], [2, 4, 6]), 0);
+});
+
+test('every luck-table string exists in both languages', () => {
+  assertBothLanguages([
+    'explore.luck.title', 'explore.luck.desc', 'luck.empty', 'luck.aria', 'luck.x',
+    'luck.lucky', 'luck.unlucky', 'luck.luckyShort', 'luck.unluckyShort', 'luck.tip',
+    'luck.fact.lucky', 'luck.fact.unlucky', 'luck.fact.moveText', 'luck.fact.r', 'luck.fact.rText',
+    'luck.fact.coverage', 'luck.fact.coverageValue', 'luck.fact.coverageText',
+  ]);
+});

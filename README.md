@@ -141,6 +141,10 @@ slider too; the ones with time along an axis of their own take none.
   layer built; on a finished season they become a scorecard for the
   pre-season prediction (hit rate, biggest climber, faller and surprise). The
   ⓘ button shows them in a popup. On phones the mountain fills the screen.
+- **Luck table** (`viz=luck`) -- each club's points against the points its
+  chances would have earned on average (both sides' goals Poisson at their xG,
+  match by match), as a bar either side of zero. Only matches with xG count.
+  Follows the rewind slider; a click opens the club.
 
 ### Model Card
 

@@ -3953,3 +3953,14 @@ body[data-viz="mountain"] > footer { display: none; }
 /* Explore: a note above or under a view. */
 .explore-note { margin: 0.75rem 0 0; color: var(--ink-muted); font-size: 0.8125rem; line-height: 1.45; }
 .explore-note--lead { margin: 0 0 0.6rem; }
+
+/* Luck table: points against xG points, one diverging bar per club. */
+.luck { padding: 0.75rem 1rem 1rem; }
+.chart .luck__row { cursor: pointer; }
+.chart .luck__row:focus-visible { outline: none; }
+.chart .luck__row:hover .luck__name, .chart .luck__row:focus-visible .luck__name { text-decoration: underline; }
+.chart .luck__bar--up { fill: var(--outcome-good); }
+.chart .luck__bar--down { fill: var(--outcome-bad); }
+.chart .luck__name { fill: var(--ink); font-size: 12px; }
+.chart .luck__value { fill: var(--ink-muted); font-size: 11px; font-variant-numeric: tabular-nums; }
+.chart .luck__side { fill: var(--ink-faint); font-size: 11px; font-weight: 600; }

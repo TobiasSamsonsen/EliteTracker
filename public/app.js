@@ -2230,11 +2230,11 @@ function renderModelCard(report) {
 /* ---------- explore: other ways to look at the numbers -------------- */
 
 /* A gallery of cards, each opening one visualisation in the same panel. */
-const EXPLORE_ITEMS = ['mountain', 'attack'];
+const EXPLORE_ITEMS = ['mountain', 'attack', 'luck'];
 /* The visualisations that follow the rewind slider: they read one day's
    report. The rest take a whole season or every season, or carry time along
    an axis of their own, which the slider would only cut short. */
-const EXPLORE_REWIND = new Set(['attack']);
+const EXPLORE_REWIND = new Set(['attack', 'luck']);
 
 function exploreThumb(id) {
   const svg = svgEl('svg', { class: 'explore-card__thumb', viewBox: '0 0 160 90', 'aria-hidden': 'true' });
@@ -2247,6 +2247,15 @@ function exploreThumb(id) {
           style: `fill: var(--seq-${Math.min(SEQ_STEPS, level + 1)})`,
         }));
       }
+    });
+  } else if (id === 'luck') {
+    // Bars either side of zero, longest at the ends.
+    svg.appendChild(svgEl('line', { class: 'explore-thumb__avg', x1: 80, x2: 80, y1: 6, y2: 84 }));
+    [34, 24, 15, 8, -6, -12, -22, -31].forEach((v, i) => {
+      svg.appendChild(svgEl('rect', {
+        x: v >= 0 ? 80 : 80 + v, y: 9 + i * 9.5, width: Math.abs(v), height: 6.5, rx: 1.5,
+        style: `fill: var(${v >= 0 ? '--outcome-good' : '--outcome-bad'})`,
+      }));
     });
   } else {
     svg.appendChild(svgEl('line', { class: 'explore-thumb__avg', x1: 82, x2: 82, y1: 10, y2: 80 }));
@@ -2275,6 +2284,7 @@ function renderExplore(report) {
   if (item !== 'mountain') mountainStop();
   if (item === 'mountain') return renderMountain(report, body);
   if (item === 'attack') return renderAttackMap(report, body);
+  if (item === 'luck') return renderLuck(report, body);
   const gallery = el('div', 'explore-gallery');
   for (const id of EXPLORE_ITEMS) {
     const card = el('button', 'explore-card');
@@ -2517,6 +2527,145 @@ async function renderTimeAxis(item, report, body, draw, runIn) {
     body.firstChild.prepend(el('p', 'explore-note explore-note--lead', t('explore.runInFrom', { date: whenDate(from) })));
   }
 }
+
+/* ---------- explore: luck table (viz=luck) ----------------------------- */
+
+/* Expected points from one match's xG: each side's goals Poisson at its xG,
+   summed to 12 goals and normalised (as model.elo.xg_implied_score). */
+function xgPoints(homeXg, awayXg) {
+  let [ph, pa] = [Math.exp(-homeXg), Math.exp(-awayXg)];
+  let [below, home, draw, homeMass] = [0, 0, 0, 0];
+  for (let k = 0; k <= 12; k += 1) {
+    if (k) {
+      ph *= homeXg / k;
+      pa *= awayXg / k;
+    }
+    home += ph * below;
+    draw += ph * pa;
+    below += pa;
+    homeMass += ph;
+  }
+  const mass = homeMass * below;
+  [home, draw] = [home / mass, draw / mass];
+  return [3 * home + draw, 3 * (1 - home - draw) + draw];
+}
+
+/* Per club, over the played matches that have xG: points won against the
+   points those chances would have earned on average. Luckiest first. */
+function luckRows(results) {
+  const rows = new Map();
+  for (const r of results) {
+    if (r.home_goals == null || !r.xg) continue;
+    const [home, away] = xgPoints(r.xg[0], r.xg[1]);
+    const won = (a, b) => (a > b ? 3 : a === b ? 1 : 0);
+    for (const [id, team, points, xpts] of [
+      [r.home_id, r.home, won(r.home_goals, r.away_goals), home],
+      [r.away_id, r.away, won(r.away_goals, r.home_goals), away],
+    ]) {
+      const row = rows.get(id) || { team_id: id, team, matches: 0, points: 0, xpts: 0 };
+      row.matches += 1;
+      row.points += points;
+      row.xpts += xpts;
+      rows.set(id, row);
+    }
+  }
+  return [...rows.values()]
+    .map((row) => ({ ...row, luck: row.points - row.xpts }))
+    .sort((a, b) => b.luck - a.luck || a.team.localeCompare(b.team));
+}
+
+function renderLuck(report, body) {
+  const rows = luckRows(report.results || []);
+  if (!rows.length) {
+    body.replaceChildren(el('p', 'explore-empty', t('luck.empty')));
+    return;
+  }
+  const wrap = el('div', 'luck');
+  const svg = svgEl('svg', { class: 'chart', role: 'group', 'aria-label': t('luck.aria') });
+  wrap.appendChild(svg);
+  body.replaceChildren(wrap);
+  const box = wrap.getBoundingClientRect().width || 940;
+  const narrow = box < SHAPE_NARROW;
+  const width = narrow ? Math.round(box) : 940;
+  const rowHeight = 26;
+  const pad = { top: 26, bottom: 30, left: narrow ? 118 : 170, right: 46 };
+  const height = pad.top + rows.length * rowHeight + pad.bottom;
+  svg.setAttribute('viewBox', `0 0 ${width} ${height}`);
+  const reach = Math.max(3, Math.ceil(Math.max(...rows.map((row) => Math.abs(row.luck))) / 2) * 2);
+  const x = (value) => pad.left + ((value + reach) / (2 * reach)) * (width - pad.left - pad.right);
+  const text = (className, content, attrs) => {
+    const node = svgEl('text', { class: className, ...attrs });
+    node.textContent = content;
+    svg.appendChild(node);
+    return node;
+  };
+  const step = reach > 8 ? 4 : 2;
+  for (let v = -reach; v <= reach; v += step) {
+    svg.appendChild(svgEl('line', { class: v ? 'grid-line' : 'axis-line', x1: x(v), x2: x(v), y1: pad.top - 6, y2: height - pad.bottom }));
+    text('tick', signed(v, 0), { x: x(v), y: height - pad.bottom + 14, 'text-anchor': 'middle' });
+  }
+  text('axis-title', t('luck.x'), { x: width - pad.right, y: height - 4, 'text-anchor': 'end' });
+  // Both sides' labels share one line, so phones get the short ones.
+  text('luck__side', t(narrow ? 'luck.unluckyShort' : 'luck.unlucky'), { x: x(-reach), y: pad.top - 10 });
+  text('luck__side', t(narrow ? 'luck.luckyShort' : 'luck.lucky'), { x: x(reach), y: pad.top - 10, 'text-anchor': 'end' });
+
+  rows.forEach((row, i) => {
+    const top = pad.top + i * rowHeight;
+    const g = svgEl('g', { class: 'luck__row', tabindex: 0, role: 'button' });
+    const [a, b] = [x(0), x(row.luck)];
+    g.appendChild(svgEl('rect', {
+      class: `luck__bar ${row.luck >= 0 ? 'luck__bar--up' : 'luck__bar--down'}`,
+      x: Math.min(a, b), y: top + 5, width: Math.max(1, Math.abs(b - a)), height: rowHeight - 10, rx: 3,
+    }));
+    g.appendChild(svgEl('image', { href: `/logos/${row.team_id}.webp`, x: 4, y: top + 3, width: 20, height: 20 }));
+    const name = svgEl('text', { class: 'luck__name', x: 30, y: top + 17 });
+    name.textContent = shortName(row.team);
+    g.appendChild(name);
+    const value = svgEl('text', {
+      class: 'luck__value', y: top + 17,
+      x: row.luck >= 0 ? b + 5 : b - 5, 'text-anchor': row.luck >= 0 ? 'start' : 'end',
+    });
+    value.textContent = signed(row.luck, 1);
+    g.appendChild(value);
+    const tip = t('luck.tip', { points: row.points, xpts: num(row.xpts, 1), luck: signed(row.luck, 1), n: row.matches });
+    g.setAttribute('aria-label', `${row.team}: ${tip}`);
+    attachTip(g, `<b>${row.team}</b><br>${tip}`);
+    g.addEventListener('click', () => openTeamView(row.team_id, row.team));
+    g.addEventListener('keydown', (event) => {
+      if (event.key !== 'Enter' && event.key !== ' ') return;
+      event.preventDefault();
+      openTeamView(row.team_id, row.team);
+    });
+    svg.appendChild(g);
+  });
+
+  const played = (report.results || []).filter((r) => r.home_goals != null).length;
+  const withXg = (report.results || []).filter((r) => r.home_goals != null && r.xg).length;
+  const [lucky, unlucky] = [rows[0], rows[rows.length - 1]];
+  const pts = rows.map((row) => row.points / row.matches);
+  const xps = rows.map((row) => row.xpts / row.matches);
+  const r = correlation(pts, xps);
+  wrap.appendChild(exploreFacts([
+    { value: lucky.team, label: t('luck.fact.lucky'), text: t('luck.fact.moveText', { luck: signed(lucky.luck, 1), xpts: num(lucky.xpts, 1), points: lucky.points }) },
+    { value: unlucky.team, label: t('luck.fact.unlucky'), text: t('luck.fact.moveText', { luck: signed(unlucky.luck, 1), xpts: num(unlucky.xpts, 1), points: unlucky.points }) },
+    { value: num(r, 2), label: t('luck.fact.r'), text: t('luck.fact.rText') },
+    { value: t('luck.fact.coverageValue', { n: withXg, of: played }), label: t('luck.fact.coverage'), text: t('luck.fact.coverageText') },
+  ]));
+}
+
+/* Pearson correlation of two equal-length lists; 0 when either is flat. */
+function correlation(a, b) {
+  const n = a.length;
+  const [ma, mb] = [a.reduce((s, v) => s + v, 0) / n, b.reduce((s, v) => s + v, 0) / n];
+  let [sab, saa, sbb] = [0, 0, 0];
+  for (let i = 0; i < n; i += 1) {
+    sab += (a[i] - ma) * (b[i] - mb);
+    saa += (a[i] - ma) ** 2;
+    sbb += (b[i] - mb) ** 2;
+  }
+  return saa && sbb ? sab / Math.sqrt(saa * sbb) : 0;
+}
+
 
 /* The season mountain, ported from experiments/season_mountain: the finish
    grid is the floor, and every round stacks another layer of finishing-place
