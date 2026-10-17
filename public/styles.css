@@ -4019,6 +4019,8 @@ body[data-viz="accuracy"] .hero-title-part[data-role="season"] { display: none; 
 .scorecard__season-bar i { position: absolute; top: 0; bottom: 0; left: 0; border-radius: 2px; background: var(--seq-6); }
 .scorecard__season-bar .scorecard__season-last { top: -3px; bottom: -3px; width: 2px; margin-left: -1px; border-radius: 1px; background: var(--ink); }
 .scorecard__note { max-width: 600px; margin-left: auto; margin-right: auto; }
+/* Six key figures: three a row on a wide screen, not five and one. */
+.scorecard .explore-facts__grid { grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); }
 
 /* Model accuracy: two parts, each with a heading and a lead. */
 .accuracy__part + .accuracy__part { margin-top: 1.25rem; padding-top: 1.25rem; border-top: 1px solid var(--rule); }
@@ -4043,7 +4045,7 @@ body[data-viz="accuracy"] .hero-title-part[data-role="season"] { display: none; 
 .calibration__table caption { padding-bottom: 0.4rem; color: var(--ink-muted); font-size: 0.8125rem; text-align: left; caption-side: top; }
 .calibration__table th, .calibration__table td { padding: 0.35rem 0.5rem; border-bottom: 1px solid var(--rule); text-align: right; }
 .calibration__table th:first-child { text-align: left; font-weight: 500; }
-.calibration__table tr:first-of-type th { color: var(--ink-muted); font-size: 0.75rem; font-weight: 600; }
+.calibration__table tr:first-of-type th { color: var(--ink-muted); font-size: 0.75rem; font-weight: 600; white-space: nowrap; }
 .calibration__ours th, .calibration__ours td { font-weight: 700; }
 
 /* Model accuracy, third part: every model version's odds on the same
@@ -4055,7 +4057,8 @@ body[data-viz="accuracy"] .hero-title-part[data-role="season"] { display: none; 
 .versions__legend { display: flex; flex-wrap: wrap; gap: 0.4rem 1.1rem; max-width: 760px; margin: 0 auto 0.4rem; color: var(--ink-muted); font-size: 0.8125rem; }
 .versions__key { display: inline-flex; align-items: center; gap: 0.4rem; }
 .versions__swatch { width: 1rem; height: 2px; border-radius: 1px; }
-.versions__swatch--market { width: 1.5rem; height: 0; border-top: 2px dashed var(--ink-muted); background: none; } /* its line's colour, set inline */
+/* Dashes drawn, not a dashed border, which renders near solid this short; --swatch is its line's colour. */
+.versions__swatch--market { width: 1.5rem; background: repeating-linear-gradient(90deg, var(--swatch, var(--ink-muted)) 0 5px, transparent 5px 8px); }
 .chart .versions__line { fill: none; stroke-width: 2; stroke-linejoin: round; }
 .chart .versions__dot { stroke: var(--panel); stroke-width: 2; pointer-events: none; }
 .chart .versions__market { stroke-width: 1.5; stroke-dasharray: 5 4; opacity: 0.85; } /* stroke: its line's colour */

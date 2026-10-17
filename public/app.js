@@ -3531,7 +3531,7 @@ function renderVersionHistory(report, body, data) {
   for (const { label, colour } of markets) {
     const item = el('span', 'versions__key');
     const swatch = el('i', 'versions__swatch versions__swatch--market');
-    swatch.style.borderTopColor = colour;
+    swatch.style.setProperty('--swatch', colour);
     item.append(swatch, label);
     legend.appendChild(item);
   }
