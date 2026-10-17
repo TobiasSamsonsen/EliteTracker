@@ -49,7 +49,11 @@ The shipped prediction is a 25/75 blend (ELO/attack-defence). Scorelines come
 from the attack/defence grid, conditioned on the blended outcome odds. In
 Eliteserien a home side whose visitor normally plays on the other surface
 (grass or artificial turf) gets a small edge on the prediction
-(`normalize/surfaces.py`).
+(`normalize/surfaces.py`). In the run-in, once both sides have played 24, a
+side near a line of the table (the title, Europe or promotion, the play-offs,
+relegation) is priced up and one with nothing left to play for down, on the
+prediction only; the season simulation reads it from each run's own table
+(`model/stakes.py`).
 
 The season simulation also plays the play-offs in every run (OBOS-ligaen 3rd-6th
 for a two-legged final against Eliteserien's 14th, OBOS-ligaen's 14th against a
@@ -180,6 +184,7 @@ Every tunable parameter in the shipped model:
 | Simulations | 50,000 | Monte Carlo runs per league (10,000 on rewound views) |
 | Strength shock | ±0.20 | Per-run club strength noise (log-odds), so finishing odds carry rating uncertainty |
 | Surface edge | 20 pts (Eliteserien) | Home side's extra rating when its visitor plays on the other surface (prediction only) |
+| Table stakes | 30 pts / 0.05 log goals | From 24 played: per unit of pressure difference (each side's points from its nearest line of the table against its matches left), on the prediction only; per run in the simulation |
 
 ### Team Focus
 

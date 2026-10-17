@@ -20,6 +20,7 @@ import time
 import urllib.error
 import urllib.request
 from dataclasses import dataclass
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
@@ -180,7 +181,10 @@ def fetch_match_xg(match_id: str) -> tuple[float, ...] | None:
 
 
 def load_xg(path: Path = XG_PATH) -> dict[str, Any]:
-    """{"matches": {match_id: values}, "none": [ids without shot data]}.
+    """{"matches": {match_id: values}, "none": [ids without shot data],
+    "pending": {match_id: when fetched}} -- `pending` holds the fetches made
+    inside the settle window, still to be asked for once more (`update_xg`,
+    and Sofascore's `update_obos_xg`).
 
     `values` is [home_xg, away_xg] from Sofascore (OBOS-ligaen); from fotmob
     [home_xg, away_xg, home_xgot, away_xgot], and from October 2026 on also
@@ -197,34 +201,65 @@ def save_xg(data: dict[str, Any], path: Path = XG_PATH) -> None:
     os.replace(temp, path)
 
 
+# How long after kickoff FotMob's xG counts as settled. FotMob refines a
+# match's xG after the first post-match pull; the old rule re-fetched every
+# match of the last two days on every run (the hourly job: up to ~48 requests
+# a match). Now a fetch inside this window is marked pending and asked for
+# once more after it, then never again -- the rule Sofascore's OBOS pull
+# follows (`sources.sofascore.pending_obos_xg`).
+SETTLE_HOURS = 48.0
+
+
+def _kickoff(match) -> datetime | None:
+    """Kickoff in UTC: the feed's `kickoff_utc`, else the date and local time
+    read as UTC (two hours out at most, which a 48-hour window absorbs)."""
+    stamp = match.kickoff_utc or (f"{match.date}T{match.time or '00:00'}:00Z" if match.date else None)
+    if not stamp:
+        return None
+    try:
+        return datetime.fromisoformat(stamp.replace("Z", "+00:00"))
+    except ValueError:
+        return None
+
+
 def update_xg(
     matches: list,
     *,
     path: Path = XG_PATH,
     fetch=fetch_match_xg,
     delay: float = 1.0,
-    stale_days: int = 2,
+    settle_hours: float = SETTLE_HOURS,
+    now: datetime | None = None,
 ) -> int:
     """Add or refresh shot data for played matches; returns how many were fetched.
 
-    Matches older than *stale_days* that are already recorded are skipped.
-    Recent matches are re-fetched because FotMob refines xG values after the
-    initial post-match scrape.
+    A match is asked for when it was never fetched, or when its last fetch
+    landed inside `settle_hours` of kickoff (recorded under xg.json's
+    `pending`) and the window has since passed: one request when it is first
+    seen, one more once FotMob has settled its numbers. A recorded match with
+    no `pending` entry is final, except one still inside its window, which is
+    marked pending without a request (fetched before this rule existed).
 
     Never raises: the model falls back to goals for a match without xG, so a
     failed fetch is printed and skipped rather than allowed to block a refresh.
     """
-    from datetime import date, timedelta
-
+    now = now or datetime.now(timezone.utc)
     data = load_xg(path)
-    stale_cutoff = (date.today() - timedelta(days=stale_days)).isoformat()
+    pending = data.setdefault("pending", {})
     added = 0
+    marked = False
     for match in matches:
         if not match.played:
             continue
         is_known = match.match_id in data["matches"] or match.match_id in data["none"]
-        is_recent = match.date > stale_cutoff
-        if is_known and not is_recent:
+        kickoff = _kickoff(match)
+        settled = kickoff is None or (now - kickoff).total_seconds() >= settle_hours * 3600
+        if is_known and match.match_id not in pending:
+            if not settled:
+                pending[match.match_id] = now.strftime("%Y-%m-%dT%H:%M:%SZ")
+                marked = True
+            continue
+        if is_known and not settled:
             continue
         try:
             shots = fetch(match.match_id)
@@ -239,8 +274,12 @@ def update_xg(
             # Remove from "none" if it was previously recorded there
             if match.match_id in data["none"]:
                 data["none"].remove(match.match_id)
+        if settled:
+            pending.pop(match.match_id, None)
+        else:
+            pending[match.match_id] = now.strftime("%Y-%m-%dT%H:%M:%SZ")
         added += 1
         time.sleep(delay)
-    if added:
+    if added or marked:
         save_xg(data, path)
     return added

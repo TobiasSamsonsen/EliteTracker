@@ -130,7 +130,7 @@ class TestConfig:
         assert config.season_regression == pytest.approx(0.88)
 
     def test_model_version_is_declared(self):
-        assert MODEL_VERSION == "elo-v15.0"
+        assert MODEL_VERSION == "elo-v16.0"
 
     def test_xg_alpha_default(self):
         config = EloConfig()
@@ -145,6 +145,16 @@ class TestConfig:
         assert updated_pair(1500, 1500, 1, 0, margin) == updated_pair(1500, 1500, 1, 0, base)
         # Ratings stay zero-sum.
         home, away = updated_pair(1500, 1500, 0, 2, margin, 0.4, 1.9)
+        assert home + away == pytest.approx(3000)
+
+    def test_xg_margin_is_not_clamped(self):
+        """elo-v16.0: a dominant win keeps its margin. Clamped to [0, 1], the
+        score of a 3-0 on 3.0 xG to 0.2 stopped at a win's 1."""
+        config = EloConfig()
+        assert config.xg_margin == pytest.approx(0.12)
+        home, away = updated_pair(1500, 1500, 3, 0, config, 3.0, 0.2)
+        expected = expected_score(1500 + config.home_advantage, 1500)
+        assert home - 1500 > config.k_factor * (1.0 - expected)
         assert home + away == pytest.approx(3000)
 
     def test_xg_margin_follows_the_xg_not_the_scoreline(self):

@@ -271,6 +271,9 @@ class AttackDefence:
     def rates_against_average(self, team_id: str, league: str, season: int) -> tuple[float, float]:
         """Goals for and against per match a club would expect against an average
         side of `league`, at a neutral ground -- the readable form of its ratings."""
+        # Before the season's first match the ratings are last season's until
+        # the offseason pull has run (rates() would run it too).
+        self.start_season(season)
         cfg = self.config
         peers = [t for (year, t), lg in self.divisions.items() if year == season and lg == league and t in self.attack]
         mean_attack = sum(self.attack[t] for t in peers) / len(peers) if peers else 0.0
@@ -316,7 +319,11 @@ class AttackDefence:
                     for t in known:
                         keep = cfg.relegated_regression if t in down else regression
                         ratings[t] = mean + keep * (ratings[t] - mean)
-                # Finishing regresses toward 0 (log-space average = 1.0x multiplier).
+                # Finishing regresses toward the division's mean finishing, so
+                # a league-wide year over or under xG carries over. Toward 0
+                # (or centred on the division) was measured worse: +0.00005 /
+                # +0.00020 log loss, OBOS-ligaen 2021+ +0.00076 (t +2.13);
+                # PROJECT_STATUS.md, "IMPROVEMENTS2.md, phases 1 and 2".
                 fin_known = [t for t in teams if t in self.finishing]
                 if fin_known:
                     mean_f = sum(self.finishing[t] for t in fin_known) / len(fin_known)
@@ -383,7 +390,10 @@ class AttackDefence:
             return 0.0
         return cfg.keeping_weight * (math.log(faced / let_in) - math.log(league_faced / league_let_in))
 
-    def rates(self, home_id: str, away_id: str, on: str, elo_gap: float = 0.0) -> tuple[float, float]:
+    def rates(self, home_id: str, away_id: str, on: str, elo_gap: float = 0.0,
+              stakes: float = 0.0) -> tuple[float, float]:
+        """`stakes`: log goals added to the home side's rate and taken off the
+        away side's, the table-stakes term (`model.stakes`, elo-v16.0)."""
         self._ensure(on, home_id, away_id)
         cfg = self.config
         effective_home = cfg.home * (1.0 + cfg.home_beta * elo_gap)
@@ -391,6 +401,8 @@ class AttackDefence:
             self.attack[home_id] - self.defence[away_id] + self.finishing.get(home_id, 0.0) - self.keeping(away_id)))
         mu = math.exp(cfg.base + cfg.spread * (
             self.attack[away_id] - self.defence[home_id] + self.finishing.get(away_id, 0.0) - self.keeping(home_id)))
+        if stakes:
+            lam, mu = lam * math.exp(stakes), mu * math.exp(-stakes)
         return lam, mu
 
     def _learning_rates(self, home_id: str, away_id: str, on: str) -> tuple[float, float]:
@@ -404,12 +416,14 @@ class AttackDefence:
                        + self.finishing.get(away_id, 0.0) - self.keeping(home_id))
         return lam, mu
 
-    def grid(self, home_id: str, away_id: str, on: str, elo_gap: float = 0.0) -> list[list[float]]:
-        lam, mu = self.rates(home_id, away_id, on, elo_gap=elo_gap)
+    def grid(self, home_id: str, away_id: str, on: str, elo_gap: float = 0.0,
+             stakes: float = 0.0) -> list[list[float]]:
+        lam, mu = self.rates(home_id, away_id, on, elo_gap=elo_gap, stakes=stakes)
         return score_grid(lam, mu, self.config.rho)
 
-    def predict(self, home_id: str, away_id: str, on: str, elo_gap: float = 0.0) -> MatchProbabilities:
-        return outcome_probabilities(self.grid(home_id, away_id, on, elo_gap=elo_gap))
+    def predict(self, home_id: str, away_id: str, on: str, elo_gap: float = 0.0,
+                stakes: float = 0.0) -> MatchProbabilities:
+        return outcome_probabilities(self.grid(home_id, away_id, on, elo_gap=elo_gap, stakes=stakes))
 
     # -- learning --------------------------------------------------------
     def observed(self, match: Match) -> tuple[float, float, float]:

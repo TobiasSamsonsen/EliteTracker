@@ -28,6 +28,7 @@ from elitetracker.model.elo import (
 from elitetracker.model.initial_ratings import SeedingConfig, TeamRating, initial_ratings, rating_for_unseeded_team
 from elitetracker.model.probabilities import match_probabilities
 from elitetracker.model.ratings import build_rating_table
+from elitetracker.model import stakes as table_stakes
 from elitetracker.model.table import table_from_matches
 from elitetracker.normalize.matches import Match
 from elitetracker.normalize.standings import load_standings
@@ -262,6 +263,24 @@ def shot_table() -> dict[str, tuple[float, ...]]:
     return {match_id: tuple(values) for match_id, values in load_xg()["matches"].items()}
 
 
+def stakes_lines(slug: str, season: int, matches: list[Match], root: Path = NORMALIZED_DIR) -> tuple[int, ...]:
+    """The lines of the table the stakes term measures from (`model.stakes`):
+    the edges of the season's bands."""
+    return table_stakes.lines(bands_for(LEAGUE_SPECS[slug], season, root), len(table_from_matches(matches)))
+
+
+@functools.cache
+def stakes_table(root: Path = NORMALIZED_DIR) -> dict[str, float]:
+    """match_id -> P_home - P_away for every played match in the run-in
+    (`model.stakes`), from the table before its date: what the backtest
+    prices each played match with."""
+    out: dict[str, float] = {}
+    for slice_ in load_slices(root):
+        lines = stakes_lines(slice_.league, slice_.season, slice_.matches, root)
+        out.update(table_stakes.season_gaps(slice_.matches, lines))
+    return out
+
+
 @functools.cache
 def market_values(path: Path = MARKET_VALUES_PATH) -> dict[int, dict[str, float]]:
     """season -> team_id -> squad value in EUR, as Transfermarkt listed it that
@@ -347,9 +366,10 @@ def build_report(
     ad.start_season(season)
     playoffs, sim_ratings, sim_ad = _playoffs(slug, season, root, by_league, ratings, ad, simulation, elo_config)
     surface = slug == "eliteserien"  # the surface edge is measured on Eliteserien only
+    lines = stakes_lines(slug, season, matches, root)
     projection = simulate_season(
         matches, sim_ratings, ad=sim_ad, config=simulation, elo_config=elo_config, playoffs=playoffs,
-        surface=surface,
+        surface=surface, stakes_lines=lines,
     )
     stakes_inputs = (
         projection.conditionals,
@@ -401,6 +421,10 @@ def build_report(
             "simulations": projection.simulations,
             "seed": projection.seed,
             "strength_sd": projection.strength_sd,
+            # The table-stakes term in the run-in (model.stakes): rating points
+            # and log goals per unit of pressure difference, from `from` played.
+            "stakes": {"elo": table_stakes.STAKES_ELO, "goals": table_stakes.STAKES_GOALS,
+                       "tau": table_stakes.STAKES_TAU, "from": table_stakes.STAKES_FROM},
             "matches_played": projection.matches_played,
             "matches_remaining": projection.matches_remaining,
             # Median points per finishing position: the expected points threshold
@@ -437,13 +461,14 @@ def build_report(
         },
         "table": _table_payload(matches, ratings, projection, seeds, ad, spec.slug, season, era, high_stakes,
                                 bands=bands_for(spec, season, root)),
-        "fixtures": _fixtures_payload(matches, ratings, elo_config, ad, surface=surface),
+        "fixtures": _fixtures_payload(matches, ratings, elo_config, ad, surface=surface,
+                                      stakes=table_stakes.fixture_gaps(matches, lines)),
         "results": _results_payload(matches, pre_match, era),
         "high_stakes": high_stakes,
         "next_stakes": _next_stakes(*stakes_inputs),
         "history": _history_payload(
             build_history(matches, all_matches, seeds, prior=prior, elo_config=elo_config,
-                          config=history, shots=shot_table(), surface=surface),
+                          config=history, shots=shot_table(), surface=surface, stakes_lines=lines),
             {row.team_id: row.team for row in table_from_matches(matches)},
         ),
     }
@@ -497,13 +522,14 @@ def _playoffs(
             opponent_of_bracket = simulate_season(
                 by_league[other], ratings, ad=ad, config=simulation, elo_config=elo_config,
                 tally_conditionals=False, keep_position=other_survival.first, surface=other == "eliteserien",
+                stakes_lines=stakes_lines(other, season, by_league[other], root),
             ).kept
         if survival and other_bracket:
             # Our survival place meets their bracket winner.
             opponent_of_survival = simulate_season(
                 by_league[other], ratings, ad=ad, config=simulation, elo_config=elo_config,
                 tally_conditionals=False, playoffs=Playoffs(bracket=places(other_bracket), ladder=ladder),
-                surface=other == "eliteserien",
+                surface=other == "eliteserien", stakes_lines=stakes_lines(other, season, by_league[other], root),
             ).bracket_winners
     sim_ratings, sim_ad = ratings, ad
     if survival and bracket and opponent_of_survival is None:
@@ -875,17 +901,21 @@ def _table_payload(
 
 def _fixtures_payload(
     matches: list[Match], ratings: dict[str, float], elo_config: EloConfig, ad: AttackDefence,
-    *, surface: bool = False,
+    *, surface: bool = False, stakes: dict[str, float] | None = None,
 ) -> list[dict[str, Any]]:
-    """Upcoming fixtures with three-way odds and the most likely scorelines."""
+    """Upcoming fixtures with three-way odds and the most likely scorelines.
+    `stakes` (match_id -> P_home - P_away, `model.stakes.fixture_gaps`) adds
+    the table-stakes term, from the table as it stands."""
+    stakes = stakes or {}
     payload = []
     for match in matches:
         if match.played:
             continue
         home_id = match.home_id or match.home
         away_id = match.away_id or match.away
-        grid = ad.grid(home_id, away_id, match.date)
-        edge = surface_edge(home_id, away_id, match.date) if surface else 0.0
+        gap = stakes.get(match.match_id, 0.0)
+        grid = ad.grid(home_id, away_id, match.date, stakes=table_stakes.STAKES_GOALS * gap)
+        edge = (surface_edge(home_id, away_id, match.date) if surface else 0.0) + table_stakes.STAKES_ELO * gap
         probabilities = blend_outcomes(match_probabilities(ratings[home_id] + edge, ratings[away_id], elo_config), grid)
         scorelines = top_scorelines(grid, probabilities)
         payload.append(

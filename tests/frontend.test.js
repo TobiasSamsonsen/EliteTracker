@@ -379,7 +379,7 @@ test('promotion and relegation count the play-offs where the report has them', (
 
 test('the play-off and surface strings exist in both languages', () => {
   assertBothLanguages([
-    'team.playoffIncluded', 'model.surfaceEdge',
+    'team.playoffIncluded', 'model.surfaceEdge', 'model.stakes', 'model.stakesValue',
   ]);
 });
 

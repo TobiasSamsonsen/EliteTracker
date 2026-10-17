@@ -207,7 +207,20 @@ from dataclasses import dataclass
 #     points per log value (`EloConfig.relegated_regression`,
 #     `relegated_value_pull`; the Elo replay reads squad values for the first
 #     time), the goals model's own value_pull (`ADConfig.relegated_regression`).
-MODEL_VERSION = "elo-v15.0"
+#
+# elo-v16.0: the IMPROVEMENTS2.md pass (October 2026); see PROJECT_STATUS.md,
+# "IMPROVEMENTS2.md, phases 1 and 2".
+#   * the xG margin is no longer clamped: the observed score plus the margin
+#     went past 1 (or below 0) in a fifth of the xG matches, so a dominant win
+#     earned almost none of it. Elo's own odds -0.00067 out of sample (t -2.95),
+#   * the margin 0.10 -> 0.12 (the walk-forward picks 0.15),
+#   * late-season table stakes on the prediction, in both models
+#     (`model.stakes`): from 24 matches played, a side near a line of the
+#     table is priced up, one with nothing to play for down; the ratings never
+#     see it. The season simulation reads it from each run's own table.
+#   Together, both divisions 2016+: -0.00056 log loss (t -2.44), out of
+#   sample -0.00072 (t -2.79); the gap to the closing line +0.00903 -> +0.00835.
+MODEL_VERSION = "elo-v16.0"
 
 # A 400-point rating gap means the stronger side is expected to score 10 times
 # as often as the weaker one; this is the constant that defines the ELO scale.
@@ -267,16 +280,21 @@ class EloConfig:
     # Margin of victory measured in xG, added to the observed score of the side
     # that created more wherever there is xG, draws included:
     # gamma * ln(1 + |r|) toward the side r favours, r = ln((home_xg + c) /
-    # (away_xg + c)), clamped to [0, 1]. The 538 damped-log form on the xG
-    # ratio; goal margins were rejected in elo-v3 (Norwegian margins are mostly
-    # noise). elo-v12.0 signed it by the goals winner, which paid a lucky 1-0
-    # win more the worse the winner was outplayed, and skipped draws and 0.0 xG.
-    # Signed by xG, judged on Elo's own odds (the displayed ratings),
-    # walk-forward over gamma 0.03-0.12 x c 0.15-0.35: -0.00105 log loss out of
-    # sample (t -2.91), Brier t -2.95, RPS t -2.79, both halves negative. The
-    # pick drifts to 0.12 (0.3-0.4 on a wider grid, t -1.85); 0.10 is the
-    # shrunk value. See PROJECT_STATUS.md, "elo-v13.0".
-    xg_margin: float = 0.10
+    # (away_xg + c)). The 538 damped-log form on the xG ratio; goal margins
+    # were rejected in elo-v3 (Norwegian margins are mostly noise). elo-v12.0
+    # signed it by the goals winner, which paid a lucky 1-0 win more the worse
+    # the winner was outplayed, and skipped draws and 0.0 xG. Signed by xG,
+    # judged on Elo's own odds (the displayed ratings), walk-forward over gamma
+    # 0.03-0.12 x c 0.15-0.35: -0.00105 log loss out of sample (t -2.91), Brier
+    # t -2.95, RPS t -2.79, both halves negative; shipped at 0.10 in elo-v13.0.
+    #
+    # Until elo-v16.0 the score was then clamped to [0, 1], which cut the
+    # margin off a dominant win (the score passed 1 in 14.9 % of xG matches,
+    # below 0 in 5.9 %). Unclamped, Elo's own odds -0.00067 out of sample
+    # (t -2.95), the blend -0.00010 (t -1.86); with no clamp the walk-forward
+    # picks gamma 0.15 every season, 0.12 the shrunk value. See
+    # PROJECT_STATUS.md, "IMPROVEMENTS2.md, phases 1 and 2".
+    xg_margin: float = 0.12
     # c above: keeps r finite at 0.0 xG and damps the ratio of two small values.
     xg_margin_smoothing: float = 0.25
 
@@ -397,8 +415,8 @@ def updated_pair(
         if config.xg_margin:
             c = config.xg_margin_smoothing
             ratio = math.log((home_xg + c) / (away_xg + c))
-            bonus = math.copysign(config.xg_margin * math.log(1.0 + abs(ratio)), ratio)
-            scored_home = min(1.0, max(0.0, scored_home + bonus))
+            # Not clamped to [0, 1] (elo-v16.0): the step stays zero-sum either way.
+            scored_home += math.copysign(config.xg_margin * math.log(1.0 + abs(ratio)), ratio)
     change = config.k_factor * (scored_home - expected_home)
     return home_rating + change, away_rating - change
 

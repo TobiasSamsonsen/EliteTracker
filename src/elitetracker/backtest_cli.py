@@ -31,7 +31,7 @@ from pathlib import Path
 
 from elitetracker.model.backtest import Scorecard, compare, paired, walk_forward
 from elitetracker.model.elo import EloConfig, MODERN_CONFIG, era_config
-from elitetracker.pipeline import load_slices, market_values, seed_ratings, shot_table
+from elitetracker.pipeline import load_slices, market_values, seed_ratings, shot_table, stakes_table
 
 
 def _frange(start: float, stop: float, step: float) -> list[float]:
@@ -147,7 +147,7 @@ def main(argv: list[str] | None = None) -> int:
                                     args.split_season, gammas, args.top)
 
     cards = [walk_forward(slices, seeds, EloConfig(), score_from_season=args.score_from, name="base",
-                           league="eliteserien", shots=shots, values=market_values())]
+                           league="eliteserien", shots=shots, values=market_values(), stakes=stakes_table())]
     for k in _frange(args.k_min, args.k_max, args.k_step):
         for home in _frange(args.home_min, args.home_max, args.home_step):
             for reg in args.regression:
@@ -163,7 +163,7 @@ def main(argv: list[str] | None = None) -> int:
                                               score_from_season=args.score_from,
                                               name=f"k={k:.0f} ha={home:.0f} reg={reg:.2f} b={beta:.2f}",
                                               league="eliteserien", shots=shots, values=market_values(),
-                                              config_for=lambda lg, s, l=legacy, m=modern: era_config(s, l, m)))
+                                              stakes=stakes_table(), config_for=lambda lg, s, l=legacy, m=modern: era_config(s, l, m)))
 
     shown = sorted(cards, key=lambda card: card.log_loss)[: max(1, args.top)]
     print(f"Scored from season {args.score_from}  |  {len(cards) - 1} configs + baseline\n")

@@ -2190,6 +2190,7 @@ function renderModelCard(report) {
     rows.push([t('model.homeAdvantageBeta'), model.home_advantage_beta]);
   }
   if (model.surface) rows.push([t('model.surfaceEdge'), `${model.surface.edge} ${t('model.pts')}`]);
+  if (model.stakes) rows.push([t('model.stakes'), t('model.stakesValue', { elo: model.stakes.elo, from: model.stakes.from })]);
   if (model.attack_defence.keeping_window) {
     rows.push([t('model.keeping'), t('model.keepingValue', { n: model.attack_defence.keeping_window })]);
   }

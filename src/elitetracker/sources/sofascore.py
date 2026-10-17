@@ -57,7 +57,7 @@ _NOISE = {"fk", "if", "il", "ik", "bk", "sk", "fotball", "ballklubb", "oslo", "f
 # not the fix for CI; see SofascoreBlocked.
 _SOFASCORE_HEADERS = {
     "Referer": "https://www.sofascore.com/",
-    "Origin": "https://www.sofascore",
+    "Origin": "https://www.sofascore.com",
     "Accept": "application/json, text/plain, */*",
     "Accept-Language": "en-US,en;q=0.9",
     "Sec-Fetch-Dest": "empty",
