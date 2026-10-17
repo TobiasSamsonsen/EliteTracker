@@ -645,7 +645,7 @@ test('calibration pools the bins at the top of the range', () => {
   assert.equal(calibrationPool(bins, 0.95), null);
 });
 
-test('calibration error bars are the 95 % Wilson interval, inside 0-1', () => {
+test('the calibration tooltip interval is the 95 % Wilson interval, inside 0-1', () => {
   const [low, high] = calibrationInterval(0.5, 100);
   assert.ok(Math.abs(low - 0.4038) < 1e-4 && Math.abs(high - 0.5962) < 1e-4);
   const [zeroLow, zeroHigh] = calibrationInterval(0, 18);
@@ -665,7 +665,7 @@ test('every calibration string exists in both languages', () => {
 });
 
 test('each calibration panel takes the same range on both axes, out to the next 10 %', () => {
-  // Draws: chances 17-33 %, intervals a little wider; the range snaps to tenths.
+  // Draws: chances 17-33 %; the range snaps to tenths.
   const draws = [{ predicted: 0.17, observed: 0.18, n: 400 }, { predicted: 0.33, observed: 0.31, n: 200 }];
   assert.deepEqual(calibrationRange(draws), [0.1, 0.4]);
   // An exact tenth stays put, and the range never leaves 0-1.

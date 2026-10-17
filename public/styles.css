@@ -4028,7 +4028,6 @@ body[data-viz="accuracy"] .hero-title-part[data-role="season"] { display: none; 
 .chart .calibration__diagonal { stroke: var(--rule-strong); stroke-width: 1.5; stroke-dasharray: 5 4; }
 .chart .calibration__line { fill: none; stroke-width: 1.5; opacity: 0.5; }
 .chart .calibration__dot { stroke: var(--panel); stroke-width: 1.5; }
-.chart .calibration__bar { fill: none; stroke-width: 1.25; opacity: 0.55; }
 .chart .calibration__dot:focus-visible { outline: none; stroke: var(--ink); stroke-width: 2; }
 .calibration__note { max-width: 1040px; margin: 0.75rem auto 1.25rem; }
 .calibration__table { width: 100%; max-width: 600px; margin: 0 auto; border-collapse: collapse; font-size: 0.875rem; font-variant-numeric: tabular-nums; }

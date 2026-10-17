@@ -3306,16 +3306,16 @@ const CALIBRATION_SERIES = [
 const CALIBRATION_MIN_N = 50;
 
 /* One panel's axis range, the same on both axes so the diagonal stays the
-   line of perfect calibration: every kept bin's chance, rate and interval,
-   out to the next 10 %. */
+   line of perfect calibration: every kept bin's chance and rate, out to the
+   next 10 %. */
 function calibrationRange(bins) {
-  const values = bins.flatMap((bin) => [bin.predicted, ...calibrationInterval(bin.observed, bin.n)]);
+  const values = bins.flatMap((bin) => [bin.predicted, bin.observed]);
   return [Math.max(0, Math.floor(Math.min(...values) * 10 + 1e-9) / 10),
     Math.min(1, Math.ceil(Math.max(...values) * 10 - 1e-9) / 10)];
 }
 
 /* One outcome's reliability diagram, zoomed to its own range: the bins as
-   dots sized by count, each with its 95 % interval, joined in order. */
+   dots sized by count, joined in order; the tooltip gives the 95 % interval. */
 function calibrationPanel(bins, labelKey, colour, biggest) {
   const panel = el('figure', 'calibration__panel');
   const title = el('figcaption', 'calibration__panel-title');
@@ -3355,17 +3355,8 @@ function calibrationPanel(bins, labelKey, colour, biggest) {
       style: `stroke: ${colour}`,
     }));
   }
-  const intervals = bins.map((bin) => calibrationInterval(bin.observed, bin.n));
-  bins.forEach((bin, i) => {
-    const [low, high] = intervals[i];
-    svg.appendChild(svgEl('path', {
-      class: 'calibration__bar',
-      d: `M${x(bin.predicted)},${y(low)}V${y(high)}M${x(bin.predicted) - 3},${y(low)}h6M${x(bin.predicted) - 3},${y(high)}h6`,
-      style: `stroke: ${colour}`,
-    }));
-  });
-  bins.forEach((bin, i) => {
-    const [low, high] = intervals[i];
+  bins.forEach((bin) => {
+    const [low, high] = calibrationInterval(bin.observed, bin.n);
     const dot = svgEl('circle', {
       class: 'calibration__dot', cx: x(bin.predicted), cy: y(bin.observed),
       r: 2.5 + 4 * Math.sqrt(bin.n / biggest), style: `fill: ${colour}`, tabindex: 0,
