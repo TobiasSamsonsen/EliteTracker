@@ -364,6 +364,26 @@ html { scroll-padding-top: 76px; }
     box-shadow: 0 1px 3px rgb(13 26 34 / 0.18), inset 0 0 0 1px var(--rule);
   }
 
+  /* The view tabs share one pill that slides to the pressed tab (slideTabThumbs);
+     until the script places it, the pressed tab paints its own. */
+  .masthead__views .switch,
+  .masthead__views .switch button { position: relative; }
+
+  .switch__thumb {
+    position: absolute;
+    left: 0;
+    border-radius: 999px;
+    background: var(--panel);
+    box-shadow: 0 1px 3px rgb(13 26 34 / 0.18), inset 0 0 0 1px var(--rule);
+    pointer-events: none;
+    transition: transform 0.3s var(--ease), width 0.3s var(--ease);
+  }
+
+  .switch:has(> .switch__thumb:not([hidden])) button[aria-pressed="true"] {
+    background: transparent;
+    box-shadow: none;
+  }
+
   /* Table view toggle: the same segmented pill as .switch. */
   .table-controls {
     display: inline-flex;
@@ -2008,6 +2028,21 @@ footer a { color: var(--ink); }
     background: color-mix(in srgb, var(--outcome-good) 16%, transparent);
     z-index: -1;
   }
+
+  /* Once placed, one pill slides between the tabs in place of each tab's own. */
+  .mobilebar__thumb {
+    position: absolute;
+    top: 0.3rem;
+    left: 0;
+    width: 3.25rem;
+    height: 1.6rem;
+    border-radius: 999px;
+    background: color-mix(in srgb, var(--outcome-good) 16%, transparent);
+    pointer-events: none;
+    transition: transform 0.3s var(--ease);
+  }
+
+  .mobilebar:has(> .mobilebar__thumb:not([hidden])) .mobilebar__item::before { content: none; }
 
   .mobilebar__item { isolation: isolate; transition: color 0.15s var(--ease); }
 

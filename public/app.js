@@ -6372,6 +6372,60 @@ function fitViews() {
     }
   }
   more.setAttribute('aria-pressed', String(tabs.some((tab) => tab.hidden && tab.dataset.view === state.activeView)));
+  slideTabThumbs();
+}
+
+/* The masthead strip and the phone's bottom bar each have one pill that
+   slides to the pressed tab. It slides only when the pressed tab changes; a
+   resize, a language or a late font that moves the tabs puts it straight in
+   place, as does its first showing. On the strip the pill takes the tab's
+   size, on the bar it keeps its own and centres on the tab. The tabs are
+   watched, since a tab can change size with no resize of the window (a
+   touch screen's larger targets, say). */
+const tabThumbs = new Map();
+let tabThumbWatch = null;
+
+function slideTabThumbs() {
+  if (!tabThumbWatch && window.ResizeObserver) {
+    tabThumbWatch = new ResizeObserver(() => slideTabThumbs());
+    for (const tab of document.querySelectorAll('.masthead__views .switch button, .mobilebar__item')) {
+      tabThumbWatch.observe(tab, { box: 'border-box' });
+    }
+  }
+  for (const thumb of document.querySelectorAll('.switch__thumb, .mobilebar__thumb')) {
+    const group = thumb.parentElement;
+    const target = [...group.querySelectorAll('[aria-pressed="true"]')].find((button) => !button.hidden);
+    if (!target) {
+      thumb.hidden = true;
+      tabThumbs.delete(thumb);
+      continue;
+    }
+    const box = target.getBoundingClientRect();
+    if (!box.width) {
+      tabThumbs.delete(thumb); // not on screen (the strip on a phone)
+      continue;
+    }
+    thumb.hidden = false;
+    const fit = thumb.classList.contains('switch__thumb');
+    const frame = group.getBoundingClientRect();
+    const width = fit ? box.width : thumb.offsetWidth;
+    const x = box.left - frame.left - group.clientLeft + (box.width - width) / 2;
+    const last = tabThumbs.get(thumb);
+    if (last && last.target === target && Math.abs(last.x - x) < 0.5 && Math.abs(last.width - width) < 0.5) continue;
+    const slide = Boolean(last) && last.target !== target;
+    if (!slide) thumb.style.transition = 'none';
+    thumb.style.transform = `translateX(${x}px)`;
+    if (fit) {
+      thumb.style.width = `${width}px`;
+      thumb.style.top = `${box.top - frame.top - group.clientTop}px`;
+      thumb.style.height = `${box.height}px`;
+    }
+    if (!slide) {
+      void thumb.offsetWidth;
+      thumb.style.transition = '';
+    }
+    tabThumbs.set(thumb, { target, x, width });
+  }
 }
 
 function markActiveView() {
