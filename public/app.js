@@ -2216,6 +2216,8 @@ function renderModelCard(report) {
     cell.appendChild(el('dd', '', String(value)));
     grid.appendChild(cell);
   }
+  const accuracy = $('#model-accuracy');
+  if (accuracy) renderAccuracy(report, accuracy);
   /* The decisive-match note lives here rather than in the static HTML so an
      empty high_stakes leaves no leftover explainer behind. */
   const how = document.querySelector('#model-how');
@@ -2233,7 +2235,7 @@ function renderModelCard(report) {
 /* ---------- explore: other ways to look at the numbers -------------- */
 
 /* A gallery of cards, each opening one visualisation in the same panel. */
-const EXPLORE_ITEMS = ['mountain', 'attack', 'luck', 'accuracy'];
+const EXPLORE_ITEMS = ['mountain', 'attack', 'luck'];
 /* The visualisations that follow the rewind slider: they read one day's
    report. The rest take a whole season or every season, or carry time along
    an axis of their own, which the slider would only cut short. */
@@ -2260,12 +2262,6 @@ function exploreThumb(id) {
         style: `fill: var(${v >= 0 ? '--outcome-good' : '--outcome-bad'})`,
       }));
     });
-  } else if (id === 'accuracy') {
-    // Called against final place: a band along the diagonal, a few misses.
-    svg.appendChild(svgEl('polygon', { class: 'scorecard__band', points: '24,8 46,8 136,82 114,82' }));
-    for (const [cx, cy] of [[30, 12], [44, 22], [52, 18], [62, 34], [74, 38], [80, 52], [92, 46], [100, 62], [112, 66], [124, 76], [58, 64], [118, 30]]) {
-      svg.appendChild(svgEl('circle', { cx, cy, r: 4, style: `fill: ${seqColor(0.6)}` }));
-    }
   } else {
     svg.appendChild(svgEl('line', { class: 'explore-thumb__avg', x1: 82, x2: 82, y1: 10, y2: 80 }));
     svg.appendChild(svgEl('line', { class: 'explore-thumb__avg', x1: 16, x2: 144, y1: 46, y2: 46 }));
@@ -2294,7 +2290,6 @@ function renderExplore(report) {
   if (item === 'mountain') return renderMountain(report, body);
   if (item === 'attack') return renderAttackMap(report, body);
   if (item === 'luck') return renderLuck(report, body);
-  if (item === 'accuracy') return renderAccuracy(report, body);
   const gallery = el('div', 'explore-gallery');
   for (const id of EXPLORE_ITEMS) {
     const card = el('button', 'explore-card');
@@ -3001,12 +2996,18 @@ function drawLuckSeasons(report, section, { counted, rows }, trend) {
   section.appendChild(box2);
 }
 
-/* ---------- explore: model accuracy (viz=accuracy) -------------------- */
+/* ---------- model card: how accurate the model is ---------------------- */
 
-/* How accurate the model is, in three parts: how every model version's odds
-   compare on the same matches; match by match, its odds against what
-   happened (both divisions, every season); and before the season, the table
-   it called against the one that came (the division in the hero). */
+/* The division the pre-season scorecard shows. The model card's hero offers
+   only the season, so the scorecard carries a division switch of its own. */
+function accuracyLeague() {
+  return state.accuracyLeague || state.league;
+}
+
+/* How accurate the model is, under the model card, in three parts: how every
+   model version's odds compare on the same matches; match by match, its odds
+   against what happened (both divisions, every season); and before the
+   season, the table it called against the one that came (one division). */
 async function renderAccuracy(report, body) {
   body.replaceChildren();
   const part = (key) => {
@@ -3020,12 +3021,31 @@ async function renderAccuracy(report, body) {
   };
   // Newest view of the model first: the versions, then match by match, then the table.
   const [versionsPart, matches, table] = [part('versions'), part('matches'), part('table')];
+  const divisions = el('div', 'accuracy__divisions');
+  divisions.setAttribute('role', 'group');
+  divisions.setAttribute('aria-label', t('accuracy.division'));
+  const drawTable = () => {
+    const slug = accuracyLeague();
+    for (const button of divisions.children) button.setAttribute('aria-pressed', String(button.dataset.league === slug));
+    return renderScorecard(state.reports[slug] || report, table);
+  };
+  for (const [slug, other] of Object.entries(state.reports || {})) {
+    const button = el('button', 'accuracy__division', other.league.name);
+    button.type = 'button';
+    button.dataset.league = slug;
+    button.addEventListener('click', () => {
+      state.accuracyLeague = slug;
+      drawTable();
+    });
+    divisions.appendChild(button);
+  }
+  table.before(divisions);
   versionsPart.appendChild(el('p', 'explore-empty', t('calib.loading')));
   const versions = loadCalibration().then(
-    (data) => { if (state.exploreItem === 'accuracy') renderVersionHistory(report, versionsPart, data); },
+    (data) => { if (state.activeView === 'model') renderVersionHistory(report, versionsPart, data); },
     () => renderVersionHistory(report, versionsPart, null),
   );
-  await Promise.all([renderScorecard(report, table), renderCalibration(report, matches), versions]);
+  await Promise.all([drawTable(), renderCalibration(report, matches), versions]);
 }
 
 /* Before the season: the prediction scorecard. */
@@ -3102,7 +3122,7 @@ async function renderScorecard(report, body) {
   body.replaceChildren(el('p', 'explore-empty', t('scorecard.loading')));
   const seasons = report.league.seasons || [];
   const settled = await Promise.all(seasons.map((season) => scorecardSeason(season, slug, seasons).catch(() => [])));
-  if (state.exploreItem !== 'accuracy' || report.league.slug !== slug) return;
+  if (state.activeView !== 'model' || accuracyLeague() !== slug) return;
   const rows = settled.flat();
   if (!rows.length) {
     body.replaceChildren(el('p', 'explore-empty', t('scorecard.empty')));
@@ -3397,7 +3417,7 @@ async function renderCalibration(report, body) {
     body.replaceChildren(el('p', 'explore-empty', t('calib.empty')));
     return;
   }
-  if (state.exploreItem !== 'accuracy') return;
+  if (state.activeView !== 'model') return;
   const wrap = el('div', 'calibration');
   body.replaceChildren(wrap);
 

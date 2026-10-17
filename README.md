@@ -159,27 +159,29 @@ slider too; the ones with time along an axis of their own take none.
   the trend line, and facts on the champions, the top quarter by xG points,
   the luckiest and unluckiest seasons and how much luck is left the season
   after.
-- **Model accuracy** (`viz=accuracy`) -- how accurate the model is, in three
-  parts, shown from the last described here to the first. *Before the season*: every finished club-season of the division
-  since 2015, where the model put it before the season (the order its
-  expected finishes give) against where it finished, one circle a cell sized
-  by how many land there, with the y = x line and the two-place band the hit
-  rate counts; a strip of seasons under it, each with its hit rate and last
-  season's table's, picks one season's clubs out by name. Key figures: hit
-  rate, last season's table as a benchmark, average miss, best- and
-  hardest-called season, biggest over- and under-achiever. *Match by match*:
-  when the model gives an outcome 40 %, does it happen 40 % of the time? A
-  reliability diagram of the pre-match odds of every match since 2016 (both
-  divisions; one panel per outcome, zoomed to its own range; 5 % bins with
-  50 or more matches, over a band through their 95 % intervals), the scores against the bookmakers' closing odds (three ways of
-  removing their margin), and where quarter-Kelly betting on the model's
-  edges would have left the bankroll. *Over the model versions*: every release replayed with
-  its own code on the same 4,800 matches, as how much better than base rates
-  its odds were (all matches, Eliteserien, and Eliteserien's xG seasons from
-  2020), each Eliteserien line with the bookmakers' closing odds on the same
-  matches as a dashed line in its colour.
 
 ### Model Card
+
+**How accurate is the model?** A panel under the settings, in three parts,
+shown from the last described here to the first. *Before the season*: every finished club-season of one division (a switch
+of its own; the model card's hero offers only the season)
+since 2015, where the model put it before the season (the order its
+expected finishes give) against where it finished, one circle a cell sized
+by how many land there, with the y = x line and the two-place band the hit
+rate counts; a strip of seasons under it, each with its hit rate and last
+season's table's, picks one season's clubs out by name. Key figures: hit
+rate, last season's table as a benchmark, average miss, best- and
+hardest-called season, biggest over- and under-achiever. *Match by match*:
+when the model gives an outcome 40 %, does it happen 40 % of the time? A
+reliability diagram of the pre-match odds of every match since 2016 (both
+divisions; one panel per outcome, zoomed to its own range; 5 % bins with
+50 or more matches, over a band through their 95 % intervals), the scores against the bookmakers' closing odds (three ways of
+removing their margin), and where quarter-Kelly betting on the model's
+edges would have left the bankroll. *Over the model versions*: every release replayed with
+its own code on the same 4,800 matches, as how much better than base rates
+its odds were (all matches, Eliteserien, and Eliteserien's xG seasons from
+2020), each Eliteserien line with the bookmakers' closing odds on the same
+matches as a dashed line in its colour.
 
 Every tunable parameter in the shipped model:
 

@@ -2319,6 +2319,12 @@ which merged both branches): every look at how accurate the model is in one
 place, before the season (the scorecard) and match by match (the
 calibration), one section each with its own key figures. The hero offers the
 division, which the first part follows; the second pools both divisions.
+On 2026-10-17 it gained a third part (every model version on the same
+matches), the parts were put in reverse order, and the owner moved it out of
+Explore into the model card, as a panel under the settings ("How accurate is
+the model?", `#model-accuracy`, drawn by `renderModelCard`); the model card's
+hero offers only the season, so the scorecard has a division switch of its
+own (`state.accuracyLeague`). It still waits on `explore/accuracy`.
 
 The luck table was the first released (2026-10-16, after elo-v14.0), which
 brought `explore/base` to `main`. Each of the other six waits on a branch of

@@ -622,7 +622,7 @@ test('last season’s table calls the clubs coming down first and those coming u
 
 test('every scorecard string exists in both languages', () => {
   assertBothLanguages([
-    'explore.accuracy.title', 'explore.accuracy.desc', 'accuracy.table', 'accuracy.tableLead', 'accuracy.matches',
+    'model.accuracy.title', 'model.accuracy.desc', 'accuracy.division', 'accuracy.table', 'accuracy.tableLead', 'accuracy.matches',
     'accuracy.matchesLead', 'scorecard.loading', 'scorecard.empty', 'scorecard.aria',
     'scorecard.x', 'scorecard.y', 'scorecard.tip', 'scorecard.fact.hits', 'scorecard.fact.hitsText',
     'scorecard.fact.miss', 'scorecard.fact.missText', 'scorecard.fact.best', 'scorecard.fact.bestText', 'scorecard.fact.over',
