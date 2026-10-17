@@ -789,11 +789,10 @@ away. Nothing ships until a walk-forward says it does.
       same 1,600 matches would say how much of the model's xG noise is the provider's,
       and an average of the two would be a cheap variance reduction if they disagree.
 
-- [ ] Rebuild and re-upload the past-seasons archive (`gh workflow run
-      past-seasons.yml`, or AGENTS.md, "Publishing past seasons"): reports built
-      before September 2026 lack `results[].xg`,
-      `results[].xg_form` and the projected goal totals, so 2015–2025 show no xG
-      under scores, dashes for projected GF/GA/GD and the old trend arrow.
+- [x] Rebuild and re-upload the past-seasons archive: done on elo-v16.0
+      (`past-seasons.yml` on a914f25, 2026-10-17), so 2015–2025 carry
+      `results[].xg`, `results[].xg_form` and the projected goal totals. Rerun it
+      after each model release (docs/operations.md, "Publishing past seasons").
 
 **Ongoing:**
 - [ ] Re-fit the draw model periodically as seasons accumulate.
@@ -872,6 +871,21 @@ away. Nothing ships until a walk-forward says it does.
   same release: the play-offs simulated in every run and counted in promotion
   and relegation chances, and a +10 Elo home edge on Eliteserien predictions
   when the two clubs play on different surfaces (-0.00031, t -2.98).
+- elo-v14.0: keeping (goals let in against xG on target, a club's last 45
+  matches) as the goals model's fourth part, its chances learnt 90 % from xG;
+  the offseason pull per division (OBOS-ligaen 0.75 / 0.3); the surface edge
+  10 -> 20.
+- elo-v15.0: a club relegated into OBOS-ligaen keeps half its distance from
+  the division's mean, toward a target set by its squad value (Elo 75 points
+  per log value; the goals model its own value pull).
+- elo-v16.0: the xG margin unclamped and 0.10 -> 0.12; late-season table
+  stakes on the prediction (`model.stakes`), the season simulation reading
+  them from each run's own table. See "IMPROVEMENTS2.md, phases 1 and 2".
+- No version (2026-10-18): one module prices a match for every caller
+  (`model/pricing.py`), the model's inputs read and digested in one place
+  (`pipeline.py`), byte-identical reports. The model-accuracy view's Kelly
+  drawdown no longer depends on hash order (0.9051, it moved between 0.903 and
+  0.906 from run to run); the local server serves `calibration.json`.
 
 ## 🧪 elo-v12 candidates: gap-dependent home advantage and favourite sharpening — measured, rejected
 
@@ -1681,7 +1695,7 @@ xG window -0.00021 (t -0.50); 2023+ Eliteserien +0.00004, OBOS -0.00067
 (t -0.96). It is the prior that helps where results alone are noisy, so its
 value now that OBOS has xG is small. Shipped at 0.2 (the pick is 0.3-0.4, and
 a value pull clears |t| >= 2 as a new data dependency). The displayed Elo
-ratings stay free of market values. The yearly data step is in QUESTIONS.md.
+ratings stay free of market values. The yearly data step is in docs/data.md.
 
 **1.8, an early-season step: shipped.** Step k * (1 + g exp(-n / tau)), n the
 club's matches so far that season, per club in the goals model (the zero-sum
@@ -1757,7 +1771,7 @@ the seasons added since elo-v12.0. The whole change is negative in both halves
   part"). Grass from Wikipedia's list of Eliteserien
   venues (Rosenborg, Brann, Lillestrøm, Haugesund, Bryne throughout; Viking to
   2017, Vålerenga to 2016, Stabæk to July 2023, Sandefjord to 2023; a few
-  second-tier grounds guessed, see QUESTIONS.md). Both mismatch directions point
+  second-tier grounds guessed, since checked: normalize/surfaces.py). Both mismatch directions point
   the same way (the home side on its own surface does better), and one term
   for any mismatch, +10 Elo points, is -0.00017 in-sample (t -2.33) but all of
   it 2016-2020 (halves -2.52 / -0.83); OOS -0.00024 (t -0.55), Eliteserien

@@ -1,7 +1,7 @@
 # EliteTracker
 
 Predictive model for Norwegian men's football: **Eliteserien** (tier 1) and
-**OBOS-ligaen** (tier 2). Uses an ELO rating system (elo-v15.0) to estimate team
+**OBOS-ligaen** (tier 2). Uses an ELO rating system (elo-v16.0) to estimate team
 strength, match probabilities and season outcomes. Fixtures and results come
 from FotMob (xG from FotMob for Eliteserien, Sofascore for OBOS-ligaen);
 benchmark odds from football-data.co.uk, squad values from Transfermarkt.
@@ -194,11 +194,14 @@ Every tunable parameter in the shipped model:
 | K-factor | 20 (legacy) / 30 (2022+) | How much ratings move per match |
 | Home advantage | 60 pts | Rating bonus for the home team |
 | xG weight | 45 % (legacy) / 30 % (2022+) | How much xG dampens lucky wins in rating updates |
+| xG margin | 0.12 | The margin of victory in xG added to the update: 0.12 × ln(1 + \|r\|) toward the side that created more, r the log ratio of the two sides' xG (unclamped since elo-v16.0) |
 | Cross-season regression | 12% | How much ratings regress toward the mean each offseason |
 | Relegated clubs | 50% + 75 pts per log value | A club relegated into OBOS-ligaen regresses half way, toward a target set by its squad value against the division's (ELO; the goals model: half way, by its own value pull) |
 | Peak draw rate | 26% | Maximum draw probability from the draw model |
 | Outcome blend | 25/75 | ELO vs attack/defence weight for win/draw/loss odds |
 | Goals model: xG weight | 90% | How much of the attack/defence update is xG rather than goals, where there is xG |
+| Goals model: spread | 1.10 | Each side's attack - defence stretched at prediction time, since the online ratings sit too close together |
+| Goals model: early-season step | up to 1.5x | A club's first matches of a season move its attack/defence further (k × (1 + 0.5 e^(-n/3)) for its n-th match) |
 | Goals model: offseason pull | 12% / 25% | How far attack/defence regress toward the division each offseason (Eliteserien / OBOS-ligaen), aimed by squad value (0.2 / 0.3) |
 | Goals model: keeping | last 45 matches | The keeper: goals let in against the xG on target faced, against the division (x 0.75), off the other side's expected goals (Eliteserien, where there is xG on target) |
 | Scorelines | attack/defence | Source of scoreline predictions (not ELO) |
@@ -305,8 +308,11 @@ public/                  Frontend (no build step, no framework)
 public/vendor/three/     three.js r147, vendored; loaded only when the season mountain opens
 data/                    Match data, xG, odds, market values
 tests/                   Python + Node test suites
+docs/                    Lookup pages: architecture, model, data, operations, frontend
+experiments/             Research scripts (their output in experiments/improvements/out/ is not tracked)
 .github/workflows/       CI: deploy on push, refresh cron every hour
 ```
 
-See `AGENTS.md` for full architecture details and `PROJECT_STATUS.md` for the
+See `docs/README.md` for where to look up architecture, the model, data and
+operations, `AGENTS.md` for the working rules, and `PROJECT_STATUS.md` for the
 decision log and research notes.

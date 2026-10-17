@@ -1,5 +1,5 @@
 # Rebuild every past season and replace the `past-seasons` release asset, then
-# redeploy -- the CI version of AGENTS.md, "Publishing past seasons". Run it by
+# redeploy -- the CI version of docs/operations.md, "Publishing past seasons". Run it by
 # hand (Actions tab, or `gh workflow run past-seasons.yml`) after a model change
 # or a change to what a report carries; ordinary results never need it.
 #

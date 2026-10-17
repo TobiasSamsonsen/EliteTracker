@@ -16,3 +16,14 @@ experiments/data/*.log
 .pi
 
 experiments/mobile-audit/shots-*/
+.ruff_cache/
+
+# Generated experiment output: the numbers that matter are in PROJECT_STATUS.md,
+# and the scripts write these again. out/ itself stays, for the scripts to write into.
+experiments/improvements/out/*
+!experiments/improvements/out/.gitkeep
+experiments/mobile-audit/*-report.json
+experiments/mobile-audit/*-report.md
+
+# Personal agent-tool config
+.opencode/

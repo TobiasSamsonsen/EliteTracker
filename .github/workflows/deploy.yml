@@ -3,7 +3,7 @@
 #
 # CI only ever simulates the CURRENT season. Past seasons are simulated on the
 # developer's machine and uploaded once as the `past-seasons` release asset --
-# see AGENTS.md, "Publishing past seasons".
+# see docs/operations.md, "Publishing past seasons".
 #
 # The current season's reports persist too, as the `current` release asset:
 # every deploy downloads them before building and re-uploads them after, so

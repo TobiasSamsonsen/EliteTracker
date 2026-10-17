@@ -19,11 +19,12 @@ Core model: Elo + xG attack/defence Poisson grid (version in `MODEL_VERSION`, `m
 
 - `sources/`: Data scraping & ingestion (`fotmob.py`, `sofascore.py`, `refresh.py`)
 - `normalize/` & `validation/`: Raw-to-canonical `Match` schemas and validation guards
-- `model/`: Rating calculations (`elo.py`, `attack_defence.py`, `career.py`, `probabilities.py`)
+- `model/`: Rating calculations (`elo.py`, `attack_defence.py`, `career.py`, `probabilities.py`; `pricing.py` prices one match for every caller)
 - `simulation/`: Monte Carlo season outcomes (`season.py`, `history.py`)
 - `pipeline.py`: Central data builder connecting models to JSON report payloads
 - `api/server.py` & `build_site.py`: Live HTTP server and static JSON site generator
 - `public/`: Dependency-free vanilla JS/HTML frontend (`app.js`, `i18n.js`)
+- `docs/`: Lookup pages (`README.md` is the index): architecture, model, data and scraping rules, operations, frontend
 
 ---
 
@@ -48,3 +49,20 @@ Core model: Elo + xG attack/defence Poisson grid (version in `MODEL_VERSION`, `m
 Run the test suite after any modification to ensure zero regressions:
 ```bash
 python -m pytest -q && node --test tests/frontend.test.js
+```
+
+---
+
+## Agent skills
+
+### Issue tracker
+
+Issues live in GitHub Issues for `TobiasSamsonsen/EliteTracker`, worked through the `gh` CLI. See `docs/agents/issue-tracker.md`.
+
+### Triage labels
+
+Default vocabulary: `needs-triage`, `needs-info`, `ready-for-agent`, `ready-for-human`, `wontfix`. See `docs/agents/triage-labels.md`.
+
+### Domain docs
+
+Single-context: one `GLOSSARY.md` and `docs/adr/` at the repo root. See `docs/agents/domain.md`.

@@ -5,7 +5,7 @@ Two pages a season (Eliteserien, OBOS-ligaen), fetched by hand once a year
 with `python -m elitetracker.research market-values --season YYYY`, never by
 `refresh` or CI. Politely: one request at a time, 4-8 s of jittered wait
 between them, a browser fingerprint, and a stop at the first 403 or 429 --
-the scraping rules of IMPROVEMENTS.md. robots.txt allows the competition
+the scraping rules in docs/data.md. robots.txt allows the competition
 pages.
 
 Season S is stored from the page Transfermarkt files under saison_id S - 1,

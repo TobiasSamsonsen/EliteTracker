@@ -1,10 +1,10 @@
 # Handoff: the Explore views, one branch each
 
-The model work is done and on `main`: elo-v13.0 (commit 28e49b1, pushed
-2026-10-16; PROJECT_STATUS.md, "elo-v13.0" in two parts and "Model versions").
-What is left is the seven Explore views the owner kept. They are built but not
-on the site: each waits on a branch of its own, to be improved there and
-released alone when it is finished. The owner decides what each one needs next.
+The model work is on `main` and deployed: elo-v16.0 (commit b571718,
+2026-10-17; PROJECT_STATUS.md, "Model versions"). What is left is the Explore
+views the owner kept that are not on the site yet. Each waits on a branch of
+its own, to be improved there and released alone when it is finished. The
+owner decides what each one needs next.
 
 ## The branches
 
@@ -59,7 +59,7 @@ git commit -am "Explore luck: ..." && git push
 ```
 
 - `public/data/` is untracked, so every branch shows the same locally built
-  data (elo-v13.0). A full rebuild is `.venv/Scripts/python -m
+  data (whatever version you last built). A full rebuild is `.venv/Scripts/python -m
   elitetracker.build_site --jobs 8`, 10+ minutes.
 - `python -m http.server --directory public 8000` serves whatever branch is
   checked out.
@@ -108,9 +108,8 @@ The three stored views, and what each needs before it comes back, are in
 
 ## Other open items
 
-- Past seasons: the owner reruns them on elo-v13.0 (`gh workflow run
-  past-seasons.yml`). Until then the site's current season is elo-v13.0 and
-  the past seasons elo-v12.2.
+- Past seasons: rebuilt on elo-v16.0 (`past-seasons.yml`, 2026-10-17). Rerun
+  it after the next model release (docs/operations.md, "Publishing past seasons").
 - The contact-form service (PROJECT_STATUS.md, "Contact form - planned").
 - Next season: `research market-values --season 2027` once 2027 is over, and a
   line in `normalize/surfaces.py` for any club changing surface or a grass club
@@ -120,6 +119,5 @@ The three stored views, and what each needs before it comes back, are in
 ## Working notes
 
 - Run everything from the repo root with `.venv/Scripts/python`.
-- `QUESTIONS.md` holds the first round of questions, all answered 2026-10-16.
 - In the Bash tool, heredocs holding `'''` strings broke; write edit scripts to
   a file and run them instead.
