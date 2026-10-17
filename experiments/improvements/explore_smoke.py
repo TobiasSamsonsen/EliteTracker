@@ -60,6 +60,20 @@ try:
                     facts = page.locator(".explore-fact").count()
                     print(f"{label} {viz} {league}: {count} marks, {facts} key figures")
                     page.screenshot(path=str(out / f"{viz}-{league}-{label}.png"), full_page=True)
+            # The model card's accuracy panel: all three parts, both divisions through its own switch.
+            page.goto(f"{base}/?view=model", wait_until="load")
+            try:
+                page.wait_for_selector(".scorecard__dot", timeout=60000)
+                for league in ("eliteserien", "obosligaen"):
+                    page.locator(f'.accuracy__division[data-league="{league}"]').click()
+                    page.wait_for_function(
+                        f'document.querySelector(\'.accuracy__division[data-league="{league}"]\').getAttribute("aria-pressed") === "true"'
+                        ' && document.querySelectorAll(".scorecard__dot").length > 0')
+                    marks = {sel: page.locator(sel).count() for sel in (".versions__hit", ".calibration__dot", ".scorecard__dot")}
+                    print(f"{label} model card {league}: {marks}")
+                page.screenshot(path=str(out / f"model-card-{label}.png"), full_page=True)
+            except Exception as exc:
+                problems.append(f"{label} model card: {exc.__class__.__name__}: {exc}")
             page.goto(f"{base}/?view=explore", wait_until="load")
             page.wait_for_selector(".explore-card")
             print(f"{label} gallery: {page.locator('.explore-card').count()} cards")

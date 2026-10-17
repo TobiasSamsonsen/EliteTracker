@@ -86,6 +86,53 @@ goals, high-stakes swings, the pre-season view) or touched presentation were
 right not to bump. elo-v13.0 was worked on as "v13.0" and then "v13.1" in the
 working tree before these rules existed; as one release it is one number.
 
+**Every version on the same matches (October 2026).**
+`experiments/improvements/version_history.py` replays each release with its
+own `src` (a git worktree of the commit above) on today's data, walk-forward,
+and scores all of them on the same 4,800 matches 2016-2025 (both divisions);
+the result is `data/model_versions.json`, which `calibration_payload` passes
+to the model accuracy view (rerun it after each release: `predict` once per
+version, then `combine`). v1 is seeded each season from the season before's
+table, v2-v6 run the careers (the production path), v7-v12 the Elo/goals blend
+the way each version's `research.cmd_run` scored it, v13 on `shipped_cards`.
+Better than base rates = 1 - log loss / 1.06202 (always the overall home/draw/away
+shares; the xG seasons -- the 2,140 matches with xG, Eliteserien
+from 2020 and OBOS-ligaen from 2023 -- 1.06251; Eliteserien 1.05915). The closing line (power method) on the same
+2,400 Eliteserien matches: 0.98758, 6.8 % better than base rates.
+
+| version | log loss, all | better than base rates | Eliteserien | xG seasons | step on the version before (t) |
+|---|---|---|---|---|---|
+| elo-v1 | 1.03505 | 2.5 % | 3.0 % | 3.8 % | -- |
+| elo-v2 | 1.03235 | 2.8 % | 2.6 % | 3.5 % | -0.00270 (-1.21) |
+| elo-v3 | 1.01294 | 4.6 % | 4.7 % | 5.2 % | -0.01941 (-6.88) |
+| elo-v5 | 1.01020 | 4.9 % | 5.0 % | 5.7 % | -0.00274 (-2.82) |
+| elo-v6 | 1.01019 | 4.9 % | 5.0 % | 5.7 % | -0.00001 (-0.03) |
+| elo-v7 | 1.00570 | 5.3 % | 5.5 % | 6.6 % | -0.00449 (-4.47) |
+| elo-v8 | 1.00554 | 5.3 % | 5.5 % | 6.8 % | -0.00017 (-0.29) |
+| elo-v9 | 1.00514 | 5.4 % | 5.6 % | 6.9 % | -0.00040 (-1.03) |
+| elo-v10 | 1.00476 | 5.4 % | 5.7 % | 7.0 % | -0.00037 (-2.31) |
+| elo-v11 | 1.00476 | 5.4 % | 5.7 % | 7.0 % | +0.00000 (+0.00) |
+| elo-v11.1 | 1.00483 | 5.4 % | 5.7 % | 7.0 % | +0.00007 (+1.07) |
+| elo-v12.0 | 1.00386 | 5.5 % | 5.7 % | 7.1 % | -0.00097 (-3.12) |
+| elo-v13.0 | 1.00252 | 5.6 % | 5.8 % | 7.2 % | -0.00135 (-3.64) |
+| elo-v14.0 | 1.00062 | 5.8 % | 6.0 % | 7.4 % | -0.00190 (-3.99) |
+| elo-v15.0 | 1.00030 | 5.8 % | 6.0 % | 7.3 % | -0.00032 (-1.60) |
+| elo-v16.0 | 0.99966 | 5.9 % | 6.0 % | 7.4 % | -0.00064 (-2.60) |
+
+elo-v11 shows nothing because its gain was data (OBOS-ligaen xG), which every
+version reads here; elo-v10 needed its era switch passed explicitly, as its
+production did. From elo-v1 to elo-v16.0 the model closed
+81 % of its gap to the closing line on Eliteserien.
+The xG seasons gain the most (3.8 % -> 7.4 %; the jump at elo-v7, the goals
+model on xG), and their line ends above the closing line's, but that line is
+Eliteserien over every season. Like for like, on Eliteserien's
+1,440 xG-season matches: elo-v16.0 8.0 % better than base rates, the
+closing line 8.3 %; the gap there is about half the 2016-2025 one.
+The chart pairs the lines that way: its xG line is Eliteserien's xG seasons
+(no OBOS-ligaen odds here), each Eliteserien line with a dashed closing line
+in its colour on the same matches; both divisions' xG seasons stay a key
+figure.
+
 ## 🔬 elo-v3: what the backtest found
 
 Fitted with `model/backtest.py` on 2019-2026 (3,623 scored matches, walk-forward, no
@@ -2553,6 +2600,19 @@ calibration -- beside the attack map and the season mountain. The lift, the
 rating river and the scorelines are stored in `experiments/explore-later/`
 (code, styles, strings, tests, and what each needs before it returns).
 
+The prediction scorecard and the match-odds calibration became one view on
+2026-10-17, **Model accuracy** (`viz=accuracy`, branch `explore/accuracy`,
+which merged both branches): every look at how accurate the model is in one
+place, before the season (the scorecard) and match by match (the
+calibration), one section each with its own key figures. The hero offers the
+division, which the first part follows; the second pools both divisions.
+On 2026-10-17 it gained a third part (every model version on the same
+matches), the parts were put in reverse order, and the owner moved it out of
+Explore into the model card, as a panel under the settings ("How accurate is
+the model?", `#model-accuracy`, drawn by `renderModelCard`); the model card's
+hero offers only the season, so the scorecard has a division switch of its
+own (`state.accuracyLeague`). It still waits on `explore/accuracy`.
+
 The luck table was the first released (2026-10-16, after elo-v14.0), which
 brought `explore/base` to `main`. Each of the other six waits on a branch of
 its own, `explore/<id>`, off `explore/base`, which holds what they share (the hero
@@ -2574,8 +2634,8 @@ day (the owner: it only cut short what the chart already shows over time).
 | race lines | both | no | time runs along the chart; the lines always run the whole season so far |
 | run-in heatmap, stakes calendar | both | no | the fixtures ahead in date order; a finished season shows them as they stood with ten rounds left, where the stakes start (`runInStart`; a line above says so) |
 | head to head | both | no | the season sets the clubs; the record now runs from 2015 to the end of that season |
-| prediction scorecard | division | no | it spans every season |
-| match-odds calibration, season mountain | -- | no | the calibration pools everything; the mountain has pickers of its own |
+| model accuracy | division | no | the scorecard spans every season; the calibration pools both divisions and every season |
+| season mountain | -- | no | the mountain has pickers of its own |
 
 `EXPLORE_REWIND` in `app.js` lists the views that follow the slider (attack,
 luck); the time-axis views read the season's latest report even when the URL
@@ -2662,14 +2722,31 @@ below that name a branch wait on it (see "Explore: which views stay").
   climber and faller as predicted -> finished, and the biggest surprise (the
   final place with the smallest pre-season chance). The mountain's ⓘ button
   opens them in a `<dialog>`; the phone layout has no other way to them.
-- **Prediction scorecard** (`viz=scorecard`, candidate #1; branch `explore/scorecard`): every finished
-  club-season of the division, its expected finish in the pre-season view
-  against its final place, the y = x line and the two-place band the hit rate
+- **Prediction scorecard** (candidate #1; since 2026-10-17 the first part of model accuracy, `viz=accuracy`, branch `explore/accuracy`): every finished
+  club-season of the division, the place the pre-season view called (the
+  order of the expected finishes) against its final place, one circle a cell
+  sized by its count, the y = x line and the two-place band the hit rate
   counts. Fetches each season's live report and pre-season view (the
   mountain's cache); an archive built before the pre-season view falls back
   to the season shape's first snapshot when that predates the first match.
-  Facts: hit rate, average miss in places, best and hardest season, biggest
-  over- and under-achiever.
+  A strip of seasons (hit rate, last season's table's as a tick) picks one
+  season's clubs out by name. Facts: hit rate, last season's table as a
+  benchmark, average miss in places, best and hardest season, biggest over-
+  and under-achiever.
+  **The call is the order, not the average (October 2026).** The first
+  version counted hits against the expected finish itself. An average bunches
+  towards the middle (no club expected better than about 1.3 or worse than
+  14.5), so the clubs at the ends missed by more than the model did, and the
+  view showed the model losing to last season's table. 2016-2025, elo-v13.0
+  data, within two places / Spearman rank correlation per season:
+
+  | call | Eliteserien | OBOS-ligaen |
+  |---|---|---|
+  | expected finish | 39 % / 0.55 | 31 % / 0.50 |
+  | the model's order | 52 % / 0.55 | 49 % / 0.50 |
+  | last season's table (clubs coming down first, up last) | 48 % / 0.49 | 48 % / 0.46 |
+
+  The view now calls by the order, and shows last season's table beside it.
 - **Luck table** (`viz=luck`, #3; released 2026-10-16): per club, points against the points its
   matches' xG would have earned on average (both sides Poisson at their xG,
   the same sum as `xg_implied_score`), as a diverging bar; follows the rewind
@@ -2791,11 +2868,14 @@ below that name a branch wait on it (see "Explore: which views stay").
   hardest first (the Fix Diff column, match by match). Scrolls sideways on
   phones with the club column pinned. Facts: hardest and easiest run-in, the
   gap between them, the surest win left.
-- **Match-odds calibration** (`viz=calibration`, #10; branch `explore/calibration`): a reliability diagram of
-  the shipped odds over every match since 2016 (home, draw, away; dot size by
-  count, bins under 30 faint), the scores against the closing line three ways
+- **Match-odds calibration** (#10; since 2026-10-17 the second part of model accuracy, `viz=accuracy`, branch `explore/accuracy`): a reliability diagram of
+  the shipped odds over every match since 2016 (home, draw, away, in 5 % bins since 2026-10-17, a band through the bins' 95 % Wilson intervals (error bars first,
+  the owner preferred a band); one panel per outcome zoomed to
+  its own range, bins under 50 matches left out; dot size by count), the scores against the closing line three ways
   de-vigged, and facts (calibration error, favourites priced 70 %+, the gap to
-  the market, quarter-Kelly ROI). Data: `public/data/calibration.json`, written
+  the market, the quarter-Kelly bankroll -- not the return per stake, which
+  can be positive while the bankroll falls: +0.7 % on stakes, bankroll 60 % on
+  elo-v15.0). Data: `public/data/calibration.json`, written
   by `build_site` from a walk-forward run (`research.calibration_payload`, about
   a second).
 

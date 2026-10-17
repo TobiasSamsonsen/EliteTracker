@@ -17,7 +17,9 @@ scores with Scorecard.observe(..., match_id) so `paired` can compare it.
 from __future__ import annotations
 
 import argparse
+import json
 import time
+from pathlib import Path
 
 from elitetracker.model import benchmark
 from elitetracker.model.backtest import Scorecard, paired, reliability, restrict, shipped_cards
@@ -218,6 +220,9 @@ def market_comparison(score_from: int) -> int:
     return 0
 
 
+VERSIONS_PATH = Path("data/model_versions.json")
+
+
 def calibration_payload(score_from: int = 2016, root=NORMALIZED_DIR) -> dict:
     """The Explore view's match-odds calibration (`viz=calibration`): the
     shipped odds' reliability over every scored match of both divisions, and
@@ -258,7 +263,8 @@ def calibration_payload(score_from: int = 2016, root=NORMALIZED_DIR) -> dict:
             **{lg: scores(restrict(shipped, {m for m in shipped.losses if league[m] == lg}))
                for lg in ("eliteserien", "obosligaen")},
         },
-        "reliability": reliability(shipped),
+        # 5 % bins: the view draws a 95 % interval on each, so narrow bins stay readable.
+        "reliability": reliability(shipped, bins=20),
         # Per scoreline (4 = 4 or more): the share of matches the model gave it
         # on average against the share that ended that way.
         "scorelines": [
@@ -269,6 +275,9 @@ def calibration_payload(score_from: int = 2016, root=NORMALIZED_DIR) -> dict:
         "market": market,
         "kelly": {key: (round(value, 4) if isinstance(value, float) else value)
                   for key, value in benchmark.kelly(model_es, prices, order).items()} if common else None,
+        # Every model version's odds on the same matches, from each release's own
+        # code (experiments/improvements/version_history.py, rerun per release).
+        "versions": json.loads(VERSIONS_PATH.read_text(encoding="utf-8")) if VERSIONS_PATH.exists() else None,
     }
 
 

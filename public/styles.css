@@ -68,6 +68,10 @@
   --seq-5: #2265ac;
   --seq-6: #253d98;
   --seq-7: #12246b;
+  /* Model accuracy's version history: two series, validated in light mode. */
+  --versions-all: #2265ac;
+  --versions-es: #3db2c4;
+  --versions-xg: #c9701c;
 
   /* Diverging: home win <- draw -> away win. */
   --home: #1d63bb;   /* white odds labels 5.9:1 (was 4.4:1) */
@@ -148,6 +152,10 @@
   --seq-5: #36abc3;
   --seq-6: #80cdbb;
   --seq-7: #caeab4;
+  /* The version history's two series, their own dark steps (validated on #131c22). */
+  --versions-all: #4479d0;
+  --versions-es: #2ba3a0;
+  --versions-xg: #c4772a;
 
   --home: #3987e5;
   --draw: #b5b5ac;
@@ -3984,3 +3992,83 @@ body[data-viz="mountain"] > footer { display: none; }
 .luck-how__title { cursor: pointer; color: var(--ink); font-size: 0.875rem; font-weight: 600; }
 .luck-how__steps { display: grid; gap: 0.35rem; margin: 0.55rem 0 0; padding-left: 1.25rem; }
 .luck-how__steps b { color: var(--ink); font-weight: 600; }
+
+/* Prediction scorecard, the pre-season part of the model card's accuracy
+   panel: the model's order before the season against final place, the
+   two-place band, a strip of seasons to pick one out. */
+.scorecard { padding: 0.75rem 1rem 1rem; }
+.scorecard .chart { max-width: 600px; margin: 0 auto; }
+.chart .scorecard__diagonal { stroke: var(--rule-strong); stroke-width: 1.5; stroke-dasharray: 5 4; }
+.scorecard__band { fill: var(--seq-2); opacity: 0.45; }
+.chart .scorecard__dot { fill: var(--seq-6); stroke: var(--panel); stroke-width: 1; opacity: 0.85; transition: opacity 0.2s; }
+.chart .scorecard__dot--miss { fill: var(--seq-4); }
+.chart .scorecard__dot:hover { opacity: 1; stroke: var(--ink); }
+.chart .scorecard__dot:focus-visible { outline: none; stroke: var(--ink); stroke-width: 2; }
+.chart.scorecard--focus .scorecard__dot { opacity: 0.18; }
+.chart .scorecard__pick { fill: var(--seq-7); stroke: var(--panel); stroke-width: 1.5; }
+.chart .scorecard__pick--miss { fill: var(--seq-5); }
+.chart .scorecard__label { fill: var(--ink); font-size: 10.5px; font-weight: 600; paint-order: stroke; stroke: var(--panel); stroke-width: 3px; stroke-linejoin: round; pointer-events: none; }
+.scorecard__seasons { display: grid; grid-template-columns: repeat(auto-fill, minmax(4.25rem, 1fr)); gap: 0.4rem; max-width: 600px; margin: 0.9rem auto 0; }
+.scorecard__season { display: grid; gap: 0.3rem; padding: 0.4rem 0.5rem; border: 1px solid var(--rule); border-radius: var(--radius-sm); background: var(--panel); color: var(--ink-muted); font: inherit; font-size: 0.75rem; text-align: left; cursor: pointer; }
+.scorecard__season b { color: var(--ink); font-size: 0.8125rem; font-weight: 600; }
+.scorecard__season:hover { border-color: var(--rule-strong); }
+.scorecard__season[aria-pressed="true"] { border-color: var(--ink); background: var(--panel-sunk); }
+.scorecard__season-bar { position: relative; height: 4px; border-radius: 2px; background: var(--rule); }
+.scorecard__season-bar i { position: absolute; top: 0; bottom: 0; left: 0; border-radius: 2px; background: var(--seq-6); }
+.scorecard__season-bar .scorecard__season-last { top: -3px; bottom: -3px; width: 2px; margin-left: -1px; border-radius: 1px; background: var(--ink); }
+.scorecard__note { max-width: 600px; margin-left: auto; margin-right: auto; }
+/* Six key figures: three a row on a wide screen, not five and one. */
+.scorecard .explore-facts__grid { grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); }
+
+/* Model accuracy, a panel of the model card: three parts, each with a
+   heading and a lead; the scorecard's own division switch. */
+.model-accuracy { margin-top: 1.25rem; }
+.accuracy__divisions { display: flex; flex-wrap: wrap; gap: 0.4rem; margin: 0.7rem 0 0; padding: 0 1rem; }
+.accuracy__division { padding: 0.3rem 0.8rem; border: 1px solid var(--rule); border-radius: 999px; background: var(--panel); color: var(--ink-muted); font: inherit; font-size: 0.8125rem; cursor: pointer; }
+.accuracy__division:hover { border-color: var(--rule-strong); }
+.accuracy__division[aria-pressed="true"] { border-color: var(--ink); background: var(--panel-sunk); color: var(--ink); font-weight: 600; }
+.accuracy__part + .accuracy__part { margin-top: 1.25rem; padding-top: 1.25rem; border-top: 1px solid var(--rule); }
+.accuracy__title { margin: 0.5rem 0 0; padding: 0 1rem; color: var(--ink); font-size: 1.0625rem; font-weight: 700; }
+.accuracy__lead { max-width: 40rem; margin: 0.3rem 0 0; padding: 0 1rem; color: var(--ink-muted); font-size: 0.875rem; line-height: 1.45; }
+
+
+/* Match-odds calibration, the second part of the model accuracy view: a reliability diagram, the market table, a legend. */
+.calibration { padding: 0.75rem 1rem 1rem; }
+.calibration__panels { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1rem 1.25rem; max-width: 1040px; margin: 0 auto; }
+@media (max-width: 760px) { .calibration__panels { grid-template-columns: minmax(0, 1fr); max-width: 380px; } }
+.calibration__panel { margin: 0; }
+.calibration__panel-title { display: flex; align-items: center; gap: 0.4rem; margin-bottom: 0.2rem; color: var(--ink); font-size: 0.875rem; font-weight: 600; }
+.calibration__swatch { width: 0.7rem; height: 0.7rem; border-radius: 999px; }
+.chart .calibration__diagonal { stroke: var(--rule-strong); stroke-width: 1.5; stroke-dasharray: 5 4; }
+.chart .calibration__band { stroke: none; opacity: 0.14; }
+.chart .calibration__line { fill: none; stroke-width: 1.5; opacity: 0.5; }
+.chart .calibration__dot { stroke: var(--panel); stroke-width: 1.5; }
+.chart .calibration__dot:focus-visible { outline: none; stroke: var(--ink); stroke-width: 2; }
+.calibration__note { max-width: 1040px; margin: 0.75rem auto 1.25rem; }
+.calibration__table { width: 100%; max-width: 600px; margin: 0 auto; border-collapse: collapse; font-size: 0.875rem; font-variant-numeric: tabular-nums; }
+.calibration__table caption { padding-bottom: 0.4rem; color: var(--ink-muted); font-size: 0.8125rem; text-align: left; caption-side: top; }
+.calibration__table th, .calibration__table td { padding: 0.35rem 0.5rem; border-bottom: 1px solid var(--rule); text-align: right; }
+.calibration__table th:first-child { text-align: left; font-weight: 500; }
+.calibration__table tr:first-of-type th { color: var(--ink-muted); font-size: 0.75rem; font-weight: 600; white-space: nowrap; }
+.calibration__ours th, .calibration__ours td { font-weight: 700; }
+
+/* Model accuracy, third part: every model version's odds on the same
+   matches. Three series (all matches, Eliteserien, the xG seasons;
+   validated per mode, see --versions-*), the bookmakers dashed, direct labels at the
+   right end, a hover column per version. */
+.versions { padding: 0.75rem 1rem 1rem; }
+.versions .chart { display: block; max-width: 760px; margin: 0 auto; }
+.versions__legend { display: flex; flex-wrap: wrap; gap: 0.4rem 1.1rem; max-width: 760px; margin: 0 auto 0.4rem; color: var(--ink-muted); font-size: 0.8125rem; }
+.versions__key { display: inline-flex; align-items: center; gap: 0.4rem; }
+.versions__swatch { width: 1rem; height: 2px; border-radius: 1px; }
+/* Dashes drawn, not a dashed border, which renders near solid this short; --swatch is its line's colour. */
+.versions__swatch--market { width: 1.5rem; background: repeating-linear-gradient(90deg, var(--swatch, var(--ink-muted)) 0 5px, transparent 5px 8px); }
+.chart .versions__line { fill: none; stroke-width: 2; stroke-linejoin: round; }
+.chart .versions__dot { stroke: var(--panel); stroke-width: 2; pointer-events: none; }
+.chart .versions__market { stroke-width: 1.5; stroke-dasharray: 5 4; opacity: 0.85; } /* stroke: its line's colour */
+.chart .versions__label { fill: var(--ink-muted); font-size: 11px; }
+.chart .versions__guide { stroke: var(--rule-strong); stroke-width: 1; opacity: 0; pointer-events: none; }
+.chart .versions__guide.is-on { opacity: 1; }
+.chart .versions__hit { fill: transparent; }
+.chart .versions__hit:focus-visible { outline: none; fill: var(--panel-sunk); fill-opacity: 0.6; }
+.versions__note { max-width: 760px; margin-left: auto; margin-right: auto; }

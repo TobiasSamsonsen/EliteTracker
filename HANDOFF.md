@@ -11,13 +11,14 @@ released alone when it is finished. The owner decides what each one needs next.
 ```
 main                       the site: Explore shows attack vs defence, the season mountain and the luck table
 └─ explore/base            what the views share (on main since the luck table's release)
-   ├─ explore/scorecard    prediction scorecard
+   ├─ explore/accuracy     model accuracy, a panel of the model card (no longer an Explore view):
+   │   the version history, the calibration and the scorecard
+   │   (merges explore/scorecard and explore/calibration, which it replaces)
    ├─ explore/luck         luck table -- released 2026-10-16 (merged into main)
    ├─ explore/runin        run-in heatmap
    ├─ explore/races        race lines
    ├─ explore/stakes       stakes calendar
    ├─ explore/h2h          head to head
-   ├─ explore/calibration  match-odds calibration
    └─ explore/later        the lift, rating river and scorelines: stored code, not wired in
 ```
 
@@ -94,13 +95,12 @@ git commit -am "Explore luck: ..." && git push
 
 | view | season controls | known limits |
 |---|---|---|
-| scorecard | division only | every finished season at once; archives before the pre-season view fall back to the first season-shape snapshot |
+| accuracy (model card) | season (hero), division (its own switch) | the scorecard: every finished season at once, archives before the pre-season view fall back to the first season-shape snapshot; the calibration pools both divisions and every season since 2016 |
 | luck (released) | division, season, rewind | xG only from 2020 (Eliteserien) and 2023 (OBOS-ligaen); earlier seasons say so; keeping only where there is xG on target (Eliteserien) |
 | runin | division, season | a finished season shows the run-in as it stood with ten rounds left |
 | races | division, season | the snapshots count places only, so promotion and relegation leave out the play-offs (the note says so) |
 | stakes | division, season | decisive matches are marked only in the last ten rounds |
 | h2h | division, season | the record runs from 2015 to the end of the season shown |
-| calibration | none (no hero) | pools both divisions and every season since 2016 |
 
 The three stored views, and what each needs before it comes back, are in
 `experiments/explore-later/README.md` on `explore/later`.

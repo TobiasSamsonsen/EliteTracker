@@ -585,3 +585,109 @@ test('every luck-table string exists in both languages', () => {
     'luck.all.fact.seasonText', 'luck.all.fact.next', 'luck.all.fact.nextText',
   ]);
 });
+
+eval(pick('expectedFinish') + pick('scorecardRows') + pick('scorecardLastSeason') + pick('scorecardHits'));
+
+test('scorecard rows put the pre-season call against the final place', () => {
+  const pre = [
+    { team_id: 'A', position_probabilities: [0.7, 0.3, 0] },
+    { team_id: 'B', position_probabilities: [0.3, 0.6, 0.1] },
+    { team_id: 'C', position_probabilities: [0, 0.1, 0.9] },
+    { team_id: 'X', position_probabilities: [0, 0, 1] },   // not in the final table: dropped
+  ];
+  const final = [{ team_id: 'C', team: 'C', position: 1 }, { team_id: 'A', team: 'A', position: 2 }, { team_id: 'B', team: 'B', position: 3 }];
+  const rows = scorecardRows(2019, pre, final);
+  assert.deepEqual(rows.map((row) => [row.team_id, row.finished]), [['A', 2], ['B', 3], ['C', 1]]);
+  assert.ok(Math.abs(rows[0].expected - 1.3) < 1e-12);
+  // The call is the order the expected finishes put the clubs in.
+  assert.deepEqual(rows.map((row) => [row.called, row.miss]), [[1, 1], [2, 1], [3, -2]]);
+  assert.equal(scorecardHits(rows), 3);
+  assert.equal(scorecardHits([{ miss: 2.5 }, { miss: -2 }]), 1);
+  assert.equal(scorecardHits([{ lastMiss: 3 }, { lastMiss: 0 }], 'lastMiss'), 1);
+});
+
+test('last season’s table calls the clubs coming down first and those coming up last', () => {
+  const previous = {
+    eliteserien: { table: [{ team_id: 'TOP', position: 1 }, { team_id: 'DOWN', position: 16 }] },
+    obosligaen: { table: [{ team_id: 'UP', position: 1 }, { team_id: 'MID', position: 8 }] },
+  };
+  // OBOS-ligaen: DOWN from above first, then UP and MID by last season's
+  // places; the two clubs from neither table share the 4th and 5th place.
+  const rows = ['MID', 'NEW1', 'DOWN', 'NEW2', 'UP'].map((team_id, i) => ({ team_id, finished: i + 1 }));
+  assert.deepEqual(scorecardLastSeason(rows, previous).map((row) => row.lastMiss), [1 - 3, 2 - 4.5, 3 - 1, 4 - 4.5, 5 - 2]);
+  // Eliteserien: the club up from OBOS-ligaen goes after every club that stayed.
+  const top = scorecardLastSeason([{ team_id: 'UP', finished: 1 }, { team_id: 'TOP', finished: 2 }], previous);
+  assert.deepEqual(top.map((row) => row.lastMiss), [1 - 2, 2 - 1]);
+});
+
+test('every scorecard string exists in both languages', () => {
+  assertBothLanguages([
+    'model.accuracy.title', 'model.accuracy.desc', 'accuracy.division', 'accuracy.table', 'accuracy.tableLead', 'accuracy.matches',
+    'accuracy.matchesLead', 'scorecard.loading', 'scorecard.empty', 'scorecard.aria',
+    'scorecard.x', 'scorecard.y', 'scorecard.tip', 'scorecard.fact.hits', 'scorecard.fact.hitsText',
+    'scorecard.fact.miss', 'scorecard.fact.missText', 'scorecard.fact.best', 'scorecard.fact.bestText', 'scorecard.fact.over',
+    'scorecard.fact.under', 'scorecard.fact.movedText', 'scorecard.cellTip', 'scorecard.pick', 'scorecard.season',
+    'scorecard.seasonFirst', 'scorecard.fact.last', 'scorecard.fact.lastText', 'scorecard.fact.missLast',
+  ]);
+});
+
+eval(pick('calibrationPool') + pick('calibrationInterval') + pick('calibrationRange'));
+
+test('calibration pools the bins at the top of the range', () => {
+  const bins = [
+    { lo: 0.6, hi: 0.7, n: 10, predicted: 0.65, observed: 0.6 },
+    { lo: 0.7, hi: 0.8, n: 30, predicted: 0.74, observed: 0.8 },
+    { lo: 0.8, hi: 0.9, n: 10, predicted: 0.84, observed: 0.9 },
+  ];
+  const top = calibrationPool(bins, 0.7);
+  assert.equal(top.n, 40);
+  assert.ok(Math.abs(top.predicted - 0.765) < 1e-12 && Math.abs(top.observed - 0.825) < 1e-12);
+  assert.equal(calibrationPool(bins, 0.95), null);
+});
+
+test('the calibration band is the 95 % Wilson interval, inside 0-1', () => {
+  const [low, high] = calibrationInterval(0.5, 100);
+  assert.ok(Math.abs(low - 0.4038) < 1e-4 && Math.abs(high - 0.5962) < 1e-4);
+  const [zeroLow, zeroHigh] = calibrationInterval(0, 18);
+  assert.equal(zeroLow, 0);
+  assert.ok(zeroHigh > 0.15 && zeroHigh < 0.2);
+  assert.equal(calibrationInterval(1, 5)[1], 1);
+});
+
+test('every calibration string exists in both languages', () => {
+  assertBothLanguages([
+    'calib.loading', 'calib.empty', 'calib.aria',
+    'calib.x', 'calib.y', 'calib.tip', 'calib.model', 'calib.elo',
+    'calib.proportional', 'calib.power', 'calib.shin', 'calib.tableCaption', 'calib.fact.error',
+    'calib.fact.errorText', 'calib.fact.favourites', 'calib.fact.favouritesText', 'calib.fact.market', 'calib.fact.marketText',
+    'calib.fact.kelly', 'calib.fact.kellyText', 'calib.note',
+  ]);
+});
+
+test('each calibration panel takes the same range on both axes, out to the next 10 %', () => {
+  // Draws: chances 17-33 %, the band a little wider; the range snaps to tenths.
+  const draws = [{ predicted: 0.17, observed: 0.18, n: 400 }, { predicted: 0.33, observed: 0.31, n: 200 }];
+  assert.deepEqual(calibrationRange(draws), [0.1, 0.4]);
+  // An exact tenth stays put, and the range never leaves 0-1.
+  assert.deepEqual(calibrationRange([{ predicted: 0.2, observed: 0.25, n: 1e9 }, { predicted: 0.95, observed: 0.99, n: 60 }]), [0.2, 1]);
+});
+
+eval(pick('versionSkill') + pick('versionShort'));
+
+test('the version history measures each version against base rates and labels it short', () => {
+  assert.ok(Math.abs(versionSkill(1.0, 1.0620) - (100 * (1 - 1 / 1.062))) < 1e-12);
+  assert.equal(versionSkill(1.062, 1.062), 0);
+  assert.deepEqual(['elo-v1', 'elo-v11.1', 'elo-v12.0', 'elo-v15.0'].map(versionShort), ['v1', 'v11.1', 'v12', 'v15']);
+});
+
+test('every version-history string exists in both languages', () => {
+  assertBothLanguages([
+    // versions.es is 'Eliteserien' in both languages, so it is left out here.
+    'accuracy.versions', 'accuracy.versionsLead', 'versions.empty', 'versions.all', 'versions.market',
+    'versions.marketShort', 'versions.marketXg', 'versions.marketXgShort', 'versions.aria', 'versions.y', 'versions.x', 'versions.tipAll', 'versions.tipEs',
+    'versions.xg', 'versions.tipXg', 'versions.fact.xg', 'versions.fact.xgText', 'versions.fact.xgMarket', 'versions.tipStep', 'versions.note', 'versions.fact.skill', 'versions.fact.skillText', 'versions.fact.step',
+    'versions.fact.stepText', 'versions.fact.gap', 'versions.fact.gapText',
+    ...['elo-v1', 'elo-v2', 'elo-v3', 'elo-v5', 'elo-v6', 'elo-v7', 'elo-v8', 'elo-v9', 'elo-v10', 'elo-v11',
+      'elo-v11.1', 'elo-v12.0', 'elo-v13.0', 'elo-v14.0', 'elo-v15.0', 'elo-v16.0'].map((v) => `versions.v.${v}`),
+  ]);
+});
