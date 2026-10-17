@@ -68,6 +68,9 @@
   --seq-5: #2265ac;
   --seq-6: #253d98;
   --seq-7: #12246b;
+  /* Model accuracy's version history: two series, validated in light mode. */
+  --versions-all: #2265ac;
+  --versions-es: #3db2c4;
 
   /* Diverging: home win <- draw -> away win. */
   --home: #1d63bb;   /* white odds labels 5.9:1 (was 4.4:1) */
@@ -148,6 +151,9 @@
   --seq-5: #36abc3;
   --seq-6: #80cdbb;
   --seq-7: #caeab4;
+  /* The version history's two series, their own dark steps (validated on #131c22). */
+  --versions-all: #4479d0;
+  --versions-es: #2ba3a0;
 
   --home: #3987e5;
   --draw: #b5b5ac;
@@ -4037,3 +4043,23 @@ body[data-viz="accuracy"] .hero-title-part[data-role="season"] { display: none; 
 .calibration__table th:first-child { text-align: left; font-weight: 500; }
 .calibration__table tr:first-of-type th { color: var(--ink-muted); font-size: 0.75rem; font-weight: 600; }
 .calibration__ours th, .calibration__ours td { font-weight: 700; }
+
+/* Model accuracy, third part: every model version's odds on the same
+   matches. Two series in one family (all matches, Eliteserien; validated
+   per mode, see --versions-*), the bookmakers dashed, direct labels at the
+   right end, a hover column per version. */
+.versions { padding: 0.75rem 1rem 1rem; }
+.versions .chart { display: block; max-width: 760px; margin: 0 auto; }
+.versions__legend { display: flex; flex-wrap: wrap; gap: 0.4rem 1.1rem; max-width: 760px; margin: 0 auto 0.4rem; color: var(--ink-muted); font-size: 0.8125rem; }
+.versions__key { display: inline-flex; align-items: center; gap: 0.4rem; }
+.versions__swatch { width: 1rem; height: 2px; border-radius: 1px; }
+.versions__swatch--market { height: 0; border-top: 2px dashed var(--ink-muted); background: none; }
+.chart .versions__line { fill: none; stroke-width: 2; stroke-linejoin: round; }
+.chart .versions__dot { stroke: var(--panel); stroke-width: 2; pointer-events: none; }
+.chart .versions__market { stroke: var(--ink-muted); stroke-width: 1.5; stroke-dasharray: 5 4; }
+.chart .versions__label { fill: var(--ink-muted); font-size: 11px; }
+.chart .versions__guide { stroke: var(--rule-strong); stroke-width: 1; opacity: 0; pointer-events: none; }
+.chart .versions__guide.is-on { opacity: 1; }
+.chart .versions__hit { fill: transparent; }
+.chart .versions__hit:focus-visible { outline: none; fill: var(--panel-sunk); fill-opacity: 0.6; }
+.versions__note { max-width: 760px; margin-left: auto; margin-right: auto; }

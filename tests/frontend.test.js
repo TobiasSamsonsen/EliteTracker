@@ -671,3 +671,23 @@ test('each calibration panel takes the same range on both axes, out to the next 
   // An exact tenth stays put, and the range never leaves 0-1.
   assert.deepEqual(calibrationRange([{ predicted: 0.2, observed: 0.25, n: 1e9 }, { predicted: 0.95, observed: 0.99, n: 60 }]), [0.2, 1]);
 });
+
+eval(pick('versionSkill') + pick('versionShort'));
+
+test('the version history measures each version against base rates and labels it short', () => {
+  assert.ok(Math.abs(versionSkill(1.0, 1.0620) - (100 * (1 - 1 / 1.062))) < 1e-12);
+  assert.equal(versionSkill(1.062, 1.062), 0);
+  assert.deepEqual(['elo-v1', 'elo-v11.1', 'elo-v12.0', 'elo-v15.0'].map(versionShort), ['v1', 'v11.1', 'v12', 'v15']);
+});
+
+test('every version-history string exists in both languages', () => {
+  assertBothLanguages([
+    // versions.es is 'Eliteserien' in both languages, so it is left out here.
+    'accuracy.versions', 'accuracy.versionsLead', 'versions.empty', 'versions.all', 'versions.market',
+    'versions.marketShort', 'versions.aria', 'versions.y', 'versions.x', 'versions.tipAll', 'versions.tipEs',
+    'versions.tipStep', 'versions.note', 'versions.fact.skill', 'versions.fact.skillText', 'versions.fact.step',
+    'versions.fact.stepText', 'versions.fact.gap', 'versions.fact.gapText',
+    ...['elo-v1', 'elo-v2', 'elo-v3', 'elo-v5', 'elo-v6', 'elo-v7', 'elo-v8', 'elo-v9', 'elo-v10', 'elo-v11',
+      'elo-v11.1', 'elo-v12.0', 'elo-v13.0', 'elo-v14.0', 'elo-v15.0'].map((v) => `versions.v.${v}`),
+  ]);
+});

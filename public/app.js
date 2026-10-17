@@ -3003,9 +3003,10 @@ function drawLuckSeasons(report, section, { counted, rows }, trend) {
 
 /* ---------- explore: model accuracy (viz=accuracy) -------------------- */
 
-/* How accurate the model is, in two parts: before the season, the table it
-   called against the one that came (the division in the hero); match by
-   match, its odds against what happened (both divisions, every season). */
+/* How accurate the model is, in three parts: before the season, the table
+   it called against the one that came (the division in the hero); match by
+   match, its odds against what happened (both divisions, every season); and
+   how every model version's odds compare on the same matches. */
 async function renderAccuracy(report, body) {
   body.replaceChildren();
   const part = (key) => {
@@ -3017,7 +3018,13 @@ async function renderAccuracy(report, body) {
     body.appendChild(section);
     return content;
   };
-  await Promise.all([renderScorecard(report, part('table')), renderCalibration(report, part('matches'))]);
+  const [table, matches, versionsPart] = [part('table'), part('matches'), part('versions')];
+  versionsPart.appendChild(el('p', 'explore-empty', t('calib.loading')));
+  const versions = loadCalibration().then(
+    (data) => { if (state.exploreItem === 'accuracy') renderVersionHistory(report, versionsPart, data); },
+    () => renderVersionHistory(report, versionsPart, null),
+  );
+  await Promise.all([renderScorecard(report, table), renderCalibration(report, matches), versions]);
 }
 
 /* Before the season: the prediction scorecard. */
@@ -3464,6 +3471,170 @@ function calibrationFacts(data) {
   return facts;
 }
 
+
+/* Over the model versions: every release's odds on the same matches. */
+
+/* How much better than guessing from base rates (how often home, draw and
+   away happen), in %: 1 - log loss / the base rates' log loss. */
+function versionSkill(logLoss, base) {
+  return 100 * (1 - logLoss / base);
+}
+
+/* "elo-v12.0" -> "v12", "elo-v11.1" -> "v11.1": the axis label. */
+function versionShort(version) {
+  return version.replace(/^elo-/, '').replace(/\.0$/, '');
+}
+
+function renderVersionHistory(report, body, data) {
+  const history = data && data.versions;
+  if (!history || !history.versions || history.versions.length < 2) {
+    body.replaceChildren(el('p', 'explore-empty', t('versions.empty')));
+    return;
+  }
+  const rows = history.versions.map((row) => ({
+    ...row,
+    all: versionSkill(row.log_loss, history.base_rate_log_loss),
+    es: versionSkill(row.log_loss_eliteserien, history.base_rate_log_loss_eliteserien),
+  }));
+  const market = history.market_log_loss_priced != null
+    ? versionSkill(history.market_log_loss_priced, history.base_rate_log_loss_eliteserien) : null;
+  const series = [
+    { key: 'all', label: t('versions.all'), colour: 'var(--versions-all)' },
+    { key: 'es', label: t('versions.es'), colour: 'var(--versions-es)' },
+  ];
+
+  const wrap = el('div', 'versions');
+  const legend = el('div', 'versions__legend');
+  for (const { label, colour } of series) {
+    const item = el('span', 'versions__key');
+    const swatch = el('i', 'versions__swatch');
+    swatch.style.background = colour;
+    item.append(swatch, label);
+    legend.appendChild(item);
+  }
+  if (market != null) {
+    const item = el('span', 'versions__key');
+    item.append(el('i', 'versions__swatch versions__swatch--market'), t('versions.market'));
+    legend.appendChild(item);
+  }
+  wrap.appendChild(legend);
+  const svg = svgEl('svg', { class: 'chart', role: 'group', 'aria-label': t('versions.aria') });
+  wrap.appendChild(svg);
+  body.replaceChildren(wrap);
+
+  const box = wrap.getBoundingClientRect().width || 720;
+  const width = Math.min(760, Math.round(box));
+  const narrow = width < 520;
+  const height = narrow ? 260 : 300;
+  const pad = { top: 14, right: narrow ? 64 : 120, bottom: 40, left: 40 };
+  svg.setAttribute('viewBox', `0 0 ${width} ${height}`);
+  const values = rows.flatMap((row) => [row.all, row.es]).concat(market != null ? [market] : []);
+  const top = Math.ceil(Math.max(...values) + 0.5);
+  const bottom = Math.min(0, Math.floor(Math.min(...values)));
+  const step = (width - pad.left - pad.right) / (rows.length - 1);
+  const x = (i) => pad.left + i * step;
+  const y = (v) => pad.top + ((top - v) / (top - bottom)) * (height - pad.top - pad.bottom);
+  const text = (className, content, attrs) => {
+    const node = svgEl('text', { class: className, ...attrs });
+    node.textContent = content;
+    svg.appendChild(node);
+    return node;
+  };
+  for (let v = bottom; v <= top; v += 1) {
+    svg.appendChild(svgEl('line', { class: v ? 'grid-line' : 'axis-line', x1: pad.left, x2: width - pad.right, y1: y(v), y2: y(v) }));
+    text('tick', `${num(v)}${percentSign()}`, { x: pad.left - 6, y: y(v) + 3.5, 'text-anchor': 'end' });
+  }
+  rows.forEach((row, i) => {
+    if (narrow && i % 2 && i !== rows.length - 1) return;
+    text('tick', versionShort(row.version), { x: x(i), y: height - pad.bottom + 15, 'text-anchor': 'middle' });
+  });
+  text('axis-title', t('versions.y'), { x: pad.left, y: pad.top - 3 });
+  text('axis-title', t('versions.x'), { x: width - pad.right, y: height - 4, 'text-anchor': 'end' });
+
+  // The bookmakers' closing line on the same Eliteserien matches: a reference, dashed.
+  if (market != null) {
+    svg.appendChild(svgEl('line', { class: 'versions__market', x1: pad.left, x2: width - pad.right, y1: y(market), y2: y(market) }));
+  }
+  const guide = svgEl('line', { class: 'versions__guide', y1: pad.top, y2: height - pad.bottom, x1: 0, x2: 0 });
+  svg.appendChild(guide);
+  for (const { key, colour } of series) {
+    svg.appendChild(svgEl('polyline', {
+      class: 'versions__line', points: rows.map((row, i) => `${x(i)},${y(row[key])}`).join(' '), style: `stroke: ${colour}`,
+    }));
+    rows.forEach((row, i) => {
+      svg.appendChild(svgEl('circle', { class: 'versions__dot', cx: x(i), cy: y(row[key]), r: 4, style: `fill: ${colour}` }));
+    });
+  }
+  // Direct labels at the right end, in ink, nudged apart where they would touch.
+  const ends = series.map(({ key, label }) => ({ label, v: rows[rows.length - 1][key] }));
+  if (market != null) ends.push({ label: t('versions.marketShort'), v: market });
+  const placed = ends.map((end) => ({ ...end, at: y(end.v) })).sort((a, b) => a.at - b.at);
+  for (let i = 1; i < placed.length; i += 1) placed[i].at = Math.max(placed[i].at, placed[i - 1].at + 13);
+  if (!narrow) {
+    for (const end of placed) {
+      text('versions__label', `${end.label} ${num(end.v, 1)}${percentSign()}`, { x: width - pad.right + 8, y: end.at + 4 });
+    }
+  }
+
+  // One hover column per version: the guide line and both series in the tooltip.
+  const date = (iso) => new Date(`${iso}T12:00:00Z`).toLocaleDateString(localeDate(), { day: 'numeric', month: 'short', year: 'numeric' });
+  rows.forEach((row, i) => {
+    const hit = svgEl('rect', {
+      class: 'versions__hit', x: x(i) - step / 2, y: pad.top, width: step, height: height - pad.top - pad.bottom, tabindex: 0,
+    });
+    const previous = rows[i - 1];
+    const tip = () => [
+      `<b>${row.version}</b>${row.released ? ` · ${date(row.released)}` : ''}`,
+      t(`versions.v.${row.version}`),
+      t('versions.tipAll', { skill: num(row.all, 1), ll: num(row.log_loss, 4) }),
+      t('versions.tipEs', { skill: num(row.es, 1), ll: num(row.log_loss_eliteserien, 4) }),
+      previous ? t('versions.tipStep', {
+        delta: signed(row.vs_previous, 4), previous: previous.version, t: num(row.t_vs_previous, 1),
+      }) : '',
+    ].filter(Boolean).join('<br>');
+    hit.setAttribute('aria-label', `${row.version}: ${t('versions.tipAll', { skill: num(row.all, 1), ll: num(row.log_loss, 4) })}`);
+    hit.addEventListener('pointerenter', () => {
+      guide.setAttribute('x1', x(i));
+      guide.setAttribute('x2', x(i));
+      guide.classList.add('is-on');
+    });
+    hit.addEventListener('pointerleave', () => guide.classList.remove('is-on'));
+    attachTip(hit, tip);
+    svg.appendChild(hit);
+  });
+
+  wrap.appendChild(el('p', 'explore-note versions__note', t('versions.note', {
+    n: num(history.n), from: history.first_season, to: history.last_season,
+  })));
+
+  const first = rows[0];
+  const last = rows[rows.length - 1];
+  const biggest = rows.slice(1).reduce((a, b) => (b.vs_previous < a.vs_previous ? b : a));
+  const facts = [{
+    value: `${num(first.all, 1)} → ${num(last.all, 1)}${percentSign()}`,
+    label: t('versions.fact.skill'),
+    text: t('versions.fact.skillText', { first: first.version, last: last.version, n: num(history.n) }),
+  }, {
+    value: biggest.version,
+    label: t('versions.fact.step'),
+    text: t('versions.fact.stepText', {
+      what: t(`versions.v.${biggest.version}`), delta: signed(biggest.vs_previous, 4), t: num(biggest.t_vs_previous, 1),
+    }),
+  }];
+  if (market != null && first.log_loss_eliteserien > history.market_log_loss_priced) {
+    const closed = (first.log_loss_eliteserien - last.log_loss_eliteserien)
+      / (first.log_loss_eliteserien - history.market_log_loss_priced);
+    facts.push({
+      value: pct(closed, 0),
+      label: t('versions.fact.gap'),
+      text: t('versions.fact.gapText', {
+        n: num(history.n_priced), first: first.version, last: last.version,
+        market: num(market, 1), from: num(first.es, 1), to: num(last.es, 1),
+      }),
+    });
+  }
+  wrap.appendChild(exploreFacts(facts));
+}
 
 /* The season mountain, ported from experiments/season_mountain: the finish
    grid is the floor, and every round stacks another layer of finishing-place

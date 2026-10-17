@@ -173,7 +173,10 @@ slider too; the ones with time along an axis of their own take none.
   divisions; one panel per outcome, zoomed to its own range; 5 % bins with
   50 or more matches, over a band through their 95 % intervals), the scores against the bookmakers' closing odds (three ways of
   removing their margin), and where quarter-Kelly betting on the model's
-  edges would have left the bankroll.
+  edges would have left the bankroll. *Over the model versions*: every release replayed with
+  its own code on the same 4,800 matches, as how much better than base rates
+  its odds were (all matches and Eliteserien), the bookmakers' closing line
+  as a reference.
 
 ### Model Card
 

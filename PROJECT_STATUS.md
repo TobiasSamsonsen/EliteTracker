@@ -85,6 +85,42 @@ goals, high-stakes swings, the pre-season view) or touched presentation were
 right not to bump. elo-v13.0 was worked on as "v13.0" and then "v13.1" in the
 working tree before these rules existed; as one release it is one number.
 
+**Every version on the same matches (October 2026).**
+`experiments/improvements/version_history.py` replays each release with its
+own `src` (a git worktree of the commit above) on today's data, walk-forward,
+and scores all of them on the same 4,800 matches 2016-2025 (both divisions);
+the result is `data/model_versions.json`, which `calibration_payload` passes
+to the model accuracy view (rerun it after each release: `predict` once per
+version, then `combine`). v1 is seeded each season from the season before's
+table, v2-v6 run the careers (the production path), v7-v12 the Elo/goals blend
+the way each version's `research.cmd_run` scored it, v13 on `shipped_cards`.
+Better than base rates = 1 - log loss / 1.06202 (always the overall home/draw/away
+shares; Eliteserien 1.05915). The closing line (power method) on the same
+2,400 Eliteserien matches: 0.98758, 6.8 % better than base rates.
+
+| version | log loss, all | better than base rates | Eliteserien | step on the version before (t) |
+|---|---|---|---|---|
+| elo-v1 | 1.03505 | 2.5 % | 3.0 % | -- |
+| elo-v2 | 1.03235 | 2.8 % | 2.6 % | -0.00270 (-1.21) |
+| elo-v3 | 1.01294 | 4.6 % | 4.7 % | -0.01941 (-6.88) |
+| elo-v5 | 1.01020 | 4.9 % | 5.0 % | -0.00274 (-2.82) |
+| elo-v6 | 1.01019 | 4.9 % | 5.0 % | -0.00001 (-0.03) |
+| elo-v7 | 1.00570 | 5.3 % | 5.5 % | -0.00449 (-4.47) |
+| elo-v8 | 1.00554 | 5.3 % | 5.5 % | -0.00017 (-0.29) |
+| elo-v9 | 1.00514 | 5.4 % | 5.6 % | -0.00040 (-1.03) |
+| elo-v10 | 1.00476 | 5.4 % | 5.7 % | -0.00037 (-2.31) |
+| elo-v11 | 1.00476 | 5.4 % | 5.7 % | +0.00000 (+0.00) |
+| elo-v11.1 | 1.00483 | 5.4 % | 5.7 % | +0.00007 (+1.07) |
+| elo-v12.0 | 1.00386 | 5.5 % | 5.7 % | -0.00097 (-3.12) |
+| elo-v13.0 | 1.00252 | 5.6 % | 5.8 % | -0.00135 (-3.64) |
+| elo-v14.0 | 1.00062 | 5.8 % | 6.0 % | -0.00190 (-3.99) |
+| elo-v15.0 | 1.00030 | 5.8 % | 6.0 % | -0.00032 (-1.60) |
+
+elo-v11 shows nothing because its gain was data (OBOS-ligaen xG), which every
+version reads here; elo-v10 needed its era switch passed explicitly, as its
+production did. From elo-v1 to elo-v15.0 the model closed
+79 % of its gap to the closing line on Eliteserien.
+
 ## 🔬 elo-v3: what the backtest found
 
 Fitted with `model/backtest.py` on 2019-2026 (3,623 scored matches, walk-forward, no
