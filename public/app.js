@@ -3306,16 +3306,17 @@ const CALIBRATION_SERIES = [
 const CALIBRATION_MIN_N = 50;
 
 /* One panel's axis range, the same on both axes so the diagonal stays the
-   line of perfect calibration: every kept bin's chance and rate, out to the
-   next 10 %. */
+   line of perfect calibration: every kept bin's chance, rate and interval
+   (the band), out to the next 10 %. */
 function calibrationRange(bins) {
-  const values = bins.flatMap((bin) => [bin.predicted, bin.observed]);
+  const values = bins.flatMap((bin) => [bin.predicted, ...calibrationInterval(bin.observed, bin.n)]);
   return [Math.max(0, Math.floor(Math.min(...values) * 10 + 1e-9) / 10),
     Math.min(1, Math.ceil(Math.max(...values) * 10 - 1e-9) / 10)];
 }
 
 /* One outcome's reliability diagram, zoomed to its own range: the bins as
-   dots sized by count, joined in order; the tooltip gives the 95 % interval. */
+   dots sized by count, joined in order, over a band through their 95 %
+   intervals. */
 function calibrationPanel(bins, labelKey, colour, biggest) {
   const panel = el('figure', 'calibration__panel');
   const title = el('figcaption', 'calibration__panel-title');
@@ -3349,6 +3350,13 @@ function calibrationPanel(bins, labelKey, colour, biggest) {
   text('axis-title', t('calib.x'), { x: x(hi), y: size - 4, 'text-anchor': 'end' });
   text('axis-title', t('calib.y'), { x: x(lo), y: pad.top - 6 });
   if (bins.length > 1) {
+    // The band: the intervals' lows left to right, their highs back.
+    const intervals = bins.map((bin) => calibrationInterval(bin.observed, bin.n));
+    const lows = bins.map((bin, i) => `${x(bin.predicted)},${y(intervals[i][0])}`);
+    const highs = bins.map((bin, i) => `${x(bin.predicted)},${y(intervals[i][1])}`).reverse();
+    svg.appendChild(svgEl('polygon', {
+      class: 'calibration__band', points: [...lows, ...highs].join(' '), style: `fill: ${colour}`,
+    }));
     svg.appendChild(svgEl('polyline', {
       class: 'calibration__line',
       points: bins.map((bin) => `${x(bin.predicted)},${y(bin.observed)}`).join(' '),
