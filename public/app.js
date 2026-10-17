@@ -6056,7 +6056,6 @@ function render() {
   else params.delete('asof');
   if (state.league !== 'eliteserien') params.set('league', state.league);
   else params.delete('league');
-  window.history.replaceState(null, '', `${window.location.pathname}?${params.toString()}${window.location.hash}`);
 
   // One search result per division: the canonical keeps only the league, so
   // view, team, season and rewind links all fold into their division's page.
@@ -6070,6 +6069,9 @@ function render() {
     document.head.appendChild(canonical);
   }
   canonical.href = `https://elitetracker.no/${state.league === 'eliteserien' ? '' : `?league=${state.league}`}`;
+  // After the title: GA's history listener can take this as a page view, and
+  // that should carry the new page's title.
+  window.history.replaceState(null, '', `${window.location.pathname}?${params.toString()}${window.location.hash}`);
   state._prevActiveView = state.activeView;
 }
 
@@ -6213,7 +6215,10 @@ function wire() {
 
   // Bind table view toggle buttons.
   for (const button of document.querySelectorAll('[data-table-mode]')) {
-    button.addEventListener('click', () => toggleTableView(button.dataset.tableMode));
+    button.addEventListener('click', () => {
+      toggleTableView(button.dataset.tableMode);
+      track('set_table_view', { table_view: button.dataset.tableMode });
+    });
   }
 
   $('#season-select').addEventListener('change', async (event) => {
@@ -7117,6 +7122,8 @@ async function boot() {
     $('#status').textContent =
       t('status.couldNotLoadSeason', { error: error.message });
   }
+  booted = true;
+  if (window.gtag) appendGtag();
 }
 
 /* ---------- analytics ----------------------------------------------- */
@@ -7126,13 +7133,26 @@ async function boot() {
    Production only, so local runs and PR previews don't count. GA4's enhanced
    measurement turns the replaceState in render() into page views. */
 const GA_ID = 'G-RCMKSGYDSJ';
+let booted = false;
 
 function loadAnalytics() {
   if (location.hostname !== 'elitetracker.no' || window.gtag) return;
   window.dataLayer = window.dataLayer || [];
   window.gtag = function gtag() { dataLayer.push(arguments); };
+  // Statistics only, as the consent bar says: no ad cookies, no Google
+  // signals, nothing for ad personalisation, whatever the GA property allows.
+  gtag('consent', 'default', {
+    analytics_storage: 'granted', ad_storage: 'denied', ad_user_data: 'denied', ad_personalization: 'denied',
+  });
   gtag('js', new Date());
-  gtag('config', GA_ID);
+  gtag('config', GA_ID, { allow_google_signals: false, allow_ad_personalization_signals: false });
+  if (booted) appendGtag();
+}
+
+/* gtag.js waits until boot has rewritten the URL (first render, ?season=,
+   ?asof=): loaded sooner, its history listener counts a landing on / twice,
+   as / and as /?view=table. Calls made meanwhile queue in dataLayer. */
+function appendGtag() {
   const script = document.createElement('script');
   script.async = true;
   script.src = `https://www.googletagmanager.com/gtag/js?id=${GA_ID}`;
@@ -7153,12 +7173,12 @@ function initConsent() {
     localStorage.setItem('elitetracker-analytics', `${answer}:${Date.now()}`);
     bar.hidden = true;
     if (answer === 'yes') return loadAnalytics();
-    if (!window.gtag) return;
-    // Withdrawn after saying yes: drop GA's cookies and reload without it.
+    // Withdrawn: drop GA's cookies, also those left by a yes that has since
+    // lapsed, and reload if GA is running on this page.
     for (const name of document.cookie.split('; ').map((c) => c.split('=')[0]).filter((n) => n.startsWith('_ga'))) {
       document.cookie = `${name}=; Max-Age=0; path=/; domain=.${location.hostname}`;
     }
-    location.reload();
+    if (window.gtag) location.reload();
   });
   $('#consent-open').addEventListener('click', () => { bar.hidden = false; });
 }
