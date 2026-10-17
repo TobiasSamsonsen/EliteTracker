@@ -126,6 +126,10 @@ model on xG), and their line ends above the closing line's, but that line is
 Eliteserien over every season. Like for like, on Eliteserien's
 1,440 xG-season matches: elo-v15.0 7.9 % better than base rates, the
 closing line 8.3 %; the gap there is about half the 2016-2025 one.
+The chart pairs the lines that way: its xG line is Eliteserien's xG seasons
+(no OBOS-ligaen odds here), each Eliteserien line with a dashed closing line
+in its colour on the same matches; both divisions' xG seasons stay a key
+figure.
 
 ## 🔬 elo-v3: what the backtest found
 

@@ -3491,21 +3491,32 @@ function renderVersionHistory(report, body, data) {
     body.replaceChildren(el('p', 'explore-empty', t('versions.empty')));
     return;
   }
-  const hasXg = history.base_rate_log_loss_xg != null;
+  // The xG line is Eliteserien's xG seasons (2020 on), where the bookmakers'
+  // closing odds price the same matches; OBOS-ligaen has none here.
+  const hasXg = history.base_rate_log_loss_eliteserien_xg != null;
   const rows = history.versions.map((row) => ({
     ...row,
     all: versionSkill(row.log_loss, history.base_rate_log_loss),
     es: versionSkill(row.log_loss_eliteserien, history.base_rate_log_loss_eliteserien),
-    xg: hasXg ? versionSkill(row.log_loss_xg, history.base_rate_log_loss_xg) : null,
+    xg: hasXg ? versionSkill(row.log_loss_eliteserien_xg, history.base_rate_log_loss_eliteserien_xg) : null,
   }));
-  const market = history.market_log_loss_priced != null
-    ? versionSkill(history.market_log_loss_priced, history.base_rate_log_loss_eliteserien) : null;
   const series = [
     { key: 'all', label: t('versions.all'), colour: 'var(--versions-all)' },
     { key: 'es', label: t('versions.es'), colour: 'var(--versions-es)' },
-    // The xG seasons: Eliteserien from 2020, OBOS-ligaen from 2023.
     ...(hasXg ? [{ key: 'xg', label: t('versions.xg'), colour: 'var(--versions-xg)' }] : []),
   ];
+  // The bookmakers on exactly the matches of the line of the same colour, dashed.
+  const markets = [
+    history.market_log_loss_priced != null && {
+      value: versionSkill(history.market_log_loss_priced, history.base_rate_log_loss_eliteserien),
+      label: t('versions.market'), short: t('versions.marketShort'), colour: 'var(--versions-es)',
+    },
+    hasXg && history.market_log_loss_eliteserien_xg != null && {
+      value: versionSkill(history.market_log_loss_eliteserien_xg, history.base_rate_log_loss_eliteserien_xg),
+      label: t('versions.marketXg'), short: t('versions.marketXgShort'), colour: 'var(--versions-xg)',
+    },
+  ].filter(Boolean);
+  const market = markets.length ? markets[0].value : null;
 
   const wrap = el('div', 'versions');
   const legend = el('div', 'versions__legend');
@@ -3516,9 +3527,11 @@ function renderVersionHistory(report, body, data) {
     item.append(swatch, label);
     legend.appendChild(item);
   }
-  if (market != null) {
+  for (const { label, colour } of markets) {
     const item = el('span', 'versions__key');
-    item.append(el('i', 'versions__swatch versions__swatch--market'), t('versions.market'));
+    const swatch = el('i', 'versions__swatch versions__swatch--market');
+    swatch.style.borderTopColor = colour;
+    item.append(swatch, label);
     legend.appendChild(item);
   }
   wrap.appendChild(legend);
@@ -3530,9 +3543,9 @@ function renderVersionHistory(report, body, data) {
   const width = Math.min(760, Math.round(box));
   const narrow = width < 520;
   const height = narrow ? 260 : 300;
-  const pad = { top: 14, right: narrow ? 64 : 120, bottom: 40, left: 40 };
+  const pad = { top: 14, right: narrow ? 64 : 172, bottom: 40, left: 40 };
   svg.setAttribute('viewBox', `0 0 ${width} ${height}`);
-  const values = rows.flatMap((row) => series.map(({ key }) => row[key])).concat(market != null ? [market] : []);
+  const values = rows.flatMap((row) => series.map(({ key }) => row[key])).concat(markets.map((m) => m.value));
   const top = Math.ceil(Math.max(...values) + 0.5);
   const bottom = Math.min(0, Math.floor(Math.min(...values)));
   const step = (width - pad.left - pad.right) / (rows.length - 1);
@@ -3555,9 +3568,10 @@ function renderVersionHistory(report, body, data) {
   text('axis-title', t('versions.y'), { x: pad.left, y: pad.top - 3 });
   text('axis-title', t('versions.x'), { x: width - pad.right, y: height - 4, 'text-anchor': 'end' });
 
-  // The bookmakers' closing line on the same Eliteserien matches: a reference, dashed.
-  if (market != null) {
-    svg.appendChild(svgEl('line', { class: 'versions__market', x1: pad.left, x2: width - pad.right, y1: y(market), y2: y(market) }));
+  for (const { value, colour } of markets) {
+    svg.appendChild(svgEl('line', {
+      class: 'versions__market', x1: pad.left, x2: width - pad.right, y1: y(value), y2: y(value), style: `stroke: ${colour}`,
+    }));
   }
   const guide = svgEl('line', { class: 'versions__guide', y1: pad.top, y2: height - pad.bottom, x1: 0, x2: 0 });
   svg.appendChild(guide);
@@ -3571,7 +3585,7 @@ function renderVersionHistory(report, body, data) {
   }
   // Direct labels at the right end, in ink, nudged apart where they would touch.
   const ends = series.map(({ key, label }) => ({ label, v: rows[rows.length - 1][key] }));
-  if (market != null) ends.push({ label: t('versions.marketShort'), v: market });
+  for (const { short, value } of markets) ends.push({ label: short, v: value });
   const placed = ends.map((end) => ({ ...end, at: y(end.v) })).sort((a, b) => a.at - b.at);
   for (let i = 1; i < placed.length; i += 1) placed[i].at = Math.max(placed[i].at, placed[i - 1].at + 13);
   if (!narrow) {
@@ -3621,8 +3635,9 @@ function renderVersionHistory(report, body, data) {
     text: t('versions.fact.skillText', { first: first.version, last: last.version, n: num(history.n) }),
   }];
   if (hasXg) {
+    const both = (row) => versionSkill(row.log_loss_xg, history.base_rate_log_loss_xg);
     facts.push({
-      value: `${num(first.xg, 1)} → ${num(last.xg, 1)}${percentSign()}`,
+      value: `${num(both(first), 1)} → ${num(both(last), 1)}${percentSign()}`,
       label: t('versions.fact.xg'),
       text: t('versions.fact.xgText', { n: num(history.n_xg), first: first.version, last: last.version }),
     });

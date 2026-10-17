@@ -684,7 +684,7 @@ test('every version-history string exists in both languages', () => {
   assertBothLanguages([
     // versions.es is 'Eliteserien' in both languages, so it is left out here.
     'accuracy.versions', 'accuracy.versionsLead', 'versions.empty', 'versions.all', 'versions.market',
-    'versions.marketShort', 'versions.aria', 'versions.y', 'versions.x', 'versions.tipAll', 'versions.tipEs',
+    'versions.marketShort', 'versions.marketXg', 'versions.marketXgShort', 'versions.aria', 'versions.y', 'versions.x', 'versions.tipAll', 'versions.tipEs',
     'versions.xg', 'versions.tipXg', 'versions.fact.xg', 'versions.fact.xgText', 'versions.fact.xgMarket', 'versions.tipStep', 'versions.note', 'versions.fact.skill', 'versions.fact.skillText', 'versions.fact.step',
     'versions.fact.stepText', 'versions.fact.gap', 'versions.fact.gapText',
     ...['elo-v1', 'elo-v2', 'elo-v3', 'elo-v5', 'elo-v6', 'elo-v7', 'elo-v8', 'elo-v9', 'elo-v10', 'elo-v11',
