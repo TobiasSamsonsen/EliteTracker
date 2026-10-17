@@ -379,7 +379,7 @@ test('promotion and relegation count the play-offs where the report has them', (
 
 test('the play-off and surface strings exist in both languages', () => {
   assertBothLanguages([
-    'team.playoffIncluded', 'model.surfaceEdge',
+    'team.playoffIncluded', 'model.surfaceEdge', 'model.stakes', 'model.stakesValue',
   ]);
 });
 
@@ -688,6 +688,6 @@ test('every version-history string exists in both languages', () => {
     'versions.xg', 'versions.tipXg', 'versions.fact.xg', 'versions.fact.xgText', 'versions.fact.xgMarket', 'versions.tipStep', 'versions.note', 'versions.fact.skill', 'versions.fact.skillText', 'versions.fact.step',
     'versions.fact.stepText', 'versions.fact.gap', 'versions.fact.gapText',
     ...['elo-v1', 'elo-v2', 'elo-v3', 'elo-v5', 'elo-v6', 'elo-v7', 'elo-v8', 'elo-v9', 'elo-v10', 'elo-v11',
-      'elo-v11.1', 'elo-v12.0', 'elo-v13.0', 'elo-v14.0', 'elo-v15.0'].map((v) => `versions.v.${v}`),
+      'elo-v11.1', 'elo-v12.0', 'elo-v13.0', 'elo-v14.0', 'elo-v15.0', 'elo-v16.0'].map((v) => `versions.v.${v}`),
   ]);
 });

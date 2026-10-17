@@ -198,6 +198,19 @@
    "log_loss_priced": 0.99602,
    "vs_previous": -0.00032,
    "t_vs_previous": -1.6
+  },
+  {
+   "version": "elo-v16.0",
+   "released": "2026-10-17",
+   "log_loss": 0.99966,
+   "brier": 0.59714,
+   "rps": 0.20763,
+   "log_loss_eliteserien": 0.99528,
+   "log_loss_xg": 0.98338,
+   "log_loss_eliteserien_xg": 0.97183,
+   "log_loss_priced": 0.99528,
+   "vs_previous": -0.00064,
+   "t_vs_previous": -2.6
   }
  ],
  "market_log_loss_priced": 0.98758,

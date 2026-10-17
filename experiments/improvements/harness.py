@@ -24,6 +24,12 @@ candidate, so on its `src` their "shipped" baseline is elo-v14.0 itself.
 recalibration.py, own_level.py, division_value_gap.py and value_crossers.py
 measured against elo-v14.0 (commit b813a07's `src`); value_crossers.py's
 relegated-clubs variant is elo-v15.0, which the replay below now carries.
+The IMPROVEMENTS2.md pass (rules.py, bugs_v15.py, rank*.py, followups_v15.py,
+bundle_v16.py) measured against elo-v15.0 (commit f72aec1's `src`); its
+candidate is elo-v16.0, which the replay below now carries: the margin
+unclamped and the table stakes (`STAKES`), both switched off by themselves
+when an older `src` is first on PYTHONPATH, so those scripts reproduce on
+f72aec1's `src` as they ran.
 """
 
 from __future__ import annotations
@@ -37,12 +43,13 @@ import numpy as np
 from elitetracker.model.attack_defence import ADConfig, AttackDefence, OUTCOME_BLEND, score_grid
 from elitetracker.model.career import relegated_values, team_ids
 from elitetracker.model.elo import (
-    EloConfig, actual_score, effective_home_advantage, era_config, expected_score, xg_implied_score,
+    MODEL_VERSION, EloConfig, actual_score, effective_home_advantage, era_config, expected_score, xg_implied_score,
 )
 from elitetracker.model.initial_ratings import rating_for_unseeded_team
 from elitetracker.model.probabilities import match_probabilities
 from elitetracker.normalize.matches import Match
 from elitetracker.normalize.surfaces import surface_edge
+import elitetracker.pipeline as _pipeline
 from elitetracker.pipeline import load_slices, market_values, seed_ratings, shot_table
 
 SLICES = load_slices()
@@ -62,13 +69,23 @@ HG = np.array([m.home_goals for m, _, _ in PLAYED])
 AG = np.array([m.away_goals for m, _, _ in PLAYED])
 Y = np.where(HG > AG, 0, np.where(HG == AG, 1, 2))
 HAS_XG = np.array([m.match_id in SHOTS for m, _, _ in PLAYED])
+# elo-v16.0: the xG margin unclamped, and the run-in's table stakes on the
+# prediction (match_id -> P_home - P_away, `model.stakes`). Before it, neither.
+_VERSION = tuple(int(x) for x in MODEL_VERSION.removeprefix("elo-v").split("."))
+CLAMPED = _VERSION < (16,)
+STAKES = _pipeline.stakes_table() if hasattr(_pipeline, "stakes_table") else {}
+if STAKES:
+    from elitetracker.model.stakes import STAKES_ELO, STAKES_GOALS
+else:
+    STAKES_ELO = STAKES_GOALS = 0.0
 
 
 # ---------------------------------------------------------------- Elo ----
 
 def shipped_score(hg, ag, hxg, axg, cfg: EloConfig) -> float:
-    """`elo.updated_pair`'s observation, verbatim (elo-v13.0; elo-v12.2's form
-    is `score_with(margin="shipped")` in elo_update.py)."""
+    """`elo.updated_pair`'s observation, verbatim (elo-v16.0; clamped to
+    [0, 1] before it; elo-v12.2's form is `score_with(margin="shipped")` in
+    elo_update.py)."""
     scored = actual_score(hg, ag)
     if hxg is not None and axg is not None and cfg.xg_alpha > 0.0:
         scored = (1.0 - cfg.xg_alpha) * scored + cfg.xg_alpha * xg_implied_score(hxg, axg)
@@ -76,7 +93,7 @@ def shipped_score(hg, ag, hxg, axg, cfg: EloConfig) -> float:
             c = cfg.xg_margin_smoothing
             ratio = math.log((hxg + c) / (axg + c))
             bonus = math.copysign(cfg.xg_margin * math.log(1.0 + abs(ratio)), ratio)
-            scored = min(1.0, max(0.0, scored + bonus))
+            scored = min(1.0, max(0.0, scored + bonus)) if CLAMPED else scored + bonus
     return scored
 
 
@@ -100,6 +117,10 @@ class EloRun:
     newcomer: Callable | None = None
     # (season, ratings) called after the offseason pull, before newcomers are placed
     offseason: Callable | None = None
+    # (k, scored, expected, hxg, axg, cfg) -> the home side's rating change
+    change: Callable | None = None
+    # The shipped table stakes on the prediction (elo-v16.0)
+    stakes: bool = True
 
 
 def elo_run(run: EloRun | None = None, gaps: np.ndarray | None = None) -> np.ndarray:
@@ -155,6 +176,8 @@ def elo_run(run: EloRun | None = None, gaps: np.ndarray | None = None) -> np.nda
             shift = run.home_shift(m, lg, season, ctx) if run.home_shift else 0.0
             h, a = ratings[home] + shift, ratings[away]
             edge = surface_edge(home, away, m.date) if run.surface and lg == "eliteserien" else 0.0
+            if run.stakes:
+                edge += STAKES_ELO * STAKES.get(m.match_id, 0.0)
             p = match_probabilities(h + edge, a, cfg)
             out[i] = (p.home_win, p.draw, p.away_win)
             if gaps is not None:
@@ -166,7 +189,7 @@ def elo_run(run: EloRun | None = None, gaps: np.ndarray | None = None) -> np.nda
             expected = expected_score(hu + effective_home_advantage(cfg, hu, a), a)
             scored = run.score(m.home_goals, m.away_goals, hxg, axg, cfg)
             k = cfg.k_factor * (run.k_mult(m, lg, season, ctx) if run.k_mult else 1.0)
-            change = k * (scored - expected)
+            change = run.change(k, scored, expected, hxg, axg, cfg) if run.change else k * (scored - expected)
             ratings[home] += change
             ratings[away] -= change
             ctx.played(m)
@@ -223,8 +246,8 @@ class ADX(AttackDefence):
         if self.season_hook:
             self.season_hook(self, season)
 
-    def rates(self, home_id, away_id, on, elo_gap=0.0):
-        lam, mu = super().rates(home_id, away_id, on, elo_gap=elo_gap)
+    def rates(self, home_id, away_id, on, elo_gap=0.0, stakes=0.0):
+        lam, mu = super().rates(home_id, away_id, on, elo_gap=elo_gap, **({"stakes": stakes} if stakes else {}))
         if self.rates_hook:
             lam, mu = self.rates_hook(self, home_id, away_id, on, lam, mu)
         return lam, mu
@@ -263,8 +286,11 @@ class ADOut:
 
 
 def ad_run(config: ADConfig | None = None, shots: dict | None = None, elo_gap: np.ndarray | None = None,
-           after_observe: Callable | None = None, values: dict | None = None, **hooks) -> ADOut:
-    ad = ADX.from_slices(SLICES, config or ADConfig(), shots=SHOTS if shots is None else shots,
+           after_observe: Callable | None = None, values: dict | None = None, cls: type = None,
+           stakes: bool = True, **hooks) -> ADOut:
+    """`cls`, a subclass of ADX, replaces the goals model's class; `stakes`
+    False leaves the shipped table stakes out."""
+    ad = (cls or ADX).from_slices(SLICES, config or ADConfig(), shots=SHOTS if shots is None else shots,
                          values=market_values() if values is None else values)
     for name, hook in hooks.items():
         setattr(ad, name, hook)
@@ -273,7 +299,8 @@ def ad_run(config: ADConfig | None = None, shots: dict | None = None, elo_gap: n
     for i, (m, _, _) in enumerate(PLAYED):
         home, away = team_ids(m)
         gap = float(elo_gap[i]) if elo_gap is not None else 0.0
-        lam, mu = ad.rates(home, away, m.date, elo_gap=gap)
+        shift = STAKES_GOALS * STAKES.get(m.match_id, 0.0) if stakes else 0.0
+        lam, mu = ad.rates(home, away, m.date, elo_gap=gap, stakes=shift)
         grid = np.array(score_grid(lam, mu, ad.config.rho))
         probs[i] = (np.tril(grid, -1).sum(), np.trace(grid), np.triu(grid, 1).sum())
         lam_a[i], mu_a[i] = lam, mu
@@ -419,7 +446,8 @@ def identity() -> None:
     from elitetracker.model.backtest import walk_forward
 
     elo, ad, mix = shipped()
-    card = walk_forward(SLICES, SEEDS, EloConfig(), score_from_season=2015, shots=SHOTS, values=VALUES)
+    card = walk_forward(SLICES, SEEDS, EloConfig(), score_from_season=2015, shots=SHOTS, values=VALUES,
+                        **({"stakes": STAKES} if STAKES else {}))
     worst = max(abs(np.array([p.home_win, p.draw, p.away_win]) - elo[INDEX[mid]]).max()
                 for mid, (p, _) in card.predictions.items())
     assert len(card.predictions) == len(IDS), (len(card.predictions), len(IDS))
@@ -428,7 +456,8 @@ def identity() -> None:
     from elitetracker.model.probabilities import MatchProbabilities
     for i, (m, _, _) in enumerate(PLAYED):
         home, away = team_ids(m)
-        p = blend_outcomes(MatchProbabilities(*elo[i]), real.grid(home, away, m.date))
+        shift = {"stakes": STAKES_GOALS * STAKES[m.match_id]} if m.match_id in STAKES else {}
+        p = blend_outcomes(MatchProbabilities(*elo[i]), real.grid(home, away, m.date, **shift))
         worst_mix = max(worst_mix, abs(np.array([p.home_win, p.draw, p.away_win]) - mix[i]).max())
         real.observe(m)
     print(f"identity: elo max diff {worst:.2e}, blend max diff {worst_mix:.2e} over {len(IDS)} matches")

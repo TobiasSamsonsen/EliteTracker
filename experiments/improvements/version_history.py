@@ -15,7 +15,8 @@ How each version's odds are made, with its own code:
   production path, through each version's own `updated_pair` and odds;
 - elo-v7-v12: Elo `walk_forward` blended with the goals model the way that
   version's `research.cmd_run` scored the shipped odds;
-- elo-v13 on: `backtest.shipped_cards`.
+- elo-v13 on: `backtest.shipped_cards` (elo-v16 on with its table stakes,
+  `pipeline.stakes_table`).
 The only adapter: today's match files differ from older `Match` classes, which
 do not know some fields (kickoff time, round; dropped) and require one
 (`venue`; None, read by no rating code).
@@ -41,7 +42,7 @@ RELEASED = {
     "elo-v1": "2026-08-09", "elo-v2": "2026-08-09", "elo-v3": "2026-08-09", "elo-v5": "2026-08-27",
     "elo-v6": "2026-08-29", "elo-v7": "2026-09-11", "elo-v8": "2026-09-13", "elo-v9": "2026-09-13",
     "elo-v10": "2026-09-16", "elo-v11": "2026-09-16", "elo-v11.1": "2026-09-16", "elo-v12.0": "2026-09-25",
-    "elo-v13.0": "2026-10-16", "elo-v14.0": "2026-10-16", "elo-v15.0": "2026-10-17",
+    "elo-v13.0": "2026-10-16", "elo-v14.0": "2026-10-16", "elo-v15.0": "2026-10-17", "elo-v16.0": "2026-10-17",
 }
 
 
@@ -137,6 +138,8 @@ def predict(out_path: str) -> None:
             kwargs = {"shots": shots_table()}
             if _accepts(B.shipped_cards, "values"):
                 kwargs["values"] = P.market_values()
+            if _accepts(B.shipped_cards, "stakes"):
+                kwargs["stakes"] = P.stakes_table()
             _, card = B.shipped_cards(slices, seeds, score_from_season=FIRST, **kwargs)
             for mid, (odds, _) in card.predictions.items():
                 keep(mid, odds, season_of[mid])

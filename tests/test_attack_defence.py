@@ -170,10 +170,12 @@ def test_update_xg_records_new_matches_and_survives_a_failed_fetch(tmp_path):
     assert calls.count("bad") == 2 and calls.count("a") == 1
 
 
-def test_update_xg_refetches_recent_matches(tmp_path):
-    from datetime import date, timedelta
+def test_update_xg_asks_once_more_after_the_settle_window(tmp_path):
+    """One request when a match is first seen and one once FotMob has settled
+    its xG, then none (the hourly job used to ask every run for two days)."""
+    from datetime import datetime, timedelta, timezone
 
-    from elitetracker.sources.fotmob import load_xg, update_xg
+    from elitetracker.sources.fotmob import SETTLE_HOURS, load_xg, update_xg
     path = tmp_path / "xg.json"
     calls = []
 
@@ -181,24 +183,49 @@ def test_update_xg_refetches_recent_matches(tmp_path):
         calls.append(match_id)
         return (1.0, 0.5, 0.8, 0.3)
 
-    today = date.today().isoformat()
-    yesterday = (date.today() - timedelta(days=1)).isoformat()
-    old = (date.today() - timedelta(days=10)).isoformat()
+    kickoff = datetime(2026, 10, 17, 18, 0, tzinfo=timezone.utc)  # "18:00", read as UTC
+    games = [match("fresh", "2026-10-17", "A", "B", 2, 0), match("old", "2026-10-01", "A", "B", 3, 1)]
+    at = lambda hours: kickoff + timedelta(hours=hours)
+    assert update_xg(games, path=path, fetch=fetch, delay=0, now=at(3)) == 2
+    assert set(load_xg(path)["pending"]) == {"fresh"}
+    for hours in (4, 5, 30):
+        assert update_xg(games, path=path, fetch=fetch, delay=0, now=at(hours)) == 0
+    assert update_xg(games, path=path, fetch=fetch, delay=0, now=at(SETTLE_HOURS + 3)) == 1
+    assert load_xg(path)["pending"] == {}
+    assert update_xg(games, path=path, fetch=fetch, delay=0, now=at(SETTLE_HOURS + 10)) == 0
+    assert calls == ["fresh", "old", "fresh"]
 
-    games = [
-        match("recent1", today, "A", "B", 2, 0),
-        match("recent2", yesterday, "A", "B", 1, 1),
-        match("stale", old, "A", "B", 3, 1),
-    ]
 
-    # First fetch: records all three
-    assert update_xg(games, path=path, fetch=fetch, delay=0) == 3
-    assert set(calls) == {"recent1", "recent2", "stale"}
+def test_update_xg_marks_a_recent_match_fetched_before_the_rule(tmp_path):
+    from datetime import datetime, timedelta, timezone
 
-    calls.clear()
-    # Second fetch: only recent matches are re-fetched (stale is skipped)
-    assert update_xg(games, path=path, fetch=fetch, delay=0) == 2
-    assert set(calls) == {"recent1", "recent2"}
+    from elitetracker.sources.fotmob import SETTLE_HOURS, load_xg, save_xg, update_xg
+    path = tmp_path / "xg.json"
+    save_xg({"matches": {"fresh": [1.0, 0.5]}, "none": []}, path)
+    calls = []
+
+    def fetch(match_id):
+        calls.append(match_id)
+        return (1.2, 0.4, 0.9, 0.3)
+
+    kickoff = datetime(2026, 10, 17, 18, 0, tzinfo=timezone.utc)
+    games = [match("fresh", "2026-10-17", "A", "B", 2, 0)]
+    assert update_xg(games, path=path, fetch=fetch, delay=0, now=kickoff + timedelta(hours=5)) == 0
+    assert "fresh" in load_xg(path)["pending"] and calls == []
+    assert update_xg(games, path=path, fetch=fetch, delay=0, now=kickoff + timedelta(hours=SETTLE_HOURS + 1)) == 1
+    assert load_xg(path)["matches"]["fresh"] == [1.2, 0.4, 0.9, 0.3]
+
+
+def test_rates_against_average_runs_the_offseason_pull_first():
+    """Before a season's first match the readable rates must already carry the
+    offseason pull, as rates() would (the pipeline used to have to call
+    start_season itself)."""
+    divisions = {(2020, "A"): "l", (2020, "B"): "l", (2021, "A"): "l", (2021, "B"): "l"}
+    model = AttackDefence(config=ADConfig(), divisions=divisions)
+    model.observe(match("1", "2020-05-01", "A", "B", 3, 0))
+    pulled = model.copy()
+    pulled.start_season(2021)
+    assert model.rates_against_average("A", "l", 2021) == pulled.rates_against_average("A", "l", 2021)
 
 
 def test_spread_stretches_predictions_but_not_what_the_ratings_learn():

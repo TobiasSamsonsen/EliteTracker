@@ -5,6 +5,8 @@ log loss of the actual place, clustered by season-league for t.
 
 Run once from the repo root (new code) and once from a worktree of the old
 commit; writes out/season_<version>.json, then `--compare a.json b.json`.
+`--sd X` simulates with that strength shock instead of the shipped one;
+`--no-stakes` leaves the run-in's table stakes out of the simulation.
 """
 import json, math, sys
 from pathlib import Path
@@ -15,7 +17,7 @@ from elitetracker.pipeline import LEAGUE_SPECS, build_all_careers, build_report,
 from elitetracker.simulation.history import HistoryConfig
 from elitetracker.simulation.season import SimulationConfig
 
-def run(out):
+def run(out, sd=None):
     careers = build_all_careers()
     rows = []
     for season in range(2016, 2026):
@@ -30,7 +32,7 @@ def run(out):
                     from datetime import date, timedelta
                     asof = str(date.fromisoformat(first) - timedelta(days=1))
                 rep = build_report(slug, season, careers=careers, asof=asof,
-                                   simulation=SimulationConfig(simulations=10_000),
+                                   simulation=SimulationConfig(simulations=10_000, **({"strength_sd": sd} if sd else {})),
                                    history=HistoryConfig(simulations=200, max_snapshots=2))
                 for row in rep["table"]:
                     probs = np.array(row["position_probabilities"])
@@ -62,4 +64,13 @@ if __name__ == "__main__":
     if sys.argv[1:2] == ["--compare"]:
         compare(sys.argv[2], sys.argv[3])
     else:
-        run(sys.argv[1] if len(sys.argv) > 1 else f"experiments/improvements/out/season_{MODEL_VERSION}.json")
+        args = sys.argv[1:]
+        if "--no-stakes" in args:
+            # The simulation without the run-in's table stakes (elo-v16.0 on):
+            # the season odds the per-run stakes are worth.
+            import elitetracker.pipeline as pipeline
+            pipeline.stakes_lines = lambda *a, **k: ()
+            args.remove("--no-stakes")
+        sd = float(args[args.index("--sd") + 1]) if "--sd" in args else None
+        paths = [a for i, a in enumerate(args) if a != "--sd" and (i == 0 or args[i - 1] != "--sd")]
+        run(paths[0] if paths else f"experiments/improvements/out/season_{MODEL_VERSION}.json", sd)

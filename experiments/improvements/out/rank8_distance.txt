@@ -1,0 +1,85 @@
+distances 2016+: median 310 km; derbies under 35 km: 204
+  0-35 km: 204 matches, home points share actual - expected -0.0146 (t -0.53)
+  35-150 km: 999 matches, home points share actual - expected +0.0054 (t +0.42)
+  150-400 km: 2529 matches, home points share actual - expected +0.0118 (t +1.46)
+  400-800 km: 878 matches, home points share actual - expected +0.0152 (t +1.13)
+  800-2000 km: 573 matches, home points share actual - expected +0.0039 (t +0.25)
+  log distance, beta -10, prediction only: LL +0.00003 (t +0.26)
+  log distance, beta -5, prediction only: LL +0.00001 (t +0.12)
+  log distance, beta 5, prediction only: LL +0.00001 (t +0.17)
+  log distance, beta 10, prediction only: LL +0.00003 (t +0.32)
+  log distance, beta 15, prediction only: LL +0.00007 (t +0.47)
+  log distance, beta 20, prediction only: LL +0.00013 (t +0.61)
+
+log distance, Elo, prediction only, walk-forward: walk-forward picks 2019:15 2020:5 2021:20 2022:5 2023:5 2024:0 2025:0 2026:0
+| window | n | log loss (t) | Brier (t) | RPS (t) | halves, log loss (t) |
+|---|---|---|---|---|---|
+| all16 2019+ OOS | 3743 | +0.00011 (+0.92) | +0.00009 (+1.00) | +0.00004 (+1.01) | +0.00019 / +0.00003 (+0.81 / +0.65) |
+| all16 in-sample, best (-5) | 5183 | +0.00001 (+0.12) | +0.00000 (+0.01) | -0.00000 (-0.09) | +0.00004 / -0.00003 (+0.59 / -0.44) |
+market gap: shipped +0.00903, OOS +0.00916
+rule: OOS LL, Brier, RPS < 0 NO; both halves < 0 NO; OOS t <= -1 NO; in-sample |t| >= 2 (best) NO -> strict fail, relaxed fail
+  derby damper 15, prediction only: derbies LL -0.00050 (t -0.60)
+  derby damper 25, prediction only: derbies LL -0.00074 (t -0.53)
+  derby damper 35, prediction only: derbies LL -0.00091 (t -0.47)
+
+derby damper 25, prediction only
+| window | n | log loss (t) | Brier (t) | RPS (t) | halves, log loss (t) |
+|---|---|---|---|---|---|
+| all16 | 5183 | -0.00003 (-0.53) | -0.00002 (-0.62) | -0.00001 (-0.44) | -0.00002 / -0.00004 (-0.27 / -0.51) |
+| es16 | 2576 | -0.00006 (-0.82) | -0.00004 (-0.78) | -0.00002 (-0.75) | -0.00017 / +0.00006 (-1.60 / +0.68) |
+| ob16 | 2607 | -0.00000 (-0.03) | -0.00001 (-0.17) | +0.00000 (+0.03) | +0.00009 / -0.00010 (+0.72 / -0.88) |
+| derby | 204 | -0.00074 (-0.53) | -0.00062 (-0.62) | -0.00021 (-0.44) | -0.00067 / -0.00080 (-0.33 / -0.43) |
+
+derby damper, Elo, prediction only, walk-forward: walk-forward picks 2019:0 2020:35 2021:35 2022:35 2023:35 2024:35 2025:35 2026:35
+| window | n | log loss (t) | Brier (t) | RPS (t) | halves, log loss (t) |
+|---|---|---|---|---|---|
+| all16 2019+ OOS | 3743 | +0.00001 (+0.10) | -0.00000 (-0.02) | +0.00000 (+0.12) | +0.00002 / +0.00000 (+0.12 / +0.01) |
+| all16 in-sample, best (35) | 5183 | -0.00004 (-0.47) | -0.00003 (-0.56) | -0.00001 (-0.38) | -0.00003 / -0.00005 (-0.22 / -0.46) |
+market gap: shipped +0.00903, OOS +0.00909
+rule: OOS LL, Brier, RPS < 0 NO; both halves < 0 NO; OOS t <= -1 NO; in-sample |t| >= 2 (best) NO -> strict fail, relaxed fail
+  log distance, beta -10, rating update too: LL +0.00003 (t +0.27)
+  log distance, beta -5, rating update too: LL +0.00001 (t +0.13)
+  log distance, beta 5, rating update too: LL +0.00001 (t +0.16)
+  log distance, beta 10, rating update too: LL +0.00003 (t +0.31)
+  log distance, beta 15, rating update too: LL +0.00007 (t +0.45)
+  log distance, beta 20, rating update too: LL +0.00013 (t +0.60)
+
+log distance, Elo, rating update too, walk-forward: walk-forward picks 2019:10 2020:5 2021:20 2022:5 2023:5 2024:0 2025:0 2026:0
+| window | n | log loss (t) | Brier (t) | RPS (t) | halves, log loss (t) |
+|---|---|---|---|---|---|
+| all16 2019+ OOS | 3743 | +0.00011 (+0.95) | +0.00008 (+1.04) | +0.00004 (+1.05) | +0.00018 / +0.00003 (+0.81 / +0.76) |
+| all16 in-sample, best (-5) | 5183 | +0.00001 (+0.13) | +0.00000 (+0.01) | -0.00000 (-0.11) | +0.00004 / -0.00003 (+0.55 / -0.39) |
+market gap: shipped +0.00903, OOS +0.00916
+rule: OOS LL, Brier, RPS < 0 NO; both halves < 0 NO; OOS t <= -1 NO; in-sample |t| >= 2 (best) NO -> strict fail, relaxed fail
+  derby damper 15, rating update too: derbies LL -0.00050 (t -0.59)
+  derby damper 25, rating update too: derbies LL -0.00074 (t -0.52)
+  derby damper 35, rating update too: derbies LL -0.00090 (t -0.46)
+
+derby damper 25, rating update too
+| window | n | log loss (t) | Brier (t) | RPS (t) | halves, log loss (t) |
+|---|---|---|---|---|---|
+| all16 | 5183 | -0.00002 (-0.42) | -0.00002 (-0.50) | -0.00001 (-0.33) | -0.00001 / -0.00003 (-0.15 / -0.47) |
+| es16 | 2576 | -0.00005 (-0.68) | -0.00003 (-0.64) | -0.00001 (-0.61) | -0.00016 / +0.00006 (-1.45 / +0.71) |
+| ob16 | 2607 | +0.00000 (+0.00) | -0.00001 (-0.13) | +0.00000 (+0.06) | +0.00010 / -0.00010 (+0.77 / -0.89) |
+| derby | 204 | -0.00074 (-0.52) | -0.00062 (-0.61) | -0.00021 (-0.43) | -0.00076 / -0.00071 (-0.36 / -0.38) |
+
+derby damper, Elo, rating update too, walk-forward: walk-forward picks 2019:0 2020:35 2021:35 2022:35 2023:35 2024:35 2025:35 2026:35
+| window | n | log loss (t) | Brier (t) | RPS (t) | halves, log loss (t) |
+|---|---|---|---|---|---|
+| all16 2019+ OOS | 3743 | +0.00001 (+0.13) | +0.00000 (+0.03) | +0.00000 (+0.15) | +0.00001 / +0.00001 (+0.11 / +0.07) |
+| all16 in-sample, best (35) | 5183 | -0.00003 (-0.36) | -0.00002 (-0.44) | -0.00001 (-0.28) | -0.00001 / -0.00004 (-0.10 / -0.43) |
+market gap: shipped +0.00903, OOS +0.00909
+rule: OOS LL, Brier, RPS < 0 NO; both halves < 0 NO; OOS t <= -1 NO; in-sample |t| >= 2 (best) NO -> strict fail, relaxed fail
+  log distance, goals model, beta -0.04: LL +0.00043 (t +1.34)
+  log distance, goals model, beta -0.02: LL +0.00015 (t +0.92)
+  log distance, goals model, beta 0.02: LL -0.00001 (t -0.08)
+  log distance, goals model, beta 0.04: LL +0.00011 (t +0.34)
+  log distance, goals model, beta 0.06: LL +0.00035 (t +0.75)
+
+log distance, goals model, walk-forward: walk-forward picks 2019:0.02 2020:0.02 2021:0.04 2022:0.02 2023:0.02 2024:0 2025:0.02 2026:0
+| window | n | log loss (t) | Brier (t) | RPS (t) | halves, log loss (t) |
+|---|---|---|---|---|---|
+| all16 2019+ OOS | 3743 | +0.00017 (+0.84) | +0.00013 (+0.90) | +0.00007 (+0.99) | +0.00019 / +0.00015 (+0.52 / +0.83) |
+| all16 in-sample, best (0.02) | 5183 | -0.00001 (-0.08) | +0.00001 (+0.12) | +0.00002 (+0.30) | -0.00013 / +0.00010 (-0.55 / +0.46) |
+market gap: shipped +0.00903, OOS +0.00927
+rule: OOS LL, Brier, RPS < 0 NO; both halves < 0 NO; OOS t <= -1 NO; in-sample |t| >= 2 (best) NO -> strict fail, relaxed fail

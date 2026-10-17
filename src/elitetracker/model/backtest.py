@@ -26,6 +26,7 @@ from elitetracker.model.attack_defence import (
 from elitetracker.model.career import SeasonSlice, replay, team_ids
 from elitetracker.model.elo import EloConfig, era_config
 from elitetracker.model.probabilities import AWAY_WIN, DRAW, HOME_WIN, MatchProbabilities, match_probabilities, outcome_of
+from elitetracker.model.stakes import STAKES_ELO, STAKES_GOALS
 from elitetracker.normalize.matches import Match
 from elitetracker.normalize.surfaces import surface_edge
 
@@ -137,6 +138,7 @@ def walk_forward(
     league: str | None = None,
     config_for: Callable[[str, int], EloConfig] | None = None,
     values: dict[int, dict[str, float]] | None = None,
+    stakes: dict[str, float] | None = None,
 ) -> Scorecard:
     """Replay every season in order, scoring only from `score_from_season` on.
 
@@ -156,8 +158,13 @@ def walk_forward(
 
     ``values`` (squad values by season, `pipeline.market_values`) places the
     clubs relegated into OBOS-ligaen as production does (elo-v15.0).
+
+    ``stakes`` (match_id -> P_home - P_away in the run-in,
+    `pipeline.stakes_table`) moves each prediction by the table-stakes term
+    (`model.stakes`, elo-v16.0); like the surface edge, never the ratings.
     """
     config = config or EloConfig()
+    stakes = stakes or {}
     config_for = config_for or (lambda lg, season: era_config(season, config))
     card = Scorecard(name=name)
     match_league = {m.match_id: s.league for s in slices for m in s.matches}
@@ -168,6 +175,7 @@ def walk_forward(
                 # The surface edge is a prediction-time term for Eliteserien
                 # (normalize.surfaces); the ratings never carry it.
                 edge = surface_edge(*team_ids(match), match.date) if match_in == "eliteserien" else 0.0
+                edge += STAKES_ELO * stakes.get(match.match_id, 0.0)
                 card.observe(
                     match_probabilities(home_before + edge, away_before, config_for(match_in, season)),
                     outcome_of(match), match.match_id,
@@ -184,6 +192,7 @@ def shipped_cards(
     values: dict[int, dict[str, float]] | None = None,
     league: str | None = None,
     scorelines: dict[tuple[int, int], list[float]] | None = None,
+    stakes: dict[str, float] | None = None,
 ) -> tuple[Scorecard, Scorecard]:
     """Elo alone and the odds the site shows (Elo blended with the
     attack/defence grid), walk-forward on the same matches.
@@ -191,9 +200,11 @@ def shipped_cards(
     `scorelines`, when given, collects per scoreline (goals capped at
     SCORELINE_CAP a side, "4" meaning 4 or more) [the summed predicted chance,
     the times it happened] over the scored matches: the site's scoreline
-    model (`conditional_scorelines`) against the results."""
+    model (`conditional_scorelines`) against the results. `stakes` as in
+    `walk_forward`, in both models."""
+    stakes = stakes or {}
     elo = walk_forward(slices, seeds, EloConfig(), score_from_season=score_from_season, name="elo",
-                       shots=shots, league=league, values=values)
+                       shots=shots, league=league, values=values, stakes=stakes)
     shipped = Scorecard(name="elo + attack/defence")
     ad = AttackDefence.from_slices(slices, ADConfig(), shots=shots, values=values)
     for match in sorted((m for s in slices for m in s.matches if m.played), key=Match.sort_key):
@@ -201,7 +212,8 @@ def shipped_cards(
             home, away = team_ids(match)
             elo_odds = elo.predictions[match.match_id][0]
             weight = gap_blend_weight(elo_odds.rating_gap, ad.config.blend_gamma)
-            grid = ad.grid(home, away, match.date, elo_gap=elo_odds.rating_gap)
+            grid = ad.grid(home, away, match.date, elo_gap=elo_odds.rating_gap,
+                           stakes=STAKES_GOALS * stakes.get(match.match_id, 0.0))
             odds = blend_outcomes(elo_odds, grid, weight=weight)
             shipped.observe(odds, outcome_of(match), match.match_id)
             if scorelines is not None:

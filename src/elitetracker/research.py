@@ -23,7 +23,7 @@ from pathlib import Path
 
 from elitetracker.model import benchmark
 from elitetracker.model.backtest import Scorecard, paired, reliability, restrict, shipped_cards
-from elitetracker.pipeline import NORMALIZED_DIR, load_matches, load_slices, market_values, seed_ratings
+from elitetracker.pipeline import NORMALIZED_DIR, load_matches, load_slices, market_values, seed_ratings, stakes_table
 from elitetracker.sources.fotmob import FetchError, fetch_match_xg, load_xg, save_xg
 from elitetracker.sources.sofascore import DEFAULT_DELAY
 
@@ -186,7 +186,7 @@ def market_comparison(score_from: int) -> int:
     dates = {m.match_id: m.date for s in slices for m in s.matches}
     shots = {k: tuple(v) for k, v in load_xg()["matches"].items()}
     elo, shipped = shipped_cards(slices, seeds, score_from_season=score_from, shots=shots,
-                                 values=market_values(), league="eliteserien")
+                                 values=market_values(), league="eliteserien", stakes=stakes_table())
     matches = [m for s in slices for m in s.matches
                if s.league == "eliteserien" and int(m.date[:4]) >= score_from]
     prices = benchmark.load_prices()
@@ -235,7 +235,7 @@ def calibration_payload(score_from: int = 2016, root=NORMALIZED_DIR) -> dict:
     shots = {k: tuple(v) for k, v in load_xg()["matches"].items()}
     scorelines: dict[tuple[int, int], list[float]] = {}
     elo, shipped = shipped_cards(slices, seeds, score_from_season=score_from, shots=shots, values=market_values(),
-                                 scorelines=scorelines)
+                                 scorelines=scorelines, stakes=stakes_table(root))
     dates = {m.match_id: m.date for s in slices for m in s.matches}
     league = {m.match_id: s.league for s in slices for m in s.matches}
     es = [m for s in slices for m in s.matches if s.league == "eliteserien" and int(m.date[:4]) >= score_from]
