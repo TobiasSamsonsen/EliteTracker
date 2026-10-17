@@ -22,7 +22,7 @@ import argparse
 from elitetracker.model.backtest import walk_forward
 from elitetracker.model.elo import EloConfig
 from elitetracker.model.initial_ratings import SeedingConfig
-from elitetracker.pipeline import load_slices, seed_ratings
+from elitetracker.pipeline import load_slices, market_values, seed_ratings
 
 
 def _evaluate(slices, reg: float, spread: float, offset: int, score_from: int):
@@ -34,7 +34,7 @@ def _evaluate(slices, reg: float, spread: float, offset: int, score_from: int):
     )
     seeds = {team_id: seed.rating for team_id, seed in seed_ratings(seeding=config).items()}
     card = walk_forward(slices, seeds, EloConfig(season_regression=reg), score_from_season=score_from,
-                        league="eliteserien")
+                        league="eliteserien", values=market_values())
     return card.log_loss, card.calibration_error()
 
 

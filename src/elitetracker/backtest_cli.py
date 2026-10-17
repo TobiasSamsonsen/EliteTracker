@@ -49,7 +49,7 @@ def _blend_forward_split(slices, seeds, shots, score_from, split_season, gamma_v
 
     # Elo-only card for all matches (the baseline to blend against).
     elo_card = walk_forward(slices, seeds, EloConfig(), score_from_season=score_from,
-                            name="elo", shots=shots, league="eliteserien")
+                            name="elo", shots=shots, league="eliteserien", values=market_values())
 
     # Replay AD over the full corpus once per gamma value.
     cards = []
@@ -147,7 +147,7 @@ def main(argv: list[str] | None = None) -> int:
                                     args.split_season, gammas, args.top)
 
     cards = [walk_forward(slices, seeds, EloConfig(), score_from_season=args.score_from, name="base",
-                           league="eliteserien", shots=shots)]
+                           league="eliteserien", shots=shots, values=market_values())]
     for k in _frange(args.k_min, args.k_max, args.k_step):
         for home in _frange(args.home_min, args.home_max, args.home_step):
             for reg in args.regression:
@@ -162,7 +162,7 @@ def main(argv: list[str] | None = None) -> int:
                     cards.append(walk_forward(slices, seeds, legacy,
                                               score_from_season=args.score_from,
                                               name=f"k={k:.0f} ha={home:.0f} reg={reg:.2f} b={beta:.2f}",
-                                              league="eliteserien", shots=shots,
+                                              league="eliteserien", shots=shots, values=market_values(),
                                               config_for=lambda lg, s, l=legacy, m=modern: era_config(s, l, m)))
 
     shown = sorted(cards, key=lambda card: card.log_loss)[: max(1, args.top)]

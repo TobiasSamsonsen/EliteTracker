@@ -267,3 +267,28 @@ def test_elo_v14_defaults():
     cfg = ADConfig()
     assert (cfg.alpha, cfg.keeping_window, cfg.keeping_weight) == (0.9, 45, 0.75)
     assert cfg.offseason("eliteserien") == (0.88, 0.2) and cfg.offseason("obosligaen") == (0.75, 0.3)
+
+
+def test_a_club_relegated_into_obos_ligaen_keeps_less_and_leans_on_its_value():
+    data = slices(
+        (2020, "eliteserien", [match("1", "2020-05-01", "A", "B", 3, 0)]),
+        (2020, "obosligaen", [match("2", "2020-05-01", "C", "D", 0, 2)]),
+        (2021, "eliteserien", [match("3", "2021-04-01", "B", "C", 1, 1)]),
+        (2021, "obosligaen", [match("4", "2021-04-01", "A", "D", 1, 1)]),
+    )
+    cfg = ADConfig(k=0.1, season_regression=0.5, obos_season_regression=0.75, relegated_regression=0.25,
+                   value_pull=0.0, obos_value_pull=0.3, early_boost=0.0)
+    model = AttackDefence.from_slices(data, cfg, values={2020: {"A": 4e6, "D": 1e6}})
+    model.replay(data[0].matches + data[1].matches)
+    pre = {name: dict(getattr(model, name)) for name in ("attack", "defence")}
+    model.start_season(2021)
+    v = 0.5 * math.log(4.0)   # A's log value above the (A, D) geometric mean
+    for name in ("attack", "defence"):
+        mean = (pre[name]["A"] + pre[name]["D"]) / 2
+        after = getattr(model, name)
+        # A came down from Eliteserien: keeps a quarter, value shift (1 - 0.25) * 0.3 * v.
+        assert abs(after["A"] - (mean + 0.25 * (pre[name]["A"] - mean) + 0.75 * 0.3 * v)) < 1e-12
+        assert abs(after["D"] - (mean + 0.75 * (pre[name]["D"] - mean) - 0.25 * 0.3 * v)) < 1e-12
+    # C went up: Eliteserien's ordinary pull.
+    es_mean = (pre["attack"]["B"] + pre["attack"]["C"]) / 2
+    assert abs(model.attack["C"] - (es_mean + 0.5 * (pre["attack"]["C"] - es_mean))) < 1e-12

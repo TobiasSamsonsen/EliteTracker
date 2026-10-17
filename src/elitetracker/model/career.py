@@ -17,6 +17,7 @@ backtest all read off it, so they can never disagree about a rating.
 
 from __future__ import annotations
 
+import math
 from dataclasses import dataclass, field
 from datetime import date, timedelta
 from typing import Callable, Iterator
@@ -79,6 +80,23 @@ def team_ids(match: Match) -> tuple[str, str]:
     return (match.home_id or match.home, match.away_id or match.away)
 
 
+def relegated_values(
+    league: str, teams: list[str], previous: dict[str, str], page: dict[str, float],
+) -> dict[str, float]:
+    """The clubs of `teams` that come down into OBOS-ligaen (in Eliteserien by
+    `previous`, team -> last season's division), each with its log squad
+    value from `page` against the geometric mean of `teams`' values; 0.0 for
+    one without a value."""
+    if league != "obosligaen":
+        return {}
+    down = [t for t in teams if previous.get(t) == "eliteserien"]
+    if not down:
+        return {}
+    logs = {t: math.log(page[t]) for t in teams if page.get(t)}
+    mean = sum(logs.values()) / len(logs) if logs else 0.0
+    return {t: logs[t] - mean if t in logs else 0.0 for t in down}
+
+
 def replay(
     slices: list[SeasonSlice],
     seeds: dict[str, float],
@@ -86,6 +104,7 @@ def replay(
     shots: dict[str, tuple[float, ...]] | None = None,
     *,
     config_for: Callable[[str, int], EloConfig] | None = None,
+    values: dict[int, dict[str, float]] | None = None,
 ) -> Iterator[tuple[int, list[SeasonSlice], dict[str, float], Iterator[tuple[Match, tuple[float, float]]]]]:
     """Replay every season in order against one shared rating table.
 
@@ -104,14 +123,25 @@ def replay(
     being fitted. The offseason pull is taken from the same config, per
     division, so it can differ by era too; only the seeding comes from the base
     ``config``.
+
+    ``values`` (season -> team_id -> squad value) places a club relegated into
+    OBOS-ligaen by its value from the season before (elo-v15.0); without it
+    such a club still takes the relegated pull, with no value shift.
     """
     config = config or EloConfig()
     config_for = config_for or (lambda league, season: era_config(season, config))
     shots = shots or {}
+    values = values or {}
     ratings = dict(seeds)
     seasons = sorted({slice_.season for slice_ in slices})
+    previous: dict[str, str] = {}
     for season in seasons:
         in_season = [slice_ for slice_ in slices if slice_.season == season]
+        active: dict[str, str] = {}
+        for slice_ in in_season:
+            for match in slice_.matches:
+                for team_id in team_ids(match):
+                    active[team_id] = slice_.league
 
         # Mean-revert ratings across the close season (except before the first
         # replayed year, whose ratings are the deliberate seed), toward each
@@ -119,22 +149,24 @@ def replay(
         # per division preserves the inter-division gap and leaves dormant
         # clubs untouched.
         if season != seasons[0]:
-            active: dict[str, str] = {}
-            for slice_ in in_season:
-                for match in slice_.matches:
-                    for team_id in team_ids(match):
-                        active[team_id] = slice_.league
             by_league: dict[str, list[str]] = {}
             for team_id, league in active.items():
                 if team_id in ratings:
                     by_league.setdefault(league, []).append(team_id)
             for league, ids in by_league.items():
-                regression = config_for(league, season).season_regression
+                league_config = config_for(league, season)
+                regression = league_config.season_regression
                 if regression >= 1.0:
                     continue
                 mean = sum(ratings[team_id] for team_id in ids) / len(ids)
+                relegated = relegated_values(league, ids, previous, values.get(season - 1, {}))
                 for team_id in ids:
-                    ratings[team_id] = mean + regression * (ratings[team_id] - mean)
+                    if team_id in relegated:
+                        goal = mean + league_config.relegated_value_pull * relegated[team_id]
+                        ratings[team_id] = goal + league_config.relegated_regression * (ratings[team_id] - goal)
+                    else:
+                        ratings[team_id] = mean + regression * (ratings[team_id] - mean)
+        previous = active
 
         for slice_ in in_season:
             for match in slice_.matches:
@@ -172,6 +204,7 @@ def build_careers(
     config: EloConfig | None = None,
     shots: dict[str, tuple[float, ...]] | None = None,
     config_for: Callable[[str, int], EloConfig] | None = None,
+    values: dict[int, dict[str, float]] | None = None,
 ) -> dict[str, TeamCareer]:
     """Replay every season in order and record each club's rating over time."""
     config = config or EloConfig()
@@ -187,7 +220,7 @@ def build_careers(
 
     ratings_by_id = {team_id: seed.rating for team_id, seed in seeds.items()}
     for season, in_season, ratings, matches in replay(
-        slices, ratings_by_id, config, shots=shots, config_for=config_for,
+        slices, ratings_by_id, config, shots=shots, config_for=config_for, values=values,
     ):
         rating_start: dict[str, float] = {}
         for slice_ in in_season:

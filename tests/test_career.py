@@ -250,3 +250,34 @@ class TestReproducibility:
 
     def test_empty_input(self):
         assert build_careers([], SEEDS, config=NEUTRAL) == {}
+
+
+def test_a_club_relegated_into_obos_ligaen_is_placed_by_its_squad_value():
+    from math import log
+
+    from elitetracker.model.career import replay
+
+    slices = [
+        SeasonSlice("eliteserien", "Eliteserien", 2020, [match(1, "A", "B", "2020-04-01")]),
+        SeasonSlice("obosligaen", "OBOS-ligaen", 2020, [match(2, "C", "D", "2020-04-01")]),
+        SeasonSlice("eliteserien", "Eliteserien", 2021, [match(3, "B", "C", "2021-04-01")]),
+        SeasonSlice("obosligaen", "OBOS-ligaen", 2021, [match(4, "A", "D", "2021-04-01")]),
+    ]
+    seeds = {"A": 1600.0, "B": 1500.0, "C": 1450.0, "D": 1350.0}
+    config = EloConfig(season_regression=0.5, relegated_regression=0.25, relegated_value_pull=100.0)
+    values = {2020: {"A": 4e6, "D": 1e6}}
+    opening = {}
+    for season, _, ratings, _ in replay(slices, seeds, config, values=values):
+        opening[season] = dict(ratings)
+    after = opening[2021]
+    # A came down: a quarter of its distance from OBOS-ligaen's mean (1475)
+    # kept, toward a target lifted by 100 points per log value above the
+    # division's geometric mean.
+    goal = 1475 + 100 * 0.5 * log(4)
+    assert after["A"] == pytest.approx(goal + 0.25 * (1600 - goal))
+    assert after["D"] == pytest.approx(1475 + 0.5 * (1350 - 1475))
+    # C went up: the ordinary pull, no value.
+    assert after["B"] == pytest.approx(1487.5) and after["C"] == pytest.approx(1462.5)
+    # Without values the relegated pull still applies, toward the plain mean.
+    plain = [dict(r) for s, _, r, _ in replay(slices, seeds, config) if s == 2021][0]
+    assert plain["A"] == pytest.approx(1475 + 0.25 * 125)
