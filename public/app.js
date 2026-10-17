@@ -3302,8 +3302,84 @@ const CALIBRATION_SERIES = [
   ['draw', 'next.draw', 'var(--draw)'],
   ['away_win', 'next.awayWin', 'var(--outcome-bad)'],
 ];
-// A bin with fewer predictions than this is drawn faint: its rate is noise.
-const CALIBRATION_MIN_N = 30;
+// A bin with fewer predictions than this is left out: its rate says nothing.
+const CALIBRATION_MIN_N = 50;
+
+/* One panel's axis range, the same on both axes so the diagonal stays the
+   line of perfect calibration: every kept bin's chance, rate and interval,
+   out to the next 10 %. */
+function calibrationRange(bins) {
+  const values = bins.flatMap((bin) => [bin.predicted, ...calibrationInterval(bin.observed, bin.n)]);
+  return [Math.max(0, Math.floor(Math.min(...values) * 10 + 1e-9) / 10),
+    Math.min(1, Math.ceil(Math.max(...values) * 10 - 1e-9) / 10)];
+}
+
+/* One outcome's reliability diagram, zoomed to its own range: the bins as
+   dots sized by count, each with its 95 % interval, joined in order. */
+function calibrationPanel(bins, labelKey, colour, biggest) {
+  const panel = el('figure', 'calibration__panel');
+  const title = el('figcaption', 'calibration__panel-title');
+  const swatch = el('i', 'calibration__swatch');
+  swatch.style.background = colour;
+  title.append(swatch, t(labelKey));
+  panel.appendChild(title);
+  const svg = svgEl('svg', { class: 'chart', role: 'group', 'aria-label': `${t(labelKey)}: ${t('calib.aria')}` });
+  panel.appendChild(svg);
+  const size = 300;
+  const pad = { top: 18, right: 10, bottom: 36, left: 38 };
+  svg.setAttribute('viewBox', `0 0 ${size} ${size}`);
+  const [lo, hi] = calibrationRange(bins);
+  const x = (p) => pad.left + ((p - lo) / (hi - lo)) * (size - pad.left - pad.right);
+  const y = (p) => size - pad.bottom - ((p - lo) / (hi - lo)) * (size - pad.top - pad.bottom);
+  const text = (className, content, attrs) => {
+    const node = svgEl('text', { class: className, ...attrs });
+    node.textContent = content;
+    svg.appendChild(node);
+  };
+  const step = hi - lo > 0.5 ? 2 : 1;
+  for (let tenth = Math.round(lo * 10); tenth <= Math.round(hi * 10); tenth += step) {
+    const p = tenth / 10;
+    svg.appendChild(svgEl('line', { class: 'grid-line', x1: x(p), x2: x(p), y1: y(lo), y2: y(hi) }));
+    svg.appendChild(svgEl('line', { class: 'grid-line', x1: x(lo), x2: x(hi), y1: y(p), y2: y(p) }));
+    const label = `${num(p * 100)}${percentSign()}`; // pct() would print 0 as a dash
+    text('tick', label, { x: x(p), y: y(lo) + 14, 'text-anchor': 'middle' });
+    text('tick', label, { x: x(lo) - 5, y: y(p) + 3.5, 'text-anchor': 'end' });
+  }
+  svg.appendChild(svgEl('line', { class: 'calibration__diagonal', x1: x(lo), y1: y(lo), x2: x(hi), y2: y(hi) }));
+  text('axis-title', t('calib.x'), { x: x(hi), y: size - 4, 'text-anchor': 'end' });
+  text('axis-title', t('calib.y'), { x: x(lo), y: pad.top - 6 });
+  if (bins.length > 1) {
+    svg.appendChild(svgEl('polyline', {
+      class: 'calibration__line',
+      points: bins.map((bin) => `${x(bin.predicted)},${y(bin.observed)}`).join(' '),
+      style: `stroke: ${colour}`,
+    }));
+  }
+  const intervals = bins.map((bin) => calibrationInterval(bin.observed, bin.n));
+  bins.forEach((bin, i) => {
+    const [low, high] = intervals[i];
+    svg.appendChild(svgEl('path', {
+      class: 'calibration__bar',
+      d: `M${x(bin.predicted)},${y(low)}V${y(high)}M${x(bin.predicted) - 3},${y(low)}h6M${x(bin.predicted) - 3},${y(high)}h6`,
+      style: `stroke: ${colour}`,
+    }));
+  });
+  bins.forEach((bin, i) => {
+    const [low, high] = intervals[i];
+    const dot = svgEl('circle', {
+      class: 'calibration__dot', cx: x(bin.predicted), cy: y(bin.observed),
+      r: 2.5 + 4 * Math.sqrt(bin.n / biggest), style: `fill: ${colour}`, tabindex: 0,
+    });
+    const tip = t('calib.tip', {
+      outcome: t(labelKey), lo: pct(bin.lo, 0), hi: pct(bin.hi, 0), n: num(bin.n),
+      predicted: pct(bin.predicted, 1), observed: pct(bin.observed, 1), low: pct(low, 0), high: pct(high, 0),
+    });
+    dot.setAttribute('aria-label', tip);
+    attachTip(dot, tip);
+    svg.appendChild(dot);
+  });
+  return panel;
+}
 
 async function renderCalibration(report, body) {
   body.replaceChildren(el('p', 'explore-empty', t('calib.loading')));
@@ -3316,82 +3392,19 @@ async function renderCalibration(report, body) {
   }
   if (state.exploreItem !== 'accuracy') return;
   const wrap = el('div', 'calibration');
-  const svg = svgEl('svg', { class: 'chart', role: 'group', 'aria-label': t('calib.aria') });
-  wrap.appendChild(svg);
   body.replaceChildren(wrap);
 
-  const box = wrap.getBoundingClientRect().width || 600;
-  const size = Math.min(560, Math.round(box));
-  const pad = { top: 16, right: 14, bottom: 40, left: 44 };
-  svg.setAttribute('viewBox', `0 0 ${size} ${size}`);
-  const span = size - pad.left - pad.right;
-  const x = (p) => pad.left + p * span;
-  const y = (p) => size - pad.bottom - p * (size - pad.top - pad.bottom);
-  const text = (className, content, attrs) => {
-    const node = svgEl('text', { class: className, ...attrs });
-    node.textContent = content;
-    svg.appendChild(node);
-  };
-  for (let i = 0; i <= 5; i += 1) {
-    const p = i / 5;
-    svg.appendChild(svgEl('line', { class: 'grid-line', x1: x(p), x2: x(p), y1: y(0), y2: y(1) }));
-    svg.appendChild(svgEl('line', { class: 'grid-line', x1: x(0), x2: x(1), y1: y(p), y2: y(p) }));
-    const label = `${num(p * 100)}${percentSign()}`; // pct() would print 0 as a dash
-    text('tick', label, { x: x(p), y: y(0) + 14, 'text-anchor': 'middle' });
-    text('tick', label, { x: x(0) - 6, y: y(p) + 3.5, 'text-anchor': 'end' });
-  }
-  svg.appendChild(svgEl('line', { class: 'calibration__diagonal', x1: x(0), y1: y(0), x2: x(1), y2: y(1) }));
-  text('axis-title', t('calib.x'), { x: x(1), y: size - 6, 'text-anchor': 'end' });
-  text('axis-title', t('calib.y'), { x: x(0), y: pad.top - 4 });
-
-  const biggest = Math.max(...CALIBRATION_SERIES.flatMap(([key]) => data.reliability[key].map((bin) => bin.n)));
-  for (const [key, labelKey, colour] of CALIBRATION_SERIES) {
-    const bins = data.reliability[key];
-    const solid = bins.filter((bin) => bin.n >= CALIBRATION_MIN_N);
-    if (solid.length > 1) {
-      svg.appendChild(svgEl('polyline', {
-        class: 'calibration__line',
-        points: solid.map((bin) => `${x(bin.predicted)},${y(bin.observed)}`).join(' '),
-        style: `stroke: ${colour}`,
-      }));
-    }
-    for (const bin of bins) {
-      const [low, high] = calibrationInterval(bin.observed, bin.n);
-      const thin = bin.n < CALIBRATION_MIN_N ? ' calibration__bar--thin' : '';
-      svg.appendChild(svgEl('path', {
-        class: `calibration__bar${thin}`,
-        d: `M${x(bin.predicted)},${y(low)}V${y(high)}M${x(bin.predicted) - 3},${y(low)}h6M${x(bin.predicted) - 3},${y(high)}h6`,
-        style: `stroke: ${colour}`,
-      }));
-    }
-    for (const bin of bins) {
-      const [low, high] = calibrationInterval(bin.observed, bin.n);
-      const dot = svgEl('circle', {
-        class: `calibration__dot${bin.n < CALIBRATION_MIN_N ? ' calibration__dot--thin' : ''}`,
-        cx: x(bin.predicted), cy: y(bin.observed), r: 2.5 + 5 * Math.sqrt(bin.n / biggest),
-        style: `fill: ${colour}`, tabindex: 0,
-      });
-      const tip = t('calib.tip', {
-        outcome: t(labelKey), lo: pct(bin.lo, 0), hi: pct(bin.hi, 0), n: num(bin.n),
-        predicted: pct(bin.predicted, 1), observed: pct(bin.observed, 1), low: pct(low, 0), high: pct(high, 0),
-      });
-      dot.setAttribute('aria-label', tip);
-      attachTip(dot, tip);
-      svg.appendChild(dot);
-    }
-  }
-  const legend = el('div', 'calibration__legend');
-  for (const [, labelKey, colour] of CALIBRATION_SERIES) {
-    const item = el('span', 'calibration__key');
-    const swatch = el('i', 'calibration__swatch');
-    swatch.style.background = colour;
-    item.append(swatch, t(labelKey));
-    legend.appendChild(item);
-  }
-  const barKey = el('span', 'calibration__key');
-  barKey.append(el('i', 'calibration__swatch calibration__swatch--bar'), t('calib.bars'));
-  legend.appendChild(barKey);
-  wrap.appendChild(legend);
+  // One panel per outcome; the bins too thin to say anything are left out.
+  const kept = CALIBRATION_SERIES.map(([key]) => data.reliability[key].filter((bin) => bin.n >= CALIBRATION_MIN_N));
+  const dropped = CALIBRATION_SERIES.reduce((sum, [key]) => sum + data.reliability[key]
+    .filter((bin) => bin.n < CALIBRATION_MIN_N).reduce((total, bin) => total + bin.n, 0), 0);
+  const biggest = Math.max(...kept.flat().map((bin) => bin.n));
+  const panels = el('div', 'calibration__panels');
+  CALIBRATION_SERIES.forEach(([, labelKey, colour], i) => {
+    if (kept[i].length) panels.appendChild(calibrationPanel(kept[i], labelKey, colour, biggest));
+  });
+  wrap.appendChild(panels);
+  wrap.appendChild(el('p', 'explore-note calibration__note', t('calib.note', { n: CALIBRATION_MIN_N, dropped: num(dropped) })));
 
   if (data.market) {
     const table = el('table', 'calibration__table');
@@ -3437,10 +3450,16 @@ function calibrationFacts(data) {
     });
   }
   if (data.kelly && data.kelly.bets) {
+    // The bankroll, not the return per stake: Kelly staking can earn on what
+    // was staked and still lose the pot.
+    const kelly = data.kelly;
     facts.push({
-      value: `${signed(data.kelly.roi * 100, 1)}${percentSign()}`,
+      value: `${signed((kelly.bankroll - 1) * 100, 0)}${percentSign()}`,
       label: t('calib.fact.kelly'),
-      text: t('calib.fact.kellyText', { bets: num(data.kelly.bets) }),
+      text: t('calib.fact.kellyText', {
+        bets: num(kelly.bets), roi: `${signed(kelly.roi * 100, 1)}${percentSign()}`,
+        end: pct(kelly.bankroll, 0), drawdown: pct(kelly.max_drawdown, 0),
+      }),
     });
   }
   return facts;

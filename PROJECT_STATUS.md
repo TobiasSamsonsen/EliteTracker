@@ -2530,10 +2530,12 @@ below that name a branch wait on it (see "Explore: which views stay").
   phones with the club column pinned. Facts: hardest and easiest run-in, the
   gap between them, the surest win left.
 - **Match-odds calibration** (#10; since 2026-10-17 the second part of model accuracy, `viz=accuracy`, branch `explore/accuracy`): a reliability diagram of
-  the shipped odds over every match since 2016 (home, draw, away, in 5 % bins since 2026-10-17, each with its 95 % Wilson interval; dot size by
-  count, bins under 30 faint), the scores against the closing line three ways
+  the shipped odds over every match since 2016 (home, draw, away, in 5 % bins since 2026-10-17, each with its 95 % Wilson interval; one panel per outcome zoomed to
+  its own range, bins under 50 matches left out; dot size by count), the scores against the closing line three ways
   de-vigged, and facts (calibration error, favourites priced 70 %+, the gap to
-  the market, quarter-Kelly ROI). Data: `public/data/calibration.json`, written
+  the market, the quarter-Kelly bankroll -- not the return per stake, which
+  can be positive while the bankroll falls: +0.7 % on stakes, bankroll 60 % on
+  elo-v15.0). Data: `public/data/calibration.json`, written
   by `build_site` from a walk-forward run (`research.calibration_payload`, about
   a second).
 

@@ -631,7 +631,7 @@ test('every scorecard string exists in both languages', () => {
   ]);
 });
 
-eval(pick('calibrationPool') + pick('calibrationInterval'));
+eval(pick('calibrationPool') + pick('calibrationInterval') + pick('calibrationRange'));
 
 test('calibration pools the bins at the top of the range', () => {
   const bins = [
@@ -660,6 +660,14 @@ test('every calibration string exists in both languages', () => {
     'calib.x', 'calib.y', 'calib.tip', 'calib.model', 'calib.elo',
     'calib.proportional', 'calib.power', 'calib.shin', 'calib.tableCaption', 'calib.fact.error',
     'calib.fact.errorText', 'calib.fact.favourites', 'calib.fact.favouritesText', 'calib.fact.market', 'calib.fact.marketText',
-    'calib.fact.kelly', 'calib.fact.kellyText', 'calib.bars',
+    'calib.fact.kelly', 'calib.fact.kellyText', 'calib.note',
   ]);
+});
+
+test('each calibration panel takes the same range on both axes, out to the next 10 %', () => {
+  // Draws: chances 17-33 %, intervals a little wider; the range snaps to tenths.
+  const draws = [{ predicted: 0.17, observed: 0.18, n: 400 }, { predicted: 0.33, observed: 0.31, n: 200 }];
+  assert.deepEqual(calibrationRange(draws), [0.1, 0.4]);
+  // An exact tenth stays put, and the range never leaves 0-1.
+  assert.deepEqual(calibrationRange([{ predicted: 0.2, observed: 0.25, n: 1e9 }, { predicted: 0.95, observed: 0.99, n: 60 }]), [0.2, 1]);
 });

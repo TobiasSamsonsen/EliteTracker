@@ -170,9 +170,10 @@ slider too; the ones with time along an axis of their own take none.
   hardest-called season, biggest over- and under-achiever. *Match by match*:
   when the model gives an outcome 40 %, does it happen 40 % of the time? A
   reliability diagram of the pre-match odds of every match since 2016 (both
-  divisions; 5 % bins, each with its 95 % interval), the scores against the bookmakers' closing odds (three ways of
-  removing their margin), and what quarter-Kelly betting on the model's
-  edges would have returned.
+  divisions; one panel per outcome, zoomed to its own range; 5 % bins with
+  50 or more matches, each with its 95 % interval), the scores against the bookmakers' closing odds (three ways of
+  removing their margin), and where quarter-Kelly betting on the model's
+  edges would have left the bankroll.
 
 ### Model Card
 
