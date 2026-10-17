@@ -3491,16 +3491,20 @@ function renderVersionHistory(report, body, data) {
     body.replaceChildren(el('p', 'explore-empty', t('versions.empty')));
     return;
   }
+  const hasXg = history.base_rate_log_loss_xg != null;
   const rows = history.versions.map((row) => ({
     ...row,
     all: versionSkill(row.log_loss, history.base_rate_log_loss),
     es: versionSkill(row.log_loss_eliteserien, history.base_rate_log_loss_eliteserien),
+    xg: hasXg ? versionSkill(row.log_loss_xg, history.base_rate_log_loss_xg) : null,
   }));
   const market = history.market_log_loss_priced != null
     ? versionSkill(history.market_log_loss_priced, history.base_rate_log_loss_eliteserien) : null;
   const series = [
     { key: 'all', label: t('versions.all'), colour: 'var(--versions-all)' },
     { key: 'es', label: t('versions.es'), colour: 'var(--versions-es)' },
+    // The xG seasons: Eliteserien from 2020, OBOS-ligaen from 2023.
+    ...(hasXg ? [{ key: 'xg', label: t('versions.xg'), colour: 'var(--versions-xg)' }] : []),
   ];
 
   const wrap = el('div', 'versions');
@@ -3528,7 +3532,7 @@ function renderVersionHistory(report, body, data) {
   const height = narrow ? 260 : 300;
   const pad = { top: 14, right: narrow ? 64 : 120, bottom: 40, left: 40 };
   svg.setAttribute('viewBox', `0 0 ${width} ${height}`);
-  const values = rows.flatMap((row) => [row.all, row.es]).concat(market != null ? [market] : []);
+  const values = rows.flatMap((row) => series.map(({ key }) => row[key])).concat(market != null ? [market] : []);
   const top = Math.ceil(Math.max(...values) + 0.5);
   const bottom = Math.min(0, Math.floor(Math.min(...values)));
   const step = (width - pad.left - pad.right) / (rows.length - 1);
@@ -3588,6 +3592,7 @@ function renderVersionHistory(report, body, data) {
       t(`versions.v.${row.version}`),
       t('versions.tipAll', { skill: num(row.all, 1), ll: num(row.log_loss, 4) }),
       t('versions.tipEs', { skill: num(row.es, 1), ll: num(row.log_loss_eliteserien, 4) }),
+      hasXg ? t('versions.tipXg', { skill: num(row.xg, 1), ll: num(row.log_loss_xg, 4) }) : '',
       previous ? t('versions.tipStep', {
         delta: signed(row.vs_previous, 4), previous: previous.version, t: num(row.t_vs_previous, 1),
       }) : '',
@@ -3614,13 +3619,31 @@ function renderVersionHistory(report, body, data) {
     value: `${num(first.all, 1)} → ${num(last.all, 1)}${percentSign()}`,
     label: t('versions.fact.skill'),
     text: t('versions.fact.skillText', { first: first.version, last: last.version, n: num(history.n) }),
-  }, {
+  }];
+  if (hasXg) {
+    facts.push({
+      value: `${num(first.xg, 1)} → ${num(last.xg, 1)}${percentSign()}`,
+      label: t('versions.fact.xg'),
+      text: t('versions.fact.xgText', { n: num(history.n_xg), first: first.version, last: last.version }),
+    });
+    // The bookmakers' line is Eliteserien over every season; on Eliteserien's
+    // own xG seasons the comparison is like for like.
+    if (history.market_log_loss_eliteserien_xg != null && last.log_loss_eliteserien_xg != null) {
+      const base = history.base_rate_log_loss_eliteserien_xg;
+      facts[facts.length - 1].text += ` ${t('versions.fact.xgMarket', {
+        n: num(history.n_eliteserien_xg), last: last.version,
+        model: num(versionSkill(last.log_loss_eliteserien_xg, base), 1),
+        market: num(versionSkill(history.market_log_loss_eliteserien_xg, base), 1),
+      })}`;
+    }
+  }
+  facts.push({
     value: biggest.version,
     label: t('versions.fact.step'),
     text: t('versions.fact.stepText', {
       what: t(`versions.v.${biggest.version}`), delta: signed(biggest.vs_previous, 4), t: num(biggest.t_vs_previous, 1),
     }),
-  }];
+  });
   if (market != null && first.log_loss_eliteserien > history.market_log_loss_priced) {
     const closed = (first.log_loss_eliteserien - last.log_loss_eliteserien)
       / (first.log_loss_eliteserien - history.market_log_loss_priced);

@@ -71,6 +71,7 @@
   /* Model accuracy's version history: two series, validated in light mode. */
   --versions-all: #2265ac;
   --versions-es: #3db2c4;
+  --versions-xg: #c9701c;
 
   /* Diverging: home win <- draw -> away win. */
   --home: #1d63bb;   /* white odds labels 5.9:1 (was 4.4:1) */
@@ -154,6 +155,7 @@
   /* The version history's two series, their own dark steps (validated on #131c22). */
   --versions-all: #4479d0;
   --versions-es: #2ba3a0;
+  --versions-xg: #c4772a;
 
   --home: #3987e5;
   --draw: #b5b5ac;
@@ -4045,8 +4047,8 @@ body[data-viz="accuracy"] .hero-title-part[data-role="season"] { display: none; 
 .calibration__ours th, .calibration__ours td { font-weight: 700; }
 
 /* Model accuracy, third part: every model version's odds on the same
-   matches. Two series in one family (all matches, Eliteserien; validated
-   per mode, see --versions-*), the bookmakers dashed, direct labels at the
+   matches. Three series (all matches, Eliteserien, the xG seasons;
+   validated per mode, see --versions-*), the bookmakers dashed, direct labels at the
    right end, a hover column per version. */
 .versions { padding: 0.75rem 1rem 1rem; }
 .versions .chart { display: block; max-width: 760px; margin: 0 auto; }

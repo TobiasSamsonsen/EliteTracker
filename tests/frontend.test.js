@@ -685,7 +685,7 @@ test('every version-history string exists in both languages', () => {
     // versions.es is 'Eliteserien' in both languages, so it is left out here.
     'accuracy.versions', 'accuracy.versionsLead', 'versions.empty', 'versions.all', 'versions.market',
     'versions.marketShort', 'versions.aria', 'versions.y', 'versions.x', 'versions.tipAll', 'versions.tipEs',
-    'versions.tipStep', 'versions.note', 'versions.fact.skill', 'versions.fact.skillText', 'versions.fact.step',
+    'versions.xg', 'versions.tipXg', 'versions.fact.xg', 'versions.fact.xgText', 'versions.fact.xgMarket', 'versions.tipStep', 'versions.note', 'versions.fact.skill', 'versions.fact.skillText', 'versions.fact.step',
     'versions.fact.stepText', 'versions.fact.gap', 'versions.fact.gapText',
     ...['elo-v1', 'elo-v2', 'elo-v3', 'elo-v5', 'elo-v6', 'elo-v7', 'elo-v8', 'elo-v9', 'elo-v10', 'elo-v11',
       'elo-v11.1', 'elo-v12.0', 'elo-v13.0', 'elo-v14.0', 'elo-v15.0'].map((v) => `versions.v.${v}`),

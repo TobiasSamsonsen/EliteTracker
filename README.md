@@ -175,7 +175,8 @@ slider too; the ones with time along an axis of their own take none.
   removing their margin), and where quarter-Kelly betting on the model's
   edges would have left the bankroll. *Over the model versions*: every release replayed with
   its own code on the same 4,800 matches, as how much better than base rates
-  its odds were (all matches and Eliteserien), the bookmakers' closing line
+  its odds were (all matches, Eliteserien, and the xG seasons: Eliteserien
+  from 2020, OBOS-ligaen from 2023), the bookmakers' closing line
   as a reference.
 
 ### Model Card

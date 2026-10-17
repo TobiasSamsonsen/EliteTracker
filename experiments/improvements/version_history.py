@@ -200,7 +200,7 @@ def _t(d):
 def combine(in_dir: str, out_path: str) -> None:
     from elitetracker.model import benchmark
     from elitetracker.model.probabilities import AWAY_WIN, DRAW, HOME_WIN, outcome_of
-    from elitetracker.pipeline import load_slices
+    from elitetracker.pipeline import load_slices, shot_table
 
     runs = sorted((json.loads(p.read_text(encoding="utf-8")) for p in Path(in_dir).glob("*.json")),
                   key=lambda r: [int(x) for x in r["version"].removeprefix("elo-v").split(".")])
@@ -211,6 +211,10 @@ def combine(in_dir: str, out_path: str) -> None:
     order = sorted(common)
     y = {mid: (HOME_WIN, DRAW, AWAY_WIN).index(meta[mid][2]) for mid in order}
     es = [mid for mid in order if meta[mid][0] == "eliteserien"]
+    # The xG seasons: the matches with xG (Eliteserien from 2020, OBOS-ligaen from 2023).
+    shots = shot_table()
+    xg = [mid for mid in order if mid in shots]
+    es_xg = [mid for mid in es if mid in shots]
 
     # The closing line on the Eliteserien matches it prices (power method).
     prices = benchmark.load_prices()
@@ -221,15 +225,17 @@ def combine(in_dir: str, out_path: str) -> None:
         rows = [_scores(odds[mid], y[mid]) for mid in ids]
         return [sum(r[i] for r in rows) / len(rows) for i in range(3)], [r[0] for r in rows]
 
-    out = {"first_season": FIRST, "last_season": LAST, "n": len(order), "n_eliteserien": len(es),
+    out = {"first_season": FIRST, "last_season": LAST, "n": len(order), "n_eliteserien": len(es), "n_xg": len(xg),
            "n_priced": len(priced), "versions": []}
     previous = None
     for run in runs:
         (ll, brier, rps), lls = score(run["odds"], order)
         (es_ll, _, _), _ = score(run["odds"], es)
+        (xg_ll, _, _), _ = score(run["odds"], xg)
+        (es_xg_ll, _, _), _ = score(run["odds"], es_xg)
         (pr_ll, _, _), _ = score(run["odds"], priced) if priced else ((None, None, None), None)
         row = {"version": run["version"], "released": RELEASED.get(run["version"]), "log_loss": round(ll, 5), "brier": round(brier, 5), "rps": round(rps, 5),
-               "log_loss_eliteserien": round(es_ll, 5),
+               "log_loss_eliteserien": round(es_ll, 5), "log_loss_xg": round(xg_ll, 5), "log_loss_eliteserien_xg": round(es_xg_ll, 5),
                "log_loss_priced": round(pr_ll, 5) if pr_ll is not None else None}
         if previous:
             d = [a - b for a, b in zip(lls, previous)]
@@ -244,11 +250,19 @@ def combine(in_dir: str, out_path: str) -> None:
         odds = {mid: [market_card.predictions[mid][0].of(o) for o in (HOME_WIN, DRAW, AWAY_WIN)] for mid in priced}
         (m_ll, _, _), _ = score(odds, priced)
         out["market_log_loss_priced"] = round(m_ll, 5)
+        # The same, on Eliteserien's xG seasons: the like-for-like check for the xG line.
+        (m_xg, _, _), _ = score(odds, [mid for mid in es_xg if mid in odds])
+        out["market_log_loss_eliteserien_xg"] = round(m_xg, 5)
         print(f"closing line (power) on the {len(priced)} priced Eliteserien matches: {m_ll:.5f}")
     base = {k: sum(1 for mid in order if y[mid] == k) / len(order) for k in range(3)}
     out["base_rate_log_loss"] = round(sum(-math.log(base[y[mid]]) for mid in order) / len(order), 5)
     base_es = {k: sum(1 for mid in es if y[mid] == k) / len(es) for k in range(3)}
     out["base_rate_log_loss_eliteserien"] = round(sum(-math.log(base_es[y[mid]]) for mid in es) / len(es), 5)
+    base_xg = {k: sum(1 for mid in xg if y[mid] == k) / len(xg) for k in range(3)}
+    base_es_xg = {k: sum(1 for mid in es_xg if y[mid] == k) / len(es_xg) for k in range(3)}
+    out["base_rate_log_loss_eliteserien_xg"] = round(sum(-math.log(base_es_xg[y[mid]]) for mid in es_xg) / len(es_xg), 5)
+    out["n_eliteserien_xg"] = len(es_xg)
+    out["base_rate_log_loss_xg"] = round(sum(-math.log(base_xg[y[mid]]) for mid in xg) / len(xg), 5)
     print(f"base rates alone: {out['base_rate_log_loss']:.5f}; {len(order)} matches ({len(es)} Eliteserien)")
     Path(out_path).write_text(json.dumps(out, indent=1) + "\n", encoding="utf-8")
 
