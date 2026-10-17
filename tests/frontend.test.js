@@ -239,8 +239,9 @@ const smallSwingStake = { ...titleStake, p_favourable: 0.34, p_unfavourable: 0.3
 test('stake chances print honestly in both languages, small and large', () => {
   assert.equal(stakePct(0.92, 'en'), '92.0%');
   assert.equal(stakePct(0.04, 'en'), '4.0%');
-  assert.equal(stakePct(0.92, 'no'), '92,0' + NBSP + '%');
-  assert.equal(stakePct(0.04, 'no'), '4,0' + NBSP + '%');
+  // A decimal point in Norwegian too (AGENTS.md); the space before % stays.
+  assert.equal(stakePct(0.92, 'no'), '92.0' + NBSP + '%');
+  assert.equal(stakePct(0.04, 'no'), '4.0' + NBSP + '%');
   // A 0.04 swing stays visibly small and never collapses to a dash.
   assert.ok(stakePct(smallSwingStake.swing, 'en').startsWith('4.'));
   assert.equal(stakePct(NaN, 'en'), '—');
@@ -333,7 +334,7 @@ test('rating trend: steady within ±8 over five matches, fast beyond ±20', () =
 });
 
 test('every stake string exists in both languages', () => {
-  const keys = ['stake.title', 'stake.win.main', 'stake.win.sub', 'stake.lose.main', 'stake.lose.sub', 'stake.legs', 'stake.badge', 'stake.next', 'next.decisive', 'team.outlook', 'team.likeliest', 'team.xPts', 'team.preSeason', 'team.sinceStart', 'team.xgForm', 'team.now', 'trend.tipTotal', 'page.older', 'page.newer', 'page.earlier', 'page.later', 'model.how5', 'tab.explore', 'explore.desc', 'explore.back', 'explore.mountain.title', 'explore.mountain.desc', 'explore.attack.title', 'explore.attack.desc', 'attack.x', 'attack.y', 'attack.betterAttack', 'attack.betterDefence', 'attack.even', 'attack.band', 'attack.trend', 'attack.side.defence', 'attack.side.attack', 'attack.balanceDefence', 'attack.balanceAttack', 'attack.balanced', 'attack.tip', 'mountain.preseason', 'timeline.preseason', 'hero.lede.preseason', 'mountain.round', 'mountain.order', 'mountain.byFinish', 'mountain.byFinal', 'mountain.byPrediction', 'mountain.builtUp', 'mountain.play', 'mountain.cutoff', 'explore.facts', 'attack.fact.slope', 'attack.fact.slopeText', 'attack.fact.r', 'attack.fact.rText', 'attack.fact.attack', 'attack.fact.defence', 'mountain.fact.places', 'mountain.fact.placesText', 'mountain.fact.favourite', 'mountain.fact.favouriteText', 'mountain.fact.climber', 'mountain.fact.faller', 'mountain.fact.moveText', 'mountain.fact.surest', 'mountain.fact.surestText', 'mountain.fact.hits', 'mountain.fact.hitsValue', 'mountain.fact.hitsText', 'mountain.fact.favouriteFinalText', 'mountain.fact.endedText', 'mountain.fact.surprise', 'mountain.fact.surpriseText', 'explore.close', 'mountain.cut', 'mountain.where', 'mountain.league', 'mountain.season', 'mountain.allTeams', 'mountain.allPlaces', 'mountain.place', 'mountain.cutTeam', 'mountain.cutPlace', 'mountain.hint', 'mountain.settings', 'mountain.loading', 'mountain.failed'];
+  const keys = ['stake.title', 'stake.win.main', 'stake.win.sub', 'stake.lose.main', 'stake.lose.sub', 'stake.legs', 'stake.badge', 'stake.next', 'next.decisive', 'team.outlook', 'team.likeliest', 'team.xPts', 'team.preSeason', 'team.sinceStart', 'team.xgForm', 'team.now', 'trend.tipTotal', 'page.older', 'page.newer', 'page.earlier', 'page.later', 'model.howLead', 'model.howLink', 'tab.explore', 'explore.desc', 'explore.back', 'explore.mountain.title', 'explore.mountain.desc', 'explore.attack.title', 'explore.attack.desc', 'attack.x', 'attack.y', 'attack.betterAttack', 'attack.betterDefence', 'attack.even', 'attack.band', 'attack.trend', 'attack.side.defence', 'attack.side.attack', 'attack.balanceDefence', 'attack.balanceAttack', 'attack.balanced', 'attack.tip', 'mountain.preseason', 'timeline.preseason', 'hero.lede.preseason', 'mountain.round', 'mountain.order', 'mountain.byFinish', 'mountain.byFinal', 'mountain.byPrediction', 'mountain.builtUp', 'mountain.play', 'mountain.cutoff', 'explore.facts', 'attack.fact.slope', 'attack.fact.slopeText', 'attack.fact.r', 'attack.fact.rText', 'attack.fact.attack', 'attack.fact.defence', 'mountain.fact.places', 'mountain.fact.placesText', 'mountain.fact.favourite', 'mountain.fact.favouriteText', 'mountain.fact.climber', 'mountain.fact.faller', 'mountain.fact.moveText', 'mountain.fact.surest', 'mountain.fact.surestText', 'mountain.fact.hits', 'mountain.fact.hitsValue', 'mountain.fact.hitsText', 'mountain.fact.favouriteFinalText', 'mountain.fact.endedText', 'mountain.fact.surprise', 'mountain.fact.surpriseText', 'explore.close', 'mountain.cut', 'mountain.where', 'mountain.league', 'mountain.season', 'mountain.allTeams', 'mountain.allPlaces', 'mountain.place', 'mountain.cutTeam', 'mountain.cutPlace', 'mountain.hint', 'mountain.settings', 'mountain.loading', 'mountain.failed'];
   for (const key of keys) {
     setLang('en');
     const en = t(key);
@@ -690,4 +691,55 @@ test('every version-history string exists in both languages', () => {
     ...['elo-v1', 'elo-v2', 'elo-v3', 'elo-v5', 'elo-v6', 'elo-v7', 'elo-v8', 'elo-v9', 'elo-v10', 'elo-v11',
       'elo-v11.1', 'elo-v12.0', 'elo-v13.0', 'elo-v14.0', 'elo-v15.0', 'elo-v16.0'].map((v) => `versions.v.${v}`),
   ]);
+});
+
+/* The model page (public/model.html) repeats the model's arithmetic in
+   public/model.js for its figures. These pin it to the Python model's own
+   numbers (src/elitetracker/model), so the page can't drift from the code. */
+const pageSrc = fs.readFileSync(`${__dirname}/../public/model.js`, 'utf8');
+const pagePick = (name) => {
+  const start = pageSrc.indexOf(`function ${name}(`);
+  return pageSrc.slice(start, pageSrc.indexOf('\n}', start) + 2);
+};
+const pageMath = new Function(`
+  ${pageSrc.match(/^const (XG_MARGIN|XG_SMOOTHING|GOAL_CAP) = .*;$/gm).join('\n')}
+  ${['expectedScore', 'eloOdds', 'xgScore', 'ratingChange', 'poisson', 'lowScore', 'scoreGrid', 'outcomeOf',
+    'gridOdds', 'blendOdds', 'scorelines', 'pressure'].map(pagePick).join('\n')}
+  return { eloOdds, xgScore, ratingChange, scoreGrid, gridOdds, blendOdds, scorelines, pressure };
+`)();
+const MODERN = { k_factor: 30, home_advantage: 60, xg_alpha: 0.3, draw_base: 0.26, draw_scale: 375 };
+const near = (actual, expected) => {
+  for (const [i, value] of [expected].flat().entries()) {
+    assert.ok(Math.abs([actual].flat()[i] - value) < 1e-6, `${[actual].flat()[i]} != ${value}`);
+  }
+};
+
+test('the model page prices a match the way model.probabilities does', () => {
+  near(pageMath.eloOdds(1650 + 60 - 1600, MODERN), [0.533935, 0.238564, 0.227501]);
+  near(pageMath.eloOdds(1500 + 60 - 1900, MODERN), [0.066632, 0.114278, 0.81909]);
+});
+
+test('the model page moves a rating the way model.elo does', () => {
+  near(pageMath.xgScore(1.4, 0.9), 0.622105);
+  near(pageMath.xgScore(0.5, 1.9), 0.188514);
+  // updated_pair's change, with and without xG, under the modern config.
+  near(pageMath.ratingChange(1600, 1600, 1, 0, 0.5, 1.9, MODERN).total, 2.541916);
+  near(pageMath.ratingChange(1600, 1600, 1, 0, null, null, MODERN).total, 12.43504);
+  near(pageMath.ratingChange(1700, 1550, 3, 0, 2.8, 0.4, MODERN).total, 9.513792);
+  const parts = pageMath.ratingChange(1600, 1600, 1, 0, 0.5, 1.9, MODERN).parts;
+  near(parts[0] + parts[1] + parts[2], 2.541916);
+});
+
+test('the model page builds the score grid and the blend the way model.attack_defence does', () => {
+  const grid = pageMath.scoreGrid(1.6, 1.1, -0.05);
+  near(pageMath.gridOdds(grid), [0.483637, 0.260752, 0.255611]);
+  near([grid[0][0], grid[1][1]], [0.073123, 0.124202]);
+  const blended = pageMath.blendOdds(pageMath.eloOdds(110, MODERN), pageMath.gridOdds(grid), 0.25);
+  near(blended, [0.496225, 0.255263, 0.248512]);
+  const cells = pageMath.scorelines(grid, blended);
+  near([cells[1][1], cells[1][0], cells[2][1]], [0.121587, 0.104264, 0.097093]);
+});
+
+test('the model page weighs table stakes the way model.stakes does', () => {
+  near([pageMath.pressure(0, 3, 0.8), pageMath.pressure(4, 3, 0.8), pageMath.pressure(6, 10, 0.8)], [1, 0.286505, 0.535261]);
 });

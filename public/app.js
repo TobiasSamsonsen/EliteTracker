@@ -138,14 +138,23 @@ const teamLogo = (teamId, name) => {
    bare 0% is shown as nothing instead, and the same at the top end. */
 const smallestShown = (digits) => 0.5 / 10 ** digits / 100;
 
-/* Numbers in the reader's convention. Norwegian writes a decimal comma, a
-   space between thousands (not at four digits, so ratings stay "1794") and
-   a space before the percent sign: "70,3 %", "50 000". */
+/* A decimal point in both languages (AGENTS.md); the rest follows the
+   reader's convention. Norwegian puts a space between thousands (not at four
+   digits, so ratings stay "1794") and before the percent sign: "70.3 %",
+   "50 000". */
 function localeNumber() { return currentLang === 'no' ? 'nb-NO' : 'en-GB'; }
 
-const num = (value, digits = 0) => value.toLocaleString(localeNumber(), {
-  minimumFractionDigits: digits, maximumFractionDigits: digits, useGrouping: 'min2',
-});
+const numberFormats = new Map();
+const num = (value, digits = 0) => {
+  const key = `${localeNumber()}|${digits}`;
+  if (!numberFormats.has(key)) {
+    numberFormats.set(key, new Intl.NumberFormat(localeNumber(), {
+      minimumFractionDigits: digits, maximumFractionDigits: digits, useGrouping: 'min2',
+    }));
+  }
+  return numberFormats.get(key).formatToParts(value)
+    .map((part) => (part.type === 'decimal' ? '.' : part.value)).join('');
+};
 
 /* Signed on the shown value, so ±0.04 at one digit reads "0.0", not "+0.0". */
 const signed = (value, digits = 0) => {
@@ -1187,6 +1196,14 @@ function dividerRow(boundary) {
       arrow.setAttribute('aria-label', trend.detail);
       arrow.title = trend.detail;
       ratingCell.appendChild(arrow);
+    } else if (!state.careers) {
+      // The arrow reads careers.json, which lands after the first draw: its
+      // room is kept, so the column does not widen under the reader then.
+      const hold = el('span', 'rating-trend');
+      hold.innerHTML = trendArrowSVG('steady');
+      hold.style.visibility = 'hidden';
+      hold.setAttribute('aria-hidden', 'true');
+      ratingCell.appendChild(hold);
     }
     tr.appendChild(ratingCell);
     // Attack and Defence — model-derived stats like Elo, Current view only
@@ -1636,8 +1653,8 @@ function sideBlock(name, id, away, nameClass = 'played-card__team-name') {
 function stakePct(value, lang) {
   if (!Number.isFinite(value)) return '—';
   const clamped = Math.max(0, Math.min(1, value));
-  const locale = lang === 'no' ? 'nb-NO' : 'en-GB';
-  const figure = (clamped * 100).toLocaleString(locale, {
+  // A decimal point in both languages (AGENTS.md); at most 100.0, so no grouping.
+  const figure = (clamped * 100).toLocaleString('en-GB', {
     minimumFractionDigits: 1, maximumFractionDigits: 1,
   });
   return lang === 'no' ? `${figure} %` : `${figure}%`;
@@ -2004,8 +2021,9 @@ function formChipsEl(form) {
   const holder = el('span', 'form__chips');
   const last5 = (form || []).slice(-5);
   if (!last5.length) return holder;
+  // W/D/L stay the data; the chip shows the reader's letter (S/U/T in Norwegian).
   for (const letter of last5) {
-    const chip = el('span', `form__chip form__chip--${letter.toLowerCase()}`, letter);
+    const chip = el('span', `form__chip form__chip--${letter.toLowerCase()}`, t(`form.${letter}`));
     holder.appendChild(chip);
   }
   // Whole-form tooltip from i18n (e.g. "2W 1D 2L" / "2S 1U 2T")
@@ -2160,14 +2178,12 @@ function renderHero(report) {
 
   const meta = $('#hero-meta');
   meta.replaceChildren();
-  // The last three describe how the model was built rather than where the
-  // season stands. They are the Model Card's job, and on a phone they cost
-  // three lines above the table, so they are marked to drop there.
+  // The last describes how the model was built rather than where the season
+  // stands, so a phone drops it. The run count and the version are not here:
+  // the lede already gives the one and the wordmark the other.
   for (const [name, value, provenance] of [
     [t('hero.played'), `${model.matches_played}`, false],
     [t('hero.remaining'), `${model.matches_remaining}`, false],
-    [t('hero.simulated'), num(model.simulations), true],
-    [t('hero.model'), model.version, true],
     [t('hero.ratingsFrom'), `${model.seed_season} ${t('hero.onward')}`, true],
   ]) {
     const cell = el('div', provenance ? 'hero__meta-provenance' : '');
@@ -2219,17 +2235,6 @@ function renderModelCard(report) {
   }
   const accuracy = $('#model-accuracy');
   if (accuracy) renderAccuracy(report, accuracy);
-  /* The decisive-match note lives here rather than in the static HTML so an
-     empty high_stakes leaves no leftover explainer behind. */
-  const how = document.querySelector('#model-how');
-  if (how) {
-    how.querySelector('[data-stake-note]')?.remove();
-    if ((report.high_stakes || []).length) {
-      const note = el('li', '', t('model.how5'));
-      note.setAttribute('data-stake-note', 'true');
-      how.appendChild(note);
-    }
-  }
 }
 
 
@@ -5330,7 +5335,7 @@ function teamMatchRow(match, teamId, report, ratingChanges) {
     const [scored, conceded] = home ? [match.home_goals, match.away_goals] : [match.away_goals, match.home_goals];
     const letter = scored > conceded ? 'W' : scored < conceded ? 'L' : 'D';
     const result = el('span', 'team-match__result');
-    result.appendChild(el('span', `form__chip form__chip--${letter.toLowerCase()}`, letter));
+    result.appendChild(el('span', `form__chip form__chip--${letter.toLowerCase()}`, t(`form.${letter}`)));
     result.appendChild(el('span', 'team-match__score', `${scored}–${conceded}`));
     if (match.xg) {
       const [xgFor, xgAgainst] = home ? match.xg : [match.xg[1], match.xg[0]];
@@ -5774,6 +5779,8 @@ function renderTimeline(report) {
   const day = days[index];
   const live = !state.asof || index === days.length - 1;
   panel.classList.toggle('is-past', !live);
+  // A rewound page always shows its slider, so the way back stays in reach.
+  if (!live) openTimeline();
   $('#timeline-now').hidden = live;
 
   range.setAttribute('aria-valuetext', live ? t('timeline.scrubLive') : dayLabel(day));
@@ -5793,6 +5800,13 @@ function renderTimeline(report) {
   scale.appendChild(el('span', '', month(first)));
   scale.appendChild(el('span', '', t('timeline.matchdays', { n: days.filter((day) => !day.preseason).length })));
   scale.appendChild(el('span', '', month(last)));
+}
+
+/* On a phone the rewind panel opens folded to one line, the slider a tap
+   away; the CSS folds it only there. Once open it stays open. */
+function openTimeline() {
+  $('#timeline').classList.add('is-open');
+  $('#timeline-open').setAttribute('aria-expanded', 'true');
 }
 
 /* Dragging fires continuously; only the value you settle on is worth a fetch. */
@@ -6229,6 +6243,10 @@ function wire() {
 
   $('#timeline-range').addEventListener('input', onTimelineInput);
   $('#timeline-now').addEventListener('click', () => { if (anim.playing) animStop(); rewindTo(null); });
+  $('#timeline-open').addEventListener('click', () => {
+    openTimeline();
+    $('#timeline-range').focus();
+  });
 
   for (const select of [$('#compare-a'), $('#compare-b')]) {
     select.addEventListener('change', () => {
@@ -6473,8 +6491,8 @@ async function loadSeason(season) {
     if (token !== latestLoad) return;
     requestedAsof = state.asof; // a rewind this load cancelled never landed
     select.value = String(previous);
-    $('#status').hidden = false;
-    $('#status').textContent = t('status.couldNotLoad', { season, error: error.message });
+    console.warn('[Season] load failed', error);
+    showStatusError(t('status.couldNotLoad', { season }), () => loadSeason(season));
   } finally {
     if (token === latestLoad) {
       seasonLoading = false;
@@ -6623,7 +6641,6 @@ function compareTeamBlock(id, name, rating, crest, side) {
   text.appendChild(el('div', 'compare__team-rating', String(Math.round(rating))));
   main.appendChild(text);
   block.appendChild(main);
-  block.appendChild(el('div', 'compare__pick-hint', t('compare.hint')));
   return block;
 }
 
@@ -6874,13 +6891,14 @@ function renderCompare(report) {
     histBlock.appendChild(el('h3', 'compare__subhead', t('compare.ratingHistory')));
     const svg = svgEl('svg', { class: 'chart', role: 'img' });
     svg.setAttribute('aria-label', t('chart.ratingHistoryFor', { home: homeName, away: awayName }));
-    drawCompareHistory(svg, careerA, careerB, teamNameById(aId), teamNameById(bId));
     histBlock.appendChild(svg);
     const legend = el('div', 'legend');
     legend.appendChild(el('span', 'compare-legend__a', teamNameById(aId)));
     legend.appendChild(el('span', 'compare-legend__b', teamNameById(bId)));
     histBlock.appendChild(legend);
     holder.appendChild(histBlock);
+    // Drawn once on the page, so the chart can take its own width.
+    drawCompareHistory(svg, careerA, careerB, teamNameById(aId), teamNameById(bId));
   }
 
   // Head-to-head: all-time results between the two clubs from careers data.
@@ -6904,10 +6922,19 @@ function renderCompare(report) {
       else if (bG > aG) bWins++;
       else draws++;
     }
+    // Each number carries its own label: with the club names at the far edges
+    // and "9 - 2 - 8" in the middle, it was not plain whose wins were whose.
     const record = el('div', 'compare__h2h-record');
-    record.appendChild(el('span', 'compare__h2h-team', homeName));
-    record.appendChild(el('span', 'compare__h2h-stat', `${aWins} \u2013 ${draws} \u2013 ${bWins}`));
-    record.appendChild(el('span', 'compare__h2h-team', awayName));
+    for (const [count, label] of [
+      [aWins, t('compare.h2h.won', { team: homeName })],
+      [draws, t('compare.h2h.drawn')],
+      [bWins, t('compare.h2h.won', { team: awayName })],
+    ]) {
+      const cell = el('div', 'compare__h2h-cell');
+      cell.appendChild(el('span', 'compare__h2h-stat', String(count)));
+      cell.appendChild(el('span', 'compare__h2h-label', label));
+      record.appendChild(cell);
+    }
     const goalsBlock = el('div', 'compare__h2h-goals');
     goalsBlock.appendChild(el('span', 'compare__h2h-goals-label', t('compare.h2h.goalsLabel')));
     goalsBlock.appendChild(el('span', 'compare__h2h-goals-stat', `${aGoals} – ${bGoals}`));
@@ -6948,10 +6975,18 @@ function renderCompare(report) {
   }
 }
 
+/* Like the club chart, a narrow container gets a viewBox of its own width:
+   the 900-wide box read at a phone's ~0.36 scale left 4px text. The narrow
+   box labels seasons as '16 and skips those that would crowd. */
+let lastCompareChart = null;
+
 function drawCompareHistory(svg, careerA, careerB, labelA, labelB) {
-  const width = 900;
-  const height = 320;
-  const pad = { top: 14, right: 18, bottom: 34, left: 46 };
+  const box = svg.getBoundingClientRect().width || 900;
+  const narrow = box < SHAPE_NARROW;
+  lastCompareChart = { svg, careerA, careerB, labelA, labelB, narrow };
+  const width = narrow ? Math.round(box) : 900;
+  const height = narrow ? 240 : 320;
+  const pad = narrow ? { top: 14, right: 10, bottom: 34, left: 40 } : { top: 14, right: 18, bottom: 34, left: 46 };
   svg.setAttribute('viewBox', `0 0 ${width} ${height}`);
   svg.replaceChildren();
 
@@ -6995,14 +7030,17 @@ function drawCompareHistory(svg, careerA, careerB, labelA, labelB) {
 
   // One vertical tick per season present, so the axis reads as years.
   const seen = new Set();
+  let lastLabelX = -Infinity;
   for (const point of all) {
     const year = point[0].slice(0, 4);
     if (seen.has(year)) continue;
     seen.add(year);
     const px = x(Math.max(tMin, Math.min(tMax, Date.parse(`${year}-01-01T12:00:00Z`))));
     svg.appendChild(svgEl('line', { class: 'grid-line', x1: px, x2: px, y1: pad.top, y2: height - pad.bottom }));
+    if (px - lastLabelX < (narrow ? 26 : 30)) continue;
+    lastLabelX = px;
     const label = svgEl('text', { class: 'tick', x: px, y: height - pad.bottom + 15, 'text-anchor': 'middle' });
-    label.textContent = year;
+    label.textContent = narrow ? `’${year.slice(2)}` : year;
     svg.appendChild(label);
   }
 
@@ -7018,9 +7056,13 @@ function drawCompareHistory(svg, careerA, careerB, labelA, labelB) {
   const xTitle = svgEl('text', { class: 'axis-title', x: pad.left + plotW / 2, y: height - 4, 'text-anchor': 'middle' });
   xTitle.textContent = t('compare.season');
   svg.appendChild(xTitle);
-  const yTitle = svgEl('text', { class: 'axis-title', x: -(pad.top + plotH / 2), y: 12, transform: 'rotate(-90)', 'text-anchor': 'middle' });
-  yTitle.textContent = t('compare.rating');
-  svg.appendChild(yTitle);
+  // A narrow box has no room beside the tick labels; the heading above the
+  // chart already names the rating.
+  if (!narrow) {
+    const yTitle = svgEl('text', { class: 'axis-title', x: -(pad.top + plotH / 2), y: 12, transform: 'rotate(-90)', 'text-anchor': 'middle' });
+    yTitle.textContent = t('compare.rating');
+    svg.appendChild(yTitle);
+  }
 
   // Crosshair + tooltip reading out both clubs' rating at the hovered date.
   const line = svgEl('line', { class: 'crosshair', y1: pad.top, y2: height - pad.bottom, x1: -10, x2: -10 });
@@ -7069,44 +7111,45 @@ async function boot() {
   wire();
   initConsent();
   
+  // The report draws the page. careers.json (club histories, head-to-heads,
+  // the rating each result moved) is several times its size, so it follows
+  // behind and the views that read it are drawn again when it lands. Both
+  // requests start now; the <link rel=preload>s already have them in flight.
+  const careersLoad = fetch('/data/careers.json').then((r) => {
+    if (!r.ok) throw new Error(`/data/careers.json ${r.status}`);
+    return r.json();
+  });
+  careersLoad.catch(() => {}); // reported by attachCareers, not as an unhandled rejection
   try {
     const reports = await fetch(reportUrl(null)).then((r) => {
       if (!r.ok) throw new Error(`server returned ${r.status}`);
       return r.json();
     });
-    
-    let careers = null;
-    try {
-      careers = await fetch('/data/careers.json').then((r) => {
-        if (!r.ok) throw new Error(`/data/careers.json ${r.status}`);
-        return r.json();
-      });
-      
-    } catch (error) {
-      console.warn('[Boot] careers.json unavailable', error);
-      track('load_error', { file: 'careers', message: error.message });
-      $('#status').hidden = false;
-      $('#status').textContent = t('status.couldNotLoad', { season: 'careers', error: error.message });
-    }
-    
+
     state.reports = applyShortNames(reports);
     rememberLiveMatchdays(state.reports);
-    state.careers = applyShortNamesToCareers(careers);
     state.season = reports[state.league].league.season;
-    
-    // Left up when careers failed, so the warning above stays readable.
-    if (careers) $('#status').hidden = true;
+
+    $('#status').hidden = true;
     $('#content').hidden = false;
-    
+
     // Read before the first render, which rewrites the query string.
     const params = new URLSearchParams(window.location.search);
     applyLeagueParameter();
     applySortParameter();
     applyViewParameter();
+    // A club link can name a club only careers.json knows (one from another
+    // season), so that one link waits for it.
+    if (params.get('team')) await attachCareers(careersLoad);
     applyTeamParameter();
-    
+
     render();
-    
+    if (!state.careers) {
+      attachCareers(careersLoad).then((loaded) => {
+        if (loaded && CAREER_VIEWS.has(state.activeView)) render();
+      });
+    }
+
 
     const wantedSeason = Number(params.get('season'));
     if (wantedSeason && wantedSeason !== state.season) await loadSeason(wantedSeason);
@@ -7121,11 +7164,41 @@ async function boot() {
   } catch (error) {
     console.error('[Boot] ERROR:', error);
     track('load_error', { file: 'report', message: error.message });
-    $('#status').textContent =
-      t('status.couldNotLoadSeason', { error: error.message });
+    showStatusError(t('status.couldNotLoadSeason'), () => location.reload());
   }
   booted = true;
   pageView();
+}
+
+/* The views that read careers.json, drawn again when it lands: the rating
+   each result moved (the table's trend arrows, the results' deltas), club
+   histories and head-to-heads. */
+const CAREER_VIEWS = new Set(['table', 'matches', 'team', 'compare']);
+
+/* Puts careers.json on the state once it lands; true when it did. A failure
+   leaves those views without club history, and says so. */
+async function attachCareers(load) {
+  try {
+    state.careers = applyShortNamesToCareers(await load);
+    return true;
+  } catch (error) {
+    console.warn('[Boot] careers.json unavailable', error);
+    track('load_error', { file: 'careers', message: error.message });
+    showStatusError(t('status.couldNotLoadHistory'), () => location.reload());
+    return false;
+  }
+}
+
+/* A failed load in the reader's words, with a way to try again. The
+   technical reason goes to the console and the load_error event instead. */
+function showStatusError(message, retry) {
+  const status = $('#status');
+  status.hidden = false;
+  status.replaceChildren(message);
+  const button = el('button', 'status__retry', t('status.retry'));
+  button.type = 'button';
+  button.addEventListener('click', retry);
+  status.append(' ', button);
 }
 
 /* ---------- analytics ----------------------------------------------- */
@@ -7514,6 +7587,11 @@ window.addEventListener('resize', () => {
     if (lastTeamChart?.chart.isConnected) {
       const width = lastTeamChart.chart.getBoundingClientRect().width;
       if (width && (width < SHAPE_NARROW) !== lastTeamChart.narrow) drawTeamChart(lastTeamChart.career);
+    }
+    if (lastCompareChart?.svg.isConnected) {
+      const { svg, careerA, careerB, labelA, labelB, narrow } = lastCompareChart;
+      const width = svg.getBoundingClientRect().width;
+      if (width && (width < SHAPE_NARROW) !== narrow) drawCompareHistory(svg, careerA, careerB, labelA, labelB);
     }
     if (!lastShape || !lastShape.chart.isConnected) return;
     const box = lastShape.chart.getBoundingClientRect().width;

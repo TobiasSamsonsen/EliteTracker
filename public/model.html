@@ -1,0 +1,677 @@
+<!doctype html>
+<html lang="nb" data-lang="no">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Slik fungerer modellen — EliteTracker</title>
+<meta name="description" content="Hvordan EliteTracker regner ut ratinger, kampodds og tabellsjanser for Eliteserien og OBOS-ligaen: kort forklart, og med alle formlene.">
+<meta name="color-scheme" content="light dark">
+<link rel="canonical" href="https://elitetracker.no/model.html">
+<script>
+  /* Theme and language as on the front page, so the choices carry over. */
+  var choice = localStorage.getItem('elitetracker-theme');
+  document.documentElement.dataset.resolvedTheme = choice === 'light' || choice === 'dark' ? choice
+    : matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+  var language = localStorage.getItem('lang') === 'en' ? 'en' : 'no';
+  document.documentElement.dataset.lang = language;
+  document.documentElement.lang = language === 'en' ? 'en' : 'nb';
+</script>
+<link rel="stylesheet" href="/styles.css">
+<style>
+  /* Both languages are in the page; the one not chosen is hidden. */
+  html[data-lang="no"] body [lang="en"],
+  html[data-lang="en"] body [lang="nb"] { display: none !important; }
+
+  .doc { max-width: 54rem; padding-block: 1.25rem 4rem; }
+  .doc__top { display: flex; justify-content: space-between; align-items: center; gap: 1rem; }
+  .doc__top a { color: var(--ink-muted); text-decoration: none; font-weight: 600; }
+  .doc__top a:hover { color: var(--ink); }
+  .doc__head { margin-top: 2.25rem; }
+  .doc h1 { font-size: clamp(2rem, 6vw, 2.75rem); margin: 0.5rem 0 0.9rem; }
+  .doc h2 { font-size: 1.6rem; margin: 3.5rem 0 0.75rem; padding-top: 1.5rem; border-top: 1px solid var(--rule); }
+  .doc h3 { font-size: 1.2rem; margin: 2.5rem 0 0.5rem; scroll-margin-top: 1rem; }
+  .doc p, .doc li { max-width: var(--measure); }
+  .doc p { margin: 0.65rem 0; }
+  .doc a { color: var(--ink); }
+  .doc var { font-style: italic; font-family: "Cambria Math", "STIX Two Math", "Latin Modern Math", serif; }
+  /* The maths italics lean into the space after them ("Sbare"); a sliver of
+     room, except before a sub- or superscript, which belongs to the letter. */
+  .doc var:not(:has(+ sub, + sup)) { margin-inline-end: 0.1em; }
+  .lead { font-size: 1.125rem; color: var(--ink-muted); }
+  .note { border-left: 3px solid var(--edge-el); background: var(--panel-sunk); padding: 0.6rem 0.85rem; border-radius: 0 var(--radius-sm) var(--radius-sm) 0; }
+
+  /* The contents have the page's own shape: the short version, then the
+     depth with its numbered sections, so "3." here is "3." in the heading. */
+  .toc { margin: 2rem 0 0; padding: 1rem 1.25rem; background: var(--panel); border: 1px solid var(--rule); border-radius: var(--radius); }
+  .toc ul, .toc ol { margin: 0; padding: 0; }
+  .toc .toc__list { list-style: none; margin-top: 0.5rem; columns: 2 15rem; column-gap: 2rem; font-size: 0.9375rem; }
+  .toc li { margin-block: 0.15rem; break-inside: avoid; }
+  .toc__list > li:last-child { break-inside: auto; }
+  .toc .toc__sub { list-style: none; padding-left: 2.1rem; }
+  .toc ol.toc__sub { list-style: decimal; }
+  .toc a[aria-current] { font-weight: 700; }
+
+  /* The way back to the contents, once they are scrolled past (model.js). */
+  .toc-jump {
+    position: fixed; right: 1rem; bottom: calc(1rem + env(safe-area-inset-bottom, 0px)); z-index: 15;
+    display: inline-flex; align-items: center; gap: 0.4rem; min-height: 44px; padding: 0 1rem;
+    background: var(--panel); color: var(--ink); border: 1px solid var(--rule-strong); border-radius: 999px;
+    box-shadow: var(--shadow); font-size: 0.875rem; font-weight: 600; text-decoration: none;
+  }
+  .toc-jump[hidden] { display: none; }
+
+  /* A wide screen has room beside the text: the contents stay there while
+     the page scrolls, the current section marked. */
+  @media (min-width: 1200px) {
+    .doc { max-width: 70rem; display: grid; grid-template-columns: 13rem minmax(0, 54rem); column-gap: 3rem; align-items: start; }
+    .doc > * { grid-column: 2; }
+    .doc > .toc {
+      grid-column: 1; grid-row: 1 / span 10; position: sticky; top: 1.5rem; margin: 0.4rem 0 0;
+      max-height: calc(100vh - 3rem); overflow-y: auto; padding: 0; background: none; border: 0; border-radius: 0;
+    }
+    .toc .toc__list { columns: auto; font-size: 0.875rem; }
+    .toc a { color: var(--ink-muted); text-decoration: none; }
+    .toc a:hover { color: var(--ink); text-decoration: underline; }
+    .toc a[aria-current] { color: var(--ink); }
+    .toc-jump { display: none; }
+  }
+
+  /* One line of steps: the boxes narrow and their labels wrap, so the line
+     never breaks with an arrow pointing at nothing. Too narrow for that, the
+     steps stack. */
+  .flow { display: flex; align-items: center; gap: 0.5rem; flex-wrap: nowrap; margin: 1.5rem 0; font-size: 0.875rem; font-weight: 600; }
+  .flow__node { background: var(--panel); border: 1px solid var(--rule); border-radius: var(--radius-sm); padding: 0.55rem 0.75rem; box-shadow: var(--shadow); text-align: center; }
+  .flow__node--model { border-color: var(--home); }
+  .flow__pair { display: grid; gap: 0.4rem; }
+  .flow__arrow { color: var(--ink-faint); font-size: 1.1rem; flex: none; }
+  @media (max-width: 899px) {
+    .flow { flex-direction: column; align-items: stretch; }
+    .flow__node { text-align: start; }
+    .flow__arrow { text-align: center; transform: rotate(90deg); }
+  }
+
+  .steps { counter-reset: step; list-style: none; padding: 0; margin: 1.25rem 0; }
+  .steps li { counter-increment: step; position: relative; padding-left: 2.6rem; margin-block: 1.1rem; }
+  .steps li::before {
+    content: counter(step); position: absolute; left: 0; top: 0.05rem; width: 1.75rem; height: 1.75rem;
+    border-radius: 50%; background: var(--panel-sunk); border: 1px solid var(--rule);
+    display: grid; place-items: center; font-weight: 700; font-size: 0.875rem;
+  }
+  .box { background: var(--panel-sunk); border: 1px solid var(--rule); border-radius: var(--radius); padding: 0.9rem 1.1rem; margin: 1.5rem 0; }
+  .box h3 { margin-top: 0; font-size: 1rem; }
+
+  .eq { overflow-x: auto; overflow-y: hidden; margin: 0.9rem 0; padding: 0.15rem 0; }
+  .eq math { font-size: 1.15em; }
+  .eq > * + * { margin-top: 0.6rem; }
+  /* Equations that stand side by side on a wide screen, each its own line
+     when there is no room for both. */
+  .eq__row { display: flex; flex-wrap: wrap; justify-content: center; align-items: baseline; gap: 0.6rem 2em; }
+  /* Still too wide for the screen: the box scrolls, and a faded edge says
+     which way there is more (model.js sets the classes). */
+  .eq.is-clipped-end { mask-image: linear-gradient(to right, #000 calc(100% - 2.5rem), transparent); }
+  .eq.is-clipped-start { mask-image: linear-gradient(to left, #000 calc(100% - 2.5rem), transparent); }
+  .eq.is-clipped-start.is-clipped-end { mask-image: linear-gradient(to right, transparent, #000 2.5rem, #000 calc(100% - 2.5rem), transparent); }
+  .eq:focus-visible { outline: 2px solid var(--home); outline-offset: 2px; }
+
+  .fig { margin: 1.75rem 0; background: var(--panel); border: 1px solid var(--rule); border-radius: var(--radius); box-shadow: var(--shadow); padding: 1rem 1.1rem 1.1rem; }
+  .fig__head { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: baseline; gap: 0.4rem 1rem; margin-bottom: 0.75rem; }
+  .fig h4 { font-family: var(--display); font-size: 1rem; margin: 0; }
+  .fig__controls { display: flex; flex-wrap: wrap; align-items: center; gap: 0.6rem 1rem; margin-bottom: 0.9rem; }
+  .fig__chart { position: relative; width: 100%; }
+  .fig__chart svg { display: block; overflow: visible; touch-action: pan-y; }
+  .fig__readout { font-size: 0.875rem; margin: 0.75rem 0 0; }
+  .fig__readout p { margin: 0.25rem 0; max-width: none; }
+  .fig figcaption { font-size: 0.8125rem; color: var(--ink-muted); margin-top: 0.75rem; }
+  .fig__slider { display: grid; gap: 0.25rem; margin-top: 0.75rem; font-size: 0.8125rem; color: var(--ink-muted); }
+  .fig__slider input { width: 100%; accent-color: var(--home); }
+  .fig__table { margin-top: 0.75rem; font-size: 0.8125rem; }
+  .fig__table summary { cursor: pointer; color: var(--ink-muted); }
+  .fig__table table { border-collapse: collapse; margin-top: 0.5rem; }
+  .fig__table th, .fig__table td { padding: 0.15rem 1rem 0.15rem 0; text-align: right; }
+  .heat { margin-top: 1rem; }
+  .heat-key { margin-top: 0.6rem; }
+
+  .key { display: flex; flex-wrap: wrap; gap: 0.25rem 1rem; font-size: 0.8125rem; color: var(--ink-muted); }
+  .key > span { display: inline-flex; align-items: center; gap: 0.4rem; }
+  .key i { display: inline-block; width: 10px; height: 10px; border-radius: 2px; }
+  .key i.line { height: 2px; width: 16px; border-radius: 1px; }
+
+  .chips { display: flex; flex-wrap: wrap; gap: 0.4rem; }
+  .chips button {
+    appearance: none; font: inherit; font-size: 0.8125rem; font-weight: 600; color: var(--ink-muted);
+    background: var(--panel-sunk); border: 1px solid var(--rule); border-radius: 999px; padding: 0.3rem 0.85rem; cursor: pointer;
+  }
+  .chips button:hover { color: var(--ink); }
+  .chips button[aria-pressed="true"] { background: var(--panel); color: var(--ink); border-color: var(--rule-strong); box-shadow: 0 1px 3px rgb(13 26 34 / 0.18); }
+
+  .calc { display: grid; grid-template-columns: max-content minmax(0, 7rem) minmax(0, 7rem); justify-content: start; gap: 0.4rem 0.6rem; align-items: center; margin-bottom: 1rem; font-size: 0.875rem; }
+  .calc__col { font-size: 0.6875rem; font-weight: 600; letter-spacing: 0.14em; text-transform: uppercase; color: var(--ink-faint); }
+  .calc input, .fig select {
+    font: inherit; font-size: 0.875rem; color: var(--ink); background: var(--panel-sunk);
+    border: 1px solid var(--rule); border-radius: var(--radius-sm); padding: 0.3rem 0.5rem; min-width: 0; width: 100%;
+  }
+  .pick { display: inline-flex; align-items: center; gap: 0.5rem; font-size: 0.875rem; color: var(--ink-muted); }
+  .pick select { width: auto; max-width: 13rem; }
+
+  /* A finger's worth of target on touch screens, as on the front page; 16px
+     text in the fields so iOS does not zoom in on focus. */
+  @media (pointer: coarse), (max-width: 760px) {
+    .fig__slider input { height: 2.75rem; }
+    .fig__table summary { display: flex; align-items: center; min-height: 44px; }
+    .chips button { min-height: 44px; padding-inline: 1rem; }
+    .calc input, .fig select { min-height: 44px; font-size: 1rem; }
+  }
+
+  .fig svg .grid line { stroke: var(--rule); stroke-width: 1; }
+  .fig svg .tick { fill: var(--ink-faint); font-size: 11px; }
+  .fig svg .axis-title { fill: var(--ink-muted); font-size: 11px; }
+  .fig svg .direct { fill: var(--ink-muted); font-size: 12px; font-weight: 600; }
+  /* A halo in the panel colour, so a rule crossing a label never cuts it. */
+  .fig svg .halo { paint-order: stroke; stroke: var(--panel); stroke-width: 4px; stroke-linejoin: round; }
+  .fig svg .even { stroke: var(--ink-faint); stroke-width: 1; }
+  .fig svg .row { fill: var(--ink-muted); font-size: 12.5px; }
+  .fig svg .row--total { fill: var(--ink); font-weight: 700; }
+  .fig svg .value { fill: var(--ink); font-size: 12px; font-weight: 600; }
+  .fig svg .value--total { font-weight: 700; }
+  .fig svg .inside { font-size: 11.5px; font-weight: 600; pointer-events: none; }
+  .fig svg .line { fill: none; stroke-width: 2; stroke-linejoin: round; stroke-linecap: round; }
+  .fig svg .dot { stroke: var(--panel); stroke-width: 2; }
+  .fig svg .crosshair { stroke: var(--rule-strong); stroke-width: 1; }
+  .fig svg .zero { stroke: var(--rule-strong); stroke-width: 1; }
+  .fig svg .rule { stroke: var(--rule); stroke-width: 1; }
+  .fig svg .hit { fill: transparent; cursor: crosshair; }
+
+  .tip {
+    position: fixed; z-index: 20; pointer-events: none; max-width: 16rem;
+    background: var(--panel); color: var(--ink); border: 1px solid var(--rule-strong); border-radius: var(--radius-sm);
+    box-shadow: var(--shadow); padding: 0.4rem 0.6rem; font-size: 0.8125rem; line-height: 1.4;
+  }
+  .doc__foot { margin-top: 3.5rem; padding-top: 1rem; border-top: 1px solid var(--rule); font-size: 0.875rem; color: var(--ink-muted); }
+</style>
+</head>
+<body>
+<main class="shell doc">
+  <nav class="doc__top">
+    <a href="/?view=model">← EliteTracker</a>
+    <div class="switch" role="group" aria-label="Språk / Language">
+      <button type="button" data-lang="no" aria-pressed="true">NO</button>
+      <button type="button" data-lang="en" aria-pressed="false">EN</button>
+    </div>
+  </nav>
+
+  <header class="doc__head">
+    <div class="label"><span lang="nb">Modellen</span><span lang="en">The model</span> · elo-v16.0</div>
+    <h1><span lang="nb">Slik fungerer modellen</span><span lang="en">How the model works</span></h1>
+    <p class="lead" lang="nb">Hver klubb i Eliteserien og OBOS-ligaen har en styrkerating som lærer av hver kamp. To modeller gjør ratingene om til odds for hver kamp, og resten av sesongen spilles 50&nbsp;000 ganger for å se hvor hver klubb trolig ender. Først kort forklart, så med alle formlene.</p>
+    <p class="lead" lang="en">Every club in Eliteserien and OBOS-ligaen has a strength rating that learns from each match. Two models turn the ratings into odds for every match, and the rest of the season is played out 50,000 times to see where each club is likely to finish. First in plain words, then with every formula.</p>
+    <p class="note" id="version-note" hidden></p>
+  </header>
+
+  <nav class="toc" id="innhold" aria-labelledby="toc-title">
+    <div class="label" id="toc-title"><span lang="nb">Innhold</span><span lang="en">Contents</span></div>
+    <ul class="toc__list">
+      <li><a href="#kort"><span lang="nb">Kortversjonen</span><span lang="en">The short version</span></a></li>
+      <li><a href="#dybden"><span lang="nb">I dybden</span><span lang="en">In depth</span></a>
+        <ul class="toc__sub">
+          <li><a href="#data"><span lang="nb">Dataene</span><span lang="en">The data</span></a></li>
+        </ul>
+        <ol class="toc__sub">
+          <li><a href="#elo"><span lang="nb">Styrkeratingen</span><span lang="en">The strength rating</span></a></li>
+          <li><a href="#odds"><span lang="nb">Fra ratingforskjell til odds</span><span lang="en">From a rating gap to odds</span></a></li>
+          <li><a href="#oppdatering"><span lang="nb">Når en rating flytter seg</span><span lang="en">How a rating moves</span></a></li>
+          <li><a href="#sesongskifte"><span lang="nb">Start og sesongskifte</span><span lang="en">Where ratings start, and between seasons</span></a></li>
+          <li><a href="#malmodellen"><span lang="nb">Målmodellen</span><span lang="en">The goals model</span></a></li>
+          <li><a href="#resultater"><span lang="nb">Resultatene</span><span lang="en">Scorelines</span></a></li>
+          <li><a href="#blanding"><span lang="nb">De to modellene sammen</span><span lang="en">The two models together</span></a></li>
+          <li><a href="#tabellinnsats"><span lang="nb">Tabellinnsats i sluttspurten</span><span lang="en">Table stakes in the run-in</span></a></li>
+          <li><a href="#simulering"><span lang="nb">Sesongsimuleringen</span><span lang="en">The season simulation</span></a></li>
+          <li><a href="#avgjorende"><span lang="nb">Avgjørende kamper</span><span lang="en">Decisive matches</span></a></li>
+          <li><a href="#testing"><span lang="nb">Slik testes den</span><span lang="en">How it is tested</span></a></li>
+          <li><a href="#grenser"><span lang="nb">Det modellen ikke vet</span><span lang="en">What the model does not know</span></a></li>
+        </ol>
+      </li>
+    </ul>
+  </nav>
+  <a class="toc-jump" href="#innhold" hidden><span aria-hidden="true">↑</span><span lang="nb">Innhold</span><span lang="en">Contents</span></a>
+
+  <!-- ================================================================ -->
+  <section id="kort">
+    <h2><span lang="nb">Kortversjonen</span><span lang="en">The short version</span></h2>
+
+    <div class="flow" aria-hidden="true">
+      <div class="flow__node"><span lang="nb">Resultater, xG og markedsverdier</span><span lang="en">Results, xG and squad values</span></div>
+      <div class="flow__arrow">→</div>
+      <div class="flow__pair">
+        <div class="flow__node flow__node--model"><span lang="nb">Styrkerating (Elo)</span><span lang="en">Strength rating (Elo)</span></div>
+        <div class="flow__node flow__node--model"><span lang="nb">Målmodell</span><span lang="en">Goals model</span></div>
+      </div>
+      <div class="flow__arrow">→</div>
+      <div class="flow__node"><span lang="nb">Odds for hver kamp</span><span lang="en">Odds for every match</span></div>
+      <div class="flow__arrow">→</div>
+      <div class="flow__node"><span lang="nb">50&nbsp;000 simulerte sesonger</span><span lang="en">50,000 simulated seasons</span></div>
+      <div class="flow__arrow">→</div>
+      <div class="flow__node"><span lang="nb">Sjanser i tabellen</span><span lang="en">Chances in the table</span></div>
+    </div>
+
+    <ol class="steps">
+      <li lang="nb"><strong>Hver klubb har en styrkerating.</strong> Den fungerer som sjakkratinger. Etter hver kamp tar vinneren poeng fra taperen: en seier alle ventet flytter ratingene litt, en overraskelse flytter dem mye. I 2026 ligger Eliteserie-klubbene mellom omtrent 1500 og 1900, OBOS-klubbene mellom 1230 og 1560, og alle står på samme skala, så en klubb tar med seg ratingen når den rykker opp eller ned. Mellom sesongene trekkes alle ratinger litt mot snittet i divisjonen, så et unntaksår ikke føres helt videre.</li>
+      <li lang="en"><strong>Every club has a strength rating.</strong> It works like chess ratings. After each match the winner takes points from the loser: a win everyone expected moves the ratings a little, an upset moves them a lot. In 2026 the Eliteserien clubs sit between roughly 1500 and 1900 and the OBOS-ligaen clubs between 1230 and 1560, all on one scale, so a club keeps its rating when it goes up or down. Between seasons every rating is pulled a little toward its division’s average, so one freak year does not carry over in full.</li>
+      <li lang="nb"><strong>Flaks filtreres bort med forventede mål.</strong> Forventede mål (xG) måler hvor gode sjanser et lag fikk: et skudd fra seks meter er verdt langt mer enn ett fra tretti. En klubb som vinner 1–0 mens den blir utspilt, får mye mindre enn resultatet alene ville gitt, og en klubb som dominerte og tapte, mister mindre.</li>
+      <li lang="en"><strong>Luck is filtered out with expected goals.</strong> Expected goals (xG) measure how good a team’s chances were: a shot from six metres is worth far more than one from thirty. A club that wins 1–0 while being outplayed gains much less than the result alone would give it, and a club that dominated and lost loses less.</li>
+      <li lang="nb"><strong>En annen modell teller mål.</strong> Hver klubb har også en angrepsrating, en forsvarsrating, en avslutningsrating og en keeperrating. Sammen sier de hvor mange mål hvert lag bør score i en gitt kamp, for eksempel 1.8 mot 0.9, og ut fra det får hvert resultat fra 0–0 til 8–8 en sannsynlighet. Mellom sesongene er det stallens markedsverdi som avgjør hvor disse ratingene trekkes: en dyr stall mot et nivå over snittet, en billig mot et nivå under.</li>
+      <li lang="en"><strong>A second model counts goals.</strong> Each club also has an attack rating, a defence rating, a finishing rating and a goalkeeper rating. Together they say how many goals each side should score in a given match, say 1.8 against 0.9, and from that every scoreline from 0–0 to 8–8 gets a probability. Between seasons the squad’s market value decides where these ratings are pulled to: an expensive squad toward a level above the average, a cheap one toward a level below.</li>
+      <li lang="nb"><strong>De to blandes til kampoddsene.</strong> Begge modellene gir odds for hjemmeseier, uavgjort og borteseier. Oddsene på siden blander dem, en firedel fra styrkeratingen og tre firedeler fra målmodellen, fordi blandingen har truffet bedre enn hver av dem alene. I de siste rundene får en klubb som har noe å spille for et lite løft, og en klubb uten noe å spille for et lite trekk ned.</li>
+      <li lang="en"><strong>The two are mixed into the match odds.</strong> Both models give odds for a home win, a draw and an away win. The odds on the site mix them, a quarter from the strength rating and three quarters from the goals model, because the mix has predicted better than either on its own. In the last rounds a club with something to play for gets a small push up, and one with nothing to play for a small push down.</li>
+      <li lang="nb"><strong>Resten av sesongen spilles 50&nbsp;000 ganger.</strong> For hver kamp som gjenstår trekker datamaskinen et resultat ut fra oddsene, regner ut tabellen og begynner på nytt, 50&nbsp;000 ganger. Vinner en klubb serien i 15&nbsp;000 av disse sesongene, er gullsjansen 30&nbsp;%. Hver simulerte sesong gjør også hver klubb litt sterkere eller svakere enn ratingen sier, fordi en rating er et anslag og formen endrer seg.</li>
+      <li lang="en"><strong>The rest of the season is played 50,000 times.</strong> For every match left, the computer draws a result from the odds, works out the table and starts again, 50,000 times. If a club wins the league in 15,000 of those seasons, its title chance is 30%. Each simulated season also makes every club a little stronger or weaker than its rating says, because a rating is an estimate and form changes.</li>
+    </ol>
+
+    <div class="box">
+      <h3><span lang="nb">Hvordan vet vi at den virker?</span><span lang="en">How do we know it works?</span></h3>
+      <p lang="nb">Hver del av modellen er testet på kamper den ikke hadde sett: hver kamp spås bare med det som var kjent før avspark, sesong for sesong, og en endring beholdes bare hvis den spår bedre. Over 4&nbsp;800 kamper fra 2016 til 2025 er modellens odds 5.9&nbsp;% bedre enn å bare bruke hvor ofte det blir hjemmeseier, uavgjort og borteseier. I Eliteserien er modellen 6.0&nbsp;% bedre og bookmakernes sluttodds, som kjenner lagoppstillingene, 6.8&nbsp;%.</p>
+      <p lang="en">Every part of the model was tested on matches it had not seen: each match is predicted only from what was known before kickoff, season by season, and a change is kept only if it predicts better. Over 4,800 matches from 2016 to 2025 the model’s odds are 5.9% better than simply using how often home wins, draws and away wins happen. In Eliteserien the model is 6.0% better and the bookmakers’ closing odds, which know the line-ups, 6.8%.</p>
+    </div>
+  </section>
+
+  <!-- ================================================================ -->
+  <section id="dybden">
+    <h2><span lang="nb">I dybden</span><span lang="en">In depth</span></h2>
+    <p lang="nb">Resten av siden er modellen slik koden regner, versjon elo-v16.0. <var>H</var> står for hjemmelaget og <var>A</var> for bortelaget (away) hele veien.</p>
+    <p lang="en">The rest of the page is the model as the code computes it, version elo-v16.0. <var>H</var> stands for the home side and <var>A</var> for the away side throughout.</p>
+
+    <h3 id="data"><span lang="nb">Dataene</span><span lang="en">The data</span></h3>
+    <p lang="nb">Alle seriekamper i Eliteserien og OBOS-ligaen fra 2015, begge divisjoner på én ratingskala, med sluttabellene fra 2014 som utgangspunkt. Forventede mål per skudd kommer fra FotMob for Eliteserien fra 2020, også xG på mål, som keeperratingen bruker, og fra Sofascore for OBOS-ligaen fra 2023. Eldre kamper rates på mål alene. Markedsverdiene for stallene kommer fra Transfermarkt, og i tillegg vet modellen hvilke klubber som spiller hjemmekampene på naturgress.</p>
+    <p lang="en">Every league match in Eliteserien and OBOS-ligaen from 2015, both divisions on one rating scale, with the 2014 final tables as the starting point. Expected goals per shot come from FotMob for Eliteserien from 2020, including xG on target, which the goalkeeper rating uses, and from Sofascore for OBOS-ligaen from 2023. Earlier matches are rated on goals alone. Squad market values come from Transfermarkt, and the model also knows which clubs play their home matches on grass.</p>
+
+    <h3 id="elo"><span lang="nb">1. Styrkeratingen</span><span lang="en">1. The strength rating</span></h3>
+    <p lang="nb">Hver klubb har ett tall, ratingen <var>R</var>. Modellens forventning til hjemmelaget er den forventede poengandelen <var>E</var>, der seier teller 1 og uavgjort ½:</p>
+    <p lang="en">Each club has one number, its rating <var>R</var>. The model’s expectation for the home side is its expected score <var>E</var>, the share of the points it would take if a win counts 1 and a draw ½:</p>
+    <div class="eq">
+      <div class="eq__row">
+        <math display="block"><mi>E</mi><mo>=</mo>
+        <mfrac><mn>1</mn><mrow><mn>1</mn><mo>+</mo><msup><mn>10</mn><mrow><mo>−</mo><mi>Δ</mi><mo>/</mo><mn>400</mn></mrow></msup></mrow></mfrac>
+        <mo>,</mo></math>
+        <math display="block"><mi>Δ</mi><mo>=</mo><msub><mi>R</mi><mi>H</mi></msub><mo>+</mo><mi>h</mi><mo>+</mo><mi>s</mi><mo>−</mo><msub><mi>R</mi><mi>A</mi></msub></math>
+      </div>
+    </div>
+    <p lang="nb">der <var>h</var>&nbsp;=&nbsp;60 er hjemmefordelen og <var>s</var> en underlagsfordel på 20 poeng i Eliteserien når bortelaget spiller hjemmekampene sine på et annet underlag (gress mot kunstgress). I sluttspurten legger tabellinnsatsen også til på <var>Δ</var> (avsnitt 8). Ved 400 poengs forskjell er det sterkeste lagets forventede poengandel ti ganger det svakestes.</p>
+    <p lang="en">where <var>h</var>&nbsp;=&nbsp;60 is home advantage and <var>s</var> a 20-point surface edge in Eliteserien when the visitors play their home matches on the other surface (grass against artificial turf). In the run-in, table stakes add to <var>Δ</var> as well (section 8). At a gap of 400 points the stronger side’s expected score is ten times the weaker side’s.</p>
+
+    <h3 id="odds"><span lang="nb">2. Fra ratingforskjell til odds</span><span lang="en">2. From a rating gap to odds</span></h3>
+    <p lang="nb"><var>E</var> er ennå ikke tre odds: uavgjort tar litt fra begge sider. Uavgjort er mest sannsynlig mellom like lag og blir sjeldnere jo større forskjellen er, noe modellen beskriver med en klokkekurve. Halvparten av uavgjort-sannsynligheten tas fra hver side, så de tre oddsene gir den samme forventede poengandelen:</p>
+    <p lang="en"><var>E</var> is not yet three odds: a draw takes something from both sides. Draws are likeliest between equal sides and get rarer as the gap grows, which the model describes with a bell curve. Half of the draw’s probability comes off each side, so the three odds give the same expected score:</p>
+    <div class="eq">
+      <math display="block">
+        <msub><mi>p</mi><mi>D</mi></msub><mo>=</mo><mi>min</mi><mrow><mo>(</mo>
+        <msub><mi>p</mi><mn>0</mn></msub><mo>&#x2062;</mo><msup><mi>e</mi><mrow><mo>−</mo><msup><mrow><mo>(</mo><mi>Δ</mi><mo>/</mo><mn>375</mn><mo>)</mo></mrow><mn>2</mn></msup></mrow></msup>
+        <mo>,</mo><mspace width="0.5em"></mspace><mn>2</mn><mo>&#x2062;</mo><mi>min</mi><mrow><mo>(</mo><mi>E</mi><mo>,</mo><mn>1</mn><mo>−</mo><mi>E</mi><mo>)</mo></mrow><mo>)</mo></mrow>
+      </math>
+      <div class="eq__row">
+        <math display="block"><msub><mi>p</mi><mi>H</mi></msub><mo>=</mo><mi>E</mi><mo>−</mo><mfrac><msub><mi>p</mi><mi>D</mi></msub><mn>2</mn></mfrac>
+        <mo>,</mo></math>
+        <math display="block"><msub><mi>p</mi><mi>A</mi></msub><mo>=</mo><mn>1</mn><mo>−</mo><mi>E</mi><mo>−</mo><mfrac><msub><mi>p</mi><mi>D</mi></msub><mn>2</mn></mfrac></math>
+      </div>
+    </div>
+    <p lang="nb">Toppen <var>p</var><sub>0</sub>&nbsp;=&nbsp;0.26, sjansen for uavgjort mellom to helt jevne lag, og bredden på 375 poeng er tilpasset på 5&nbsp;543 kamper.</p>
+    <p lang="en">The peak <var>p</var><sub>0</sub>&nbsp;=&nbsp;0.26, the chance of a draw between two exactly level sides, and the width of 375 points were fitted on 5,543 matches.</p>
+
+    <figure class="fig" id="fig-gap">
+      <div class="fig__head">
+        <h4><span lang="nb">Odds ut fra ratingforskjellen</span><span lang="en">Odds by rating difference</span></h4>
+        <div class="key">
+          <span><i style="background: var(--home)"></i><span lang="nb">Hjemmeseier</span><span lang="en">Home win</span></span>
+          <span><i style="background: var(--draw)"></i><span lang="nb">Uavgjort</span><span lang="en">Draw</span></span>
+          <span><i style="background: var(--away)"></i><span lang="nb">Borteseier</span><span lang="en">Away win</span></span>
+        </div>
+      </div>
+      <div class="fig__chart"></div>
+      <label class="fig__slider"><span><span lang="nb">Ratingforskjell</span><span lang="en">Rating difference</span> <var>R</var><sub>H</sub>&nbsp;−&nbsp;<var>R</var><sub>A</sub></span>
+        <input type="range" min="-500" max="500" step="5" value="0"></label>
+      <p class="fig__readout" aria-live="polite"></p>
+      <figcaption><span lang="nb">Dra over figuren eller bruk glidebryteren. Bunnaksen er forskjellen mellom de to lagenes ratinger; hjemmefordelen <var>h</var>&nbsp;=&nbsp;60 legges på, så <var>Δ</var> er forskjellen pluss 60. To like lag (0) gir derfor hjemmelaget overtaket, og linjene for hjemmeseier og borteseier møtes først ved −60, der bortelaget er så mye bedre at det veier opp for hjemmefordelen.</span><span lang="en">Drag across the chart or use the slider. The bottom axis is the difference between the two clubs’ ratings; home advantage <var>h</var>&nbsp;=&nbsp;60 is added on top, so <var>Δ</var> is the difference plus 60. Two equal clubs (0) therefore favour the home side, and the home-win and away-win lines meet only at −60, where the visitors are good enough to cancel home advantage out.</span></figcaption>
+    </figure>
+
+    <h3 id="oppdatering"><span lang="nb">3. Når en rating flytter seg</span><span lang="en">3. How a rating moves</span></h3>
+    <p lang="nb">Etter kampen flytter begge ratingene seg like mye, i hver sin retning, så poengene en klubb vinner er poengene motstanderen taper:</p>
+    <p lang="en">After the match both ratings move by the same amount in opposite directions, so the points a club gains are the points its opponent loses:</p>
+    <div class="eq">
+      <div class="eq__row">
+        <math display="block"><msubsup><mi>R</mi><mi>H</mi><mo>′</mo></msubsup><mo>=</mo><msub><mi>R</mi><mi>H</mi></msub><mo>+</mo><mi>K</mi><mrow><mo>(</mo><mi>S</mi><mo>−</mo><mi>E</mi><mo>)</mo></mrow>
+        <mo>,</mo></math>
+        <math display="block"><msubsup><mi>R</mi><mi>A</mi><mo>′</mo></msubsup><mo>=</mo><msub><mi>R</mi><mi>A</mi></msub><mo>−</mo><mi>K</mi><mrow><mo>(</mo><mi>S</mi><mo>−</mo><mi>E</mi><mo>)</mo></mrow></math>
+      </div>
+    </div>
+    <p lang="nb">Uten xG er <var>S</var> bare resultatet <var>W</var>: 1 for hjemmeseier, ½ for uavgjort og 0 for tap. Med xG ser <var>S</var> også på sjansene:</p>
+    <p lang="en">Without xG, <var>S</var> is just the result <var>W</var>: 1 for a home win, ½ for a draw and 0 for a defeat. With xG, <var>S</var> also looks at the chances:</p>
+    <div class="eq">
+      <math display="block">
+        <mi>S</mi><mo>=</mo><mrow><mo>(</mo><mn>1</mn><mo>−</mo><mi>α</mi><mo>)</mo></mrow><mo>&#x2062;</mo><mi>W</mi><mo>+</mo><mi>α</mi><mo>&#x2062;</mo><mi>X</mi>
+        <mo>+</mo><mi>γ</mi><mo>&#x2062;</mo><mi>sgn</mi><mo>&#x2061;</mo><mrow><mo>(</mo><mi>r</mi><mo>)</mo></mrow><mo>&#x2062;</mo><mi>ln</mi><mo>&#x2061;</mo><mrow><mo>(</mo><mn>1</mn><mo>+</mo><mo>|</mo><mi>r</mi><mo>|</mo><mo>)</mo></mrow>
+      </math>
+      <div class="eq__row">
+        <math display="block"><mi>X</mi><mo>=</mo>
+        <munder><mo>∑</mo><mrow><mi>i</mi><mo>&gt;</mo><mi>j</mi></mrow></munder>
+        <msub><mi>π</mi><mi>i</mi></msub><mrow><mo>(</mo><msub><mi>x</mi><mi>H</mi></msub><mo>)</mo></mrow><mo>&#x2062;</mo><msub><mi>π</mi><mi>j</mi></msub><mrow><mo>(</mo><msub><mi>x</mi><mi>A</mi></msub><mo>)</mo></mrow>
+        <mo>+</mo><mfrac><mn>1</mn><mn>2</mn></mfrac>
+        <munder><mo>∑</mo><mi>i</mi></munder>
+        <msub><mi>π</mi><mi>i</mi></msub><mrow><mo>(</mo><msub><mi>x</mi><mi>H</mi></msub><mo>)</mo></mrow><mo>&#x2062;</mo><msub><mi>π</mi><mi>i</mi></msub><mrow><mo>(</mo><msub><mi>x</mi><mi>A</mi></msub><mo>)</mo></mrow>
+        <mo>,</mo></math>
+        <math display="block"><msub><mi>π</mi><mi>k</mi></msub><mrow><mo>(</mo><mi>x</mi><mo>)</mo></mrow><mo>=</mo>
+        <mfrac><mrow><msup><mi>e</mi><mrow><mo>−</mo><mi>x</mi></mrow></msup><mo>&#x2062;</mo><msup><mi>x</mi><mi>k</mi></msup></mrow><mrow><mi>k</mi><mo>!</mo></mrow></mfrac></math>
+      </div>
+      <math display="block">
+        <mi>r</mi><mo>=</mo><mi>ln</mi><mo>&#x2061;</mo>
+        <mfrac><mrow><msub><mi>x</mi><mi>H</mi></msub><mo>+</mo><mi>c</mi></mrow><mrow><msub><mi>x</mi><mi>A</mi></msub><mo>+</mo><mi>c</mi></mrow></mfrac>
+      </math>
+    </div>
+    <p lang="nb"><var>X</var> er poengandelen hjemmelaget ville fått om kampen ble spilt mange ganger med de to lagenes xG, <var>x</var><sub>H</sub> og <var>x</var><sub>A</sub>, og mål trukket fra Poisson-fordelinger (opptil 12 per lag, normalisert). Siste ledd er en xG-margin, som blir større jo mer det ene laget skapte enn det andre, med <var>γ</var>&nbsp;=&nbsp;0.12 og <var>c</var>&nbsp;=&nbsp;0.25. Fra 2022 er steget <var>K</var>&nbsp;=&nbsp;30 og xG-vekten <var>α</var>&nbsp;=&nbsp;0.30; før det var <var>K</var>&nbsp;=&nbsp;20 og <var>α</var>&nbsp;=&nbsp;0.45. <var>S</var> kappes ikke ved 0 eller 1, så en dominerende seier får hele marginen sin. Endringen kan deles i tre, ett ledd for hver del av <var>S</var>:</p>
+    <p lang="en"><var>X</var> is the share of the points the home side would take if the match were played many times at the two sides’ xG, <var>x</var><sub>H</sub> and <var>x</var><sub>A</sub>, with goals drawn from Poisson distributions (up to 12 a side, normalised). The last term is an xG margin, larger the more one side out-created the other, with <var>γ</var>&nbsp;=&nbsp;0.12 and <var>c</var>&nbsp;=&nbsp;0.25. From 2022 the step is <var>K</var>&nbsp;=&nbsp;30 and the xG weight <var>α</var>&nbsp;=&nbsp;0.30; before that <var>K</var>&nbsp;=&nbsp;20 and <var>α</var>&nbsp;=&nbsp;0.45. <var>S</var> is not cut off at 0 or 1, so a dominant win earns its full margin. The change splits into three, one term for each part of <var>S</var>:</p>
+    <div class="eq">
+      <math display="block">
+        <mi>K</mi><mrow><mo>(</mo><mi>S</mi><mo>−</mo><mi>E</mi><mo>)</mo></mrow><mo>=</mo>
+        <mi>K</mi><mrow><mo>(</mo><mn>1</mn><mo>−</mo><mi>α</mi><mo>)</mo></mrow><mrow><mo>(</mo><mi>W</mi><mo>−</mo><mi>E</mi><mo>)</mo></mrow>
+        <mo>+</mo><mi>K</mi><mi>α</mi><mrow><mo>(</mo><mi>X</mi><mo>−</mo><mi>E</mi><mo>)</mo></mrow>
+        <mo>+</mo><mi>K</mi><mi>γ</mi><mo>&#x2062;</mo><mi>sgn</mi><mo>&#x2061;</mo><mrow><mo>(</mo><mi>r</mi><mo>)</mo></mrow><mo>&#x2062;</mo><mi>ln</mi><mo>&#x2061;</mo><mrow><mo>(</mo><mn>1</mn><mo>+</mo><mo>|</mo><mi>r</mi><mo>|</mo><mo>)</mo></mrow>
+      </math>
+    </div>
+
+    <figure class="fig" id="fig-update">
+      <div class="fig__head">
+        <h4 id="fig-update-title"><span lang="nb">En ratingendring, tatt fra hverandre</span><span lang="en">A rating change, taken apart</span></h4>
+      </div>
+      <div class="fig__controls">
+        <div class="chips" role="group" aria-labelledby="fig-update-title">
+          <button type="button" data-preset="lucky" aria-pressed="true"><span lang="nb">Heldig seier</span><span lang="en">Lucky win</span></button>
+          <button type="button" data-preset="deserved" aria-pressed="false"><span lang="nb">Fortjent seier</span><span lang="en">Deserved win</span></button>
+          <button type="button" data-preset="upset" aria-pressed="false"><span lang="nb">Overraskelse</span><span lang="en">Upset</span></button>
+          <button type="button" data-preset="goals" aria-pressed="false"><span lang="nb">Uten xG</span><span lang="en">Without xG</span></button>
+        </div>
+      </div>
+      <div class="calc">
+        <span></span>
+        <span class="calc__col"><span lang="nb">Hjemme</span><span lang="en">Home</span></span>
+        <span class="calc__col"><span lang="nb">Borte</span><span lang="en">Away</span></span>
+        <span>Rating</span>
+        <input id="u-hr" type="text" inputmode="numeric" value="1600">
+        <input id="u-ar" type="text" inputmode="numeric" value="1600">
+        <span><span lang="nb">Mål</span><span lang="en">Goals</span></span>
+        <input id="u-hg" type="text" inputmode="numeric" value="1">
+        <input id="u-ag" type="text" inputmode="numeric" value="0">
+        <span>xG</span>
+        <input id="u-hx" type="text" inputmode="decimal" value="0.5">
+        <input id="u-ax" type="text" inputmode="decimal" value="1.9">
+      </div>
+      <div class="fig__chart"></div>
+      <p class="fig__readout" aria-live="polite"></p>
+      <figcaption><span lang="nb">Hjemmelagets endring; bortelaget får det samme med motsatt fortegn. Tøm xG-feltene for en kamp uten xG.</span><span lang="en">The home side’s change; the away side gets the same with the sign turned. Clear the xG boxes for a match without xG.</span></figcaption>
+    </figure>
+
+    <h3 id="sesongskifte"><span lang="nb">4. Start og sesongskifte</span><span lang="en">4. Where ratings start, and between seasons</span></h3>
+    <p lang="nb">Ratingene ble satt én gang, fra sluttabellene i 2014: begge divisjoner på én stige, der en plassering i OBOS-ligaen regnes som 14 plasser dårligere enn den samme i Eliteserien, spredt fra 1670 for seriemesteren til 1330 for sisteplassen i OBOS-ligaen. Siden er hver kamp spilt av i rekkefølge, så en klubb tar med seg ratingen over sesonger og mellom divisjoner. En klubb som kommer opp fra 2. divisjon, utenfor dataene, starter på 1330.</p>
+    <p lang="en">The ratings were set once, from the 2014 final tables: both divisions on one ladder, with a place in OBOS-ligaen counted 14 places below the same place in Eliteserien, spread from 1670 for the champions to 1330 for OBOS-ligaen’s last. Since then every match has been replayed in order, so a club carries its rating across seasons and divisions. A club coming up from 2. divisjon, the third tier and outside the data, starts at 1330.</p>
+    <p lang="nb">Ved hver ny sesong trekkes hver rating 12&nbsp;% mot snittet <var>R̄</var> i sin egen divisjon (<var>ω</var>&nbsp;=&nbsp;0.88), så et unntaksår ikke føres helt videre:</p>
+    <p lang="en">At each new season every rating is pulled 12% toward the mean <var>R̄</var> of its own division (<var>ω</var>&nbsp;=&nbsp;0.88), so one freak year does not carry over in full:</p>
+    <div class="eq">
+      <math display="block">
+        <mi>R</mi><mo>←</mo><mover accent="true"><mi>R</mi><mo>¯</mo></mover><mo>+</mo><mi>ω</mi><mrow><mo>(</mo><mi>R</mi><mo>−</mo><mover accent="true"><mi>R</mi><mo>¯</mo></mover><mo>)</mo></mrow>
+      </math>
+    </div>
+    <p lang="nb">Markedsverdien er ikke med i dette trekket: testet ga den ingenting ekstra for Elo-ratingene, ut over det målmodellen allerede henter fra den (avsnitt 5). Unntaket er en klubb som rykker ned i OBOS-ligaen. Den trekkes halvveis, mot et nivå <var>T</var> satt av stallens markedsverdi <var>V</var> på Transfermarkt sesongen før mot divisjonens geometriske snitt <var>V̄</var>, i stedet for å beholde det meste av Eliteserie-ratingen:</p>
+    <p lang="en">Squad value plays no part in this pull: tested, it added nothing to the Elo ratings beyond what the goals model already takes from it (section 5). The exception is a club relegated into OBOS-ligaen. It is pulled half way, toward a level <var>T</var> set by its squad value <var>V</var> on Transfermarkt the season before against the division’s geometric mean <var>V̄</var>, instead of keeping most of its Eliteserien rating:</p>
+    <div class="eq">
+      <div class="eq__row">
+        <math display="block"><mi>R</mi><mo>←</mo><mi>T</mi><mo>+</mo><mfrac><mn>1</mn><mn>2</mn></mfrac><mrow><mo>(</mo><mi>R</mi><mo>−</mo><mi>T</mi><mo>)</mo></mrow>
+        <mo>,</mo></math>
+        <math display="block"><mi>T</mi><mo>=</mo><mover accent="true"><mi>R</mi><mo>¯</mo></mover><mo>+</mo><mn>75</mn><mo>&#x2062;</mo><mi>ln</mi><mo>&#x2061;</mo><mrow><mo>(</mo><mi>V</mi><mo>/</mo><mover accent="true"><mi>V</mi><mo>¯</mo></mover><mo>)</mo></mrow></math>
+      </div>
+    </div>
+
+    <p lang="nb">En nedrykket stall verdt dobbelt så mye som divisjonens typiske får <var>T</var> 52 poeng over snittet (75&nbsp;·&nbsp;ln&nbsp;2), og ratingen går halve veien dit.</p>
+    <p lang="en">A relegated squad worth twice the division’s typical one has <var>T</var> 52 points above the mean (75&nbsp;·&nbsp;ln&nbsp;2), and its rating goes half the way there.</p>
+
+    <h3 id="malmodellen"><span lang="nb">5. Målmodellen</span><span lang="en">5. The goals model</span></h3>
+    <p lang="nb">Den andre modellen gir hver klubb fire tall på en log-mål-skala: angrep <var>a</var>, forsvar <var>d</var>, avslutning <var>f</var> og keeper <var>g</var>. Kampens forventede mål er</p>
+    <p lang="en">The second model gives each club four numbers on a log-goals scale: attack <var>a</var>, defence <var>d</var>, finishing <var>f</var> and goalkeeping <var>g</var>. A match’s expected goals are</p>
+    <div class="eq">
+      <math display="block">
+        <mi>λ</mi><mo>=</mo><mi>exp</mi><mo>&#x2061;</mo><mrow><mo>[</mo><mi>β</mi><mo>+</mo><mi>η</mi><mo>+</mo><mi>σ</mi><mrow><mo>(</mo>
+        <msub><mi>a</mi><mi>H</mi></msub><mo>−</mo><msub><mi>d</mi><mi>A</mi></msub><mo>+</mo><msub><mi>f</mi><mi>H</mi></msub><mo>−</mo><msub><mi>g</mi><mi>A</mi></msub><mo>)</mo></mrow><mo>]</mo></mrow>
+      </math>
+      <math display="block">
+        <mi>μ</mi><mo>=</mo><mi>exp</mi><mo>&#x2061;</mo><mrow><mo>[</mo><mi>β</mi><mo>+</mo><mi>σ</mi><mrow><mo>(</mo>
+        <msub><mi>a</mi><mi>A</mi></msub><mo>−</mo><msub><mi>d</mi><mi>H</mi></msub><mo>+</mo><msub><mi>f</mi><mi>A</mi></msub><mo>−</mo><msub><mi>g</mi><mi>H</mi></msub><mo>)</mo></mrow><mo>]</mo></mrow>
+      </math>
+    </div>
+    <p lang="nb">med <var>β</var>&nbsp;=&nbsp;0.37 (et snittlag scorer <var>e</var><sup>0.37</sup>&nbsp;≈&nbsp;1.45 mål), hjemmefordel <var>η</var>&nbsp;=&nbsp;0.22 (25&nbsp;% flere mål hjemme) og <var>σ</var>&nbsp;=&nbsp;1.10, en strekk som brukes når modellen spår, fordi ratinger som oppdateres i faste steg henger etter og havner for nær snittet.</p>
+    <p lang="en">with <var>β</var>&nbsp;=&nbsp;0.37 (an average side scores <var>e</var><sup>0.37</sup>&nbsp;≈&nbsp;1.45 goals), home advantage <var>η</var>&nbsp;=&nbsp;0.22 (25% more goals at home) and <var>σ</var>&nbsp;=&nbsp;1.10, a stretch used when predicting, because ratings that update in fixed steps lag behind and end up too close to the average.</p>
+    <p lang="nb">Angrep og forsvar lærer som Elo, men av mål. Etter kampen flytter avviket mellom det som ble observert og det som var ventet angrepet til laget som scoret opp og forsvaret til laget som slapp inn ned, med samme steg:</p>
+    <p lang="en">Attack and defence learn like Elo, but from goals. After the match, the gap between what was observed and what was expected moves the scoring side’s attack up and the conceding side’s defence down by the same step:</p>
+    <div class="eq">
+      <div class="eq__row">
+        <math display="block"><msub><mi>o</mi><mi>H</mi></msub><mo>=</mo><mrow><mo>(</mo><mn>1</mn><mo>−</mo><msub><mi>α</mi><mi>g</mi></msub><mo>)</mo></mrow><mo>&#x2062;</mo><msub><mi>G</mi><mi>H</mi></msub><mo>+</mo><msub><mi>α</mi><mi>g</mi></msub><mo>&#x2062;</mo><msub><mi>x</mi><mi>H</mi></msub>
+        <mo>,</mo></math>
+        <math display="block"><msub><mi>ε</mi><mi>H</mi></msub><mo>=</mo><mi>clip</mi><mrow><mo>(</mo><msub><mi>o</mi><mi>H</mi></msub><mo>−</mo><mover accent="true"><mi>λ</mi><mo>^</mo></mover><mo>,</mo><mspace width="0.3em"></mspace><mo>−</mo><mn>4</mn><mo>,</mo><mspace width="0.3em"></mspace><mn>4</mn><mo>)</mo></mrow></math>
+      </div>
+      <div class="eq__row">
+        <math display="block"><msub><mi>a</mi><mi>H</mi></msub><mo>←</mo><msub><mi>a</mi><mi>H</mi></msub><mo>+</mo><msub><mi>k</mi><mi>H</mi></msub><mo>&#x2062;</mo><msub><mi>ε</mi><mi>H</mi></msub>
+        <mo>,</mo></math>
+        <math display="block"><msub><mi>d</mi><mi>A</mi></msub><mo>←</mo><msub><mi>d</mi><mi>A</mi></msub><mo>−</mo><msub><mi>k</mi><mi>A</mi></msub><mo>&#x2062;</mo><msub><mi>ε</mi><mi>H</mi></msub></math>
+      </div>
+    </div>
+    <p lang="nb">og det samme med <var>H</var> og <var>A</var> byttet om. <var>G</var> er målene, <var>λ̂</var> er <var>λ</var> uten strekken <var>σ</var>. Med xG er observasjonen <var>o</var> 90&nbsp;% xG og 10&nbsp;% mål (<var>α</var><sub>g</sub>&nbsp;=&nbsp;0.9), og den gir et større steg, <var>k</var>&nbsp;=&nbsp;0.05 mot 0.015 på mål alene, fordi xG er det renere signalet. Et avvik teller høyst 4 mål, og en klubbs første kamper i sesongen tar et større steg, så ratingene tar igjen vinterens overganger raskere (<var>n</var> er antall kamper klubben har spilt i sesongen):</p>
+    <p lang="en">and the same with <var>H</var> and <var>A</var> swapped. <var>G</var> is goals, and <var>λ̂</var> is <var>λ</var> without the stretch <var>σ</var>. With xG the observation <var>o</var> is 90% xG and 10% goals (<var>α</var><sub>g</sub>&nbsp;=&nbsp;0.9), and it earns a larger step, <var>k</var>&nbsp;=&nbsp;0.05 against 0.015 on goals alone, because xG is the cleaner signal. A surprise counts for at most 4 goals, and a club’s first matches of a season take a bigger step, so the ratings catch up with a winter of transfers sooner (<var>n</var> is the number of matches the club has played that season):</p>
+    <div class="eq">
+      <math display="block">
+        <msub><mi>k</mi><mi>n</mi></msub><mo>=</mo><mi>k</mi><mrow><mo>(</mo><mn>1</mn><mo>+</mo><mfrac><mn>1</mn><mn>2</mn></mfrac><mo>&#x2062;</mo><msup><mi>e</mi><mrow><mo>−</mo><mi>n</mi><mo>/</mo><mn>3</mn></mrow></msup><mo>)</mo></mrow>
+      </math>
+    </div>
+    <p lang="nb">Avslutning og keeper er tregere mål:</p>
+    <p lang="en">Finishing and goalkeeping are slower measures:</p>
+    <div class="eq">
+      <div class="eq__row">
+        <math display="block"><mi>f</mi><mo>=</mo><mi>ln</mi><mo>&#x2061;</mo><mfrac><mrow><mo>∑</mo><mi>G</mi></mrow><mrow><mo>∑</mo><mi>x</mi></mrow></mfrac>
+        <mo>,</mo></math>
+        <math display="block"><mi>g</mi><mo>=</mo><mi>κ</mi><mrow><mo>[</mo>
+        <mi>ln</mi><mo>&#x2061;</mo><mfrac><mrow><mo>∑</mo><msub><mi>x</mi><mtext>OT</mtext></msub></mrow><mrow><mo>∑</mo><msub><mi>G</mi><mtext>in</mtext></msub></mrow></mfrac>
+        <mo>−</mo>
+        <msub><mrow><mo>(</mo><mi>ln</mi><mo>&#x2061;</mo><mfrac><mrow><mo>∑</mo><msub><mi>x</mi><mtext>OT</mtext></msub></mrow><mrow><mo>∑</mo><msub><mi>G</mi><mtext>in</mtext></msub></mrow></mfrac><mo>)</mo></mrow><mtext>div</mtext></msub>
+        <mo>]</mo></mrow></math>
+      </div>
+    </div>
+    <p lang="nb">Avslutning er en klubbs mål delt på xG over en hel sesong, ført inn i neste sesong og trukket 30&nbsp;% mot divisjonens snitt. Keeperratingen sammenligner xG på mål (<var>x</var><sub>OT</sub>) en klubb har møtt med målene den har sluppet inn (<var>G</var><sub>in</sub>) over de siste 45 kampene, mot det samme forholdet for divisjonens siste 240, med vekt <var>κ</var>&nbsp;=&nbsp;0.75. Den teller fra 22 kamper, og bare i Eliteserien, der FotMob har xG på mål.</p>
+    <p lang="en">Finishing is a club’s goals over its xG across a whole season, carried into the next season and pulled 30% toward the division’s mean. Goalkeeping compares the xG on target (<var>x</var><sub>OT</sub>) a club has faced with the goals it let in (<var>G</var><sub>in</sub>) over its last 45 matches, against the same ratio for the division’s last 240, with weight <var>κ</var>&nbsp;=&nbsp;0.75. It counts from 22 matches, and only in Eliteserien, where FotMob has xG on target.</p>
+    <p lang="nb">Mellom sesongene trekkes angrep og forsvar mot divisjonens snitt, men ikke mot selve snittet: målet flyttes etter hva stallen er verdt. <var>V</var> er stallens markedsverdi på Transfermarkt sesongen før og <var>V̄</var> divisjonens geometriske snitt, så <var>v</var> er 0 for en typisk stall, positiv for en dyr og negativ for en billig:</p>
+    <p lang="en">Between seasons attack and defence are pulled toward the division’s mean, but not to the mean itself: the target moves with what the squad is worth. <var>V</var> is the squad’s market value on Transfermarkt the season before and <var>V̄</var> the division’s geometric mean, so <var>v</var> is 0 for a typical squad, positive for an expensive one and negative for a cheap one:</p>
+    <div class="eq">
+      <div class="eq__row">
+        <math display="block"><mi>a</mi><mo>←</mo><msub><mi>T</mi><mi>a</mi></msub><mo>+</mo><mi>ω</mi><mrow><mo>(</mo><mi>a</mi><mo>−</mo><msub><mi>T</mi><mi>a</mi></msub><mo>)</mo></mrow>
+        <mo>,</mo></math>
+        <math display="block"><msub><mi>T</mi><mi>a</mi></msub><mo>=</mo><mover accent="true"><mi>a</mi><mo>¯</mo></mover><mo>+</mo><mi>φ</mi><mo>&#x2062;</mo><mi>v</mi>
+        <mo>,</mo></math>
+        <math display="block"><mi>v</mi><mo>=</mo><mi>ln</mi><mo>&#x2061;</mo><mrow><mo>(</mo><mi>V</mi><mo>/</mo><mover accent="true"><mi>V</mi><mo>¯</mo></mover><mo>)</mo></mrow></math>
+      </div>
+    </div>
+    <p lang="nb">og det samme for forsvaret <var>d</var>, mot <var>d̄</var>&nbsp;+&nbsp;<var>φv</var>. Eliteserien bruker <var>ω</var>&nbsp;=&nbsp;0.88 og <var>φ</var>&nbsp;=&nbsp;0.2. OBOS-ligaen bruker <var>ω</var>&nbsp;=&nbsp;0.75 og <var>φ</var>&nbsp;=&nbsp;0.3, fordi stallene der skifter mer mellom sesongene og verdien sier mer, og en klubb som rykker ned dit får <var>ω</var>&nbsp;=&nbsp;0.5. Bare delen som trekkes, 1&nbsp;−&nbsp;<var>ω</var>, går mot målet, så verdien flytter ratingen (1&nbsp;−&nbsp;<var>ω</var>)<var>φv</var>. For en stall verdt dobbelt så mye som divisjonens typiske (<var>v</var>&nbsp;=&nbsp;ln&nbsp;2&nbsp;≈&nbsp;0.69) er det 0.017 i både angrep og forsvar i Eliteserien, rundt 2&nbsp;% flere mål for og færre mot, 0.052 i OBOS-ligaen (rundt 6&nbsp;%) og 0.10 for en klubb som rykker ned dit (rundt 12&nbsp;%). En klubb uten verdi på Transfermarkt, som en klubb opp fra 2. divisjon, trekkes mot selve snittet, og en klubb uten historikk starter 0.15 under det.</p>
+    <p lang="en">and the same for the defence <var>d</var>, toward <var>d̄</var>&nbsp;+&nbsp;<var>φv</var>. Eliteserien uses <var>ω</var>&nbsp;=&nbsp;0.88 and <var>φ</var>&nbsp;=&nbsp;0.2. OBOS-ligaen uses <var>ω</var>&nbsp;=&nbsp;0.75 and <var>φ</var>&nbsp;=&nbsp;0.3, because its squads change more between seasons and the value says more, and a club relegated into it gets <var>ω</var>&nbsp;=&nbsp;0.5. Only the part that is pulled, 1&nbsp;−&nbsp;<var>ω</var>, goes toward the target, so the value moves the rating by (1&nbsp;−&nbsp;<var>ω</var>)<var>φv</var>. For a squad worth twice the division’s typical one (<var>v</var>&nbsp;=&nbsp;ln&nbsp;2&nbsp;≈&nbsp;0.69) that is 0.017 in both attack and defence in Eliteserien, about 2% more goals scored and fewer let in, 0.052 in OBOS-ligaen (about 6%) and 0.10 for a club relegated there (about 12%). A club with no value on Transfermarkt, such as one coming up from 2. divisjon, is pulled toward the mean itself, and a club with no history starts 0.15 below it.</p>
+
+    <h3 id="resultater"><span lang="nb">6. Resultatene</span><span lang="en">6. Scorelines</span></h3>
+    <p lang="nb">Målene behandles som to Poisson-tall med snitt <var>λ</var> og <var>μ</var>, med Dixon og Coles’ korreksjon for de lave resultatene (<var>ρ</var>&nbsp;=&nbsp;−0.05), opptil 8 mål per lag, skalert så alt summerer til 1:</p>
+    <p lang="en">Goals are treated as two Poisson counts with means <var>λ</var> and <var>μ</var>, with Dixon and Coles’s correction for the low scores (<var>ρ</var>&nbsp;=&nbsp;−0.05), up to 8 goals a side, scaled to sum to 1:</p>
+    <div class="eq">
+      <math display="block">
+        <mi>P</mi><mrow><mo>(</mo><mi>i</mi><mo>,</mo><mi>j</mi><mo>)</mo></mrow><mo>∝</mo>
+        <msub><mi>π</mi><mi>i</mi></msub><mrow><mo>(</mo><mi>λ</mi><mo>)</mo></mrow><mo>&#x2062;</mo><msub><mi>π</mi><mi>j</mi></msub><mrow><mo>(</mo><mi>μ</mi><mo>)</mo></mrow><mo>&#x2062;</mo><mi>τ</mi><mrow><mo>(</mo><mi>i</mi><mo>,</mo><mi>j</mi><mo>)</mo></mrow>
+      </math>
+      <div class="eq__row">
+        <math display="block"><mi>τ</mi><mrow><mo>(</mo><mn>0</mn><mo>,</mo><mn>0</mn><mo>)</mo></mrow><mo>=</mo><mn>1</mn><mo>−</mo><mi>λ</mi><mi>μ</mi><mi>ρ</mi><mo>,</mo></math>
+        <math display="block"><mi>τ</mi><mrow><mo>(</mo><mn>0</mn><mo>,</mo><mn>1</mn><mo>)</mo></mrow><mo>=</mo><mn>1</mn><mo>+</mo><mi>λ</mi><mi>ρ</mi><mo>,</mo></math>
+        <math display="block"><mi>τ</mi><mrow><mo>(</mo><mn>1</mn><mo>,</mo><mn>0</mn><mo>)</mo></mrow><mo>=</mo><mn>1</mn><mo>+</mo><mi>μ</mi><mi>ρ</mi><mo>,</mo></math>
+        <math display="block"><mi>τ</mi><mrow><mo>(</mo><mn>1</mn><mo>,</mo><mn>1</mn><mo>)</mo></mrow><mo>=</mo><mn>1</mn><mo>−</mo><mi>ρ</mi></math>
+      </div>
+    </div>
+    <p lang="nb">og <var>τ</var>&nbsp;=&nbsp;1 ellers. Summen av cellene der hjemmelaget scorer flest gir målmodellens egen sjanse for hjemmeseier, diagonalen sjansen for uavgjort og resten sjansen for borteseier.</p>
+    <p lang="en">and <var>τ</var>&nbsp;=&nbsp;1 otherwise. Summing the cells where the home side scores more gives the goals model’s own home-win chance, the diagonal its draw chance and the rest its away-win chance.</p>
+
+    <figure class="fig" id="fig-match">
+      <div class="fig__head">
+        <h4><span lang="nb">En kamp gjennom begge modellene</span><span lang="en">A match through both models</span></h4>
+        <div class="key">
+          <span><i style="background: var(--home)"></i><span lang="nb">Hjemmeseier</span><span lang="en">Home win</span></span>
+          <span><i style="background: var(--draw)"></i><span lang="nb">Uavgjort</span><span lang="en">Draw</span></span>
+          <span><i style="background: var(--away)"></i><span lang="nb">Borteseier</span><span lang="en">Away win</span></span>
+        </div>
+      </div>
+      <div class="fig__controls">
+        <div class="switch" role="group" aria-label="Divisjon / Division">
+          <button type="button" data-league="eliteserien" aria-pressed="true">Eliteserien</button>
+          <button type="button" data-league="obosligaen" aria-pressed="false">OBOS-ligaen</button>
+        </div>
+        <label class="pick"><span lang="nb">Hjemme</span><span lang="en">Home</span> <select id="m-home"></select></label>
+        <label class="pick"><span lang="nb">Borte</span><span lang="en">Away</span> <select id="m-away"></select></label>
+      </div>
+      <div class="fig__chart"></div>
+      <!-- The grid's colours, read the same way as the front page's Sluttabell. -->
+      <div class="key heat-key">
+        <span><span lang="nb">Rutene:</span><span lang="en">Squares:</span>
+          <span lang="nb">usannsynlig</span><span lang="en">unlikely</span>
+          <span class="legend__ramp" aria-hidden="true"><i style="background: var(--seq-1)"></i><i style="background: var(--seq-2)"></i><i style="background: var(--seq-3)"></i><i style="background: var(--seq-4)"></i><i style="background: var(--seq-5)"></i><i style="background: var(--seq-6)"></i><i style="background: var(--seq-7)"></i></span>
+          <span lang="nb">sannsynlig</span><span lang="en">likely</span></span>
+      </div>
+      <div class="fig__readout" aria-live="polite"></div>
+      <figcaption><span lang="nb">Med dagens ratinger fra den publiserte rapporten. Søylene viser oddsene fra hver modell og blandingen (avsnitt 7); rutene er sjansen for akkurat det resultatet etter blandingen. Uten tabellinnsats (avsnitt 8), så oddsene for en kamp i sluttspurten kan avvike litt fra de publiserte.</span><span lang="en">With today’s ratings from the published report. The bars show each model’s odds and the blend (section 7); the cells are the chance of exactly that score after the blend. Without table stakes (section 8), so the odds for a match in the run-in can differ a little from the published ones.</span></figcaption>
+    </figure>
+
+    <h3 id="blanding"><span lang="nb">7. De to modellene sammen</span><span lang="en">7. The two models together</span></h3>
+    <p lang="nb">Oddsene på siden er en geometrisk blanding, en firedel Elo og tre firedeler målmodell (<var>θ</var>&nbsp;=&nbsp;0.25), skalert så de summerer til 1. Vekten er valgt på tidligere sesonger, der blandingen spådde bedre enn hver modell alene.</p>
+    <p lang="en">The odds on the site are a geometric blend, a quarter Elo and three quarters goals model (<var>θ</var>&nbsp;=&nbsp;0.25), scaled to sum to 1. The weight was chosen on past seasons, where the blend predicted better than either model alone.</p>
+    <div class="eq">
+      <math display="block">
+        <msub><mi>p</mi><mi>o</mi></msub><mo>=</mo>
+        <mfrac>
+          <mrow><msup><mrow><mo>(</mo><msubsup><mi>p</mi><mi>o</mi><mtext>Elo</mtext></msubsup><mo>)</mo></mrow><mi>θ</mi></msup><mo>&#x2062;</mo><msup><mrow><mo>(</mo><msubsup><mi>p</mi><mi>o</mi><mtext>Pois</mtext></msubsup><mo>)</mo></mrow><mrow><mn>1</mn><mo>−</mo><mi>θ</mi></mrow></msup></mrow>
+          <mrow><munder><mo>∑</mo><mi>q</mi></munder><msup><mrow><mo>(</mo><msubsup><mi>p</mi><mi>q</mi><mtext>Elo</mtext></msubsup><mo>)</mo></mrow><mi>θ</mi></msup><mo>&#x2062;</mo><msup><mrow><mo>(</mo><msubsup><mi>p</mi><mi>q</mi><mtext>Pois</mtext></msubsup><mo>)</mo></mrow><mrow><mn>1</mn><mo>−</mo><mi>θ</mi></mrow></msup></mrow>
+        </mfrac>
+      </math>
+    </div>
+    <p lang="nb">Resultatene tar så hvem som vinner fra disse oddsene og hvor mange mål fra rutenettet: cellene for hvert utfall <var>o</var> (hjemmeseier, uavgjort, borteseier) skaleres til utfallets odds.</p>
+    <p lang="en">The scorelines then take who wins from these odds and how many goals from the grid: the cells of each outcome <var>o</var> (home win, draw, away win) are scaled to that outcome’s odds.</p>
+    <div class="eq">
+      <math display="block">
+        <msup><mi>P</mi><mo>*</mo></msup><mrow><mo>(</mo><mi>i</mi><mo>,</mo><mi>j</mi><mo>)</mo></mrow><mo>=</mo><mi>P</mi><mrow><mo>(</mo><mi>i</mi><mo>,</mo><mi>j</mi><mo>)</mo></mrow><mo>&#x2062;</mo>
+        <mfrac><msub><mi>p</mi><mi>o</mi></msub><msubsup><mi>p</mi><mi>o</mi><mtext>Pois</mtext></msubsup></mfrac>
+      </math>
+    </div>
+
+    <h3 id="tabellinnsats"><span lang="nb">8. Tabellinnsats i sluttspurten</span><span lang="en">8. Table stakes in the run-in</span></h3>
+    <p lang="nb">Sent i sesongen spiller en klubb nær en strek i tabellen (gull, Europa- eller opprykksplass, kvalifisering, nedrykk) som om den er sterkere enn ratingen sier, og en klubb uten noe å spille for som om den er svakere. Når begge lag har spilt 24 kamper, er hvert lags press</p>
+    <p lang="en">Late in a season, a club near a line in the table (the title, the European or promotion places, the play-offs, relegation) plays as if stronger than its rating says, and a club with nothing left to play for as if weaker. Once both sides have played 24 matches, each side’s pressure is</p>
+    <div class="eq">
+      <math display="block">
+        <mi>Π</mi><mo>=</mo><mi>exp</mi><mo>&#x2061;</mo><mrow><mo>(</mo><mo>−</mo>
+        <mfrac><mrow><mi>max</mi><mrow><mo>(</mo><mn>0</mn><mo>,</mo><mi>m</mi><mo>−</mo><mn>1</mn><mo>)</mo></mrow></mrow><mrow><mi>ν</mi><mo>&#x2062;</mo><mi>ℓ</mi></mrow></mfrac><mo>)</mo></mrow>
+      </math>
+    </div>
+    <p lang="nb">der <var>m</var> er avstanden i poeng til nærmeste strek, <var>ℓ</var> antall kamper igjen og <var>ν</var>&nbsp;=&nbsp;0.8: 1 innenfor ett poeng av en strek, og så avtagende når avstanden blir større enn det som gjenstår å spille om. Forskjellen flytter spådommen, men aldri ratingene (<var>ψ</var>&nbsp;=&nbsp;0.05):</p>
+    <p lang="en">where <var>m</var> is the distance in points to the nearest line, <var>ℓ</var> the matches left and <var>ν</var>&nbsp;=&nbsp;0.8: 1 within a point of a line, then falling as the distance outgrows what is left to play for. The difference moves the prediction, never the ratings (<var>ψ</var>&nbsp;=&nbsp;0.05):</p>
+    <div class="eq">
+      <math display="block">
+        <mi>Δ</mi><mo>←</mo><mi>Δ</mi><mo>+</mo><mn>30</mn><mrow><mo>(</mo><msub><mi>Π</mi><mi>H</mi></msub><mo>−</mo><msub><mi>Π</mi><mi>A</mi></msub><mo>)</mo></mrow>
+      </math>
+      <div class="eq__row">
+        <math display="block"><mi>λ</mi><mo>←</mo><mi>λ</mi><mo>&#x2062;</mo><msup><mi>e</mi><mrow><mi>ψ</mi><mrow><mo>(</mo><msub><mi>Π</mi><mi>H</mi></msub><mo>−</mo><msub><mi>Π</mi><mi>A</mi></msub><mo>)</mo></mrow></mrow></msup>
+        <mo>,</mo></math>
+        <math display="block"><mi>μ</mi><mo>←</mo><mi>μ</mi><mo>&#x2062;</mo><msup><mi>e</mi><mrow><mo>−</mo><mi>ψ</mi><mrow><mo>(</mo><msub><mi>Π</mi><mi>H</mi></msub><mo>−</mo><msub><mi>Π</mi><mi>A</mi></msub><mo>)</mo></mrow></mrow></msup></math>
+      </div>
+    </div>
+    <p lang="nb">Tabellen er den før kampdagen; i simuleringen er det hver simulerte sesongs egen tabell.</p>
+    <p lang="en">The table is the one before the match day; in the simulation it is each simulated season’s own table.</p>
+
+    <figure class="fig" id="fig-stakes">
+      <div class="fig__head">
+        <h4><span lang="nb">Press ut fra avstanden til streken</span><span lang="en">Pressure by distance to the line</span></h4>
+        <div class="key">
+          <span><i class="line" style="background: var(--seq-4)"></i><span lang="nb">2 kamper igjen</span><span lang="en">2 matches left</span></span>
+          <span><i class="line" style="background: var(--seq-5)"></i><span lang="nb">5 kamper igjen</span><span lang="en">5 matches left</span></span>
+          <span><i class="line" style="background: var(--seq-7)"></i><span lang="nb">10 kamper igjen</span><span lang="en">10 matches left</span></span>
+        </div>
+      </div>
+      <div class="fig__chart"></div>
+      <figcaption><span lang="nb">Jo færre kamper igjen, jo raskere faller presset når klubben er langt fra en strek. To lag med likt press påvirker ikke hverandres odds.</span><span lang="en">The fewer matches left, the faster the pressure falls once a club is far from a line. Two sides under equal pressure leave each other’s odds alone.</span></figcaption>
+    </figure>
+
+    <h3 id="simulering"><span lang="nb">9. Sesongsimuleringen</span><span lang="en">9. The season simulation</span></h3>
+    <p lang="nb">Tabellsjansene kommer av å spille hver gjenstående kamp 50&nbsp;000 ganger. I hver gjennomkjøring trekker hver klubb først et styrkesjokk <var>z</var> fra en normalfordeling med standardavvik <var>ξ</var>&nbsp;=&nbsp;0.20, som gjelder hele gjennomkjøringen, fordi dagens rating bare er et anslag. Sjokket vipper hver av klubbens kamper:</p>
+    <p lang="en">The table chances come from playing every remaining match 50,000 times. In each run every club first draws a strength shock <var>z</var> from a normal distribution with standard deviation <var>ξ</var>&nbsp;=&nbsp;0.20, kept for the whole run, because today’s rating is only an estimate. The shock tilts each of the club’s matches:</p>
+    <div class="eq">
+      <math display="block">
+        <msub><mi>z</mi><mi>c</mi></msub><mo>∼</mo><mi>𝒩</mi><mrow><mo>(</mo><mn>0</mn><mo>,</mo><msup><mi>ξ</mi><mn>2</mn></msup><mo>)</mo></mrow>
+      </math>
+      <div class="eq__row">
+        <math display="block"><msubsup><mi>p</mi><mi>H</mi><mo>′</mo></msubsup><mo>∝</mo><msub><mi>p</mi><mi>H</mi></msub><mo>&#x2062;</mo><msup><mi>e</mi><mrow><msub><mi>z</mi><mi>H</mi></msub><mo>−</mo><msub><mi>z</mi><mi>A</mi></msub></mrow></msup>
+        <mo>,</mo></math>
+        <math display="block"><msubsup><mi>p</mi><mi>D</mi><mo>′</mo></msubsup><mo>∝</mo><msub><mi>p</mi><mi>D</mi></msub>
+        <mo>,</mo></math>
+        <math display="block"><msubsup><mi>p</mi><mi>A</mi><mo>′</mo></msubsup><mo>∝</mo><msub><mi>p</mi><mi>A</mi></msub><mo>&#x2062;</mo><msup><mi>e</mi><mrow><msub><mi>z</mi><mi>A</mi></msub><mo>−</mo><msub><mi>z</mi><mi>H</mi></msub></mrow></msup></math>
+      </div>
+    </div>
+    <p lang="nb">Så trekkes hver kamps utfall fra disse oddsene, et resultat fra målmodellens celler for det utfallet, og tabellen sorteres på poeng, målforskjell, scorede mål og innbyrdes oppgjør. Etter siste runde spiller hver gjennomkjøring kvalifiseringen: OBOS-ligaens 3.–6. plass i enkeltkamper (5. mot 6., vinneren borte mot 4., så borte mot 3.), vinneren mot Eliteseriens nr. 14 over to kamper, og OBOS-ligaens nr. 14 mot et lag fra 2. divisjon over to kamper. Står det likt etter full tid, avgjør ekstraomgangene omtrent halvparten; resten går til straffer, som er et myntkast. Ratingene endres ikke i løpet av en gjennomkjøring. Med 50&nbsp;000 gjennomkjøringer er den største tilfeldige feilen i en celle rundt et halvt prosentpoeng.</p>
+    <p lang="en">Then each match’s outcome is drawn from those odds, a scoreline from the goals model’s cells for that outcome, and the table is sorted on points, goal difference, goals scored and head-to-head. After the last round each run plays the play-offs: OBOS-ligaen’s 3rd to 6th in single matches (5th v 6th, the winner away at 4th, then away at 3rd), the winner against Eliteserien’s 14th over two legs, and OBOS-ligaen’s 14th against a side from 2. divisjon over two legs. A tie level at full time is settled by extra time about half the time; the rest go to penalties, a coin flip. Ratings do not change during a run. With 50,000 runs the largest sampling error in any cell is about half a percentage point.</p>
+
+    <figure class="fig" id="fig-season">
+      <div class="fig__head">
+        <h4><span lang="nb">Sluttplassering i 50&nbsp;000 sesonger</span><span lang="en">Finishing place in 50,000 seasons</span></h4>
+      </div>
+      <div class="fig__controls">
+        <div class="switch" role="group" aria-label="Divisjon / Division">
+          <button type="button" data-league="eliteserien" aria-pressed="true">Eliteserien</button>
+          <button type="button" data-league="obosligaen" aria-pressed="false">OBOS-ligaen</button>
+        </div>
+        <label class="pick"><span lang="nb">Klubb</span><span lang="en">Club</span> <select id="s-club"></select></label>
+      </div>
+      <div class="fig__chart"></div>
+      <p class="fig__readout" aria-live="polite"></p>
+      <details class="fig__table"></details>
+      <figcaption><span lang="nb">Fra den publiserte rapporten: andelen av de 50&nbsp;000 simulerte sesongene der klubben endte på hver plass.</span><span lang="en">From the published report: the share of the 50,000 simulated seasons in which the club finished in each place.</span></figcaption>
+    </figure>
+
+    <h3 id="avgjorende"><span lang="nb">10. Avgjørende kamper</span><span lang="en">10. Decisive matches</span></h3>
+    <p lang="nb">Når en klubb har en reell sjanse til tittel, kvalik eller å berge plassen, er den avgjørende kampen det gjenstående oppgjøret som flytter den sjansen mest. Selv et stort utslag er bare gapet mellom to simulerte sjanser, ingen garanti, og de to oppgjørene i et par teller nesten likt, så det mest avgjørende oppgjøret er det som vises. Avgjørende kamper merkes bare i de ti siste rundene: testet på tidligere sesonger pekte utslagene før det ikke ut kampene som faktisk avgjorde noe. En lagside viser hele sesongen hva neste kamp gjør med sjansene.</p>
+    <p lang="en">When a club has a real shot at the title, qualification or survival, its decisive match is the remaining fixture that moves that chance the most. Even a large swing is only the gap between two simulated chances, not a guarantee, and the two legs of a pairing count almost the same, so the more decisive leg is the one named. Decisive matches are only flagged in the last ten rounds: tested on past seasons, earlier swings did not pick out the matches that went on to settle anything. A club page shows what its next match does to its chances all season.</p>
+
+    <h3 id="testing"><span lang="nb">11. Slik testes den</span><span lang="en">11. How it is tested</span></h3>
+    <p lang="nb">Alt over er valgt fremover i tid (walk-forward): hver sesong spås med innstillinger tilpasset bare på sesongene før, og hver kamp bare med det som var kjent før avspark. Hovedmålet er log loss, den gjennomsnittlige overraskelsen over det som skjedde:</p>
+    <p lang="en">Everything above was chosen walk-forward: each season is predicted with settings fitted only on the seasons before it, and each match only from what was known before kickoff. The main yardstick is log loss, the average surprise at what happened:</p>
+    <div class="eq">
+      <div class="eq__row">
+        <math display="block"><mi>L</mi><mo>=</mo><mo>−</mo><mfrac><mn>1</mn><mi>N</mi></mfrac>
+        <munderover><mo>∑</mo><mrow><mi>n</mi><mo>=</mo><mn>1</mn></mrow><mi>N</mi></munderover>
+        <mi>ln</mi><mo>&#x2061;</mo><msub><mi>p</mi><mrow><mi>n</mi><mo>,</mo><msub><mi>o</mi><mi>n</mi></msub></mrow></msub>
+        <mo>,</mo></math>
+        <math display="block"><mn>1</mn><mo>−</mo><mfrac><mi>L</mi><msub><mi>L</mi><mn>0</mn></msub></mfrac></math>
+      </div>
+    </div>
+    <p lang="nb">der <var>p</var><sub>n,o<sub>n</sub></sub> er sjansen modellen ga utfallet som faktisk skjedde i kamp <var>n</var>. Grunnratene, som alltid gir den samlede andelen hjemmeseire, uavgjort og borteseire, får <var>L</var><sub>0</sub>&nbsp;=&nbsp;1.062, og 1&nbsp;−&nbsp;<var>L</var>/<var>L</var><sub>0</sub> er hvor mye bedre modellen er. En endring tas bare i bruk når den slår versjonen før på kamper den ikke har sett, parvis over kampene og med en t-verdi, og da med en verdi trukket mot ingen endring. På 4&nbsp;800 kamper 2016–2025 får dagens versjon <var>L</var>&nbsp;=&nbsp;0.9997, 5.9&nbsp;% bedre enn grunnratene; den første versjonen var 2.5&nbsp;% bedre. I Eliteserien er modellen 6.0&nbsp;% bedre og bookmakernes sluttodds 6.8&nbsp;%; i sesongene med xG (Eliteserien 2020–2025, 1&nbsp;440 kamper) 8.0&nbsp;% mot 8.3&nbsp;%. Hver versjon, og hvor godt oddsene stemmer med det som skjedde, står i <a href="/?view=model">modellvisningen</a>.</p>
+    <p lang="en">where <var>p</var><sub>n,o<sub>n</sub></sub> is the chance the model gave the outcome that actually happened in match <var>n</var>. Base rates, which always give the overall share of home wins, draws and away wins, score <var>L</var><sub>0</sub>&nbsp;=&nbsp;1.062, and 1&nbsp;−&nbsp;<var>L</var>/<var>L</var><sub>0</sub> is how much better the model is. A change ships only when it beats the version before on matches it has not seen, paired across matches and with a t statistic, and then at a value shrunk toward no change. On 4,800 matches 2016–2025 the current version scores <var>L</var>&nbsp;=&nbsp;0.9997, 5.9% better than base rates; the first version was 2.5% better. In Eliteserien the model is 6.0% better and the bookmakers’ closing odds 6.8%; in the seasons with xG (Eliteserien 2020–2025, 1,440 matches) 8.0% against 8.3%. Every version, and how well its odds match what happened, is in the <a href="/?view=model">model view</a>.</p>
+
+    <h3 id="grenser"><span lang="nb">12. Det modellen ikke vet</span><span lang="en">12. What the model does not know</span></h3>
+    <ul lang="nb">
+      <li>Lagoppstillinger, skader, karantener og overganger i løpet av sesongen. Spillertilgjengelighet er testet og ga ikke bedre odds; markedsverdiene kommer bare inn ved sesongstart.</li>
+      <li>Det som skjedde før 2015, og 2. divisjon: en klubb som rykker opp derfra starter nederst på stigen og rettes av resultatene.</li>
+      <li>Forventede mål før 2020 i Eliteserien og før 2023 i OBOS-ligaen: de kampene rates på mål alene.</li>
+      <li>Form innenfor en simulert sesong: ratingene står stille, og styrkesjokket står for formen som endrer seg.</li>
+    </ul>
+    <ul lang="en">
+      <li>Line-ups, injuries, suspensions and transfers during a season. Player availability was tested and did not improve the odds; squad values come in only at the start of a season.</li>
+      <li>What happened before 2015, and 2. divisjon: a club coming up from there starts at the bottom of the ladder and is corrected by its results.</li>
+      <li>Expected goals before 2020 in Eliteserien and before 2023 in OBOS-ligaen: those matches are rated on goals alone.</li>
+      <li>Form within a simulated season: the ratings stand still, and the strength shock stands in for form that changes.</li>
+    </ul>
+  </section>
+
+  <footer class="doc__foot">
+    <a href="/?view=model"><span lang="nb">← Tilbake til modellkortet</span><span lang="en">← Back to the model card</span></a>
+  </footer>
+</main>
+<script src="/model.js" defer></script>
+</body>
+</html>

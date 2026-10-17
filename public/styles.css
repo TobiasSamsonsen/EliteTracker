@@ -1320,7 +1320,7 @@ table.standings .zone-divider__wrap::after {
 .fixture__lines {
   display: flex;
   flex-wrap: nowrap;
-  gap: 0.3rem;
+  gap: 0.9rem;
   overflow: hidden;
   justify-content: center;
   margin: 0 auto;
@@ -1332,10 +1332,6 @@ table.standings .zone-divider__wrap::after {
   font-size: 0.6875rem;
   font-weight: 600;
   color: var(--ink-muted);
-  background: var(--panel-sunk);
-  border: 1px solid var(--rule);
-  border-radius: 999px;
-  padding: 0.05rem 0.3rem;
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
 }
@@ -1488,13 +1484,28 @@ table.standings .zone-divider__wrap::after {
 }
 .compare__card-main { display: flex; flex-direction: row; align-items: center; gap: 0.75rem; }
 .compare__team .team-logo { width: 48px; height: 48px; flex: none; }
-.compare__pick-hint {
-  text-align: center; font-size: 0.7rem; font-weight: 600; letter-spacing: 0.04em;
-  text-transform: uppercase; color: var(--ink-faint);
-  border-top: 1px solid var(--rule); padding-top: 0.55rem;
+/* The club name opens the list: a chevron says so, as on the hero's
+   pickers, and the dashed underline comes on hover. */
+.compare__team:hover .compare__team-name,
+.compare__team:focus-visible .compare__team-name {
+  text-decoration: underline dashed var(--ink-faint);
+  text-decoration-thickness: 2px;
+  text-underline-offset: 0.25em;
 }
-.compare__team:hover .compare__pick-hint,
-.compare__team:focus-visible .compare__pick-hint { color: var(--ink); }
+.compare__team-name::after {
+  content: "";
+  display: inline-block;
+  width: 0.38em;
+  height: 0.38em;
+  margin: 0 0.05em 0.2em 0.4em;
+  border-right: 0.12em solid currentColor;
+  border-bottom: 0.12em solid currentColor;
+  transform: rotate(45deg);
+  opacity: 0.55;
+  transition: opacity 0.15s var(--ease);
+}
+.compare__team:hover .compare__team-name::after,
+.compare__team:focus-visible .compare__team-name::after { opacity: 1; }
 #compare-output { padding: 0 1.25rem 1.25rem; }
 .compare__teams { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); align-items: center; gap: 0.75rem; margin: 0.25rem 0 0.5rem; }
 .compare__swap-center {
@@ -1514,8 +1525,7 @@ table.standings .zone-divider__wrap::after {
 .compare__scorelines-chips { display: flex; flex-wrap: wrap; justify-content: center; gap: 0.5rem; margin-top: 0.55rem; }
 .compare__scoreline {
   display: flex; flex: 1 1 0; justify-content: center; align-items: baseline; gap: 0.4rem; min-width: 5rem;
-  background: var(--panel); border: 1px solid var(--rule); border-radius: 999px;
-  padding: 0.3rem 0.75rem; font-weight: 700; font-size: 1.05rem; font-variant-numeric: tabular-nums;
+  padding: 0.3rem 0.5rem; font-weight: 700; font-size: 1.05rem; font-variant-numeric: tabular-nums;
 }
 .compare__scoreline-prob { font-size: 0.8rem; font-weight: 600; color: var(--ink-muted); }
 .compare__block { margin-top: 2.25rem; padding-top: 1.75rem; border-top: 1px solid var(--rule); }
@@ -1546,18 +1556,16 @@ table.standings .zone-divider__wrap::after {
 .compare__option-name { font-size: 1rem; font-weight: 600; min-width: 0; overflow-wrap: anywhere; }
 
 .compare__h2h-record {
-  display: flex;
-  align-items: center;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 9rem));
   justify-content: center;
   gap: 0.75rem;
-  margin: 0.75rem 0 0.35rem;
-  font-size: 1.5rem;
-  font-weight: 800;
-  font-variant-numeric: tabular-nums;
+  margin: 0.75rem 0 0.5rem;
+  text-align: center;
 }
-.compare__h2h-team { flex: 1; font-size: 0.75rem; font-weight: 600; color: var(--ink-muted); text-transform: uppercase; letter-spacing: 0.05em; }
-.compare__h2h-team:last-child { text-align: right; }
-.compare__h2h-stat { font-size: 1.5rem; font-weight: 800; }
+.compare__h2h-cell { display: flex; flex-direction: column; align-items: center; gap: 0.15rem; min-width: 0; }
+.compare__h2h-stat { font-size: 1.5rem; font-weight: 800; line-height: 1.1; font-variant-numeric: tabular-nums; }
+.compare__h2h-label { font-size: 0.75rem; font-weight: 600; color: var(--ink-muted); overflow-wrap: anywhere; }
 .compare__h2h-goals { display: flex; flex-direction: column; align-items: center; gap: 0.1rem; margin: 0 0 0.75rem; }
 .compare__h2h-goals-label { font-size: 0.6875rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--ink-muted); }
 .compare__h2h-goals-stat { font-size: 1rem; font-weight: 600; font-variant-numeric: tabular-nums; }
@@ -1756,7 +1764,6 @@ table.standings .zone-divider__wrap::after {
   .compare__team-side { font-size: 0.6875rem; }
   .compare__team-name { font-size: 0.95rem; }
   .compare__team-rating { font-size: 1.3rem; }
-  .compare__pick-hint { font-size: 0.6875rem; padding-top: 0.4rem; }
   .compare__swap-center { width: 44px; height: 44px; font-size: 1.1rem; }
   .compare__scoreline { font-size: 0.85rem; padding: 0.25rem 0.6rem; min-width: 4rem; gap: 0.3rem; }
   .compare__scoreline-prob { font-size: 0.7rem; }
@@ -1793,6 +1800,8 @@ table.standings .zone-divider__wrap::after {
 .caveats { padding: 1.1rem 1.25rem; border-top: 1px solid var(--rule); background: var(--panel-sunk); }
 .caveats ul { margin: 0.5rem 0 0; padding-left: 1.1rem; color: var(--ink-muted); font-size: 0.875rem; }
 .caveats li { margin-block: 0.35rem; max-width: var(--measure); }
+.caveats p { margin: 0.5rem 0 0; color: var(--ink-muted); font-size: 0.875rem; max-width: var(--measure); }
+.caveats__link { display: inline-block; margin-top: 0.6rem; font-size: 0.875rem; font-weight: 600; color: var(--ink); }
 
 footer {
   padding-block: 2rem 3rem;
@@ -1817,22 +1826,21 @@ footer a { color: var(--ink); }
   cursor: pointer;
 }
 
-/* Both answers get the same weight: consent nudged toward yes isn't consent. */
+/* Both answers get the same weight: consent nudged toward yes isn't consent.
+   Docked full width to the bottom edge, on one line where it fits: as a box
+   floating at the middle of the screen it sat over the middle of the grid. */
 .consent {
   position: fixed;
-  inset: auto 1rem 1rem;
+  inset: auto 0 0;
   z-index: 45;
-  max-width: 36rem;
-  margin-inline: auto;
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   gap: 0.5rem 0.75rem;
-  padding: 0.75rem 1rem;
+  padding: 0.75rem max(1rem, calc((100% - 1220px) / 2 + 1rem));
   background: var(--panel);
-  border: 1px solid var(--rule);
-  border-radius: var(--radius-sm);
-  box-shadow: 0 6px 24px rgb(0 0 0 / 0.18);
+  border-top: 1px solid var(--rule);
+  box-shadow: 0 -4px 20px rgb(0 0 0 / 0.12);
   font-size: 0.8125rem;
 }
 .consent[hidden] { display: none; }
@@ -1852,7 +1860,7 @@ footer a { color: var(--ink); }
   cursor: pointer;
 }
 @media (max-width: 760px) {
-  .consent { bottom: calc(52px + env(safe-area-inset-bottom, 0px) + 0.75rem); }
+  .consent { bottom: calc(52px + env(safe-area-inset-bottom, 0px)); }
   /* On a phone they get a line of their own, side by side, half each. */
   .consent__actions { flex: 1 1 100%; }
   .consent__actions button { flex: 1; min-height: 44px; }
@@ -1894,6 +1902,20 @@ footer a { color: var(--ink); }
 /* While it stands in for the page it is a screen tall, so the footer starts
    below the fold rather than jumping down past the arriving content. */
 .status:has(+ #content[hidden]) { min-height: 100vh; }
+.status__retry {
+  appearance: none;
+  margin-left: 0.5rem;
+  font: inherit;
+  font-weight: 600;
+  color: var(--ink);
+  background: var(--panel);
+  border: 1px solid var(--rule-strong);
+  border-radius: var(--radius);
+  padding: 0.35rem 0.9rem;
+  min-height: 40px;
+  cursor: pointer;
+}
+.status__retry:hover { border-color: var(--ink-faint); }
 
 /* ---------- motion ------------------------------------------------ */
 
@@ -1958,7 +1980,7 @@ footer a { color: var(--ink); }
     background: none;
     color: var(--ink-faint);
     font: inherit;
-    font-size: 0.625rem;
+    font-size: 0.6875rem;
     font-weight: 600;
     letter-spacing: 0.02em;
     display: flex;
@@ -2217,7 +2239,6 @@ footer a { color: var(--ink); }
 
   /* Left-aligned so the first view is the one you actually start on. */
   .masthead__views { justify-content: flex-start; }
-  .timeline__note { display: none; }
 
   /* Team grid row: smaller cells on a phone */
   .team-grid-row__cell { height: 1.5rem; font-size: 0.5625rem; }
@@ -2379,7 +2400,7 @@ footer a { color: var(--ink); }
   .team-summary__name { font-size: 1.125rem; }
   .team-summary__rating { font-size: 2rem; }
   .team-stats__value { font-size: 1.25rem; }
-  .team-stats__label { font-size: 0.625rem; }
+  .team-stats__label { font-size: 0.6875rem; }
   .team-stats__tile { padding: 0.5rem 0.35rem; }
 
   /* Compare clubs tighter */
@@ -2414,6 +2435,8 @@ footer a { color: var(--ink); }
 .settings-btn {
   appearance: none;
   margin-left: auto; /* the right edge, also on a phone where the views are hidden */
+  min-width: 40px;
+  min-height: 40px;
   border: 0;
   background: none;
   color: var(--ink-muted);
@@ -3310,13 +3333,6 @@ footer a { color: var(--ink); }
   font-variant-numeric: tabular-nums;
 }
 
-.timeline__note {
-  margin: 0.85rem 0 0;
-  font-size: 0.8125rem;
-  color: var(--ink-muted);
-  max-width: var(--measure);
-}
-
 /* Everything downstream dims while a rewound view is being fetched, so it is
    obvious the numbers on screen are about to change. */
 #content.is-rewinding .panel:not(.timeline) { opacity: 0.55; transition: opacity 0.15s var(--ease); }
@@ -3324,6 +3340,55 @@ footer a { color: var(--ink); }
 
 .timeline.is-past { border-color: var(--tier-1); }
 .timeline.is-past .timeline__head p { color: var(--tier-1); }
+
+/* The button that unfolds the panel. A phone's only: see below. */
+.timeline__open {
+  display: none;
+  align-items: center;
+  gap: 0.4rem;
+  min-height: 44px;
+  appearance: none;
+  font: inherit;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--ink);
+  background: var(--panel-sunk);
+  border: 1px solid var(--rule-strong);
+  border-radius: var(--radius);
+  padding: 0.35rem 0.8rem;
+  cursor: pointer;
+}
+
+/* A wide screen holds the panel on one line: where the page stands, the
+   slider, the way back to live. The first column has a fixed width and the
+   state a single line, so a longer date never moves the slider under the
+   thumb. */
+@media (min-width: 1000px) {
+  .timeline:not([hidden]) {
+    display: grid;
+    grid-template-columns: 24rem minmax(0, 1fr) auto;
+    align-items: center;
+    column-gap: 1.5rem;
+  }
+  .timeline__head { display: contents; }
+  .timeline__head > div:first-child { flex-direction: column; align-items: flex-start; gap: 0.15rem; flex-wrap: nowrap; min-width: 0; }
+  .timeline__head p { margin: 0; max-width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .timeline__control { grid-column: 2; grid-row: 1; }
+  .timeline__now { grid-column: 3; grid-row: 1; }
+}
+
+/* A phone folds the panel to one line until asked: where the page stands,
+   and the button that opens the slider. Rewinding is the occasional tool;
+   the view below is what the screen is for. A rewound page opens it itself
+   (renderTimeline), and once open it stays open. */
+@media (max-width: 760px) {
+  .timeline:not(.is-open) .timeline__head { margin-bottom: 0; }
+  .timeline:not(.is-open) .timeline__head .label,
+  .timeline:not(.is-open) .timeline__now,
+  .timeline:not(.is-open) .timeline__control { display: none; }
+  .timeline:not(.is-open) .timeline__head p { grid-column: 1; grid-row: 1; min-height: 0; font-size: 0.9375rem; }
+  .timeline:not(.is-open) .timeline__open { display: inline-flex; grid-column: 2; grid-row: 1; }
+}
 
 /* Team focus: Season Shape responsiveness */
 @media (max-width: 480px) {
@@ -3366,7 +3431,7 @@ footer a { color: var(--ink); }
   .team-summary__name { font-size: 1.125rem; }
   .team-summary__rating { font-size: 2rem; }
   .team-stats__value { font-size: 1.25rem; }
-  .team-stats__label { font-size: 0.625rem; }
+  .team-stats__label { font-size: 0.6875rem; }
   .team-stats__tile { padding: 0.5rem 0.35rem; }
 
   /* Compare clubs tighter */
@@ -3474,8 +3539,8 @@ footer a { color: var(--ink); }
 
   /* Tighter gaps: the odds bar keeps its row layout at every width */
   .fixture__odds-col { gap: 0.25rem; }
-  .fixture__lines { gap: 0.25rem; }
-  .fixture__line { font-size: 0.625rem; padding: 0.05rem 0.25rem; }
+  .fixture__lines { gap: 0.6rem; }
+  .fixture__line { font-size: 0.6875rem; }
 
   /* Week pagination: larger touch targets */
   .fixtures .played-nav__btn { min-height: 44px; min-width: 44px; padding: 0.4rem 0.75rem; }
@@ -3503,7 +3568,7 @@ footer a { color: var(--ink); }
   .played-results .played-nav__label { min-width: 0; }
 
   /* xG under score readability */
-  .played-card__xg { font-size: 0.625rem; margin-top: 0.25rem; }
+  .played-card__xg { font-size: 0.6875rem; margin-top: 0.25rem; }
 }
 
 @media (max-width: 480px) {
@@ -3518,7 +3583,6 @@ footer a { color: var(--ink); }
   .compare__team .team-logo { width: 40px; height: 40px; }
   .compare__card-main { flex-direction: column; align-items: center; gap: 0.35rem; }
   .compare__team-text { align-items: center; text-align: center; }
-  .compare__pick-hint { font-size: 0.6875rem; padding-top: 0.4rem; }
   .compare__swap-center { width: 44px; height: 44px; font-size: 1.1rem; }
 
   /* Scoreline chips wrap */
@@ -3528,7 +3592,7 @@ footer a { color: var(--ink); }
 
   /* H2H record */
   .compare__h2h-record { font-size: 1.1rem; }
-  .compare__h2h-team { font-size: 0.6875rem; }
+  .compare__h2h-label { font-size: 0.6875rem; }
   .compare__h2h-stat { font-size: 1.1rem; }
 }
 
@@ -3538,7 +3602,7 @@ footer a { color: var(--ink); }
   .compare__team-name { font-size: 0.875rem; }
   .compare__team-rating { font-size: 1.1rem; }
   .compare__scoreline { font-size: 0.75rem; padding: 0.2rem 0.5rem; min-width: 3.5rem; }
-  .compare__scoreline-prob { font-size: 0.625rem; }
+  .compare__scoreline-prob { font-size: 0.6875rem; }
   .compare__h2h-record { font-size: 1rem; }
   .compare__h2h-stat { font-size: 1rem; }
 }
@@ -3551,7 +3615,7 @@ footer a { color: var(--ink); }
 @media (max-width: 480px) {
   .model-grid { grid-template-columns: 1fr; }
   .panel .model-grid div { padding: 0.8rem 0.9rem; }
-  .model-grid dt { font-size: 0.625rem; }
+  .model-grid dt { font-size: 0.6875rem; }
   .model-grid dd { font-size: 0.9375rem; }
   .caveats { padding: 1rem; }
   .caveats li { font-size: 0.8125rem; }

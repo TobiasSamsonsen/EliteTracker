@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="nb">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Fant ikke siden — EliteTracker</title>
+<meta name="robots" content="noindex">
+<meta name="color-scheme" content="light dark">
+<script>
+  /* Same theme resolution as the front page, so the choice carries over. */
+  var choice = localStorage.getItem('elitetracker-theme');
+  document.documentElement.dataset.resolvedTheme = choice === 'light' || choice === 'dark' ? choice
+    : matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+</script>
+<!-- Firebase serves this for any address it has no file for, at that
+     address, so every path here is absolute. -->
+<link rel="stylesheet" href="/styles.css">
+<style>
+  .notfound { max-width: var(--measure); padding-block: 2rem 4rem; }
+  .notfound h1 { font-size: 1.75rem; margin: 1.5rem 0 0.25rem; }
+  .notfound p { color: var(--ink-muted); }
+  .notfound a { color: var(--ink); }
+  .notfound ul { padding-left: 1.1rem; }
+  .notfound li { margin-block: 0.4rem; }
+  .notfound section + section { margin-top: 3rem; padding-top: 1rem; border-top: 1px solid var(--rule); }
+</style>
+</head>
+<body>
+<main class="shell notfound">
+  <a href="/">← EliteTracker</a>
+
+  <section lang="nb">
+    <h1>Fant ikke siden</h1>
+    <p>Denne adressen finnes ikke på EliteTracker, eller så er den flyttet. Kanskje du lette etter en av disse:</p>
+    <ul>
+      <li><a href="/?view=grid">Sluttabellen</a></li>
+      <li><a href="/?view=table">Tabellen</a></li>
+      <li><a href="/?view=matches">Kampene og oddsen</a></li>
+      <li><a href="/?league=obosligaen">OBOS-ligaen</a></li>
+      <li><a href="/model.html">Slik fungerer modellen</a></li>
+    </ul>
+  </section>
+
+  <section lang="en">
+    <h1>Page not found</h1>
+    <p>This address doesn’t exist on EliteTracker, or it has moved. Perhaps you were after one of these:</p>
+    <ul>
+      <li><a href="/?view=grid">The finish grid</a></li>
+      <li><a href="/?view=table">The table</a></li>
+      <li><a href="/?view=matches">Matches and odds</a></li>
+      <li><a href="/?league=obosligaen">OBOS-ligaen</a></li>
+      <li><a href="/model.html">How the model works</a></li>
+    </ul>
+  </section>
+</main>
+</body>
+</html>

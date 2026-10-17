@@ -260,7 +260,8 @@ then the head-to-head record between the clubs still level.
 
 ## Rewind
 
-A slider on the grid, table and ladder views (and the attack vs defence map)
+A slider on the grid, table and ladder views (and the attack vs defence map;
+on a phone the panel opens folded, the slider a tap away)
 lets you scrub to any matchday. Every view rebuilds from only the results known
 on that date, so you can see how the predictions evolved through the season.
 The first stop is the **pre-season prediction**, dated the day before either

@@ -8,7 +8,7 @@ const translations = {
     'tab.ladder': 'Ladder',
     'tab.compare': 'Compare Clubs',
     'tab.explore': 'Explore',
-    'tab.model': 'Model Card',
+    'tab.model': 'Model',
 
     // Mobile bar
     'mob.grid': 'Grid',
@@ -274,8 +274,6 @@ const translations = {
     'hero.title': 'Where everyone finishes',
     'hero.played': 'Played',
     'hero.remaining': 'Remaining',
-    'hero.simulated': 'Seasons simulated',
-    'hero.model': 'Model',
     'hero.ratingsFrom': 'Ratings from',
     'hero.onward': 'onward',
     'hero.lede.finished': '{team} finished top on {points} points. All {matches} matches played; ratings shown are where each club ended the season.',
@@ -296,6 +294,7 @@ const translations = {
     'timeline.live': 'Live — everything played so far',
     'timeline.backToLive': 'Back to live',
     'timeline.backToLiveShort': 'Live',
+    'timeline.open': 'Rewind',
     'timeline.note': 'Everything below is rebuilt from only the results known on the day you pick.',
     'timeline.matchdays': '{n} matchdays',
     'timeline.animating': 'Animating — as of {when}',
@@ -422,7 +421,6 @@ const translations = {
     'compare.desc': 'Predictions for a fictional match between any two clubs. Compare each team\'s rating history.',
     'compare.home': 'Home',
     'compare.away': 'Away',
-    'compare.hint': 'Click to change',
     'compare.chooseClub': 'Choose a club',
     'compare.swap': 'Swap the two clubs',
     'compare.match': 'Fictional match',
@@ -431,6 +429,8 @@ const translations = {
     'compare.ratingHistory': 'Rating history',
     'compare.h2h': 'Head-to-head',
     'compare.h2h.goalsLabel': 'Goals',
+    'compare.h2h.won': '{team} won',
+    'compare.h2h.drawn': 'Draws',
     'page.of': 'Page {n} of {total}',
     'compare.season': 'Season',
     'compare.rating': 'ELO rating',
@@ -439,11 +439,8 @@ const translations = {
     'model.title': 'Model card',
     'model.desc': 'Every number above comes from these settings and this data.',
     'model.howItWorks': 'How it works',
-    'model.how1': 'Each club carries one ELO rating. After every match, the winner gains points and the loser loses them — more if the result was unexpected, and less if xG shows the win was lucky; a match one side dominated on xG also moves the ratings its way, draws included. The gap between two clubs\' ratings gives one set of win/draw/loss odds; a second set comes from each club\'s attack and defence ratings, which move on expected goals (xG) — FotMob for Eliteserien, Sofascore for OBOS-ligaen. The odds shown blend 25 % Elo with 75 % attack/defence. From 2022 both divisions use a faster K-factor and a lower xG weight (K=30, α=30 %); earlier seasons use K=20, α=45 %.',
-    'model.how2': 'Cross-season regression pulls every rating 12 % toward the division average during the off-season. This prevents one strong or weak year from carrying over unchanged, while still letting form carry momentum. For the attack and defence ratings the average is shifted by the club’s squad market value the season before (Transfermarkt), and a club’s first matches of a new season move them further, so they catch up with the winter’s transfers sooner. A club relegated into OBOS-ligaen is pulled half way, toward a level set by its squad value against the division’s, rather than keeping most of its Eliteserien rating.',
-    'model.how3': 'Simulations replay the remaining fixtures thousands of times. Each simulated match first picks an outcome (win, draw, or loss) from the pre-match probabilities, then draws a scoreline from the two clubs\' attack and defence ratings — the goals each side is expected to score and concede. After the last round each run also plays the play-offs (OBOS-ligaen 3rd–6th for a two-legged final against Eliteserien\'s 14th, and OBOS-ligaen\'s 14th against a second-tier side), so the promotion and relegation chances count them. Each run also nudges every club\'s strength up or down by a small random amount for the rest of that run, because a rating is an estimate and form drifts over a season; without it the finishing odds come out too sure of themselves.',
-    'model.how4': 'Two OBOS-ligaen clubs were promoted from the third tier, which is outside this project\'s data. They start at the bottom of the ladder and are corrected only by results.',
-    'model.how5': 'When a club has a real shot at the title, qualification or survival, its decisive match is the remaining fixture that moves that chance the most. Even a large swing is only the gap between two simulated chances, not a guarantee, and the two legs of a pairing count almost the same, so the more decisive leg is the one named. Decisive matches are only flagged in the last ten rounds: tested on past seasons, earlier swings did not pick out the matches that went on to settle anything. A club page shows what its next match does to its chances all season.',
+    'model.howLead': 'Each club has a strength rating that learns from every match, with expected goals (xG) telling luck from good play. A second model counts goals; the odds blend the two, and the rest of the season is played 50,000 times for the table chances.',
+    'model.howLink': 'How the model works, in plain words and with every formula →',
     'model.version': 'Version',
     'model.kfactor': 'K-factor',
     'model.homeAdvantage': 'Home advantage',
@@ -537,15 +534,18 @@ const translations = {
 
     // Form
     'form.tooltip': '{w}W {d}D {l}L',
+    'form.W': 'W', 'form.D': 'D', 'form.L': 'L',
 
     // Season select
     'season.live': '{season} (live)',
 
     // Status / errors
     'status.loading': 'Loading the season\u2026',
-    'status.couldNotLoad': 'Could not load {season}: {error}',
-    'status.couldNotLoadSeason': 'Could not load the season: {error}. Are the data files deployed?',
-    'status.couldNotRewind': 'Could not rewind: {error}',
+    'status.couldNotLoad': 'Could not load {season}. Check your connection and try again.',
+    'status.couldNotLoadSeason': 'Could not load the season. Check your connection and try again.',
+    'status.couldNotLoadHistory': 'Club histories and past meetings could not be loaded.',
+    'status.couldNotRewind': 'Could not rewind. Try again.',
+    'status.retry': 'Try again',
 
     // Table dynamic headers
     'table.champion': 'Champion',
@@ -626,7 +626,7 @@ const translations = {
     'tab.ladder': 'Stige',
     'tab.compare': 'Sammenlign',
     'tab.explore': 'Utforsk',
-    'tab.model': 'Modellkort',
+    'tab.model': 'Modell',
 
     // Mobile bar
     'mob.grid': 'Sluttabell',
@@ -892,8 +892,6 @@ const translations = {
     'hero.title': 'Hvem ender hvor',
     'hero.played': 'Spilt',
     'hero.remaining': 'Gjenværende',
-    'hero.simulated': 'Simulerte sesonger',
-    'hero.model': 'Modell',
     'hero.ratingsFrom': 'Ratinger fra',
     'hero.onward': 'og utover',
     'hero.lede.finished': '{team} vant med {points} poeng. Alle {matches} kamper spilt; ratingene viser hvor hvert lag endte sesongen.',
@@ -914,6 +912,7 @@ const translations = {
     'timeline.live': 'Direkte — alt spilt så langt',
     'timeline.backToLive': 'Tilbake til direkte',
     'timeline.backToLiveShort': 'Direkte',
+    'timeline.open': 'Spol tilbake',
     'timeline.note': 'Alt nedenfor bygges kun på resultatene som var kjent på den dagen du velger.',
     'timeline.matchdays': '{n} spillerunder',
     'timeline.animating': 'Animerer — per {when}',
@@ -1037,7 +1036,6 @@ const translations = {
     'compare.desc': 'Spådommer for en fiktiv kamp mellom to klubber. Sammenlign hvert lags rating over tid.',
     'compare.home': 'Hjemme',
     'compare.away': 'Borte',
-    'compare.hint': 'Klikk for å endre',
     'compare.chooseClub': 'Velg en klubb',
     'compare.swap': 'Bytt de to klubbene',
     'compare.match': 'Fiktiv kamp',
@@ -1046,6 +1044,8 @@ const translations = {
     'compare.ratingHistory': 'Rating over tid',
     'compare.h2h': 'Tidligere møter',
     'compare.h2h.goalsLabel': 'Mål',
+    'compare.h2h.won': '{team} vant',
+    'compare.h2h.drawn': 'Uavgjort',
     'page.of': 'Side {n} av {total}',
     'compare.season': 'Sesong',
     'compare.rating': 'ELO-rating',
@@ -1054,11 +1054,8 @@ const translations = {
     'model.title': 'Modellkort',
     'model.desc': 'Hvert tall over kommer fra disse innstillingene og disse dataene.',
     'model.howItWorks': 'Slik fungerer det',
-    'model.how1': 'Hvert lag har én ELO-rating. Etter hver kamp får vinneren poeng og taperen taper — mer hvis resultatet var overraskende, og mindre hvis xG viser at seieren var heldig; en kamp det ene laget dominerte på xG flytter også ratingene i dets favør, uavgjort inkludert. Avstanden mellom to lags ratinger gir ett sett odds for seier, uavgjort og tap; et annet sett kommer fra hvert lags angreps- og forsvarsrating, som oppdateres på forventede mål (xG) — FotMob for Eliteserien, Sofascore for OBOS-ligaen. Oddsene blander 25 % Elo med 75 % angrep/forsvar. Fra 2022 bruker begge divisjoner raskere K-faktor og lavere xG-vekt (K=30, α=30 %); tidligere sesonger bruker K=20, α=45 %.',
-    'model.how2': 'Kryssesongsregresjon drar hver rating 12 % mot divisjonsgjennomsnittet i pausen mellom sesonger. Dette forhindrer at ett sterkt eller svakt år videreføres uendret, samtidig som formen beholder momentum. For angreps- og forsvarsratingene flyttes snittet etter klubbens markedsverdi sesongen før (Transfermarkt), og en klubbs første kamper i en ny sesong flytter dem mer, så de tar igjen vinterens overganger raskere. En klubb som rykker ned i OBOS-ligaen trekkes halvveis, mot et nivå satt av markedsverdien mot divisjonens, i stedet for å beholde det meste av Eliteserie-ratingen.',
-    'model.how3': 'Simuleringer spiller gjennom de gjenværende kampene tusenvis av ganger. Hver simulert kamp velger først et utfall (seier, uavgjort eller tap) fra førkampssannsynlighetene, og trekker deretter et sluttresultat fra de to klubbenes angreps- og forsvarsratinger — målene hvert lag forventes å score og slippe inn. Etter siste runde spiller hver simulering også kvalifiseringen (OBOS-ligaens 3.–6. plass om en finale over to kamper mot Eliteseriens nr. 14, og OBOS-ligaens nr. 14 mot et lag fra 2. divisjon), så sjansene for opprykk og nedrykk regner den med. Hver simulering flytter også hver klubbs styrke litt opp eller ned, tilfeldig, for resten av den simuleringen, fordi en rating er et anslag og formen endrer seg gjennom en sesong; uten dette blir sluttplasseringsoddsene for skråsikre.',
-    'model.how4': 'To OBOS-ligaen-klubber rykket opp fra tredje nivå, som er utenfor dette prosjekts data. De starter på bunnen av stigen og korrigeres kun av resultater.',
-    'model.how5': 'Når et lag har en reell sjanse til tittel, kvalik eller å berge plassen, er den avgjørende kampen det gjenstående oppgjøret som flytter den sjansen mest. Selv et stort utslag er bare gapet mellom to simulerte sjanser, ingen garanti, og de to oppgjørene i et par teller nesten likt, så det mest avgjørende oppgjøret er det som vises. Avgjørende kamper merkes bare i de ti siste rundene: testet på tidligere sesonger pekte utslagene før det ikke ut kampene som faktisk avgjorde noe. En lagside viser hele sesongen hva neste kamp gjør med sjansene.',
+    'model.howLead': 'Hver klubb har en styrkerating som lærer av hver kamp, der forventede mål (xG) skiller flaks fra godt spill. En annen modell teller mål; oddsene blander de to, og resten av sesongen spilles 50 000 ganger for tabellsjansene.',
+    'model.howLink': 'Slik fungerer modellen, kort forklart og med alle formlene →',
     'model.version': 'Versjon',
     'model.kfactor': 'K-faktor',
     'model.homeAdvantage': 'Hjemmefordel',
@@ -1152,15 +1149,18 @@ const translations = {
 
     // Form
     'form.tooltip': '{w}S {d}U {l}T',
+    'form.W': 'S', 'form.D': 'U', 'form.L': 'T',
 
     // Season select
     'season.live': '{season} (direkte)',
 
     // Status / errors
     'status.loading': 'Laster sesongen\u2026',
-    'status.couldNotLoad': 'Kunne ikke laste {season}: {error}',
-    'status.couldNotLoadSeason': 'Kunne ikke laste sesongen: {error}. Er datafilene deployet?',
-    'status.couldNotRewind': 'Kunne ikke spole tilbake: {error}',
+    'status.couldNotLoad': 'Kunne ikke laste {season}. Sjekk nettforbindelsen og prøv igjen.',
+    'status.couldNotLoadSeason': 'Kunne ikke laste sesongen. Sjekk nettforbindelsen og prøv igjen.',
+    'status.couldNotLoadHistory': 'Klubbhistorikk og tidligere møter kunne ikke lastes.',
+    'status.couldNotRewind': 'Kunne ikke spole tilbake. Prøv igjen.',
+    'status.retry': 'Prøv igjen',
 
     // Table dynamic headers
     'table.champion': 'Mester',
