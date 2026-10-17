@@ -2098,6 +2098,37 @@ should count less), on the final model, `experiments/improvements/fcdk_decay.py`
   0.25-0.5: worse throughout, +0.00179 (t +2.38) at best.
 The flat 45-match keeping window stays.
 
+Finishing and keeping learnt online, the way attack and defence are (the
+owner, on elo-v15.0, October 2026), `experiments/improvements/fcdk_online.py`
+(the subclass with both off is the shipped model to 0.0): each a rating of
+its own that takes a step after every match with the data, k times the
+Poisson surprise -- finishing F += k (goals - xG x the division's goals per
+xG x e^F), keeping K += k (xGoT faced x the division's goals per xGoT x e^-K
+- let in), the surprise capped like attack/defence's -- with w x the rating
+in the predicted and learning rates. Online F replaces last season's
+finishing (with and without the 0.7 offseason pull), online K the flat
+window. k 0.005-0.08 (roughly a memory of 200 down to 10 matches) x w
+0.25-1.0, paired against elo-v15.0:
+
+| variant | all 2016+ LL (t) | Brier t | RPS t | all 2021+ LL (t) | Eliteserien 2021+ LL (t) |
+|---|---|---|---|---|---|
+| K, best (k 0.005, w 0.25) | +0.00046 (+1.93) | +1.70 | +1.82 | +0.00060 (+1.50) | +0.00141 (+1.84) |
+| K, worst (k 0.08, w 1.0) | +0.00282 (+3.59) | +3.70 | +3.57 | +0.00405 (+3.04) | +0.00840 (+3.25) |
+| F, no pull, best (k 0.005, w 0.25) | +0.00079 (+1.99) | +1.79 | +1.65 | +0.00152 (+2.05) | +0.00249 (+2.26) |
+| F, pull 0.7, best (k 0.005, w 0.25) | +0.00081 (+2.02) | +1.82 | +1.68 | +0.00155 (+2.08) | +0.00255 (+2.29) |
+| F, worst (k 0.08, w 1.0) | +0.00708 (+5.31) | +5.09 | +4.84 | +0.01364 (+5.76) | +0.02015 (+5.60) |
+| F and K, best (k 0.01, w 0.5) | +0.00144 (+3.13) | +2.81 | +2.70 | +0.00257 (+3.09) | +0.00468 (+3.59) |
+
+Worse at every speed and weight; the best settings are the slowest and
+lightest, that is the part switched off, and they cost about what the shipped
+part is worth (season-level finishing off was +0.00146 in the elo-v14.0
+sweep). The walk-forward keeps the shipped model in every season but one
+(2021, where it is worse: t +4 to +5). Same verdict as the decayed averages
+above: finishing is best as last season's whole-season figure and keeping as
+a flat window with a hard cut-off; a rating that keeps learning from every
+match carries a club's old finishing and old keeper too long, and reacts to
+single matches too much once it learns fast enough to forget them.
+
 **Shipped as elo-v14.0.** `ADConfig.alpha` 0.9, `keeping_window` 45,
 `keeping_weight` 0.75 (`AttackDefence.keeping`, in the predicted and the
 learning rates, and in `rates_against_average`'s goals against),

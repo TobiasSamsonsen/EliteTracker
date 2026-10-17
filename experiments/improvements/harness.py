@@ -263,8 +263,9 @@ class ADOut:
 
 
 def ad_run(config: ADConfig | None = None, shots: dict | None = None, elo_gap: np.ndarray | None = None,
-           after_observe: Callable | None = None, values: dict | None = None, **hooks) -> ADOut:
-    ad = ADX.from_slices(SLICES, config or ADConfig(), shots=SHOTS if shots is None else shots,
+           after_observe: Callable | None = None, values: dict | None = None, cls: type = None, **hooks) -> ADOut:
+    """`cls`, a subclass of ADX, replaces the goals model's class."""
+    ad = (cls or ADX).from_slices(SLICES, config or ADConfig(), shots=SHOTS if shots is None else shots,
                          values=market_values() if values is None else values)
     for name, hook in hooks.items():
         setattr(ad, name, hook)
