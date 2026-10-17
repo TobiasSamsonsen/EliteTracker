@@ -46,7 +46,7 @@ try:
             if decline.is_visible():
                 decline.click()
             for viz, ready in (("calibration", ".calibration__dot"), ("luck", ".luck__row"), ("runin", ".runin__cell"),
-                               ("scorecard", ".scorecard__dot"), ("accuracy", ".scorecard__dot, .calibration__dot"), ("races", ".races__race"), ("h2h", ".h2h__cell"),
+                               ("scorecard", ".scorecard__dot"), ("accuracy", ".scorecard__dot"), ("races", ".races__race"), ("h2h", ".h2h__cell"),
                                ("stakes", ".stakes__cell, .explore-empty")):
                 if viz not in live:
                     continue
