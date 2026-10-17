@@ -79,7 +79,7 @@ reports and `careers.json` carry them).
 | elo-v13.0 | 2026-10-16 | 28e49b1 | major | xG margin signed by xG; exact xG-implied score; squad-value offseason pull; early-season step; strength shock 0.20; surface edge in Eliteserien; play-offs simulated |
 | elo-v14.0 | 2026-10-16 | 3909841 | major | keeping (xG on target, a club's last 45 matches) as the goals model's fourth part, its chances learnt 90 % from xG; the offseason pull per division (OBOS-ligaen 0.75 / 0.3); surface edge 10 -> 20 |
 | elo-v15.0 | 2026-10-17 | adc21db | major | a club relegated into OBOS-ligaen keeps half its distance from the division's mean, toward a target set by its squad value (Elo 75 points per log value, its first use of squad values; the goals model its own value pull) |
-| elo-v16.0 | 2026-10-17 | (this release) | major | the xG margin unclamped and 0.10 -> 0.12; late-season table stakes on the prediction (`model.stakes`), the season simulation reading them from each run's own table -- **the deployed version** |
+| elo-v16.0 | 2026-10-17 | b571718 | major | the xG margin unclamped and 0.10 -> 0.12; late-season table stakes on the prediction (`model.stakes`), the season simulation reading them from each run's own table -- **the deployed version** |
 
 Unbumped commits that only added output fields (`position_points`, projected
 goals, high-stakes swings, the pre-season view) or touched presentation were
