@@ -2592,7 +2592,7 @@ about a match twice instead of up to 48 times. The other 1.1 items (a shared
 curl_cffi session for FotMob, browser headers on its requests) are not
 needed: FotMob serves plain requests from both this machine and CI.
 
-## 🔭 Explore: which views stay, and a season in each (October 2026) - luck table released, six on branches
+## 🔭 Explore: which views stay, and a season in each (October 2026) - luck table and model accuracy released, five on branches
 
 The owner kept seven of the ten new views -- race lines, prediction scorecard,
 luck table, run-in heatmap, stakes calendar, head to head, match-odds
@@ -2611,7 +2611,8 @@ matches), the parts were put in reverse order, and the owner moved it out of
 Explore into the model card, as a panel under the settings ("How accurate is
 the model?", `#model-accuracy`, drawn by `renderModelCard`); the model card's
 hero offers only the season, so the scorecard has a division switch of its
-own (`state.accuracyLeague`). It still waits on `explore/accuracy`.
+own (`state.accuracyLeague`). Released 2026-10-17 with elo-v16.0 in its
+version history (`explore/accuracy` merged into `main`).
 
 The luck table was the first released (2026-10-16, after elo-v14.0), which
 brought `explore/base` to `main`. Each of the other six waits on a branch of
@@ -2722,7 +2723,7 @@ below that name a branch wait on it (see "Explore: which views stay").
   climber and faller as predicted -> finished, and the biggest surprise (the
   final place with the smallest pre-season chance). The mountain's ⓘ button
   opens them in a `<dialog>`; the phone layout has no other way to them.
-- **Prediction scorecard** (candidate #1; since 2026-10-17 the first part of model accuracy, `viz=accuracy`, branch `explore/accuracy`): every finished
+- **Prediction scorecard** (candidate #1; since 2026-10-17 the first part of model accuracy, in the model card, released 2026-10-17): every finished
   club-season of the division, the place the pre-season view called (the
   order of the expected finishes) against its final place, one circle a cell
   sized by its count, the y = x line and the two-place band the hit rate
@@ -2868,7 +2869,7 @@ below that name a branch wait on it (see "Explore: which views stay").
   hardest first (the Fix Diff column, match by match). Scrolls sideways on
   phones with the club column pinned. Facts: hardest and easiest run-in, the
   gap between them, the surest win left.
-- **Match-odds calibration** (#10; since 2026-10-17 the second part of model accuracy, `viz=accuracy`, branch `explore/accuracy`): a reliability diagram of
+- **Match-odds calibration** (#10; since 2026-10-17 the second part of model accuracy, in the model card, released 2026-10-17): a reliability diagram of
   the shipped odds over every match since 2016 (home, draw, away, in 5 % bins since 2026-10-17, a band through the bins' 95 % Wilson intervals (error bars first,
   the owner preferred a band); one panel per outcome zoomed to
   its own range, bins under 50 matches left out; dot size by count), the scores against the closing line three ways
