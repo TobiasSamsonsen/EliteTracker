@@ -1,7 +1,7 @@
 # EliteTracker
 
 Predictive model for Norwegian men's football: **Eliteserien** (tier 1) and
-**OBOS-ligaen** (tier 2). Uses an ELO rating system (elo-v14.0) to estimate team
+**OBOS-ligaen** (tier 2). Uses an ELO rating system (elo-v15.0) to estimate team
 strength, match probabilities and season outcomes. Fixtures and results come
 from FotMob (xG from FotMob for Eliteserien, Sofascore for OBOS-ligaen);
 benchmark odds from football-data.co.uk, squad values from Transfermarkt.
@@ -41,7 +41,9 @@ Two sets of odds are blended for each fixture:
   correction, updated match-by-match on goals and xG. Each offseason it is
   pulled toward its division's average shifted by the club's squad market
   value the season before, and a club's first matches of a season move it
-  further, so it catches up with the winter's transfers sooner
+  further, so it catches up with the winter's transfers sooner. A club
+  relegated into OBOS-ligaen is placed more by its squad value than by the
+  rating it brings, in both models
 
 The shipped prediction is a 25/75 blend (ELO/attack-defence). Scorelines come
 from the attack/defence grid, conditioned on the blended outcome odds. In
@@ -168,6 +170,7 @@ Every tunable parameter in the shipped model:
 | Home advantage | 60 pts | Rating bonus for the home team |
 | xG weight | 45 % (legacy) / 30 % (2022+) | How much xG dampens lucky wins in rating updates |
 | Cross-season regression | 12% | How much ratings regress toward the mean each offseason |
+| Relegated clubs | 50% + 75 pts per log value | A club relegated into OBOS-ligaen regresses half way, toward a target set by its squad value against the division's (ELO; the goals model: half way, by its own value pull) |
 | Peak draw rate | 26% | Maximum draw probability from the draw model |
 | Outcome blend | 25/75 | ELO vs attack/defence weight for win/draw/loss odds |
 | Goals model: xG weight | 90% | How much of the attack/defence update is xG rather than goals, where there is xG |

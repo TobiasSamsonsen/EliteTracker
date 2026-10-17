@@ -197,7 +197,17 @@ from dataclasses import dataclass
 #   * the surface edge 10 -> 20 rating points.
 #   Together: all matches 2021-2026 -0.00262 log loss (t -3.74), 2016-2026
 #   -0.00190 (t -4.05), both divisions, Brier and RPS alike.
-MODEL_VERSION = "elo-v14.0"
+#
+# elo-v15.0: clubs relegated into OBOS-ligaen placed by their squad value
+# (October 2026); see PROJECT_STATUS.md, "Clubs changing division placed by
+# their own squad value".
+#   * at the offseason a club coming down keeps half its distance from
+#     OBOS-ligaen's mean (0.88 / 0.75 before) in Elo and the goals model, and
+#     its target moves by its log squad value against the division's: 75 Elo
+#     points per log value (`EloConfig.relegated_regression`,
+#     `relegated_value_pull`; the Elo replay reads squad values for the first
+#     time), the goals model's own value_pull (`ADConfig.relegated_regression`).
+MODEL_VERSION = "elo-v15.0"
 
 # A 400-point rating gap means the stronger side is expected to score 10 times
 # as often as the weaker one; this is the constant that defines the ELO scale.
@@ -232,6 +242,19 @@ class EloConfig:
     # mean-revert. Applied per division now, so the inter-division gap is
     # preserved. Re-fit by walk-forward backtest on the per-division scheme.
     season_regression: float = 0.88
+    # A club relegated into OBOS-ligaen (elo-v15.0) is placed more by what its
+    # squad is worth than by the Eliteserien rating it brings: it keeps
+    # `relegated_regression` of its distance from the division's mean instead
+    # of season_regression, and its target moves by `relegated_value_pull`
+    # rating points per log of its squad value against the division's
+    # (geometric mean, Transfermarkt, the season before). With the goals
+    # model's own (`ADConfig.relegated_regression`): 2016+ -0.00047 log loss
+    # (t -2.43), Brier t -2.67, RPS t -2.71, both halves; promoted clubs gain
+    # nothing from it. A stronger pull without the value does nothing (t -0.2).
+    # PROJECT_STATUS.md, "Clubs changing division placed by their own squad
+    # value". season_regression and 0.0 are elo-v14.0.
+    relegated_regression: float = 0.5
+    relegated_value_pull: float = 75.0
     # Weight on the xG-implied expected score in the rating update. 0.0 is pure
     # Elo (binary result only); 0.45 means 45% of the observation is the Poisson
     # expectation under the two sides' expected goals, so a lucky win moves

@@ -21,6 +21,9 @@ out/ exactly put a worktree of commit ed7b2b0's `src` first on PYTHONPATH.
 Likewise keeping.py, keeping_rolling.py, fcdk*.py and sweep2021*.py measured
 against elo-v13.0 (commit 9b6d720's `src`); elo-v14.0 is their final
 candidate, so on its `src` their "shipped" baseline is elo-v14.0 itself.
+recalibration.py, own_level.py, division_value_gap.py and value_crossers.py
+measured against elo-v14.0 (commit b813a07's `src`); value_crossers.py's
+relegated-clubs variant is elo-v15.0, which the replay below now carries.
 """
 
 from __future__ import annotations
@@ -32,7 +35,7 @@ from typing import Callable
 import numpy as np
 
 from elitetracker.model.attack_defence import ADConfig, AttackDefence, OUTCOME_BLEND, score_grid
-from elitetracker.model.career import team_ids
+from elitetracker.model.career import relegated_values, team_ids
 from elitetracker.model.elo import (
     EloConfig, actual_score, effective_home_advantage, era_config, expected_score, xg_implied_score,
 )
@@ -45,6 +48,7 @@ from elitetracker.pipeline import load_slices, market_values, seed_ratings, shot
 SLICES = load_slices()
 SEEDS = {team_id: seed.rating for team_id, seed in seed_ratings().items()}
 SHOTS = shot_table()
+VALUES = market_values()
 PLAYED: list[tuple[Match, str, int]] = sorted(
     ((m, s.league, s.season) for s in SLICES for m in s.matches if m.played),
     key=lambda row: Match.sort_key(row[0]),
@@ -106,29 +110,38 @@ def elo_run(run: EloRun | None = None, gaps: np.ndarray | None = None) -> np.nda
     out = np.zeros((len(PLAYED), 3))
     seasons = sorted({s for _, _, s in PLAYED} | {sl.season for sl in SLICES})
     ctx = Context()
+    previous: dict[str, str] = {}
     for season in seasons:
         in_season = [sl for sl in SLICES if sl.season == season]
+        active: dict[str, str] = {}
+        for sl in in_season:
+            for m in sl.matches:
+                for t in team_ids(m):
+                    active[t] = sl.league
         if season != seasons[0]:
-            active: dict[str, str] = {}
-            for sl in in_season:
-                for m in sl.matches:
-                    for t in team_ids(m):
-                        active[t] = sl.league
             by_league: dict[str, list[str]] = {}
             for t, lg in active.items():
                 if t in ratings:
                     by_league.setdefault(lg, []).append(t)
             for lg, ids in by_league.items():
-                regression = run.config_for(lg, season).season_regression
+                cfg = run.config_for(lg, season)
+                regression = cfg.season_regression
                 if regression >= 1.0:
                     continue
                 mean = sum(ratings[t] for t in ids) / len(ids)
                 targets = run.target(season, lg, ids, ratings) if run.target else None
+                # elo-v15.0: clubs relegated into OBOS-ligaen, placed by squad value.
+                down = relegated_values(lg, ids, previous, VALUES.get(season - 1, {}))
                 for t in ids:
+                    if t in down:
+                        goal = mean + cfg.relegated_value_pull * down[t]
+                        ratings[t] = goal + cfg.relegated_regression * (ratings[t] - goal)
+                        continue
                     goal = targets.get(t, mean) if targets else mean
                     ratings[t] = goal + regression * (ratings[t] - goal)
             if run.offseason:
                 run.offseason(season, ratings)
+        previous = active
         for sl in in_season:
             for m in sl.matches:
                 for t in team_ids(m):
@@ -406,7 +419,7 @@ def identity() -> None:
     from elitetracker.model.backtest import walk_forward
 
     elo, ad, mix = shipped()
-    card = walk_forward(SLICES, SEEDS, EloConfig(), score_from_season=2015, shots=SHOTS)
+    card = walk_forward(SLICES, SEEDS, EloConfig(), score_from_season=2015, shots=SHOTS, values=VALUES)
     worst = max(abs(np.array([p.home_win, p.draw, p.away_win]) - elo[INDEX[mid]]).max()
                 for mid, (p, _) in card.predictions.items())
     assert len(card.predictions) == len(IDS), (len(card.predictions), len(IDS))

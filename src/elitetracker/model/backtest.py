@@ -136,6 +136,7 @@ def walk_forward(
     shots: dict[str, tuple[float, ...]] | None = None,
     league: str | None = None,
     config_for: Callable[[str, int], EloConfig] | None = None,
+    values: dict[int, dict[str, float]] | None = None,
 ) -> Scorecard:
     """Replay every season in order, scoring only from `score_from_season` on.
 
@@ -152,12 +153,15 @@ def walk_forward(
     ``config_for(league, season)`` picks the Elo config each match is rated and
     predicted with -- the shipped era switch by default (see `elo.era_config`),
     a per-division variant when one is being fitted.
+
+    ``values`` (squad values by season, `pipeline.market_values`) places the
+    clubs relegated into OBOS-ligaen as production does (elo-v15.0).
     """
     config = config or EloConfig()
     config_for = config_for or (lambda lg, season: era_config(season, config))
     card = Scorecard(name=name)
     match_league = {m.match_id: s.league for s in slices for m in s.matches}
-    for season, _, _, matches in replay(slices, seeds, config, shots=shots, config_for=config_for):
+    for season, _, _, matches in replay(slices, seeds, config, shots=shots, config_for=config_for, values=values):
         for match, (home_before, away_before) in matches:
             match_in = match_league.get(match.match_id, "")
             if season >= score_from_season and (league is None or match_in == league):
@@ -189,7 +193,7 @@ def shipped_cards(
     the times it happened] over the scored matches: the site's scoreline
     model (`conditional_scorelines`) against the results."""
     elo = walk_forward(slices, seeds, EloConfig(), score_from_season=score_from_season, name="elo",
-                       shots=shots, league=league)
+                       shots=shots, league=league, values=values)
     shipped = Scorecard(name="elo + attack/defence")
     ad = AttackDefence.from_slices(slices, ADConfig(), shots=shots, values=values)
     for match in sorted((m for s in slices for m in s.matches if m.played), key=Match.sort_key):

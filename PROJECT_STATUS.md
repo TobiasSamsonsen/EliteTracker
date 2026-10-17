@@ -77,7 +77,8 @@ reports and `careers.json` carry them).
 | elo-v12.1 | 2026-10-11 | 8e7c30c | minor | head-to-head tiebreak in the table and the simulation |
 | elo-v12.2 | 2026-10-13 | fbbc061 | minor | season simulation on NumPy (a new random stream) |
 | elo-v13.0 | 2026-10-16 | 28e49b1 | major | xG margin signed by xG; exact xG-implied score; squad-value offseason pull; early-season step; strength shock 0.20; surface edge in Eliteserien; play-offs simulated |
-| elo-v14.0 | 2026-10-16 | 3909841 | major | keeping (xG on target, a club's last 45 matches) as the goals model's fourth part, its chances learnt 90 % from xG; the offseason pull per division (OBOS-ligaen 0.75 / 0.3); surface edge 10 -> 20 -- **the deployed version** |
+| elo-v14.0 | 2026-10-16 | 3909841 | major | keeping (xG on target, a club's last 45 matches) as the goals model's fourth part, its chances learnt 90 % from xG; the offseason pull per division (OBOS-ligaen 0.75 / 0.3); surface edge 10 -> 20 |
+| elo-v15.0 | 2026-10-17 | see git log | major | a club relegated into OBOS-ligaen keeps half its distance from the division's mean, toward a target set by its squad value (Elo 75 points per log value, its first use of squad values; the goals model its own value pull) -- **the deployed version** |
 
 Unbumped commits that only added output fields (`position_points`, projected
 goals, high-stakes swings, the pre-season view) or touched presentation were
@@ -2201,8 +2202,8 @@ Squad values understate how far apart the divisions have grown, whether
 because OBOS-ligaen squads are valued generously for how they play or
 because Eliteserien's top has pulled away (not tested).
 
-**Clubs changing division placed by their own squad value - a candidate,
-not shipped.** The owner's follow-up: not the whole gap, but each promoted or
+**Clubs changing division placed by their own squad value - relegated
+clubs shipped as elo-v15.0.** The owner's follow-up: not the whole gap, but each promoted or
 relegated club placed more by its value against its new division. Today
 such a club is pulled like any other: toward its new division's mean,
 keeping 0.88 of its distance (goals model: 0.88 Eliteserien / 0.75
@@ -2241,8 +2242,22 @@ and a second pull for one group of clubs, so the |t| >= 2 bar applies: met
 in-sample (relegated only, t −2.43, both halves negative on all three
 metrics), not out of sample (t −1.75). If it is taken up, the cleanest form
 is relegated clubs only, keep 0.5, the goals model's own value shift, Elo
-75 points per log value, then a forward split before a release (elo-v15.0,
-MAJOR).
+75 points per log value.
+
+Shipped as elo-v15.0 on the owner's call (2026-10-17), without a forward
+split: `EloConfig.relegated_regression` 0.5 and `relegated_value_pull` 75
+(the Elo replay reads squad values for the first time: `career.replay`,
+`build_careers`, `walk_forward` take `values`), `ADConfig.relegated_regression`
+0.5. The harness carries it (identity to the bit). Against elo-v14.0, the
+same matches:
+
+| window | log loss | t | Brier t | RPS t | halves t |
+|---|---|---|---|---|---|
+| all 2016+ (5,183) | −0.00046 | −2.32 | −2.57 | −2.61 | −1.84 / −1.42 |
+| Eliteserien | +0.00005 | +0.45 | +0.37 | +0.29 | +0.55 / −0.05 |
+| OBOS-ligaen | −0.00095 | −2.51 | −2.76 | −2.79 | −2.12 / −1.42 |
+| 2021+ (2,783) | −0.00042 | −1.57 | −1.60 | −1.82 | −1.10 / −1.12 |
+| matches with a relegated club (757) | −0.00348 | −2.72 | −2.98 | −3.02 | −2.61 / −1.19 |
 
 ## 🔭 Explore: which views stay, and a season in each (October 2026) - luck table released, six on branches
 

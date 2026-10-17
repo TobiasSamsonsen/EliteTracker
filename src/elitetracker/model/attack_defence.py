@@ -32,7 +32,9 @@ the next season with regression, avoiding the noise of match-level updates.
 Two season-start corrections (elo-v13.0): the offseason pull aims at the
 division mean shifted by the club's squad market value from the season
 before, and a club's first matches of a season take a bigger step. From
-elo-v14.0 each division has its own pull (OBOS-ligaen's is stronger).
+elo-v14.0 each division has its own pull (OBOS-ligaen's is stronger); from
+elo-v15.0 a club relegated into OBOS-ligaen keeps only half its distance
+from the division's mean, so its squad value counts for more.
 
 Keeping (elo-v14.0) is the fourth part: the chances are learnt mostly from xG
 (alpha 0.9), so the goals a keeper lets in are left out of the defence rating
@@ -120,6 +122,11 @@ class ADConfig:
     # walk-forward wants 0.70 / 0.4); Eliteserien flat within +-0.0001.
     obos_season_regression: float = 0.75
     obos_value_pull: float = 0.3
+    # A club relegated into OBOS-ligaen keeps this much of its distance from
+    # the division's mean, its value shift (1 - this) * obos_value_pull * v
+    # (elo-v15.0, with the Elo replay's `EloConfig.relegated_regression`).
+    # obos_season_regression is elo-v14.0.
+    relegated_regression: float = 0.5
     # The other side's keeper (elo-v14.0): log(xG on target faced / goals let
     # in) over a club's last `keeping_window` matches with xG on target
     # (fotmob: Eliteserien from 2020), against its division's last
@@ -300,11 +307,15 @@ class AttackDefence:
         for league, teams in active.items():
             known = [t for t in teams if t in self.attack]
             regression, pull = cfg.offseason(league)
+            # Clubs coming down from Eliteserien keep less (elo-v15.0).
+            down = {t for t in known if self.divisions.get((prev_season, t)) == "eliteserien"} \
+                if league == "obosligaen" and not first else set()
             if known and not first and regression < 1.0:
                 for ratings in (self.attack, self.defence):
                     mean = sum(ratings[t] for t in known) / len(known)
                     for t in known:
-                        ratings[t] = mean + regression * (ratings[t] - mean)
+                        keep = cfg.relegated_regression if t in down else regression
+                        ratings[t] = mean + keep * (ratings[t] - mean)
                 # Finishing regresses toward 0 (log-space average = 1.0x multiplier).
                 fin_known = [t for t in teams if t in self.finishing]
                 if fin_known:
@@ -324,20 +335,23 @@ class AttackDefence:
                         self.defence[t] = level
                     self.finishing.setdefault(t, 0.0)
             if known and not first and pull:
-                self._pull_toward_value(season, teams, regression, pull)
+                self._pull_toward_value(season, teams, regression, pull, down)
 
-    def _pull_toward_value(self, season: int, teams: list[str], regression: float, pull: float) -> None:
+    def _pull_toward_value(self, season: int, teams: list[str], regression: float, pull: float,
+                           down: set[str] = frozenset()) -> None:
         """Move the pull's target by `pull` * relative squad value (the
         division's value_pull). Each club with last season's value is shifted
         by (1 - regression) * pull * v after the pull toward the mean, which is
-        the same as pulling it toward mean + pull * v in the first place."""
+        the same as pulling it toward mean + pull * v in the first place; a
+        club in `down` (relegated) by (1 - relegated_regression) * pull * v."""
         page = self.values.get(season - 1, {})
         logs = {t: math.log(page[t]) for t in teams if page.get(t) and t in self.attack}
         if not logs:
             return
         mean = sum(logs.values()) / len(logs)
         for t, value in logs.items():
-            shift = (1.0 - regression) * pull * (value - mean)
+            keep = self.config.relegated_regression if t in down else regression
+            shift = (1.0 - keep) * pull * (value - mean)
             self.attack[t] += shift
             self.defence[t] += shift
 

@@ -247,7 +247,7 @@ def build_all_careers(
 ) -> dict[str, TeamCareer]:
     return build_careers(
         load_slices(root), seed_ratings(root, seeding=seeding),
-        config=elo_config, shots=shot_table(),
+        config=elo_config, shots=shot_table(), values=market_values(),
     )
 
 
