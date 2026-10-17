@@ -159,8 +159,8 @@ slider too; the ones with time along an axis of their own take none.
   the trend line, and facts on the champions, the top quarter by xG points,
   the luckiest and unluckiest seasons and how much luck is left the season
   after.
-- **Model accuracy** (`viz=accuracy`) -- how accurate the model is, in two
-  parts. *Before the season*: every finished club-season of the division
+- **Model accuracy** (`viz=accuracy`) -- how accurate the model is, in three
+  parts, shown from the last described here to the first. *Before the season*: every finished club-season of the division
   since 2015, where the model put it before the season (the order its
   expected finishes give) against where it finished, one circle a cell sized
   by how many land there, with the y = x line and the two-place band the hit

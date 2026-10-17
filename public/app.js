@@ -3003,10 +3003,10 @@ function drawLuckSeasons(report, section, { counted, rows }, trend) {
 
 /* ---------- explore: model accuracy (viz=accuracy) -------------------- */
 
-/* How accurate the model is, in three parts: before the season, the table
-   it called against the one that came (the division in the hero); match by
-   match, its odds against what happened (both divisions, every season); and
-   how every model version's odds compare on the same matches. */
+/* How accurate the model is, in three parts: how every model version's odds
+   compare on the same matches; match by match, its odds against what
+   happened (both divisions, every season); and before the season, the table
+   it called against the one that came (the division in the hero). */
 async function renderAccuracy(report, body) {
   body.replaceChildren();
   const part = (key) => {
@@ -3018,7 +3018,8 @@ async function renderAccuracy(report, body) {
     body.appendChild(section);
     return content;
   };
-  const [table, matches, versionsPart] = [part('table'), part('matches'), part('versions')];
+  // Newest view of the model first: the versions, then match by match, then the table.
+  const [versionsPart, matches, table] = [part('versions'), part('matches'), part('table')];
   versionsPart.appendChild(el('p', 'explore-empty', t('calib.loading')));
   const versions = loadCalibration().then(
     (data) => { if (state.exploreItem === 'accuracy') renderVersionHistory(report, versionsPart, data); },
