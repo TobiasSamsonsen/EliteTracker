@@ -5834,6 +5834,8 @@ async function rewindTo(asof) {
   // A new season's timeline replaces this one; the slider waits for it.
   if (seasonLoading || asof === requestedAsof) return;
   requestedAsof = asof;
+  // The reader's own rewinds; boot replaying a shared ?asof= link is not one.
+  if (booted) track('rewind', { asof: asof || 'live' });
   const token = ++latestLoad; // retires any rewind still in flight
   const season = state.season;
   const content = $('#content');
@@ -6069,9 +6071,9 @@ function render() {
     document.head.appendChild(canonical);
   }
   canonical.href = `https://elitetracker.no/${state.league === 'eliteserien' ? '' : `?league=${state.league}`}`;
-  // After the title: GA's history listener can take this as a page view, and
-  // that should carry the new page's title.
   window.history.replaceState(null, '', `${window.location.pathname}?${params.toString()}${window.location.hash}`);
+  // After the title, which the page view carries.
+  pageView();
   state._prevActiveView = state.activeView;
 }
 
@@ -7123,17 +7125,18 @@ async function boot() {
       t('status.couldNotLoadSeason', { error: error.message });
   }
   booted = true;
-  if (window.gtag) appendGtag();
+  pageView();
 }
 
 /* ---------- analytics ----------------------------------------------- */
 
 /* Google Analytics (the Firebase project's GA4 stream) loads only after the
    reader says yes: Norwegian law wants consent before non-essential cookies.
-   Production only, so local runs and PR previews don't count. GA4's enhanced
-   measurement turns the replaceState in render() into page views. */
+   Production only, so local runs and PR previews don't count. Page views come
+   from pageView(), so the stream's "page changes based on browser history
+   events" setting must stay off in GA, or every view counts twice. */
 const GA_ID = 'G-RCMKSGYDSJ';
-let booted = false;
+let booted = false; // boot has rewritten the URL (first render, ?season=, ?asof=)
 
 function loadAnalytics() {
   if (location.hostname !== 'elitetracker.no' || window.gtag) return;
@@ -7145,18 +7148,28 @@ function loadAnalytics() {
     analytics_storage: 'granted', ad_storage: 'denied', ad_user_data: 'denied', ad_personalization: 'denied',
   });
   gtag('js', new Date());
-  gtag('config', GA_ID, { allow_google_signals: false, allow_ad_personalization_signals: false });
-  if (booted) appendGtag();
-}
-
-/* gtag.js waits until boot has rewritten the URL (first render, ?season=,
-   ?asof=): loaded sooner, its history listener counts a landing on / twice,
-   as / and as /?view=table. Calls made meanwhile queue in dataLayer. */
-function appendGtag() {
+  gtag('config', GA_ID, {
+    send_page_view: false, allow_google_signals: false, allow_ad_personalization_signals: false,
+  });
+  pageView();
   const script = document.createElement('script');
   script.async = true;
   script.src = `https://www.googletagmanager.com/gtag/js?id=${GA_ID}`;
   document.head.append(script);
+}
+
+/* One page view per view, club, league or season the reader opens, and none
+   until boot is done, so a landing counts once, at the address it settles on.
+   ?asof= is left out: a rewind is the 'rewind' event, not a new page. */
+let lastPage = null;
+function pageView() {
+  if (!booted || !window.gtag) return;
+  const url = new URL(location.href);
+  url.searchParams.delete('asof');
+  url.hash = '';
+  if (url.href === lastPage) return;
+  lastPage = url.href;
+  gtag('event', 'page_view', { page_location: url.href, page_title: document.title });
 }
 
 /* Stored as 'yes:<ms>' or 'no:<ms>'; an answer older than a year counts as
