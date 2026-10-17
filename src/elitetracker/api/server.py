@@ -31,8 +31,10 @@ from elitetracker.pipeline import (
     build_report,
     careers_payload,
     current_season,
+    reload_inputs,
     rewound_configs,
 )
+from elitetracker.research import calibration_payload
 
 WEB_DIR = Path(__file__).resolve().parents[3] / "public"
 
@@ -55,10 +57,17 @@ def report(root: Path, slug: str, season: int, asof: str | None) -> Any:
     )
 
 
+@functools.cache
+def calibration(root: Path) -> Any:
+    return calibration_payload(root=root)
+
+
 def data_payload(root: Path, name: str) -> tuple[Any, int]:
     """What the static build would have written under /data/<name>, plus a status."""
     if name == "careers.json":
         return careers_payload(careers(root), root=root), 200
+    if name == "calibration.json":
+        return calibration(root), 200
     match = _REPORT_NAME.fullmatch(name)
     if match is None:
         return {"error": "not found"}, 404
@@ -88,7 +97,9 @@ class Handler(SimpleHTTPRequestHandler):
         if not path.startswith("/data/"):
             return super().do_GET()
         if self.reload:
+            reload_inputs()
             careers.cache_clear()
+            calibration.cache_clear()
             report.cache_clear()
         try:
             self._json(*data_payload(self.root, path.removeprefix("/data/")))

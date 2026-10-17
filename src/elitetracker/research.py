@@ -23,7 +23,7 @@ from pathlib import Path
 
 from elitetracker.model import benchmark
 from elitetracker.model.backtest import Scorecard, paired, reliability, restrict, shipped_cards
-from elitetracker.pipeline import NORMALIZED_DIR, load_matches, load_slices, market_values, seed_ratings, stakes_table
+from elitetracker.pipeline import NORMALIZED_DIR, load_matches, load_slices, market_values, seed_ratings, shot_table, stakes_table
 from elitetracker.sources.fotmob import FetchError, fetch_match_xg, load_xg, save_xg
 from elitetracker.sources.sofascore import DEFAULT_DELAY
 
@@ -44,7 +44,7 @@ def cmd_odds(args: argparse.Namespace) -> int:
 
 def cmd_xg(args: argparse.Namespace) -> int:
     """The manual, opt-in fotmob backfill (refresh only ever asks for new
-    matches). Polite by the scraping rules of IMPROVEMENTS.md: one request at a
+    matches). Polite by the scraping rules (docs/data.md): one request at a
     time, a jittered wait of `--delay` to twice that between them (4-8 s by
     default), the file saved after every match, and a stop at the first 403 or
     429 -- asking again would only make a refusal stick. Entries that already
@@ -184,8 +184,7 @@ def market_comparison(score_from: int) -> int:
     slices = load_slices()
     seeds = {team_id: seed.rating for team_id, seed in seed_ratings().items()}
     dates = {m.match_id: m.date for s in slices for m in s.matches}
-    shots = {k: tuple(v) for k, v in load_xg()["matches"].items()}
-    elo, shipped = shipped_cards(slices, seeds, score_from_season=score_from, shots=shots,
+    elo, shipped = shipped_cards(slices, seeds, score_from_season=score_from, shots=shot_table(),
                                  values=market_values(), league="eliteserien", stakes=stakes_table())
     matches = [m for s in slices for m in s.matches
                if s.league == "eliteserien" and int(m.date[:4]) >= score_from]
@@ -232,9 +231,8 @@ def calibration_payload(score_from: int = 2016, root=NORMALIZED_DIR) -> dict:
 
     slices = load_slices(root)
     seeds = {team_id: seed.rating for team_id, seed in seed_ratings(root).items()}
-    shots = {k: tuple(v) for k, v in load_xg()["matches"].items()}
     scorelines: dict[tuple[int, int], list[float]] = {}
-    elo, shipped = shipped_cards(slices, seeds, score_from_season=score_from, shots=shots, values=market_values(),
+    elo, shipped = shipped_cards(slices, seeds, score_from_season=score_from, shots=shot_table(root), values=market_values(root),
                                  scorelines=scorelines, stakes=stakes_table(root))
     dates = {m.match_id: m.date for s in slices for m in s.matches}
     league = {m.match_id: s.league for s in slices for m in s.matches}
@@ -253,7 +251,9 @@ def calibration_payload(score_from: int = 2016, root=NORMALIZED_DIR) -> dict:
         market = {"model": scores(model_es), "elo": scores(restrict(elo, common, "elo"))}
         for method, card in markets.items():
             market[method] = {**scores(restrict(card, common)), "paired_t": round(paired(model_es, card)[2], 2)}
-    order = sorted(common, key=lambda mid: dates[mid])
+    # Matches on one date in id order: a set iterates in hash order, which
+    # differs run to run and moved the bankroll's drawdown with it.
+    order = sorted(common, key=lambda mid: (dates[mid], mid))
     return {
         "version": MODEL_VERSION,
         "first_season": score_from,

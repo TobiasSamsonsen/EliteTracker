@@ -40,16 +40,17 @@ def _frange(start: float, stop: float, step: float) -> list[float]:
 
 def _blend_forward_split(slices, seeds, shots, score_from, split_season, gamma_values, top):
     """Forward-split sweep of blend_gamma: fit on first half, test on second."""
-    from elitetracker.model.attack_defence import ADConfig, AttackDefence, blend_outcomes, gap_blend_weight
-    from elitetracker.model.career import team_ids
+    from elitetracker.model.attack_defence import ADConfig, AttackDefence
+    from elitetracker.model.pricing import match_odds
     from elitetracker.model.probabilities import outcome_of
     from elitetracker.normalize.matches import Match
 
     dates = {m.match_id: m.date for s in slices for m in s.matches}
 
     # Elo-only card for all matches (the baseline to blend against).
+    stakes = stakes_table()
     elo_card = walk_forward(slices, seeds, EloConfig(), score_from_season=score_from,
-                            name="elo", shots=shots, league="eliteserien", values=market_values())
+                            name="elo", shots=shots, league="eliteserien", values=market_values(), stakes=stakes)
 
     # Replay AD over the full corpus once per gamma value.
     cards = []
@@ -58,13 +59,10 @@ def _blend_forward_split(slices, seeds, shots, score_from, split_season, gamma_v
         ad = AttackDefence.from_slices(slices, ad_config, shots=shots, values=market_values())
         card = Scorecard(name=f"g={gamma:.2f}")
         for match in sorted((m for s in slices for m in s.matches if m.played), key=Match.sort_key):
-            home, away = team_ids(match)
             if match.match_id not in elo_card.predictions:
                 continue
-            elo_odds = elo_card.predictions[match.match_id][0]
-            gw = gap_blend_weight(elo_odds.rating_gap, gamma)
-            blended = blend_outcomes(elo_odds, ad.grid(home, away, match.date, elo_gap=elo_odds.rating_gap),
-                                     weight=gw)
+            blended = match_odds(elo_card.predictions[match.match_id][0], ad, match,
+                                 stakes=stakes.get(match.match_id, 0.0)).odds
             card.observe(blended, outcome_of(match), match.match_id)
             ad.observe(match)
 

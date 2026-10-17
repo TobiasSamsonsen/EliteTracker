@@ -152,24 +152,23 @@ class TestRewind:
             assert result["home_id"] == result["home"]
             assert result["away_id"] == result["away"]
 
-    def test_results_carry_xg_where_known(self, monkeypatch):
+    def test_results_carry_xg_where_known(self):
         """Played Results prints xG under the score; matches without it get no key."""
-        monkeypatch.setattr(pipeline, "shot_table", lambda: {"1": (1.234, 0.5, 0.9, 0.2)})
         with_xg, without = pipeline._results_payload(
-            [match(1, "A", "B", "2026-03-01"), match(2, "C", "D", "2026-03-01")]
+            [match(1, "A", "B", "2026-03-01"), match(2, "C", "D", "2026-03-01")],
+            shots={"1": (1.234, 0.5, 0.9, 0.2)},
         )
         assert with_xg["xg"] == [1.23, 0.5]
         assert with_xg["xgot"] == [0.9, 0.2]
         assert "xg" not in without and "xgot" not in without
 
-    def test_results_leave_out_xgot_the_source_lacks(self, monkeypatch):
+    def test_results_leave_out_xgot_the_source_lacks(self):
         """Sofascore (OBOS-ligaen) has xG but no xG on target: no xgot key."""
-        monkeypatch.setattr(pipeline, "shot_table", lambda: {"1": (1.4, 0.7)})
-        (result,) = pipeline._results_payload([match(1, "A", "B", "2026-03-01")])
+        (result,) = pipeline._results_payload([match(1, "A", "B", "2026-03-01")], shots={"1": (1.4, 0.7)})
         assert result["xg"] == [1.4, 0.7]
         assert "xgot" not in result
 
-    def test_xg_form_is_the_rating_change_the_chances_alone_would_give(self, monkeypatch):
+    def test_xg_form_is_the_rating_change_the_chances_alone_would_give(self):
         """The trend arrow's signal: K * (xG-implied score - expected score), and
         the away side's is the negative. Even ratings, even xG: the home side
         only matched what home advantage expected of it, so it comes out below."""
@@ -178,9 +177,8 @@ class TestRewind:
         even = pipeline.xg_form(1500, 1500, 1.4, 1.4, config)
         assert even < 0
         assert pipeline.xg_form(1500, 1500, 3.0, 0.5, config) > 5
-        monkeypatch.setattr(pipeline, "shot_table", lambda: {"1": (3.0, 0.5)})
         (result,) = pipeline._results_payload(
-            [match(1, "A", "B", "2026-03-01")], {"1": (1500.0, 1500.0)}, config
+            [match(1, "A", "B", "2026-03-01")], {"1": (1500.0, 1500.0)}, config, shots={"1": (3.0, 0.5)}
         )
         home, away = result["xg_form"]
         assert home == pytest.approx(-away) and home > 5
@@ -354,3 +352,18 @@ class TestBands:
                                 ("Europa League qualification", 3, 3),
                                 ("Conference League qualification", 4, 4)]
         assert europe(2028) == europe(2027)
+
+
+def test_inputs_come_from_the_data_directory_and_reload_on_request(tmp_path):
+    """xG is read beside the normalized directory it is asked for, never from
+    the working copy's data/; a read is kept until `reload_inputs`."""
+    root = tmp_path / "normalized"
+    root.mkdir()
+    xg = tmp_path / "xg.json"
+    xg.write_text(json.dumps({"matches": {"1": [1.0, 2.0]}, "none": []}), encoding="utf-8")
+    assert pipeline.shot_table(root) == {"1": (1.0, 2.0)}
+    assert pipeline.market_values(root) == {}
+    xg.write_text(json.dumps({"matches": {"1": [3.0, 0.5]}, "none": []}), encoding="utf-8")
+    assert pipeline.shot_table(root) == {"1": (1.0, 2.0)}
+    pipeline.reload_inputs()
+    assert pipeline.shot_table(root) == {"1": (3.0, 0.5)}

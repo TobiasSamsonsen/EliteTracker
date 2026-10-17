@@ -20,15 +20,12 @@ import statistics
 from dataclasses import dataclass, field
 from typing import Callable, Iterable
 
-from elitetracker.model.attack_defence import (
-    ADConfig, AttackDefence, blend_outcomes, conditional_scorelines, gap_blend_weight,
-)
-from elitetracker.model.career import SeasonSlice, replay, team_ids
+from elitetracker.model.attack_defence import ADConfig, AttackDefence, conditional_scorelines
+from elitetracker.model.career import SeasonSlice, replay
 from elitetracker.model.elo import EloConfig, era_config
-from elitetracker.model.probabilities import AWAY_WIN, DRAW, HOME_WIN, MatchProbabilities, match_probabilities, outcome_of
-from elitetracker.model.stakes import STAKES_ELO, STAKES_GOALS
+from elitetracker.model.pricing import elo_odds, match_odds
+from elitetracker.model.probabilities import AWAY_WIN, DRAW, HOME_WIN, MatchProbabilities, outcome_of
 from elitetracker.normalize.matches import Match
-from elitetracker.normalize.surfaces import surface_edge
 
 # Guards log(0) when a model is certain and wrong.
 _FLOOR = 1e-12
@@ -172,12 +169,9 @@ def walk_forward(
         for match, (home_before, away_before) in matches:
             match_in = match_league.get(match.match_id, "")
             if season >= score_from_season and (league is None or match_in == league):
-                # The surface edge is a prediction-time term for Eliteserien
-                # (normalize.surfaces); the ratings never carry it.
-                edge = surface_edge(*team_ids(match), match.date) if match_in == "eliteserien" else 0.0
-                edge += STAKES_ELO * stakes.get(match.match_id, 0.0)
                 card.observe(
-                    match_probabilities(home_before + edge, away_before, config_for(match_in, season)),
+                    elo_odds(match, home_before, away_before, config_for(match_in, season), match_in,
+                             stakes=stakes.get(match.match_id, 0.0)),
                     outcome_of(match), match.match_id,
                 )
     return card
@@ -209,15 +203,10 @@ def shipped_cards(
     ad = AttackDefence.from_slices(slices, ADConfig(), shots=shots, values=values)
     for match in sorted((m for s in slices for m in s.matches if m.played), key=Match.sort_key):
         if match.match_id in elo.predictions:
-            home, away = team_ids(match)
-            elo_odds = elo.predictions[match.match_id][0]
-            weight = gap_blend_weight(elo_odds.rating_gap, ad.config.blend_gamma)
-            grid = ad.grid(home, away, match.date, elo_gap=elo_odds.rating_gap,
-                           stakes=STAKES_GOALS * stakes.get(match.match_id, 0.0))
-            odds = blend_outcomes(elo_odds, grid, weight=weight)
-            shipped.observe(odds, outcome_of(match), match.match_id)
+            priced = match_odds(elo.predictions[match.match_id][0], ad, match, stakes=stakes.get(match.match_id, 0.0))
+            shipped.observe(priced.odds, outcome_of(match), match.match_id)
             if scorelines is not None:
-                for (i, j), chance in conditional_scorelines(grid, odds).items():
+                for (i, j), chance in conditional_scorelines(priced.grid, priced.odds).items():
                     scorelines.setdefault((min(i, SCORELINE_CAP), min(j, SCORELINE_CAP)), [0.0, 0])[0] += chance
                 happened = (min(match.home_goals, SCORELINE_CAP), min(match.away_goals, SCORELINE_CAP))
                 scorelines.setdefault(happened, [0.0, 0])[1] += 1

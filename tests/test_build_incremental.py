@@ -45,6 +45,11 @@ def two_matches(tmp_path):
     return root
 
 
+def write_xg(root, matches):
+    """xg.json sits beside the normalized directory, as data/xg.json does."""
+    (root.parent / "xg.json").write_text(json.dumps({"matches": matches, "none": []}), encoding="utf-8")
+
+
 def stamp(root, asof=None, regression=0.88):
     return build_site.view_stamp(root, 2026, asof, season_regression=regression)
 
@@ -89,26 +94,38 @@ class TestPrefixStamping:
         ])
         assert stamp(two_matches, "2026-05-08") != before
 
-    def test_xg_after_the_rewind_does_not_invalidate_it(self, two_matches, monkeypatch):
+    def test_xg_after_the_rewind_does_not_invalidate_it(self, two_matches):
         """xG keeps arriving late; a later match's must not disturb May."""
-        monkeypatch.setattr(build_site, "load_xg", lambda *a, **k: {
-            "matches": {}, "none": [], "pending": {}
-        })
+        write_xg(two_matches, {})
         before = stamp(two_matches, "2026-05-08")
-        monkeypatch.setattr(build_site, "load_xg", lambda *a, **k: {
-            "matches": {"3": [2.1, 0.4]}, "none": [], "pending": {}
-        })  # match 3 is the September fixture, after the rewind
+        write_xg(two_matches, {"3": [2.1, 0.4]})  # match 3 is the September fixture, after the rewind
         assert stamp(two_matches, "2026-05-08") == before
 
-    def test_xg_before_the_rewind_does_invalidate_it(self, two_matches, monkeypatch):
-        monkeypatch.setattr(build_site, "load_xg", lambda *a, **k: {
-            "matches": {}, "none": [], "pending": {}
-        })
+    def test_xg_before_the_rewind_does_invalidate_it(self, two_matches):
+        write_xg(two_matches, {})
         before = stamp(two_matches, "2026-05-08")
-        monkeypatch.setattr(build_site, "load_xg", lambda *a, **k: {
-            "matches": {"2": [1.9, 0.8], "none": [], "pending": {}}
-        })
+        write_xg(two_matches, {"2": [1.9, 0.8]})
         assert stamp(two_matches, "2026-05-08") != before
+
+    def test_squad_values_before_the_season_invalidate_it(self, two_matches):
+        """The goals model's offseason pull reads the season before's values."""
+        before = stamp(two_matches, "2026-05-08")
+        values = two_matches.parent / "market_values.json"
+        values.write_text(json.dumps({"2026": {"A": {"total": 1.0}}}), encoding="utf-8")
+        assert stamp(two_matches, "2026-05-08") == before  # this season's own: read next season
+        values.write_text(json.dumps({"2025": {"A": {"total": 1.0}}}), encoding="utf-8")
+        assert stamp(two_matches, "2026-05-08") != before
+
+    def test_careers_follow_the_squad_values_and_the_seed_tables(self, two_matches):
+        """careers.json replays every season with the values pull, from the
+        2014 tables: a change to either must rebuild it."""
+        before = build_site.careers_stamp(two_matches, season_regression=0.88)
+        (two_matches.parent / "market_values.json").write_text(
+            json.dumps({"2025": {"A": {"total": 1.0}}}), encoding="utf-8")
+        after_values = build_site.careers_stamp(two_matches, season_regression=0.88)
+        assert after_values != before
+        (two_matches / "eliteserien_2014_standings.json").write_text("[]", encoding="utf-8")
+        assert build_site.careers_stamp(two_matches, season_regression=0.88) != after_values
 
     def test_model_version_change_invalidates_everything(self, two_matches, monkeypatch):
         before = stamp(two_matches, "2026-05-08")

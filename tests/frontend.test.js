@@ -28,22 +28,22 @@ test('the away side gets the mirror of the home result', () => {
 });
 
 /* The compare tool's odds moved from Python into the browser; these pin the
-   port to the model it was ported from (model/probabilities.py). */
+   port to the model it was ported from (model/pricing.py). The numbers are the
+   Python model's own, written by tests/test_pricing.py, which fails first when
+   the model moves. */
 eval(pick('matchOdds') + pick('scoreGrid') + pick('topScorelines') + pick('blendOdds'));
 
-const MODEL = {
-  home_advantage: 60,
-  home_advantage_beta: 0,
-  draw_base: 0.26,
-  draw_scale: 375,
-  attack_defence: { outcome_blend: 0.5, blend_gamma: 0, home: 0.22, home_beta: 0, base: 0.37, rho: -0.05, k: 0.015, teams: { A: [0.3, 0.15], B: [-0.2, -0.1] } },
-};
+const GOLDEN = JSON.parse(fs.readFileSync(`${__dirname}/fixtures/match_odds.json`, 'utf8'));
+const MODEL = GOLDEN.app.model;
+const triple = (odds) => [odds.home_win, odds.draw, odds.away_win];
 
 test('odds match model/probabilities.py exactly', () => {
-  const odds = matchOdds(MODEL, 1700, 1300);
-  assert.equal(odds.home_win, 0.9050153512773468);
-  assert.equal(odds.draw, 0.05774117477091502);
-  assert.equal(odds.away_win, 0.03724347395173815);
+  assert.deepEqual(triple(matchOdds(MODEL, ...GOLDEN.app.ratings)), GOLDEN.app.elo);
+});
+
+test('the compare tool prices a match the way model/pricing.py does', () => {
+  const odds = blendOdds(MODEL, matchOdds(MODEL, ...GOLDEN.app.ratings), 'A', 'B');
+  triple(odds).forEach((p, i) => assert.ok(Math.abs(p - GOLDEN.app.odds[i]) < 1e-12));
 });
 
 test('home_win + half the draw reproduces the ELO expectation', () => {
@@ -60,20 +60,15 @@ test('home_win + half the draw reproduces the ELO expectation', () => {
    top_scorelines(grid, MatchProbabilities(0.6, 0.25, 0.15), 5). */
 test('scoreline grid matches model/attack_defence.py', () => {
   const grid = scoreGrid(MODEL, 'A', 'B');
-  assert.ok(Math.abs(grid[1][1] - 0.07059684298063104) < 1e-9);
-  assert.ok(Math.abs(grid[0][0] - 0.027850049771817192) < 1e-9);
+  assert.ok(Math.abs(grid[1][1] - GOLDEN.app.grid['1-1']) < 1e-9);
+  assert.ok(Math.abs(grid[0][0] - GOLDEN.app.grid['0-0']) < 1e-9);
   assert.ok(Math.abs(grid.flat().reduce((sum, p) => sum + p, 0) - 1) < 1e-12);
 });
 
 test('scorelines take who-wins from the odds and how-many from the grid', () => {
-  const odds = { home_win: 0.6, draw: 0.25, away_win: 0.15 };
-  const expected = [
-    [1, 1, 0.10936521754255615],
-    [2, 1, 0.07507122130035435],
-    [2, 0, 0.07358471152212517],
-    [2, 2, 0.07149363149818763],
-    [3, 1, 0.06734475288162461],
-  ];
+  const [home_win, draw, away_win] = GOLDEN.app.given;
+  const odds = { home_win, draw, away_win };
+  const expected = GOLDEN.app.scorelines;
   const lines = topScorelines(MODEL, odds, 'A', 'B');
   assert.equal(lines.length, 5);
   lines.forEach((line, index) => {
@@ -715,8 +710,7 @@ const near = (actual, expected) => {
 };
 
 test('the model page prices a match the way model.probabilities does', () => {
-  near(pageMath.eloOdds(1650 + 60 - 1600, MODERN), [0.533935, 0.238564, 0.227501]);
-  near(pageMath.eloOdds(1500 + 60 - 1900, MODERN), [0.066632, 0.114278, 0.81909]);
+  for (const [gap, odds] of GOLDEN.page.elo) near(pageMath.eloOdds(gap, GOLDEN.page.config), odds);
 });
 
 test('the model page moves a rating the way model.elo does', () => {
@@ -731,15 +725,16 @@ test('the model page moves a rating the way model.elo does', () => {
 });
 
 test('the model page builds the score grid and the blend the way model.attack_defence does', () => {
-  const grid = pageMath.scoreGrid(1.6, 1.1, -0.05);
-  near(pageMath.gridOdds(grid), [0.483637, 0.260752, 0.255611]);
-  near([grid[0][0], grid[1][1]], [0.073123, 0.124202]);
-  const blended = pageMath.blendOdds(pageMath.eloOdds(110, MODERN), pageMath.gridOdds(grid), 0.25);
-  near(blended, [0.496225, 0.255263, 0.248512]);
+  const { grid: g, blend: b } = GOLDEN.page;
+  const grid = pageMath.scoreGrid(...g.rates);
+  near(pageMath.gridOdds(grid), g.odds);
+  near([grid[0][0], grid[1][1]], [g['0-0'], g['1-1']]);
+  const blended = pageMath.blendOdds(pageMath.eloOdds(b.gap, GOLDEN.page.config), pageMath.gridOdds(grid), b.weight);
+  near(blended, b.odds);
   const cells = pageMath.scorelines(grid, blended);
-  near([cells[1][1], cells[1][0], cells[2][1]], [0.121587, 0.104264, 0.097093]);
+  near([cells[1][1], cells[1][0], cells[2][1]], [b['1-1'], b['1-0'], b['2-1']]);
 });
 
 test('the model page weighs table stakes the way model.stakes does', () => {
-  near([pageMath.pressure(0, 3, 0.8), pageMath.pressure(4, 3, 0.8), pageMath.pressure(6, 10, 0.8)], [1, 0.286505, 0.535261]);
+  for (const [d, left, tau, p] of GOLDEN.page.pressure) near(pageMath.pressure(d, left, tau), p);
 });

@@ -33,14 +33,14 @@ from dataclasses import dataclass
 
 import numpy as np
 
-from elitetracker.model.attack_defence import GOAL_CAP, AttackDefence, gap_blend_weight
-from elitetracker.model.elo import EloConfig, effective_home_advantage, _RATING_SCALE
-from elitetracker.model.probabilities import match_probabilities
-from elitetracker.model.stakes import STAKES_ELO, STAKES_FROM, STAKES_GOALS, run_pressures
+from elitetracker.model.attack_defence import GOAL_CAP, AttackDefence
+from elitetracker.model.career import team_ids
+from elitetracker.model.elo import EloConfig
+from elitetracker.model.pricing import blend_weight, elo_odds, goal_rates
+from elitetracker.model.stakes import STAKES_FROM, run_pressures
 from elitetracker.model.table import TableRow, table_from_matches
 from elitetracker.normalize.matches import Match
 from elitetracker.normalize.standings import POINTS_FOR_DRAW, POINTS_FOR_WIN
-from elitetracker.normalize.surfaces import surface_edge
 from elitetracker.simulation.playoffs import Knockout, Opponent, Playoffs, PlayoffTally
 
 # Chosen by measurement, not taste. Monte Carlo error falls as 1/sqrt(N), and
@@ -235,33 +235,36 @@ def _blended(grid: np.ndarray, elo: np.ndarray, weight: np.ndarray | None) -> tu
 
 def _fixtures(
     matches: list[Match], ratings: dict[str, float], index_of: dict[str, int], config: EloConfig,
-    ad: AttackDefence, blend: bool = True, surface: bool = False, played: np.ndarray | None = None,
+    ad: AttackDefence, blend: bool = True, league: str = "", played: np.ndarray | None = None,
     stakes: bool = False,
 ) -> Fixtures:
     """Every unplayed fixture's outcome odds and scoreline tables, computed
-    once and all together: the scoring grids of `model.attack_defence`
+    once and all together: `model.pricing`'s match odds with the score grids
     (score_grid, blend_outcomes, conditional_scorelines) as arrays, one row
-    per fixture, rather than a Python grid each. With `surface` (Eliteserien)
-    each fixture's Elo odds carry the surface edge (`normalize.surfaces`).
-    With `stakes`, the fixtures both of whose sides will have played
-    STAKES_FROM by their date (`played`: each club's count today) also get
-    their odds at every STAKES_GAPS value, for the run-in (`model.stakes`)."""
+    per fixture, rather than a Python grid each. `league` is the division
+    the fixtures are played in (`pricing.elo_odds`). With `stakes`, the
+    fixtures both of whose sides will have played STAKES_FROM by their date
+    (`played`: each club's count today) also get their odds at every
+    STAKES_GAPS value, for the run-in (`model.stakes`)."""
     unplayed = [match for match in matches if not match.played]
-    home, away, lam, mu, elo, weight, rated = [], [], [], [], [], [], []
+
+    def priced(match: Match, gaps: list[float]) -> list[tuple[tuple[float, float, float], tuple[float, float], float]]:
+        """(Elo odds, goal rates, blend weight) for `match` at each stakes gap."""
+        home_id, away_id = team_ids(match)
+        odds = [elo_odds(match, ratings[home_id], ratings[away_id], config, league, stakes=g) for g in gaps]
+        return [((o.home_win, o.draw, o.away_win), rates, blend_weight(o, ad))
+                for o, rates in zip(odds, goal_rates(odds, ad, match, gaps))]
+
+    home, away, lam, mu, elo, weight = [], [], [], [], [], []
     for match in unplayed:
-        home_id = match.home_id or match.home
-        away_id = match.away_id or match.away
-        home_rating = ratings[home_id] + (surface_edge(home_id, away_id, match.date) if surface else 0.0)
-        gap = (home_rating + effective_home_advantage(config, home_rating, ratings[away_id]) - ratings[away_id]) / _RATING_SCALE
-        rates = ad.rates(home_id, away_id, match.date, elo_gap=gap)
-        odds = match_probabilities(home_rating, ratings[away_id], config)
+        home_id, away_id = team_ids(match)
+        ((odds, rates, w),) = priced(match, [0.0])
         home.append(index_of[home_id])
         away.append(index_of[away_id])
         lam.append(rates[0])
         mu.append(rates[1])
-        elo.append((odds.home_win, odds.draw, odds.away_win))
-        weight.append(gap_blend_weight(gap, ad.config.blend_gamma))
-        rated.append((home_rating, ratings[away_id]))
+        elo.append(odds)
+        weight.append(w)
     count = len(unplayed)
     lam = np.array(lam, dtype=float)
     mu = np.array(mu, dtype=float)
@@ -284,14 +287,14 @@ def _fixtures(
             by_then[f] = done[home_at[f]], done[away_at[f]]
         run_in = np.nonzero(by_then.min(axis=1) >= STAKES_FROM)[0]
         if len(run_in):
-            gaps = np.tile(STAKES_GAPS, len(run_in))
             rows = np.repeat(run_in, len(STAKES_GAPS))
-            shifted = [match_probabilities(rated[f][0] + STAKES_ELO * g, rated[f][1], config) for f, g in zip(rows, gaps)]
-            shifted_elo = np.array([(p.home_win, p.draw, p.away_win) for p in shifted], dtype=float)
-            _, shifted_odds = _blended(
-                _score_grids(lam[rows] * np.exp(STAKES_GOALS * gaps), mu[rows] * np.exp(-STAKES_GOALS * gaps),
-                             ad.config.rho),
-                shifted_elo, weight[rows] if blend else None)
+            shifted = [row for f in run_in for row in priced(unplayed[f], STAKES_GAPS.tolist())]
+            shifted_elo = np.array([odds for odds, _, _ in shifted], dtype=float)
+            shifted_lam = np.array([rates[0] for _, rates, _ in shifted], dtype=float)
+            shifted_mu = np.array([rates[1] for _, rates, _ in shifted], dtype=float)
+            shifted_weight = np.array([w for _, _, w in shifted], dtype=float).reshape(len(rows), 1)
+            _, shifted_odds = _blended(_score_grids(shifted_lam, shifted_mu, ad.config.rho),
+                                       shifted_elo, shifted_weight if blend else None)
             shape = (len(run_in), len(STAKES_GAPS))
             stakes_home_win = shifted_odds[:, 0].reshape(shape)
             stakes_home_or_draw = (shifted_odds[:, 0] + shifted_odds[:, 1]).reshape(shape)
@@ -353,7 +356,7 @@ def simulate_season(
     tally_conditionals: bool = True,
     playoffs: Playoffs | None = None,
     keep_position: int | None = None,
-    surface: bool = False,
+    league: str = "",
     stakes_lines: tuple[int, ...] = (),
 ) -> SeasonProjection:
     """`ad` is the attack/defence state as of the matches given; the outcome odds
@@ -366,8 +369,9 @@ def simulate_season(
     `playoffs` plays the post-season ties in every run, on a random stream of
     their own, so the finishing chances are the same with them as without;
     `keep_position` records that place's club and shock per run, for the
-    division whose play-off it meets. `surface` (Eliteserien) adds the
-    surface edge to its fixtures' odds; the play-off ties go without.
+    division whose play-off it meets. `league` is the division the season is
+    played in, for its match odds (`model.pricing`); the play-off ties go
+    without the surface edge.
     `stakes_lines` (`pipeline.stakes_lines`) switches on the run-in's table
     stakes, each run's from its own table; the play-off ties go without."""
     config = config or SimulationConfig()
@@ -393,7 +397,7 @@ def simulate_season(
     rows = [by_id[team_id] for team_id in team_ids]
     cuts = tuple(b for b in stakes_lines if b < count)
     played_now = np.array([row.played for row in rows], dtype=np.int64)
-    fixtures = _fixtures(matches, ratings, index_of, elo_config, ad, blend, surface, played_now, bool(cuts))
+    fixtures = _fixtures(matches, ratings, index_of, elo_config, ad, blend, league, played_now, bool(cuts))
     fixture_count = len(fixtures)
     home, away = fixtures.home, fixtures.away
     home_chance, home_or_draw_chance = fixtures.home_win, fixtures.home_or_draw

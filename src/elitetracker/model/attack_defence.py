@@ -394,16 +394,25 @@ class AttackDefence:
               stakes: float = 0.0) -> tuple[float, float]:
         """`stakes`: log goals added to the home side's rate and taken off the
         away side's, the table-stakes term (`model.stakes`, elo-v16.0)."""
+        return self.rates_at(home_id, away_id, on, [(elo_gap, stakes)])[0]
+
+    def rates_at(self, home_id: str, away_id: str, on: str,
+                 at: list[tuple[float, float]]) -> list[tuple[float, float]]:
+        """`rates` at each (elo_gap, stakes) of `at`, each side's ratings read
+        once: the run-in prices a fixture at every pressure gap."""
         self._ensure(on, home_id, away_id)
         cfg = self.config
-        effective_home = cfg.home * (1.0 + cfg.home_beta * elo_gap)
-        lam = math.exp(cfg.base + effective_home + cfg.spread * (
-            self.attack[home_id] - self.defence[away_id] + self.finishing.get(home_id, 0.0) - self.keeping(away_id)))
-        mu = math.exp(cfg.base + cfg.spread * (
-            self.attack[away_id] - self.defence[home_id] + self.finishing.get(away_id, 0.0) - self.keeping(home_id)))
-        if stakes:
-            lam, mu = lam * math.exp(stakes), mu * math.exp(-stakes)
-        return lam, mu
+        home_side = self.attack[home_id] - self.defence[away_id] + self.finishing.get(home_id, 0.0) - self.keeping(away_id)
+        away_side = self.attack[away_id] - self.defence[home_id] + self.finishing.get(away_id, 0.0) - self.keeping(home_id)
+        out = []
+        for elo_gap, stakes in at:
+            effective_home = cfg.home * (1.0 + cfg.home_beta * elo_gap)
+            lam = math.exp(cfg.base + effective_home + cfg.spread * home_side)
+            mu = math.exp(cfg.base + cfg.spread * away_side)
+            if stakes:
+                lam, mu = lam * math.exp(stakes), mu * math.exp(-stakes)
+            out.append((lam, mu))
+        return out
 
     def _learning_rates(self, home_id: str, away_id: str, on: str) -> tuple[float, float]:
         """The rates the online update measures surprise against: unstretched,

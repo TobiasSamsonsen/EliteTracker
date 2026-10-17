@@ -11,29 +11,31 @@ shown in 2026 are on the same scale and connected by its results in between.
 from __future__ import annotations
 
 import functools
+import hashlib
 import json
 import re
-from dataclasses import dataclass
+from dataclasses import asdict, dataclass
 from datetime import date, timedelta
 from pathlib import Path
 from typing import Any
 
 import numpy as np
 
-from elitetracker.model.attack_defence import ADConfig, AttackDefence, OUTCOME_BLEND, blend_outcomes, top_scorelines
-from elitetracker.model.career import SeasonSlice, TeamCareer, build_careers
+from elitetracker.model.attack_defence import ADConfig, AttackDefence, OUTCOME_BLEND
+from elitetracker.model.career import SeasonSlice, TeamCareer, build_careers, team_ids
 from elitetracker.model.elo import (
     MODEL_VERSION, EloConfig, effective_home_advantage, era_config, expected_score, xg_implied_score,
 )
 from elitetracker.model.initial_ratings import SeedingConfig, TeamRating, initial_ratings, rating_for_unseeded_team
+from elitetracker.model.pricing import SURFACE_LEAGUE, elo_odds, match_odds
 from elitetracker.model.probabilities import match_probabilities
 from elitetracker.model.ratings import build_rating_table
 from elitetracker.model import stakes as table_stakes
 from elitetracker.model.table import table_from_matches
 from elitetracker.normalize.matches import Match
 from elitetracker.normalize.standings import load_standings
-from elitetracker.normalize.surfaces import SURFACE_EDGE, is_grass, surface_edge
-from elitetracker.sources.fotmob import load_xg
+from elitetracker.normalize.surfaces import SURFACE_EDGE, is_grass
+from elitetracker.sources.fotmob import XG_PATH, load_xg
 # Transfermarkt squad values per club-season, for the goals model's offseason
 # pull (`ADConfig.value_pull`); `research market-values` adds a season by hand.
 from elitetracker.sources.transfermarkt import MARKET_VALUES_PATH
@@ -226,6 +228,21 @@ def seed_ratings(root: Path = NORMALIZED_DIR, *, seeding: SeedingConfig | None =
     )
 
 
+# -- the model's inputs ------------------------------------------------------
+# Everything the model reads from disk sits under one data directory: the
+# normalized match and standings files (and the UEFA ranks) in `root`, xg.json
+# and market_values.json beside it. Each input is read once per root and kept;
+# `reload_inputs` drops them all, and `inputs_digest` hashes them afresh for
+# the static build's reuse check -- so an input added here is added there.
+
+def _xg_path(root: Path) -> Path:
+    return Path(root).parent / XG_PATH.name
+
+
+def _values_path(root: Path) -> Path:
+    return Path(root).parent / MARKET_VALUES_PATH.name
+
+
 @functools.cache
 def load_slices(root: Path = NORMALIZED_DIR) -> list[SeasonSlice]:
     return [
@@ -248,19 +265,19 @@ def build_all_careers(
 ) -> dict[str, TeamCareer]:
     return build_careers(
         load_slices(root), seed_ratings(root, seeding=seeding),
-        config=elo_config, shots=shot_table(), values=market_values(),
+        config=elo_config, shots=shot_table(root), values=market_values(root),
     )
 
 
 @functools.cache
-def shot_table() -> dict[str, tuple[float, ...]]:
+def shot_table(root: Path = NORMALIZED_DIR) -> dict[str, tuple[float, ...]]:
     """match_id -> expected goals: fotmob for Eliteserien, Sofascore for OBOS.
 
     Entries are (home_xg, away_xg) and, where the source has it, xG on target,
     npxG and the first red card's minute after them (`load_xg`); everything
     downstream reads the first two.
     """
-    return {match_id: tuple(values) for match_id, values in load_xg()["matches"].items()}
+    return {match_id: tuple(values) for match_id, values in load_xg(_xg_path(root))["matches"].items()}
 
 
 def stakes_lines(slug: str, season: int, matches: list[Match], root: Path = NORMALIZED_DIR) -> tuple[int, ...]:
@@ -282,10 +299,14 @@ def stakes_table(root: Path = NORMALIZED_DIR) -> dict[str, float]:
 
 
 @functools.cache
-def market_values(path: Path = MARKET_VALUES_PATH) -> dict[int, dict[str, float]]:
+def market_values(root: Path = NORMALIZED_DIR) -> dict[int, dict[str, float]]:
     """season -> team_id -> squad value in EUR, as Transfermarkt listed it that
     season. A season's pull reads the season before, so a missing file or
     season only switches the value pull off."""
+    return _read_values(_values_path(root))
+
+
+def _read_values(path: Path) -> dict[int, dict[str, float]]:
     if not path.exists():
         return {}
     with path.open(encoding="utf-8") as handle:
@@ -302,9 +323,66 @@ def prior_attack_defence(root: Path, season: int) -> AttackDefence:
     state before replaying the season they are reporting on.
     """
     slices = load_slices(root)
-    return AttackDefence.from_slices(slices, ADConfig(), shots=shot_table(), values=market_values()).replay(
+    return AttackDefence.from_slices(slices, ADConfig(), shots=shot_table(root), values=market_values(root)).replay(
         [match for slice_ in slices if slice_.season < season for match in slice_.matches]
     )
+
+
+def reload_inputs() -> None:
+    """Forget every input read so far: the next read takes the files as they are now."""
+    for loader in (load_slices, shot_table, stakes_table, market_values, prior_attack_defence):
+        loader.cache_clear()
+
+
+def inputs_digest(root: Path = NORMALIZED_DIR, season: int | None = None, asof: str | None = None) -> str:
+    """A digest of every input a view of (`season`, `asof`) reads, taken from
+    the files as they are now; with no `season`, of every input of every
+    season (careers.json).
+
+    With `asof` set, only results played on or before that date count, which
+    is what makes a rewound view reusable. Unplayed fixtures always count: the
+    view lists future fixtures, so a rescheduled match changes it whatever the
+    date. A live view (`asof=None`) sees every result, so any data change
+    invalidates it -- as it must.
+    """
+    root = Path(root)
+    # Seed ratings come from the 2014 tables, which every view replays from.
+    extras = [hashlib.sha256(standings.read_bytes()).hexdigest() for standings in sorted(root.glob("*_standings.json"))]
+
+    shot_dates: dict[str, str] = {}
+    records: list[dict[str, Any]] = []
+    for path in sorted(root.glob("*_matches.json")):
+        for match in load_matches(path):
+            shot_dates[match.match_id] = match.date
+            record = asdict(match)
+            if asof and match.played and match.date > asof:
+                # A rewound view shows every match after its date as unplayed,
+                # whether or not it has since been played -- the result is not
+                # knowable back then. Both states must therefore hash the same,
+                # or every fixture would churn the stamp of every earlier rewind.
+                record.update(played=False, home_goals=None, away_goals=None)
+            records.append(record)
+
+    # Only xG for matches this view knows about. xG arriving for a later match
+    # must not invalidate an earlier rewind.
+    records += [
+        {"match_id": match_id, "xg": values}
+        for match_id, values in sorted(load_xg(_xg_path(root)).get("matches", {}).items())
+        if asof is None or shot_dates.get(match_id, "") <= asof
+    ]
+
+    # The goals model's offseason pull reads each season's squad values from
+    # the season before, so only the pages before this season count.
+    records += [
+        {"values": year, "clubs": clubs}
+        for year, clubs in sorted(_read_values(_values_path(root)).items()) if season is None or year < season
+    ]
+
+    # The European places come from Norway's UEFA rank, which the refresh
+    # updates in a data file rather than in code; a new rank must rebuild.
+    extras.append(repr(bands_for(LEAGUE_SPECS["eliteserien"], season, root)) if season else repr(uefa_ranks(root)))
+    blob = json.dumps(records, sort_keys=True, ensure_ascii=False, default=str)
+    return hashlib.sha256("\n".join(extras + [blob]).encode("utf-8")).hexdigest()
 
 
 def _season_seeds(careers: dict[str, TeamCareer], season: int) -> dict[str, TeamRating]:
@@ -360,16 +438,17 @@ def build_report(
 
     era = era_config(season, elo_config)
     pre_match: dict[str, tuple[float, float]] = {}
-    ratings = build_rating_table(seeds, all_matches, config=elo_config, shots=shot_table(), before=pre_match)
+    shots = shot_table(root)
+    ratings = build_rating_table(seeds, all_matches, config=elo_config, shots=shots, before=pre_match)
     prior = prior_attack_defence(root, season)
     ad = prior.copy().replay(all_matches)
     ad.start_season(season)
     playoffs, sim_ratings, sim_ad = _playoffs(slug, season, root, by_league, ratings, ad, simulation, elo_config)
-    surface = slug == "eliteserien"  # the surface edge is measured on Eliteserien only
+    surface = slug == SURFACE_LEAGUE
     lines = stakes_lines(slug, season, matches, root)
     projection = simulate_season(
         matches, sim_ratings, ad=sim_ad, config=simulation, elo_config=elo_config, playoffs=playoffs,
-        surface=surface, stakes_lines=lines,
+        league=slug, stakes_lines=lines,
     )
     stakes_inputs = (
         projection.conditionals,
@@ -461,14 +540,14 @@ def build_report(
         },
         "table": _table_payload(matches, ratings, projection, seeds, ad, spec.slug, season, era, high_stakes,
                                 bands=bands_for(spec, season, root)),
-        "fixtures": _fixtures_payload(matches, ratings, elo_config, ad, surface=surface,
+        "fixtures": _fixtures_payload(matches, ratings, elo_config, ad, league=slug,
                                       stakes=table_stakes.fixture_gaps(matches, lines)),
-        "results": _results_payload(matches, pre_match, era),
+        "results": _results_payload(matches, pre_match, era, shots=shots),
         "high_stakes": high_stakes,
         "next_stakes": _next_stakes(*stakes_inputs),
         "history": _history_payload(
             build_history(matches, all_matches, seeds, prior=prior, elo_config=elo_config,
-                          config=history, shots=shot_table(), surface=surface, stakes_lines=lines),
+                          config=history, shots=shots, league=slug, stakes_lines=lines),
             {row.team_id: row.team for row in table_from_matches(matches)},
         ),
     }
@@ -521,7 +600,7 @@ def _playoffs(
             # Our bracket winner meets their survival place: keep it per run.
             opponent_of_bracket = simulate_season(
                 by_league[other], ratings, ad=ad, config=simulation, elo_config=elo_config,
-                tally_conditionals=False, keep_position=other_survival.first, surface=other == "eliteserien",
+                tally_conditionals=False, keep_position=other_survival.first, league=other,
                 stakes_lines=stakes_lines(other, season, by_league[other], root),
             ).kept
         if survival and other_bracket:
@@ -529,7 +608,7 @@ def _playoffs(
             opponent_of_survival = simulate_season(
                 by_league[other], ratings, ad=ad, config=simulation, elo_config=elo_config,
                 tally_conditionals=False, playoffs=Playoffs(bracket=places(other_bracket), ladder=ladder),
-                surface=other == "eliteserien", stakes_lines=stakes_lines(other, season, by_league[other], root),
+                league=other, stakes_lines=stakes_lines(other, season, by_league[other], root),
             ).bracket_winners
     sim_ratings, sim_ad = ratings, ad
     if survival and bracket and opponent_of_survival is None:
@@ -901,23 +980,23 @@ def _table_payload(
 
 def _fixtures_payload(
     matches: list[Match], ratings: dict[str, float], elo_config: EloConfig, ad: AttackDefence,
-    *, surface: bool = False, stakes: dict[str, float] | None = None,
+    *, league: str = "", stakes: dict[str, float] | None = None,
 ) -> list[dict[str, Any]]:
-    """Upcoming fixtures with three-way odds and the most likely scorelines.
-    `stakes` (match_id -> P_home - P_away, `model.stakes.fixture_gaps`) adds
-    the table-stakes term, from the table as it stands."""
+    """Upcoming fixtures with three-way odds and the most likely scorelines,
+    priced as everywhere else (`model.pricing`). `stakes` (match_id ->
+    P_home - P_away, `model.stakes.fixture_gaps`) adds the table-stakes term,
+    from the table as it stands."""
     stakes = stakes or {}
     payload = []
     for match in matches:
         if match.played:
             continue
-        home_id = match.home_id or match.home
-        away_id = match.away_id or match.away
+        home_id, away_id = team_ids(match)
         gap = stakes.get(match.match_id, 0.0)
-        grid = ad.grid(home_id, away_id, match.date, stakes=table_stakes.STAKES_GOALS * gap)
-        edge = (surface_edge(home_id, away_id, match.date) if surface else 0.0) + table_stakes.STAKES_ELO * gap
-        probabilities = blend_outcomes(match_probabilities(ratings[home_id] + edge, ratings[away_id], elo_config), grid)
-        scorelines = top_scorelines(grid, probabilities)
+        priced = match_odds(elo_odds(match, ratings[home_id], ratings[away_id], elo_config, league, stakes=gap),
+                            ad, match, stakes=gap)
+        probabilities = priced.odds
+        scorelines = priced.scorelines()
         payload.append(
             {
                 "match_id": match.match_id,
@@ -957,8 +1036,11 @@ def xg_form(home_rating: float, away_rating: float, home_xg: float, away_xg: flo
 
 def _results_payload(
     matches: list[Match], pre_match: dict[str, tuple[float, float]] | None = None, config: EloConfig | None = None,
+    *, shots: dict[str, tuple[float, ...]] | None = None,
 ) -> list[dict[str, Any]]:
+    """Played results; `shots` (`shot_table`) adds each match's xG where known."""
     pre_match = pre_match or {}
+    shots_of = shots or {}
     config = config or EloConfig()
     payload = []
     for match in matches:
@@ -977,7 +1059,7 @@ def _results_payload(
         }
         # Shown under the score so a rating move reads against the chances as
         # well as the result; left out where the match has no xG.
-        shots = shot_table().get(match.match_id)
+        shots = shots_of.get(match.match_id)
         if shots:
             result["xg"] = [round(shots[0], 2), round(shots[1], 2)]
             # xG on target (fotmob, Eliteserien), for the luck table's keeping:

@@ -122,7 +122,7 @@ def test_the_run_in_odds_at_no_pressure_difference_are_the_plain_odds():
     ratings = {t: 1500.0 + 10 * (16 - i) for i, t in enumerate(TEAMS)}
     index_of = {t: i for i, t in enumerate(TEAMS)}
     played = np.full(16, 20)
-    fixtures = _fixtures(matches, ratings, index_of, EloConfig(), AttackDefence(), True, False, played, True)
+    fixtures = _fixtures(matches, ratings, index_of, EloConfig(), AttackDefence(), True, "", played, True)
     assert len(fixtures.stakes) == 6 * 8
     zero = list(STAKES_GAPS).index(0.0)
     assert np.allclose(fixtures.stakes_home_win[:, zero], fixtures.home_win[fixtures.stakes], atol=1e-12)

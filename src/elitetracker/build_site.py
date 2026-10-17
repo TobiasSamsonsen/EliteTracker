@@ -28,7 +28,6 @@ import hashlib
 import json
 import os
 import time
-from dataclasses import asdict
 from multiprocessing import Pool
 from pathlib import Path
 from typing import Any
@@ -46,18 +45,16 @@ from elitetracker.pipeline import (
     LEAGUE_SPECS,
     NORMALIZED_DIR,
     available_seasons,
-    bands_for,
     build_all_careers,
     build_report,
     careers_payload,
     current_season,
+    inputs_digest,
     load_matches,
-    market_values,
     preseason_date,
     rewound_configs,
 )
 from elitetracker.research import calibration_payload
-from elitetracker.sources.fotmob import load_xg
 
 MANIFEST_NAME = "build-manifest.json"
 
@@ -100,11 +97,18 @@ def write_payload(path: Path, payload: Any) -> int:
 # every matchday, which is exactly the cost this avoids.
 # --------------------------------------------------------------------------
 
-# Records are hashed through sorted-key JSON so the digest is stable across
-# runs and Python versions -- the manifest is compared across CI runs.
-def _digest_records(records: list[dict[str, Any]], extras: list[str]) -> str:
-    blob = json.dumps(records, sort_keys=True, ensure_ascii=False, default=str)
-    return hashlib.sha256("\n".join(extras + [blob]).encode("utf-8")).hexdigest()
+# A stamp is the code, the settings and the data a view reads. The data's part
+# is `pipeline.inputs_digest`, next to the loaders it digests, so an input the
+# model starts reading is stamped without touching this file. Every part is
+# stable across runs and Python versions -- the manifest is compared across
+# CI runs.
+def _digest(extras: list[str]) -> str:
+    return hashlib.sha256("\n".join(extras).encode("utf-8")).hexdigest()
+
+
+def _source_hashes() -> list[str]:
+    """The model source. A frontend-only push changes none of this."""
+    return [hashlib.sha256(source.read_bytes()).hexdigest() for source in sorted(_PACKAGE_DIR.rglob("*.py"))]
 
 
 def view_stamp(
@@ -115,77 +119,18 @@ def view_stamp(
     season_regression: float,
 ) -> str:
     """A digest of everything that can affect the view for (season, asof).
-
-    When `asof` is set, only results played on or before that date count, which
-    is what makes a rewound view reusable. Unplayed fixtures always count: the
-    view lists future fixtures, so a rescheduled match changes it whatever the
-    date. A live view (`asof=None`) sees every result, so any data change
-    invalidates it -- as it must.
-    """
-    extras = [MODEL_VERSION, str(season), str(asof), str(season_regression)]
-
-    # Model source. A frontend-only push changes none of this.
-    for source in sorted(_PACKAGE_DIR.rglob("*.py")):
-        extras.append(hashlib.sha256(source.read_bytes()).hexdigest())
-
-    # Seed ratings come from the 2014 tables, which every view replays from.
-    for standings in sorted(root.glob("*_standings.json")):
-        extras.append(hashlib.sha256(standings.read_bytes()).hexdigest())
-
-    shot_dates: dict[str, str] = {}
-    records: list[dict[str, Any]] = []
-    for path in sorted(root.glob("*_matches.json")):
-        for match in load_matches(path):
-            shot_dates[match.match_id] = match.date
-            record = asdict(match)
-            if asof and match.played and match.date > asof:
-                # A rewound view shows every match after its date as unplayed,
-                # whether or not it has since been played -- the result is not
-                # knowable back then. Both states must therefore hash the same,
-                # or every fixture would churn the stamp of every earlier rewind.
-                record.update(
-                    played=False,
-                    home_goals=None,
-                    away_goals=None,
-                )
-            records.append(record)
-
-    # Only xG for matches this view knows about. xG arriving for a later match
-    # must not invalidate an earlier rewind.
-    shots = load_xg().get("matches", {})
-    records += [
-        {"match_id": match_id, "xg": values}
-        for match_id, values in sorted(shots.items())
-        if asof is None or shot_dates.get(match_id, "") <= asof
-    ]
-
-    # The goals model's offseason pull reads each season's squad values from
-    # the season before, so only the pages before this season count.
-    records += [
-        {"values": year, "clubs": clubs}
-        for year, clubs in sorted(market_values().items()) if year < season
-    ]
-
-    extras.append(repr(rewound_configs(asof)))  # simulation settings differ live vs rewound
-    # The European places come from Norway's UEFA rank, which the refresh
-    # updates in a data file rather than in code; a new rank must rebuild.
-    extras.append(repr(bands_for(LEAGUE_SPECS["eliteserien"], season, root)))
-    return _digest_records(records, extras)
+    Its data's part (`pipeline.inputs_digest`) counts only the results played
+    on or before `asof`, which is what makes a rewound view reusable."""
+    return _digest([
+        MODEL_VERSION, str(season), str(asof), str(season_regression), *_source_hashes(),
+        repr(rewound_configs(asof)),  # simulation settings differ live vs rewound
+        inputs_digest(root, season, asof),
+    ])
 
 
 def careers_stamp(root: Path, *, season_regression: float) -> str:
-    """Digest for careers.json, which spans every season and every result."""
-    extras = [MODEL_VERSION, str(season_regression)]
-    for source in sorted(_PACKAGE_DIR.rglob("*.py")):
-        extras.append(hashlib.sha256(source.read_bytes()).hexdigest())
-    records: list[dict[str, Any]] = []
-    for path in sorted(root.glob("*_matches.json")):
-        records += [asdict(match) for match in load_matches(path)]
-    records += [
-        {"match_id": match_id, "xg": values}
-        for match_id, values in sorted(load_xg().get("matches", {}).items())
-    ]
-    return _digest_records(records, extras)
+    """Digest for careers.json, which spans every season and every input."""
+    return _digest([MODEL_VERSION, str(season_regression), *_source_hashes(), inputs_digest(root)])
 
 
 def reusable(names: list[str], stamp: str, previous: dict[str, str], out_dir: Path) -> bool:
