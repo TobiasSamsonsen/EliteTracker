@@ -258,7 +258,8 @@ def calibration_payload(score_from: int = 2016, root=NORMALIZED_DIR) -> dict:
             **{lg: scores(restrict(shipped, {m for m in shipped.losses if league[m] == lg}))
                for lg in ("eliteserien", "obosligaen")},
         },
-        "reliability": reliability(shipped),
+        # 5 % bins: the view draws a 95 % interval on each, so narrow bins stay readable.
+        "reliability": reliability(shipped, bins=20),
         # Per scoreline (4 = 4 or more): the share of matches the model gave it
         # on average against the share that ended that way.
         "scorelines": [

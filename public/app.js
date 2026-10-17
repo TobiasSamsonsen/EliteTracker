@@ -3287,6 +3287,16 @@ function calibrationPool(bins, from) {
   };
 }
 
+/* The 95 % Wilson interval of a rate seen in n trials: the bin's error bar,
+   which stays inside 0-1 and is honest at the thin ends where a plain
+   normal interval is not. */
+function calibrationInterval(rate, n, z = 1.96) {
+  const z2 = (z * z) / n;
+  const centre = (rate + z2 / 2) / (1 + z2);
+  const half = (z / (1 + z2)) * Math.sqrt(rate * (1 - rate) / n + z2 / (4 * n));
+  return [Math.max(0, centre - half), Math.min(1, centre + half)];
+}
+
 const CALIBRATION_SERIES = [
   ['home_win', 'next.homeWin', 'var(--outcome-good)'],
   ['draw', 'next.draw', 'var(--draw)'],
@@ -3346,14 +3356,24 @@ async function renderCalibration(report, body) {
       }));
     }
     for (const bin of bins) {
+      const [low, high] = calibrationInterval(bin.observed, bin.n);
+      const thin = bin.n < CALIBRATION_MIN_N ? ' calibration__bar--thin' : '';
+      svg.appendChild(svgEl('path', {
+        class: `calibration__bar${thin}`,
+        d: `M${x(bin.predicted)},${y(low)}V${y(high)}M${x(bin.predicted) - 3},${y(low)}h6M${x(bin.predicted) - 3},${y(high)}h6`,
+        style: `stroke: ${colour}`,
+      }));
+    }
+    for (const bin of bins) {
+      const [low, high] = calibrationInterval(bin.observed, bin.n);
       const dot = svgEl('circle', {
         class: `calibration__dot${bin.n < CALIBRATION_MIN_N ? ' calibration__dot--thin' : ''}`,
-        cx: x(bin.predicted), cy: y(bin.observed), r: 3 + 7 * Math.sqrt(bin.n / biggest),
+        cx: x(bin.predicted), cy: y(bin.observed), r: 2.5 + 5 * Math.sqrt(bin.n / biggest),
         style: `fill: ${colour}`, tabindex: 0,
       });
       const tip = t('calib.tip', {
         outcome: t(labelKey), lo: pct(bin.lo, 0), hi: pct(bin.hi, 0), n: num(bin.n),
-        predicted: pct(bin.predicted, 1), observed: pct(bin.observed, 1),
+        predicted: pct(bin.predicted, 1), observed: pct(bin.observed, 1), low: pct(low, 0), high: pct(high, 0),
       });
       dot.setAttribute('aria-label', tip);
       attachTip(dot, tip);
@@ -3368,6 +3388,9 @@ async function renderCalibration(report, body) {
     item.append(swatch, t(labelKey));
     legend.appendChild(item);
   }
+  const barKey = el('span', 'calibration__key');
+  barKey.append(el('i', 'calibration__swatch calibration__swatch--bar'), t('calib.bars'));
+  legend.appendChild(barKey);
   wrap.appendChild(legend);
 
   if (data.market) {

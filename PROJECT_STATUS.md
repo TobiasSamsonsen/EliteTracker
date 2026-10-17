@@ -2379,7 +2379,7 @@ below that name a branch wait on it (see "Explore: which views stay").
   phones with the club column pinned. Facts: hardest and easiest run-in, the
   gap between them, the surest win left.
 - **Match-odds calibration** (#10; since 2026-10-17 the second part of model accuracy, `viz=accuracy`, branch `explore/accuracy`): a reliability diagram of
-  the shipped odds over every match since 2016 (home, draw, away; dot size by
+  the shipped odds over every match since 2016 (home, draw, away, in 5 % bins since 2026-10-17, each with its 95 % Wilson interval; dot size by
   count, bins under 30 faint), the scores against the closing line three ways
   de-vigged, and facts (calibration error, favourites priced 70 %+, the gap to
   the market, quarter-Kelly ROI). Data: `public/data/calibration.json`, written

@@ -631,7 +631,7 @@ test('every scorecard string exists in both languages', () => {
   ]);
 });
 
-eval(pick('calibrationPool'));
+eval(pick('calibrationPool') + pick('calibrationInterval'));
 
 test('calibration pools the bins at the top of the range', () => {
   const bins = [
@@ -645,12 +645,21 @@ test('calibration pools the bins at the top of the range', () => {
   assert.equal(calibrationPool(bins, 0.95), null);
 });
 
+test('calibration error bars are the 95 % Wilson interval, inside 0-1', () => {
+  const [low, high] = calibrationInterval(0.5, 100);
+  assert.ok(Math.abs(low - 0.4038) < 1e-4 && Math.abs(high - 0.5962) < 1e-4);
+  const [zeroLow, zeroHigh] = calibrationInterval(0, 18);
+  assert.equal(zeroLow, 0);
+  assert.ok(zeroHigh > 0.15 && zeroHigh < 0.2);
+  assert.equal(calibrationInterval(1, 5)[1], 1);
+});
+
 test('every calibration string exists in both languages', () => {
   assertBothLanguages([
     'calib.loading', 'calib.empty', 'calib.aria',
     'calib.x', 'calib.y', 'calib.tip', 'calib.model', 'calib.elo',
     'calib.proportional', 'calib.power', 'calib.shin', 'calib.tableCaption', 'calib.fact.error',
     'calib.fact.errorText', 'calib.fact.favourites', 'calib.fact.favouritesText', 'calib.fact.market', 'calib.fact.marketText',
-    'calib.fact.kelly', 'calib.fact.kellyText',
+    'calib.fact.kelly', 'calib.fact.kellyText', 'calib.bars',
   ]);
 });

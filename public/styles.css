@@ -4025,10 +4025,13 @@ body[data-viz="accuracy"] .hero-title-part[data-role="season"] { display: none; 
 .chart .calibration__line { fill: none; stroke-width: 1.5; opacity: 0.55; }
 .chart .calibration__dot { stroke: var(--panel); stroke-width: 1.5; }
 .chart .calibration__dot--thin { opacity: 0.35; }
+.chart .calibration__bar { fill: none; stroke-width: 1.25; opacity: 0.6; }
+.chart .calibration__bar--thin { opacity: 0.2; }
 .chart .calibration__dot:focus-visible { outline: none; stroke: var(--ink); stroke-width: 2; }
 .calibration__legend { display: flex; flex-wrap: wrap; justify-content: center; gap: 0.5rem 1.25rem; margin: 0.5rem 0 1rem; font-size: 0.8125rem; color: var(--ink-muted); }
 .calibration__key { display: inline-flex; align-items: center; gap: 0.4rem; }
 .calibration__swatch { width: 0.7rem; height: 0.7rem; border-radius: 999px; }
+.calibration__swatch--bar { width: 2px; height: 0.8rem; border-radius: 0; background: var(--ink-muted); }
 .calibration__table { width: 100%; max-width: 600px; margin: 0 auto; border-collapse: collapse; font-size: 0.875rem; font-variant-numeric: tabular-nums; }
 .calibration__table caption { padding-bottom: 0.4rem; color: var(--ink-muted); font-size: 0.8125rem; text-align: left; caption-side: top; }
 .calibration__table th, .calibration__table td { padding: 0.35rem 0.5rem; border-bottom: 1px solid var(--rule); text-align: right; }
