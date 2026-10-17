@@ -2108,6 +2108,142 @@ table. Checked against the sweep: with elo-v14.0's `src` the harness's
 shipped model is the experiment's final model to 2e-16 (Elo odds exact), and
 `harness.identity()` holds.
 
+## 🧪 Recalibration re-tested on elo-v14.0: a lookup table for the favourites (October 2026) - rejected
+
+The owner's question, from the model accuracy view's 5 % bins: heavy
+favourites win more often than priced, so would a lookup table (or similar)
+on the predicted chances help? Re-test of the elo-v12 recalibration layers
+(temperature −0.0010, t −1.4; temperature + biases −0.0006) with new ones.
+`experiments/improvements/recalibration.py`: the shipped odds (the same as
+`calibration.json`), each layer fitted on every scored season before the one
+it scores (2016 on), scored 2018–2026, both divisions, 4,223 matches, paired
+against the shipped odds:
+
+| layer | log loss | t | Brier | t | RPS | t | halves (log loss) | favourites ≥ 70 %: n, priced, won |
+|---|---|---|---|---|---|---|---|---|
+| shipped | | | | | | | | 296, 76.3 %, 81.1 % |
+| temperature (picks 0.99–1.06) | −0.00004 | −0.13 | +0.00003 | +0.17 | +0.00002 | +0.20 | +0.00028 / −0.00036 | 365, 76.4 %, 79.2 % |
+| temperature + outcome biases | +0.00048 | +0.65 | +0.00043 | +0.95 | +0.00017 | +0.80 | −0.00053 / +0.00150 | 383, 76.5 %, 79.6 % |
+| LUT, 5 % bins, shrunk with 50 pseudo-matches | +0.00166 | +1.85 | +0.00098 | +1.76 | +0.00035 | +1.37 | −0.00074 / +0.00405 | 424, 75.9 %, 78.8 % |
+| LUT, 5 % bins, 200 pseudo-matches | +0.00073 | +1.20 | +0.00043 | +1.14 | +0.00014 | +0.81 | −0.00120 / +0.00266 | 386, 75.7 %, 78.5 % |
+| LUT, 10 % bins, 50 pseudo-matches | +0.00114 | +1.44 | +0.00070 | +1.44 | +0.00025 | +1.12 | −0.00051 / +0.00279 | 402, 76.3 %, 78.1 % |
+| isotonic per outcome | +0.00852 | +2.90 | +0.00230 | +2.24 | +0.00078 | +1.83 | +0.00582 / +0.01122 | 502, 80.5 %, 76.9 % |
+| favourite's log-odds × s from 60 % (s 0.90–1.34) | −0.00019 | −0.34 | +0.00002 | +0.05 | −0.00001 | −0.10 | −0.00017 / −0.00022 | 430, 77.8 %, 77.9 % |
+| favourite's log-odds × s from 70 % (s 0.90–1.22) | −0.00022 | −0.95 | −0.00009 | −0.71 | −0.00004 | −0.84 | +0.00017 / −0.00060 | 268, 78.3 %, 82.5 % |
+
+Every layer fails the one-knob rule (no t ≤ −1, halves disagree, Brier and
+RPS not both negative); the lookup tables are worse out of sample, more so
+the freer they are. The temperature the elo-v12 test found (1.09–1.12) is
+down to about 1.05: the spread (1.10) took most of it. A layer that sharpens
+the top moves more matches into the ≥ 70 % bin, and the newcomers win less
+often than the old ones.
+
+Why it does not transfer: the favourites' gap is not a fixed curve. Priced
+70 %+, they won 72.1 % against 74.9 % in 2016–2020 (86 matches, se 4.7 pp)
+and 82.9 % against 76.7 % in 2021–2026 (234, se 2.7 pp). Half of the recent
+excess is one club: Bodø/Glimt won 49 of 53 at 78.7 % priced (+7.3 wins of
++14.6 for all clubs); Brann +2.6, Vålerenga +2.4, Viking +1.8, Molde −0.4.
+Earlier, Rosenborg −2.8. So it reads as the ratings of a dominant club
+running behind it, not as odds that are too flat. The lead, if it is taken
+up: a club-level ceiling or the top of the rating scale, not a probability
+mapping.
+
+**The offseason pull toward each club's own level, re-tested on elo-v14.0 -
+rejected again.** elo-v12 era: −0.0002 (t −1.8). `experiments/improvements/own_level.py`
+(harness, identity to the bit): the target is mean + w × L, L an EWMA (memory
+λ, from 0) of the club's pre-pull deviation from its division mean, reset when
+it changes division; in Elo, in the goals model (attack and defence each,
+on top of the squad-value shift), or both. λ {0.5, 0.7, 0.85} × w {0.5, 1}, 2016+:
+
+| where | best in-sample | walk-forward 2019+ (all / ES / OBOS) |
+|---|---|---|
+| Elo | −0.00001 (t −0.15) | +0.00005 (t +1.14) / +0.00006 / +0.00003 |
+| goals model | +0.00001 (λ 0.85, w 0.5) | +0.00016 (t +1.53) / −0.00001 / +0.00033 (t +1.75) |
+| both | +0.00002 | +0.00014 (t +1.52) / +0.00003 / +0.00025 |
+
+Elo is flat at every setting (2021+ at best −0.00005, t −0.35); the goals
+model is worse the more it leans on the club's own level (w 1, λ 0.5:
++0.00031, t +1.02), OBOS-ligaen most. The favourites priced 70 %+ since 2021
+do not move (234 → 236 matches, won 82.9 % → 83.1 %). The elo-v12-era hint
+has gone; a likely reason, not tested, is the squad-value pull (elo-v13.0),
+which already moves the goals model's target by a club's resources. So the
+dominant clubs' excess is not the offseason pull either, and stays open.
+
+**The gap between the divisions set by squad value - rejected.** The
+owner's idea: base the difference between Eliteserien and OBOS-ligaen on
+their clubs' average or median squad value. Today that gap is seeded once
+(the 2014 ladder; `division_gap` 0.25) and carried: the pull is per division
+and no match crosses, so only the clubs going up and down move it.
+`experiments/improvements/division_value_gap.py` (a new optional `offseason`
+hook in the harness's Elo replay; identity to the bit): each offseason,
+after the pull, last season's OBOS-ligaen clubs move a fraction k of the way
+to a value-implied gap -- the run's own mean gap of the seasons before,
+scaled by this season's log median (or mean) value gap over theirs; for the
+goals model also 0.2 × the value gap, the value pull's own rule.
+
+The carried gap has grown while the value gap shrank: Elo 162 → 206 points
+2016 → 2025 (216 in 2026), the defence gap 0.23 → 0.46, the median value gap
+1.45 → 1.19. So the idea narrows the gap, and the results disagree. 2016+,
+all 5,183 matches / the 2,192 with a club new to its division:
+
+| variant | all | new to the division |
+|---|---|---|
+| Elo, k 0.25 / 0.5 / 1 | +0.00007 / +0.00014 / +0.00029 (t +1.69) | +0.00015 / +0.00032 / +0.00065 |
+| goals model, k 0.25 / 0.5 / 1 | +0.00002 / +0.00009 / +0.00025 | +0.00013 / +0.00039 / +0.00092 |
+| both, k 0.25 / 0.5 / 1 | +0.00012 / +0.00034 / +0.00079 (t +1.48) | +0.00036 / +0.00094 / +0.00216 (t +1.76) |
+| both, k 0.5, mean value | −0.00000 | +0.00014 |
+| goals model, absolute 0.2, k 0.5 / 1 | +0.00009 / +0.00032 | +0.00036 / +0.00102 |
+
+Every first half worse (t +1.5 to +3.4 on the new-to-the-division matches),
+second halves flat. Walk-forward 2019+: Elo never picks it; goals model
++0.00029 (t +1.94; OBOS-ligaen +0.00057, t +2.64); both +0.00033 (t +2.40).
+Squad values understate how far apart the divisions have grown, whether
+because OBOS-ligaen squads are valued generously for how they play or
+because Eliteserien's top has pulled away (not tested).
+
+**Clubs changing division placed by their own squad value - a candidate,
+not shipped.** The owner's follow-up: not the whole gap, but each promoted or
+relegated club placed more by its value against its new division. Today
+such a club is pulled like any other: toward its new division's mean,
+keeping 0.88 of its distance (goals model: 0.88 Eliteserien / 0.75
+OBOS-ligaen, target moved by `value_pull` 0.2 / 0.3 × log value against the
+division's); Elo has no value term. `experiments/improvements/value_crossers.py`
+(identity to the bit, and the hooks at shipped settings give the shipped odds
+back): for clubs whose division changed, keep r_c of the distance, and move
+the target by c Elo points (Elo) or m × `value_pull` (goals model) per log
+value. 1,503 matches 2016+ have such a club. 2016+, all matches:
+
+| variant | log loss | t | Brier t | RPS t | halves t |
+|---|---|---|---|---|---|
+| Elo, keep 0.5, no value (control) | −0.00002 | −0.19 | −0.20 | −0.40 | −0.50 / +0.26 |
+| Elo, keep shipped, c 75 | −0.00003 | −1.38 | −1.53 | −1.41 | −0.55 / −1.51 |
+| Elo, keep 0.5, c 75 | −0.00019 | −2.57 | −2.74 | −2.83 | −2.28 / −1.42 |
+| Elo, keep 0.25, c 150 | −0.00045 | −2.25 | −2.46 | −2.42 | −1.49 / −1.71 |
+| Elo, keep 0, c 150 | −0.00057 | −2.13 | −2.34 | −2.31 | −1.47 / −1.56 |
+| goals model, keep 0.5, ×1 | −0.00053 | −2.18 | −2.37 | −2.47 | −2.11 / −0.86 |
+| goals model, keep 0.25, ×1 | −0.00079 | −1.81 | −2.01 | −2.11 | −1.82 / −0.63 |
+| goals model, keep 0.25, ×2 | +0.00069 | +0.60 | +0.22 | +0.29 | +0.66 / +0.07 |
+| both, keep 0.5, ×1, c 75 | −0.00066 | −2.22 | −2.41 | −2.50 | −2.16 / −0.91 |
+| relegated clubs only, keep 0.5, ×1, c 75 | −0.00047 | −2.43 | −2.67 | −2.71 | −1.83 / −1.60 |
+| promoted clubs only, keep 0.5, ×1, c 75 | −0.00019 | −0.82 | −0.88 | −0.97 | −1.29 / +0.28 |
+
+The value is what helps: a stronger pull alone does nothing (Elo keep 0.5 or
+0.25 with c 0: t −0.2 / +0.03). Walk-forward 2019+ (each season the
+setting that did best on the seasons before): Elo −0.00053 (t −1.86; Brier
+t −1.87, RPS t −2.13; halves −2.34 / −0.63; picks keep 0, c 150 mostly);
+relegated clubs, both models −0.00094 (t −1.75; halves −1.69 / −0.69);
+both directions, both models −0.00071 (t −1.30); the goals model alone
++0.00004 (it picks keep 0 from 2020, which overshoots: fragile); promoted
+clubs only −0.00003. So it is the relegated clubs: a club coming down is
+better placed by what its squad is worth than by the Eliteserien rating it
+brings (which clubs gain was not broken down). It adds a value term to Elo
+and a second pull for one group of clubs, so the |t| >= 2 bar applies: met
+in-sample (relegated only, t −2.43, both halves negative on all three
+metrics), not out of sample (t −1.75). If it is taken up, the cleanest form
+is relegated clubs only, keep 0.5, the goals model's own value shift, Elo
+75 points per log value, then a forward split before a release (elo-v15.0,
+MAJOR).
+
 ## 🔭 Explore: which views stay, and a season in each (October 2026) - luck table released, six on branches
 
 The owner kept seven of the ten new views -- race lines, prediction scorecard,

@@ -94,6 +94,8 @@ class EloRun:
     target: Callable | None = None
     # team -> starting rating for a club with none (default: the ladder floor)
     newcomer: Callable | None = None
+    # (season, ratings) called after the offseason pull, before newcomers are placed
+    offseason: Callable | None = None
 
 
 def elo_run(run: EloRun | None = None, gaps: np.ndarray | None = None) -> np.ndarray:
@@ -125,6 +127,8 @@ def elo_run(run: EloRun | None = None, gaps: np.ndarray | None = None) -> np.nda
                 for t in ids:
                     goal = targets.get(t, mean) if targets else mean
                     ratings[t] = goal + regression * (ratings[t] - goal)
+            if run.offseason:
+                run.offseason(season, ratings)
         for sl in in_season:
             for m in sl.matches:
                 for t in team_ids(m):
