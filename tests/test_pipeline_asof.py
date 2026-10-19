@@ -1,6 +1,7 @@
 """The season-rewind view: the report as it would have read on a given day."""
 
 import json
+import math
 
 import pytest
 
@@ -367,3 +368,40 @@ def test_inputs_come_from_the_data_directory_and_reload_on_request(tmp_path):
     assert pipeline.shot_table(root) == {"1": (1.0, 2.0)}
     pipeline.reload_inputs()
     assert pipeline.shot_table(root) == {"1": (3.0, 0.5)}
+
+
+class TestAttackTrend:
+    """The attack map's trend slope, pooled over the division's earlier seasons."""
+
+    def rates(self, monkeypatch, rates, first_xg=None):
+        monkeypatch.setattr(pipeline, "season_end_rates", lambda root: rates)
+        monkeypatch.setattr(pipeline, "first_xg_seasons", lambda root: first_xg or {})
+
+    def test_pools_earlier_seasons_each_centred_on_its_own_mean(self, monkeypatch):
+        # Two seasons on the same slope at different scoring levels: pooled
+        # raw, the level shift would tilt the line; centred, it does not.
+        low = [(1.0, 1.5), (1.4, 1.3), (1.8, 1.1)]
+        high = [(2.0, 2.5), (2.4, 2.3), (2.8, 2.1)]
+        self.rates(monkeypatch, {
+            ("eliteserien", 2020): low, ("eliteserien", 2021): high,
+            ("eliteserien", 2022): [(1.0, 1.0), (2.0, 2.0)],  # the season shown: never pooled
+            ("obosligaen", 2021): [(1.0, 1.0), (2.0, 2.0)],
+        })
+        trend = pipeline.attack_trend("eliteserien", 2022)
+        assert trend == {"sxx": pytest.approx(0.64), "syy": pytest.approx(0.16), "sxy": pytest.approx(-0.32), "first": 2020}
+        # Orthogonal regression on those sums: the shared slope.
+        sxx, syy, sxy = trend["sxx"], trend["syy"], trend["sxy"]
+        assert (syy - sxx + math.hypot(syy - sxx, 2 * sxy)) / (2 * sxy) == pytest.approx(-0.5)
+
+    def test_none_before_an_earlier_season(self, monkeypatch):
+        self.rates(monkeypatch, {("eliteserien", 2020): [(1.0, 1.5), (1.8, 1.1)]})
+        assert pipeline.attack_trend("eliteserien", 2020) is None
+
+    def test_xg_seasons_and_goals_only_seasons_pool_apart(self, monkeypatch):
+        clubs = [(1.0, 1.5), (1.4, 1.3), (1.8, 1.1)]
+        self.rates(monkeypatch, {("eliteserien", year): clubs for year in range(2017, 2023)},
+                   first_xg={"eliteserien": 2020})
+        assert pipeline.attack_trend("eliteserien", 2022)["first"] == 2020
+        assert pipeline.attack_trend("eliteserien", 2020) is None  # the first xG season fits its own
+        assert pipeline.attack_trend("eliteserien", 2019)["first"] == 2017
+        assert pipeline.attack_trend("eliteserien", 2023)["sxx"] == pytest.approx(3 * 0.32)  # 2020-2022

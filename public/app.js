@@ -2397,10 +2397,13 @@ function renderAttackMap(report, body) {
   }
 
   const mean = (key) => rows.reduce((sum, row) => sum + row[key], 0) / rows.length;
-  // The division's trend: a best fit through the clubs, by orthogonal
-  // regression since neither axis is the outcome of the other. Along it, how
-  // good a club is overall; above it, a club defends better than its attack
-  // would suggest, below it, the other way round.
+  // The division's trend, by orthogonal regression since neither axis is the
+  // outcome of the other. Along it, how good a club is overall; above it, a
+  // club defends better than its attack would suggest, below it, the other way
+  // round. Sixteen clubs leave one season's slope to chance, so these clubs
+  // are pooled with the division's earlier seasons (`attack_trend`, each
+  // season centred on its own mean); the line runs through this season's
+  // average club.
   const [ma, md] = [mean('attack'), mean('defence')];
   let [sxx, syy, sxy] = [0, 0, 0];
   for (const row of rows) {
@@ -2409,7 +2412,9 @@ function renderAttackMap(report, body) {
     syy += dd * dd;
     sxy += da * dd;
   }
-  const fit = sxy ? (syy - sxx + Math.hypot(syy - sxx, 2 * sxy)) / (2 * sxy) : 0;
+  const pooled = report.attack_trend;
+  const [pxx, pyy, pxy] = pooled ? [sxx + pooled.sxx, syy + pooled.syy, sxy + pooled.sxy] : [sxx, syy, sxy];
+  const fit = pxy ? (pyy - pxx + Math.hypot(pyy - pxx, 2 * pxy)) / (2 * pxy) : 0;
 
   // Reference lines, defence = slope * attack + offset. Each label runs along
   // its line, at the stretch furthest from the crests and the corner labels.
@@ -2503,7 +2508,9 @@ function renderAttackMap(report, body) {
   const ranked = [...rows].sort((a, b) => balanceOf(b).distance - balanceOf(a).distance);
   const [defenceLed, attackLed] = [ranked[0], ranked[ranked.length - 1]];
   wrap.appendChild(exploreFacts([
-    { value: num(Math.abs(fit), 2), label: t('attack.fact.slope'), text: t('attack.fact.slopeText', { v: num(Math.abs(fit), 2) }) },
+    { value: num(Math.abs(fit), 2), label: t('attack.fact.slope'), text: pooled
+      ? t('attack.fact.slopePooledText', { v: num(Math.abs(fit), 2), from: pooled.first, to: report.league.season })
+      : t('attack.fact.slopeText', { v: num(Math.abs(fit), 2) }) },
     { value: num(sxy / Math.sqrt(sxx * syy), 2), label: t('attack.fact.r'), text: t('attack.fact.rText') },
     { value: attackLed.team, label: t('attack.fact.attack'), text: `${balanceText(balanceOf(attackLed))}.` },
     { value: defenceLed.team, label: t('attack.fact.defence'), text: `${balanceText(balanceOf(defenceLed))}.` },

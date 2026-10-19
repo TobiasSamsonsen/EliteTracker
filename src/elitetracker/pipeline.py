@@ -328,9 +328,78 @@ def prior_attack_defence(root: Path, season: int) -> AttackDefence:
     )
 
 
+@functools.cache
+def season_end_rates(root: Path) -> dict[tuple[str, int], list[tuple[float, float]]]:
+    """Each division's clubs as they ended each season, in expected goals for
+    and against per match against an average side (the table's `attack` and
+    `defence`). Every season is replayed once, in order."""
+    slices = load_slices(root)
+    ad = AttackDefence.from_slices(slices, ADConfig(), shots=shot_table(root), values=market_values(root))
+    rates: dict[tuple[str, int], list[tuple[float, float]]] = {}
+    for season in available_seasons(root):
+        ad.replay([match for slice_ in slices if slice_.season == season for match in slice_.matches])
+        for slug in LEAGUE_SPECS:
+            clubs = sorted(team for (year, team), league in ad.divisions.items()
+                           if year == season and league == slug and team in ad.attack)
+            rates[(slug, season)] = [ad.rates_against_average(team, slug, season) for team in clubs]
+    return rates
+
+
+@functools.cache
+def first_xg_seasons(root: Path) -> dict[str, int]:
+    """Each division's first season with xG for at least 90% of its played
+    matches (Eliteserien 2020; OBOS-ligaen 2023, at 92%). Every season before
+    it has none, so its ratings stand on goals alone."""
+    shots = shot_table(root)
+    first: dict[str, int] = {}
+    for slice_ in sorted(load_slices(root), key=lambda slice_: slice_.season):
+        played = [match for match in slice_.matches if match.played]
+        if played and sum(match.match_id in shots for match in played) >= 0.9 * len(played):
+            first.setdefault(slice_.league, slice_.season)
+    return first
+
+
+def attack_trend(slug: str, season: int, root: Path = NORMALIZED_DIR) -> dict[str, Any] | None:
+    """The attack map's trend line, from the seasons of `slug` before `season`
+    rated the same way: the sums of squares and products of each season's
+    clubs, centred on that season's own mean. The page adds the clubs of the
+    day it shows and fits the slope by orthogonal regression.
+
+    Sixteen clubs leave one season's slope to chance (Eliteserien's ran from
+    -0.42 to -1.29 between seasons, OBOS-ligaen's went flat mid-2026), so the
+    seasons are pooled; the centring keeps a division's scoring level, which
+    moves from year to year, out of the slope. Ratings from xG and ratings from
+    goals alone are not one measure, so a season from the division's first xG
+    season on pools only with those, and one before it only with the seasons
+    before it. Only earlier seasons count, so a view never changes when a later
+    season is played. None before there is one.
+    """
+    rates = season_end_rates(Path(root))
+    first_xg = first_xg_seasons(Path(root)).get(slug)
+    since = first_xg if first_xg is not None and season >= first_xg else None
+    seasons = [
+        year for (league, year), clubs in rates.items()
+        if league == slug and year < season and len(clubs) > 1
+        and (year >= since if since is not None else first_xg is None or year < first_xg)
+    ]
+    sxx = syy = sxy = 0.0
+    for year in seasons:
+        clubs = rates[(slug, year)]
+        mean_for = sum(scored for scored, _ in clubs) / len(clubs)
+        mean_against = sum(conceded for _, conceded in clubs) / len(clubs)
+        for scored, conceded in clubs:
+            sxx += (scored - mean_for) ** 2
+            syy += (conceded - mean_against) ** 2
+            sxy += (scored - mean_for) * (conceded - mean_against)
+    if not seasons:
+        return None
+    return {"sxx": round(sxx, 6), "syy": round(syy, 6), "sxy": round(sxy, 6), "first": min(seasons)}
+
+
 def reload_inputs() -> None:
     """Forget every input read so far: the next read takes the files as they are now."""
-    for loader in (load_slices, shot_table, stakes_table, market_values, prior_attack_defence):
+    for loader in (load_slices, shot_table, stakes_table, market_values, prior_attack_defence, season_end_rates,
+                   first_xg_seasons):
         loader.cache_clear()
 
 
@@ -540,6 +609,8 @@ def build_report(
         },
         "table": _table_payload(matches, ratings, projection, seeds, ad, spec.slug, season, era, high_stakes,
                                 bands=bands_for(spec, season, root)),
+        # The attack map's trend, pooled over the division's earlier seasons.
+        "attack_trend": attack_trend(spec.slug, season, root),
         "fixtures": _fixtures_payload(matches, ratings, elo_config, ad, league=slug,
                                       stakes=table_stakes.fixture_gaps(matches, lines)),
         "results": _results_payload(matches, pre_match, era, shots=shots),

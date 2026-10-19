@@ -132,7 +132,11 @@ slider too; the ones with time along an axis of their own take none.
 
 - **Attack vs defence** (`viz=attack`) -- every club placed by its attack and
   defence ratings (expected goals for and against per match against an average
-  side), with a best-fit trend line through the division. Above the line a club
+  side), with a trend line through the division's average club, its slope
+  fitted over this season and the earlier ones rated the same way pooled (one
+  season's sixteen clubs leave the slope to chance): xG seasons with xG
+  seasons (Eliteserien from 2020, OBOS-ligaen from 2023), goals-only seasons
+  with goals-only ones. Above the line a club
   defends better than its attack would suggest, below it the other way round;
   the tooltip says by how much. Key figures: the trend's slope (how many fewer
   goals a club concedes per extra goal it creates), the correlation, and the

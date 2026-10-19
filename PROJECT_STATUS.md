@@ -2701,7 +2701,29 @@ below that name a branch wait on it (see "Explore: which views stay").
   best-fit trend line (orthogonal regression, since neither axis is the
   outcome of the other) splits "better defence than their level suggests"
   from "better attack", with direction guides on both axes; each tooltip
-  says by how much. Tried and dropped: an average crosshair with quadrant
+  says by how much. The slope pools the day's clubs with the division's
+  earlier seasons (`attack_trend` in the report holds their sums, each season
+  centred on its own mean, so a division's scoring level stays out of it) and
+  the line runs through this season's average club. Earlier seasons alone were
+  tried first and dropped: OBOS-ligaen 2016 then took 2015's -6.3 whole; with
+  its own clubs added, -1.73. Early in a season the day's clubs sit close
+  together and weigh little, so the line hardly moves on the slider. Only
+  seasons rated the same way pool: from a division's first season with xG
+  for 90% of its matches (Eliteserien 2020, OBOS-ligaen 2023 at 92%) only xG
+  seasons, before it only goals-only ones (`first_xg_seasons`). The two are
+  not one measure: Eliteserien's goals-only seasons pool to -0.86 to -1.01,
+  its xG seasons to -0.55 to -0.72 (2026: -0.70, against -0.73 pooled over
+  all). A fixed rolling window was considered instead: five seasons back
+  from 2026 would still take OBOS-ligaen's goals-only 2021-22. The first xG
+  season fits its own (OBOS-ligaen 2023: -1.72). One season's own fit
+  was noise: end-of-season slopes ran -0.42 to -1.29 in Eliteserien and -0.46
+  to -1.83 in OBOS-ligaen (2015: -6.0), with bootstrap spreads as wide as that
+  range, and OBOS-ligaen 2026's went flat (r near 0) from May to August, when
+  the "attack-led" labels just ranked attack. Pooled over 2015-2026: -0.68
+  (r -0.58) and -0.82 (r -0.54). OBOS-ligaen 2026's high level (mean 1.96 for,
+  1.92 against) is real, not a data fault: 1.91 goals and 2.01 xG per club per
+  match, against 1.4-1.6 before, no duplicate matches, and the NFF table
+  agrees (Haugesund 78-40 after 26). Tried and dropped: an average crosshair with quadrant
   labels, the y = x line with +/-0.5 bands, and a fixed-slope equal-total
   line. A 15-match rolling window for early season was considered and
   rejected: the ratings already carry over and adjust for opponents, and a
