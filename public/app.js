@@ -814,7 +814,10 @@ function updateLadderAnimFrame(reports) {
    Each band gets its own distinct hue so the decisive-match dot is
    instantly recognisable without text. Tone alone is not enough:
    a play-off is a good thing in OBOS-ligaen (promotion) and a bad
-   one in Eliteserien (relegation). */
+   one in Eliteserien (relegation). Promotion takes the blue, not the
+   champions' yellow: its top place is both, so a club decisive for both
+   shows two dots that must differ. Blue is free in OBOS-ligaen and the
+   colour-blind-safe partner of the relegation red. */
 function bandColor(band, count) {
   const label = band.label;
   if (label === 'Champions') return 'var(--band-champion)';
@@ -822,7 +825,7 @@ function bandColor(band, count) {
   if (label === 'Europa League qualification') return 'var(--edge-el)';
   if (label === 'Conference League qualification') return 'var(--edge-ecl)';
   if (label === 'Relegation' || label === 'Relegation play-off') return 'var(--outcome-bad)';
-  if (label === 'Promotion') return 'var(--band-champion)';
+  if (label === 'Promotion') return 'var(--outcome-good)';
   if (label === 'Promotion play-off') return 'var(--edge-el)';
   // Fallback: good vs bad based on table half
   return outcomeClass(band.first, [band], count) === 'good'

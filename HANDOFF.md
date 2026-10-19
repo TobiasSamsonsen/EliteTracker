@@ -194,9 +194,10 @@ cards, stacked one above the other when a club has a stake in more than one
 band (`.stake-dots`); shorter tooltips everywhere (`public/app.js`,
 `i18n.js`, `styles.css`, `index.html`); and `p_draw` in the report's
 `high_stakes` / `next_stakes` (`pipeline.py`, so the dot's tooltip reads
-W/D/L). Open: `bandColor` gives Champions and Promotion the same yellow, so in
-OBOS-ligaen a club decisive for both shows two yellow dots; telling them apart
-would change the promotion colour across the site.
+W/D/L). Promotion has its own colour since (`bandColor`: the blue
+`--outcome-good`, where it shared the champions' yellow), so a club decisive for
+both shows two different dots, and OBOS-ligaen's promotion place and line are
+blue across the site.
 
 ## Other open items
 
