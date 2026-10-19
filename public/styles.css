@@ -2356,10 +2356,11 @@ footer a { color: var(--ink); }
   #content > section { margin-block: 0; }
   .hero { padding-bottom: 0.25rem; }
 
-  /* The divider row spans the whole scrolling table, so a centred label sits
-     off-screen. Pin it to the left with a short lead-in line. */
-  table.standings .zone-divider__wrap { justify-content: flex-start; padding-left: 0.5rem; }
-  table.standings .zone-divider__wrap::before { flex: 0 0 0.75rem; }
+  /* The divider row spans the whole scrolling table, so a label centred in it
+     sits off-screen. Size the label to the visible scrollport (cqi) and stick
+     it to the left edge, so it stays centred in view as the table scrolls. */
+  .scroller:has(> table.standings) { container-type: inline-size; }
+  table.standings .zone-divider__wrap { position: sticky; left: 0; width: 100cqi; }
 
   /* A tighter masthead on small screens. */
   .masthead__inner { gap: 0.7rem 1rem; min-height: 0; padding-block: 0.7rem; }
