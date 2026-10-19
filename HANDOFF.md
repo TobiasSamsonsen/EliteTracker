@@ -201,6 +201,16 @@ blue across the site.
 
 ## Other open items
 
+- Shelved (2026-10-19): installed from Chrome on the owner's Android phone,
+  the system navigation bar stays white in the dark theme. Tried: a
+  `manifest.webmanifest` (standalone, `theme_color` and `background_color`
+  `#0b1116`, PNG icons in `public/icons/`), live and installable, reinstalled
+  on the phone; no change. The page paints dark (`color-scheme: dark`, dark
+  body). Next time, start from the phone's Android and Chrome versions,
+  whether the phone or only the site is in dark mode, and `chrome://webapks`.
+  Reports disagree on what Chrome colours that bar from. Also `/` is cached
+  an hour (the no-cache rule in firebase.json matches `*.html`, not `/`).
+
 - Past seasons: rebuilt on elo-v16.0 (`past-seasons.yml`, 2026-10-17). Rerun
   it after the next model release (docs/operations.md, "Publishing past seasons").
 - The contact-form service (PROJECT_STATUS.md, "Contact form - planned").
