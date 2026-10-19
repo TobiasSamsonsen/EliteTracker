@@ -1391,16 +1391,11 @@ table.standings .zone-divider__wrap::after {
 }
 /* A finger-sized target around the 9px dot. */
 .stake-dot::after { content: ""; position: absolute; inset: -12px; }
-.stake-dot__tooltip { max-width: 280px; }
-.stake-dot__tooltip strong {
-  display: block;
-  margin-bottom: 0.2rem;
-}
-.stake-dot__legs {
-  margin-top: 0.3rem;
-  font-size: 0.7rem;
-  opacity: 0.75;
-}
+/* A side's dots, one per band it has a stake in, stacked rather than in a
+   row, so the card keeps its width; the targets shrink to fit the stack. */
+.stake-dots { display: inline-flex; flex-direction: column; gap: 3px; flex: none; }
+.stake-dots .stake-dot + .stake-dot::after,
+.stake-dots .stake-dot:has(+ .stake-dot)::after { inset: -1px -12px; }
 
 /* Stacked diverging bar: home | draw | away, with 2px surface gaps. */
 .odds { display: flex; gap: 2px; height: 1.5rem; }
@@ -1457,17 +1452,6 @@ table.standings .zone-divider__wrap::after {
     border-radius: 6px;
   }
   :is(#played-results, #fixtures, #team-content) .played-card__side .team-logo { width: 36px; height: 36px; }
-  /* The decisive-match dot beside the crest, on its inner side, rather than
-     on a line of its own under it. The DOM puts the dot on the inside of the
-     name, so row-reverse lands it inside the crest on both sides. Above the
-     name overlay, so a tap on it still brings up its tooltip. */
-  :is(#played-results, #fixtures, #team-content) .played-card__team,
-  :is(#played-results, #fixtures, #team-content) .played-card__side--home .played-card__team {
-    flex-direction: row-reverse;
-    align-items: center;
-    gap: 0.3rem;
-  }
-  :is(#played-results, #fixtures, #team-content) .played-card__team .stake-dot { z-index: 1; }
   :is(#played-results, #fixtures, #team-content) .played-card { gap: 0.25rem; }
 }
 

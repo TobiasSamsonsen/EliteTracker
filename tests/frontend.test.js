@@ -212,7 +212,7 @@ test('an empty range has no index, so the slider stays hidden', () => {
 globalThis.localStorage = globalThis.localStorage || { getItem: () => 'en', setItem: () => {} };
 globalThis.document = globalThis.document || { querySelectorAll: () => [], getElementById: () => null, documentElement: {} };
 const i18nSrc = fs.readFileSync(`${__dirname}/../public/i18n.js`, 'utf8');
-eval(i18nSrc + pick('bandName') + pick('bandEdgeName') + pick('stakePct') + pick('teamStakes') + pick('nextStake') + pick('stakesForFixture') + pick('stakeLegs') + pick('stakeCopy'));
+eval(i18nSrc + pick('bandName') + pick('bandEdgeName') + pick('stakePct') + pick('teamStakes') + pick('nextStake') + pick('stakesForFixture') + pick('stakeLegs') + pick('stakeCopy') + pick('stakeTip'));
 
 const NBSP = String.fromCharCode(160);
 const titleStake = {
@@ -262,6 +262,18 @@ test('relegation copy is loss-oriented, never win-oriented', () => {
   const noTitle = stakeCopy(titleStake, 'no');
   assert.ok(noTitle.main.startsWith('Tittel'));
   assert.ok(noTitle.main.endsWith('med seier mot Brann'));
+  setLang('en');
+});
+
+test('the decisive-match tooltip is the race and the club W/D/L, relegation included', () => {
+  setLang('en');
+  assert.equal(stakeTip({ ...titleStake, p_draw: 0.6 }, 'en'), '<b>Title</b> W 92% · D 60% · L 31%');
+  // Relegation's favourable side is the loss: turned back to the club's results.
+  assert.equal(stakeTip({ ...relegationStake, p_draw: 0.5 }, 'en'), '<b>Relegation</b> W 22% · D 50% · L 78%');
+  // Reports built before the draw was kept show the win and the loss.
+  assert.equal(stakeTip(titleStake, 'en'), '<b>Title</b> W 92% · L 31%');
+  setLang('no');
+  assert.equal(stakeTip({ ...titleStake, p_draw: 0.6 }, 'no'), `<b>Tittel</b> S 92${NBSP}% · U 60${NBSP}% · T 31${NBSP}%`);
   setLang('en');
 });
 
@@ -329,7 +341,7 @@ test('rating trend: steady within ±8 over five matches, fast beyond ±20', () =
 });
 
 test('every stake string exists in both languages', () => {
-  const keys = ['stake.title', 'stake.win.main', 'stake.win.sub', 'stake.lose.main', 'stake.lose.sub', 'stake.legs', 'stake.badge', 'stake.next', 'next.decisive', 'team.outlook', 'team.likeliest', 'team.xPts', 'team.preSeason', 'team.sinceStart', 'team.xgForm', 'team.now', 'trend.tipTotal', 'page.older', 'page.newer', 'page.earlier', 'page.later', 'model.howLead', 'model.howLink', 'tab.explore', 'explore.desc', 'explore.back', 'explore.mountain.title', 'explore.mountain.desc', 'explore.attack.title', 'explore.attack.desc', 'attack.x', 'attack.y', 'attack.betterAttack', 'attack.betterDefence', 'attack.even', 'attack.band', 'attack.trend', 'attack.side.defence', 'attack.side.attack', 'attack.balanceDefence', 'attack.balanceAttack', 'attack.balanced', 'attack.tip', 'mountain.preseason', 'timeline.preseason', 'hero.lede.preseason', 'mountain.round', 'mountain.order', 'mountain.byFinish', 'mountain.byFinal', 'mountain.byPrediction', 'mountain.builtUp', 'mountain.play', 'mountain.cutoff', 'explore.facts', 'attack.fact.slope', 'attack.fact.slopeText', 'attack.fact.r', 'attack.fact.rText', 'attack.fact.attack', 'attack.fact.defence', 'mountain.fact.places', 'mountain.fact.placesText', 'mountain.fact.favourite', 'mountain.fact.favouriteText', 'mountain.fact.climber', 'mountain.fact.faller', 'mountain.fact.moveText', 'mountain.fact.surest', 'mountain.fact.surestText', 'mountain.fact.hits', 'mountain.fact.hitsValue', 'mountain.fact.hitsText', 'mountain.fact.favouriteFinalText', 'mountain.fact.endedText', 'mountain.fact.surprise', 'mountain.fact.surpriseText', 'explore.close', 'mountain.cut', 'mountain.where', 'mountain.league', 'mountain.season', 'mountain.allTeams', 'mountain.allPlaces', 'mountain.place', 'mountain.cutTeam', 'mountain.cutPlace', 'mountain.hint', 'mountain.settings', 'mountain.loading', 'mountain.failed'];
+  const keys = ['stake.title', 'stake.win.main', 'stake.win.sub', 'stake.lose.main', 'stake.lose.sub', 'stake.legs', 'stake.badge', 'stake.next', 'next.decisive', 'team.outlook', 'team.likeliest', 'team.xPts', 'team.preSeason', 'team.sinceStart', 'team.xgForm', 'team.now', 'trend.tipMatches', 'page.older', 'page.newer', 'page.earlier', 'page.later', 'model.howLead', 'model.howLink', 'tab.explore', 'explore.desc', 'explore.back', 'explore.mountain.title', 'explore.mountain.desc', 'explore.attack.title', 'explore.attack.desc', 'attack.x', 'attack.y', 'attack.betterAttack', 'attack.betterDefence', 'attack.even', 'attack.band', 'attack.trend', 'attack.side.defence', 'attack.side.attack', 'attack.balanceDefence', 'attack.balanceAttack', 'attack.balanced', 'attack.tip', 'mountain.preseason', 'timeline.preseason', 'hero.lede.preseason', 'mountain.round', 'mountain.order', 'mountain.byFinish', 'mountain.byFinal', 'mountain.byPrediction', 'mountain.builtUp', 'mountain.play', 'mountain.cutoff', 'explore.facts', 'attack.fact.slope', 'attack.fact.slopeText', 'attack.fact.r', 'attack.fact.rText', 'attack.fact.attack', 'attack.fact.defence', 'mountain.fact.places', 'mountain.fact.placesText', 'mountain.fact.favourite', 'mountain.fact.favouriteText', 'mountain.fact.climber', 'mountain.fact.faller', 'mountain.fact.moveText', 'mountain.fact.surest', 'mountain.fact.surestText', 'mountain.fact.hits', 'mountain.fact.hitsValue', 'mountain.fact.hitsText', 'mountain.fact.favouriteFinalText', 'mountain.fact.endedText', 'mountain.fact.surprise', 'mountain.fact.surpriseText', 'explore.close', 'mountain.cut', 'mountain.where', 'mountain.league', 'mountain.season', 'mountain.allTeams', 'mountain.allPlaces', 'mountain.place', 'mountain.cutTeam', 'mountain.cutPlace', 'mountain.hint', 'mountain.settings', 'mountain.loading', 'mountain.failed'];
   for (const key of keys) {
     setLang('en');
     const en = t(key);
@@ -411,7 +423,7 @@ eval(pick('xgPoints') + pick('luckChances') + pick('luckRows') + pick('luckSeaso
   + pick('seasonSpan') + pick('luckTrend') + pick('withTrend'));
 const LUCK_XG_SHARE = 0.9;
 const LUCK_CARRY = 3;  // the app has 5; these seasons are three matches a club
-const [LUCK_FINISHING, LUCK_KEEPING, LUCK_LEAGUE] = [20, 10, 240];
+const LUCK_FINISHING = 0.5;
 
 test('xG points match the Python recurrence', () => {
   const close = (a, b) => assert.ok(Math.abs(a - b) < 1e-12, `${a} vs ${b}`);
@@ -423,54 +435,48 @@ test('xG points match the Python recurrence', () => {
   close(even1, even2);
 });
 
-/* One division's matches, a day apart from 1 March 2026. */
-const fixture = (i, home_id, away_id, hg, ag, xg, xgot = null) => ({
-  match_id: String(i), date: new Date(Date.UTC(2026, 2, 1 + i)).toISOString().slice(0, 10),
-  home_id, away_id, home: home_id, away: away_id, home_goals: hg, away_goals: ag, xg, xgot,
+/* A division's seasons: A has the chances and beats them, B is level, C and
+   D fall short. Each season is one double round, with fixed xG per pairing. */
+const luckSeason = (season, results, { remaining = 0, table } = {}) => ({
+  league: { season },
+  model: { matches_remaining: remaining },
+  table: (table || ['A', 'B', 'C', 'D']).map((id, i) => ({ team_id: id, position: i + 1 })),
+  results: results.map(([home_id, away_id, hg, ag, xg], i) => ({
+    match_id: `${season}-${i}`, home_id, away_id, home: home_id, away: away_id, home_goals: hg, away_goals: ag, xg,
+  })),
+});
+const strongSeason = (season, extra = []) => luckSeason(season, [
+  ['A', 'B', 2, 0, [1.4, 1.2]], ['A', 'C', 2, 0, [1.5, 1.0]], ['A', 'D', 1, 0, [1.6, 0.9]],
+  ['B', 'C', 1, 1, [1.2, 1.2]], ['B', 'D', 1, 0, [1.3, 1.1]], ['C', 'D', 0, 1, [1.2, 1.0]],
+  ...extra,
+]);
+const closePair = (a, b) => assert.ok(Math.abs(a[0] - b[0]) < 1e-12 && Math.abs(a[1] - b[1]) < 1e-12, `${a} vs ${b}`);
+
+test('the chances take each side\'s finishing last season, against the division, at half strength', () => {
+  // 2024: A scores 2 from 1.0 xG, the rest score their xG; the division 5 from 4.0.
+  const last = luckSeason(2024, [['A', 'B', 2, 1, [1.0, 1.0]], ['C', 'D', 1, 1, [1.0, 1.0]]]);
+  const chances = luckChances([last, luckSeason(2025, [['A', 'B', 0, 0, [1.0, 1.0]], ['E', 'C', 0, 0, [1.0, 1.0]]])]);
+  // A finished at 2 / 1.25 of the division, B and C at 1 / 1.25; each counts at half (a square root).
+  closePair(chances.get('2025-0'), xgPoints(Math.sqrt(2 / 1.25), Math.sqrt(1 / 1.25)));
+  // E was not in the division, and 2024 has no season before it: nothing to scale.
+  closePair(chances.get('2025-1'), xgPoints(1.0, Math.sqrt(1 / 1.25)));
+  closePair(chances.get('2024-0'), xgPoints(1.0, 1.0));
 });
 
-test('the chances take a side\'s recent finishing, against the division, from 10 matches on', () => {
-  // A scores 2 from every 1.0 xG; everyone else scores their xG.
-  const results = [];
-  for (let i = 0; i < 12; i += 1) {
-    results.push(fixture(2 * i, 'A', 'B', 2, 1, [1.0, 1.0]), fixture(2 * i + 1, 'C', 'D', 1, 1, [1.0, 1.0]));
-  }
-  results.push(fixture(24, 'A', 'C', 1, 1, [1.0, 1.0]));
-  const chances = luckChances(results);
-  const plain = xgPoints(1.0, 1.0);
-  // Under 10 matches (half the window) nothing is scaled.
-  assert.deepEqual(chances.get('10'), plain);
-  // After 12, A's chances are worth more, C's (below the division) less.
-  const [home, away] = chances.get('24');
-  assert.ok(home > plain[0] + 0.1 && away < plain[1]);
+test('a season\'s own goals do not move its chances', () => {
+  const last = luckSeason(2024, [['A', 'B', 2, 1, [1.0, 1.0]], ['C', 'D', 1, 1, [1.0, 1.0]]]);
+  const [lucky, unlucky] = [5, 0].map((goals) => luckChances([last, luckSeason(2025, [
+    ['A', 'B', goals, 0, [1.2, 0.8]], ['B', 'A', 0, goals, [0.9, 1.1]],
+  ])]));
+  assert.deepEqual([...lucky], [...unlucky]);
 });
 
-test('finishing at the division\'s own rate scales nothing', () => {
-  const results = [];
-  for (let i = 0; i < 15; i += 1) results.push(fixture(i, i % 2 ? 'A' : 'B', i % 2 ? 'B' : 'A', 2, 1, [2.0, 1.0]));
-  const plain = xgPoints(2.0, 1.0);
-  for (const [home, away] of luckChances(results).values()) {
-    assert.ok(Math.abs(home - plain[0]) < 1e-12 && Math.abs(away - plain[1]) < 1e-12);
-  }
-});
-
-test('a keeper letting in less than the xG on target faced lowers the other side\'s chances', () => {
-  // A's keeper lets in 1 from 6.0 xG on target over six matches; the other
-  // keepers let in what they faced. The same matches without xG on target
-  // leave keeping out.
-  const season = (withGot) => {
-    const got = (pair) => (withGot ? pair : null);
-    const out = [];
-    for (let i = 0; i < 6; i += 1) {
-      out.push(fixture(2 * i, 'A', 'B', 1, i === 0 ? 1 : 0, [1.0, 1.0], got([1.0, 1.0])));
-      out.push(fixture(2 * i + 1, 'C', 'D', 1, 1, [1.0, 1.0], got([1.0, 1.0])));
-    }
-    out.push(fixture(12, 'B', 'A', 1, 1, [1.0, 1.0]));
-    return out;
-  };
-  const kept = luckChances(season(true)).get('12');
-  const blind = luckChances(season(false)).get('12');
-  assert.ok(kept[0] < blind[0] - 0.05);
+test('finishing at the division\'s own rate scales nothing, and matches without xG are skipped', () => {
+  // A and B each score 3 from 3.0 xG in 2024; the 5-0 without xG does not count.
+  const last = luckSeason(2024, [['A', 'B', 2, 1, [2.0, 1.0]], ['B', 'A', 2, 1, [2.0, 1.0]], ['A', 'B', 5, 0, null]]);
+  const chances = luckChances([last, luckSeason(2025, [['A', 'B', 1, 1, [1.5, 0.7]], ['A', 'B', 1, 1, null]])]);
+  closePair(chances.get('2025-0'), xgPoints(1.5, 0.7));
+  assert.ok(!chances.has('2025-1') && !chances.has('2024-2'));
 });
 
 test('luck rows sum points, xG points and the scaled chances per club', () => {
@@ -496,22 +502,6 @@ test('luck rows sum points, xG points and the scaled chances per club', () => {
   assert.ok(Math.abs(a.gap - (4 - 1.5)) < 1e-12 && Math.abs(a.above - (4 - a.xpts)) < 1e-12);
 });
 
-/* A division's seasons: A has the chances and beats them, B is level, C and
-   D fall short. Each season is one double round, with fixed xG per pairing. */
-const luckSeason = (season, results, { remaining = 0, table } = {}) => ({
-  league: { season },
-  model: { matches_remaining: remaining },
-  table: (table || ['A', 'B', 'C', 'D']).map((id, i) => ({ team_id: id, position: i + 1 })),
-  results: results.map(([home_id, away_id, hg, ag, xg], i) => ({
-    match_id: `${season}-${i}`, home_id, away_id, home: home_id, away: away_id, home_goals: hg, away_goals: ag, xg,
-  })),
-});
-const strongSeason = (season, extra = []) => luckSeason(season, [
-  ['A', 'B', 2, 0, [1.4, 1.2]], ['A', 'C', 2, 0, [1.5, 1.0]], ['A', 'D', 1, 0, [1.6, 0.9]],
-  ['B', 'C', 1, 1, [1.2, 1.2]], ['B', 'D', 1, 0, [1.3, 1.1]], ['C', 'D', 0, 1, [1.2, 1.0]],
-  ...extra,
-]);
-
 test('luck seasons count finished seasons with xG for most matches', () => {
   const noXg = luckSeason(2019, [['A', 'B', 1, 0, null], ['C', 'D', 1, 0, null]]);
   const running = luckSeason(2026, [['A', 'B', 1, 0, [1, 1]]], { remaining: 5 });
@@ -531,7 +521,7 @@ test('luck summary: champions, quarters by xG points, extremes and what lasts', 
   assert.equal(summary.quarter, 1);
   assert.deepEqual(summary.champions.map((c) => [c.team_id, c.season, c.mostChances]), [['A', 2024, true], ['A', 2025, true], ['C', 2026, false]]);
   assert.ok(summary.top > 0 && summary.bottom < summary.top);
-  // Points above xG points = finishing and keeping + the trend + luck.
+  // Points above xG points = last season's finishing + the trend + luck.
   const { form, trendPoints, luck } = summary.topSplit;
   assert.ok(Math.abs(form + trendPoints + luck - summary.top) < 1e-12);
   assert.equal(summary.luckiest.luck, Math.max(...lucky.map((row) => row.luck)));
@@ -570,7 +560,7 @@ test('every luck-table string exists in both languages', () => {
     'luck.fact.lucky', 'luck.fact.unlucky', 'luck.fact.luckyText', 'luck.fact.unluckyText',
     'luck.fact.chances', 'luck.fact.chancesLead', 'luck.fact.chancesBehind',
     'luck.fact.coverage', 'luck.fact.coverageValue', 'luck.fact.coverageText',
-    'luck.how.title', 'luck.how.chances', 'luck.how.form', 'luck.how.formNoKeeping', 'luck.how.trend',
+    'luck.how.title', 'luck.how.chances', 'luck.how.form', 'luck.how.trend',
     'luck.how.noTrend', 'luck.how.luck',
     'luck.all.title', 'luck.all.loading', 'luck.all.seasons', 'luck.all.partial', 'luck.all.partialSeason', 'luck.all.why.eliteserien',
     'luck.all.why.obosligaen', 'luck.all.whyAny', 'luck.all.running', 'luck.all.empty', 'luck.all.aria',

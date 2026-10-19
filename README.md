@@ -150,11 +150,10 @@ slider too; the ones with time along an axis of their own take none.
 - **Luck table** (`viz=luck`) -- each club's points against what its chances
   usually earn, as a bar either side of zero, with each club's table place.
   The chances are each match's xG as points (both sides' goals Poisson at
-  their xG), scaled before the match by the side's finishing over its last 20
-  matches (goals against xG) and the other side's keeping over its last 10
-  (goals let in against xG on target; Eliteserien only), both against the
-  division; on top comes the trend below, since better sides still beat their
-  chances. A "How luck is measured" box above the chart says so step by step,
+  their xG), scaled by each side's finishing last season (goals against xG,
+  against the division, at half strength; none for a club new to the
+  division); on top comes the trend below, since better sides still beat
+  their chances. A "How luck is measured" box above the chart says so step by step,
   and the tooltip splits a club's usual points into those parts. Only matches
   with xG count. Follows the rewind slider; a click opens the club. Under it,
   "Do good teams have more luck?": every club season of the division's

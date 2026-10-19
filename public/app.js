@@ -1650,12 +1650,12 @@ function sideBlock(name, id, away, nameClass = 'played-card__team-name') {
 
 /* One decimal, always: a 0.04 swing reads "4.0%", never rounded up into
    something bigger and never hidden as "—" the way pct() hides dust. */
-function stakePct(value, lang) {
+function stakePct(value, lang, digits = 1) {
   if (!Number.isFinite(value)) return '—';
   const clamped = Math.max(0, Math.min(1, value));
   // A decimal point in both languages (AGENTS.md); at most 100.0, so no grouping.
   const figure = (clamped * 100).toLocaleString('en-GB', {
-    minimumFractionDigits: 1, maximumFractionDigits: 1,
+    minimumFractionDigits: digits, maximumFractionDigits: digits,
   });
   return lang === 'no' ? `${figure} %` : `${figure}%`;
 }
@@ -1722,18 +1722,30 @@ function stakeCopy(entry, lang) {
   return { main: t(`stake.${kind}.main`, args), sub: t(`stake.${kind}.sub`, args) };
 }
 
+/* The decisive-match tooltip: the race and its chance after each of the
+   club's own results ("Title W 92% · D 61% · L 31%"). Relegation's
+   favourable side is the loss, so it is turned back to the club's results.
+   Reports built before the draw was kept show the win and the loss. */
+function stakeTip(entry, lang) {
+  const relegation = entry.band_tone === 'relegation';
+  const results = [
+    ['W', relegation ? entry.p_unfavourable : entry.p_favourable],
+    ['D', entry.p_draw],
+    ['L', relegation ? entry.p_favourable : entry.p_unfavourable],
+  ].filter(([, value]) => value != null);
+  const line = results.map(([key, value]) => `${t(`form.${key}`)} ${stakePct(value, lang, 0)}`).join(' · ');
+  return `<b>${bandEdgeName({ label: entry.band_label })}</b> ${line}`;
+}
+
 /* The coloured dot that marks a decisive match, in its band's colour, with the
    stake as its readout. On touch the club name beside it opens the club, so
    the dot is its own tap target and explains itself without navigating. */
-function stakeDot(entry, report, count) {
+function stakeDot(entry, count) {
   const band = { first: entry.band_first, last: entry.band_last, tone: entry.band_tone, label: entry.band_label };
   const dot = el('span', 'stake-dot');
   dot.style.background = bandColor(band, count);
   dot.setAttribute('aria-hidden', 'true');
-  const copy = stakeCopy(entry, currentLang);
-  const legs = stakeLegs(entry, report.fixtures || []);
-  const legsHtml = legs.length >= 2 ? `<div class="stake-dot__legs">${t('stake.legs', { a: formatDate(legs[0].date), b: formatDate(legs[1].date) })}</div>` : '';
-  dot.tip = () => `<div class="stake-dot__tooltip"><strong>${entry.team} (${bandEdgeName(band)})</strong><br>${copy.main}<br>${copy.sub}${legsHtml}</div>`;
+  dot.tip = () => stakeTip(entry, currentLang);
   attachTip(dot, dot.tip);
   dot.addEventListener('click', (event) => event.stopPropagation());
   return dot;
@@ -1784,19 +1796,25 @@ function buildFixtureCard(fixture, stakes, report) {
   matchup.appendChild(awaySide);
   card.appendChild(matchup);
 
-  // Decisive-match dots: one per team that has a stake on this fixture.
-  // Attached to the team name element with a tooltip on hover.
+  // Decisive-match dots: one per band a team has a stake in on this fixture,
+  // stacked when there are several. The team name shares the first dot's
+  // tooltip on hover.
   if (stakes && stakes.length && report) {
     const count = report.table.length;
+    const stacks = new Map();
     for (const entry of stakes) {
       const isHome = entry.team_id === fixture.home_id;
       const nameEl = isHome ? homeName : awayName;
       if (!nameEl) continue;
-      const dot = stakeDot(entry, report, count);
-      // On the inside of the name: right of the home name, left of the away one.
-      const nameBtn = nameEl.querySelector('.played-card__team-name');
-      if (isHome) nameBtn.after(dot); else nameBtn.before(dot);
-      attachTip(nameEl, dot.tip);
+      const dot = stakeDot(entry, count);
+      if (!stacks.has(isHome)) {
+        const stack = el('span', 'stake-dots');
+        // On the outside of the rating: left of the home one, right of the away one.
+        if (isHome) homeSide.prepend(stack); else awaySide.append(stack);
+        stacks.set(isHome, stack);
+        attachTip(nameEl, dot.tip);
+      }
+      stacks.get(isHome).appendChild(dot);
     }
   }
   if (fixture.scorelines && fixture.scorelines.length) {
@@ -2561,64 +2579,54 @@ function xgPoints(homeXg, awayXg) {
   return [3 * home + draw, 3 * (1 - home - draw) + draw];
 }
 
-/* Before each match its chances are scaled by each side's recent finishing
-   (goals against xG over its last LUCK_FINISHING matches in the division) and
-   the other side's recent keeping (xG on target faced against goals let in,
-   last LUCK_KEEPING matches with xG on target), each against the division's
-   last LUCK_LEAGUE club matches, from LUCK_FINISHING / 2 and LUCK_KEEPING / 2
-   matches on. Swept over Eliteserien 2021-2025 (PROJECT_STATUS.md, "Luck:
-   finishing and keeping in the chances"): -17.3 in mean squared luck a club
-   season (t -3.0), the trend a third flatter. */
-const LUCK_FINISHING = 20;
-const LUCK_KEEPING = 10;
-const LUCK_LEAGUE = 240;
+/* Each match's chances are scaled by each side's finishing last season (its
+   goals against its xG then, against the division's), at LUCK_FINISHING of
+   its size; a club that was not in the division gets none. Fixed before the
+   season, it cannot follow this season's luck, which a rolling finishing and
+   keeping did: they took out luck with the skill. PROJECT_STATUS.md, "Luck:
+   which signals take out the skill": -0.0049 log loss a match (t -3.0) over
+   Eliteserien 2021-2026, and with the trend 80 % of the skill in a club
+   season's luck; nothing either way in OBOS-ligaen. */
+const LUCK_FINISHING = 0.5;
 
-/* match id -> [home, away] xG points from the chances scaled by finishing
-   and keeping, as they stood before the match. `results` are one division's,
-   over as many seasons as there are, so a season starts from the last one's
-   form. Matches without xG are skipped; without xG on target, keeping is. */
-function luckChances(results) {
-  const played = results.filter((r) => r.home_goals != null && r.xg)
-    .sort((a, b) => (a.date < b.date ? -1 : a.date > b.date ? 1 : a.home_id < b.home_id ? -1 : a.home_id > b.home_id ? 1 : 0));
-  const clubs = new Map();  // team -> recent [goals, xg, conceded, xG on target faced or null]
-  let league = [];
-  const ratio = (rows, top, bottom) => {
-    const [a, b] = [rows.reduce((sum, row) => sum + row[top], 0), rows.reduce((sum, row) => sum + row[bottom], 0)];
-    return a > 0 && b > 0 ? Math.log(a / b) : null;
-  };
-  // Finishing reads (goals, xG); keeping (xG on target faced, conceded).
-  const form = (team, n, top, bottom, reference) => {
-    const rows = (clubs.get(team) || []).filter((row) => row[3] != null || top !== 3).slice(-n);
-    if (rows.length < Math.floor(n / 2) || reference == null) return 0;
-    const mine = ratio(rows, top, bottom);
-    return mine == null ? 0 : mine - reference;
-  };
-  const out = new Map();
-  for (const r of played) {
-    const finishing = ratio(league, 0, 1);
-    const keeping = ratio(league.filter((row) => row[3] != null), 3, 2);
-    const [home, away] = [r.home_id, r.away_id];
-    const lam = r.xg[0] * Math.exp(form(home, LUCK_FINISHING, 0, 1, finishing) - form(away, LUCK_KEEPING, 3, 2, keeping));
-    const mu = r.xg[1] * Math.exp(form(away, LUCK_FINISHING, 0, 1, finishing) - form(home, LUCK_KEEPING, 3, 2, keeping));
-    out.set(r.match_id, xgPoints(lam, mu));
-    const sides = [
-      [home, [r.home_goals, r.xg[0], r.away_goals, r.xgot ? r.xgot[1] : null]],
-      [away, [r.away_goals, r.xg[1], r.home_goals, r.xgot ? r.xgot[0] : null]],
-    ];
-    for (const [team, row] of sides) {
-      const rows = clubs.get(team) || [];
-      rows.push(row);
-      clubs.set(team, rows.slice(-200));
-      league.push(row);
+/* match id -> [home, away] xG points from the chances scaled by last
+   season's finishing. `reports` are one division's seasons, each with its
+   `league.season` and `results`. Matches without xG are skipped. */
+function luckChances(reports) {
+  const finishing = new Map();  // season -> team -> log(goals / xG) against the division's
+  for (const { league, results } of reports) {
+    const clubs = new Map();
+    let [goals, xg] = [0, 0];
+    for (const r of results) {
+      if (r.home_goals == null || !r.xg) continue;
+      for (const [team, scored, chances] of [[r.home_id, r.home_goals, r.xg[0]], [r.away_id, r.away_goals, r.xg[1]]]) {
+        const [g, x] = clubs.get(team) || [0, 0];
+        clubs.set(team, [g + scored, x + chances]);
+        goals += scored;
+        xg += chances;
+      }
     }
-    league = league.slice(-LUCK_LEAGUE);
+    if (!(goals > 0 && xg > 0)) continue;
+    const division = Math.log(goals / xg);
+    finishing.set(league.season, new Map([...clubs]
+      .filter(([, [g, x]]) => g > 0 && x > 0)
+      .map(([team, [g, x]]) => [team, Math.log(g / x) - division])));
+  }
+  const out = new Map();
+  for (const { league, results } of reports) {
+    const last = finishing.get(league.season - 1) || new Map();
+    const scale = (team) => Math.exp(LUCK_FINISHING * (last.get(team) || 0));
+    for (const r of results) {
+      if (r.home_goals == null || !r.xg) continue;
+      out.set(r.match_id, xgPoints(r.xg[0] * scale(r.home_id), r.xg[1] * scale(r.away_id)));
+    }
   }
   return out;
 }
 
 /* Per club, over the played matches that have xG: its points, the points its
    xG would have earned on average (`xpts`), the same from the chances scaled
-   by finishing and keeping (`chances`, from `luckChances`; the plain xG
+   by last season's finishing (`chances`, from `luckChances`; the plain xG
    points where a match is missing from it) and the gap to those (`gap`). */
 function luckRows(results, chances = new Map()) {
   const rows = new Map();
@@ -2686,7 +2694,7 @@ async function renderLuck(report, body) {
     fetchedReport(reportUrl(season)).then((all) => applyShortNames(all)[slug]).catch(() => null)));
   if (token !== luckToken || state.activeView !== 'explore' || state.exploreItem !== 'luck') return;
   const loaded = reports.filter((r) => r && r.results);
-  const chances = luckChances(loaded.flatMap((r) => r.results));
+  const chances = luckChances(loaded);
   const history = luckSeasons(loaded, chances);
   const trend = luckTrend(history.rows);
   history.rows = history.rows.map((row) => withTrend(row, trend));
@@ -2694,8 +2702,7 @@ async function renderLuck(report, body) {
     .sort((a, b) => b.luck - a.luck || a.team.localeCompare(b.team));
   const wrap = el('div', 'luck');
   body.replaceChildren(wrap);
-  const keeping = (report.results || []).some((r) => r.xgot);
-  wrap.appendChild(luckHow(trend, history, keeping));
+  wrap.appendChild(luckHow(trend, history));
   if (rows.length) drawLuckSeason(report, wrap, rows);
   else wrap.appendChild(el('p', 'explore-empty', t('luck.empty')));
   const across = el('section', 'luck-all');
@@ -2704,7 +2711,7 @@ async function renderLuck(report, body) {
 }
 
 /* What the luck is measured against, step by step, above the table. */
-function luckHow(trend, history, keeping) {
+function luckHow(trend, history) {
   const box = el('details', 'luck-how');
   box.open = true;
   box.appendChild(el('summary', 'luck-how__title', t('luck.how.title')));
@@ -2712,9 +2719,7 @@ function luckHow(trend, history, keeping) {
   const list = seasonSpan(history.counted.map((c) => c.season));
   for (const text of [
     t('luck.how.chances'),
-    keeping
-      ? t('luck.how.form', { fin: LUCK_FINISHING, keep: LUCK_KEEPING })
-      : t('luck.how.formNoKeeping', { fin: LUCK_FINISHING }),
+    t('luck.how.form'),
     trend ? t('luck.how.trend', { list }) : t('luck.how.noTrend'),
     t('luck.how.luck'),
   ]) {
@@ -2782,7 +2787,7 @@ function drawLuckSeason(report, wrap, rows) {
     g.appendChild(value);
     const tip = t('luck.tip', { points: row.points, usual: num(row.usual, 1), luck: signed(row.luck, 1), n: row.matches });
     g.setAttribute('aria-label', `${row.team}: ${tip}. ${luckUsualText(row)}`);
-    attachTip(g, `<b>${row.team}</b><br>${tip}<br>${luckUsualText(row)}`);
+    attachTip(g, `<b>${row.team}</b><br>${tip}<br><span class="tooltip__muted">${luckUsualText(row)}</span>`);
     g.addEventListener('click', () => openTeamView(row.team_id, row.team));
     g.addEventListener('keydown', (event) => {
       if (event.key !== 'Enter' && event.key !== ' ') return;
@@ -2954,7 +2959,7 @@ function drawLuckSeasons(report, section, { counted, rows }, trend) {
     if (champion) g.appendChild(svgEl('image', { href: `/logos/${row.team_id}.webp`, x: cx - crest / 2, y: cy - crest / 2, width: crest, height: crest }));
     const tip = t('luck.all.tip', { season: row.season, points: row.points, usual: num(row.usual, 1), luck: signed(row.luck, 1), finish: finish(row) });
     g.setAttribute('aria-label', `${row.team} ${tip} ${luckUsualText(row)}`);
-    attachTip(g, `<b>${row.team}</b> ${tip}<br>${luckUsualText(row)}`);
+    attachTip(g, `<b>${row.team}</b> ${tip}<br><span class="tooltip__muted">${luckUsualText(row)}</span>`);
     svg.appendChild(g);
   }
   section.appendChild(el('p', 'explore-note', t(counted.some((c) => c.season === shown) ? 'luck.all.legendShown' : 'luck.all.legend', { season: shown })));
@@ -5019,7 +5024,7 @@ function computeRatingTrend(teamName, report) {
   // One line for the table's arrow and for screen readers; the team view
   // shows `tip`, which adds the matches behind the number.
   const detail = t('trend.detail', { label, n: total });
-  const tip = `<b>${label}</b><br>${t('trend.tipTotal', { n: total })}`
+  const tip = `<b>${label}</b> ${total}`
     + `<br><span class="tooltip__muted">${t('trend.tipMatches', { count: values.length, list: values.map((v) => signed(v, 0)).join(' ') })}</span>`;
   return { direction, svg: trendArrowSVG(direction), detail, tip, diff };
 }
@@ -5033,7 +5038,7 @@ function computeXgForm(teamName, report) {
   const { key, direction } = trendDegree(diff, FORM_CUTS);
   const label = t(`form.${key}`);
   const perMatch = signed(diff, 1);
-  const tip = `<b>${label}</b><br>${t('form.tipPerMatch', { n: perMatch })}`
+  const tip = `<b>${label}</b> ${t('form.tipPerMatch', { n: perMatch })}`
     + `<br><span class="tooltip__muted">${t('trend.tipMatches', { count: values.length, list: values.map((v) => signed(v, 1)).join(' ') })}</span>`;
   return { direction, svg: trendArrowSVG(direction), label, detail: t('form.detail', { label, n: perMatch }), tip };
 }
@@ -5366,7 +5371,7 @@ function teamMatchRow(match, teamId, report, ratingChanges) {
     row.appendChild(odds);
     const stake = (report.high_stakes || []).find((entry) =>
       String(entry.match_id) === String(match.match_id) && String(entry.team_id) === String(teamId));
-    if (stake) label.appendChild(stakeDot(stake, report, report.table.length));
+    if (stake) label.appendChild(stakeDot(stake, report.table.length));
   }
   return row;
 }
@@ -5658,7 +5663,6 @@ function attachTeamShapeCrosshair(chart, report, team, geometry) {
 
   const relegation = report.league.bands.find((band) => band.tone === 'relegation');
   const top = report.league.bands.find((band) => band.tone === 'top');
-  const totalMatches = report.model.matches_played + report.model.matches_remaining;
 
   const surface = svgEl('rect', {
     x: pad.left, y: pad.top, width: plotWidth, height: plotHeight, fill: 'transparent',
@@ -5687,9 +5691,7 @@ function attachTeamShapeCrosshair(chart, report, team, geometry) {
     showTooltip(
       event,
       `<b>${team.team}</b> · ${played === 0 ? t('shape.preseason') : when}<br>` +
-        `${t('shape.matchesPlayed', { n: played, total: totalMatches })}<br>` +
-        `${t('shape.rating', { n: team.ratings[index] })}<br>` +
-        `${t('shape.mostLikely', { n: ordinal(best + 1) })} (${pct(probabilities[best])})<br>` +
+        `${t('shape.rating', { n: team.ratings[index] })} · ${t('shape.mostLikely', { n: ordinal(best + 1) })} (${pct(probabilities[best])})<br>` +
         `${top ? `${t('shape.topN', { n: top.last, pct: pct(sum(top)) })} · ` : ''}${t('shape.bottomN', { n: count - (relegation ? relegation.first - 1 : count), pct: pct(sum(relegation)) })}`
     );
   });

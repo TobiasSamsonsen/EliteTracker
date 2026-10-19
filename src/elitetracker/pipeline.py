@@ -669,7 +669,7 @@ def _contender_legs(
     2 away win), per club, how many runs finished the club in each
     position given that outcome. Yields (team_id, band, baseline,
     legs), one leg per fixture with the band's chance given the
-    favourable and the unfavourable result. Relegation is the one
+    favourable result, the draw and the unfavourable result. Relegation is the one
     band a loss brings closer, so its favourable side is the loss.
     """
     if not conditionals or not clubs or not fixtures:
@@ -712,6 +712,11 @@ def _contender_legs(
                     continue  # branch too thin to divide into
                 win_band = sum(wins[span]) / n_win
                 loss_band = sum(losses[span]) / n_loss
+                # The draw is only read out, never ranked on, so a thin
+                # draw branch leaves out the figure rather than the fixture.
+                draws = branches[1][club_index]
+                n_draw = sum(draws)
+                draw_band = sum(draws[span]) / n_draw if n_draw >= min_branch else None
                 # Relegation reads the other way round: the loss is
                 # what brings it closer, so it is the favourable side.
                 favourable, unfavourable = (
@@ -728,6 +733,7 @@ def _contender_legs(
                     "away_id": game.away_id or game.away,
                     "p_favourable": favourable,
                     "p_unfavourable": unfavourable,
+                    "p_draw": draw_band,
                     "swing": favourable - unfavourable,
                 })
             yield team_id, band, baseline, legs
@@ -753,6 +759,7 @@ def _stake_entry(
         "p_baseline": round(baseline, 4),
         "p_favourable": round(chosen["p_favourable"], 4),
         "p_unfavourable": round(chosen["p_unfavourable"], 4),
+        "p_draw": None if chosen["p_draw"] is None else round(chosen["p_draw"], 4),
         "swing": round(chosen["swing"], 4),
     }
 

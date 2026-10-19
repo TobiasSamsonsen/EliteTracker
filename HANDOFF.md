@@ -106,6 +106,98 @@ git commit -am "Explore luck: ..." && git push
 The three stored views, and what each needs before it comes back, are in
 `experiments/explore-later/README.md` on `explore/later`.
 
+## The luck measure: last season's finishing (changed 2026-10-19)
+
+The luck table (`public/app.js`: `LUCK_FINISHING` and `luckChances` at line
+~2575, `luckRows`, `luckTrend`, `withTrend`, `renderLuck`, `luckSeasons`)
+now scales each match's xG by each side's finishing last season (goals
+against xG, against the division, x 0.5; 0 for a club new to the division),
+then measures luck against the Poisson xG points of those chances plus the
+trend on xG points a match. That replaced the rolling finishing 20 + keeping
+10 on the owner's call. Frontend only, no model change or version bump:
+`luckChances` takes the division's season reports; keeping and
+`luck.how.formNoKeeping` are gone; the copy in both languages, the tests,
+README and PROJECT_STATUS.md follow. Both test suites and `explore_smoke.py`
+pass. The tooltip names it "last season's finishing".
+
+The record is PROJECT_STATUS.md, "Luck: more signals, and the measure
+re-tested" and "Luck: which signals take out the skill"; read them before
+changing the measure again. What led here, from the first re-test:
+
+- **The shipped finishing 20 + keeping 10 takes out luck, not skill.** It was
+  picked on the mean squared luck of a club season (-17.3, t -3.0), and that
+  measure rewards any term that follows this season's luck: a lucky spell
+  raises the usual points after it, and the later luck cancels the earlier.
+  On simulated seasons with no skill at all (goals drawn Poisson from the
+  xG), the shipped method still cuts the mean square from 41.5 to 25.6, as
+  much as on the real data. Its luck correlates +0.70 with the true luck,
+  and the two halves of a season -0.21 (real -0.15, plain xG +0.05).
+- **The honest measure is per match**: log loss of each result under its own
+  scaled chances, with the form read from earlier matches. On it the shipped
+  form is +0.0329 against plain xG (t +4.58), and every rolling keeping
+  window hurts. Use this measure (and the no-skill world as a check) for any
+  further test; the season mean square is only a secondary figure.
+- **The one real signal is last season's finishing** (club goals / xG over
+  last season against the division's, fixed before the season): per match
+  w 0.5 -0.0045 (t -2.62), w 0.25 -0.0027 (t -3.16); in the no-skill world it
+  costs (+0.0033), and halves stay at +0.03. Last season's keeping adds
+  nothing.
+- No other signal helped: shots one by one or with same-minute rebounds as
+  one chance, penalties at the division's rate, the closing market as the
+  trend's quality or blended into the usual points, a curved trend,
+  finishing from xG on target, red cards (+0.18 a match for the side a man
+  up, too small to matter). Game-state weighting was not tested on purpose
+  (the score is the scorer's luck).
+
+**Re-tested for every signal on 2026-10-19** (`luck_skill.py`, out in
+`out/luck_skill.txt`; PROJECT_STATUS.md, "Luck: which signals take out the
+skill"). Points minus xG points hold about 13 points squared of skill a club
+season (se 9) beside about 37 of luck. Last season's finishing x 0.5 plus the
+trend takes out 80 % of that skill, and the rest is no more than a prior's
+own noise. The shipped rolling form takes out 202 %: luck too. The only other
+signal with skill in it is shot-level. Shots one by one explain about 40 % of
+the trend as the Poisson's bias. Shot by shot (each shot's luck weighted by
+what the match hung on it) reaches 90 %, but it needs every shot in the
+report and Eliteserien only. Squad value, the pre-season rating, keeping,
+several seasons of finishing, game state and chance quality add nothing. In
+OBOS-ligaen last season's finishing neither helps nor hurts, and it hurts if
+relegated clubs bring their Eliteserien finishing. So read it from the same
+division only.
+
+Settled with it: OBOS-ligaen takes the same rule (it costs nothing there:
++0.0001 log loss, t +0.05); promoted clubs keep 0 (their OBOS-ligaen
+finishing is no better); the weight picked out of sample is 0.7-1.0, while
+w 0.5 has the best t (-0.0049 log loss, t -3.02), so 0.5 is a judgement. The
+browser's chances match `luck_skill.py` to 0.041 a club season.
+
+Open: shot by shot is the one later step worth having. It needs every
+shot's minute, side, xG and outcome in the data the view reads (a new file
+beside the reports, not in each dated report) and works for Eliteserien
+only, since OBOS-ligaen has no shots.
+
+Reproduce (the output in `out/` is git-ignored):
+
+```bash
+.venv/Scripts/python -W ignore experiments/improvements/luck_signals.py > experiments/improvements/out/luck_signals.txt
+PYTHONIOENCODING=utf-8 .venv/Scripts/python -W ignore experiments/improvements/luck_skill.py > experiments/improvements/out/luck_skill.txt
+```
+
+`luck_signals.py` reimplements the old rolling luck in Python (it matches
+the logged sd 5.29 / 6.59) and holds the first re-test: `per_match`,
+`per_match_null`, `null_world`, `prior_test`, `prior_scales`.
+`luck_skill.py` (about 90 seconds) holds the second: the per-match tests,
+the skill left in a club season, both no-skill worlds, shot by shot,
+OBOS-ligaen and the champions.
+
+Committed with it: the decisive-match dot outside the rating on fixture
+cards, stacked one above the other when a club has a stake in more than one
+band (`.stake-dots`); shorter tooltips everywhere (`public/app.js`,
+`i18n.js`, `styles.css`, `index.html`); and `p_draw` in the report's
+`high_stakes` / `next_stakes` (`pipeline.py`, so the dot's tooltip reads
+W/D/L). Open: `bandColor` gives Champions and Promotion the same yellow, so in
+OBOS-ligaen a club decisive for both shows two yellow dots; telling them apart
+would change the promotion colour across the site.
+
 ## Other open items
 
 - Past seasons: rebuilt on elo-v16.0 (`past-seasons.yml`, 2026-10-17). Rerun

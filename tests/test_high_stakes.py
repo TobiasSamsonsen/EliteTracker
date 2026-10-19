@@ -101,11 +101,13 @@ class TestStakeOrientation:
         )
         assert champions["p_favourable"] == 1.0
         assert champions["p_unfavourable"] == 0.25
+        assert champions["p_draw"] == 0.5
         relegation = next(
             e for e in entries if e["team_id"] == "A" and e["band_tone"] == "relegation"
         )
         assert relegation["p_favourable"] == 0.75
         assert relegation["p_unfavourable"] == 0.0
+        assert relegation["p_draw"] == 0.5
 
 
 class TestPairingCollapse:

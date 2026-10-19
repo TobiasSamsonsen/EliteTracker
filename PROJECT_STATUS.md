@@ -2877,6 +2877,152 @@ below that name a branch wait on it (see "Explore: which views stay").
   The view opens with "How luck is measured" (chances, finishing and keeping,
   the trend, luck), and the tooltip splits a club's usual points into xG
   points, finishing and keeping, and the trend.
+
+  **Luck: more signals, and the measure re-tested (October 2026, the owner's
+  idea).** `experiments/improvements/luck_signals.py`, out in
+  `out/luck_signals.txt`; Eliteserien, fitted on 2020-2025 (96 club seasons),
+  scored on 2021-2025 (80). The shipped luck reproduces at sd 5.30 (logged
+  5.29; plain xG points 6.61, logged 6.59), and -15.7 (t -2.9) in mean
+  squared luck against the plain xG points (logged -17.3; the gap is the
+  trend fitted on 96 club seasons here).
+  - **The mean squared luck rewards soaking up luck.** In a no-skill world
+    (the same matches, goals drawn Poisson from the xG, xG on target the
+    division's share, 20 runs), where all of it is luck, the shipped
+    finishing 20 + keeping 10 still takes the mean square from 41.5 to 25.6,
+    as much as it does on the real data; its luck correlates only +0.70
+    with the true luck, and the halves of a season -0.21 (real -0.15; plain
+    +0.05). A form over this season's matches follows its luck: a lucky
+    spell raises the usual points after it, and the luck after it cancels
+    the luck before. The grid that shipped 20 + 10 (keeping 10, the
+    shortest window, best) measured this, not finishing or keeping.
+  - **Scored match by match instead** (log loss of each result under its
+    own scaled chances, 1,200 matches; the form is read from the matches
+    before, so nothing can be soaked up): the shipped form +0.0329 against
+    the plain xG (t +4.58; the no-skill world +0.0546). Rolling finishing
+    20 x 1.0 +0.0141 (t +3.05), 45 x 0.25 -0.0008 (t -0.96), 90 x 0.25
+    -0.0002; rolling keeping hurts at every window and weight (10 x 1.0
+    +0.0210, t +3.73; 45 x 0.25 +0.0005).
+  - **Last season's finishing is the signal.** Each club's goals / xG over
+    last season against the division's, fixed before the season: per match
+    w 0.25 -0.0027 (t -3.16), w 0.5 -0.0045 (t -2.62), w 0.7 -0.0053
+    (t -2.18), w 1.0 -0.0053 (t -1.53); mean squared luck w 0.5 -3.0
+    (t -1.67); halves of a season +0.03 (nothing soaked up); in the no-skill
+    world it costs (+3.8, +0.0033), so the gain is real. Last season's
+    keeping adds nothing (w 0.25 on top of finishing 0.5: +0.0004).
+  - **Other signals, against the shipped luck** (mean squared luck a club
+    season; per match against the plain xG where run):
+    shots one by one instead of a Poisson on the total -0.9 (t -1.4);
+    same-minute rebounds as one chance -1.3 (t -1.6), per match -0.0004
+    (t -0.1): the total's Poisson loses nothing measurable.
+    Penalties at the division's rate (being given one as luck) +4.0
+    (t +2.2): a penalty won is a chance, not luck.
+    The closing market's expected points as the trend's quality: +0.4
+    (t +0.4); beside the xG trend -0.03 (market coefficient 0.05): the
+    market knows nothing about who beats their xG that the xG points a
+    match do not. Blending the market into the usual points hurts at every
+    weight (0.1 +0.5, 0.5 +5.9).
+    A curved trend -0.3 (t -0.4). Finishing from xG on target (shooting)
+    instead of goals +4.5 (t +1.9).
+    Red cards: a side whose opponent alone was sent off takes +0.18 points
+    a match over its chances (t +1.7; its opponent -0.18, t -1.9), 132
+    matches; as a term -0.4 (t -1.3), about a third of a point a club
+    season. Not a signal worth its rule.
+    Game state left out: a side leads because it scored, so weighting xG by
+    the score hands the scorer's luck back to it.
+  - Verdict: the in-season finishing and keeping in the luck view take luck
+    out, not skill; last season's finishing (w 0.5) is the one term that
+    separates skill, and shots, penalties, the market, red cards and a
+    curved trend add nothing. Proposed: the view's chances from last
+    season's finishing x 0.5 in place of the rolling 20 + 10. Not changed
+    yet (the owner's call). No model change, no version bump.
+
+  **Luck: which signals take out the skill (October 2026, the owner's
+  question).** `experiments/improvements/luck_skill.py`, out in
+  `out/luck_skill.txt`. Every term is fixed before the season or read off
+  this season's xG, never its goals. Scored per match out of sample (each
+  season's weights fitted on the other seasons; Eliteserien 2021-2026, 1,379
+  matches), by the skill left in a club season's luck (2021-2025, 80: the
+  spread of the clubs' mean luck a match beyond its noise, within each
+  season, in points squared a club season, bootstrap se), and in a no-skill
+  world (goals Poisson from the xG, 20 runs) where it should find nothing.
+  - **How much skill there is.** Points minus xG points: mean square 50.6 a
+    club season, of which 13.3 (se 9.0) is skill and the rest luck (the
+    no-skill world: -0.1). The se is what 80 club seasons allow; no method
+    is placed closer than about ±7.
+  - **What carries skill.** The trend on this season's xG points a match:
+    per match -0.0138 points squared (t -2.13), the same from each club's
+    other matches only (-0.0144, t -2.18), skill left 5.8 (56 % taken).
+    Last season's finishing: x 0.5 -0.0049 log loss (t -3.02), every weight
+    0.1-1.0 helps, the weight picked out of sample 0.7-1.0 (-0.0053, t
+    -1.97). Both, x 0.5 then the trend: -0.0338 (t -2.97), skill left 2.7
+    (se 7.0, 80 % taken), against 4.1 for the same rule in the no-skill
+    world (a prior's own noise): no skill left that the data can find. Its
+    luck correlates +0.01 with the pre-season rating, +0.05 between halves
+    of a season (the no-skill level is +0.02 to +0.05), -0.10 year to year.
+  - **The shipped rolling 20 + 10 takes out luck** (as above): skill left
+    -13.5 (202 % taken), -18.0 in the no-skill world. It shrinks the
+    luckiest and unluckiest seasons most, against the trend alone:
+    Lillestrøm 2022 +10.8 to +2.8, Brann 2021 -18.9 to -8.6, Kristiansund
+    2022 -12.2 to -4.3 (the proposed: +11.5, -16.6, -10.3).
+  - **Shots one by one, re-tested without the trend.** Goals from many
+    shots spread less than a Poisson on their total, so strong sides win
+    more than plain xG points say with no skill at all: in a shot world (the
+    real shots, each in with its xG, 30 runs) plain luck correlates +0.16
+    with xG points a match and +0.12 with the pre-season rating, the shots
+    one by one -0.01. On the real data alone: skill left 8.1 (39 % taken),
+    r with xG points +0.38 to +0.24, per match -0.0053 (t -0.48). So about
+    40 % of "good sides beat their xG" is the Poisson, not skill; the trend
+    takes it out as well (with finishing and the trend: 2.2, 83 %).
+  - **Shot by shot** (each shot's goal minus xG times the expected points it
+    moves at its minute and score, a clock at the match's own xG; a sum
+    that averages zero for any club whatever the score did, so it hands no
+    scorer's luck back, and a shot at 3-0 counts for little): alone 6.7
+    (49 %); with finishing x 0.5 1.9 (86 %, no trend); with the trend too
+    1.3 (90 %), mean square 35.8, the lowest; r 0.965 with the true luck in
+    the shot world. Within noise of the plain rule, and it needs every shot
+    in the report; OBOS-ligaen has none.
+  - **Game state is weak here.** xG a minute by the shooting side's lead
+    -2, -1, 0, +1, +2: 0.98, 1.06, 0.97, 0.99, 1.06 of its season's
+    average. A clock that answers the score moves shot by shot 6.7 to 6.4.
+  - **What does not carry skill** (per match against the plain; skill
+    left): squad value as the trend's quality -0.0006 (t -0.20), 13.2; the
+    pre-season rating -0.0102 (t -1.54), 9.7; the closing market's points
+    a match -0.0188 (t -2.42), 4.2, the best single trend, but the market
+    moves with results and no world here can check that, so not taken (the
+    last entry's market tests were on the mean square). Finishing over two
+    or three seasons (-0.0031, -0.0029 log loss) is weaker than one;
+    non-penalty, or shrunk by 20 or 40 xG, the same as raw; promoted clubs'
+    OBOS-ligaen finishing -0.0051 against -0.0053 without; shooting (xG on
+    target / xG) -0.0022; last season's keeping +0.0002, conceding (goals
+    against / xG against) picked at 0; last season's whole gap +0.0097
+    (t +1.09); a home term +0.0009; beside the trend, xG a shot +0.0028
+    (t +2.01), xG a shot against and shot share nothing.
+  - **OBOS-ligaen** (2024-2026, 686 matches, Sofascore xG): the trend
+    -0.0187 (t -1.47); last season's finishing there x 0.5 +0.0001 log loss
+    (t +0.05), nothing; relegated clubs bringing their Eliteserien
+    finishing +0.0031 (t +1.43), x 1.0 +0.0095 (t +2.18). Finishing year to
+    year, same club and division: Eliteserien r +0.26 (n 81), OBOS-ligaen
+    -0.06 (n 33).
+  - **A champion is lucky with no skill at all**: in the shot world the
+    club that finishes first is +5.3 (sd 4.9) above its usual points,
+    because finishing first picks the lucky. The real champions 2021-2025
+    on average: points minus xG points +11.7, the trend alone +7.7, shipped
+    +4.3 (below the no-skill level), proposed +6.5, shot by shot +5.7.
+  - Verdict: two signals carry skill, the trend on this season's xG points
+    (partly the Poisson's bias, partly finishing) and last season's
+    finishing in Eliteserien; together they leave none the data can find.
+    Nothing else tested helps. The proposal stands, now with its edge:
+    last season's finishing x 0.5 in place of the rolling 20 + 10, read in
+    the same division only (a club new to it gets 0, so OBOS-ligaen's
+    neither gains nor loses), the trend kept. Made on the owner's call,
+    2026-10-19: `luckChances` reads each club's finishing from the season
+    before (`LUCK_FINISHING` 0.5), keeping is gone from the view and its
+    copy; the browser's scaled chances match this Python to 0.041 a club
+    season (the report rounds xG to 2 decimals), and finishing moves a club
+    season's usual points by sd 1.5 (Eliteserien 2021-2025, -3.2 to +4.1).
+    Shot by shot is the one later step worth having (the trend mostly
+    explained instead of fitted), at the cost of the shots in the report.
+    No model change, no version bump.
 - **Run-in heatmap** (`viz=runin`, #4; branch `explore/runin`): clubs down, their remaining fixtures
   across in date order, each cell the opponent's crest, H/A and the club's win
   chance on the `--seq` ramp; rows by points a match the odds are worth,
