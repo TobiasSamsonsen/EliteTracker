@@ -17,6 +17,13 @@ on:
   pull_request:
   workflow_dispatch:
 
+# One deploy at a time per branch, in push order: two pushes close together
+# ran side by side, and the older, slower build published last, over the
+# newer one (2026-10-19). A run waiting here is replaced by a newer one.
+concurrency:
+  group: deploy-${{ github.ref }}
+  cancel-in-progress: false
+
 permissions:
   checks: write
   contents: write   # re-upload the current-season release asset
