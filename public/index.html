@@ -178,16 +178,14 @@
           <button type="button" class="timeline__open" id="timeline-open" aria-expanded="false" aria-controls="timeline-control"><span data-i18n="timeline.open">Rewind</span><svg viewBox="0 0 12 12" width="10" height="10" aria-hidden="true" focusable="false"><path d="M2.5 4.5 6 8l3.5-3.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
         </div>
         <div class="timeline__control" id="timeline-control">
-          <label class="visually-hidden" for="timeline-range" data-i18n="aria.matchdaySlider">Matchday to view the season as of</label>
+          <label class="visually-hidden" for="timeline-range" data-i18n="aria.matchdaySlider">Pick a matchday</label>
           <button type="button" class="timeline__step" id="timeline-back" data-i18n="aria.oneEarlier" data-i18n-attr="aria-label" aria-label="One matchday earlier">&minus;</button>
           <input type="range" id="timeline-range" min="0" max="0" value="0" step="1" aria-describedby="timeline-note" data-i18n="timeline.tip" data-i18n-attr="title" title="Only results known by the chosen day count">
           <button type="button" class="timeline__step" id="timeline-forward" data-i18n="aria.oneLater" data-i18n-attr="aria-label" aria-label="One matchday later">+</button>
           <div class="timeline__scale" id="timeline-scale" aria-hidden="true"></div>
         </div>
         <!-- Said by the slider (its description and hover title), not as a line of its own. -->
-        <p class="visually-hidden" id="timeline-note" data-i18n="timeline.note">
-          Everything below is rebuilt from only the results known on the day you pick.
-        </p>
+        <p class="visually-hidden" id="timeline-note" data-i18n="timeline.note">Everything below uses only the results known on the day you pick.</p>
       </div>
     </section>
 
@@ -197,7 +195,7 @@
         <div class="panel__head">
           <div>
             <h2 data-i18n="grid.title">The finish grid</h2>
-            <p data-i18n="grid.desc">Each team's probability of finishing in every position, ranked by most likely outcome.</p>
+            <p data-i18n="grid.desc">Each club’s chance of every place, sorted by likeliest finish.</p>
           </div>
           <div class="grid-controls">
             <div class="label" id="grid-count"></div>
@@ -229,7 +227,7 @@
         <div class="panel__head">
           <div>
             <h2 id="table-title" data-i18n="table.title">Table</h2>
-            <p data-i18n="table.desc">Pick any club for its focus page.</p>
+            <p data-i18n="table.desc">Pick a club to open its page.</p>
           </div>
           <div class="table-controls">
             <button type="button" class="table-control-btn" data-table-mode="current" aria-pressed="true"><span data-i18n="table.view.current">Current</span></button>
@@ -277,10 +275,10 @@
                   <button type="button" class="sort-btn" data-sort-key="rating"><span class="sort-btn__label" data-i18n="table.col.rating">Rating</span><span class="sort-btn__short" aria-hidden="true" data-i18n="table.col.ratingShort">Elo</span><span class="visually-hidden" data-i18n="th.rating.desc">, ELO rating</span><span class="sort-btn__caret" aria-hidden="true"></span></button>
                 </th>
                 <th class="num col--extra" scope="col" aria-sort="none" data-sort-col="attack_pct" data-table-view="current">
-                  <button type="button" class="sort-btn" data-sort-key="attack_pct"><span class="sort-btn__label" data-i18n="team.attack">Attack</span><span class="visually-hidden" data-i18n="th.attack.desc">, chances created vs division average</span><span class="sort-btn__caret" aria-hidden="true"></span></button>
+                  <button type="button" class="sort-btn" data-sort-key="attack_pct"><span class="sort-btn__label" data-i18n="team.attack">Attack</span><span class="visually-hidden" data-i18n="th.attack.desc">, chances created vs division average, in percent</span><span class="sort-btn__caret" aria-hidden="true"></span></button>
                 </th>
                 <th class="num col--extra" scope="col" aria-sort="none" data-sort-col="defence_pct" data-table-view="current">
-                  <button type="button" class="sort-btn" data-sort-key="defence_pct"><span class="sort-btn__label" data-i18n="team.defence">Defence</span><span class="visually-hidden" data-i18n="th.defence.desc">, chances conceded vs division average, turned round so higher is better</span><span class="sort-btn__caret" aria-hidden="true"></span></button>
+                  <button type="button" class="sort-btn" data-sort-key="defence_pct"><span class="sort-btn__label" data-i18n="team.defence">Defence</span><span class="visually-hidden" data-i18n="th.defence.desc">, chances conceded vs division average; higher is better</span><span class="sort-btn__caret" aria-hidden="true"></span></button>
                 </th>
                 <th class="num" scope="col" aria-sort="none" data-sort-col="expected_points" data-table-view="prediction">
                   <button type="button" class="sort-btn" data-sort-key="expected_points"><span class="sort-btn__label" data-i18n="th.expected_points">xPts</span><span class="visually-hidden" data-i18n="th.expected_points.desc">, expected final points</span><span class="sort-btn__caret" aria-hidden="true"></span></button>
@@ -295,7 +293,7 @@
                   <button type="button" class="sort-btn" data-sort-key="expected_goal_difference"><span class="sort-btn__label" data-i18n="table.col.projGoalDiff">GD</span><span class="visually-hidden" data-i18n="table.col.projGoalDiff.desc">, projected final goal difference</span><span class="sort-btn__caret" aria-hidden="true"></span></button>
                 </th>
                 <th class="num" scope="col" aria-sort="none" data-sort-col="fixture_difficulty" data-table-view="prediction">
-                  <button type="button" class="sort-btn" data-sort-key="fixture_difficulty"><span class="sort-btn__label" data-i18n="table.col.fixture_difficulty">Fix Diff</span><span class="sort-btn__short" aria-hidden="true" data-i18n="table.col.fixture_difficultyShort">Fix</span><span class="visually-hidden" data-i18n="table.col.fixture_difficulty.desc">Expected points per remaining match vs league average</span><span class="sort-btn__caret" aria-hidden="true"></span></button>
+                  <button type="button" class="sort-btn" data-sort-key="fixture_difficulty"><span class="sort-btn__label" data-i18n="table.col.fixture_difficulty">Fix Diff</span><span class="sort-btn__short" aria-hidden="true" data-i18n="table.col.fixture_difficultyShort">Fix</span><span class="visually-hidden" data-i18n="table.col.fixture_difficulty.desc">, expected points a match for an average side with these fixtures; lower is harder</span><span class="sort-btn__caret" aria-hidden="true"></span></button>
                 </th>
                 <th class="num" scope="col" aria-sort="none" data-sort-col="up" data-table-view="prediction">
                   <button type="button" class="sort-btn" data-sort-key="up"><span class="sort-btn__label" id="head-first" data-i18n="table.col.champion">Champion</span><span class="sort-btn__short" id="head-first-short" aria-hidden="true" data-i18n="table.col.championShort">Title</span><span class="visually-hidden" id="head-first-desc">, chance of winning the title</span><span class="sort-btn__caret" aria-hidden="true"></span></button>
@@ -319,7 +317,7 @@
         <div class="panel__head">
           <div>
             <h2 data-i18n="ladder.title">The ladder</h2>
-            <p data-i18n="ladder.desc">All teams in both divisions compared on one rating scale.</p>
+            <p data-i18n="ladder.desc">Every club in both divisions on one rating scale.</p>
           </div>
           <button type="button" class="grid-anim-btn" id="ladder-anim-play" aria-pressed="false" data-i18n="title.animateSeason" data-i18n-attr="title" title="Replay the season matchday by matchday"><span class="grid-anim-btn__icon" aria-hidden="true">▶</span><span class="grid-anim-btn__label" data-i18n="anim.play">Play season</span></button>
         </div>
@@ -346,7 +344,7 @@
         <div class="panel__head">
           <div>
             <h2 data-i18n="matches.title">Matches</h2>
-            <p data-i18n="matches.desc">Every week of the season: results going back, the model's odds and likeliest scorelines going forward.</p>
+            <p data-i18n="matches.desc">Week by week: results so far, and odds and likeliest scorelines for the matches to come.</p>
           </div>
           <div class="label" id="fixture-count"></div>
         </div>
@@ -360,7 +358,7 @@
         <div class="panel__head">
           <div>
             <h2 data-i18n="compare.title">Compare clubs</h2>
-            <p data-i18n="compare.desc">Predictions for a fictional match between any two clubs. Compare each team's rating history.</p>
+            <p data-i18n="compare.desc">Odds for an imagined match between any two clubs, and their ratings over time.</p>
           </div>
         </div>
         <div class="compare__pickers">
@@ -395,7 +393,7 @@
         <dl class="model-grid" id="model-grid"></dl>
         <div class="caveats">
           <div class="label" data-i18n="model.howItWorks">How it works</div>
-          <p data-i18n="model.howLead">Each club has a strength rating that learns from every match, with expected goals (xG) telling luck from good play. A second model counts goals; the odds blend the two, and the rest of the season is played 50,000 times for the table chances.</p>
+          <p data-i18n="model.howLead">Each club has a strength rating that updates after every match, with expected goals (xG) separating luck from good play. A separate goals model counts goals, and the odds blend the two. The rest of the season is then played 50,000 times for the table chances.</p>
           <a class="caveats__link" href="/model.html" data-i18n="model.howLink">How the model works, in plain words and with every formula →</a>
         </div>
       </div>
