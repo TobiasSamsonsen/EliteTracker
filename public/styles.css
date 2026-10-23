@@ -565,8 +565,8 @@ html { scroll-padding-top: 76px; }
   grid-template-columns: minmax(0, 1fr);
 }
 
-/* The motif: the season mountain's contour map (renderBackdrop), square,
-   cropped to cover the whole page and scrolling with it. Faint; the panels
+/* The motif: the season mountain's contour map (renderBackdrop), a square
+   as wide as the page repeated down it, scrolling with it. Faint; the panels
    are opaque, so it shows only around them, never behind data. */
 .backdrop {
   position: absolute;
@@ -577,12 +577,9 @@ html { scroll-padding-top: 76px; }
   pointer-events: none;
   color: var(--ink);
   opacity: var(--backdrop-alpha);
-  fill: none;
   stroke: currentColor;
-  stroke-width: 1.25px;
   stroke-linejoin: round;
 }
-.backdrop path { vector-effect: non-scaling-stroke; }
 
 /* The race the season is about: the clubs still contending for one band,
    side by side. Archivo at its widest and heaviest, set tight, the unit a

@@ -5961,8 +5961,9 @@ async function rewindTo(asof) {
    height field is square: per club and place, how many snapshots kept that
    place open. Drawn from the season in view, so every year has its own;
    tools/brand/contours.py draws the same for the share image. */
-const BACKDROP = { samples: 100, levels: 12, sigma: 2.5, cut: 0.005, pad: 2 };
+const BACKDROP = { samples: 140, levels: 12, sigma: 3.5, cut: 0.005, pad: 2, stroke: 1.25 };
 let backdropKey = '';
+let backdropLines = null; // the season's contour paths, in sample units
 
 function backdropField(history) {
   const teams = history.teams;
@@ -6063,20 +6064,48 @@ function backdropContour(values, level) {
   return lines;
 }
 
-/* Two rounds of Chaikin's corner cutting, so the lines run smooth. */
-function backdropRound(points) {
-  let pts = points;
-  for (let round = 0; round < 2; round += 1) {
-    const next = [pts[0]];
-    for (let k = 0; k < pts.length - 1; k += 1) {
-      const [x1, y1] = pts[k];
-      const [x2, y2] = pts[k + 1];
-      next.push([0.75 * x1 + 0.25 * x2, 0.75 * y1 + 0.25 * y2], [0.25 * x1 + 0.75 * x2, 0.25 * y1 + 0.75 * y2]);
+/* A contour as a smooth curve: thin the marching-squares points (Ramer-
+   Douglas-Peucker), then run a Catmull-Rom spline through what is left,
+   written as cubic Beziers, so no corner of the sampling grid shows at any
+   size. */
+function backdropCurve(points) {
+  const keep = new Uint8Array(points.length);
+  keep[0] = 1;
+  keep[points.length - 1] = 1;
+  const stack = [[0, points.length - 1]];
+  while (stack.length) {
+    const [a, b] = stack.pop();
+    const [ax, ay] = points[a];
+    const [bx, by] = points[b];
+    const length = Math.hypot(bx - ax, by - ay);
+    let far = -1;
+    let most = 0.12; // in samples
+    for (let k = a + 1; k < b; k += 1) {
+      const [x, y] = points[k];
+      // A closed loop starts and ends on one point: measure from it.
+      const off = length
+        ? Math.abs((bx - ax) * (y - ay) - (by - ay) * (x - ax)) / length
+        : Math.hypot(x - ax, y - ay);
+      if (off > most) { most = off; far = k; }
     }
-    next.push(pts[pts.length - 1]);
-    pts = next;
+    if (far > 0) { keep[far] = 1; stack.push([a, far], [far, b]); }
   }
-  return pts;
+  const pts = points.filter((_, k) => keep[k]);
+  const closed = pts.length > 3 && Math.hypot(pts[0][0] - pts[pts.length - 1][0], pts[0][1] - pts[pts.length - 1][1]) < 1e-6;
+  const at = (k) => {
+    if (closed) return pts[((k % (pts.length - 1)) + (pts.length - 1)) % (pts.length - 1)];
+    return pts[Math.max(0, Math.min(pts.length - 1, k))];
+  };
+  const f = (v) => v.toFixed(2);
+  let d = `M${f(pts[0][0])} ${f(pts[0][1])}`;
+  for (let k = 0; k < pts.length - 1; k += 1) {
+    const [x0, y0] = at(k - 1);
+    const [x1, y1] = at(k);
+    const [x2, y2] = at(k + 1);
+    const [x3, y3] = at(k + 2);
+    d += `C${f(x1 + (x2 - x0) / 6)} ${f(y1 + (y2 - y0) / 6)} ${f(x2 - (x3 - x1) / 6)} ${f(y2 - (y3 - y1) / 6)} ${f(x2)} ${f(y2)}`;
+  }
+  return closed ? `${d}Z` : d;
 }
 
 function renderBackdrop(report) {
@@ -6085,6 +6114,7 @@ function renderBackdrop(report) {
   if (!svg) return;
   if (!history?.teams?.length || !history.teams[0].positions?.length) {
     backdropKey = '';
+    backdropLines = null;
     svg.replaceChildren();
     return;
   }
@@ -6097,17 +6127,49 @@ function renderBackdrop(report) {
   let lo = Infinity;
   let hi = -Infinity;
   for (const row of values) for (const v of row) { lo = Math.min(lo, v); hi = Math.max(hi, v); }
-  const paths = [];
+  backdropLines = [];
   for (let k = 1; k <= levels; k += 1) {
     const level = lo + ((hi - lo) * k) / (levels + 1);
     for (const line of backdropContour(values, level)) {
       if (line.length < 4) continue;
-      const d = `M${backdropRound(line).map(([x, y]) => `${x.toFixed(1)} ${y.toFixed(1)}`).join(' ')}`;
-      paths.push(svgEl('path', { d }));
+      backdropLines.push(backdropCurve(line));
     }
   }
-  svg.setAttribute('viewBox', `0 0 ${samples - 1} ${samples - 1}`);
-  svg.replaceChildren(...paths);
+  svg.dataset.layout = '';
+  layoutBackdrop();
+}
+
+/* The map is a square as wide as the page, repeated down it with every
+   other copy flipped, so the lines run on across the seams. Its size hangs
+   on the page's width alone: a view of another length only shows more or
+   fewer copies, and nothing moves. Each copy is a vector <use> of the one
+   map (a <pattern> would be rasterised, its lines soft and stepped). Laid out
+   again whenever the page's size changes. */
+let backdropObserver = null;
+function layoutBackdrop() {
+  const svg = $('#backdrop');
+  if (!svg) return;
+  if (!backdropObserver && window.ResizeObserver) {
+    backdropObserver = new ResizeObserver(() => layoutBackdrop());
+    backdropObserver.observe(svg);
+  }
+  const width = svg.clientWidth;
+  const copies = Math.max(1, Math.ceil(svg.clientHeight / width));
+  const layout = `${width}x${copies}`;
+  if (!width || !backdropLines || svg.dataset.layout === layout) return;
+  svg.dataset.layout = layout;
+  const scale = width / (BACKDROP.samples - 1);
+  // The stroke in the map's own units, so it is 1.25 px on the page
+  // (non-scaling-stroke is not honoured through <use>).
+  const map = svgEl('g', { id: 'backdrop-map', fill: 'none', 'stroke-width': BACKDROP.stroke / scale });
+  map.append(...backdropLines.map((d) => svgEl('path', { d })));
+  const defs = svgEl('defs');
+  defs.append(map);
+  const uses = Array.from({ length: copies }, (_, k) => svgEl('use', {
+    href: '#backdrop-map',
+    transform: k % 2 ? `translate(0 ${(k + 1) * width}) scale(${scale} ${-scale})` : `translate(0 ${k * width}) scale(${scale})`,
+  }));
+  svg.replaceChildren(defs, ...uses);
 }
 
 /* ---------- theme -------------------------------------------------- */

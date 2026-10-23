@@ -220,8 +220,12 @@ chance (0.5 % or more, its default cut) of a place, places across and clubs
 deep in finishing order, so its height field is square: per club and place,
 how many snapshots kept the place open. `renderBackdrop` (app.js) draws it
 in the browser from the report in view, so every season and division has its
-own and the live season stays current without a build step; it spans the
-whole page and scrolls with it, cropped to cover, faint
+own and the live season stays current without a build step; a square as
+wide as the page, repeated down it with every other copy flipped so the lines
+run on, scrolling with the page (its size hangs on the width alone, so
+switching views moves nothing; each copy a vector `<use>` of one map, its
+lines Catmull-Rom curves rather than polylines, so they stay smooth at any
+size), faint
 (`--backdrop-alpha`, 5.5 % light, 8 % dark), and shows only around the
 opaque panels. `tools/brand/contours.py` draws the same map for 2025 as a
 fixed `contours.svg`, for the share image and the 404 page, which have no
