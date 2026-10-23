@@ -4048,6 +4048,10 @@ html { scroll-behavior: smooth; }
 
 .explore-card:hover .explore-card__thumb { transform: translateY(-2px); border-color: var(--accent); box-shadow: var(--shadow), var(--glow-ring); }
 .explore-card:focus-visible { outline: none; }
+/* Where a thumbnail grows to in a long view (openExplore): the panel's width,
+   the thumbnail's shape, at the top. Empty, and only there for the move. */
+#explore-body { position: relative; }
+.explore-morph { position: absolute; inset: 0 0 auto; aspect-ratio: 16 / 9; pointer-events: none; }
 .explore-card:focus-visible .explore-card__thumb { outline: 2px solid var(--ink); outline-offset: 3px; }
 .explore-card__title { font-weight: 700; font-size: 1rem; }
 .explore-card__desc { color: var(--ink-muted); font-size: 0.875rem; line-height: 1.4; }

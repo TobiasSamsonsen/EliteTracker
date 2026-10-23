@@ -262,8 +262,10 @@ scroll-progress bar on the right.
 - [ ] The View Transitions API for switching tabs, and for a table row
       growing into the club page.
 - [x] Explore: a visualisation grows out of its card's thumbnail and shrinks
-      back into it (a shared view-transition name; the mountain grows to fill
-      the window). Done early, 2026-10-24.
+      back into it (a shared view-transition name). The mountain grows to
+      fill the window; the attack map and the luck table, which run long,
+      only to the panel's width in the thumbnail's own 16:9 shape, the view
+      fading in beneath. Done early, 2026-10-24.
 - [x] On a phone, views in the More sheet rise from below (the page sinks
       on the way back), since they are not beside the bar's tabs. Done
       early, 2026-10-24.

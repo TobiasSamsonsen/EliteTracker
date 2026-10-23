@@ -2453,7 +2453,10 @@ function exploreThumb(id) {
    thumbnail grows into the view it opens, and the view shrinks back into its
    card on the way back: one shared view-transition name, on the thumbnail
    before and the view after (or the other way round). The mountain fills the
-   window; the others fill the panel. */
+   window, so the thumbnail grows to the window. The others run long down the
+   page, so it grows only to the panel's width, in its own 16:9 shape, at the
+   top of the view: a box laid there for the move (.explore-morph) and taken
+   away after it. */
 function openExplore(id) {
   const from = state.exploreItem;
   const update = () => {
@@ -2462,7 +2465,12 @@ function openExplore(id) {
     window.scrollTo({ top: 0, behavior: 'instant' });
   };
   const thumb = (item) => document.querySelector(`.explore-card[data-item="${item}"] .explore-card__thumb`);
-  const view = (item) => (item === 'mountain' ? $('.mountain') : $('[data-section="explore"] > .panel'));
+  const view = (item) => {
+    if (item === 'mountain') return $('.mountain');
+    const box = el('div', 'explore-morph');
+    $('#explore-body').prepend(box);
+    return box;
+  };
   const before = id ? thumb(id) : from && view(from);
   if (!before || !document.startViewTransition || window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
     update();
@@ -2479,6 +2487,7 @@ function openExplore(id) {
     if (after) after.style.viewTransitionName = 'explore-open';
   }).finished.finally(() => {
     if (after) after.style.viewTransitionName = '';
+    if (after?.classList.contains('explore-morph')) after.remove();
     delete root.dataset.transition;
   });
 }
