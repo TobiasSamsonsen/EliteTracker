@@ -12,7 +12,7 @@
   }
 </script>
 <title>Eliteserien 2026: rating, odds og tabellprognose — EliteTracker</title>
-<meta name="theme-color" content="#e9edf1">
+<meta name="theme-color" content="#e8edf5">
 <!-- Installed from Chrome, the app opens standalone from this manifest; without
      it Android only made a shortcut, its system bars white in the dark theme.
      A manifest holds one colour, so it takes the dark paper; the theme-color
@@ -49,10 +49,10 @@
   document.documentElement.dataset.resolvedTheme = choice === 'light' || choice === 'dark' ? choice
     : matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
   document.querySelector('meta[name=theme-color]').content =
-    document.documentElement.dataset.resolvedTheme === 'dark' ? '#0b1116' : '#e9edf1';
+    document.documentElement.dataset.resolvedTheme === 'dark' ? '#080f1c' : '#e8edf5';
 </script>
 <link rel="stylesheet" href="/styles.css">
-<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'><rect width='16' height='16' rx='3' fill='%232a78d6'/><rect x='3' y='9' width='2.5' height='4' fill='white'/><rect x='6.75' y='6' width='2.5' height='7' fill='white'/><rect x='10.5' y='3' width='2.5' height='10' fill='white'/></svg>">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'><rect width='16' height='16' rx='3' fill='%231f5eff'/><rect x='3' y='9' width='2.5' height='4' fill='white'/><rect x='6.75' y='6' width='2.5' height='7' fill='white'/><rect x='10.5' y='3' width='2.5' height='10' fill='white'/></svg>">
 </head>
 <body>
 
@@ -445,6 +445,7 @@
   <select id="season-select" class="season-select"></select>
 </div>
 
+<script src="/thumbs.js" defer></script>
 <script src="/i18n.js" defer></script>
 <script src="/app.js" defer></script>
 </body>

@@ -2,8 +2,14 @@
    ------------------------------------------------------------------
    One typeface (Archivo variable) worked across its width axis: expanded
    for display, normal for prose, tabular figures for data. The palette is
-   cold Nordic paper and petrol ink; the only saturated colours on the page
-   belong to data, so a hue always means something.
+   deep navy and one electric blue, built the Material 3 way: the neutrals
+   are tinted toward the accent's hue (OKLCH 262, at the old greys'
+   lightness, so every contrast below held), and the accent comes in roles
+   -- a fill with its on-colour, and a text tone per theme, since a vivid
+   blue reads as a fill on dark but not as text. The accent is for
+   interface only (the selected tab, focus, a pressed menu item); every
+   other saturated colour belongs to data, so a hue on a chart or a table
+   always means something.
 
    Data colours come from the validated data-viz palette:
      sequential  blue 100..700   -> finishing-position probability
@@ -37,24 +43,39 @@
 :root {
   color-scheme: light;
 
-  --paper: #e9edf1;
+  --paper: #e8edf5;
   --panel: #ffffff;
-  --panel-sunk: #f3f6f8;
-  --ink: #0d1a22;
-  --ink-muted: #55666f;
-  --ink-faint: #5a6c77;   /* 4.6:1 on paper; was 2.6:1 */
-  --rule: #bcc8d1;
-  --rule-strong: #9ab0bb;
+  --panel-sunk: #f3f5fa;
+  --ink: #0f1828;
+  --ink-muted: #5a6375;
+  --ink-faint: #5f697c;   /* 4.7:1 on paper */
+  --rule: #bfc6d3;
+  --rule-strong: #a2adc0;
+
+  /* The interface accent. --accent is the fill (white on it 5.1:1, and 3.4:1
+     or more against every surface in both themes); --accent-ink is the same
+     hue as text, icons and focus rings. */
+  --accent: #1f5eff;
+  --on-accent: #ffffff;
+  --accent-ink: #184ddd;  /* 5.7:1 on paper */
 
   /* Default label ink on a cell, and the inverted ink used once the fill
      has moved far enough from the surface. */
-  --cell-ink: #0d1a22;
+  --cell-ink: #0f1828;
   --cell-ink-invert: #ffffff;
 
   /* Qualification markers only -- labelled status marks, not part of the
-     quantitative encoding above. */
-  --outcome-good: #1d63bb;   /* 5.0:1 as text on paper */
-  --outcome-bad: #c43534;    /* 4.6:1 as text on paper */
+     quantitative encoding above. The same electric blue and red as home and
+     away, one pair for both themes; drawn as text they take their -ink
+     tones, since a fill this vivid is under 4.5:1 as text on navy. */
+  --outcome-good: #1f5eff;
+  --outcome-bad: #d92b36;
+  --outcome-good-ink: var(--accent-ink);
+  --outcome-bad-ink: #c4242f;   /* 4.9:1 on paper */
+  /* The light a good or bad bar gives off (the odds, attack and defence):
+     a brighter take on the fill's own hue. */
+  --glow-good: #3d7bff;
+  --glow-bad: #ff3b46;
 
   /* Sequential data ramp. Multi-hue on purpose: sixteen stacked bands cannot
      be told apart in one hue. Resampled at uniform OKLab lightness from the
@@ -69,14 +90,17 @@
   --seq-6: #253d98;
   --seq-7: #12246b;
   /* Model accuracy's version history: two series, validated in light mode. */
-  --versions-all: #2265ac;
+  --versions-all: #1f5eff;
   --versions-es: #3db2c4;
   --versions-xg: #c9701c;
 
-  /* Diverging: home win <- draw -> away win. */
-  --home: #1d63bb;   /* white odds labels 5.9:1 (was 4.4:1) */
+  /* Diverging: home win <- draw -> away win. Home is the electric accent and
+     away a red as saturated, one pair for both themes with white labels
+     (5.1:1 and 4.8:1). Machado CVD dE home-away 30-35, up from 19-31;
+     each against the draw holds 10 or more. */
+  --home: #1f5eff;
   --draw: #8c8c86;
-  --away: #c43534;   /* white odds labels 5.3:1 (was 4.0:1) */
+  --away: #d92b36;
 
 
   /* Outcome meters in the table. They borrow the qualification-marker colours
@@ -109,9 +133,13 @@
   --edge-el: #e07b1f;   /* orange, 4.8:1 on paper light, 5.2:1 on panel dark */
   --edge-ecl: #1e8a49;  /* green,  5.1:1 on paper light, 5.4:1 on panel dark */
 
-  --shadow: 0 1px 2px rgb(13 26 34 / 0.04), 0 12px 32px -16px rgb(13 26 34 / 0.16);
-  /* A faint wash of the brand blue behind the top of the page. */
-  --glow: rgb(42 120 214 / 0.08);
+  --shadow: 0 1px 2px rgb(15 24 40 / 0.04), 0 12px 32px -16px rgb(15 24 40 / 0.16);
+  /* A faint wash of the accent behind the top of the page, and the
+     same light around whatever control is active: the site's one glow. */
+  --glow: rgb(31 94 255 / 0.12);
+  --glow-ring: 0 4px 14px -3px rgb(31 94 255 / 0.55);   /* an active control */
+  --glow-hover: 0 0 0 1px rgb(31 94 255 / 0.35), 0 4px 16px -6px rgb(31 94 255 / 0.45);
+  --glow-text: 0 0 14px rgb(31 94 255 / 0.25);
 
   --measure: 68ch;
   --gutter: clamp(1rem, 4vw, 3rem);
@@ -130,20 +158,23 @@
 :root[data-resolved-theme="dark"] {
   color-scheme: dark;
 
-  --paper: #0b1116;
-  --panel: #131c22;
-  --panel-sunk: #0f171c;
-  --ink: #e7eef3;
-  --ink-muted: #93a6b1;
-  --ink-faint: #7f939e;   /* 5.4:1 on panel; was 3.6:1 */
-  --rule: #22303a;
-  --rule-strong: #34454f;
+  --paper: #080f1c;
+  --panel: #111929;
+  --panel-sunk: #0c1423;
+  --ink: #e8edf5;
+  --ink-muted: #98a3b7;
+  --ink-faint: #8490a5;   /* 5.5:1 on panel */
+  --rule: #222e43;
+  --rule-strong: #35435b;
+
+  /* The fill stays electric; as text it lifts to a lighter tone of the same
+     hue and chroma, since the vivid fill as text on navy is 3.4:1. */
+  --accent-ink: #588cff;  /* 5.5:1 on panel */
 
   --cell-ink: #ffffff;
-  --cell-ink-invert: #0d1a22;
+  --cell-ink-invert: #0f1828;
 
-  --outcome-good: #3987e5;
-  --outcome-bad: #e66767;
+  --outcome-bad-ink: #f4514f;   /* 5.1:1 on panel */
 
   --seq-1: #081d58;
   --seq-2: #22318d;
@@ -153,13 +184,10 @@
   --seq-6: #80cdbb;
   --seq-7: #caeab4;
   /* The version history's two series, their own dark steps (validated on #131c22). */
-  --versions-all: #4479d0;
   --versions-es: #2ba3a0;
   --versions-xg: #c4772a;
 
-  --home: #3987e5;
   --draw: #b5b5ac;
-  --away: #e66767;
 
   --tier-1: #a78bfa;
   --tier-2: #d95926;
@@ -172,8 +200,11 @@
   --edge-ecl: #4ade80;  /* lighter green,  5.5:1 on panel dark */
 
   /* The inset line lifts a panel's top edge off the page, the way light falls on it. */
-  --shadow: inset 0 1px 0 rgb(255 255 255 / 0.04), 0 1px 2px rgb(0 0 0 / 0.35), 0 16px 40px -20px rgb(0 0 0 / 0.7);
-  --glow: rgb(57 135 229 / 0.12);
+  --shadow: inset 0 1px 0 rgb(122 168 255 / 0.08), 0 1px 2px rgb(0 0 0 / 0.35), 0 16px 40px -20px rgb(0 0 0 / 0.7);
+  --glow: rgb(31 94 255 / 0.3);
+  --glow-ring: 0 0 22px -2px rgb(31 94 255 / 0.8);
+  --glow-hover: 0 0 0 1px rgb(31 94 255 / 0.5), 0 0 22px -6px rgb(31 94 255 / 0.7);
+  --glow-text: 0 0 22px rgb(31 94 255 / 0.65);
 }
 
 /* ---------- base -------------------------------------------------- */
@@ -191,7 +222,9 @@ html, body { overflow-x: clip; }
 
 body {
   margin: 0;
-  background: radial-gradient(1100px 520px at 50% -240px, var(--glow), transparent 70%) no-repeat, var(--paper);
+  background:
+    radial-gradient(1400px 640px at 50% -260px, var(--glow), transparent 70%) no-repeat,
+    var(--paper);
   color: var(--ink);
   font-family: var(--body);
   font-size: 15px;
@@ -224,7 +257,7 @@ h1, h2, h3 {
 a { color: inherit; }
 
 :where(a, button, [tabindex]):focus-visible {
-  outline: 2px solid var(--home);
+  outline: 2px solid var(--accent-ink);
   outline-offset: 2px;
   border-radius: 2px;
 }
@@ -279,6 +312,18 @@ html { scroll-padding-top: 76px; }
   background: color-mix(in srgb, var(--paper) 88%, transparent);
   backdrop-filter: blur(12px);
   border-bottom: 1px solid var(--rule);
+}
+
+/* The accent lights the masthead's bottom edge from the middle out. */
+.masthead::after {
+  content: "";
+  position: absolute;
+  inset: auto 10% -1px;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--accent), transparent);
+  box-shadow: 0 0 12px 0 var(--accent);
+  opacity: 0.7;
+  pointer-events: none;
 }
 
 .masthead__inner {
@@ -358,31 +403,72 @@ html { scroll-padding-top: 76px; }
 
   .switch button:hover { color: var(--ink); }
 
+  /* Every pressed segment is the accent pill; the view tabs share one that
+     slides (.switch__thumb), the phone's tab bar its own (.mobilebar__thumb). */
   .switch button[aria-pressed="true"] {
-    background: var(--panel);
-    color: var(--ink);
-    box-shadow: 0 1px 3px rgb(13 26 34 / 0.18), inset 0 0 0 1px var(--rule);
+    background: var(--accent);
+    color: var(--on-accent);
+    box-shadow: var(--glow-ring);
   }
 
-  /* The view tabs share one pill that slides to the pressed tab (slideTabThumbs);
-     until the script places it, the pressed tab paints its own. */
-  .masthead__views .switch,
-  .masthead__views .switch button { position: relative; }
+  /* Each segmented group has one pill that slides to the pressed button
+     (thumbs.js); until the script places it, the pressed button paints its own. */
+  :is(.switch, .table-controls, .grid-anim-speed),
+  :is(.switch, .table-controls, .grid-anim-speed) button { position: relative; }
 
   .switch__thumb {
     position: absolute;
     left: 0;
     border-radius: 999px;
-    background: var(--panel);
-    box-shadow: 0 1px 3px rgb(13 26 34 / 0.18), inset 0 0 0 1px var(--rule);
+    background: var(--accent);
+    box-shadow: var(--glow-ring);
     pointer-events: none;
     transition: transform 0.3s var(--ease), width 0.3s var(--ease);
   }
 
-  .switch:has(> .switch__thumb:not([hidden])) button[aria-pressed="true"] {
+  :is(.switch, .table-controls, .grid-anim-speed):has(> .switch__thumb:not([hidden])) [aria-pressed="true"] {
     background: transparent;
     box-shadow: none;
   }
+
+  @media (prefers-reduced-motion: reduce) {
+    .switch__thumb, .mobilebar__thumb { transition: none; }
+  }
+
+/* Switching tab: the content slides the way the tabs run and fades, the
+   outgoing view leaving as the incoming one arrives a beat behind it, a
+   short shared-axis move (switchView sets --view-dir: 1 forward, -1 back).
+   The masthead, the phone's tab bar and the consent bar hold still: only
+   #content moves, and the page around it swaps at once. Without view transitions, or with
+   reduced motion, the view simply changes. */
+@media (prefers-reduced-motion: no-preference) {
+  #content { view-transition-name: content; }
+  ::view-transition-old(root),
+  ::view-transition-new(root) { animation: none; }
+  /* At the new view's place, not tweened from the old: the old view was
+     scrolled, the new one opens at the top. */
+  ::view-transition-group(content) { animation: none; }
+  ::view-transition-old(content) { animation: view-out 180ms var(--ease) both; }
+  ::view-transition-new(content) { animation: view-in 260ms var(--ease) 50ms both; }
+
+  /* What floats over the content is captured on its own, so the sliding
+     view passes beneath it, and it swaps in place: its old picture dropped,
+     the new one live (the tab pill slides in it). */
+  .masthead { view-transition-name: masthead; }
+  .mobilebar { view-transition-name: tabbar; }
+  .consent { view-transition-name: consent; }
+  ::view-transition-old(masthead),
+  ::view-transition-old(tabbar),
+  ::view-transition-old(consent) { display: none; }
+  ::view-transition-group(masthead),
+  ::view-transition-group(tabbar),
+  ::view-transition-group(consent),
+  ::view-transition-new(masthead),
+  ::view-transition-new(tabbar),
+  ::view-transition-new(consent) { animation: none; }
+}
+@keyframes view-out { to { opacity: 0; transform: translateX(calc(var(--view-dir, 1) * -40px)); } }
+@keyframes view-in { from { opacity: 0; transform: translateX(calc(var(--view-dir, 1) * 40px)); } }
 
   /* Table view toggle: the same segmented pill as .switch. */
   .table-controls {
@@ -411,9 +497,9 @@ html { scroll-padding-top: 76px; }
   .table-control-btn:hover { color: var(--ink); }
 
   .table-control-btn[aria-pressed="true"] {
-    background: var(--panel);
-    color: var(--ink);
-    box-shadow: 0 1px 3px rgb(13 26 34 / 0.18), inset 0 0 0 1px var(--rule);
+    background: var(--accent);
+    color: var(--on-accent);
+    box-shadow: var(--glow-ring);
   }
 
 /* Fixture difficulty pill — diverging red–gray–green ramp.
@@ -468,7 +554,8 @@ html { scroll-padding-top: 76px; }
 }
 .hero-title-part:hover {
   border-color: var(--ink);
-  color: var(--outcome-good);
+  color: var(--accent-ink);
+  text-shadow: var(--glow-text);
 }
 
 /* A chevron says "this opens a list" where the dashed underline alone only
@@ -771,11 +858,12 @@ table.grid tbody th .team-logo {
   cursor: pointer;
   line-height: 1;
 }
-.grid-anim-btn__icon { font-size: 0.7rem; color: var(--tier-1); }
+.grid-anim-btn__icon { font-size: 0.7rem; color: var(--accent-ink); }
 .grid-anim-btn[aria-pressed="true"] {
-  background: var(--ink);
-  border-color: var(--ink);
-  color: var(--panel);
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--on-accent);
+  box-shadow: var(--glow-ring);
 }
 .grid-anim-btn[aria-pressed="true"] .grid-anim-btn__icon { color: inherit; }
 .grid-anim-btn:disabled { opacity: 0.55; cursor: progress; }
@@ -808,7 +896,8 @@ table.grid tbody th .team-logo {
 .grid-anim-bar__fill {
   display: block;
   height: 100%;
-  background: var(--tier-1);
+  background: var(--accent);
+  box-shadow: 0 0 10px var(--accent);
   transform: scaleX(0);
   transform-origin: left;
 }
@@ -836,7 +925,7 @@ table.grid tbody th .team-logo {
   cursor: pointer;
 }
 .grid-anim-speed button:hover { color: var(--ink); }
-.grid-anim-speed button[aria-pressed="true"] { background: var(--ink); color: var(--panel); }
+.grid-anim-speed button[aria-pressed="true"] { background: var(--accent); color: var(--on-accent); box-shadow: var(--glow-ring); }
 
 /* Loading overlay on the grid during prefetch */
 .grid-loading {
@@ -962,7 +1051,7 @@ table.standings .sep { border-left: 1px solid var(--rule); }
 table.standings .muted { color: var(--ink-muted); }
 
 /* Attack/Defence pill — diverging red–gray–blue ramp.
-   --ad-hue: 0 (red) or 218 (blue); --ad-sat/--ad-light interpolated to gray at k=0.
+   --ad-hue: 0 (red) or 223 (blue); --ad-sat/--ad-light interpolated to gray at k=0.
    --ad-alpha: 0.1 (avg) → 0.45 (league extreme). Flat bg, no gradient. */
 .attack-defence-pill {
   padding: 0 6px;
@@ -1026,7 +1115,9 @@ table.standings .zone-divider__wrap {
   font-weight: 700;
   letter-spacing: 0.04em;
   text-transform: uppercase;
-  color: var(--band-color, var(--ink));
+  /* The band's fill, leaned a quarter toward the ink: legible as text on
+     either theme, still its band's colour. */
+  color: color-mix(in srgb, var(--band-color, var(--ink)) 75%, var(--ink));
   width: 100%;
 }
 :root:not([data-resolved-theme="dark"]) table.standings .zone-divider__wrap {
@@ -1409,16 +1500,22 @@ table.standings .zone-divider__wrap::after {
   border-radius: 2px;
   min-width: 0;
   overflow: hidden;
+  /* The fill is the flat outcome colour (the same blue as the buttons);
+     the light around it is a brighter take on the outcome's own hue, so
+     home and away still read as themselves. The draw gives no light. */
+  background: var(--seg);
+  box-shadow: 0 2px 8px -3px color-mix(in srgb, var(--seg-glow) 60%, transparent);
+}
+:root[data-resolved-theme="dark"] .odds__seg {
+  box-shadow: 0 0 3px color-mix(in srgb, var(--seg-glow) 75%, transparent),
+              0 0 12px color-mix(in srgb, var(--seg-glow) 45%, transparent);
 }
 
 .odds__seg:first-child { border-radius: 3px 2px 2px 3px; }
 .odds__seg:last-child { border-radius: 2px 3px 3px 2px; }
-.odds__seg[data-outcome="home"] { background: var(--home); }
-.odds__seg[data-outcome="draw"] { background: var(--draw); color: #10171b; }
-.odds__seg[data-outcome="away"] { background: var(--away); }
-/* The dark theme's brighter hues take dark labels: white was 3.2-3.6:1. */
-:root[data-resolved-theme="dark"] .odds__seg[data-outcome="home"],
-:root[data-resolved-theme="dark"] .odds__seg[data-outcome="away"] { color: #0d1a22; }
+.odds__seg[data-outcome="home"] { --seg: var(--home); --seg-glow: var(--glow-good); }
+.odds__seg[data-outcome="draw"] { --seg: var(--draw); --seg-glow: transparent; color: #10171b; }
+.odds__seg[data-outcome="away"] { --seg: var(--away); --seg-glow: var(--glow-bad); }
 
 /* Mobile: let fixture odds and lines stack instead of fixed min-width.
    Uses 760px to match the main mobile breakpoint (navigation, tables, etc.). */
@@ -1457,7 +1554,8 @@ table.standings .zone-divider__wrap::after {
 
 @media (max-width: 480px) {
   .fixture__lines { justify-content: flex-start; }
-  .odds { overflow-x: auto; scrollbar-width: none; overscroll-behavior-x: contain; }
+  /* The scroller clips at its box, so it gets room for the glow. */
+  .odds { overflow-x: auto; scrollbar-width: none; overscroll-behavior-x: contain; padding: 8px; margin: -8px; }
   .odds::-webkit-scrollbar { display: none; }
 }
 
@@ -1537,9 +1635,9 @@ table.standings .zone-divider__wrap::after {
 .compare__subhead { font-size: 0.95rem; font-weight: 700; margin: 0 0 0.5rem; }
 .compare__block .odds { margin-top: 0.75rem; }
 .compare-line { fill: none; stroke-width: 2; }
-.compare-line--a { stroke: #2a78d6; }
+.compare-line--a { stroke: var(--home); }
 .compare-line--b { stroke: #e0682a; }
-.compare-legend__a { color: color-mix(in srgb, #2a78d6 70%, var(--ink)); font-weight: 600; margin-right: 0.75rem; }
+.compare-legend__a { color: color-mix(in srgb, var(--home) 70%, var(--ink)); font-weight: 600; margin-right: 0.75rem; }
 .compare-legend__b { color: color-mix(in srgb, #e0682a 70%, var(--ink)); font-weight: 600; }
 /* The line colours are chart hues; as text they are mixed toward --ink, which
    darkens them on light and lightens them on dark (>= 6:1 in both). */
@@ -1612,7 +1710,7 @@ table.standings .zone-divider__wrap::after {
 
 .played-nav__btn:hover { background: var(--panel-sunk); border-color: var(--rule-strong); }
 .played-nav__btn:disabled { opacity: 0.35; cursor: default; }
-.played-nav__btn:disabled:hover { background: var(--panel); border-color: var(--rule); }
+.played-nav__btn:disabled:hover { background: var(--panel); border-color: var(--rule); box-shadow: none; }
 
 .played-nav__label {
   font-family: var(--display);
@@ -1726,8 +1824,8 @@ table.standings .zone-divider__wrap::after {
   white-space: nowrap;
 }
 
-.played-card__delta--up { color: var(--outcome-good); }
-.played-card__delta--down { color: var(--outcome-bad); }
+.played-card__delta--up { color: var(--outcome-good-ink); }
+.played-card__delta--down { color: var(--outcome-bad-ink); }
 
 /* Score */
 .played-card__score {
@@ -1999,9 +2097,11 @@ footer a { color: var(--ink); }
 
   .mobilebar__icon { width: 17px; height: 17px; }
 
-  .mobilebar__item[aria-pressed="true"] { color: var(--outcome-good); }
+  .mobilebar__item[aria-pressed="true"] { color: var(--ink); }
 
-  /* The active tab gets a soft pill behind its icon, as native tab bars do. */
+  .mobilebar__item[aria-pressed="true"] .mobilebar__icon { color: var(--on-accent); }
+
+  /* The active tab gets a pill behind its icon, as native tab bars do. */
   .mobilebar__item[aria-pressed="true"]::before {
     content: "";
     position: absolute;
@@ -2009,7 +2109,8 @@ footer a { color: var(--ink); }
     width: 3.25rem;
     height: 1.6rem;
     border-radius: 999px;
-    background: color-mix(in srgb, var(--outcome-good) 16%, transparent);
+    background: var(--accent);
+    box-shadow: var(--glow-ring);
     z-index: -1;
   }
 
@@ -2021,7 +2122,8 @@ footer a { color: var(--ink); }
     width: 3.25rem;
     height: 1.6rem;
     border-radius: 999px;
-    background: color-mix(in srgb, var(--outcome-good) 16%, transparent);
+    background: var(--accent);
+    box-shadow: var(--glow-ring);
     pointer-events: none;
     transition: transform 0.3s var(--ease);
   }
@@ -2080,7 +2182,7 @@ footer a { color: var(--ink); }
     cursor: pointer;
   }
 
-  .sheet__item[aria-pressed="true"] { color: var(--outcome-good); background: var(--panel-sunk); }
+  .sheet__item[aria-pressed="true"] { color: var(--accent-ink); background: var(--panel-sunk); }
 
   .sheet__divider {
     height: 1px;
@@ -2317,13 +2419,13 @@ footer a { color: var(--ink); }
     opacity: 0;
     pointer-events: none;
   }
-  .ptr-indicator.pulling { color: var(--tier-1); }
-  .ptr-indicator.loading { color: var(--tier-1); }
+  .ptr-indicator.pulling { color: var(--accent-ink); }
+  .ptr-indicator.loading { color: var(--accent-ink); }
   .ptr-spinner {
     width: 1.25rem;
     height: 1.25rem;
     border: 2px solid var(--rule);
-    border-top-color: var(--tier-1);
+    border-top-color: var(--accent-ink);
     border-radius: 50%;
     animation: ptr-spin 0.8s linear infinite;
   }
@@ -2518,7 +2620,7 @@ footer a { color: var(--ink); }
   width: 100%;
 }
 .popover-menu__btn:hover { background: var(--panel-sunk); }
-.popover-menu__btn[aria-pressed="true"] { color: var(--outcome-good); }
+.popover-menu__btn[aria-pressed="true"] { color: var(--accent-ink); }
 
 /* ---------- team focus view ---------------------------------------- */
 
@@ -2654,7 +2756,9 @@ footer a { color: var(--ink); }
 .team-summary__trend--fall { color: var(--outcome-bad); }
 .team-summary__trend--strong-fall { color: var(--outcome-bad); }
 
-/* xG form under the rating: a labelled line, so it never reads as a second
+/* The trend arrows are icons, not text (3:1 is their bar, WCAG 1.4.11), so
+   they take the vivid fills: 3.4:1 or more on every surface.
+   xG form under the rating: a labelled line, so it never reads as a second
    verdict on the rating. Only the icon takes the trend colour. */
 .team-summary__form {
   display: inline-flex;
@@ -2717,8 +2821,8 @@ footer a { color: var(--ink); }
 .team-match__score { font-family: var(--display); font-weight: 800; min-width: 2.2rem; }
 .team-match__xg { font-size: 0.75rem; color: var(--ink-muted); min-width: 4.5rem; }
 .team-match__delta { font-size: 0.8125rem; font-weight: 700; min-width: 2rem; text-align: right; color: var(--ink-faint); }
-.team-match__delta.up { color: var(--outcome-good); }
-.team-match__delta.down { color: var(--outcome-bad); }
+.team-match__delta.up { color: var(--outcome-good-ink); }
+.team-match__delta.down { color: var(--outcome-bad-ink); }
 .team-match__odds { width: 13rem; height: 1.25rem; font-size: 0.6875rem; }
 .team-match__legend { padding: 0; border: 0; background: none; font-size: 0.75rem; }
 /* Below desktop width the date moves under the opponent's name, so a row is
@@ -2829,8 +2933,15 @@ footer a { color: var(--ink); }
   width: var(--width);
   border-radius: inherit;
   background: var(--outcome-good);
+  /* Lit like the odds bars: a tight glow at the edge, a soft one around. */
+  --bar-glow: var(--glow-good);
+  box-shadow: 0 1px 6px -1px color-mix(in srgb, var(--bar-glow) 60%, transparent);
 }
-.team-stats__bar--bad::before { background: var(--outcome-bad); }
+.team-stats__bar--bad::before { background: var(--outcome-bad); --bar-glow: var(--glow-bad); }
+:root[data-resolved-theme="dark"] .team-stats__bar::before {
+  box-shadow: 0 0 3px color-mix(in srgb, var(--bar-glow) 75%, transparent),
+              0 0 10px color-mix(in srgb, var(--bar-glow) 45%, transparent);
+}
 /* The division average: the centre line the bar grows out from. */
 .team-stats__bar::after {
   content: "";
@@ -2985,17 +3096,17 @@ footer a { color: var(--ink); }
 .season-row-compact:hover,
 .season-row-compact:focus-visible { background: var(--panel-sunk); }
 .season-row-compact:focus-visible {
-  outline: 2px solid var(--tier-1);
+  outline: 2px solid var(--accent-ink);
   outline-offset: -2px;
 }
 
 /* Active state - currently displayed season shape */
 .season-row-compact.is-active {
-  background: color-mix(in srgb, var(--tier-1) 12%, var(--panel));
-  box-shadow: inset 3px 0 0 var(--tier-1);
+  background: color-mix(in srgb, var(--accent) 12%, var(--panel));
+  box-shadow: inset 3px 0 0 var(--accent);
 }
 .season-row-compact.is-active:hover {
-  background: color-mix(in srgb, var(--tier-1) 16%, var(--panel));
+  background: color-mix(in srgb, var(--accent) 16%, var(--panel));
 }
 
 .season-row-compact__season {
@@ -3078,8 +3189,8 @@ footer a { color: var(--ink); }
   min-width: 2.2rem;
   text-align: right;
 }
-.season-row-compact__change-val.up { color: var(--outcome-good); }
-.season-row-compact__change-val.down { color: var(--outcome-bad); }
+.season-row-compact__change-val.up { color: var(--outcome-good-ink); }
+.season-row-compact__change-val.down { color: var(--outcome-bad-ink); }
 .season-row-compact__change-bar {
   flex: 1;
   height: 4px;
@@ -3115,7 +3226,7 @@ footer a { color: var(--ink); }
   font-weight: 700;
   letter-spacing: 0.06em;
   text-transform: uppercase;
-  color: var(--outcome-good);
+  color: var(--outcome-good-ink);
 }
 /* On a phone the word does not fit beside the place; a dot carries it. */
 @media (max-width: 760px) {
@@ -3328,21 +3439,21 @@ footer a { color: var(--ink); }
   height: 18px;
   margin-top: -6px;
   border-radius: 50%;
-  background: var(--tier-1);
+  background: var(--accent);
   border: 3px solid var(--panel);
-  box-shadow: 0 0 0 1px var(--rule-strong);
+  box-shadow: 0 0 0 1px var(--rule-strong), var(--glow-ring);
 }
 
 .timeline input[type="range"]::-moz-range-thumb {
   width: 18px;
   height: 18px;
   border-radius: 50%;
-  background: var(--tier-1);
+  background: var(--accent);
   border: 3px solid var(--panel);
-  box-shadow: 0 0 0 1px var(--rule-strong);
+  box-shadow: 0 0 0 1px var(--rule-strong), var(--glow-ring);
 }
 
-.timeline input[type="range"]:focus-visible { outline: 2px solid var(--tier-1); outline-offset: 4px; }
+.timeline input[type="range"]:focus-visible { outline: 2px solid var(--accent-ink); outline-offset: 4px; }
 
 .timeline__scale {
   display: flex;
@@ -3358,8 +3469,8 @@ footer a { color: var(--ink); }
 #content.is-rewinding .panel:not(.timeline) { opacity: 0.55; transition: opacity 0.15s var(--ease); }
 #content.is-rewinding { cursor: progress; }
 
-.timeline.is-past { border-color: var(--tier-1); }
-.timeline.is-past .timeline__head p { color: var(--tier-1); }
+.timeline.is-past { border-color: var(--accent); }
+.timeline.is-past .timeline__head p { color: var(--accent-ink); }
 
 /* The button that unfolds the panel. A phone's only: see below. */
 .timeline__open {
@@ -3682,7 +3793,7 @@ footer a { color: var(--ink); }
 /* Focus visible styles for mobile keyboard navigation */
 @media (max-width: 760px) {
   :where(a, button, [tabindex]):focus-visible {
-    outline: 2px solid var(--tier-1);
+    outline: 2px solid var(--accent-ink);
     outline-offset: 2px;
     border-radius: 2px;
   }
@@ -3723,6 +3834,7 @@ html { scroll-behavior: smooth; }
 .compare__swap-center:hover {
   background: var(--panel-sunk);
   border-color: var(--rule-strong);
+  box-shadow: var(--glow-hover);
 }
 
 /* Touch size on a phone, like the rewind step buttons. */
@@ -3778,10 +3890,10 @@ html { scroll-behavior: smooth; }
   background: var(--panel-sunk);
   border: 1px solid var(--rule);
   border-radius: 12px;
-  transition: transform 0.15s var(--ease), box-shadow 0.15s var(--ease);
+  transition: transform 0.15s var(--ease), box-shadow 0.15s var(--ease), border-color 0.15s var(--ease);
 }
 
-.explore-card:hover .explore-card__thumb { transform: translateY(-2px); box-shadow: var(--shadow); }
+.explore-card:hover .explore-card__thumb { transform: translateY(-2px); border-color: var(--accent); box-shadow: var(--shadow), var(--glow-ring); }
 .explore-card:focus-visible { outline: none; }
 .explore-card:focus-visible .explore-card__thumb { outline: 2px solid var(--ink); outline-offset: 3px; }
 .explore-card__title { font-weight: 700; font-size: 1rem; }
@@ -3933,8 +4045,8 @@ body[data-viz="mountain"] > footer { display: none; }
   padding: 0;
 }
 .mountain__gear svg { color: var(--ink); }
-.mountain__gear[aria-expanded="true"] { background: var(--ink); border-color: var(--ink); }
-.mountain__gear[aria-expanded="true"] svg { color: var(--paper); }
+.mountain__gear[aria-expanded="true"] { background: var(--accent); border-color: var(--accent); box-shadow: var(--glow-ring); }
+.mountain__gear[aria-expanded="true"] svg { color: var(--on-accent); }
 .mountain__readout { position: absolute; left: 1rem; bottom: 5rem; display: grid; gap: 0.15rem; pointer-events: none; }
 .mountain__readout b { font-size: 1.375rem; font-stretch: 112%; line-height: 1; }
 .mountain__readout span { color: var(--ink-muted); font-size: 0.75rem; font-variant-numeric: tabular-nums; }
@@ -3987,11 +4099,12 @@ body[data-viz="mountain"] > footer { display: none; }
   padding: 0;
   border: 0;
   border-radius: 999px;
-  background: var(--ink);
-  color: var(--paper);
+  background: var(--accent);
+  color: var(--on-accent);
+  box-shadow: var(--glow-ring);
   cursor: pointer;
 }
-.mountain__play:hover { background: color-mix(in oklab, var(--ink) 85%, var(--panel)); }
+.mountain__play:hover { background: color-mix(in oklab, var(--accent) 85%, white); }
 .mountain__play[aria-pressed="true"] .mountain__icon-play,
 .mountain__play:not([aria-pressed="true"]) .mountain__icon-pause { display: none; }
 .mountain__ctl { display: grid; gap: 0.4rem; min-width: 0; }
@@ -4096,7 +4209,7 @@ body[data-viz="mountain"] > footer { display: none; }
 .scorecard__season { display: grid; gap: 0.3rem; padding: 0.4rem 0.5rem; border: 1px solid var(--rule); border-radius: var(--radius-sm); background: var(--panel); color: var(--ink-muted); font: inherit; font-size: 0.75rem; text-align: left; cursor: pointer; }
 .scorecard__season b { color: var(--ink); font-size: 0.8125rem; font-weight: 600; }
 .scorecard__season:hover { border-color: var(--rule-strong); }
-.scorecard__season[aria-pressed="true"] { border-color: var(--ink); background: var(--panel-sunk); }
+.scorecard__season[aria-pressed="true"] { border-color: var(--accent); background: var(--panel-sunk); box-shadow: var(--glow-hover); }
 .scorecard__season-bar { position: relative; height: 4px; border-radius: 2px; background: var(--rule); }
 .scorecard__season-bar i { position: absolute; top: 0; bottom: 0; left: 0; border-radius: 2px; background: var(--seq-6); }
 .scorecard__season-bar .scorecard__season-last { top: -3px; bottom: -3px; width: 2px; margin-left: -1px; border-radius: 1px; background: var(--ink); }
@@ -4110,7 +4223,7 @@ body[data-viz="mountain"] > footer { display: none; }
 .accuracy__divisions { display: flex; flex-wrap: wrap; gap: 0.4rem; margin: 0.7rem 0 0; padding: 0 1rem; }
 .accuracy__division { padding: 0.3rem 0.8rem; border: 1px solid var(--rule); border-radius: 999px; background: var(--panel); color: var(--ink-muted); font: inherit; font-size: 0.8125rem; cursor: pointer; }
 .accuracy__division:hover { border-color: var(--rule-strong); }
-.accuracy__division[aria-pressed="true"] { border-color: var(--ink); background: var(--panel-sunk); color: var(--ink); font-weight: 600; }
+.accuracy__division[aria-pressed="true"] { border-color: var(--accent); background: var(--accent); color: var(--on-accent); font-weight: 600; box-shadow: var(--glow-ring); }
 .accuracy__part + .accuracy__part { margin-top: 1.25rem; padding-top: 1.25rem; border-top: 1px solid var(--rule); }
 .accuracy__title { margin: 0.5rem 0 0; padding: 0 1rem; color: var(--ink); font-size: 1.0625rem; font-weight: 700; }
 .accuracy__lead { max-width: 40rem; margin: 0.3rem 0 0; padding: 0 1rem; color: var(--ink-muted); font-size: 0.875rem; line-height: 1.45; }

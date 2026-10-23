@@ -301,7 +301,7 @@ function inkOn(cssColor) {
     const s = c / 255;
     return s <= 0.03928 ? s / 12.92 : ((s + 0.055) / 1.055) ** 2.4;
   });
-  return 0.2126 * r + 0.7152 * g + 0.0722 * b > 0.3 ? '#0d1a22' : '#ffffff';
+  return 0.2126 * r + 0.7152 * g + 0.0722 * b > 0.3 ? '#0f1828' : '#ffffff';
 }
 
 const tip = document.createElement('div');

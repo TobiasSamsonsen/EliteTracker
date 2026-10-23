@@ -1287,14 +1287,14 @@ body.appendChild(tr);
 
 /* Pill for attack/defence % — diverging red–gray–blue ramp.
    k in [-1, 1]: -1 = league worst (red), 0 = avg (gray), 1 = league best (blue).
-   Hue fixed per side (0° red, 218° blue), S interpolated with sqrt curve for more mid-range chroma,
+   Hue fixed per side (0° red, 223° blue: the electric accent's), S interpolated with sqrt curve for more mid-range chroma,
    L/alpha linear. Flat background, alpha 0.1..0.45. Text hue-derived per fixture-pill pattern. */
 function makePctPill(pct, k) {
   const pill = el('span', 'attack-defence-pill', `${signed(pct)}${percentSign()}`);
   // Clamp k
   const kk = Math.max(-1, Math.min(1, k));
   // Red side (k < 0): hue 0, S 0→85% (sqrt), L 55→45%
-  // Blue side (k > 0): hue 218, S 0→92% (sqrt), L 55→42%
+  // Blue side (k > 0): hue 223, S 0→92% (sqrt), L 55→42%
   // Gray at k=0: S=0%, L=55%
   if (kk < 0) {
     const t = -kk; // 0..1
@@ -1307,7 +1307,7 @@ function makePctPill(pct, k) {
     const t = kk; // 0..1
     const s = Math.round(92 * Math.sqrt(t));   // 0% → 92% (sqrt curve for mid-range chroma)
     const l = Math.round(55 - 13 * t);         // 55% → 42%
-    pill.style.setProperty('--ad-hue', '218');
+    pill.style.setProperty('--ad-hue', '223');
     pill.style.setProperty('--ad-sat', `${s}%`);
     pill.style.setProperty('--ad-light', `${l}%`);
   }
@@ -3347,9 +3347,9 @@ function calibrationInterval(rate, n, z = 1.96) {
 }
 
 const CALIBRATION_SERIES = [
-  ['home_win', 'next.homeWin', 'var(--outcome-good)'],
+  ['home_win', 'next.homeWin', 'var(--home)'],
   ['draw', 'next.draw', 'var(--draw)'],
-  ['away_win', 'next.awayWin', 'var(--outcome-bad)'],
+  ['away_win', 'next.awayWin', 'var(--away)'],
 ];
 // A bin with fewer predictions than this is left out: its rate says nothing.
 const CALIBRATION_MIN_N = 50;
@@ -5894,7 +5894,7 @@ function resolveTheme() {
   document.documentElement.dataset.resolvedTheme = chosen === 'light' || chosen === 'dark' ? chosen
     : window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
   $('meta[name=theme-color]').content =
-    document.documentElement.dataset.resolvedTheme === 'dark' ? '#0b1116' : '#e9edf1';
+    document.documentElement.dataset.resolvedTheme === 'dark' ? '#080f1c' : '#e8edf5';
   for (const button of document.querySelectorAll('[data-theme-choice]')) {
     button.setAttribute('aria-pressed', String(button.dataset.themeChoice === chosen));
   }
@@ -6104,16 +6104,30 @@ function render() {
 }
 
 // Switch the active view: shared by top-strip/bar clicks and the bar swipe.
-function switchView(view) {
+// The page slides the way the tabs run (a swipe passes its own way, so the
+// page follows the finger); see "Switching tab" in the stylesheet.
+function switchView(view, { dir } = {}) {
   closeSheet();
   if (anim.playing && view !== state.activeView) animStop();
-  // The Explore tab always opens on its gallery.
-  if (view === 'explore') state.exploreItem = null;
-  state.activeView = view;
-  markActiveView();
-  render();
-  hideTooltip();
-  window.scrollTo({ top: 0, behavior: 'instant' });
+  const order = [...document.querySelectorAll('.masthead__views [data-view]')].map((tab) => tab.dataset.view);
+  const from = order.indexOf(state.activeView);
+  const to = order.indexOf(view);
+  const update = () => {
+    // The Explore tab always opens on its gallery.
+    if (view === 'explore') state.exploreItem = null;
+    state.activeView = view;
+    markActiveView();
+    render();
+    hideTooltip();
+    window.scrollTo({ top: 0, behavior: 'instant' });
+  };
+  if (view === state.activeView || !document.startViewTransition
+      || window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    update();
+    return;
+  }
+  document.documentElement.style.setProperty('--view-dir', String(dir ?? (from >= 0 && to >= 0 && to < from ? -1 : 1)));
+  document.startViewTransition(update);
 }
 
 function wire() {
@@ -6384,60 +6398,6 @@ function fitViews() {
     }
   }
   more.setAttribute('aria-pressed', String(tabs.some((tab) => tab.hidden && tab.dataset.view === state.activeView)));
-  slideTabThumbs();
-}
-
-/* The masthead strip and the phone's bottom bar each have one pill that
-   slides to the pressed tab. It slides only when the pressed tab changes; a
-   resize, a language or a late font that moves the tabs puts it straight in
-   place, as does its first showing. On the strip the pill takes the tab's
-   size, on the bar it keeps its own and centres on the tab. The tabs are
-   watched, since a tab can change size with no resize of the window (a
-   touch screen's larger targets, say). */
-const tabThumbs = new Map();
-let tabThumbWatch = null;
-
-function slideTabThumbs() {
-  if (!tabThumbWatch && window.ResizeObserver) {
-    tabThumbWatch = new ResizeObserver(() => slideTabThumbs());
-    for (const tab of document.querySelectorAll('.masthead__views .switch button, .mobilebar__item')) {
-      tabThumbWatch.observe(tab, { box: 'border-box' });
-    }
-  }
-  for (const thumb of document.querySelectorAll('.switch__thumb, .mobilebar__thumb')) {
-    const group = thumb.parentElement;
-    const target = [...group.querySelectorAll('[aria-pressed="true"]')].find((button) => !button.hidden);
-    if (!target) {
-      thumb.hidden = true;
-      tabThumbs.delete(thumb);
-      continue;
-    }
-    const box = target.getBoundingClientRect();
-    if (!box.width) {
-      tabThumbs.delete(thumb); // not on screen (the strip on a phone)
-      continue;
-    }
-    thumb.hidden = false;
-    const fit = thumb.classList.contains('switch__thumb');
-    const frame = group.getBoundingClientRect();
-    const width = fit ? box.width : thumb.offsetWidth;
-    const x = box.left - frame.left - group.clientLeft + (box.width - width) / 2;
-    const last = tabThumbs.get(thumb);
-    if (last && last.target === target && Math.abs(last.x - x) < 0.5 && Math.abs(last.width - width) < 0.5) continue;
-    const slide = Boolean(last) && last.target !== target;
-    if (!slide) thumb.style.transition = 'none';
-    thumb.style.transform = `translateX(${x}px)`;
-    if (fit) {
-      thumb.style.width = `${width}px`;
-      thumb.style.top = `${box.top - frame.top - group.clientTop}px`;
-      thumb.style.height = `${box.height}px`;
-    }
-    if (!slide) {
-      void thumb.offsetWidth;
-      thumb.style.transition = '';
-    }
-    tabThumbs.set(thumb, { target, x, width });
-  }
 }
 
 function markActiveView() {
@@ -7110,13 +7070,13 @@ function drawCompareHistory(svg, careerA, careerB, labelA, labelB) {
     svg.appendChild(label);
   }
 
-  const colors = ['#2a78d6', '#e0682a'];
+  const colors = ['var(--home)', '#e0682a'];
   series.forEach((points, index) => {
     if (!points.length) return;
     const line = points.map((point) => `${x(pointTime(point))},${y(point[1])}`).join(' ');
-    svg.appendChild(svgEl('polyline', { class: `compare-line compare-line--${index === 0 ? 'a' : 'b'}`, points: line, stroke: colors[index] }));
+    svg.appendChild(svgEl('polyline', { class: `compare-line compare-line--${index === 0 ? 'a' : 'b'}`, points: line, style: `stroke: ${colors[index]}` }));
     const last = points[points.length - 1];
-    svg.appendChild(svgEl('circle', { cx: x(pointTime(last)), cy: y(last[1]), r: 3, fill: colors[index] }));
+    svg.appendChild(svgEl('circle', { cx: x(pointTime(last)), cy: y(last[1]), r: 3, style: `fill: ${colors[index]}` }));
   });
 
   const xTitle = svgEl('text', { class: 'axis-title', x: pad.left + plotW / 2, y: height - 4, 'text-anchor': 'middle' });
@@ -7487,7 +7447,7 @@ function initMobileGestures() {
       const currentIndex = viewsInBar.indexOf(state.activeView);
       const nextIndex = (currentIndex + direction + viewsInBar.length) % viewsInBar.length;
       const nextView = viewsInBar[nextIndex];
-      switchView(nextView);
+      switchView(nextView, { dir: deltaX > 0 ? -1 : 1 });
       track('swipe_view', { view: nextView });
       if (navigator.vibrate) navigator.vibrate(15);
     }

@@ -7,6 +7,7 @@ Scripts load with `<script defer>`.
 |---|---|
 | `index.html` + `app.js` + `i18n.js` + `styles.css` | the site |
 | `model.html` + `model.js` | the model page (`/model.html`), self-contained |
+| `thumbs.js` | the sliding pill of every segmented control, on both pages |
 | `i18n.js` | `translations.en` and `translations.no`, one key table each; `t(key, vars)` |
 | `vendor/three/` | three.js r147, vendored; loaded only when the season mountain opens |
 | `fonts/`, `logos/`, `og.png` | assets |
