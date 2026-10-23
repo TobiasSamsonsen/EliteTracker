@@ -5961,9 +5961,8 @@ async function rewindTo(asof) {
    height field is square: per club and place, how many snapshots kept that
    place open. Drawn from the season in view, so every year has its own;
    tools/brand/contours.py draws the same for the share image. */
-const BACKDROP = { samples: 140, levels: 12, sigma: 3.5, cut: 0.005, pad: 2, stroke: 1.25 };
+const BACKDROP = { samples: 140, levels: 12, sigma: 3.5, cut: 0.005, pad: 2 };
 let backdropKey = '';
-let backdropLines = null; // the season's contour paths, in sample units
 
 function backdropField(history) {
   const teams = history.teams;
@@ -6114,7 +6113,6 @@ function renderBackdrop(report) {
   if (!svg) return;
   if (!history?.teams?.length || !history.teams[0].positions?.length) {
     backdropKey = '';
-    backdropLines = null;
     svg.replaceChildren();
     return;
   }
@@ -6127,7 +6125,7 @@ function renderBackdrop(report) {
   let lo = Infinity;
   let hi = -Infinity;
   for (const row of values) for (const v of row) { lo = Math.min(lo, v); hi = Math.max(hi, v); }
-  backdropLines = [];
+  const backdropLines = [];
   for (let k = 1; k <= levels; k += 1) {
     const level = lo + ((hi - lo) * k) / (levels + 1);
     for (const line of backdropContour(values, level)) {
@@ -6135,42 +6133,10 @@ function renderBackdrop(report) {
       backdropLines.push(backdropCurve(line));
     }
   }
-  svg.dataset.layout = '';
-  layoutBackdrop();
+  svg.setAttribute('viewBox', `0 0 ${samples - 1} ${samples - 1}`);
+  svg.replaceChildren(...backdropLines.map((d) => svgEl('path', { d })));
 }
 
-/* The map is a square as wide as the page, repeated down it with every
-   other copy flipped, so the lines run on across the seams. Its size hangs
-   on the page's width alone: a view of another length only shows more or
-   fewer copies, and nothing moves. Each copy is a vector <use> of the one
-   map (a <pattern> would be rasterised, its lines soft and stepped). Laid out
-   again whenever the page's size changes. */
-let backdropObserver = null;
-function layoutBackdrop() {
-  const svg = $('#backdrop');
-  if (!svg) return;
-  if (!backdropObserver && window.ResizeObserver) {
-    backdropObserver = new ResizeObserver(() => layoutBackdrop());
-    backdropObserver.observe(svg);
-  }
-  const width = svg.clientWidth;
-  const copies = Math.max(1, Math.ceil(svg.clientHeight / width));
-  const layout = `${width}x${copies}`;
-  if (!width || !backdropLines || svg.dataset.layout === layout) return;
-  svg.dataset.layout = layout;
-  const scale = width / (BACKDROP.samples - 1);
-  // The stroke in the map's own units, so it is 1.25 px on the page
-  // (non-scaling-stroke is not honoured through <use>).
-  const map = svgEl('g', { id: 'backdrop-map', fill: 'none', 'stroke-width': BACKDROP.stroke / scale });
-  map.append(...backdropLines.map((d) => svgEl('path', { d })));
-  const defs = svgEl('defs');
-  defs.append(map);
-  const uses = Array.from({ length: copies }, (_, k) => svgEl('use', {
-    href: '#backdrop-map',
-    transform: k % 2 ? `translate(0 ${(k + 1) * width}) scale(${scale} ${-scale})` : `translate(0 ${k * width}) scale(${scale})`,
-  }));
-  svg.replaceChildren(defs, ...uses);
-}
 
 /* ---------- theme -------------------------------------------------- */
 
