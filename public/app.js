@@ -2163,7 +2163,10 @@ function bandChances(positions, bands) {
    foregone win does not lead (a side above 60 % rules a match out while any
    other is left). A week played: the most exciting result, weighing how far
    it moved the two clubs' chances of every band (the history snapshots
-   either side of it) by how surprising, close and full of goals it was. */
+   either side of it) by its excitement: how surprising the result was, its
+   drama -- a tight game (in goals or in xG) or a thrashing nobody saw coming
+   (a margin the scoreline grid gave little chance), whichever is more -- and
+   its goals. */
 function heroMatch(report) {
   const { timeline, weeks, byWeek, index } = matchesTimeline(report);
   if (!timeline.length) return null;
@@ -2227,8 +2230,22 @@ function heroMatch(report) {
       : null;
     const outcome = match.home_goals > match.away_goals ? 'home_win' : match.home_goals < match.away_goals ? 'away_win' : 'draw';
     const surprise = odds ? 1 - odds[outcome] : 0;
-    const margin = Math.abs(match.home_goals - match.away_goals);
-    const close = margin <= 1 ? 1 : margin === 2 ? 0.4 : 0;
+    const diff = match.home_goals - match.away_goals;
+    const margin = Math.abs(diff);
+    const goalsClose = margin <= 1 ? 1 : margin === 2 ? 0.4 : 0;
+    const xgClose = match.xg ? Math.max(0, 1 - Math.abs(match.xg[0] - match.xg[1]) / 1.5) : 0;
+    // The chance of a margin at least this big, this way (or of a draw),
+    // from the scoreline grid; a 5-0 nobody expected scores near 1.
+    let tail = null;
+    if (odds) {
+      tail = 0;
+      scoreGrid(report.model, match.home_id, match.away_id, odds.gap / 400).forEach((row, i) => row.forEach((p, j) => {
+        const d = i - j;
+        if (diff > 0 ? d >= diff : diff < 0 ? d <= diff : d === 0) tail += p;
+      }));
+    }
+    const shock = tail == null ? 0 : Math.min(1, -Math.log10(Math.max(tail, 1e-6)) / 2.5);
+    const drama = Math.max(goalsClose, xgClose, shock);
     const goals = Math.min(match.home_goals + match.away_goals, 6) / 6;
     // How far the two clubs' chances of every band moved across the match.
     const before = snapshot(match.date, false);
@@ -2248,10 +2265,15 @@ function heroMatch(report) {
         });
       }
     }
-    const excitement = 0.45 * surprise + 0.35 * close + 0.2 * goals;
-    return { match, odds, shift, score: (impact + 0.05) * (0.25 + excitement) };
+    const excitement = 0.4 * surprise + 0.4 * drama + 0.2 * goals;
+    return { match, odds, shift, tail: margin >= 2 ? tail : null, score: (impact + 0.05) * (0.25 + excitement) };
   });
-  const { match, odds, shift } = scored.reduce((a, b) => (b.score > a.score ? b : a));
+  const { match, odds, shift, tail } = scored.reduce((a, b) => (b.score > a.score ? b : a));
+  const notes = [];
+  if (tail != null && tail < 0.02) notes.push(t('hero.match.shock', { p: pct(tail) }));
+  if (shift && shift.move >= 0.02) {
+    notes.push(t('hero.match.shift', { team: shift.team, band: shortBandLabel(shift.band, report), from: pct(shift.was), to: pct(shift.is) }));
+  }
   const before = (chance) => (odds ? t('hero.match.before', { p: pct(chance) }) : '');
   return {
     label: when(match),
@@ -2260,9 +2282,7 @@ function heroMatch(report) {
       { name: '', figure: '–', unit: '', draw: true },
       { row: { team_id: match.away_id, team: match.away }, figure: String(match.away_goals), unit: '', sub: before(odds?.away_win) },
     ],
-    note: shift && shift.move >= 0.02
-      ? t('hero.match.shift', { team: shift.team, band: shortBandLabel(shift.band, report), from: pct(shift.was), to: pct(shift.is) })
-      : '',
+    note: notes.join(' · '),
   };
 }
 

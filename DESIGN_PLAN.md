@@ -138,10 +138,14 @@ most (`next_stakes`, `high_stakes`), weighed by how even it is
 left; it shows home / draw / away and the stake ("Lillestrøm · ECL: 37.5 %
 med seier, 12.6 % med tap"). A week played: the most exciting result, how
 far it moved the two clubs' chances of every band (history snapshots either
-side) weighed by surprise (1 − its pre-match chance, priced from both
-ratings going in), closeness and goals; it shows the score, each side's
-chance before the match and the biggest shift ("Aalesund · Nedrykk:
-51.6 % → 27.4 %"). All fall back to the race. On a phone three figures stand
+side) weighed by its excitement: 0.4 surprise (1 − its pre-match chance,
+priced from both ratings going in), 0.4 drama and 0.2 goals. Drama is the
+most of: a close margin in goals, a close margin in xG, or a shock -- a
+margin the scoreline grid gave little chance (−log10 of that chance, over
+2.5) -- so a thrashing can lead as well as a tight game (week 15: Viking
+5–0 Bodø/Glimt, a 0.4 % margin, "Modellen ga en så stor seier 0.4 %
+sjanse · Viking · CL: 40.3 % → 68.3 %"). It shows the score, each side's
+chance before the match and the biggest shift. All fall back to the race. On a phone three figures stand
 in one row; under 400 px the masthead shows the mark without the name, so
 the division pill and settings fit.
 

@@ -284,6 +284,7 @@ const translations = {
     'hero.match.stake': '{team} · {band}: {win} with a win, {loss} with a defeat',
     'hero.match.before': '{p} before the match',
     'hero.match.shift': '{team} · {band}: {from} → {to}',
+    'hero.match.shock': 'The model gave a win that big a {p} chance',
     'team.own.make': 'Make this your club',
     'team.own.is': 'Your club',
 
@@ -911,6 +912,7 @@ const translations = {
     'hero.match.stake': '{team} · {band}: {win} med seier, {loss} med tap',
     'hero.match.before': '{p} før kampen',
     'hero.match.shift': '{team} · {band}: {from} → {to}',
+    'hero.match.shock': 'Modellen ga en så stor seier {p} sjanse',
     'team.own.make': 'Gjør til din klubb',
     'team.own.is': 'Din klubb',
 
