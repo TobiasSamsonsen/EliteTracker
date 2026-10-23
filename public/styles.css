@@ -583,25 +583,33 @@ html { scroll-padding-top: 76px; }
 .race__name .team-logo { width: 20px; height: 20px; }
 .race__own { color: var(--accent-ink); }
 
-/* Division and season, in the masthead: the same two pickers the hero's
-   title used to carry, at the size of the navigation. */
+/* Division and season, in the masthead: one pill like the view switch, each
+   half opening a list exactly as wide as itself. */
 .league-picker {
-  display: flex;
-  align-items: baseline;
-  gap: 0.6rem;
-  font-weight: 700;
-  font-size: 0.9375rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 3px;
+  background: var(--panel-sunk);
+  border: 1px solid var(--rule);
+  border-radius: 999px;
   white-space: nowrap;
 }
 
 .hero-title-part {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.3rem 0.8rem;
+  border-radius: 999px;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--ink);
   cursor: pointer;
-  transition: color 0.15s var(--ease);
+  transition: background 0.15s var(--ease), color 0.15s var(--ease);
 }
-.hero-title-part:hover {
-  color: var(--accent-ink);
-  text-shadow: var(--glow-text);
-}
+.hero-title-part:hover,
+.hero-title-part[aria-expanded="true"] { background: var(--panel); }
+.hero-title-part[aria-expanded="true"] { color: var(--accent-ink); }
 
 /* A chevron says "this opens a list"; it turns over while the list is open. */
 .hero-title-part::after {
@@ -609,9 +617,9 @@ html { scroll-padding-top: 76px; }
   display: inline-block;
   width: 0.32em;
   height: 0.32em;
-  margin: 0 0.1em 0.18em 0.28em;
-  border-right: 0.12em solid currentColor;
-  border-bottom: 0.12em solid currentColor;
+  margin: 0 0 0.25em 0.5em;
+  border-right: 0.14em solid currentColor;
+  border-bottom: 0.14em solid currentColor;
   transform: rotate(45deg);
   opacity: 0.55;
   transition: transform 0.15s var(--ease), opacity 0.15s var(--ease);
@@ -2508,6 +2516,13 @@ footer a { color: var(--ink); }
   /* Tighter wordmark on small phones. */
   .wordmark { font-size: 0.8rem; letter-spacing: 0; }
 
+  /* The division and season pill fits beside the wordmark and the settings
+     button: tighter halves, and the lists' text still in line with them. */
+  .masthead__inner { gap: 0.5rem; }
+  .masthead__end { gap: 0.25rem; }
+  .league-picker .hero-title-part { padding-inline: 0.6rem; }
+  .popover-menu--picker .popover-menu__btn { padding-inline: calc(0.6rem - 4px); }
+
   /* Grid animation controls: ensure they fit */
   .grid-anim-bar { padding: 0.5rem 1rem; gap: 0.5rem; }
   .grid-anim-bar__when { min-width: 0; font-size: 0.75rem; }
@@ -2597,6 +2612,14 @@ footer a { color: var(--ink); }
 }
 .popover-menu[hidden] { display: none; }
 .popover-menu--scroll { max-height: 50vh; overflow-y: auto; }
+/* The picker's lists sit under their half of the pill, as wide as it, each
+   option's text in line with the half's own. */
+.popover-menu--picker { padding: 3px; }
+.popover-menu--picker .popover-menu__btn {
+  font-size: 0.8125rem;
+  padding: 0.45rem calc(0.8rem - 4px);
+  white-space: nowrap;
+}
 #settings-menu { min-width: 200px; }
 #views-more-menu { min-width: 180px; }
 #views-more-menu .popover-menu__btn { display: block; }
@@ -3811,7 +3834,8 @@ footer a { color: var(--ink); }
   .compare__option { min-height: 44px; padding: 0.6rem 0.75rem; }
   .popover-menu__btn { min-height: 44px; padding: 0.6rem 0.75rem; }
   .settings-btn { min-height: 44px; min-width: 44px; }
-  .hero-title-part { min-height: 44px; display: inline-flex; align-items: center; padding: 0.25rem 0; }
+  .hero-title-part { min-height: 40px; }
+  .popover-menu--picker .popover-menu__btn { min-height: 44px; padding-block: 0.6rem; }
 }
 
 /* The club menu is as wide as its half-width card: on a phone a 32px crest

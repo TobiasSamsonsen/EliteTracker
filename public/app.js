@@ -2205,7 +2205,7 @@ function renderHero(report) {
     leagueMenu.style.position = 'fixed';
     leagueMenu.style.top = `${rect.bottom + 6}px`;
     leagueMenu.style.left = `${rect.left}px`;
-    leagueMenu.style.minWidth = `${rect.width}px`;
+    leagueMenu.style.width = `${rect.width}px`;
     menuFocusCleanup = trapFocus(leagueMenu);
   });
   divSpan.addEventListener('keydown', (event) => {
@@ -2238,7 +2238,7 @@ function renderHero(report) {
     seasonMenu.style.position = 'fixed';
     seasonMenu.style.top = `${rect.bottom + 6}px`;
     seasonMenu.style.left = `${rect.left}px`;
-    seasonMenu.style.minWidth = `${rect.width}px`;
+    seasonMenu.style.width = `${rect.width}px`;
     menuFocusCleanup = trapFocus(seasonMenu);
   });
   seasonSpan.addEventListener('keydown', (event) => {

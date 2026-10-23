@@ -109,6 +109,11 @@ first and with a muted figure, so it shows how many places are left (7
 December 2020: Molde 100, Vålerenga 96.9, then Rosenborg, Kristiansund and
 Odd for the last Conference League place).
 
+**The pickers in the masthead** are one pill like the view switch, its two
+halves (division, season) each opening a list exactly as wide as itself,
+the options' text in line with the half's. Tighter halves on a phone, so the
+pill fits beside the wordmark and the settings button down to 360 px.
+
 **Decision:**
 
 ### 5. Card typography and spacing
