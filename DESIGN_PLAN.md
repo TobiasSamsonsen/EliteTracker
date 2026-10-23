@@ -102,6 +102,13 @@ the table, so a settled title hands over to the places below it. A finished
 season shows its champion on points. "Your club" is a pill on each club page,
 kept in `localStorage` on the device only.
 
+**Third review: thresholds and clubs already through.** A race is open while
+some club is between 10 % and 90 % (symmetric; 95 % was too kind). In a band
+of several places, the clubs already through (90 % and up) stay in the race,
+first and with a muted figure, so it shows how many places are left (7
+December 2020: Molde 100, Vålerenga 96.9, then Rosenborg, Kristiansund and
+Odd for the last Conference League place).
+
 **Decision:**
 
 ### 5. Card typography and spacing

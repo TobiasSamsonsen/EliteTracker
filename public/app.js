@@ -2072,8 +2072,9 @@ function setOwnClub(teamId) {
 /* The hero's race: the clubs still contending for one band, side by side. A
    band is open while some club's chance of it lies between 10 % and 90 %
    (symmetric: a leader at 90 % leaves the rest 10 %). A club above 90 % is
-   through and leaves the race; one from 5 % up is shown in it, so an open
-   race has its outsiders too. The reader's own club's first open band comes
+   through: shown first and muted, so a band of several places shows how
+   many are left. One from 5 % up is shown as a contender, so an open race
+   has its outsiders too. The reader's own club's first open band comes
    first; else the first open band down the table, so a settled title hands
    over to the places below it. Null once every band is settled or the
    season is over. */
@@ -2095,15 +2096,19 @@ function heroRace(report, ownId) {
   const band = (own && bands.find((b) => open(own, b)))
     || bands.find((b) => report.table.some((row) => open(row, b)));
   if (!band) return null;
-  let clubs = report.table
+  const ranked = report.table
     .map((row) => ({ row, chance: bandChance(row, band, slug) }))
-    .filter(({ chance }) => chance > RACE_SHOWN && chance < RACE_SETTLED)
-    .sort((a, b) => b.chance - a.chance)
-    .slice(0, 4);
-  if (own && !clubs.some(({ row }) => row === own)) {
-    clubs = [...clubs.slice(0, 3), { row: own, chance: bandChance(own, band, slug) }];
+    .filter(({ chance }) => chance > RACE_SHOWN)
+    .sort((a, b) => b.chance - a.chance);
+  // Clubs through first: in a band of several places they show how many are
+  // still to play for. Then the contenders, fewer the more are through.
+  const through = ranked.filter(({ chance }) => chance >= RACE_SETTLED);
+  const room = Math.max(2, 6 - through.length);
+  let contenders = ranked.filter(({ chance }) => chance < RACE_SETTLED).slice(0, room);
+  if (own && !contenders.some(({ row }) => row === own)) {
+    contenders = [...contenders.slice(0, room - 1), { row: own, chance: bandChance(own, band, slug) }];
   }
-  return { band, clubs, own };
+  return { band, through, contenders, own };
 }
 
 function renderRace(report) {
@@ -2113,7 +2118,10 @@ function renderRace(report) {
   let clubs;
   if (race) {
     label = race.band.tone === 'champion' ? t('hero.race.title') : bandName(race.band);
-    clubs = race.clubs.map(({ row, chance }) => [row, bare(chance), '%']);
+    clubs = [
+      ...race.through.map(({ row, chance }) => [row, bare(chance), '%', true]),
+      ...race.contenders.map(({ row, chance }) => [row, bare(chance), '%', false]),
+    ];
   } else {
     // Every band settled: the champion, on points once the season is over.
     const champion = report.table.reduce((best, row) =>
@@ -2123,11 +2131,12 @@ function renderRace(report) {
     clubs = [[champion, done ? num(champion.points) : bare(champion.position_probabilities[0]), done ? t('hero.race.points') : '%']];
   }
   const list = el('ol', 'race__clubs');
-  for (const [row, figure, unit] of clubs) {
+  for (const [row, figure, unit, through] of clubs) {
     const mine = row === race?.own;
-    const item = el('li', mine ? 'race__club is-own' : 'race__club');
+    const item = el('li', ['race__club', mine && 'is-own', through && 'is-through'].filter(Boolean).join(' '));
     const value = el('b', 'race__value', figure);
     value.appendChild(el('small', '', unit));
+    if (through) value.appendChild(el('span', 'visually-hidden', ` (${t('hero.race.through')})`));
     const name = el('span', 'race__name');
     const crest = teamLogo(row.team_id, row.team);
     if (crest) name.appendChild(crest);

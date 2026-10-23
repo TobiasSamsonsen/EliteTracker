@@ -569,6 +569,9 @@ html { scroll-padding-top: 76px; }
 }
 .race[data-count="1"] .race__value { font-size: clamp(3.5rem, 11vw, 7.5rem); }
 .race:is([data-count="3"], [data-count="4"]) .race__value { font-size: clamp(2.25rem, 5.5vw, 4rem); }
+.race:is([data-count="5"], [data-count="6"], [data-count="7"]) .race__value { font-size: clamp(1.75rem, 4.5vw, 3rem); }
+/* A club already through: the place is decided, so its figure steps back. */
+.race__club.is-through .race__value { color: var(--ink-faint); }
 .race__value small {
   font-size: 0.4em;
   font-weight: 700;
