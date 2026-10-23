@@ -351,7 +351,15 @@ html { scroll-padding-top: 76px; }
   overflow-x: auto;
   scrollbar-width: none;
   overscroll-behavior-x: contain;
+  /* A scroller clips at its padding box, so the active tab's glow needs room
+     of its own: padding as wide as the glow, taken back by the margin. */
+  padding: 22px;
+  margin: -22px;
+  /* That room reaches past the masthead's foot and into its neighbours'
+     gaps; it lets clicks through to whatever is beneath. */
+  pointer-events: none;
 }
+.masthead__views > * { pointer-events: auto; }
 
 .masthead__views::-webkit-scrollbar { display: none; }
 
