@@ -501,6 +501,28 @@ html { scroll-padding-top: 76px; }
 }
 @keyframes view-out { to { opacity: 0; transform: translateX(calc(var(--view-dir, 1) * -40px)); } }
 @keyframes view-in { from { opacity: 0; transform: translateX(calc(var(--view-dir, 1) * 40px)); } }
+@keyframes view-out-y { to { opacity: 0; transform: translateY(calc(var(--view-dir, 1) * -40px)); } }
+@keyframes view-in-y { from { opacity: 0; transform: translateY(calc(var(--view-dir, 1) * min(20vh, 160px))); } }
+@keyframes fade-out { to { opacity: 0; } }
+@keyframes fade-in { from { opacity: 0; } }
+
+@media (prefers-reduced-motion: no-preference) {
+  /* A phone's More-sheet views: the page rises from below going to one, as
+     the sheet did, and sinks coming back (switchView). */
+  :root[data-transition="vertical"]::view-transition-old(content) { animation-name: view-out-y; }
+  :root[data-transition="vertical"]::view-transition-new(content) { animation-name: view-in-y; animation-duration: 320ms; }
+
+  /* An Explore view grows out of its card's thumbnail and shrinks back into
+     it (openExplore); around it the page only crossfades. Both pictures fill
+     the morphing box, cropped from the top, so neither is squashed. */
+  :root[data-transition="explore"]::view-transition-old(content) { animation: fade-out 160ms var(--ease) both; }
+  :root[data-transition="explore"]::view-transition-new(content) { animation: fade-in 260ms var(--ease) 120ms both; }
+  ::view-transition-group(explore-open) { animation-duration: 440ms; animation-timing-function: cubic-bezier(0.2, 0.8, 0.2, 1); }
+  ::view-transition-old(explore-open),
+  ::view-transition-new(explore-open) { width: 100%; height: 100%; object-fit: cover; object-position: top; }
+  ::view-transition-old(explore-open) { animation: fade-out 220ms var(--ease) both; }
+  ::view-transition-new(explore-open) { animation: fade-in 320ms var(--ease) 60ms both; }
+}
 
   /* Table view toggle: the same segmented pill as .switch. */
   .table-controls {

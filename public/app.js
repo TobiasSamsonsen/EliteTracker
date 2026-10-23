@@ -2351,10 +2351,38 @@ function exploreThumb(id) {
   return svg;
 }
 
+/* Open a visualisation (or, with null, go back to the gallery). The card's
+   thumbnail grows into the view it opens, and the view shrinks back into its
+   card on the way back: one shared view-transition name, on the thumbnail
+   before and the view after (or the other way round). The mountain fills the
+   window; the others fill the panel. */
 function openExplore(id) {
-  state.exploreItem = id;
-  render();
-  window.scrollTo({ top: 0, behavior: 'instant' });
+  const from = state.exploreItem;
+  const update = () => {
+    state.exploreItem = id;
+    render();
+    window.scrollTo({ top: 0, behavior: 'instant' });
+  };
+  const thumb = (item) => document.querySelector(`.explore-card[data-item="${item}"] .explore-card__thumb`);
+  const view = (item) => (item === 'mountain' ? $('.mountain') : $('[data-section="explore"] > .panel'));
+  const before = id ? thumb(id) : from && view(from);
+  if (!before || !document.startViewTransition || window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    update();
+    return;
+  }
+  const root = document.documentElement;
+  root.dataset.transition = 'explore';
+  before.style.viewTransitionName = 'explore-open';
+  let after = null;
+  document.startViewTransition(() => {
+    before.style.viewTransitionName = '';
+    update();
+    after = id ? view(id) : thumb(from);
+    if (after) after.style.viewTransitionName = 'explore-open';
+  }).finished.finally(() => {
+    if (after) after.style.viewTransitionName = '';
+    delete root.dataset.transition;
+  });
 }
 
 function renderExplore(report) {
@@ -2373,6 +2401,7 @@ function renderExplore(report) {
   for (const id of EXPLORE_ITEMS) {
     const card = el('button', 'explore-card');
     card.type = 'button';
+    card.dataset.item = id;
     card.appendChild(exploreThumb(id));
     card.appendChild(el('span', 'explore-card__title', t(`explore.${id}.title`)));
     card.appendChild(el('span', 'explore-card__desc', t(`explore.${id}.desc`)));
@@ -6357,13 +6386,19 @@ function render() {
 
 // Switch the active view: shared by top-strip/bar clicks and the bar swipe.
 // The page slides the way the tabs run (a swipe passes its own way, so the
-// page follows the finger); see "Switching tab" in the stylesheet.
+// page follows the finger); see "Switching tab" in the stylesheet. On a
+// phone the views in the More sheet are not beside the bar's, so going to
+// one the page rises from below, as the sheet did, and coming back it sinks.
 function switchView(view, { dir } = {}) {
   closeSheet();
   if (anim.playing && view !== state.activeView) animStop();
   const order = [...document.querySelectorAll('.masthead__views [data-view]')].map((tab) => tab.dataset.view);
   const from = order.indexOf(state.activeView);
   const to = order.indexOf(view);
+  const inSheet = (v) => !!document.querySelector(`.sheet__item[data-view="${v}"]`);
+  const bar = $('#mobilebar');
+  const vertical = dir === undefined && bar && getComputedStyle(bar).display !== 'none'
+    && (inSheet(view) || inSheet(state.activeView));
   const update = () => {
     // The Explore tab always opens on its gallery.
     if (view === 'explore') state.exploreItem = null;
@@ -6378,8 +6413,14 @@ function switchView(view, { dir } = {}) {
     update();
     return;
   }
-  document.documentElement.style.setProperty('--view-dir', String(dir ?? (from >= 0 && to >= 0 && to < from ? -1 : 1)));
-  document.startViewTransition(update);
+  const root = document.documentElement;
+  if (vertical) {
+    root.dataset.transition = 'vertical';
+    root.style.setProperty('--view-dir', inSheet(view) ? '1' : '-1');
+  } else {
+    root.style.setProperty('--view-dir', String(dir ?? (from >= 0 && to >= 0 && to < from ? -1 : 1)));
+  }
+  document.startViewTransition(update).finished.finally(() => { delete root.dataset.transition; });
 }
 
 function wire() {

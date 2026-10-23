@@ -248,6 +248,12 @@ scroll-progress bar on the right.
 **To do** (no library: browser features only)
 - [ ] The View Transitions API for switching tabs, and for a table row
       growing into the club page.
+- [x] Explore: a visualisation grows out of its card's thumbnail and shrinks
+      back into it (a shared view-transition name; the mountain grows to fill
+      the window). Done early, 2026-10-24.
+- [x] On a phone, views in the More sheet rise from below (the page sinks
+      on the way back), since they are not beside the bar's tabs. Done
+      early, 2026-10-24.
 - [ ] Scroll-driven CSS (`animation-timeline: view()`) to bring in panels and
       the finish grid row by row. Detect support; browsers without it simply
       show everything.
