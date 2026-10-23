@@ -397,7 +397,11 @@
         <dl class="model-grid" id="model-grid"></dl>
         <div class="caveats">
           <div class="label" data-i18n="model.howItWorks">How it works</div>
-          <p data-i18n="model.howLead">Each club has a strength rating that updates after every match, with expected goals (xG) separating luck from good play. A separate goals model counts goals, and the odds blend the two. The rest of the season is then played 50,000 times for the table chances.</p>
+          <ol class="steps">
+            <li><span class="steps__n">01</span><b data-i18n="model.step1.title">Rating</b><p data-i18n="model.step1.text">Each club has a strength rating that moves after every match. Expected goals (xG) separate luck from good play.</p></li>
+            <li><span class="steps__n">02</span><b data-i18n="model.step2.title">Goals</b><p data-i18n="model.step2.text">A separate goals model counts goals scored and conceded. The match odds blend the two.</p></li>
+            <li><span class="steps__n">03</span><b data-i18n="model.step3.title">Simulation</b><p data-i18n="model.step3.text">The rest of the season is played 50,000 times. The table chances are how often each club finishes in each place.</p></li>
+          </ol>
           <a class="caveats__link" href="/model.html" data-i18n="model.howLink">How the model works, in plain words and with every formula →</a>
         </div>
       </div>

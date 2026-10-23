@@ -141,6 +141,15 @@
   --glow-hover: 0 0 0 1px rgb(31 94 255 / 0.35), 0 4px 16px -6px rgb(31 94 255 / 0.45);
   --glow-text: 0 0 14px rgb(31 94 255 / 0.25);
 
+  /* One spacing scale inside panels, so padding and row heights repeat. */
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-5: 1.25rem;
+  --space-6: 1.5rem;
+  --space-7: 2rem;
+
   --measure: 68ch;
   --gutter: clamp(1rem, 4vw, 3rem);
   /* Panels and cards; controls use --radius-sm, toggles are full pills. */
@@ -149,6 +158,9 @@
 
   --display: "Archivo", system-ui, -apple-system, "Segoe UI", sans-serif;
   --body: "Archivo", system-ui, -apple-system, "Segoe UI", sans-serif;
+  /* Labels, column heads and metadata: each system's own monospace, so
+     nothing to download. */
+  --mono: ui-monospace, "Cascadia Mono", "SF Mono", Menlo, Consolas, "Roboto Mono", "Liberation Mono", monospace;
 
   --ease: cubic-bezier(0.2, 0.7, 0.3, 1);
 }
@@ -246,12 +258,12 @@ h1, h2, h3 {
 /* A small uppercase utility label. Used for eyebrows and column heads,
    never for prose. */
 .label {
+  font-family: var(--mono);
   font-size: 0.6875rem;
-  font-weight: 600;
-  letter-spacing: 0.14em;
+  font-weight: 500;
+  letter-spacing: 0.1em;
   text-transform: uppercase;
   color: var(--ink-faint);
-  font-variation-settings: "wdth" 105;
 }
 
 a { color: inherit; }
@@ -370,7 +382,7 @@ html { scroll-padding-top: 76px; }
 }
 
 .wordmark span {
-  font-variation-settings: "wdth" 100;
+  font-family: var(--mono);
   font-weight: 500;
   font-size: 0.6875rem;
   letter-spacing: 0.14em;
@@ -682,7 +694,7 @@ section { margin-block: clamp(1.5rem, 3vw, 2.25rem); }
   justify-content: space-between;
   gap: 1rem 2rem;
   flex-wrap: wrap;
-  padding: 1.1rem 1.25rem;
+  padding: var(--space-5);
   border-bottom: 1px solid var(--rule);
 }
 
@@ -1008,7 +1020,7 @@ table.standings {
 
 table.standings th,
 table.standings td {
-  padding: 0.35rem 0.6rem;
+  padding: var(--space-2) 0.6rem;
   text-align: right;
   border-bottom: 1px solid var(--rule);
   white-space: nowrap;
@@ -1019,9 +1031,10 @@ table.standings td {
    pinning it to the window. */
 table.standings thead th {
   background: var(--panel);
+  font-family: var(--mono);
   font-size: 0.6875rem;
-  font-weight: 600;
-  letter-spacing: 0.09em;
+  font-weight: 500;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
   color: var(--ink-muted);
   border-bottom-color: var(--rule-strong);
@@ -1924,13 +1937,34 @@ table.standings .zone-divider__wrap::after {
   padding: 0.9rem 1.25rem;
   box-shadow: 1px 0 0 var(--rule), 0 1px 0 var(--rule);
 }
-.model-grid dt { overflow-wrap: anywhere; font-size: 0.6875rem; letter-spacing: 0.12em; text-transform: uppercase; color: var(--ink-faint); }
+.model-grid dt { overflow-wrap: anywhere; font-family: var(--mono); font-size: 0.6875rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-faint); }
 .model-grid dd { margin: 0.25rem 0 0; font-size: 1.0625rem; font-weight: 700; }
 
 .caveats { padding: 1.1rem 1.25rem; border-top: 1px solid var(--rule); background: var(--panel-sunk); }
 .caveats ul { margin: 0.5rem 0 0; padding-left: 1.1rem; color: var(--ink-muted); font-size: 0.875rem; }
 .caveats li { margin-block: 0.35rem; max-width: var(--measure); }
 .caveats p { margin: 0.5rem 0 0; color: var(--ink-muted); font-size: 0.875rem; max-width: var(--measure); }
+/* How the model works, as three numbered steps. */
+.steps {
+  list-style: none;
+  margin: var(--space-3) 0 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr));
+  gap: var(--space-3);
+}
+.steps li {
+  display: grid;
+  gap: var(--space-2);
+  align-content: start;
+  padding: var(--space-5);
+  background: var(--panel);
+  border: 1px solid var(--rule);
+  border-radius: var(--radius-sm);
+}
+.steps__n { font-family: var(--mono); font-size: 0.6875rem; letter-spacing: 0.1em; color: var(--accent-ink); }
+.steps b { font-size: 1rem; }
+.caveats .steps p { margin: 0; }
 .caveats__link { display: inline-block; margin-top: 0.6rem; font-size: 0.875rem; font-weight: 600; color: var(--ink); }
 
 footer {

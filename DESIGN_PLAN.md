@@ -33,7 +33,7 @@ about it.
 | # | Item | Inspired by | Round | Status |
 |---|---|---|---|---|
 | 1 | Type at display scale | Lando Norris, Lusion | 1 | ◐ |
-| 5 | Card typography and spacing | Field Rank | 1 | ☐ |
+| 5 | Card typography and spacing | Field Rank | 1 | ◐ |
 | 4 | One notation everywhere | Field Rank | 1 | ☐ |
 | 3 | A mark and a motif | Lando Norris | 1 | ☐ |
 | 6 | Motion that explains | Lusion, Lando Norris | 2 | ☐ |
@@ -102,21 +102,28 @@ surface. It is calm because there are only two text sizes per card and the
 spacing repeats exactly.
 
 **To do**
-- [ ] A spacing scale as tokens (4, 8, 12, 16, 20, 24, 32) and use it inside
+- [x] A spacing scale as tokens (4, 8, 12, 16, 20, 24, 32) and use it inside
       panels, so padding and row heights repeat exactly.
-- [ ] A monospace for metadata and column heads. Try the system stack
+- [x] A monospace for metadata and column heads. Try the system stack
       (`ui-monospace, "Cascadia Mono", Menlo, monospace`) first, since it needs
       no download; if it looks too different across systems, compare
       self-hosting Geist Mono (OFL), with its case.
 - [ ] Panel heads: a "→" link on the right where the panel leads somewhere
       (the table to a club, matches to all fixtures).
-- [ ] The model card's explanation as numbered `01 02 03` cards.
+- [x] The model card's explanation as numbered `01 02 03` cards.
 - [ ] Variant B: one view (the table) with no box, only hairline rules and the
       grid, to see whether a more editorial page suits the site better than
       cards.
 
 **Decide by.** Put a Field Rank card and the reworked table side by side at
 the same width: is ours as calm?
+
+**Built.** Spacing tokens `--space-1..7`, used for the panel head padding and
+the table's row padding (rows about 36 → 41 px). `--mono` (the system stack,
+nothing downloaded) on every `.label`, the table's column heads, the model
+grid's terms and the version badge. The model card's "how it works" is three
+numbered steps, Rating / Goals / Simulation, in both languages. Not yet: the
+"→" panel links (few panels lead anywhere further) and variant B.
 
 **Decision:**
 
