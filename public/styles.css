@@ -388,6 +388,10 @@ html { scroll-padding-top: 76px; }
   white-space: nowrap; /* the model badge stays beside the name */
 }
 
+/* The mark: a corner of the finish grid, as in public/icons/mark.svg. */
+.wordmark__mark { width: 1.15em; height: 1.15em; flex: none; align-self: center; fill: currentColor; }
+.wordmark__lead { fill: var(--accent); }
+
 .wordmark span {
   font-variation-settings: "wdth" 100;
   font-weight: 500;
@@ -552,6 +556,27 @@ html { scroll-padding-top: 76px; }
   gap: 0.75rem 3rem;
   align-items: end;
   grid-template-columns: minmax(0, 1fr);
+  position: relative;
+  isolation: isolate;
+}
+
+/* The motif: contour lines of how settled each place in the table was through
+   a real season (tools/brand/contours.py), the season's end at the right.
+   Full bleed behind the hero, faint, strongest where the hero is empty. */
+.hero::before {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  inset: -4rem calc(50% - 50vw) -1rem;
+  background: var(--ink);
+  opacity: 0.09;
+  pointer-events: none;
+  -webkit-mask: url(/contours.svg) right center / auto 150% no-repeat,
+    radial-gradient(ellipse 60% 85% at 80% 45%, #000 35%, transparent 80%);
+  -webkit-mask-composite: source-in;
+  mask: url(/contours.svg) right center / auto 150% no-repeat,
+    radial-gradient(ellipse 60% 85% at 80% 45%, #000 35%, transparent 80%);
+  mask-composite: intersect;
 }
 
 /* The race the season is about: the clubs still contending for one band,
@@ -646,7 +671,8 @@ html { scroll-padding-top: 76px; }
    the ladder, the compare tool, the model card and the attack map, the
    league's story is someone else's headline. The page heading stays (it is
    visually hidden), and so do the pickers in the masthead. */
-body:is([data-view="team"], [data-view="ladder"], [data-view="compare"], [data-view="model"], [data-view="explore"]) .race { display: none; }
+body:is([data-view="team"], [data-view="ladder"], [data-view="compare"], [data-view="model"], [data-view="explore"]) .race,
+body:is([data-view="team"], [data-view="ladder"], [data-view="compare"], [data-view="model"], [data-view="explore"]) .hero::before { display: none; }
 body:is([data-view="team"], [data-view="ladder"], [data-view="compare"], [data-view="model"], [data-view="explore"]) .hero { padding-block: 0; }
 /* The ladder and the compare tool take both divisions, and the model card
    holds for both, so only the season is a choice there. */

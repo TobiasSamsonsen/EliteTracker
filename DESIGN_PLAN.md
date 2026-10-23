@@ -35,7 +35,7 @@ about it.
 | 1 | Type at display scale | Lando Norris, Lusion | 1 | ◐ |
 | 5 | Card typography and spacing | Field Rank | 1 | ◐ |
 | 4 | One notation everywhere | Field Rank | 1 | ☐ |
-| 3 | A mark and a motif | Lando Norris | 1 | ☐ |
+| 3 | A mark and a motif | Lando Norris | 1 | ◐ |
 | 6 | Motion that explains | Lusion, Lando Norris | 2 | ☐ |
 | 11 | Colour that changes as you scroll | Lando Norris | 2 | ☐ |
 | 2 | Headlines written from the data | The Immortals, Lando Norris | 2 | ☐ |
@@ -196,17 +196,32 @@ whole page as texture and change colour with each section; they come from his
 helmet design, so the texture means something.
 
 **To do**
-- [ ] A mark drawn from the finish grid: a small grid of cells with one in
+- [x] A mark drawn from the finish grid: a small grid of cells with one in
       electric blue. SVG, so it works from 16 px up.
-- [ ] Use it everywhere: favicon, `public/icons/`, the manifest, `og.png`, and
+- [x] Use it everywhere: favicon, `public/icons/`, the manifest, `og.png`, and
       beside the wordmark.
-- [ ] A motif: contour lines. Norway is mountains, and the site already has a
+- [x] A motif: contour lines. Norway is mountains, and the site already has a
       season mountain (`vendor/three/`, the season mountain view). Generate a
       contour SVG from that mountain's height field and lay it very faintly
       behind the hero and section starts, never behind data.
 
 **Decide by.** Is the mark recognisable at 16 px in a browser tab? Is the
 contour texture felt rather than seen, in both themes?
+
+**Built.** The mark is a 3 × 3 corner of the finish grid: the diagonal
+(each club's likeliest place) bright, its neighbours at 35 %, the far corners
+at 10 %, and the top left, the title, in the electric blue
+(`public/icons/mark.svg`). It sits before the wordmark and is the favicon on
+every page; `tools/brand/render.mjs` draws the PNG icons and a new `og.png`
+from it with the installed Chrome (the old `og.png` was a screenshot from
+elo-v12). The motif is not the mountain's 3D surface but its data:
+`tools/brand/contours.py` draws contour lines of how settled each place was
+through Eliteserien 2025 (for every matchday and place, the largest chance
+any club had of it), time left to right, the table top to bottom: the ends of
+the table settle early, the middle late, and every line closes in on the
+season's end. 10 KB of SVG, laid behind the hero as a CSS mask at 9 % of the
+ink, strongest on the right where the hero is empty, hidden on the views
+without a race.
 
 **Decision:**
 
