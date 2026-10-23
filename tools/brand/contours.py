@@ -1,15 +1,17 @@
-"""Draw the site's contour motif from a real season.
+"""Draw the contour motif from a season mountain.
 
-The field is how settled each place in the table was, matchday by matchday:
-for every snapshot of the season and every place, the largest chance any
-club had of finishing there. Early on no place is anyone's; by the end every
-place is somebody's. Contour lines of that field, smoothed, make the faint
-map behind the hero.
+The season mountain (Explore) stacks a block for every round in which a club
+still had a chance of a place: places across, clubs deep in finishing order.
+Its height field is square: for each club and place, how many of the
+season's snapshots kept that place possible (a chance of 0.5 % or more, the
+mountain's default cut). Contour lines of that field, smoothed, make the
+motif. The page draws its own from the season in view (app.js, "backdrop");
+this script draws the fixed one the share image and the 404 page use.
 
     .venv/Scripts/python tools/brand/contours.py [season] [division]
 
-writes public/contours.svg (lines only; the page colours it through a CSS
-mask). Reads the built report, public/data/report-<season>.json.
+writes public/contours.svg (lines only, coloured by the page or the image).
+Reads the built report, public/data/report-<season>.json.
 """
 
 import json
@@ -19,18 +21,21 @@ from pathlib import Path
 import numpy as np
 
 ROOT = Path(__file__).resolve().parents[2]
-WIDTH, HEIGHT = 1600, 640       # the SVG's viewBox
-GRID = 4                        # field samples per 4 viewBox units
-LEVELS = 14
+SIZE = 1000                     # the SVG's square viewBox
+SAMPLES = 120                   # field samples across
+LEVELS = 12
 SMOOTH = 3.0                    # Gaussian sigma, in field samples
+CUT = 0.005                     # the mountain's default cut
 
 
 def field(season, division):
     report = json.loads((ROOT / "public" / "data" / f"report-{season}.json").read_text(encoding="utf-8"))
     teams = report[division]["history"]["teams"]
-    # snapshots x places: the most settled club's chance of each place.
-    stack = np.array([team["positions"] for team in teams])     # teams, snapshots, places
-    return stack.max(axis=0)
+    stack = np.array([team["positions"] for team in teams])     # clubs, snapshots, places
+    places = np.arange(1, stack.shape[2] + 1)
+    expected = (stack[:, -1, :] * places).sum(axis=1)           # finishing order, as the mountain's rows
+    order = np.argsort(expected)
+    return (stack[order] >= CUT).sum(axis=1).astype(float)      # clubs x places: rounds standing
 
 
 def resample(values, width, height):
@@ -47,8 +52,6 @@ def resample(values, width, height):
     c = values[y0 + 1][:, x0]
     d = values[y0 + 1][:, x0 + 1]
     return a * (1 - fy) * (1 - fx) + b * (1 - fy) * fx + c * fy * (1 - fx) + d * fy * fx
-
-
 def blur(values, sigma):
     radius = int(3 * sigma)
     kernel = np.exp(-0.5 * (np.arange(-radius, radius + 1) / sigma) ** 2)
@@ -157,22 +160,23 @@ def simplify(points, tolerance):
 def main():
     season = sys.argv[1] if len(sys.argv) > 1 else "2025"
     division = sys.argv[2] if len(sys.argv) > 2 else "eliteserien"
-    raw = field(season, division)                 # snapshots x places
-    # Time runs left to right, the table top to bottom.
-    values = blur(resample(raw.T, WIDTH // GRID, HEIGHT // GRID), SMOOTH)
+    # Pad with open ground, so the lines close around the mountain.
+    raw = np.pad(field(season, division), 2)
+    values = blur(resample(raw, SAMPLES, SAMPLES), SMOOTH)
+    scale = SIZE / (SAMPLES - 1)
     lo, hi = values.min(), values.max()
     paths = []
     for level in np.linspace(lo, hi, LEVELS + 2)[1:-1]:
         for line in contour(values, level):
             if len(line) < 4:
                 continue
-            pts = simplify(chaikin(line) * GRID, 0.6)
+            pts = simplify(chaikin(line) * scale, 0.6)
             d = "M" + " ".join(f"{x:.0f} {y:.0f}" for x, y in pts)
             paths.append(f'<path d="{d}"/>')
     svg = (
-        f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {WIDTH} {HEIGHT}" '
+        f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {SIZE} {SIZE}" '
         f'fill="none" stroke="#000" stroke-width="1.5" stroke-linejoin="round">'
-        f"<!-- Contours of how settled each place was, {division} {season}: tools/brand/contours.py -->"
+        f"<!-- The season mountain's contours, {division} {season}: tools/brand/contours.py -->"
         + "".join(paths)
         + "</svg>\n"
     )

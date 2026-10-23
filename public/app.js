@@ -5953,6 +5953,163 @@ async function rewindTo(asof) {
   }
 }
 
+/* ---------- backdrop ----------------------------------------------- */
+
+/* The season mountain's contour map, behind the whole page. The mountain
+   (Explore) stacks a block for every snapshot in which a club still had a
+   chance of a place, places across and clubs deep in finishing order, so its
+   height field is square: per club and place, how many snapshots kept that
+   place open. Drawn from the season in view, so every year has its own;
+   tools/brand/contours.py draws the same for the share image. */
+const BACKDROP = { samples: 100, levels: 12, sigma: 2.5, cut: 0.005, pad: 2 };
+let backdropKey = '';
+
+function backdropField(history) {
+  const teams = history.teams;
+  const last = teams[0].positions.length - 1;
+  const expected = (team) => team.positions[last].reduce((sum, p, place) => sum + p * (place + 1), 0);
+  const rows = [...teams].sort((a, b) => expected(a) - expected(b))
+    .map((team) => team.positions[0].map((_, place) =>
+      team.positions.reduce((count, snapshot) => count + (snapshot[place] >= BACKDROP.cut ? 1 : 0), 0)));
+  // Open ground around it, so every line closes around the mountain.
+  const n = rows.length + 2 * BACKDROP.pad;
+  return Array.from({ length: n }, (_, i) => Array.from({ length: n }, (_, j) =>
+    rows[i - BACKDROP.pad]?.[j - BACKDROP.pad] ?? 0));
+}
+
+/* Bilinear resampling onto size x size, then a Gaussian blur. */
+function backdropSmooth(grid, size, sigma) {
+  const n = grid.length;
+  const out = Array.from({ length: size }, (_, i) => {
+    const y = (i * (n - 1)) / (size - 1);
+    const y0 = Math.min(n - 2, Math.floor(y));
+    const fy = y - y0;
+    return Float64Array.from({ length: size }, (_, j) => {
+      const x = (j * (n - 1)) / (size - 1);
+      const x0 = Math.min(n - 2, Math.floor(x));
+      const fx = x - x0;
+      return grid[y0][x0] * (1 - fy) * (1 - fx) + grid[y0][x0 + 1] * (1 - fy) * fx
+        + grid[y0 + 1][x0] * fy * (1 - fx) + grid[y0 + 1][x0 + 1] * fy * fx;
+    });
+  });
+  const radius = Math.ceil(3 * sigma);
+  const kernel = Array.from({ length: 2 * radius + 1 }, (_, k) => Math.exp(-0.5 * ((k - radius) / sigma) ** 2));
+  const total = kernel.reduce((a, b) => a + b, 0);
+  const at = (i) => (i < 0 ? -i - 1 : i >= size ? 2 * size - i - 1 : i); // reflect at the edges
+  const pass = (get) => Array.from({ length: size }, (_, i) => Float64Array.from({ length: size }, (_, j) =>
+    kernel.reduce((sum, w, k) => sum + w * get(i, j + k - radius), 0) / total));
+  const across = pass((i, j) => out[i][at(j)]);
+  const down = pass((i, j) => across[at(j)][i]);
+  return down.map((_, i) => Float64Array.from({ length: size }, (_, j) => down[j][i]));
+}
+
+/* Marching squares at one level: polylines in sample units. */
+function backdropContour(values, level) {
+  const size = values.length;
+  const segments = [];
+  const cross = (x1, y1, v1, x2, y2, v2) => {
+    const t = v2 === v1 ? 0.5 : (level - v1) / (v2 - v1);
+    return [x1 + (x2 - x1) * t, y1 + (y2 - y1) * t];
+  };
+  for (let i = 0; i < size - 1; i += 1) {
+    for (let j = 0; j < size - 1; j += 1) {
+      const tl = values[i][j];
+      const tr = values[i][j + 1];
+      const br = values[i + 1][j + 1];
+      const bl = values[i + 1][j];
+      const index = (tl >= level ? 8 : 0) | (tr >= level ? 4 : 0) | (br >= level ? 2 : 0) | (bl >= level ? 1 : 0);
+      if (index === 0 || index === 15) continue;
+      // Edges are keyed so neighbouring cells name a shared edge alike.
+      const edge = {
+        t: [`h${i},${j}`, cross(j, i, tl, j + 1, i, tr)],
+        r: [`v${i},${j + 1}`, cross(j + 1, i, tr, j + 1, i + 1, br)],
+        b: [`h${i + 1},${j}`, cross(j, i + 1, bl, j + 1, i + 1, br)],
+        l: [`v${i},${j}`, cross(j, i, tl, j, i + 1, bl)],
+      };
+      const centre = (tl + tr + br + bl) / 4 >= level;
+      const pairs = {
+        1: ['lb'], 2: ['br'], 3: ['lr'], 4: ['tr'], 6: ['tb'], 7: ['tl'],
+        8: ['tl'], 9: ['tb'], 11: ['tr'], 12: ['lr'], 13: ['br'], 14: ['lb'],
+        5: centre ? ['tr', 'lb'] : ['tl', 'br'],
+        10: centre ? ['tl', 'br'] : ['tr', 'lb'],
+      }[index];
+      for (const [a, b] of pairs) segments.push([edge[a], edge[b]]);
+    }
+  }
+  // Join the segments through their shared edges.
+  const byEdge = new Map();
+  segments.forEach(([a, b], k) => {
+    for (const [key] of [a, b]) byEdge.set(key, [...(byEdge.get(key) || []), k]);
+  });
+  const used = new Set();
+  const lines = [];
+  segments.forEach((first, k) => {
+    if (used.has(k)) return;
+    used.add(k);
+    const line = [...first];
+    for (const forward of [true, false]) {
+      for (;;) {
+        const end = forward ? line[line.length - 1] : line[0];
+        const next = (byEdge.get(end[0]) || []).find((n) => !used.has(n));
+        if (next === undefined) break;
+        used.add(next);
+        const [p, q] = segments[next];
+        const step = p[0] === end[0] ? q : p;
+        if (forward) line.push(step); else line.unshift(step);
+      }
+    }
+    lines.push(line.map(([, point]) => point));
+  });
+  return lines;
+}
+
+/* Two rounds of Chaikin's corner cutting, so the lines run smooth. */
+function backdropRound(points) {
+  let pts = points;
+  for (let round = 0; round < 2; round += 1) {
+    const next = [pts[0]];
+    for (let k = 0; k < pts.length - 1; k += 1) {
+      const [x1, y1] = pts[k];
+      const [x2, y2] = pts[k + 1];
+      next.push([0.75 * x1 + 0.25 * x2, 0.75 * y1 + 0.25 * y2], [0.25 * x1 + 0.75 * x2, 0.25 * y1 + 0.75 * y2]);
+    }
+    next.push(pts[pts.length - 1]);
+    pts = next;
+  }
+  return pts;
+}
+
+function renderBackdrop(report) {
+  const svg = $('#backdrop');
+  const history = report.history;
+  if (!svg) return;
+  if (!history?.teams?.length || !history.teams[0].positions?.length) {
+    backdropKey = '';
+    svg.replaceChildren();
+    return;
+  }
+  // The rewind hands a report per date, each with its season so far.
+  const key = `${report.league.slug}|${report.league.season}|${history.dates?.length}|${history.dates?.[history.dates.length - 1]}`;
+  if (key === backdropKey) return;
+  backdropKey = key;
+  const { samples, levels, sigma } = BACKDROP;
+  const values = backdropSmooth(backdropField(history), samples, sigma);
+  let lo = Infinity;
+  let hi = -Infinity;
+  for (const row of values) for (const v of row) { lo = Math.min(lo, v); hi = Math.max(hi, v); }
+  const paths = [];
+  for (let k = 1; k <= levels; k += 1) {
+    const level = lo + ((hi - lo) * k) / (levels + 1);
+    for (const line of backdropContour(values, level)) {
+      if (line.length < 4) continue;
+      const d = `M${backdropRound(line).map(([x, y]) => `${x.toFixed(1)} ${y.toFixed(1)}`).join(' ')}`;
+      paths.push(svgEl('path', { d }));
+    }
+  }
+  svg.setAttribute('viewBox', `0 0 ${samples - 1} ${samples - 1}`);
+  svg.replaceChildren(...paths);
+}
+
 /* ---------- theme -------------------------------------------------- */
 
 function resolveTheme() {
@@ -6057,6 +6214,7 @@ function render() {
   renderSeasonOptions(report);
   renderTimeline(report);
   renderHero(report);
+  renderBackdrop(report);
 
   // Show/hide sections based on active view
   for (const section of document.querySelectorAll('[data-section]')) {

@@ -30,21 +30,19 @@
   .notfound { padding-block: clamp(2rem, 6vw, 4.5rem) 4rem; }
 
   /* The error as a place in the table: 404th, set like the hero's race. */
-  .notfound__hero { position: relative; isolation: isolate; max-width: 46rem; }
-  .notfound__hero::before {
+  .notfound__hero { max-width: 46rem; }
+  /* The front page draws the season in view's mountain; this page has no
+     season, so it takes the fixed one (tools/brand/contours.py). */
+  body::before {
     content: "";
-    position: absolute;
+    position: fixed;
+    inset: 0;
     z-index: -1;
-    inset: -6rem calc(50% - 50vw) -3rem;
-    background: var(--ink);
-    opacity: 0.09;
     pointer-events: none;
-    -webkit-mask: url(/contours.svg) right center / auto 150% no-repeat,
-      radial-gradient(ellipse 60% 85% at 80% 45%, #000 35%, transparent 80%);
-    -webkit-mask-composite: source-in;
-    mask: url(/contours.svg) right center / auto 150% no-repeat,
-      radial-gradient(ellipse 60% 85% at 80% 45%, #000 35%, transparent 80%);
-    mask-composite: intersect;
+    background: var(--ink);
+    opacity: var(--backdrop-alpha);
+    -webkit-mask: url(/contours.svg) center / cover no-repeat;
+    mask: url(/contours.svg) center / cover no-repeat;
   }
   .notfound__place {
     margin: var(--space-3) 0 var(--space-5);

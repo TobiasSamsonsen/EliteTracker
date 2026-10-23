@@ -140,6 +140,9 @@
   --glow-ring: 0 4px 14px -3px rgb(31 94 255 / 0.55);   /* an active control */
   --glow-hover: 0 0 0 1px rgb(31 94 255 / 0.35), 0 4px 16px -6px rgb(31 94 255 / 0.45);
   --glow-text: 0 0 14px rgb(31 94 255 / 0.25);
+  /* The contour backdrop's strength: dark ink on light paper reads heavier
+     than light ink on navy, so each theme has its own. */
+  --backdrop-alpha: 0.055;
 
   /* One spacing scale inside panels, so padding and row heights repeat. */
   --space-1: 0.25rem;
@@ -214,6 +217,7 @@
   --glow-ring: 0 0 22px -2px rgb(31 94 255 / 0.8);
   --glow-hover: 0 0 0 1px rgb(31 94 255 / 0.5), 0 0 22px -6px rgb(31 94 255 / 0.7);
   --glow-text: 0 0 22px rgb(31 94 255 / 0.65);
+  --backdrop-alpha: 0.08;
 }
 
 /* ---------- base -------------------------------------------------- */
@@ -556,28 +560,26 @@ html { scroll-padding-top: 76px; }
   gap: 0.75rem 3rem;
   align-items: end;
   grid-template-columns: minmax(0, 1fr);
-  position: relative;
-  isolation: isolate;
 }
 
-/* The motif: contour lines of how settled each place in the table was through
-   a real season (tools/brand/contours.py), the season's end at the right.
-   Full bleed behind the hero, faint, strongest where the hero is empty. */
-.hero::before {
-  content: "";
-  position: absolute;
+/* The motif: the season mountain's contour map (renderBackdrop), square,
+   cropped to cover the window and fixed behind the whole page. Faint; the
+   panels are opaque, so it shows only around them, never behind data. */
+.backdrop {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
   z-index: -1;
-  inset: -4rem calc(50% - 50vw) -1rem;
-  background: var(--ink);
-  opacity: 0.09;
   pointer-events: none;
-  -webkit-mask: url(/contours.svg) right center / auto 150% no-repeat,
-    radial-gradient(ellipse 60% 85% at 80% 45%, #000 35%, transparent 80%);
-  -webkit-mask-composite: source-in;
-  mask: url(/contours.svg) right center / auto 150% no-repeat,
-    radial-gradient(ellipse 60% 85% at 80% 45%, #000 35%, transparent 80%);
-  mask-composite: intersect;
+  color: var(--ink);
+  opacity: var(--backdrop-alpha);
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.25px;
+  stroke-linejoin: round;
 }
+.backdrop path { vector-effect: non-scaling-stroke; }
 
 /* The race the season is about: the clubs still contending for one band,
    side by side. Archivo at its widest and heaviest, set tight, the unit a
@@ -671,8 +673,7 @@ html { scroll-padding-top: 76px; }
    the ladder, the compare tool, the model card and the attack map, the
    league's story is someone else's headline. The page heading stays (it is
    visually hidden), and so do the pickers in the masthead. */
-body:is([data-view="team"], [data-view="ladder"], [data-view="compare"], [data-view="model"], [data-view="explore"]) .race,
-body:is([data-view="team"], [data-view="ladder"], [data-view="compare"], [data-view="model"], [data-view="explore"]) .hero::before { display: none; }
+body:is([data-view="team"], [data-view="ladder"], [data-view="compare"], [data-view="model"], [data-view="explore"]) .race { display: none; }
 body:is([data-view="team"], [data-view="ladder"], [data-view="compare"], [data-view="model"], [data-view="explore"]) .hero { padding-block: 0; }
 /* The ladder and the compare tool take both divisions, and the model card
    holds for both, so only the season is a choice there. */

@@ -214,14 +214,19 @@ at 10 %, and the top left, the title, in the electric blue
 (`public/icons/mark.svg`). It sits before the wordmark and is the favicon on
 every page; `tools/brand/render.mjs` draws the PNG icons and a new `og.png`
 from it with the installed Chrome (the old `og.png` was a screenshot from
-elo-v12). The motif is not the mountain's 3D surface but its data:
-`tools/brand/contours.py` draws contour lines of how settled each place was
-through Eliteserien 2025 (for every matchday and place, the largest chance
-any club had of it), time left to right, the table top to bottom: the ends of
-the table settle early, the middle late, and every line closes in on the
-season's end. 10 KB of SVG, laid behind the hero as a CSS mask at 9 % of the
-ink, strongest on the right where the hero is empty, hidden on the views
-without a race.
+elo-v12). The motif is the season mountain's contour map, drawn per season. The
+mountain stacks a block for every snapshot in which a club still had a
+chance (0.5 % or more, its default cut) of a place, places across and clubs
+deep in finishing order, so its height field is square: per club and place,
+how many snapshots kept the place open. `renderBackdrop` (app.js) draws it
+in the browser from the report in view, so every season and division has its
+own and the live season stays current without a build step; it is fixed
+behind the whole page, cropped to cover the window, faint
+(`--backdrop-alpha`, 5.5 % light, 8 % dark), and shows only around the
+opaque panels. `tools/brand/contours.py` draws the same map for 2025 as a
+fixed `contours.svg`, for the share image and the 404 page, which have no
+season of their own. (The first try, behind the hero only, drew how settled
+each place was over time from 2025 alone.)
 
 **Decision:**
 
@@ -247,6 +252,10 @@ scroll-progress bar on the right.
 - [ ] Lines draw themselves: a club's rating history in the club and compare
       views draws in when it scrolls into view (Lando's signature, as data).
 - [ ] Word-by-word fill on the model card's explanation (Lusion).
+- [ ] The backdrop moves: the season mountain's contours (item 3) could grow
+      round by round as the rewind plays or a season loads, the way the
+      mountain builds up in Explore, or drift slowly. `renderBackdrop` already
+      redraws for each date the rewind picks.
 
 **Decide by.** Profile on a phone (CPU slowed 4×): no stutter when scrolling
 the table, no layout shift. Every motion must say something (what changed,

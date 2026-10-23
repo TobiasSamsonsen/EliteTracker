@@ -39,7 +39,7 @@ const icon = (size, maskable) => page(size, size, maskable
 const og = page(1200, 630, `
 <div style="position:relative;width:1200px;height:630px;overflow:hidden;color:#e8edf5;font-family:Archivo;
   background:radial-gradient(1100px 520px at 50% -200px, rgb(31 94 255 / .3), transparent 70%), #080f1c">
-  <img src="${contours}" style="position:absolute;inset:0;width:1200px;height:630px;filter:invert(1);opacity:.13;
+  <img src="${contours}" style="position:absolute;inset:0;width:1200px;height:630px;object-fit:cover;filter:invert(1);opacity:.13;
     -webkit-mask:linear-gradient(to right, transparent 10%, #000 70%)">
   <div style="position:absolute;left:96px;top:118px;display:flex;align-items:center;gap:30px">
     <div style="width:104px;height:104px">${mark.replace('<svg ', '<svg width="104" height="104" ')}</div>
