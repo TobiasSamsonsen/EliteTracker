@@ -2169,27 +2169,14 @@ function renderHero(report) {
   // A finished season has nothing left to simulate, so it gets told as history.
   if (model.matches_remaining === 0) {
     $('#hero-lede').textContent =
-      t('hero.lede.finished', {
-        team: leader.team,
-        points: leader.points,
-        matches: model.matches_played,
-      });
+      t('hero.lede.finished', { matches: model.matches_played });
   } else {
     // Before a ball is kicked the table's "leader" is only the alphabet.
     const lede = model.matches_played === 0
-      ? t('hero.lede.preseason', { favourite: favourite.team, pct: pct(favourite.position_probabilities[0]) })
+      ? t('hero.lede.preseason', { favourite: favourite.team })
       : favourite.team === leader.team
-        ? t('hero.lede.agrees', {
-            team: leader.team,
-            points: leader.points,
-            pct: pct(favourite.position_probabilities[0]),
-          })
-        : t('hero.lede.disagrees', {
-            team: leader.team,
-            points: leader.points,
-            favourite: favourite.team,
-            pct: pct(favourite.position_probabilities[0]),
-          });
+        ? t('hero.lede.agrees', { team: leader.team, points: leader.points })
+        : t('hero.lede.disagrees', { team: leader.team, points: leader.points, favourite: favourite.team });
     $('#hero-lede').textContent =
       t('hero.lede.remaining', {
         lede,
@@ -2211,21 +2198,6 @@ function renderHero(report) {
     lede.style.minHeight = `${lede.offsetHeight}px`;
   }
 
-  const meta = $('#hero-meta');
-  meta.replaceChildren();
-  // The last describes how the model was built rather than where the season
-  // stands, so a phone drops it. The run count and the version are not here:
-  // the lede already gives the one and the wordmark the other.
-  for (const [name, value, provenance] of [
-    [t('hero.played'), `${model.matches_played}`, false],
-    [t('hero.remaining'), `${model.matches_remaining}`, false],
-    [t('hero.ratingsFrom'), `${model.seed_season} ${t('hero.onward')}`, true],
-  ]) {
-    const cell = el('div', provenance ? 'hero__meta-provenance' : '');
-    cell.appendChild(el('span', '', name));
-    cell.appendChild(el('b', '', value));
-    meta.appendChild(cell);
-  }
 }
 
 function renderModelCard(report) {

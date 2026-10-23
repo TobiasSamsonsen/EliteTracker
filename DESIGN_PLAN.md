@@ -84,9 +84,13 @@ figures stay readable at 13 px?
 **Built.** The figure is the favourite's
 title chance while the season runs, the champion's points once it is over,
 with the club's crest and a caption under it; it shows only where the lede
-does. Panel titles 1.25 → 1.5rem. Table figures at `wdth` 85. Open questions
-for the decision: the figure pushes the finish grid about 150 px down on a
-desktop; and the lede still repeats the number, which item 2 rewrites.
+does. Panel titles 1.25 → 1.5rem. Table figures at `wdth` 85.
+
+**First review: "quite bad and cluttered".** The figure was added without
+taking anything away. Now it replaces: the stats column beside the hero
+(played, remaining, ratings from) is gone, and the sentence no longer repeats
+the number ("Bodø/Glimt leder med 56 poeng. 56 kamper igjen, simulert 50 000
+ganger."). Open: is the favourite's title chance the right figure at all?
 
 **Decision:**
 
@@ -104,7 +108,7 @@ spacing repeats exactly.
 **To do**
 - [x] A spacing scale as tokens (4, 8, 12, 16, 20, 24, 32) and use it inside
       panels, so padding and row heights repeat exactly.
-- [x] A monospace for metadata and column heads. Try the system stack
+- [x] ~~A monospace for metadata and column heads.~~ Tried and taken out (see below). Try the system stack
       (`ui-monospace, "Cascadia Mono", Menlo, monospace`) first, since it needs
       no download; if it looks too different across systems, compare
       self-hosting Geist Mono (OFL), with its case.
@@ -119,11 +123,16 @@ spacing repeats exactly.
 the same width: is ours as calm?
 
 **Built.** Spacing tokens `--space-1..7`, used for the panel head padding and
-the table's row padding (rows about 36 → 41 px). `--mono` (the system stack,
-nothing downloaded) on every `.label`, the table's column heads, the model
-grid's terms and the version badge. The model card's "how it works" is three
-numbered steps, Rating / Goals / Simulation, in both languages. Not yet: the
-"→" panel links (few panels lead anywhere further) and variant B.
+the table's row padding (rows about 36 → 41 px). The model card's "how it
+works" is three numbered steps, Rating / Goals / Simulation, in both
+languages. Not yet: the "→" panel links (few panels lead anywhere further)
+and variant B.
+
+**First review: "quite bad and cluttered".** The monospace on every label
+was a third type voice on panels already dense with data; Field Rank can
+carry one because its cards hold little. Taken out again (labels back in
+Archivo). The model card's steps lost their boxes (boxes in a box in a
+panel) and are plain columns. The spacing stays.
 
 **Decision:**
 

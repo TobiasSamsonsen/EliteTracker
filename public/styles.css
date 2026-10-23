@@ -158,9 +158,6 @@
 
   --display: "Archivo", system-ui, -apple-system, "Segoe UI", sans-serif;
   --body: "Archivo", system-ui, -apple-system, "Segoe UI", sans-serif;
-  /* Labels, column heads and metadata: each system's own monospace, so
-     nothing to download. */
-  --mono: ui-monospace, "Cascadia Mono", "SF Mono", Menlo, Consolas, "Roboto Mono", "Liberation Mono", monospace;
 
   --ease: cubic-bezier(0.2, 0.7, 0.3, 1);
 }
@@ -258,12 +255,12 @@ h1, h2, h3 {
 /* A small uppercase utility label. Used for eyebrows and column heads,
    never for prose. */
 .label {
-  font-family: var(--mono);
   font-size: 0.6875rem;
-  font-weight: 500;
-  letter-spacing: 0.1em;
+  font-weight: 600;
+  letter-spacing: 0.14em;
   text-transform: uppercase;
   color: var(--ink-faint);
+  font-variation-settings: "wdth" 105;
 }
 
 a { color: inherit; }
@@ -382,7 +379,7 @@ html { scroll-padding-top: 76px; }
 }
 
 .wordmark span {
-  font-family: var(--mono);
+  font-variation-settings: "wdth" 100;
   font-weight: 500;
   font-size: 0.6875rem;
   letter-spacing: 0.14em;
@@ -538,19 +535,13 @@ html { scroll-padding-top: 76px; }
 /* ---------- hero -------------------------------------------------- */
 
 /* The masthead already names the league and season, so the hero's job is to
-   say what the model thinks -- not to fill a screen before any data appears.
-   On a wide screen the vitals sit beside the headline instead of under it. */
+   say what the model thinks -- not to fill a screen before any data appears. */
 .hero {
   padding-block: clamp(1.25rem, 3vw, 2rem) 1.25rem;
   display: grid;
   gap: 0.75rem 3rem;
   align-items: end;
   grid-template-columns: minmax(0, 1fr);
-}
-
-@media (min-width: 1000px) {
-  .hero { grid-template-columns: minmax(0, 1fr) auto; }
-  .hero__meta { grid-column: 2; grid-row: 1 / span 3; }
 }
 
 .hero h1 {
@@ -619,42 +610,11 @@ html { scroll-padding-top: 76px; }
   font-size: 1rem;
 }
 
-.hero__meta {
-  display: flex;
-  flex-wrap: wrap;
-  align-content: end;
-  gap: 0.4rem 1.5rem;
-  padding-top: 0.75rem;
-  border-top: 1px solid var(--rule);
-}
-
-@media (min-width: 1000px) {
-  .hero__meta {
-    flex-direction: column;
-    gap: 0.3rem;
-    padding-top: 0;
-    padding-left: 1.5rem;
-    border-top: 0;
-    border-left: 1px solid var(--rule);
-  }
-}
-
 /* The league hero only where it is the page's own story. In a club's view,
    the ladder, the compare tool, the model card and the attack map, the
-   league's story and vitals are someone else's headline; the title stays,
-   since its pickers still navigate. On a phone the vitals repeat the lede
-   and push the content down. */
-body[data-view="team"] #hero-lede,
-body[data-view="team"] .hero__meta,
-body[data-view="ladder"] #hero-lede,
-body[data-view="ladder"] .hero__meta,
-body[data-view="compare"] #hero-lede,
-body[data-view="compare"] .hero__meta,
-body[data-view="model"] #hero-lede,
-body[data-view="model"] .hero__meta,
-body[data-view="explore"] #hero-lede,
-body[data-view="explore"] .hero__meta,
-body:is([data-view="team"], [data-view="ladder"], [data-view="compare"], [data-view="model"], [data-view="explore"]) .hero__figure { display: none; }
+   league's story is someone else's headline; the title stays, since its
+   pickers still navigate. */
+body:is([data-view="team"], [data-view="ladder"], [data-view="compare"], [data-view="model"], [data-view="explore"]) :is(#hero-lede, .hero__figure) { display: none; }
 body[data-view="team"] .hero,
 body[data-view="ladder"] .hero,
 body[data-view="compare"] .hero,
@@ -669,13 +629,6 @@ body[data-view="model"] .hero-title-part[data-role="division"] { display: none; 
    title, whose two pickers change them. The gallery shows no league's
    numbers and the season mountain has pickers of its own: no hero there. */
 body[data-view="explore"]:is([data-viz=""], [data-viz="mountain"]) .hero { display: none; }
-@media (max-width: 760px) {
-  .hero__meta { display: none; }
-}
-
-.hero__meta div { display: flex; align-items: baseline; gap: 0.5rem; }
-.hero__meta b { font-weight: 700; font-size: 1rem; }
-
 /* ---------- panels ------------------------------------------------ */
 
 section { margin-block: clamp(1.5rem, 3vw, 2.25rem); }
@@ -1031,10 +984,9 @@ table.standings td {
    pinning it to the window. */
 table.standings thead th {
   background: var(--panel);
-  font-family: var(--mono);
   font-size: 0.6875rem;
-  font-weight: 500;
-  letter-spacing: 0.08em;
+  font-weight: 600;
+  letter-spacing: 0.09em;
   text-transform: uppercase;
   color: var(--ink-muted);
   border-bottom-color: var(--rule-strong);
@@ -1937,7 +1889,7 @@ table.standings .zone-divider__wrap::after {
   padding: 0.9rem 1.25rem;
   box-shadow: 1px 0 0 var(--rule), 0 1px 0 var(--rule);
 }
-.model-grid dt { overflow-wrap: anywhere; font-family: var(--mono); font-size: 0.6875rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-faint); }
+.model-grid dt { overflow-wrap: anywhere; font-size: 0.6875rem; letter-spacing: 0.12em; text-transform: uppercase; color: var(--ink-faint); }
 .model-grid dd { margin: 0.25rem 0 0; font-size: 1.0625rem; font-weight: 700; }
 
 .caveats { padding: 1.1rem 1.25rem; border-top: 1px solid var(--rule); background: var(--panel-sunk); }
@@ -1951,18 +1903,14 @@ table.standings .zone-divider__wrap::after {
   padding: 0;
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr));
-  gap: var(--space-3);
+  gap: var(--space-4) var(--space-7);
 }
 .steps li {
   display: grid;
-  gap: var(--space-2);
+  gap: var(--space-1);
   align-content: start;
-  padding: var(--space-5);
-  background: var(--panel);
-  border: 1px solid var(--rule);
-  border-radius: var(--radius-sm);
 }
-.steps__n { font-family: var(--mono); font-size: 0.6875rem; letter-spacing: 0.1em; color: var(--accent-ink); }
+.steps__n { font-size: 0.75rem; font-weight: 700; color: var(--accent-ink); }
 .steps b { font-size: 1rem; }
 .caveats .steps p { margin: 0; }
 .caveats__link { display: inline-block; margin-top: 0.6rem; font-size: 0.875rem; font-weight: 600; color: var(--ink); }
@@ -2369,8 +2317,6 @@ footer a { color: var(--ink); }
 /* ---------- responsive -------------------------------------------- */
 
 @media (max-width: 760px) {
-  .hero__meta { gap: 0.4rem 1.25rem; }
-
   /* Bring the title closer to the top on mobile so "Eliteserien 2026"
      is visible immediately when scrolled to top, below the sticky masthead. */
   .hero { padding-top: clamp(0.5rem, 2vw, 1rem); }
@@ -2431,10 +2377,6 @@ footer a { color: var(--ink); }
 
   .wordmark { margin-right: 0; white-space: nowrap; }
   .wordmark span { display: none; }
-
-  /* How the model was built belongs in the Model Card, not above the table.
-     Needs to outrank `.hero__meta div`, which sets these to flex. */
-  .hero__meta .hero__meta-provenance { display: none; }
 
   /* The finish grid's explanation runs six lines on a phone -- more screen
      than the grid it introduces. Clamped to two, faded so there is visibly

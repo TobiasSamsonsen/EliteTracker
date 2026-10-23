@@ -272,18 +272,14 @@ const translations = {
 
     // Hero
     'hero.title': 'Where everyone finishes',
-    'hero.played': 'Played',
-    'hero.remaining': 'Remaining',
-    'hero.ratingsFrom': 'Ratings from',
-    'hero.onward': 'onward',
     'hero.figure.title': 'chance of the title',
     'hero.figure.champions': 'champions',
     'hero.figure.points': 'pts',
-    'hero.lede.finished': '{team} won it on {points} points. All {matches} matches played; the ratings are as they stood at the end.',
-    'hero.lede.preseason': 'Before a ball is kicked, the model makes {favourite} favourite at {pct}.',
-    'hero.lede.agrees': '{team} lead on {points} points and the model agrees: {pct} to win the league.',
-    'hero.lede.disagrees': '{team} lead on {points} points, but the model makes {favourite} favourite at {pct}.',
-    'hero.lede.remaining': '{lede} The {remaining} matches left are simulated {simulations} times.',
+    'hero.lede.finished': 'All {matches} matches played. The ratings are as they stood at the end.',
+    'hero.lede.preseason': 'Before a ball is kicked, {favourite} start as favourites.',
+    'hero.lede.agrees': '{team} lead on {points} points.',
+    'hero.lede.disagrees': '{team} lead on {points} points, but the model favours {favourite}.',
+    'hero.lede.remaining': '{lede} {remaining} matches left, simulated {simulations} times.',
 
     // Theme
     'theme.light': 'Light',
@@ -897,18 +893,14 @@ const translations = {
 
     // Hero
     'hero.title': 'Hvem ender hvor',
-    'hero.played': 'Spilt',
-    'hero.remaining': 'Gjenværende',
-    'hero.ratingsFrom': 'Ratinger fra',
-    'hero.onward': 'og utover',
     'hero.figure.title': 'sjanse for gull',
     'hero.figure.champions': 'seriemester',
     'hero.figure.points': 'poeng',
-    'hero.lede.finished': '{team} vant med {points} poeng. Alle {matches} kamper er spilt, og ratingene er slik de sto ved sesongslutt.',
-    'hero.lede.preseason': 'Før første kamp gjør modellen {favourite} til favoritt med {pct}.',
-    'hero.lede.agrees': '{team} leder med {points} poeng, og modellen er enig: {pct} sjanse for å vinne serien.',
-    'hero.lede.disagrees': '{team} leder med {points} poeng, men modellen gjør {favourite} til favoritt med {pct}.',
-    'hero.lede.remaining': '{lede} De {remaining} gjenstående kampene er simulert {simulations} ganger.',
+    'hero.lede.finished': 'Alle {matches} kamper er spilt. Ratingene er slik de sto ved sesongslutt.',
+    'hero.lede.preseason': 'Før første kamp er {favourite} favoritt.',
+    'hero.lede.agrees': '{team} leder med {points} poeng.',
+    'hero.lede.disagrees': '{team} leder med {points} poeng, men modellen har {favourite} som favoritt.',
+    'hero.lede.remaining': '{lede} {remaining} kamper igjen, simulert {simulations} ganger.',
 
     // Theme
     'theme.light': 'Lys',
