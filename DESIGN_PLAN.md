@@ -54,6 +54,14 @@ libraries (Lenis, GSAP); scroll-jacking; a loading screen in front of the data
 (Lusion's counter suits a showcase, not a page people open for the numbers);
 WebGL on the main page.
 
+**Parked: to bring back in some other way.**
+- *The season sentence under the hero*: who leads on how many points, how
+  many matches are left and how many times they are simulated, or "All 240
+  matches played" for a finished season (keys `hero.lede.*` in git history).
+  Taken out of the hero on 2026-10-23 so the hero is only the race. Could
+  return as item 2's data-written headline, as a line in the rewind panel
+  beside "Live — 184 matches played", or in the model card.
+
 ---
 
 ## Round 1: how it looks at rest
@@ -113,6 +121,10 @@ Odd for the last Conference League place).
 halves (division, season) each opening a list exactly as wide as itself,
 the options' text in line with the half's. Tighter halves on a phone, so the
 pill fits beside the wordmark and the settings button down to 360 px.
+
+**The sentence under the race is gone** (parked, see "Parked" above). The
+race now holds its height while the rewind scrubs, as the sentence did, so
+the slider never moves under the thumb.
 
 **Decision:**
 

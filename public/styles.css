@@ -638,7 +638,7 @@ html { scroll-padding-top: 76px; }
    the ladder, the compare tool, the model card and the attack map, the
    league's story is someone else's headline. The page heading stays (it is
    visually hidden), and so do the pickers in the masthead. */
-body:is([data-view="team"], [data-view="ladder"], [data-view="compare"], [data-view="model"], [data-view="explore"]) :is(#hero-lede, .race) { display: none; }
+body:is([data-view="team"], [data-view="ladder"], [data-view="compare"], [data-view="model"], [data-view="explore"]) .race { display: none; }
 body:is([data-view="team"], [data-view="ladder"], [data-view="compare"], [data-view="model"], [data-view="explore"]) .hero { padding-block: 0; }
 /* The ladder and the compare tool take both divisions, and the model card
    holds for both, so only the season is a choice there. */
@@ -3446,8 +3446,8 @@ footer a { color: var(--ink); }
 /* On a phone, a fixed shape while you scrub: the eyebrow and the
    back-to-live button on one row, the state on two reserved lines below, so
    neither the button nor a longer date moves the slider under the thumb.
-   The hero sentence above keeps room for its usual length too (and
-   renderHero never lets it shrink while you scrub). After the base rules
+   The race in the hero above keeps the room it has taken too (renderHero
+   never lets it shrink while you scrub). After the base rules
    above, which it must override. */
 @media (max-width: 760px) {
   .timeline__head { display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 0.25rem 0.75rem; }
@@ -3458,11 +3458,6 @@ footer a { color: var(--ink); }
   /* "Live" rather than "Back to live", so the eyebrow beside it keeps to one line. */
   .timeline__now-long { display: none; }
   .timeline__now-short { display: inline; }
-  #hero-lede { min-height: 3lh; }
-}
-
-@media (max-width: 370px) {
-  #hero-lede { min-height: 4lh; }
 }
 
 .timeline__control { position: relative; }

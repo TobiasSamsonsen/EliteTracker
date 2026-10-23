@@ -278,11 +278,6 @@ const translations = {
     'hero.race.through': 'decided',
     'team.own.make': 'Make this your club',
     'team.own.is': 'Your club',
-    'hero.lede.finished': 'All {matches} matches played. The ratings are as they stood at the end.',
-    'hero.lede.preseason': 'Before a ball is kicked, {favourite} start as favourites.',
-    'hero.lede.agrees': '{team} lead on {points} points.',
-    'hero.lede.disagrees': '{team} lead on {points} points, but the model favours {favourite}.',
-    'hero.lede.remaining': '{lede} {remaining} matches left, simulated {simulations} times.',
 
     // Theme
     'theme.light': 'Light',
@@ -902,11 +897,6 @@ const translations = {
     'hero.race.through': 'avgjort',
     'team.own.make': 'Gjør til din klubb',
     'team.own.is': 'Din klubb',
-    'hero.lede.finished': 'Alle {matches} kamper er spilt. Ratingene er slik de sto ved sesongslutt.',
-    'hero.lede.preseason': 'Før første kamp er {favourite} favoritt.',
-    'hero.lede.agrees': '{team} leder med {points} poeng.',
-    'hero.lede.disagrees': '{team} leder med {points} poeng, men modellen har {favourite} som favoritt.',
-    'hero.lede.remaining': '{lede} {remaining} kamper igjen, simulert {simulations} ganger.',
 
     // Theme
     'theme.light': 'Lys',

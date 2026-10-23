@@ -2157,10 +2157,6 @@ function renderRace(report) {
 
 function renderHero(report) {
   const model = report.model;
-  const leader = report.table[0];
-  const favourite = report.table.reduce((best, row) =>
-    row.position_probabilities[0] > best.position_probabilities[0] ? row : best
-  );
 
   // The page's heading names the division and season; the two pickers that
   // change them sit in the masthead.
@@ -2254,36 +2250,18 @@ function renderHero(report) {
 
   renderRace(report);
 
-  // A finished season has nothing left to simulate, so it gets told as history.
-  if (model.matches_remaining === 0) {
-    $('#hero-lede').textContent =
-      t('hero.lede.finished', { matches: model.matches_played });
-  } else {
-    // Before a ball is kicked the table's "leader" is only the alphabet.
-    const lede = model.matches_played === 0
-      ? t('hero.lede.preseason', { favourite: favourite.team })
-      : favourite.team === leader.team
-        ? t('hero.lede.agrees', { team: leader.team, points: leader.points })
-        : t('hero.lede.disagrees', { team: leader.team, points: leader.points, favourite: favourite.team });
-    $('#hero-lede').textContent =
-      t('hero.lede.remaining', {
-        lede,
-        remaining: model.matches_remaining,
-        simulations: num(model.simulations),
-      });
-  }
-  // Scrubbing the rewind slider rewrites this sentence for every date. A
-  // longer one may add a line, but a shorter one never takes it away again,
-  // so the slider below does not bob up and down under the thumb. The hold
-  // starts over with the league, season, language or width.
-  const lede = $('#hero-lede');
-  if (lede.offsetHeight) {
+  // Scrubbing the rewind slider redraws the race for every date. More clubs
+  // may take more room, but fewer never give it back, so the slider below
+  // does not bob up and down under the thumb. The hold starts over with the
+  // league, season, language or width.
+  const race = $('#hero-race');
+  if (race.offsetHeight) {
     const hold = `${state.league}|${report.league.season}|${currentLang}|${window.innerWidth}`;
-    if (lede.dataset.hold !== hold) {
-      lede.dataset.hold = hold;
-      lede.style.minHeight = '';
+    if (race.dataset.hold !== hold) {
+      race.dataset.hold = hold;
+      race.style.minHeight = '';
     }
-    lede.style.minHeight = `${lede.offsetHeight}px`;
+    race.style.minHeight = `${race.offsetHeight}px`;
   }
 
 }
