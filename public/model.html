@@ -142,7 +142,7 @@
     background: var(--panel-sunk); border: 1px solid var(--rule); border-radius: 999px; padding: 0.3rem 0.85rem; cursor: pointer;
   }
   .chips button:hover { color: var(--ink); }
-  .chips button[aria-pressed="true"] { background: var(--panel); color: var(--ink); border-color: var(--rule-strong); box-shadow: 0 1px 3px rgb(13 26 34 / 0.18); }
+  .chips button[aria-pressed="true"] { background: var(--accent); color: var(--on-accent); border-color: var(--accent); box-shadow: var(--glow-ring); }
 
   .calc { display: grid; grid-template-columns: max-content minmax(0, 7rem) minmax(0, 7rem); justify-content: start; gap: 0.4rem 0.6rem; align-items: center; margin-bottom: 1rem; font-size: 0.875rem; }
   .calc__col { font-size: 0.6875rem; font-weight: 600; letter-spacing: 0.14em; text-transform: uppercase; color: var(--ink-faint); }
@@ -672,6 +672,7 @@
     <a href="/?view=model"><span lang="nb">← Tilbake til modellkortet</span><span lang="en">← Back to the model card</span></a>
   </footer>
 </main>
+<script src="/thumbs.js" defer></script>
 <script src="/model.js" defer></script>
 </body>
 </html>
