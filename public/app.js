@@ -2070,13 +2070,16 @@ function setOwnClub(teamId) {
 }
 
 /* The hero's race: the clubs still contending for one band, side by side. A
-   band is open while some club's chance of it is neither near nothing nor
-   near certain. The reader's own club's first open band comes first; else
-   the first open band down the table, so a settled title hands over to the
-   places below it. Null once every band is settled or the season is over. */
-const RACE_OPEN = 0.05;
-const RACE_SHOWN = 0.01;
-const RACE_SETTLED = 0.95;
+   band is open while some club's chance of it lies between 10 % and 90 %
+   (symmetric: a leader at 90 % leaves the rest 10 %). A club above 90 % is
+   through and leaves the race; one from 5 % up is shown in it, so an open
+   race has its outsiders too. The reader's own club's first open band comes
+   first; else the first open band down the table, so a settled title hands
+   over to the places below it. Null once every band is settled or the
+   season is over. */
+const RACE_OPEN = 0.1;
+const RACE_SHOWN = 0.05;
+const RACE_SETTLED = 0.9;
 
 function heroRace(report, ownId) {
   // A finished season is told by its champion, even while a relegation
