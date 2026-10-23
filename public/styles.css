@@ -235,6 +235,9 @@ html, body { overflow-x: clip; }
 
 body {
   margin: 0;
+  /* The contour backdrop spans the whole page from here. */
+  position: relative;
+  min-height: 100vh;
   background:
     radial-gradient(1400px 640px at 50% -260px, var(--glow), transparent 70%) no-repeat,
     var(--paper);
@@ -563,10 +566,10 @@ html { scroll-padding-top: 76px; }
 }
 
 /* The motif: the season mountain's contour map (renderBackdrop), square,
-   cropped to cover the window and fixed behind the whole page. Faint; the
-   panels are opaque, so it shows only around them, never behind data. */
+   cropped to cover the whole page and scrolling with it. Faint; the panels
+   are opaque, so it shows only around them, never behind data. */
 .backdrop {
-  position: fixed;
+  position: absolute;
   inset: 0;
   width: 100%;
   height: 100%;
