@@ -538,7 +538,7 @@ html { scroll-padding-top: 76px; }
 
 @media (min-width: 1000px) {
   .hero { grid-template-columns: minmax(0, 1fr) auto; }
-  .hero__meta { grid-column: 2; grid-row: 1 / span 2; }
+  .hero__meta { grid-column: 2; grid-row: 1 / span 3; }
 }
 
 .hero h1 {
@@ -546,6 +546,31 @@ html { scroll-padding-top: 76px; }
   font-variation-settings: "wdth" 125;
   max-width: 22ch;
 }
+
+/* The season in one figure, at display size: Archivo at its widest and
+   heaviest, set tight, with the unit a step down so the number leads. */
+.hero__figure {
+  display: grid;
+  gap: 0.6rem;
+  margin-top: 0.5rem;
+}
+.hero__number {
+  font-family: var(--display);
+  font-variation-settings: "wdth" 125;
+  font-weight: 800;
+  font-size: clamp(3.5rem, 11vw, 7.5rem);
+  line-height: 0.85;
+  letter-spacing: -0.035em;
+}
+.hero__number small {
+  font-size: 0.4em;
+  font-weight: 700;
+  letter-spacing: 0;
+  margin-left: 0.12em;
+  color: var(--ink-muted);
+}
+.hero__caption { display: flex; align-items: center; gap: 0.5rem; color: var(--ink-muted); }
+.hero__caption .team-logo { width: 18px; height: 18px; }
 
 .hero-title-part {
   cursor: pointer;
@@ -616,7 +641,8 @@ body[data-view="compare"] .hero__meta,
 body[data-view="model"] #hero-lede,
 body[data-view="model"] .hero__meta,
 body[data-view="explore"] #hero-lede,
-body[data-view="explore"] .hero__meta { display: none; }
+body[data-view="explore"] .hero__meta,
+body:is([data-view="team"], [data-view="ladder"], [data-view="compare"], [data-view="model"], [data-view="explore"]) .hero__figure { display: none; }
 body[data-view="team"] .hero,
 body[data-view="ladder"] .hero,
 body[data-view="compare"] .hero,
@@ -660,7 +686,7 @@ section { margin-block: clamp(1.5rem, 3vw, 2.25rem); }
   border-bottom: 1px solid var(--rule);
 }
 
-.panel__head h2 { font-size: 1.25rem; }
+.panel__head h2 { font-size: 1.5rem; }
 
 .panel__head p {
   margin: 0.35rem 0 0;
@@ -1044,7 +1070,9 @@ table.standings tbody tr:hover { background: var(--panel-sunk); }
 }
 
 table.standings th.is-sorted { color: var(--ink); }
-table.standings .num { width: 3.2rem; }
+/* Figures a step narrower than the text: a scoreboard's set, and a column
+   or two more fits before the table scrolls. */
+table.standings .num { width: 3.2rem; font-variation-settings: "wdth" 85; }
 table.standings .club { text-align: left; width: 100%; font-weight: 600; }
 table.standings .pos { text-align: center; width: 2.6rem; color: var(--ink-muted); }
 table.standings .sep { border-left: 1px solid var(--rule); }

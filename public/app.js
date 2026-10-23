@@ -2152,6 +2152,20 @@ function renderHero(report) {
 
   $('#model-badge').textContent = model.version;
 
+  // The season in one figure, set large: the favourite's title chance, or
+  // once it is over, the champion's points. The unit is set smaller.
+  const done = model.matches_remaining === 0;
+  const figureRow = done ? leader : favourite;
+  const [figure, unit] = done
+    ? [num(leader.points), t('hero.figure.points')]
+    : [pct(favourite.position_probabilities[0]).replace(percentSign(), ''), '%'];
+  $('#hero-number').replaceChildren(figure, el('small', '', unit));
+  const crest = teamLogo(figureRow.team_id, figureRow.team);
+  $('#hero-caption').replaceChildren(
+    ...(crest ? [crest] : []),
+    `${figureRow.team} · ${t(done ? 'hero.figure.champions' : 'hero.figure.title')}`,
+  );
+
   // A finished season has nothing left to simulate, so it gets told as history.
   if (model.matches_remaining === 0) {
     $('#hero-lede').textContent =
