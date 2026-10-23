@@ -127,17 +127,23 @@ race now holds its height while the rewind scrubs, as the sentence did, so
 the slider never moves under the thumb.
 
 **The hero follows the view** (2026-10-24). Sluttabell keeps the race. Tabell
-shows the month's climber and faller: the biggest rise and fall in expected
-final place since the history snapshot nearest four weeks back ("+1.1
-places, KFUM, expected place 11.5 → 10.4"); a rating rise does not always
-move a club in the table, this does. Kamper shows the match of the week:
-of the week the view opens on, the fixture whose result swings a club's
-chance of a band most (`next_stakes`, `high_stakes`), weighed by how even it
-is (1 − |home − away|), with any side above 60 % ruled out while another
-match is left; it shows home / draw / away and why it matters ("Lillestrøm ·
-ECL: 37.5 % med seier, 12.6 % med tap"). Both fall back to the race. On a
-phone three figures stand in one row; under 400 px the masthead shows the
-mark without the name, so the division pill and settings fit.
+shows the month's climber and faller by rating: the biggest rise and fall
+from each club's rating 28 days before the report's latest date (the rating
+history) to now ("+15 rating, KFUM, 1568 → 1583"); an earlier try measured
+expected final place instead and was changed on review. Kamper shows the
+match of the week for the week on show, moving as you page. A week with
+fixtures to play: the fixture whose result swings a club's chance of a band
+most (`next_stakes`, `high_stakes`), weighed by how even it is
+(1 − |home − away|), any side above 60 % ruled out while another match is
+left; it shows home / draw / away and the stake ("Lillestrøm · ECL: 37.5 %
+med seier, 12.6 % med tap"). A week played: the most exciting result, how
+far it moved the two clubs' chances of every band (history snapshots either
+side) weighed by surprise (1 − its pre-match chance, priced from both
+ratings going in), closeness and goals; it shows the score, each side's
+chance before the match and the biggest shift ("Aalesund · Nedrykk:
+51.6 % → 27.4 %"). All fall back to the race. On a phone three figures stand
+in one row; under 400 px the masthead shows the mark without the name, so
+the division pill and settings fit.
 
 **Decision:**
 

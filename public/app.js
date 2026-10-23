@@ -1884,29 +1884,38 @@ function playedCard(match, ratingChanges) {
    and Next forward, as on FotMob. It opens on the week of the next fixture --
    which in mid-round also holds the results already in -- or, once the season
    is over, on its last week. */
-function renderMatches(report) {
-  const holder = $('#fixtures');
-  holder.replaceChildren();
+/* Results and fixtures on one timeline, bucketed by ISO week, with the week
+   the view opens on: the next fixture's, or the last once the season is
+   over. The matches view and its hero share it. */
+function matchesTimeline(report) {
   const played = (report.results || []).map((match) => ({ match, played: true }));
   const upcoming = (report.fixtures || []).map((match) => ({ match, played: false }));
   const timeline = [...played, ...upcoming].sort((a, b) =>
     `${a.match.date} ${a.match.time || ''}`.localeCompare(`${b.match.date} ${b.match.time || ''}`));
+  const { weeks, byWeek } = groupByWeek(timeline.map((item) => ({ ...item, date: item.match.date })));
+  const firstUpcoming = timeline.find((item) => !item.played);
+  const current = firstUpcoming ? weeks.indexOf(isoWeek(firstUpcoming.match.date)) : weeks.length - 1;
+  const index = Math.max(0, Math.min(state.matchesWeek ?? current, weeks.length - 1));
+  return { timeline, weeks, byWeek, firstUpcoming, current, index };
+}
+
+function renderMatches(report) {
+  const holder = $('#fixtures');
+  holder.replaceChildren();
+  const { timeline, weeks, byWeek, firstUpcoming, current, index } = matchesTimeline(report);
   if (!timeline.length) {
     $('#fixture-count').textContent = '';
     holder.appendChild(el('p', 'muted', t('played.empty')));
     return;
   }
-  const { weeks, byWeek } = groupByWeek(timeline.map((item) => ({ ...item, date: item.match.date })));
-  const firstUpcoming = timeline.find((item) => !item.played);
-  const current = firstUpcoming ? weeks.indexOf(isoWeek(firstUpcoming.match.date)) : weeks.length - 1;
-  if (state.matchesWeek == null) state.matchesWeek = current;
-  state.matchesWeek = Math.max(0, Math.min(state.matchesWeek, weeks.length - 1));
+  state.matchesWeek = index;
   const items = byWeek.get(weeks[state.matchesWeek]);
   const results = items.filter((item) => item.played).map((item) => item.match);
   const fixtures = items.filter((item) => !item.played).map((item) => item.match);
   $('#fixture-count').textContent = t('matches.count', { played: results.length, upcoming: fixtures.length });
 
-  const go = (index) => () => { state.matchesWeek = index; renderMatches(report); };
+  // Paging the weeks moves the hero's match of the week along with them.
+  const go = (week) => () => { state.matchesWeek = week; renderMatches(report); renderRace(report); };
   holder.appendChild(pageNav(
     t('played.week', { n: weeks[state.matchesWeek] }) + (state.matchesWeek === current && firstUpcoming ? ` · ${t('matches.thisWeek')}` : ''),
     state.matchesWeek > 0 ? go(state.matchesWeek - 1) : null,
@@ -2111,84 +2120,149 @@ function heroRace(report, ownId) {
   return { band, through, contenders, own };
 }
 
-/* The month's movers, for the table: the clubs whose expected final place
-   rose and fell most over about four weeks (the history snapshot nearest
-   28 days before the latest). Null when the season is too young to say or
-   nothing has moved half a place. */
+/* The month's movers, for the table: the clubs whose rating rose and fell
+   most over the last four weeks (from the rating history, as it stood 28
+   days before the report's latest date, to now). Null until the history has
+   loaded, or when no one has moved five points. */
 function heroMovers(report) {
-  const history = report.history;
-  const dates = history?.dates || [];
-  const last = dates.length - 1;
-  if (!history?.teams?.length || last < 1) return null;
-  const day = (iso) => Date.parse(`${iso}T12:00:00Z`);
-  const target = day(dates[last]) - 28 * 86400000;
-  let from = 0;
-  for (let k = 0; k < last; k += 1) if (Math.abs(day(dates[k]) - target) < Math.abs(day(dates[from]) - target)) from = k;
-  const expected = (positions) => positions.reduce((sum, p, place) => sum + p * (place + 1), 0);
-  const moves = history.teams
-    .map((team) => ({
-      row: report.table.find((row) => String(row.team_id) === String(team.team_id)),
-      before: expected(team.positions[from]),
-      now: expected(team.positions[last]),
-    }))
-    .filter((move) => move.row)
-    .map((move) => ({ ...move, gain: move.before - move.now }))
-    .sort((a, b) => b.gain - a.gain);
+  const careers = state.careers?.teams;
+  const dates = report.history?.dates || [];
+  if (!careers || !dates.length) return null;
+  const now = dates[dates.length - 1];
+  const then = new Date(Date.parse(`${now}T12:00:00Z`) - 28 * 86400000).toISOString().slice(0, 10);
+  const moves = report.table.map((row) => {
+    const points = careers.find((career) => String(career.team_id) === String(row.team_id))?.points || [];
+    let before = null;
+    for (const [date, rating] of points) if (date <= then) before = rating;
+    return before == null ? null : { row, before, now: row.rating, change: row.rating - before };
+  }).filter(Boolean).sort((a, b) => b.change - a.change);
   const up = moves[0];
   const down = moves[moves.length - 1];
-  if (!up || up.gain < 0.5) return null;
-  const weeks = Math.max(1, Math.round((day(dates[last]) - day(dates[from])) / (7 * 86400000)));
+  if (!up || up.change < 5) return null;
   const item = (move) => ({
     row: move.row,
-    figure: signed(move.gain, 1),
-    unit: t('hero.movers.places'),
-    sub: t('hero.movers.expected', { from: num(move.before, 1), to: num(move.now, 1) }),
+    // The difference of the two ratings as shown, so the sum adds up.
+    figure: signed(Math.round(move.now) - Math.round(move.before)),
+    unit: t('hero.movers.unit'),
+    sub: t('hero.movers.from', { from: num(move.before), to: num(move.now) }),
   });
   return {
-    label: t('hero.movers.title', { weeks }),
-    items: down.gain <= -0.5 ? [item(up), item(down)] : [item(up)],
+    label: t('hero.movers.title'),
+    items: down.change <= -5 ? [item(up), item(down)] : [item(up)],
   };
 }
 
-/* The match of the week, for the matches view: of this week's fixtures (the
-   week the view opens on), the one whose result swings a club's chance of a
-   band the most, weighed by how even it is, so a foregone win does not
-   lead. A side above 60 % rules a match out while any other is left. */
+/* A club's chance of each band, read off a history snapshot's places. */
+function bandChances(positions, bands) {
+  return bands.map((band) => positions.slice(band.first - 1, band.last).reduce((a, b) => a + b, 0));
+}
+
+/* The match of the week, for the matches view, following the week on show.
+   A week with fixtures still to play: of those, the one whose result swings
+   a club's chance of a band the most, weighed by how even it is, so a
+   foregone win does not lead (a side above 60 % rules a match out while any
+   other is left). A week played: the most exciting result, weighing how far
+   it moved the two clubs' chances of every band (the history snapshots
+   either side of it) by how surprising, close and full of goals it was. */
 function heroMatch(report) {
-  const fixtures = [...(report.fixtures || [])].sort((a, b) =>
-    `${a.date} ${a.time || ''}`.localeCompare(`${b.date} ${b.time || ''}`));
-  if (!fixtures.length) return null;
-  const week = isoWeek(fixtures[0].date);
-  const thisWeek = fixtures.filter((f) => isoWeek(f.date) === week && f.date.slice(0, 4) === fixtures[0].date.slice(0, 4));
-  const stakes = [...(report.next_stakes || []), ...(report.high_stakes || [])];
-  const scored = thisWeek.map((fixture) => {
-    const entries = stakesForFixture(stakes, fixture.match_id).sort((a, b) => b.swing - a.swing);
-    const swing = entries.length ? entries[0].swing : 0;
-    const balance = 1 - Math.abs(fixture.home_win - fixture.away_win);
-    return { fixture, stake: entries[0], score: (swing + 0.05) * balance };
-  });
-  const open = scored.filter(({ fixture }) => Math.max(fixture.home_win, fixture.away_win) <= 0.6);
-  const best = (open.length ? open : scored).reduce((a, b) => (b.score > a.score ? b : a));
-  const { fixture, stake } = best;
+  const { timeline, weeks, byWeek, index } = matchesTimeline(report);
+  if (!timeline.length) return null;
+  const items = byWeek.get(weeks[index]);
+  const fixtures = items.filter((item) => !item.played).map((item) => item.match);
+  const results = items.filter((item) => item.played).map((item) => item.match);
   const bare = (chance) => pct(chance).replace(percentSign(), '');
-  let note = '';
-  if (stake) {
-    const band = { label: stake.band_label, first: stake.band_first, last: stake.band_last, tone: stake.band_tone };
-    note = t('hero.match.stake', {
-      team: stake.team,
-      band: shortBandLabel(band, report),
-      win: pct(stake.p_favourable),
-      loss: pct(stake.p_unfavourable),
+  const when = (match) => `${t('hero.match.title')} · ${formatDate(match.date)}${match.time ? ` ${match.time}` : ''}`;
+
+  if (fixtures.length) {
+    const stakes = [...(report.next_stakes || []), ...(report.high_stakes || [])];
+    const scored = fixtures.map((fixture) => {
+      const entries = stakesForFixture(stakes, fixture.match_id).sort((a, b) => b.swing - a.swing);
+      const swing = entries.length ? entries[0].swing : 0;
+      const balance = 1 - Math.abs(fixture.home_win - fixture.away_win);
+      return { fixture, stake: entries[0], score: (swing + 0.05) * balance };
     });
+    const open = scored.filter(({ fixture }) => Math.max(fixture.home_win, fixture.away_win) <= 0.6);
+    const { fixture, stake } = (open.length ? open : scored).reduce((a, b) => (b.score > a.score ? b : a));
+    let note = '';
+    if (stake) {
+      const band = { label: stake.band_label, first: stake.band_first, last: stake.band_last, tone: stake.band_tone };
+      note = t('hero.match.stake', {
+        team: stake.team,
+        band: shortBandLabel(band, report),
+        win: pct(stake.p_favourable),
+        loss: pct(stake.p_unfavourable),
+      });
+    }
+    return {
+      label: when(fixture),
+      items: [
+        { row: { team_id: fixture.home_id, team: fixture.home }, figure: bare(fixture.home_win), unit: '%' },
+        { name: t('hero.match.draw'), figure: bare(fixture.draw), unit: '%', draw: true },
+        { row: { team_id: fixture.away_id, team: fixture.away }, figure: bare(fixture.away_win), unit: '%' },
+      ],
+      note,
+    };
   }
+  if (!results.length) return null;
+
+  // Each club's rating going into the match, from its history: the point
+  // before the match's own.
+  const changes = buildRatingChanges(state.careers);
+  const ratingBefore = (id, date) => {
+    const entry = changes.get(`${id}|${date}`);
+    return entry ? entry.rating - entry.change : null;
+  };
+  const history = report.history;
+  const bands = report.league.bands;
+  const snapshot = (date, after) => {
+    const dates = history?.dates || [];
+    const k = after ? dates.findIndex((d) => d >= date) : dates.findLastIndex((d) => d < date);
+    return k >= 0 ? k : null;
+  };
+  const scored = results.map((match) => {
+    const hr = ratingBefore(match.home_id, match.date);
+    const ar = ratingBefore(match.away_id, match.date);
+    const odds = hr != null && ar != null
+      ? blendOdds(report.model, matchOdds(report.model, hr + surfaceEdge(report.model, match.home_id, match.away_id), ar), match.home_id, match.away_id)
+      : null;
+    const outcome = match.home_goals > match.away_goals ? 'home_win' : match.home_goals < match.away_goals ? 'away_win' : 'draw';
+    const surprise = odds ? 1 - odds[outcome] : 0;
+    const margin = Math.abs(match.home_goals - match.away_goals);
+    const close = margin <= 1 ? 1 : margin === 2 ? 0.4 : 0;
+    const goals = Math.min(match.home_goals + match.away_goals, 6) / 6;
+    // How far the two clubs' chances of every band moved across the match.
+    const before = snapshot(match.date, false);
+    const after = snapshot(match.date, true);
+    let impact = 0;
+    let shift = null;
+    if (before != null && after != null && before !== after) {
+      for (const id of [match.home_id, match.away_id]) {
+        const team = history.teams.find((h) => String(h.team_id) === String(id));
+        if (!team) continue;
+        const was = bandChances(team.positions[before], bands);
+        const is = bandChances(team.positions[after], bands);
+        bands.forEach((band, b) => {
+          const move = Math.abs(is[b] - was[b]);
+          impact += move;
+          if (!shift || move > shift.move) shift = { move, band, was: was[b], is: is[b], team: id === match.home_id ? match.home : match.away };
+        });
+      }
+    }
+    const excitement = 0.45 * surprise + 0.35 * close + 0.2 * goals;
+    return { match, odds, shift, score: (impact + 0.05) * (0.25 + excitement) };
+  });
+  const { match, odds, shift } = scored.reduce((a, b) => (b.score > a.score ? b : a));
+  const before = (chance) => (odds ? t('hero.match.before', { p: pct(chance) }) : '');
   return {
-    label: `${t('hero.match.title')} · ${formatDate(fixture.date)}${fixture.time ? ` ${fixture.time}` : ''}`,
+    label: when(match),
     items: [
-      { row: { team_id: fixture.home_id, team: fixture.home }, figure: bare(fixture.home_win), unit: '%' },
-      { name: t('hero.match.draw'), figure: bare(fixture.draw), unit: '%', draw: true },
-      { row: { team_id: fixture.away_id, team: fixture.away }, figure: bare(fixture.away_win), unit: '%' },
+      { row: { team_id: match.home_id, team: match.home }, figure: String(match.home_goals), unit: '', sub: before(odds?.home_win) },
+      { name: '', figure: '–', unit: '', draw: true },
+      { row: { team_id: match.away_id, team: match.away }, figure: String(match.away_goals), unit: '', sub: before(odds?.away_win) },
     ],
-    note,
+    note: shift && shift.move >= 0.02
+      ? t('hero.match.shift', { team: shift.team, band: shortBandLabel(shift.band, report), from: pct(shift.was), to: pct(shift.is) })
+      : '',
   };
 }
 
