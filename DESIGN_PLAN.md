@@ -7,9 +7,10 @@ about it.
 
 ## How we work through it
 
-1. Take the next item in the order below. Build it on its own branch,
-   `design/<number>-<slug>`, and open a PR so Firebase gives it a preview URL
-   to try on a phone.
+1. Take the next item in the order below. Every item is built on the one
+   branch, `design/identity`, as its own commit(s) named "Design item N: …",
+   so a dropped item is reverted by its commits. One PR for the whole branch
+   gives a Firebase preview URL to try on a phone.
 2. Screenshot before and after at desktop (1440 wide) and phone (390 wide), in
    light and dark, in Norwegian and English.
 3. Run the checks every item must pass (below), then decide: keep, drop, or
@@ -80,7 +81,7 @@ made for much larger.
 **Decide by.** Does the hero read in one glance on a phone? Do the narrower
 figures stay readable at 13 px?
 
-**Built** (branch `design/1-display-type`). The figure is the favourite's
+**Built.** The figure is the favourite's
 title chance while the season runs, the champion's points once it is over,
 with the club's crest and a caption under it; it shows only where the lede
 does. Panel titles 1.25 → 1.5rem. Table figures at `wdth` 85. Open questions
