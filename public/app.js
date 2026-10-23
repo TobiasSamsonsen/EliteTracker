@@ -2111,48 +2111,146 @@ function heroRace(report, ownId) {
   return { band, through, contenders, own };
 }
 
-function renderRace(report) {
+/* The month's movers, for the table: the clubs whose expected final place
+   rose and fell most over about four weeks (the history snapshot nearest
+   28 days before the latest). Null when the season is too young to say or
+   nothing has moved half a place. */
+function heroMovers(report) {
+  const history = report.history;
+  const dates = history?.dates || [];
+  const last = dates.length - 1;
+  if (!history?.teams?.length || last < 1) return null;
+  const day = (iso) => Date.parse(`${iso}T12:00:00Z`);
+  const target = day(dates[last]) - 28 * 86400000;
+  let from = 0;
+  for (let k = 0; k < last; k += 1) if (Math.abs(day(dates[k]) - target) < Math.abs(day(dates[from]) - target)) from = k;
+  const expected = (positions) => positions.reduce((sum, p, place) => sum + p * (place + 1), 0);
+  const moves = history.teams
+    .map((team) => ({
+      row: report.table.find((row) => String(row.team_id) === String(team.team_id)),
+      before: expected(team.positions[from]),
+      now: expected(team.positions[last]),
+    }))
+    .filter((move) => move.row)
+    .map((move) => ({ ...move, gain: move.before - move.now }))
+    .sort((a, b) => b.gain - a.gain);
+  const up = moves[0];
+  const down = moves[moves.length - 1];
+  if (!up || up.gain < 0.5) return null;
+  const weeks = Math.max(1, Math.round((day(dates[last]) - day(dates[from])) / (7 * 86400000)));
+  const item = (move) => ({
+    row: move.row,
+    figure: signed(move.gain, 1),
+    unit: t('hero.movers.places'),
+    sub: t('hero.movers.expected', { from: num(move.before, 1), to: num(move.now, 1) }),
+  });
+  return {
+    label: t('hero.movers.title', { weeks }),
+    items: down.gain <= -0.5 ? [item(up), item(down)] : [item(up)],
+  };
+}
+
+/* The match of the week, for the matches view: of this week's fixtures (the
+   week the view opens on), the one whose result swings a club's chance of a
+   band the most, weighed by how even it is, so a foregone win does not
+   lead. A side above 60 % rules a match out while any other is left. */
+function heroMatch(report) {
+  const fixtures = [...(report.fixtures || [])].sort((a, b) =>
+    `${a.date} ${a.time || ''}`.localeCompare(`${b.date} ${b.time || ''}`));
+  if (!fixtures.length) return null;
+  const week = isoWeek(fixtures[0].date);
+  const thisWeek = fixtures.filter((f) => isoWeek(f.date) === week && f.date.slice(0, 4) === fixtures[0].date.slice(0, 4));
+  const stakes = [...(report.next_stakes || []), ...(report.high_stakes || [])];
+  const scored = thisWeek.map((fixture) => {
+    const entries = stakesForFixture(stakes, fixture.match_id).sort((a, b) => b.swing - a.swing);
+    const swing = entries.length ? entries[0].swing : 0;
+    const balance = 1 - Math.abs(fixture.home_win - fixture.away_win);
+    return { fixture, stake: entries[0], score: (swing + 0.05) * balance };
+  });
+  const open = scored.filter(({ fixture }) => Math.max(fixture.home_win, fixture.away_win) <= 0.6);
+  const best = (open.length ? open : scored).reduce((a, b) => (b.score > a.score ? b : a));
+  const { fixture, stake } = best;
+  const bare = (chance) => pct(chance).replace(percentSign(), '');
+  let note = '';
+  if (stake) {
+    const band = { label: stake.band_label, first: stake.band_first, last: stake.band_last, tone: stake.band_tone };
+    note = t('hero.match.stake', {
+      team: stake.team,
+      band: shortBandLabel(band, report),
+      win: pct(stake.p_favourable),
+      loss: pct(stake.p_unfavourable),
+    });
+  }
+  return {
+    label: `${t('hero.match.title')} · ${formatDate(fixture.date)}${fixture.time ? ` ${fixture.time}` : ''}`,
+    items: [
+      { row: { team_id: fixture.home_id, team: fixture.home }, figure: bare(fixture.home_win), unit: '%' },
+      { name: t('hero.match.draw'), figure: bare(fixture.draw), unit: '%', draw: true },
+      { row: { team_id: fixture.away_id, team: fixture.away }, figure: bare(fixture.away_win), unit: '%' },
+    ],
+    note,
+  };
+}
+
+/* The race, as the hero draws it: its band, or the champion once every band
+   is settled. */
+function heroRaceModel(report) {
   const race = heroRace(report, ownClub());
   const bare = (chance) => pct(chance).replace(percentSign(), '');
-  let label;
-  let clubs;
   if (race) {
-    label = race.band.tone === 'champion' ? t('hero.race.title') : bandName(race.band);
-    clubs = [
-      ...race.through.map(({ row, chance }) => [row, bare(chance), '%', true]),
-      ...race.contenders.map(({ row, chance }) => [row, bare(chance), '%', false]),
-    ];
-  } else {
-    // Every band settled: the champion, on points once the season is over.
-    const champion = report.table.reduce((best, row) =>
-      row.position_probabilities[0] > best.position_probabilities[0] ? row : best);
-    const done = report.model.matches_remaining === 0;
-    label = t('band.Champions');
-    clubs = [[champion, done ? num(champion.points) : bare(champion.position_probabilities[0]), done ? t('hero.race.points') : '%']];
+    return {
+      label: race.band.tone === 'champion' ? t('hero.race.title') : bandName(race.band),
+      items: [
+        ...race.through.map(({ row, chance }) => ({ row, figure: bare(chance), unit: '%', through: true })),
+        ...race.contenders.map(({ row, chance }) => ({ row, figure: bare(chance), unit: '%', own: row === race.own })),
+      ],
+    };
   }
+  // Every band settled: the champion, on points once the season is over.
+  const champion = report.table.reduce((best, row) =>
+    row.position_probabilities[0] > best.position_probabilities[0] ? row : best);
+  const done = report.model.matches_remaining === 0;
+  return {
+    label: t('band.Champions'),
+    items: [{
+      row: champion,
+      figure: done ? num(champion.points) : bare(champion.position_probabilities[0]),
+      unit: done ? t('hero.race.points') : '%',
+    }],
+  };
+}
+
+/* The hero follows the view: the table shows the month's movers, the
+   matches the match of the week, the rest the race. Each falls back to the
+   race when it has nothing to show. */
+function renderRace(report) {
+  const hero = (state.activeView === 'table' && heroMovers(report))
+    || (state.activeView === 'matches' && heroMatch(report))
+    || heroRaceModel(report);
   const list = el('ol', 'race__clubs');
-  for (const [row, figure, unit, through] of clubs) {
-    const mine = row === race?.own;
-    const item = el('li', ['race__club', mine && 'is-own', through && 'is-through'].filter(Boolean).join(' '));
-    const value = el('b', 'race__value', figure);
-    value.appendChild(el('small', '', unit));
-    if (through) value.appendChild(el('span', 'visually-hidden', ` (${t('hero.race.through')})`));
+  for (const item of hero.items) {
+    const li = el('li', ['race__club', item.own && 'is-own', item.through && 'is-through', item.draw && 'is-draw'].filter(Boolean).join(' '));
+    const value = el('b', 'race__value', item.figure);
+    value.appendChild(el('small', '', item.unit));
+    if (item.through) value.appendChild(el('span', 'visually-hidden', ` (${t('hero.race.through')})`));
     const name = el('span', 'race__name');
-    const crest = teamLogo(row.team_id, row.team);
+    const crest = item.row && teamLogo(item.row.team_id, item.row.team);
     if (crest) name.appendChild(crest);
-    name.appendChild(document.createTextNode(row.team));
-    if (mine) {
+    name.appendChild(document.createTextNode(item.row ? item.row.team : item.name));
+    if (item.own) {
       const star = el('span', 'race__own', '★');
       star.title = t('hero.race.own');
       star.setAttribute('aria-label', t('hero.race.own'));
       name.appendChild(star);
     }
-    item.append(value, name);
-    list.appendChild(item);
+    li.append(value, name);
+    if (item.sub) li.appendChild(el('span', 'race__sub', item.sub));
+    list.appendChild(li);
   }
   const box = $('#hero-race');
-  box.dataset.count = String(clubs.length);
-  box.replaceChildren(el('div', 'race__label label', label), list);
+  box.dataset.count = String(hero.items.length);
+  box.replaceChildren(el('div', 'race__label label', hero.label), list);
+  if (hero.note) box.appendChild(el('p', 'race__note', hero.note));
 }
 
 function renderHero(report) {
@@ -2253,10 +2351,10 @@ function renderHero(report) {
   // Scrubbing the rewind slider redraws the race for every date. More clubs
   // may take more room, but fewer never give it back, so the slider below
   // does not bob up and down under the thumb. The hold starts over with the
-  // league, season, language or width.
+  // league, season, view, language or width.
   const race = $('#hero-race');
   if (race.offsetHeight) {
-    const hold = `${state.league}|${report.league.season}|${currentLang}|${window.innerWidth}`;
+    const hold = `${state.league}|${report.league.season}|${state.activeView}|${currentLang}|${window.innerWidth}`;
     if (race.dataset.hold !== hold) {
       race.dataset.hold = hold;
       race.style.minHeight = '';

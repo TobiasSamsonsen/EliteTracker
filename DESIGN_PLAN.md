@@ -126,6 +126,19 @@ pill fits beside the wordmark and the settings button down to 360 px.
 race now holds its height while the rewind scrubs, as the sentence did, so
 the slider never moves under the thumb.
 
+**The hero follows the view** (2026-10-24). Sluttabell keeps the race. Tabell
+shows the month's climber and faller: the biggest rise and fall in expected
+final place since the history snapshot nearest four weeks back ("+1.1
+places, KFUM, expected place 11.5 → 10.4"); a rating rise does not always
+move a club in the table, this does. Kamper shows the match of the week:
+of the week the view opens on, the fixture whose result swings a club's
+chance of a band most (`next_stakes`, `high_stakes`), weighed by how even it
+is (1 − |home − away|), with any side above 60 % ruled out while another
+match is left; it shows home / draw / away and why it matters ("Lillestrøm ·
+ECL: 37.5 % med seier, 12.6 % med tap"). Both fall back to the race. On a
+phone three figures stand in one row; under 400 px the masthead shows the
+mark without the name, so the division pill and settings fit.
+
 **Decision:**
 
 ### 5. Card typography and spacing

@@ -400,6 +400,21 @@ html { scroll-padding-top: 76px; }
 /* The mark: a corner of the finish grid, as in public/icons/mark.svg. */
 .wordmark__mark { width: 1.15em; height: 1.15em; flex: none; align-self: center; fill: currentColor; }
 .wordmark__lead { fill: var(--accent); }
+.wordmark__name { font-weight: inherit; }
+/* Under 400px the name, the division pill and the settings button overflow
+   the bar, so the mark stands alone, larger; the name stays for screen
+   readers. */
+@media (max-width: 399px) {
+  .wordmark__mark { width: 1.75rem; height: 1.75rem; }
+  .wordmark__name {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+}
 
 .wordmark span {
   font-variation-settings: "wdth" 100;
@@ -657,6 +672,16 @@ html { scroll-padding-top: 76px; }
 .race__name { display: flex; align-items: center; gap: 0.5rem; font-weight: 600; color: var(--ink-muted); }
 .race__name .team-logo { width: 20px; height: 20px; }
 .race__own { color: var(--accent-ink); }
+/* The match of the week's draw stands between the clubs, a step back. */
+.race__club.is-draw .race__value { color: var(--ink-muted); }
+.race__sub { font-size: 0.8125rem; color: var(--ink-faint); }
+.race__note { margin: 0; font-size: 0.875rem; color: var(--ink-muted); }
+/* Three side by side on a phone (a match with its draw, or a three-club
+   race), rather than two and one left over. */
+@media (max-width: 480px) {
+  .race[data-count="3"] .race__clubs { flex-wrap: nowrap; gap: var(--space-4); }
+  .race[data-count="3"] .race__value { font-size: clamp(1.5rem, 7vw, 2.25rem); }
+}
 
 /* Division and season, in the masthead: one pill like the view switch, each
    half opening a list exactly as wide as itself. */
