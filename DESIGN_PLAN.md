@@ -92,6 +92,16 @@ taking anything away. Now it replaces: the stats column beside the hero
 the number ("Bodø/Glimt leder med 56 poeng. 56 kamper igjen, simulert 50 000
 ganger."). Open: is the favourite's title chance the right figure at all?
 
+**Second review: the picker was the clutter; show a race, not one club.**
+The division and season pickers moved from the hero to the masthead's right
+side (the hero keeps a visually hidden `h1`). The figure became a race: the
+clubs still contending for one band (chance between 1 % and 95 %, at most
+four), each with its chance, side by side. Which race: the reader's own club's
+first open band (chance between 5 % and 95 %), else the first open band down
+the table, so a settled title hands over to the places below it. A finished
+season shows its champion on points. "Your club" is a pill on each club page,
+kept in `localStorage` on the device only.
+
 **Decision:**
 
 ### 5. Card typography and spacing

@@ -2057,6 +2057,92 @@ function formChipsEl(form) {
 
 /* ---------- hero & model card ------------------------------------- */
 
+/* The reader's own club, remembered on this device only. */
+const OWN_CLUB_KEY = 'elitetracker-own-club';
+function ownClub() {
+  try { return localStorage.getItem(OWN_CLUB_KEY); } catch { return null; }
+}
+function setOwnClub(teamId) {
+  try {
+    if (teamId) localStorage.setItem(OWN_CLUB_KEY, teamId);
+    else localStorage.removeItem(OWN_CLUB_KEY);
+  } catch { /* private window: the choice lasts this page only */ }
+}
+
+/* The hero's race: the clubs still contending for one band, side by side. A
+   band is open while some club's chance of it is neither near nothing nor
+   near certain. The reader's own club's first open band comes first; else
+   the first open band down the table, so a settled title hands over to the
+   places below it. Null once every band is settled or the season is over. */
+const RACE_OPEN = 0.05;
+const RACE_SHOWN = 0.01;
+const RACE_SETTLED = 0.95;
+
+function heroRace(report, ownId) {
+  // A finished season is told by its champion, even while a relegation
+  // play-off against the division below is still simulated.
+  if (report.model.matches_remaining === 0) return null;
+  const slug = report.league.slug;
+  const open = (row, band) => {
+    const chance = bandChance(row, band, slug);
+    return chance > RACE_OPEN && chance < RACE_SETTLED;
+  };
+  const own = ownId ? report.table.find((row) => String(row.team_id) === ownId) : null;
+  const bands = report.league.bands;
+  const band = (own && bands.find((b) => open(own, b)))
+    || bands.find((b) => report.table.some((row) => open(row, b)));
+  if (!band) return null;
+  let clubs = report.table
+    .map((row) => ({ row, chance: bandChance(row, band, slug) }))
+    .filter(({ chance }) => chance > RACE_SHOWN && chance < RACE_SETTLED)
+    .sort((a, b) => b.chance - a.chance)
+    .slice(0, 4);
+  if (own && !clubs.some(({ row }) => row === own)) {
+    clubs = [...clubs.slice(0, 3), { row: own, chance: bandChance(own, band, slug) }];
+  }
+  return { band, clubs, own };
+}
+
+function renderRace(report) {
+  const race = heroRace(report, ownClub());
+  const bare = (chance) => pct(chance).replace(percentSign(), '');
+  let label;
+  let clubs;
+  if (race) {
+    label = race.band.tone === 'champion' ? t('hero.race.title') : bandName(race.band);
+    clubs = race.clubs.map(({ row, chance }) => [row, bare(chance), '%']);
+  } else {
+    // Every band settled: the champion, on points once the season is over.
+    const champion = report.table.reduce((best, row) =>
+      row.position_probabilities[0] > best.position_probabilities[0] ? row : best);
+    const done = report.model.matches_remaining === 0;
+    label = t('band.Champions');
+    clubs = [[champion, done ? num(champion.points) : bare(champion.position_probabilities[0]), done ? t('hero.race.points') : '%']];
+  }
+  const list = el('ol', 'race__clubs');
+  for (const [row, figure, unit] of clubs) {
+    const mine = row === race?.own;
+    const item = el('li', mine ? 'race__club is-own' : 'race__club');
+    const value = el('b', 'race__value', figure);
+    value.appendChild(el('small', '', unit));
+    const name = el('span', 'race__name');
+    const crest = teamLogo(row.team_id, row.team);
+    if (crest) name.appendChild(crest);
+    name.appendChild(document.createTextNode(row.team));
+    if (mine) {
+      const star = el('span', 'race__own', '★');
+      star.title = t('hero.race.own');
+      star.setAttribute('aria-label', t('hero.race.own'));
+      name.appendChild(star);
+    }
+    item.append(value, name);
+    list.appendChild(item);
+  }
+  const box = $('#hero-race');
+  box.dataset.count = String(clubs.length);
+  box.replaceChildren(el('div', 'race__label label', label), list);
+}
+
 function renderHero(report) {
   const model = report.model;
   const leader = report.table[0];
@@ -2064,8 +2150,10 @@ function renderHero(report) {
     row.position_probabilities[0] > best.position_probabilities[0] ? row : best
   );
 
-  // Build interactive title: clickable division name + clickable season year.
-  const title = $('#hero-title');
+  // The page's heading names the division and season; the two pickers that
+  // change them sit in the masthead.
+  $('#hero-title').textContent = `${report.league.name} ${report.league.season}`;
+  const title = $('#league-picker');
   title.replaceChildren();
   // Each half of the heading is a button that opens a picker. The visible
   // text stays the accessible name -- an aria-label here would replace it, and
@@ -2105,7 +2193,7 @@ function renderHero(report) {
     leagueMenu.style.position = 'fixed';
     leagueMenu.style.top = `${rect.bottom + 6}px`;
     leagueMenu.style.left = `${rect.left}px`;
-    leagueMenu.style.width = `${rect.width}px`;
+    leagueMenu.style.minWidth = `${rect.width}px`;
     menuFocusCleanup = trapFocus(leagueMenu);
   });
   divSpan.addEventListener('keydown', (event) => {
@@ -2138,7 +2226,7 @@ function renderHero(report) {
     seasonMenu.style.position = 'fixed';
     seasonMenu.style.top = `${rect.bottom + 6}px`;
     seasonMenu.style.left = `${rect.left}px`;
-    seasonMenu.style.width = `${rect.width}px`;
+    seasonMenu.style.minWidth = `${rect.width}px`;
     menuFocusCleanup = trapFocus(seasonMenu);
   });
   seasonSpan.addEventListener('keydown', (event) => {
@@ -2152,19 +2240,7 @@ function renderHero(report) {
 
   $('#model-badge').textContent = model.version;
 
-  // The season in one figure, set large: the favourite's title chance, or
-  // once it is over, the champion's points. The unit is set smaller.
-  const done = model.matches_remaining === 0;
-  const figureRow = done ? leader : favourite;
-  const [figure, unit] = done
-    ? [num(leader.points), t('hero.figure.points')]
-    : [pct(favourite.position_probabilities[0]).replace(percentSign(), ''), '%'];
-  $('#hero-number').replaceChildren(figure, el('small', '', unit));
-  const crest = teamLogo(figureRow.team_id, figureRow.team);
-  $('#hero-caption').replaceChildren(
-    ...(crest ? [crest] : []),
-    `${figureRow.team} · ${t(done ? 'hero.figure.champions' : 'hero.figure.title')}`,
-  );
+  renderRace(report);
 
   // A finished season has nothing left to simulate, so it gets told as history.
   if (model.matches_remaining === 0) {
@@ -4896,6 +4972,20 @@ function renderTeamSummary(teamId, row, career, report, container) {
   // Name (pushes right side to the end)
   const nameBlock = el('div', 'team-summary__name-block');
   nameBlock.appendChild(el('h3', 'team-summary__name', row?.team || career?.team || 'Unknown'));
+  // Your club: the hero follows its races first.
+  const ownBtn = el('button', 'team-summary__own');
+  ownBtn.type = 'button';
+  const paintOwn = () => {
+    const mine = ownClub() === String(teamId);
+    ownBtn.setAttribute('aria-pressed', String(mine));
+    ownBtn.textContent = mine ? `★ ${t('team.own.is')}` : `☆ ${t('team.own.make')}`;
+  };
+  ownBtn.addEventListener('click', () => {
+    setOwnClub(ownClub() === String(teamId) ? null : String(teamId));
+    paintOwn();
+  });
+  paintOwn();
+  nameBlock.appendChild(ownBtn);
   header.appendChild(nameBlock);
 
   // Rating block: [arrow + rating] / position

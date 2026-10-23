@@ -360,8 +360,10 @@ html { scroll-padding-top: 76px; }
 @media (min-width: 761px) {
   .masthead__inner { display: grid; grid-template-columns: 1fr minmax(0, auto) 1fr; }
   .wordmark { justify-self: start; }
-  .settings-btn { justify-self: end; }
+  .masthead__end { justify-self: end; }
 }
+
+.masthead__end { display: flex; align-items: center; gap: 1rem; margin-left: auto; }
 
 .wordmark {
   font-family: var(--display);
@@ -544,58 +546,69 @@ html { scroll-padding-top: 76px; }
   grid-template-columns: minmax(0, 1fr);
 }
 
-.hero h1 {
-  font-size: clamp(1.75rem, 4vw, 2.5rem);
-  font-variation-settings: "wdth" 125;
-  max-width: 22ch;
+/* The race the season is about: the clubs still contending for one band,
+   side by side. Archivo at its widest and heaviest, set tight, the unit a
+   step down so the number leads; fewer clubs, larger figures. */
+.race { display: grid; gap: var(--space-3); }
+.race__clubs {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-4) var(--space-7);
 }
-
-/* The season in one figure, at display size: Archivo at its widest and
-   heaviest, set tight, with the unit a step down so the number leads. */
-.hero__figure {
-  display: grid;
-  gap: 0.6rem;
-  margin-top: 0.5rem;
-}
-.hero__number {
+.race__club { display: grid; gap: var(--space-2); }
+.race__value {
   font-family: var(--display);
   font-variation-settings: "wdth" 125;
   font-weight: 800;
-  font-size: clamp(3.5rem, 11vw, 7.5rem);
+  font-size: clamp(2.75rem, 8vw, 5.5rem);
   line-height: 0.85;
   letter-spacing: -0.035em;
 }
-.hero__number small {
+.race[data-count="1"] .race__value { font-size: clamp(3.5rem, 11vw, 7.5rem); }
+.race:is([data-count="3"], [data-count="4"]) .race__value { font-size: clamp(2.25rem, 5.5vw, 4rem); }
+.race__value small {
   font-size: 0.4em;
   font-weight: 700;
   letter-spacing: 0;
   margin-left: 0.12em;
   color: var(--ink-muted);
 }
-.hero__caption { display: flex; align-items: center; gap: 0.5rem; color: var(--ink-muted); }
-.hero__caption .team-logo { width: 18px; height: 18px; }
+.race__name { display: flex; align-items: center; gap: 0.5rem; font-weight: 600; color: var(--ink-muted); }
+.race__name .team-logo { width: 20px; height: 20px; }
+.race__own { color: var(--accent-ink); }
+
+/* Division and season, in the masthead: the same two pickers the hero's
+   title used to carry, at the size of the navigation. */
+.league-picker {
+  display: flex;
+  align-items: baseline;
+  gap: 0.6rem;
+  font-weight: 700;
+  font-size: 0.9375rem;
+  white-space: nowrap;
+}
 
 .hero-title-part {
   cursor: pointer;
-  border-bottom: 2px dashed var(--ink-faint);
-  transition: border-color 0.15s var(--ease), color 0.15s var(--ease);
+  transition: color 0.15s var(--ease);
 }
 .hero-title-part:hover {
-  border-color: var(--ink);
   color: var(--accent-ink);
   text-shadow: var(--glow-text);
 }
 
-/* A chevron says "this opens a list" where the dashed underline alone only
-   hinted at it; it turns over while the list is open. */
+/* A chevron says "this opens a list"; it turns over while the list is open. */
 .hero-title-part::after {
   content: "";
   display: inline-block;
   width: 0.32em;
   height: 0.32em;
   margin: 0 0.1em 0.18em 0.28em;
-  border-right: 0.08em solid currentColor;
-  border-bottom: 0.08em solid currentColor;
+  border-right: 0.12em solid currentColor;
+  border-bottom: 0.12em solid currentColor;
   transform: rotate(45deg);
   opacity: 0.55;
   transition: transform 0.15s var(--ease), opacity 0.15s var(--ease);
@@ -612,23 +625,18 @@ html { scroll-padding-top: 76px; }
 
 /* The league hero only where it is the page's own story. In a club's view,
    the ladder, the compare tool, the model card and the attack map, the
-   league's story is someone else's headline; the title stays, since its
-   pickers still navigate. */
-body:is([data-view="team"], [data-view="ladder"], [data-view="compare"], [data-view="model"], [data-view="explore"]) :is(#hero-lede, .hero__figure) { display: none; }
-body[data-view="team"] .hero,
-body[data-view="ladder"] .hero,
-body[data-view="compare"] .hero,
-body[data-view="model"] .hero,
-body[data-view="explore"] .hero { padding-bottom: 0.5rem; }
+   league's story is someone else's headline. The page heading stays (it is
+   visually hidden), and so do the pickers in the masthead. */
+body:is([data-view="team"], [data-view="ladder"], [data-view="compare"], [data-view="model"], [data-view="explore"]) :is(#hero-lede, .race) { display: none; }
+body:is([data-view="team"], [data-view="ladder"], [data-view="compare"], [data-view="model"], [data-view="explore"]) .hero { padding-block: 0; }
 /* The ladder and the compare tool take both divisions, and the model card
    holds for both, so only the season is a choice there. */
 body[data-view="ladder"] .hero-title-part[data-role="division"],
 body[data-view="compare"] .hero-title-part[data-role="division"],
 body[data-view="model"] .hero-title-part[data-role="division"] { display: none; }
-/* Explore: a visualisation of one division and season keeps the hero's
-   title, whose two pickers change them. The gallery shows no league's
-   numbers and the season mountain has pickers of its own: no hero there. */
-body[data-view="explore"]:is([data-viz=""], [data-viz="mountain"]) .hero { display: none; }
+/* Explore: the gallery shows no league's numbers and the season mountain has
+   pickers of its own: no hero there, and no masthead pickers. */
+body[data-view="explore"]:is([data-viz=""], [data-viz="mountain"]) :is(.hero, .league-picker) { display: none; }
 /* ---------- panels ------------------------------------------------ */
 
 section { margin-block: clamp(1.5rem, 3vw, 2.25rem); }
@@ -2560,7 +2568,6 @@ footer a { color: var(--ink); }
 
 .settings-btn {
   appearance: none;
-  margin-left: auto; /* the right edge, also on a phone where the views are hidden */
   min-width: 40px;
   min-height: 40px;
   border: 0;
@@ -2719,6 +2726,25 @@ footer a { color: var(--ink); }
   overflow: hidden;
   text-overflow: ellipsis;
 }
+
+/* Your club: a quiet pill, lit in the accent once chosen. */
+.team-summary__own {
+  appearance: none;
+  align-self: flex-start;
+  margin-top: var(--space-1);
+  padding: 0.25rem 0.75rem;
+  border: 1px solid var(--rule-strong);
+  border-radius: 999px;
+  background: none;
+  color: var(--ink-muted);
+  font: inherit;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: color 0.15s var(--ease), border-color 0.15s var(--ease);
+}
+.team-summary__own:hover { color: var(--ink); border-color: var(--ink-faint); }
+.team-summary__own[aria-pressed="true"] { color: var(--accent-ink); border-color: var(--accent-ink); }
 
 .team-summary__rating-block {
   display: flex;

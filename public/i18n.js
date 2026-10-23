@@ -272,9 +272,11 @@ const translations = {
 
     // Hero
     'hero.title': 'Where everyone finishes',
-    'hero.figure.title': 'chance of the title',
-    'hero.figure.champions': 'champions',
-    'hero.figure.points': 'pts',
+    'hero.race.title': 'The title race',
+    'hero.race.points': 'pts',
+    'hero.race.own': 'your club',
+    'team.own.make': 'Make this your club',
+    'team.own.is': 'Your club',
     'hero.lede.finished': 'All {matches} matches played. The ratings are as they stood at the end.',
     'hero.lede.preseason': 'Before a ball is kicked, {favourite} start as favourites.',
     'hero.lede.agrees': '{team} lead on {points} points.',
@@ -893,9 +895,11 @@ const translations = {
 
     // Hero
     'hero.title': 'Hvem ender hvor',
-    'hero.figure.title': 'sjanse for gull',
-    'hero.figure.champions': 'seriemester',
-    'hero.figure.points': 'poeng',
+    'hero.race.title': 'Gullkampen',
+    'hero.race.points': 'poeng',
+    'hero.race.own': 'din klubb',
+    'team.own.make': 'Gjør til din klubb',
+    'team.own.is': 'Din klubb',
     'hero.lede.finished': 'Alle {matches} kamper er spilt. Ratingene er slik de sto ved sesongslutt.',
     'hero.lede.preseason': 'Før første kamp er {favourite} favoritt.',
     'hero.lede.agrees': '{team} leder med {points} poeng.',
