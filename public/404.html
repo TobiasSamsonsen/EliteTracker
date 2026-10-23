@@ -4,54 +4,188 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Fant ikke siden — EliteTracker</title>
+<link rel="icon" href="/icons/mark.svg" type="image/svg+xml">
 <meta name="robots" content="noindex">
 <meta name="color-scheme" content="light dark">
 <script>
-  /* Same theme resolution as the front page, so the choice carries over. */
-  var choice = localStorage.getItem('elitetracker-theme');
+  /* Same theme and language as the front page, so the choices carry over. */
+  try {
+    var choice = localStorage.getItem('elitetracker-theme');
+    var lang = localStorage.getItem('lang') === 'en' ? 'en' : 'no';
+  } catch (e) { var choice = null, lang = 'no'; }
   document.documentElement.dataset.resolvedTheme = choice === 'light' || choice === 'dark' ? choice
     : matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+  document.documentElement.dataset.lang = lang;
+  document.documentElement.lang = lang === 'en' ? 'en' : 'nb';
 </script>
 <!-- Firebase serves this for any address it has no file for, at that
      address, so every path here is absolute. -->
+<link rel="preload" href="/fonts/archivo-latin.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="stylesheet" href="/styles.css">
 <style>
-  .notfound { max-width: var(--measure); padding-block: 2rem 4rem; }
-  .notfound h1 { font-size: 1.75rem; margin: 1.5rem 0 0.25rem; }
-  .notfound p { color: var(--ink-muted); }
-  .notfound a { color: var(--ink); }
-  .notfound ul { padding-left: 1.1rem; }
-  .notfound li { margin-block: 0.4rem; }
-  .notfound section + section { margin-top: 3rem; padding-top: 1rem; border-top: 1px solid var(--rule); }
+  /* One language at a time, the one the front page last used. */
+  html[data-lang="en"] .notfound [lang="nb"],
+  html:not([data-lang="en"]) .notfound [lang="en"] { display: none; }
+
+  .notfound { padding-block: clamp(2rem, 6vw, 4.5rem) 4rem; }
+
+  /* The error as a place in the table: 404th, set like the hero's race. */
+  .notfound__hero { max-width: 46rem; }
+  /* The front page draws the season in view's mountain; this page has no
+     season, so it takes the fixed one (tools/brand/contours.py). */
+  body::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    pointer-events: none;
+    background: var(--ink);
+    opacity: var(--backdrop-alpha);
+    -webkit-mask: url(/contours.svg) center / cover no-repeat;
+    mask: url(/contours.svg) center / cover no-repeat;
+  }
+  .notfound__place {
+    margin: var(--space-3) 0 var(--space-5);
+    font-family: var(--display);
+    font-variation-settings: "wdth" 125;
+    font-weight: 800;
+    font-size: clamp(5.5rem, 22vw, 11rem);
+    line-height: 0.85;
+    letter-spacing: -0.04em;
+  }
+  .notfound__place small {
+    font-size: 0.22em;
+    font-weight: 700;
+    letter-spacing: 0;
+    margin-left: 0.2em;
+    color: var(--ink-muted);
+  }
+  .notfound h1 { font-size: clamp(1.5rem, 4vw, 2.25rem); max-width: 18ch; }
+  .notfound__lede { margin: var(--space-3) 0 var(--space-6); max-width: 40ch; color: var(--ink-muted); font-size: 1.0625rem; }
+
+  .notfound__home {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.7rem 1.3rem;
+    border-radius: 999px;
+    background: var(--accent);
+    color: var(--on-accent);
+    box-shadow: var(--glow-ring);
+    font-weight: 700;
+    text-decoration: none;
+  }
+  .notfound__home:hover { filter: brightness(1.1); }
+
+  /* Or straight to a view: one card each, with the phone bar's icons. */
+  .notfound__more { margin-top: clamp(3rem, 8vw, 5rem); }
+  .notfound__more .label { margin-bottom: var(--space-3); }
+  .notfound__links {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(12rem, 1fr));
+    gap: var(--space-3);
+  }
+  .notfound__links a {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    grid-template-rows: auto 1fr;
+    gap: 0.15rem 0.85rem;
+    align-items: start;
+    height: 100%;
+    padding: var(--space-4) var(--space-5);
+    background: var(--panel);
+    border: 1px solid var(--rule);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    text-decoration: none;
+    transition: border-color 0.15s var(--ease), box-shadow 0.15s var(--ease);
+  }
+  .notfound__links a:hover { border-color: var(--accent); box-shadow: var(--glow-hover); }
+  .notfound__links svg { grid-row: span 2; width: 22px; height: 22px; margin-top: 1px; color: var(--accent-ink); }
+  .notfound__links b { font-size: 0.9375rem; }
+  .notfound__links span { font-size: 0.8125rem; color: var(--ink-muted); }
+
+  .notfound-bar { display: flex; align-items: center; justify-content: space-between; }
 </style>
 </head>
 <body>
+<header class="masthead">
+  <div class="shell masthead__inner notfound-bar">
+    <a href="/" class="wordmark"><svg class="wordmark__mark" viewBox="5 5 22 22" aria-hidden="true" focusable="false"><rect x="5.5" y="5.5" width="6" height="6" rx="1.2" class="wordmark__lead"/><rect x="13" y="5.5" width="6" height="6" rx="1.2" opacity=".35"/><rect x="20.5" y="5.5" width="6" height="6" rx="1.2" opacity=".1"/><rect x="5.5" y="13" width="6" height="6" rx="1.2" opacity=".35"/><rect x="13" y="13" width="6" height="6" rx="1.2"/><rect x="20.5" y="13" width="6" height="6" rx="1.2" opacity=".35"/><rect x="5.5" y="20.5" width="6" height="6" rx="1.2" opacity=".1"/><rect x="13" y="20.5" width="6" height="6" rx="1.2" opacity=".35"/><rect x="20.5" y="20.5" width="6" height="6" rx="1.2"/></svg>EliteTracker</a>
+    <div class="switch switch--lang" role="group" aria-label="Språk / Language">
+      <button type="button" data-lang="no" aria-pressed="true">NO</button>
+      <button type="button" data-lang="en" aria-pressed="false">EN</button>
+    </div>
+  </div>
+</header>
+
 <main class="shell notfound">
-  <a href="/">← EliteTracker</a>
+  <div lang="nb">
+    <section class="notfound__hero">
+      <div class="label">Feil 404</div>
+      <p class="notfound__place" aria-hidden="true">404.<small>plass</small></p>
+      <h1>Denne siden endte utenfor tabellen</h1>
+      <p class="notfound__lede">Adressen finnes ikke på EliteTracker, eller så er den flyttet.</p>
+      <a class="notfound__home" href="/">Til forsiden <span aria-hidden="true">→</span></a>
+    </section>
+    <nav class="notfound__more" aria-label="Eller rett til">
+      <div class="label">Eller rett til</div>
+      <ul class="notfound__links">
+        <li><a href="/?view=grid"><svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><rect x="1.5" y="1.5" width="3.6" height="3.6" rx=".5"/><rect x="6.2" y="1.5" width="3.6" height="3.6" rx=".5" opacity=".4"/><rect x="10.9" y="1.5" width="3.6" height="3.6" rx=".5" opacity=".15"/><rect x="1.5" y="6.2" width="3.6" height="3.6" rx=".5" opacity=".4"/><rect x="6.2" y="6.2" width="3.6" height="3.6" rx=".5"/><rect x="10.9" y="6.2" width="3.6" height="3.6" rx=".5" opacity=".4"/><rect x="1.5" y="10.9" width="3.6" height="3.6" rx=".5" opacity=".15"/><rect x="6.2" y="10.9" width="3.6" height="3.6" rx=".5" opacity=".4"/><rect x="10.9" y="10.9" width="3.6" height="3.6" rx=".5"/></svg><b>Sluttabellen</b><span>Hvert lags sjanse for hver plass</span></a></li>
+        <li><a href="/?view=table"><svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><rect x="1.5" y="2.5" width="13" height="2.2" rx=".6"/><rect x="1.5" y="6.9" width="13" height="2.2" rx=".6"/><rect x="1.5" y="11.3" width="13" height="2.2" rx=".6"/></svg><b>Tabellen</b><span>Poeng, form og prognose</span></a></li>
+        <li><a href="/?view=matches"><svg viewBox="0 0 16 16" aria-hidden="true"><rect x="1.8" y="3" width="12.4" height="11.2" rx="1.6" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M1.8 6.6h12.4" stroke="currentColor" stroke-width="1.6"/><path d="M5.2 1.6v2.6M10.8 1.6v2.6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg><b>Kampene</b><span>Resultater og odds</span></a></li>
+        <li><a href="/?league=obosligaen"><svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><rect x="1.5" y="9" width="3.4" height="5.5" rx=".6"/><rect x="6.3" y="5" width="3.4" height="9.5" rx=".6"/><rect x="11.1" y="1.5" width="3.4" height="13" rx=".6"/></svg><b>OBOS-ligaen</b><span>Opprykksjakten i divisjonen under</span></a></li>
+        <li><a href="/model.html"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M1.5 13.5 5.5 8l3 3 6-8" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg><b>Modellen</b><span>Slik regnes sjansene ut</span></a></li>
+      </ul>
+    </nav>
+  </div>
 
-  <section lang="nb">
-    <h1>Fant ikke siden</h1>
-    <p>Denne adressen finnes ikke på EliteTracker, eller så er den flyttet. Kanskje du lette etter en av disse:</p>
-    <ul>
-      <li><a href="/?view=grid">Sluttabellen</a></li>
-      <li><a href="/?view=table">Tabellen</a></li>
-      <li><a href="/?view=matches">Kampene og oddsen</a></li>
-      <li><a href="/?league=obosligaen">OBOS-ligaen</a></li>
-      <li><a href="/model.html">Slik fungerer modellen</a></li>
-    </ul>
-  </section>
-
-  <section lang="en">
-    <h1>Page not found</h1>
-    <p>This address doesn’t exist on EliteTracker, or it has moved. Perhaps you were after one of these:</p>
-    <ul>
-      <li><a href="/?view=grid">The finish grid</a></li>
-      <li><a href="/?view=table">The table</a></li>
-      <li><a href="/?view=matches">Matches and odds</a></li>
-      <li><a href="/?league=obosligaen">OBOS-ligaen</a></li>
-      <li><a href="/model.html">How the model works</a></li>
-    </ul>
-  </section>
+  <div lang="en">
+    <section class="notfound__hero">
+      <div class="label">Error 404</div>
+      <p class="notfound__place" aria-hidden="true">404<small>th</small></p>
+      <h1>This page finished outside the table</h1>
+      <p class="notfound__lede">The address doesn’t exist on EliteTracker, or it has moved.</p>
+      <a class="notfound__home" href="/">To the front page <span aria-hidden="true">→</span></a>
+    </section>
+    <nav class="notfound__more" aria-label="Or straight to">
+      <div class="label">Or straight to</div>
+      <ul class="notfound__links">
+        <li><a href="/?view=grid"><svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><rect x="1.5" y="1.5" width="3.6" height="3.6" rx=".5"/><rect x="6.2" y="1.5" width="3.6" height="3.6" rx=".5" opacity=".4"/><rect x="10.9" y="1.5" width="3.6" height="3.6" rx=".5" opacity=".15"/><rect x="1.5" y="6.2" width="3.6" height="3.6" rx=".5" opacity=".4"/><rect x="6.2" y="6.2" width="3.6" height="3.6" rx=".5"/><rect x="10.9" y="6.2" width="3.6" height="3.6" rx=".5" opacity=".4"/><rect x="1.5" y="10.9" width="3.6" height="3.6" rx=".5" opacity=".15"/><rect x="6.2" y="10.9" width="3.6" height="3.6" rx=".5" opacity=".4"/><rect x="10.9" y="10.9" width="3.6" height="3.6" rx=".5"/></svg><b>The finish grid</b><span>Every club’s chance of every place</span></a></li>
+        <li><a href="/?view=table"><svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><rect x="1.5" y="2.5" width="13" height="2.2" rx=".6"/><rect x="1.5" y="6.9" width="13" height="2.2" rx=".6"/><rect x="1.5" y="11.3" width="13" height="2.2" rx=".6"/></svg><b>The table</b><span>Points, form and forecast</span></a></li>
+        <li><a href="/?view=matches"><svg viewBox="0 0 16 16" aria-hidden="true"><rect x="1.8" y="3" width="12.4" height="11.2" rx="1.6" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M1.8 6.6h12.4" stroke="currentColor" stroke-width="1.6"/><path d="M5.2 1.6v2.6M10.8 1.6v2.6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg><b>Matches</b><span>Results and odds</span></a></li>
+        <li><a href="/?league=obosligaen"><svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><rect x="1.5" y="9" width="3.4" height="5.5" rx=".6"/><rect x="6.3" y="5" width="3.4" height="9.5" rx=".6"/><rect x="11.1" y="1.5" width="3.4" height="13" rx=".6"/></svg><b>OBOS-ligaen</b><span>The promotion race one division down</span></a></li>
+        <li><a href="/model.html"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M1.5 13.5 5.5 8l3 3 6-8" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg><b>The model</b><span>How the chances are worked out</span></a></li>
+      </ul>
+    </nav>
+  </div>
 </main>
+
+<script>
+  /* The language switch: shows the other half of the page and remembers the
+     choice for the front page too. */
+  (function () {
+    var titles = { no: 'Fant ikke siden — EliteTracker', en: 'Page not found — EliteTracker' };
+    var buttons = document.querySelectorAll('.switch--lang [data-lang]');
+    function show(lang) {
+      document.documentElement.dataset.lang = lang;
+      document.documentElement.lang = lang === 'en' ? 'en' : 'nb';
+      document.title = titles[lang];
+      for (var i = 0; i < buttons.length; i++) {
+        buttons[i].setAttribute('aria-pressed', String(buttons[i].dataset.lang === lang));
+      }
+    }
+    for (var i = 0; i < buttons.length; i++) {
+      buttons[i].addEventListener('click', function () {
+        try { localStorage.setItem('lang', this.dataset.lang); } catch (e) { /* this page only */ }
+        show(this.dataset.lang);
+      });
+    }
+    show(document.documentElement.dataset.lang);
+  })();
+</script>
 </body>
 </html>

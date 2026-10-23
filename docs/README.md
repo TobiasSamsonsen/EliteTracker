@@ -21,6 +21,8 @@ Elsewhere in the repo:
   idea ever tested, shipped or rejected, with its numbers. Read it before
   proposing a model change.
 - `HANDOFF.md`: the open Explore branches and other loose ends.
+- `DESIGN_PLAN.md`: the design ideas being tested one by one (from
+  2026-10-23), each kept or dropped.
 
 The October 2026 plans (`IMPROVEMENTS.md`, `IMPROVEMENTS2.md`), their
 questions (`QUESTIONS.md`) and the September UI audit (`ux-audit.md`) were

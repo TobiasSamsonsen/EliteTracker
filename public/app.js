@@ -1884,29 +1884,38 @@ function playedCard(match, ratingChanges) {
    and Next forward, as on FotMob. It opens on the week of the next fixture --
    which in mid-round also holds the results already in -- or, once the season
    is over, on its last week. */
-function renderMatches(report) {
-  const holder = $('#fixtures');
-  holder.replaceChildren();
+/* Results and fixtures on one timeline, bucketed by ISO week, with the week
+   the view opens on: the next fixture's, or the last once the season is
+   over. The matches view and its hero share it. */
+function matchesTimeline(report) {
   const played = (report.results || []).map((match) => ({ match, played: true }));
   const upcoming = (report.fixtures || []).map((match) => ({ match, played: false }));
   const timeline = [...played, ...upcoming].sort((a, b) =>
     `${a.match.date} ${a.match.time || ''}`.localeCompare(`${b.match.date} ${b.match.time || ''}`));
+  const { weeks, byWeek } = groupByWeek(timeline.map((item) => ({ ...item, date: item.match.date })));
+  const firstUpcoming = timeline.find((item) => !item.played);
+  const current = firstUpcoming ? weeks.indexOf(isoWeek(firstUpcoming.match.date)) : weeks.length - 1;
+  const index = Math.max(0, Math.min(state.matchesWeek ?? current, weeks.length - 1));
+  return { timeline, weeks, byWeek, firstUpcoming, current, index };
+}
+
+function renderMatches(report) {
+  const holder = $('#fixtures');
+  holder.replaceChildren();
+  const { timeline, weeks, byWeek, firstUpcoming, current, index } = matchesTimeline(report);
   if (!timeline.length) {
     $('#fixture-count').textContent = '';
     holder.appendChild(el('p', 'muted', t('played.empty')));
     return;
   }
-  const { weeks, byWeek } = groupByWeek(timeline.map((item) => ({ ...item, date: item.match.date })));
-  const firstUpcoming = timeline.find((item) => !item.played);
-  const current = firstUpcoming ? weeks.indexOf(isoWeek(firstUpcoming.match.date)) : weeks.length - 1;
-  if (state.matchesWeek == null) state.matchesWeek = current;
-  state.matchesWeek = Math.max(0, Math.min(state.matchesWeek, weeks.length - 1));
+  state.matchesWeek = index;
   const items = byWeek.get(weeks[state.matchesWeek]);
   const results = items.filter((item) => item.played).map((item) => item.match);
   const fixtures = items.filter((item) => !item.played).map((item) => item.match);
   $('#fixture-count').textContent = t('matches.count', { played: results.length, upcoming: fixtures.length });
 
-  const go = (index) => () => { state.matchesWeek = index; renderMatches(report); };
+  // Paging the weeks moves the hero's match of the week along with them.
+  const go = (week) => () => { state.matchesWeek = week; renderMatches(report); renderRace(report); };
   holder.appendChild(pageNav(
     t('played.week', { n: weeks[state.matchesWeek] }) + (state.matchesWeek === current && firstUpcoming ? ` · ${t('matches.thisWeek')}` : ''),
     state.matchesWeek > 0 ? go(state.matchesWeek - 1) : null,
@@ -2057,15 +2066,294 @@ function formChipsEl(form) {
 
 /* ---------- hero & model card ------------------------------------- */
 
+/* The reader's own club, remembered on this device only. */
+const OWN_CLUB_KEY = 'elitetracker-own-club';
+function ownClub() {
+  try { return localStorage.getItem(OWN_CLUB_KEY); } catch { return null; }
+}
+function setOwnClub(teamId) {
+  try {
+    if (teamId) localStorage.setItem(OWN_CLUB_KEY, teamId);
+    else localStorage.removeItem(OWN_CLUB_KEY);
+  } catch { /* private window: the choice lasts this page only */ }
+}
+
+/* The hero's race: the clubs still contending for one band, side by side. A
+   band is open while some club's chance of it lies between 10 % and 90 %
+   (symmetric: a leader at 90 % leaves the rest 10 %). A club above 90 % is
+   through: shown first and muted, so a band of several places shows how
+   many are left. One from 5 % up is shown as a contender, so an open race
+   has its outsiders too. The reader's own club's first open band comes
+   first; else the first open band down the table, so a settled title hands
+   over to the places below it. Null once every band is settled or the
+   season is over. */
+const RACE_OPEN = 0.1;
+const RACE_SHOWN = 0.05;
+const RACE_SETTLED = 0.9;
+
+function heroRace(report, ownId) {
+  // A finished season is told by its champion, even while a relegation
+  // play-off against the division below is still simulated.
+  if (report.model.matches_remaining === 0) return null;
+  const slug = report.league.slug;
+  const open = (row, band) => {
+    const chance = bandChance(row, band, slug);
+    return chance > RACE_OPEN && chance < RACE_SETTLED;
+  };
+  const own = ownId ? report.table.find((row) => String(row.team_id) === ownId) : null;
+  const bands = report.league.bands;
+  const band = (own && bands.find((b) => open(own, b)))
+    || bands.find((b) => report.table.some((row) => open(row, b)));
+  if (!band) return null;
+  const ranked = report.table
+    .map((row) => ({ row, chance: bandChance(row, band, slug) }))
+    .filter(({ chance }) => chance > RACE_SHOWN)
+    .sort((a, b) => b.chance - a.chance);
+  // Clubs through first: in a band of several places they show how many are
+  // still to play for. Then the contenders, fewer the more are through.
+  const through = ranked.filter(({ chance }) => chance >= RACE_SETTLED);
+  const room = Math.max(2, 6 - through.length);
+  let contenders = ranked.filter(({ chance }) => chance < RACE_SETTLED).slice(0, room);
+  if (own && !contenders.some(({ row }) => row === own)) {
+    contenders = [...contenders.slice(0, room - 1), { row: own, chance: bandChance(own, band, slug) }];
+  }
+  return { band, through, contenders, own };
+}
+
+/* The month's movers, for the table: the clubs whose rating rose and fell
+   most over the last four weeks (from the rating history, as it stood 28
+   days before the report's latest date, to now). Null until the history has
+   loaded, or when no one has moved five points. */
+function heroMovers(report) {
+  const careers = state.careers?.teams;
+  const dates = report.history?.dates || [];
+  if (!careers || !dates.length) return null;
+  const now = dates[dates.length - 1];
+  const then = new Date(Date.parse(`${now}T12:00:00Z`) - 28 * 86400000).toISOString().slice(0, 10);
+  const moves = report.table.map((row) => {
+    const points = careers.find((career) => String(career.team_id) === String(row.team_id))?.points || [];
+    let before = null;
+    for (const [date, rating] of points) if (date <= then) before = rating;
+    return before == null ? null : { row, before, now: row.rating, change: row.rating - before };
+  }).filter(Boolean).sort((a, b) => b.change - a.change);
+  const up = moves[0];
+  const down = moves[moves.length - 1];
+  if (!up || up.change < 5) return null;
+  const item = (move) => ({
+    row: move.row,
+    // The difference of the two ratings as shown, so the sum adds up.
+    figure: signed(Math.round(move.now) - Math.round(move.before)),
+    unit: t('hero.movers.unit'),
+    sub: t('hero.movers.from', { from: num(move.before), to: num(move.now) }),
+  });
+  return {
+    label: t('hero.movers.title'),
+    items: down.change <= -5 ? [item(up), item(down)] : [item(up)],
+  };
+}
+
+/* A club's chance of each band, read off a history snapshot's places. */
+function bandChances(positions, bands) {
+  return bands.map((band) => positions.slice(band.first - 1, band.last).reduce((a, b) => a + b, 0));
+}
+
+/* The match of the week, for the matches view, following the week on show.
+   A week with fixtures still to play: of those, the one whose result swings
+   a club's chance of a band the most, weighed by how even it is, so a
+   foregone win does not lead (a side above 60 % rules a match out while any
+   other is left). A week played: the most exciting result, weighing how far
+   it moved the two clubs' chances of every band (the history snapshots
+   either side of it) by its excitement: how surprising the result was, its
+   drama -- a tight game (in goals or in xG) or a thrashing nobody saw coming
+   (a margin the scoreline grid gave little chance), whichever is more -- and
+   its goals. */
+function heroMatch(report) {
+  const { timeline, weeks, byWeek, index } = matchesTimeline(report);
+  if (!timeline.length) return null;
+  const items = byWeek.get(weeks[index]);
+  const fixtures = items.filter((item) => !item.played).map((item) => item.match);
+  const results = items.filter((item) => item.played).map((item) => item.match);
+  const bare = (chance) => pct(chance).replace(percentSign(), '');
+  const when = (match) => `${t('hero.match.title')} · ${formatDate(match.date)}${match.time ? ` ${match.time}` : ''}`;
+
+  if (fixtures.length) {
+    const stakes = [...(report.next_stakes || []), ...(report.high_stakes || [])];
+    const scored = fixtures.map((fixture) => {
+      const entries = stakesForFixture(stakes, fixture.match_id).sort((a, b) => b.swing - a.swing);
+      const swing = entries.length ? entries[0].swing : 0;
+      const balance = 1 - Math.abs(fixture.home_win - fixture.away_win);
+      return { fixture, stake: entries[0], score: (swing + 0.05) * balance };
+    });
+    const open = scored.filter(({ fixture }) => Math.max(fixture.home_win, fixture.away_win) <= 0.6);
+    const { fixture, stake } = (open.length ? open : scored).reduce((a, b) => (b.score > a.score ? b : a));
+    let note = '';
+    if (stake) {
+      const band = { label: stake.band_label, first: stake.band_first, last: stake.band_last, tone: stake.band_tone };
+      note = t('hero.match.stake', {
+        team: stake.team,
+        band: shortBandLabel(band, report),
+        win: pct(stake.p_favourable),
+        loss: pct(stake.p_unfavourable),
+      });
+    }
+    return {
+      label: when(fixture),
+      items: [
+        { row: { team_id: fixture.home_id, team: fixture.home }, figure: bare(fixture.home_win), unit: '%' },
+        { name: t('hero.match.draw'), figure: bare(fixture.draw), unit: '%', draw: true },
+        { row: { team_id: fixture.away_id, team: fixture.away }, figure: bare(fixture.away_win), unit: '%' },
+      ],
+      note,
+    };
+  }
+  if (!results.length) return null;
+
+  // Each club's rating going into the match, from its history: the point
+  // before the match's own.
+  const changes = buildRatingChanges(state.careers);
+  const ratingBefore = (id, date) => {
+    const entry = changes.get(`${id}|${date}`);
+    return entry ? entry.rating - entry.change : null;
+  };
+  const history = report.history;
+  const bands = report.league.bands;
+  const snapshot = (date, after) => {
+    const dates = history?.dates || [];
+    const k = after ? dates.findIndex((d) => d >= date) : dates.findLastIndex((d) => d < date);
+    return k >= 0 ? k : null;
+  };
+  const scored = results.map((match) => {
+    const hr = ratingBefore(match.home_id, match.date);
+    const ar = ratingBefore(match.away_id, match.date);
+    const odds = hr != null && ar != null
+      ? blendOdds(report.model, matchOdds(report.model, hr + surfaceEdge(report.model, match.home_id, match.away_id), ar), match.home_id, match.away_id)
+      : null;
+    const outcome = match.home_goals > match.away_goals ? 'home_win' : match.home_goals < match.away_goals ? 'away_win' : 'draw';
+    const surprise = odds ? 1 - odds[outcome] : 0;
+    const diff = match.home_goals - match.away_goals;
+    const margin = Math.abs(diff);
+    const goalsClose = margin <= 1 ? 1 : margin === 2 ? 0.4 : 0;
+    const xgClose = match.xg ? Math.max(0, 1 - Math.abs(match.xg[0] - match.xg[1]) / 1.5) : 0;
+    // The chance of a margin at least this big, this way (or of a draw),
+    // from the scoreline grid; a 5-0 nobody expected scores near 1.
+    let tail = null;
+    if (odds) {
+      tail = 0;
+      scoreGrid(report.model, match.home_id, match.away_id, odds.gap / 400).forEach((row, i) => row.forEach((p, j) => {
+        const d = i - j;
+        if (diff > 0 ? d >= diff : diff < 0 ? d <= diff : d === 0) tail += p;
+      }));
+    }
+    const shock = tail == null ? 0 : Math.min(1, -Math.log10(Math.max(tail, 1e-6)) / 2.5);
+    const drama = Math.max(goalsClose, xgClose, shock);
+    const goals = Math.min(match.home_goals + match.away_goals, 6) / 6;
+    // How far the two clubs' chances of every band moved across the match.
+    const before = snapshot(match.date, false);
+    const after = snapshot(match.date, true);
+    let impact = 0;
+    let shift = null;
+    if (before != null && after != null && before !== after) {
+      for (const id of [match.home_id, match.away_id]) {
+        const team = history.teams.find((h) => String(h.team_id) === String(id));
+        if (!team) continue;
+        const was = bandChances(team.positions[before], bands);
+        const is = bandChances(team.positions[after], bands);
+        bands.forEach((band, b) => {
+          const move = Math.abs(is[b] - was[b]);
+          impact += move;
+          if (!shift || move > shift.move) shift = { move, band, was: was[b], is: is[b], team: id === match.home_id ? match.home : match.away };
+        });
+      }
+    }
+    const excitement = 0.4 * surprise + 0.4 * drama + 0.2 * goals;
+    return { match, odds, shift, tail: margin >= 2 ? tail : null, score: (impact + 0.05) * (0.25 + excitement) };
+  });
+  const { match, odds, shift, tail } = scored.reduce((a, b) => (b.score > a.score ? b : a));
+  const notes = [];
+  if (tail != null && tail < 0.02) notes.push(t('hero.match.shock', { p: pct(tail) }));
+  if (shift && shift.move >= 0.02) {
+    notes.push(t('hero.match.shift', { team: shift.team, band: shortBandLabel(shift.band, report), from: pct(shift.was), to: pct(shift.is) }));
+  }
+  const before = (chance) => (odds ? t('hero.match.before', { p: pct(chance) }) : '');
+  return {
+    label: when(match),
+    items: [
+      { row: { team_id: match.home_id, team: match.home }, figure: String(match.home_goals), unit: '', sub: before(odds?.home_win) },
+      { name: '', figure: '–', unit: '', draw: true },
+      { row: { team_id: match.away_id, team: match.away }, figure: String(match.away_goals), unit: '', sub: before(odds?.away_win) },
+    ],
+    note: notes.join(' · '),
+  };
+}
+
+/* The race, as the hero draws it: its band, or the champion once every band
+   is settled. */
+function heroRaceModel(report) {
+  const race = heroRace(report, ownClub());
+  const bare = (chance) => pct(chance).replace(percentSign(), '');
+  if (race) {
+    return {
+      label: race.band.tone === 'champion' ? t('hero.race.title') : bandName(race.band),
+      items: [
+        ...race.through.map(({ row, chance }) => ({ row, figure: bare(chance), unit: '%', through: true })),
+        ...race.contenders.map(({ row, chance }) => ({ row, figure: bare(chance), unit: '%', own: row === race.own })),
+      ],
+    };
+  }
+  // Every band settled: the champion, on points once the season is over.
+  const champion = report.table.reduce((best, row) =>
+    row.position_probabilities[0] > best.position_probabilities[0] ? row : best);
+  const done = report.model.matches_remaining === 0;
+  return {
+    label: t('band.Champions'),
+    items: [{
+      row: champion,
+      figure: done ? num(champion.points) : bare(champion.position_probabilities[0]),
+      unit: done ? t('hero.race.points') : '%',
+    }],
+  };
+}
+
+/* The hero follows the view: the table shows the month's movers, the
+   matches the match of the week, the rest the race. Each falls back to the
+   race when it has nothing to show. */
+function renderRace(report) {
+  const hero = (state.activeView === 'table' && heroMovers(report))
+    || (state.activeView === 'matches' && heroMatch(report))
+    || heroRaceModel(report);
+  const list = el('ol', 'race__clubs');
+  for (const item of hero.items) {
+    const li = el('li', ['race__club', item.own && 'is-own', item.through && 'is-through', item.draw && 'is-draw'].filter(Boolean).join(' '));
+    const value = el('b', 'race__value', item.figure);
+    value.appendChild(el('small', '', item.unit));
+    if (item.through) value.appendChild(el('span', 'visually-hidden', ` (${t('hero.race.through')})`));
+    const name = el('span', 'race__name');
+    const crest = item.row && teamLogo(item.row.team_id, item.row.team);
+    if (crest) name.appendChild(crest);
+    name.appendChild(document.createTextNode(item.row ? item.row.team : item.name));
+    if (item.own) {
+      const star = el('span', 'race__own', '★');
+      star.title = t('hero.race.own');
+      star.setAttribute('aria-label', t('hero.race.own'));
+      name.appendChild(star);
+    }
+    li.append(value, name);
+    if (item.sub) li.appendChild(el('span', 'race__sub', item.sub));
+    list.appendChild(li);
+  }
+  const box = $('#hero-race');
+  box.dataset.count = String(hero.items.length);
+  box.replaceChildren(el('div', 'race__label label', hero.label), list);
+  if (hero.note) box.appendChild(el('p', 'race__note', hero.note));
+}
+
 function renderHero(report) {
   const model = report.model;
-  const leader = report.table[0];
-  const favourite = report.table.reduce((best, row) =>
-    row.position_probabilities[0] > best.position_probabilities[0] ? row : best
-  );
 
-  // Build interactive title: clickable division name + clickable season year.
-  const title = $('#hero-title');
+  // The page's heading names the division and season; the two pickers that
+  // change them sit in the masthead.
+  $('#hero-title').textContent = `${report.league.name} ${report.league.season}`;
+  const title = $('#league-picker');
   title.replaceChildren();
   // Each half of the heading is a button that opens a picker. The visible
   // text stays the accessible name -- an aria-label here would replace it, and
@@ -2152,66 +2440,22 @@ function renderHero(report) {
 
   $('#model-badge').textContent = model.version;
 
-  // A finished season has nothing left to simulate, so it gets told as history.
-  if (model.matches_remaining === 0) {
-    $('#hero-lede').textContent =
-      t('hero.lede.finished', {
-        team: leader.team,
-        points: leader.points,
-        matches: model.matches_played,
-      });
-  } else {
-    // Before a ball is kicked the table's "leader" is only the alphabet.
-    const lede = model.matches_played === 0
-      ? t('hero.lede.preseason', { favourite: favourite.team, pct: pct(favourite.position_probabilities[0]) })
-      : favourite.team === leader.team
-        ? t('hero.lede.agrees', {
-            team: leader.team,
-            points: leader.points,
-            pct: pct(favourite.position_probabilities[0]),
-          })
-        : t('hero.lede.disagrees', {
-            team: leader.team,
-            points: leader.points,
-            favourite: favourite.team,
-            pct: pct(favourite.position_probabilities[0]),
-          });
-    $('#hero-lede').textContent =
-      t('hero.lede.remaining', {
-        lede,
-        remaining: model.matches_remaining,
-        simulations: num(model.simulations),
-      });
-  }
-  // Scrubbing the rewind slider rewrites this sentence for every date. A
-  // longer one may add a line, but a shorter one never takes it away again,
-  // so the slider below does not bob up and down under the thumb. The hold
-  // starts over with the league, season, language or width.
-  const lede = $('#hero-lede');
-  if (lede.offsetHeight) {
-    const hold = `${state.league}|${report.league.season}|${currentLang}|${window.innerWidth}`;
-    if (lede.dataset.hold !== hold) {
-      lede.dataset.hold = hold;
-      lede.style.minHeight = '';
+  renderRace(report);
+
+  // Scrubbing the rewind slider redraws the race for every date. More clubs
+  // may take more room, but fewer never give it back, so the slider below
+  // does not bob up and down under the thumb. The hold starts over with the
+  // league, season, view, language or width.
+  const race = $('#hero-race');
+  if (race.offsetHeight) {
+    const hold = `${state.league}|${report.league.season}|${state.activeView}|${currentLang}|${window.innerWidth}`;
+    if (race.dataset.hold !== hold) {
+      race.dataset.hold = hold;
+      race.style.minHeight = '';
     }
-    lede.style.minHeight = `${lede.offsetHeight}px`;
+    race.style.minHeight = `${race.offsetHeight}px`;
   }
 
-  const meta = $('#hero-meta');
-  meta.replaceChildren();
-  // The last describes how the model was built rather than where the season
-  // stands, so a phone drops it. The run count and the version are not here:
-  // the lede already gives the one and the wordmark the other.
-  for (const [name, value, provenance] of [
-    [t('hero.played'), `${model.matches_played}`, false],
-    [t('hero.remaining'), `${model.matches_remaining}`, false],
-    [t('hero.ratingsFrom'), `${model.seed_season} ${t('hero.onward')}`, true],
-  ]) {
-    const cell = el('div', provenance ? 'hero__meta-provenance' : '');
-    cell.appendChild(el('span', '', name));
-    cell.appendChild(el('b', '', value));
-    meta.appendChild(cell);
-  }
 }
 
 function renderModelCard(report) {
@@ -2299,10 +2543,47 @@ function exploreThumb(id) {
   return svg;
 }
 
+/* Open a visualisation (or, with null, go back to the gallery). The card's
+   thumbnail grows into the view it opens, and the view shrinks back into its
+   card on the way back: one shared view-transition name, on the thumbnail
+   before and the view after (or the other way round). The mountain fills the
+   window, so the thumbnail grows to the window. The others run long down the
+   page, so it grows only to the panel's width, in its own 16:9 shape, at the
+   top of the view: a box laid there for the move (.explore-morph) and taken
+   away after it. */
 function openExplore(id) {
-  state.exploreItem = id;
-  render();
-  window.scrollTo({ top: 0, behavior: 'instant' });
+  const from = state.exploreItem;
+  const update = () => {
+    state.exploreItem = id;
+    render();
+    window.scrollTo({ top: 0, behavior: 'instant' });
+  };
+  const thumb = (item) => document.querySelector(`.explore-card[data-item="${item}"] .explore-card__thumb`);
+  const view = (item) => {
+    if (item === 'mountain') return $('.mountain');
+    const box = el('div', 'explore-morph');
+    $('#explore-body').prepend(box);
+    return box;
+  };
+  const before = id ? thumb(id) : from && view(from);
+  if (!before || !document.startViewTransition || window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    update();
+    return;
+  }
+  const root = document.documentElement;
+  root.dataset.transition = 'explore';
+  before.style.viewTransitionName = 'explore-open';
+  let after = null;
+  document.startViewTransition(() => {
+    before.style.viewTransitionName = '';
+    update();
+    after = id ? view(id) : thumb(from);
+    if (after) after.style.viewTransitionName = 'explore-open';
+  }).finished.finally(() => {
+    if (after) after.style.viewTransitionName = '';
+    if (after?.classList.contains('explore-morph')) after.remove();
+    delete root.dataset.transition;
+  });
 }
 
 function renderExplore(report) {
@@ -2321,6 +2602,7 @@ function renderExplore(report) {
   for (const id of EXPLORE_ITEMS) {
     const card = el('button', 'explore-card');
     card.type = 'button';
+    card.dataset.item = id;
     card.appendChild(exploreThumb(id));
     card.appendChild(el('span', 'explore-card__title', t(`explore.${id}.title`)));
     card.appendChild(el('span', 'explore-card__desc', t(`explore.${id}.desc`)));
@@ -4910,6 +5192,20 @@ function renderTeamSummary(teamId, row, career, report, container) {
   // Name (pushes right side to the end)
   const nameBlock = el('div', 'team-summary__name-block');
   nameBlock.appendChild(el('h3', 'team-summary__name', row?.team || career?.team || 'Unknown'));
+  // Your club: the hero follows its races first.
+  const ownBtn = el('button', 'team-summary__own');
+  ownBtn.type = 'button';
+  const paintOwn = () => {
+    const mine = ownClub() === String(teamId);
+    ownBtn.setAttribute('aria-pressed', String(mine));
+    ownBtn.textContent = mine ? `★ ${t('team.own.is')}` : `☆ ${t('team.own.make')}`;
+  };
+  ownBtn.addEventListener('click', () => {
+    setOwnClub(ownClub() === String(teamId) ? null : String(teamId));
+    paintOwn();
+  });
+  paintOwn();
+  nameBlock.appendChild(ownBtn);
   header.appendChild(nameBlock);
 
   // Rating block: [arrow + rating] / position
@@ -5887,6 +6183,191 @@ async function rewindTo(asof) {
   }
 }
 
+/* ---------- backdrop ----------------------------------------------- */
+
+/* The season mountain's contour map, behind the whole page. The mountain
+   (Explore) stacks a block for every snapshot in which a club still had a
+   chance of a place, places across and clubs deep in finishing order, so its
+   height field is square: per club and place, how many snapshots kept that
+   place open. Drawn from the season in view, so every year has its own;
+   tools/brand/contours.py draws the same for the share image. */
+const BACKDROP = { samples: 140, levels: 12, sigma: 3.5, cut: 0.005, pad: 2 };
+let backdropKey = '';
+
+function backdropField(history) {
+  const teams = history.teams;
+  const last = teams[0].positions.length - 1;
+  const expected = (team) => team.positions[last].reduce((sum, p, place) => sum + p * (place + 1), 0);
+  const rows = [...teams].sort((a, b) => expected(a) - expected(b))
+    .map((team) => team.positions[0].map((_, place) =>
+      team.positions.reduce((count, snapshot) => count + (snapshot[place] >= BACKDROP.cut ? 1 : 0), 0)));
+  // Open ground around it, so every line closes around the mountain.
+  const n = rows.length + 2 * BACKDROP.pad;
+  return Array.from({ length: n }, (_, i) => Array.from({ length: n }, (_, j) =>
+    rows[i - BACKDROP.pad]?.[j - BACKDROP.pad] ?? 0));
+}
+
+/* Bilinear resampling onto size x size, then a Gaussian blur. */
+function backdropSmooth(grid, size, sigma) {
+  const n = grid.length;
+  const out = Array.from({ length: size }, (_, i) => {
+    const y = (i * (n - 1)) / (size - 1);
+    const y0 = Math.min(n - 2, Math.floor(y));
+    const fy = y - y0;
+    return Float64Array.from({ length: size }, (_, j) => {
+      const x = (j * (n - 1)) / (size - 1);
+      const x0 = Math.min(n - 2, Math.floor(x));
+      const fx = x - x0;
+      return grid[y0][x0] * (1 - fy) * (1 - fx) + grid[y0][x0 + 1] * (1 - fy) * fx
+        + grid[y0 + 1][x0] * fy * (1 - fx) + grid[y0 + 1][x0 + 1] * fy * fx;
+    });
+  });
+  const radius = Math.ceil(3 * sigma);
+  const kernel = Array.from({ length: 2 * radius + 1 }, (_, k) => Math.exp(-0.5 * ((k - radius) / sigma) ** 2));
+  const total = kernel.reduce((a, b) => a + b, 0);
+  const at = (i) => (i < 0 ? -i - 1 : i >= size ? 2 * size - i - 1 : i); // reflect at the edges
+  const pass = (get) => Array.from({ length: size }, (_, i) => Float64Array.from({ length: size }, (_, j) =>
+    kernel.reduce((sum, w, k) => sum + w * get(i, j + k - radius), 0) / total));
+  const across = pass((i, j) => out[i][at(j)]);
+  const down = pass((i, j) => across[at(j)][i]);
+  return down.map((_, i) => Float64Array.from({ length: size }, (_, j) => down[j][i]));
+}
+
+/* Marching squares at one level: polylines in sample units. */
+function backdropContour(values, level) {
+  const size = values.length;
+  const segments = [];
+  const cross = (x1, y1, v1, x2, y2, v2) => {
+    const t = v2 === v1 ? 0.5 : (level - v1) / (v2 - v1);
+    return [x1 + (x2 - x1) * t, y1 + (y2 - y1) * t];
+  };
+  for (let i = 0; i < size - 1; i += 1) {
+    for (let j = 0; j < size - 1; j += 1) {
+      const tl = values[i][j];
+      const tr = values[i][j + 1];
+      const br = values[i + 1][j + 1];
+      const bl = values[i + 1][j];
+      const index = (tl >= level ? 8 : 0) | (tr >= level ? 4 : 0) | (br >= level ? 2 : 0) | (bl >= level ? 1 : 0);
+      if (index === 0 || index === 15) continue;
+      // Edges are keyed so neighbouring cells name a shared edge alike.
+      const edge = {
+        t: [`h${i},${j}`, cross(j, i, tl, j + 1, i, tr)],
+        r: [`v${i},${j + 1}`, cross(j + 1, i, tr, j + 1, i + 1, br)],
+        b: [`h${i + 1},${j}`, cross(j, i + 1, bl, j + 1, i + 1, br)],
+        l: [`v${i},${j}`, cross(j, i, tl, j, i + 1, bl)],
+      };
+      const centre = (tl + tr + br + bl) / 4 >= level;
+      const pairs = {
+        1: ['lb'], 2: ['br'], 3: ['lr'], 4: ['tr'], 6: ['tb'], 7: ['tl'],
+        8: ['tl'], 9: ['tb'], 11: ['tr'], 12: ['lr'], 13: ['br'], 14: ['lb'],
+        5: centre ? ['tr', 'lb'] : ['tl', 'br'],
+        10: centre ? ['tl', 'br'] : ['tr', 'lb'],
+      }[index];
+      for (const [a, b] of pairs) segments.push([edge[a], edge[b]]);
+    }
+  }
+  // Join the segments through their shared edges.
+  const byEdge = new Map();
+  segments.forEach(([a, b], k) => {
+    for (const [key] of [a, b]) byEdge.set(key, [...(byEdge.get(key) || []), k]);
+  });
+  const used = new Set();
+  const lines = [];
+  segments.forEach((first, k) => {
+    if (used.has(k)) return;
+    used.add(k);
+    const line = [...first];
+    for (const forward of [true, false]) {
+      for (;;) {
+        const end = forward ? line[line.length - 1] : line[0];
+        const next = (byEdge.get(end[0]) || []).find((n) => !used.has(n));
+        if (next === undefined) break;
+        used.add(next);
+        const [p, q] = segments[next];
+        const step = p[0] === end[0] ? q : p;
+        if (forward) line.push(step); else line.unshift(step);
+      }
+    }
+    lines.push(line.map(([, point]) => point));
+  });
+  return lines;
+}
+
+/* A contour as a smooth curve: thin the marching-squares points (Ramer-
+   Douglas-Peucker), then run a Catmull-Rom spline through what is left,
+   written as cubic Beziers, so no corner of the sampling grid shows at any
+   size. */
+function backdropCurve(points) {
+  const keep = new Uint8Array(points.length);
+  keep[0] = 1;
+  keep[points.length - 1] = 1;
+  const stack = [[0, points.length - 1]];
+  while (stack.length) {
+    const [a, b] = stack.pop();
+    const [ax, ay] = points[a];
+    const [bx, by] = points[b];
+    const length = Math.hypot(bx - ax, by - ay);
+    let far = -1;
+    let most = 0.12; // in samples
+    for (let k = a + 1; k < b; k += 1) {
+      const [x, y] = points[k];
+      // A closed loop starts and ends on one point: measure from it.
+      const off = length
+        ? Math.abs((bx - ax) * (y - ay) - (by - ay) * (x - ax)) / length
+        : Math.hypot(x - ax, y - ay);
+      if (off > most) { most = off; far = k; }
+    }
+    if (far > 0) { keep[far] = 1; stack.push([a, far], [far, b]); }
+  }
+  const pts = points.filter((_, k) => keep[k]);
+  const closed = pts.length > 3 && Math.hypot(pts[0][0] - pts[pts.length - 1][0], pts[0][1] - pts[pts.length - 1][1]) < 1e-6;
+  const at = (k) => {
+    if (closed) return pts[((k % (pts.length - 1)) + (pts.length - 1)) % (pts.length - 1)];
+    return pts[Math.max(0, Math.min(pts.length - 1, k))];
+  };
+  const f = (v) => v.toFixed(2);
+  let d = `M${f(pts[0][0])} ${f(pts[0][1])}`;
+  for (let k = 0; k < pts.length - 1; k += 1) {
+    const [x0, y0] = at(k - 1);
+    const [x1, y1] = at(k);
+    const [x2, y2] = at(k + 1);
+    const [x3, y3] = at(k + 2);
+    d += `C${f(x1 + (x2 - x0) / 6)} ${f(y1 + (y2 - y0) / 6)} ${f(x2 - (x3 - x1) / 6)} ${f(y2 - (y3 - y1) / 6)} ${f(x2)} ${f(y2)}`;
+  }
+  return closed ? `${d}Z` : d;
+}
+
+function renderBackdrop(report) {
+  const svg = $('#backdrop');
+  const history = report.history;
+  if (!svg) return;
+  if (!history?.teams?.length || !history.teams[0].positions?.length) {
+    backdropKey = '';
+    svg.replaceChildren();
+    return;
+  }
+  // The rewind hands a report per date, each with its season so far.
+  const key = `${report.league.slug}|${report.league.season}|${history.dates?.length}|${history.dates?.[history.dates.length - 1]}`;
+  if (key === backdropKey) return;
+  backdropKey = key;
+  const { samples, levels, sigma } = BACKDROP;
+  const values = backdropSmooth(backdropField(history), samples, sigma);
+  let lo = Infinity;
+  let hi = -Infinity;
+  for (const row of values) for (const v of row) { lo = Math.min(lo, v); hi = Math.max(hi, v); }
+  const backdropLines = [];
+  for (let k = 1; k <= levels; k += 1) {
+    const level = lo + ((hi - lo) * k) / (levels + 1);
+    for (const line of backdropContour(values, level)) {
+      if (line.length < 4) continue;
+      backdropLines.push(backdropCurve(line));
+    }
+  }
+  svg.setAttribute('viewBox', `0 0 ${samples - 1} ${samples - 1}`);
+  svg.replaceChildren(...backdropLines.map((d) => svgEl('path', { d })));
+}
+
+
 /* ---------- theme -------------------------------------------------- */
 
 function resolveTheme() {
@@ -5991,6 +6472,7 @@ function render() {
   renderSeasonOptions(report);
   renderTimeline(report);
   renderHero(report);
+  renderBackdrop(report);
 
   // Show/hide sections based on active view
   for (const section of document.querySelectorAll('[data-section]')) {
@@ -6105,13 +6587,19 @@ function render() {
 
 // Switch the active view: shared by top-strip/bar clicks and the bar swipe.
 // The page slides the way the tabs run (a swipe passes its own way, so the
-// page follows the finger); see "Switching tab" in the stylesheet.
+// page follows the finger); see "Switching tab" in the stylesheet. On a
+// phone the views in the More sheet are not beside the bar's, so going to
+// one the page rises from below, as the sheet did, and coming back it sinks.
 function switchView(view, { dir } = {}) {
   closeSheet();
   if (anim.playing && view !== state.activeView) animStop();
   const order = [...document.querySelectorAll('.masthead__views [data-view]')].map((tab) => tab.dataset.view);
   const from = order.indexOf(state.activeView);
   const to = order.indexOf(view);
+  const inSheet = (v) => !!document.querySelector(`.sheet__item[data-view="${v}"]`);
+  const bar = $('#mobilebar');
+  const vertical = dir === undefined && bar && getComputedStyle(bar).display !== 'none'
+    && (inSheet(view) || inSheet(state.activeView));
   const update = () => {
     // The Explore tab always opens on its gallery.
     if (view === 'explore') state.exploreItem = null;
@@ -6126,8 +6614,14 @@ function switchView(view, { dir } = {}) {
     update();
     return;
   }
-  document.documentElement.style.setProperty('--view-dir', String(dir ?? (from >= 0 && to >= 0 && to < from ? -1 : 1)));
-  document.startViewTransition(update);
+  const root = document.documentElement;
+  if (vertical) {
+    root.dataset.transition = 'vertical';
+    root.style.setProperty('--view-dir', inSheet(view) ? '1' : '-1');
+  } else {
+    root.style.setProperty('--view-dir', String(dir ?? (from >= 0 && to >= 0 && to < from ? -1 : 1)));
+  }
+  document.startViewTransition(update).finished.finally(() => { delete root.dataset.transition; });
 }
 
 function wire() {

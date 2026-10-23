@@ -11,6 +11,7 @@ Scripts load with `<script defer>`.
 | `i18n.js` | `translations.en` and `translations.no`, one key table each; `t(key, vars)` |
 | `vendor/three/` | three.js r147, vendored; loaded only when the season mountain opens |
 | `fonts/`, `logos/`, `og.png` | assets |
+| `icons/mark.svg`, `contours.svg` | the mark (favicon and wordmark) and the contour motif behind the hero; `tools/brand/` makes them and, from them, the PNG icons and `og.png` (see the scripts' headers) |
 | `personvern.html`, `404.html`, `robots.txt`, `sitemap.xml` | static pages |
 | `data/` | the built reports (git-ignored; see [operations.md](operations.md)) |
 

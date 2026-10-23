@@ -76,6 +76,7 @@
      a brighter take on the fill's own hue. */
   --glow-good: #3d7bff;
   --glow-bad: #ff3b46;
+  --glow-draw: #a6a69e;   /* the draw's grey, a step lighter */
 
   /* Sequential data ramp. Multi-hue on purpose: sixteen stacked bands cannot
      be told apart in one hue. Resampled at uniform OKLab lightness from the
@@ -140,6 +141,18 @@
   --glow-ring: 0 4px 14px -3px rgb(31 94 255 / 0.55);   /* an active control */
   --glow-hover: 0 0 0 1px rgb(31 94 255 / 0.35), 0 4px 16px -6px rgb(31 94 255 / 0.45);
   --glow-text: 0 0 14px rgb(31 94 255 / 0.25);
+  /* The contour backdrop's strength: dark ink on light paper reads heavier
+     than light ink on navy, so each theme has its own. */
+  --backdrop-alpha: 0.055;
+
+  /* One spacing scale inside panels, so padding and row heights repeat. */
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-5: 1.25rem;
+  --space-6: 1.5rem;
+  --space-7: 2rem;
 
   --measure: 68ch;
   --gutter: clamp(1rem, 4vw, 3rem);
@@ -188,6 +201,7 @@
   --versions-xg: #c4772a;
 
   --draw: #b5b5ac;
+  --glow-draw: #d6d6cd;
 
   --tier-1: #a78bfa;
   --tier-2: #d95926;
@@ -205,6 +219,7 @@
   --glow-ring: 0 0 22px -2px rgb(31 94 255 / 0.8);
   --glow-hover: 0 0 0 1px rgb(31 94 255 / 0.5), 0 0 22px -6px rgb(31 94 255 / 0.7);
   --glow-text: 0 0 22px rgb(31 94 255 / 0.65);
+  --backdrop-alpha: 0.08;
 }
 
 /* ---------- base -------------------------------------------------- */
@@ -222,6 +237,9 @@ html, body { overflow-x: clip; }
 
 body {
   margin: 0;
+  /* The contour backdrop spans the whole page from here. */
+  position: relative;
+  min-height: 100vh;
   background:
     radial-gradient(1400px 640px at 50% -260px, var(--glow), transparent 70%) no-repeat,
     var(--paper);
@@ -342,7 +360,15 @@ html { scroll-padding-top: 76px; }
   overflow-x: auto;
   scrollbar-width: none;
   overscroll-behavior-x: contain;
+  /* A scroller clips at its padding box, so the active tab's glow needs room
+     of its own: padding as wide as the glow, taken back by the margin. */
+  padding: 22px;
+  margin: -22px;
+  /* That room reaches past the masthead's foot and into its neighbours'
+     gaps; it lets clicks through to whatever is beneath. */
+  pointer-events: none;
 }
+.masthead__views > * { pointer-events: auto; }
 
 .masthead__views::-webkit-scrollbar { display: none; }
 
@@ -351,8 +377,10 @@ html { scroll-padding-top: 76px; }
 @media (min-width: 761px) {
   .masthead__inner { display: grid; grid-template-columns: 1fr minmax(0, auto) 1fr; }
   .wordmark { justify-self: start; }
-  .settings-btn { justify-self: end; }
+  .masthead__end { justify-self: end; }
 }
+
+.masthead__end { display: flex; align-items: center; gap: 1rem; margin-left: auto; }
 
 .wordmark {
   font-family: var(--display);
@@ -367,6 +395,25 @@ html { scroll-padding-top: 76px; }
   align-items: baseline;
   gap: 0.5rem;
   white-space: nowrap; /* the model badge stays beside the name */
+}
+
+/* The mark: a corner of the finish grid, as in public/icons/mark.svg. */
+.wordmark__mark { width: 1.15em; height: 1.15em; flex: none; align-self: center; fill: currentColor; }
+.wordmark__lead { fill: var(--accent); }
+.wordmark__name { font-weight: inherit; }
+/* Under 400px the name, the division pill and the settings button overflow
+   the bar, so the mark stands alone, larger; the name stays for screen
+   readers. */
+@media (max-width: 399px) {
+  .wordmark__mark { width: 1.75rem; height: 1.75rem; }
+  .wordmark__name {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
 }
 
 .wordmark span {
@@ -469,6 +516,28 @@ html { scroll-padding-top: 76px; }
 }
 @keyframes view-out { to { opacity: 0; transform: translateX(calc(var(--view-dir, 1) * -40px)); } }
 @keyframes view-in { from { opacity: 0; transform: translateX(calc(var(--view-dir, 1) * 40px)); } }
+@keyframes view-out-y { to { opacity: 0; transform: translateY(calc(var(--view-dir, 1) * -40px)); } }
+@keyframes view-in-y { from { opacity: 0; transform: translateY(calc(var(--view-dir, 1) * min(20vh, 160px))); } }
+@keyframes fade-out { to { opacity: 0; } }
+@keyframes fade-in { from { opacity: 0; } }
+
+@media (prefers-reduced-motion: no-preference) {
+  /* A phone's More-sheet views: the page rises from below going to one, as
+     the sheet did, and sinks coming back (switchView). */
+  :root[data-transition="vertical"]::view-transition-old(content) { animation-name: view-out-y; }
+  :root[data-transition="vertical"]::view-transition-new(content) { animation-name: view-in-y; animation-duration: 320ms; }
+
+  /* An Explore view grows out of its card's thumbnail and shrinks back into
+     it (openExplore); around it the page only crossfades. Both pictures fill
+     the morphing box, cropped from the top, so neither is squashed. */
+  :root[data-transition="explore"]::view-transition-old(content) { animation: fade-out 160ms var(--ease) both; }
+  :root[data-transition="explore"]::view-transition-new(content) { animation: fade-in 260ms var(--ease) 120ms both; }
+  ::view-transition-group(explore-open) { animation-duration: 440ms; animation-timing-function: cubic-bezier(0.2, 0.8, 0.2, 1); }
+  ::view-transition-old(explore-open),
+  ::view-transition-new(explore-open) { width: 100%; height: 100%; object-fit: cover; object-position: top; }
+  ::view-transition-old(explore-open) { animation: fade-out 220ms var(--ease) both; }
+  ::view-transition-new(explore-open) { animation: fade-in 320ms var(--ease) 60ms both; }
+}
 
   /* Table view toggle: the same segmented pill as .switch. */
   .table-controls {
@@ -526,8 +595,7 @@ html { scroll-padding-top: 76px; }
 /* ---------- hero -------------------------------------------------- */
 
 /* The masthead already names the league and season, so the hero's job is to
-   say what the model thinks -- not to fill a screen before any data appears.
-   On a wide screen the vitals sit beside the headline instead of under it. */
+   say what the model thinks -- not to fill a screen before any data appears. */
 .hero {
   padding-block: clamp(1.25rem, 3vw, 2rem) 1.25rem;
   display: grid;
@@ -536,38 +604,122 @@ html { scroll-padding-top: 76px; }
   grid-template-columns: minmax(0, 1fr);
 }
 
-@media (min-width: 1000px) {
-  .hero { grid-template-columns: minmax(0, 1fr) auto; }
-  .hero__meta { grid-column: 2; grid-row: 1 / span 2; }
+/* The motif: the season mountain's contour map (renderBackdrop), shown
+   once at the top of the page and scrolling with it. The square is as wide
+   as the page and at least as tall as the screen, centred, so it fills the
+   first screen on a phone too; it fades out towards its foot. Its size hangs
+   on the window alone, so switching views moves nothing. Faint; the panels
+   are opaque, so it shows only around them, never behind data. */
+.backdrop {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  overflow: hidden;
+  pointer-events: none;
+  color: var(--ink);
+  opacity: var(--backdrop-alpha);
+}
+.backdrop svg {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  translate: -50% 0;
+  width: max(100%, 100vh);
+  width: max(100%, 100lvh);
+  height: auto;
+  aspect-ratio: 1;
+  fill: none;
+  stroke: currentColor;
+  stroke-linejoin: round;
+  -webkit-mask-image: linear-gradient(to bottom, #000 55%, transparent);
+  mask-image: linear-gradient(to bottom, #000 55%, transparent);
+}
+.backdrop path { vector-effect: non-scaling-stroke; stroke-width: 1.25px; }
+
+/* The race the season is about: the clubs still contending for one band,
+   side by side. Archivo at its widest and heaviest, set tight, the unit a
+   step down so the number leads; fewer clubs, larger figures. */
+.race { display: grid; gap: var(--space-3); }
+.race__clubs {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-4) var(--space-7);
+}
+.race__club { display: grid; gap: var(--space-2); }
+.race__value {
+  font-family: var(--display);
+  font-variation-settings: "wdth" 125;
+  font-weight: 800;
+  font-size: clamp(2.75rem, 8vw, 5.5rem);
+  line-height: 0.85;
+  letter-spacing: -0.035em;
+}
+.race[data-count="1"] .race__value { font-size: clamp(3.5rem, 11vw, 7.5rem); }
+.race:is([data-count="3"], [data-count="4"]) .race__value { font-size: clamp(2.25rem, 5.5vw, 4rem); }
+.race:is([data-count="5"], [data-count="6"], [data-count="7"]) .race__value { font-size: clamp(1.75rem, 4.5vw, 3rem); }
+/* A club already through: the place is decided, so its figure steps back. */
+.race__club.is-through .race__value { color: var(--ink-faint); }
+.race__value small {
+  font-size: 0.4em;
+  font-weight: 700;
+  letter-spacing: 0;
+  margin-left: 0.12em;
+  color: var(--ink-muted);
+}
+.race__name { display: flex; align-items: center; gap: 0.5rem; font-weight: 600; color: var(--ink-muted); }
+.race__name .team-logo { width: 20px; height: 20px; }
+.race__own { color: var(--accent-ink); }
+/* The match of the week's draw stands between the clubs, a step back. */
+.race__club.is-draw .race__value { color: var(--ink-muted); }
+.race__sub { font-size: 0.8125rem; color: var(--ink-faint); }
+.race__note { margin: 0; font-size: 0.875rem; color: var(--ink-muted); }
+/* Three side by side on a phone (a match with its draw, or a three-club
+   race), rather than two and one left over. */
+@media (max-width: 480px) {
+  .race[data-count="3"] .race__clubs { flex-wrap: nowrap; gap: var(--space-4); }
+  .race[data-count="3"] .race__value { font-size: clamp(1.5rem, 7vw, 2.25rem); }
 }
 
-.hero h1 {
-  font-size: clamp(1.75rem, 4vw, 2.5rem);
-  font-variation-settings: "wdth" 125;
-  max-width: 22ch;
+/* Division and season, in the masthead: one pill like the view switch, each
+   half opening a list exactly as wide as itself. */
+.league-picker {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 3px;
+  background: var(--panel-sunk);
+  border: 1px solid var(--rule);
+  border-radius: 999px;
+  white-space: nowrap;
 }
 
 .hero-title-part {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.3rem 0.8rem;
+  border-radius: 999px;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--ink);
   cursor: pointer;
-  border-bottom: 2px dashed var(--ink-faint);
-  transition: border-color 0.15s var(--ease), color 0.15s var(--ease);
+  transition: background 0.15s var(--ease), color 0.15s var(--ease);
 }
-.hero-title-part:hover {
-  border-color: var(--ink);
-  color: var(--accent-ink);
-  text-shadow: var(--glow-text);
-}
+.hero-title-part:hover,
+.hero-title-part[aria-expanded="true"] { background: var(--panel); }
+.hero-title-part[aria-expanded="true"] { color: var(--accent-ink); }
 
-/* A chevron says "this opens a list" where the dashed underline alone only
-   hinted at it; it turns over while the list is open. */
+/* A chevron says "this opens a list"; it turns over while the list is open. */
 .hero-title-part::after {
   content: "";
   display: inline-block;
   width: 0.32em;
   height: 0.32em;
-  margin: 0 0.1em 0.18em 0.28em;
-  border-right: 0.08em solid currentColor;
-  border-bottom: 0.08em solid currentColor;
+  margin: 0 0 0.25em 0.5em;
+  border-right: 0.14em solid currentColor;
+  border-bottom: 0.14em solid currentColor;
   transform: rotate(45deg);
   opacity: 0.55;
   transition: transform 0.15s var(--ease), opacity 0.15s var(--ease);
@@ -582,62 +734,20 @@ html { scroll-padding-top: 76px; }
   font-size: 1rem;
 }
 
-.hero__meta {
-  display: flex;
-  flex-wrap: wrap;
-  align-content: end;
-  gap: 0.4rem 1.5rem;
-  padding-top: 0.75rem;
-  border-top: 1px solid var(--rule);
-}
-
-@media (min-width: 1000px) {
-  .hero__meta {
-    flex-direction: column;
-    gap: 0.3rem;
-    padding-top: 0;
-    padding-left: 1.5rem;
-    border-top: 0;
-    border-left: 1px solid var(--rule);
-  }
-}
-
 /* The league hero only where it is the page's own story. In a club's view,
    the ladder, the compare tool, the model card and the attack map, the
-   league's story and vitals are someone else's headline; the title stays,
-   since its pickers still navigate. On a phone the vitals repeat the lede
-   and push the content down. */
-body[data-view="team"] #hero-lede,
-body[data-view="team"] .hero__meta,
-body[data-view="ladder"] #hero-lede,
-body[data-view="ladder"] .hero__meta,
-body[data-view="compare"] #hero-lede,
-body[data-view="compare"] .hero__meta,
-body[data-view="model"] #hero-lede,
-body[data-view="model"] .hero__meta,
-body[data-view="explore"] #hero-lede,
-body[data-view="explore"] .hero__meta { display: none; }
-body[data-view="team"] .hero,
-body[data-view="ladder"] .hero,
-body[data-view="compare"] .hero,
-body[data-view="model"] .hero,
-body[data-view="explore"] .hero { padding-bottom: 0.5rem; }
+   league's story is someone else's headline. The page heading stays (it is
+   visually hidden), and so do the pickers in the masthead. */
+body:is([data-view="team"], [data-view="ladder"], [data-view="compare"], [data-view="model"], [data-view="explore"]) .race { display: none; }
+body:is([data-view="team"], [data-view="ladder"], [data-view="compare"], [data-view="model"], [data-view="explore"]) .hero { padding-block: 0; }
 /* The ladder and the compare tool take both divisions, and the model card
    holds for both, so only the season is a choice there. */
 body[data-view="ladder"] .hero-title-part[data-role="division"],
 body[data-view="compare"] .hero-title-part[data-role="division"],
 body[data-view="model"] .hero-title-part[data-role="division"] { display: none; }
-/* Explore: a visualisation of one division and season keeps the hero's
-   title, whose two pickers change them. The gallery shows no league's
-   numbers and the season mountain has pickers of its own: no hero there. */
-body[data-view="explore"]:is([data-viz=""], [data-viz="mountain"]) .hero { display: none; }
-@media (max-width: 760px) {
-  .hero__meta { display: none; }
-}
-
-.hero__meta div { display: flex; align-items: baseline; gap: 0.5rem; }
-.hero__meta b { font-weight: 700; font-size: 1rem; }
-
+/* Explore: the gallery shows no league's numbers and the season mountain has
+   pickers of its own: no hero there, and no masthead pickers. */
+body[data-view="explore"]:is([data-viz=""], [data-viz="mountain"]) :is(.hero, .league-picker) { display: none; }
 /* ---------- panels ------------------------------------------------ */
 
 section { margin-block: clamp(1.5rem, 3vw, 2.25rem); }
@@ -656,11 +766,11 @@ section { margin-block: clamp(1.5rem, 3vw, 2.25rem); }
   justify-content: space-between;
   gap: 1rem 2rem;
   flex-wrap: wrap;
-  padding: 1.1rem 1.25rem;
+  padding: var(--space-5);
   border-bottom: 1px solid var(--rule);
 }
 
-.panel__head h2 { font-size: 1.25rem; }
+.panel__head h2 { font-size: 1.5rem; }
 
 .panel__head p {
   margin: 0.35rem 0 0;
@@ -982,7 +1092,7 @@ table.standings {
 
 table.standings th,
 table.standings td {
-  padding: 0.35rem 0.6rem;
+  padding: var(--space-2) 0.6rem;
   text-align: right;
   border-bottom: 1px solid var(--rule);
   white-space: nowrap;
@@ -1044,7 +1154,9 @@ table.standings tbody tr:hover { background: var(--panel-sunk); }
 }
 
 table.standings th.is-sorted { color: var(--ink); }
-table.standings .num { width: 3.2rem; }
+/* Figures a step narrower than the text: a scoreboard's set, and a column
+   or two more fits before the table scrolls. */
+table.standings .num { width: 3.2rem; font-variation-settings: "wdth" 85; }
 table.standings .club { text-align: left; width: 100%; font-weight: 600; }
 table.standings .pos { text-align: center; width: 2.6rem; color: var(--ink-muted); }
 table.standings .sep { border-left: 1px solid var(--rule); }
@@ -1502,7 +1614,7 @@ table.standings .zone-divider__wrap::after {
   overflow: hidden;
   /* The fill is the flat outcome colour (the same blue as the buttons);
      the light around it is a brighter take on the outcome's own hue, so
-     home and away still read as themselves. The draw gives no light. */
+     each outcome still reads as itself: blue, red, and the draw's grey. */
   background: var(--seg);
   box-shadow: 0 2px 8px -3px color-mix(in srgb, var(--seg-glow) 60%, transparent);
 }
@@ -1514,7 +1626,7 @@ table.standings .zone-divider__wrap::after {
 .odds__seg:first-child { border-radius: 3px 2px 2px 3px; }
 .odds__seg:last-child { border-radius: 2px 3px 3px 2px; }
 .odds__seg[data-outcome="home"] { --seg: var(--home); --seg-glow: var(--glow-good); }
-.odds__seg[data-outcome="draw"] { --seg: var(--draw); --seg-glow: transparent; color: #10171b; }
+.odds__seg[data-outcome="draw"] { --seg: var(--draw); --seg-glow: var(--glow-draw); color: #10171b; }
 .odds__seg[data-outcome="away"] { --seg: var(--away); --seg-glow: var(--glow-bad); }
 
 /* Mobile: let fixture odds and lines stack instead of fixed min-width.
@@ -1554,8 +1666,9 @@ table.standings .zone-divider__wrap::after {
 
 @media (max-width: 480px) {
   .fixture__lines { justify-content: flex-start; }
-  /* The scroller clips at its box, so it gets room for the glow. */
-  .odds { overflow-x: auto; scrollbar-width: none; overscroll-behavior-x: contain; padding: 8px; margin: -8px; }
+  /* The scroller clips at its box, so it gets room for the glow; the room
+     is added to its height, or the segments would shrink to 8px. */
+  .odds { overflow-x: auto; scrollbar-width: none; overscroll-behavior-x: contain; padding: 8px; margin: -8px; height: calc(1.5rem + 16px); }
   .odds::-webkit-scrollbar { display: none; }
 }
 
@@ -1903,6 +2016,23 @@ table.standings .zone-divider__wrap::after {
 .caveats ul { margin: 0.5rem 0 0; padding-left: 1.1rem; color: var(--ink-muted); font-size: 0.875rem; }
 .caveats li { margin-block: 0.35rem; max-width: var(--measure); }
 .caveats p { margin: 0.5rem 0 0; color: var(--ink-muted); font-size: 0.875rem; max-width: var(--measure); }
+/* How the model works, as three numbered steps. */
+.steps {
+  list-style: none;
+  margin: var(--space-3) 0 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr));
+  gap: var(--space-4) var(--space-7);
+}
+.steps li {
+  display: grid;
+  gap: var(--space-1);
+  align-content: start;
+}
+.steps__n { font-size: 0.75rem; font-weight: 700; color: var(--accent-ink); }
+.steps b { font-size: 1rem; }
+.caveats .steps p { margin: 0; }
 .caveats__link { display: inline-block; margin-top: 0.6rem; font-size: 0.875rem; font-weight: 600; color: var(--ink); }
 
 footer {
@@ -2307,8 +2437,6 @@ footer a { color: var(--ink); }
 /* ---------- responsive -------------------------------------------- */
 
 @media (max-width: 760px) {
-  .hero__meta { gap: 0.4rem 1.25rem; }
-
   /* Bring the title closer to the top on mobile so "Eliteserien 2026"
      is visible immediately when scrolled to top, below the sticky masthead. */
   .hero { padding-top: clamp(0.5rem, 2vw, 1rem); }
@@ -2369,10 +2497,6 @@ footer a { color: var(--ink); }
 
   .wordmark { margin-right: 0; white-space: nowrap; }
   .wordmark span { display: none; }
-
-  /* How the model was built belongs in the Model Card, not above the table.
-     Needs to outrank `.hero__meta div`, which sets these to flex. */
-  .hero__meta .hero__meta-provenance { display: none; }
 
   /* The finish grid's explanation runs six lines on a phone -- more screen
      than the grid it introduces. Clamped to two, faded so there is visibly
@@ -2493,6 +2617,13 @@ footer a { color: var(--ink); }
   /* Tighter wordmark on small phones. */
   .wordmark { font-size: 0.8rem; letter-spacing: 0; }
 
+  /* The division and season pill fits beside the wordmark and the settings
+     button: tighter halves, and the lists' text still in line with them. */
+  .masthead__inner { gap: 0.5rem; }
+  .masthead__end { gap: 0.25rem; }
+  .league-picker .hero-title-part { padding-inline: 0.6rem; }
+  .popover-menu--picker .popover-menu__btn { padding-inline: calc(0.6rem - 4px); }
+
   /* Grid animation controls: ensure they fit */
   .grid-anim-bar { padding: 0.5rem 1rem; gap: 0.5rem; }
   .grid-anim-bar__when { min-width: 0; font-size: 0.75rem; }
@@ -2556,7 +2687,6 @@ footer a { color: var(--ink); }
 
 .settings-btn {
   appearance: none;
-  margin-left: auto; /* the right edge, also on a phone where the views are hidden */
   min-width: 40px;
   min-height: 40px;
   border: 0;
@@ -2583,6 +2713,14 @@ footer a { color: var(--ink); }
 }
 .popover-menu[hidden] { display: none; }
 .popover-menu--scroll { max-height: 50vh; overflow-y: auto; }
+/* The picker's lists sit under their half of the pill, as wide as it, each
+   option's text in line with the half's own. */
+.popover-menu--picker { padding: 3px; }
+.popover-menu--picker .popover-menu__btn {
+  font-size: 0.8125rem;
+  padding: 0.45rem calc(0.8rem - 4px);
+  white-space: nowrap;
+}
 #settings-menu { min-width: 200px; }
 #views-more-menu { min-width: 180px; }
 #views-more-menu .popover-menu__btn { display: block; }
@@ -2715,6 +2853,25 @@ footer a { color: var(--ink); }
   overflow: hidden;
   text-overflow: ellipsis;
 }
+
+/* Your club: a quiet pill, lit in the accent once chosen. */
+.team-summary__own {
+  appearance: none;
+  align-self: flex-start;
+  margin-top: var(--space-1);
+  padding: 0.25rem 0.75rem;
+  border: 1px solid var(--rule-strong);
+  border-radius: 999px;
+  background: none;
+  color: var(--ink-muted);
+  font: inherit;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: color 0.15s var(--ease), border-color 0.15s var(--ease);
+}
+.team-summary__own:hover { color: var(--ink); border-color: var(--ink-faint); }
+.team-summary__own[aria-pressed="true"] { color: var(--accent-ink); border-color: var(--accent-ink); }
 
 .team-summary__rating-block {
   display: flex;
@@ -3390,8 +3547,8 @@ footer a { color: var(--ink); }
 /* On a phone, a fixed shape while you scrub: the eyebrow and the
    back-to-live button on one row, the state on two reserved lines below, so
    neither the button nor a longer date moves the slider under the thumb.
-   The hero sentence above keeps room for its usual length too (and
-   renderHero never lets it shrink while you scrub). After the base rules
+   The race in the hero above keeps the room it has taken too (renderHero
+   never lets it shrink while you scrub). After the base rules
    above, which it must override. */
 @media (max-width: 760px) {
   .timeline__head { display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 0.25rem 0.75rem; }
@@ -3402,11 +3559,6 @@ footer a { color: var(--ink); }
   /* "Live" rather than "Back to live", so the eyebrow beside it keeps to one line. */
   .timeline__now-long { display: none; }
   .timeline__now-short { display: inline; }
-  #hero-lede { min-height: 3lh; }
-}
-
-@media (max-width: 370px) {
-  #hero-lede { min-height: 4lh; }
 }
 
 .timeline__control { position: relative; }
@@ -3778,7 +3930,8 @@ footer a { color: var(--ink); }
   .compare__option { min-height: 44px; padding: 0.6rem 0.75rem; }
   .popover-menu__btn { min-height: 44px; padding: 0.6rem 0.75rem; }
   .settings-btn { min-height: 44px; min-width: 44px; }
-  .hero-title-part { min-height: 44px; display: inline-flex; align-items: center; padding: 0.25rem 0; }
+  .hero-title-part { min-height: 40px; }
+  .popover-menu--picker .popover-menu__btn { min-height: 44px; padding-block: 0.6rem; }
 }
 
 /* The club menu is as wide as its half-width card: on a phone a 32px crest
@@ -3895,6 +4048,10 @@ html { scroll-behavior: smooth; }
 
 .explore-card:hover .explore-card__thumb { transform: translateY(-2px); border-color: var(--accent); box-shadow: var(--shadow), var(--glow-ring); }
 .explore-card:focus-visible { outline: none; }
+/* Where a thumbnail grows to in a long view (openExplore): the panel's width,
+   the thumbnail's shape, at the top. Empty, and only there for the move. */
+#explore-body { position: relative; }
+.explore-morph { position: absolute; inset: 0 0 auto; aspect-ratio: 16 / 9; pointer-events: none; }
 .explore-card:focus-visible .explore-card__thumb { outline: 2px solid var(--ink); outline-offset: 3px; }
 .explore-card__title { font-weight: 700; font-size: 1rem; }
 .explore-card__desc { color: var(--ink-muted); font-size: 0.875rem; line-height: 1.4; }
