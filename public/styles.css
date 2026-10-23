@@ -76,6 +76,7 @@
      a brighter take on the fill's own hue. */
   --glow-good: #3d7bff;
   --glow-bad: #ff3b46;
+  --glow-draw: #a6a69e;   /* the draw's grey, a step lighter */
 
   /* Sequential data ramp. Multi-hue on purpose: sixteen stacked bands cannot
      be told apart in one hue. Resampled at uniform OKLab lightness from the
@@ -200,6 +201,7 @@
   --versions-xg: #c4772a;
 
   --draw: #b5b5ac;
+  --glow-draw: #d6d6cd;
 
   --tier-1: #a78bfa;
   --tier-2: #d95926;
@@ -1549,7 +1551,7 @@ table.standings .zone-divider__wrap::after {
   overflow: hidden;
   /* The fill is the flat outcome colour (the same blue as the buttons);
      the light around it is a brighter take on the outcome's own hue, so
-     home and away still read as themselves. The draw gives no light. */
+     each outcome still reads as itself: blue, red, and the draw's grey. */
   background: var(--seg);
   box-shadow: 0 2px 8px -3px color-mix(in srgb, var(--seg-glow) 60%, transparent);
 }
@@ -1561,7 +1563,7 @@ table.standings .zone-divider__wrap::after {
 .odds__seg:first-child { border-radius: 3px 2px 2px 3px; }
 .odds__seg:last-child { border-radius: 2px 3px 3px 2px; }
 .odds__seg[data-outcome="home"] { --seg: var(--home); --seg-glow: var(--glow-good); }
-.odds__seg[data-outcome="draw"] { --seg: var(--draw); --seg-glow: transparent; color: #10171b; }
+.odds__seg[data-outcome="draw"] { --seg: var(--draw); --seg-glow: var(--glow-draw); color: #10171b; }
 .odds__seg[data-outcome="away"] { --seg: var(--away); --seg-glow: var(--glow-bad); }
 
 /* Mobile: let fixture odds and lines stack instead of fixed min-width.
@@ -1601,8 +1603,9 @@ table.standings .zone-divider__wrap::after {
 
 @media (max-width: 480px) {
   .fixture__lines { justify-content: flex-start; }
-  /* The scroller clips at its box, so it gets room for the glow. */
-  .odds { overflow-x: auto; scrollbar-width: none; overscroll-behavior-x: contain; padding: 8px; margin: -8px; }
+  /* The scroller clips at its box, so it gets room for the glow; the room
+     is added to its height, or the segments would shrink to 8px. */
+  .odds { overflow-x: auto; scrollbar-width: none; overscroll-behavior-x: contain; padding: 8px; margin: -8px; height: calc(1.5rem + 16px); }
   .odds::-webkit-scrollbar { display: none; }
 }
 
