@@ -2148,40 +2148,32 @@ function heroMovers(report) {
   };
 }
 
-/* A club's chance of each band, read off a history snapshot's places. */
-function bandChances(positions, bands) {
-  return bands.map((band) => positions.slice(band.first - 1, band.last).reduce((a, b) => a + b, 0));
-}
-
 /* The match of the week, for the matches view, following the week on show.
    It is chosen on the week's eve and kept while the week is played, so a
    result coming in neither drops it nor swaps it for another: chosen from
    the report as it stood the evening before the week's first match
-   (`weekEve`), which the rest of the week cannot change. Of the week's
-   fixtures, the one whose result swings a club's chance of a band the most,
-   weighed by how even it is (`pickFixture`). Shown as a fixture until it is
-   played, then as its result. Until that report is in (or where there is
-   none) the live report's fixtures stand in; on a week part played, the race.
-   A week played in full: its most exciting result (`scoreResult`). */
+   (`weekEve`), which the rest of the week cannot change (`pickFixture`).
+   Shown as a fixture until it is played, then as its result. A week played
+   in full turns to its best result (`scoreResult`). Undefined while the
+   eve's report loads: the hero stays as it is until it is in. */
 function heroMatch(report) {
   const { timeline, weeks, byWeek, index } = matchesTimeline(report);
   if (!timeline.length) return null;
   const items = byWeek.get(weeks[index]);
   const fixtures = items.filter((item) => !item.played).map((item) => item.match);
   const results = items.filter((item) => item.played).map((item) => item.match);
-  if (!fixtures.length) {
-    if (!results.length) return null;
-    return resultHero(report, results.map((match) => scoreResult(report, match)).reduce((a, b) => (b.score > a.score ? b : a)));
-  }
   const eve = weekEve(report, items);
-  if (eve === undefined && results.length) return null;
+  if (eve === undefined) return undefined;
+  if (!fixtures.length) {
+    return resultHero(report, results.map((match) => scoreResult(report, match, eve)).reduce((a, b) => (b.score > a.score ? b : a)));
+  }
   const ids = new Set(items.map((item) => item.match.match_id));
   const onEve = (eve?.fixtures || []).filter((match) => ids.has(match.match_id));
   const pick = onEve.length ? pickFixture(eve, onEve) : null;
   const played = pick && results.find((match) => match.match_id === pick.match_id);
-  if (played) return resultHero(report, scoreResult(report, played));
-  // The live fixture, for today's odds; a pick moved out of the week gives
-  // way to the live report's own.
+  if (played) return resultHero(report, scoreResult(report, played, eve));
+  // The live fixture, for today's odds; without an eve, or with its pick
+  // moved out of the week, the live report chooses.
   const fixture = (pick && fixtures.find((match) => match.match_id === pick.match_id)) || pickFixture(report, fixtures);
   return fixtureHero(report, fixture);
 }
@@ -2207,27 +2199,53 @@ function weekEve(report, items) {
   return all === undefined ? undefined : all?.[report.league.slug] ?? null;
 }
 
-/* On a week part played the hero needs the week's eve: asked for ahead, so
-   the matches view has it when it opens. */
+/* The current week's eve, asked for ahead, so the matches view has it when
+   it opens. */
 function prefetchWeekEve(report) {
   const { timeline, weeks, byWeek, current } = matchesTimeline(report);
-  const items = timeline.length ? byWeek.get(weeks[current]) : [];
-  if (items.some((item) => item.played) && items.some((item) => !item.played)) weekEve(report, items);
+  if (timeline.length) weekEve(report, byWeek.get(weeks[current]));
 }
 
-/* Of a week's fixtures, the one whose result swings a club's chance of a
-   band the most, weighed by how even it is, so a foregone win does not lead
-   (a side above 60 % rules a match out while any other is left). */
+/* How decisive a match is, from the stakes on its eve: per club, the swing
+   of its band's chance between winning and losing, weighed by how high the
+   band sits (the title whole, the bottom place half), the two clubs added.
+   0 to 1: two clubs swinging 0.4 each count as all. With the entries, for
+   the result's note. */
+function matchStakes(eve, matchId) {
+  const entries = eve ? stakesForFixture([...(eve.next_stakes || []), ...(eve.high_stakes || [])], matchId) : [];
+  const places = Math.max(2, eve?.table?.length || 16);
+  const perClub = new Map();
+  for (const entry of entries) {
+    const weighed = entry.swing * (1 - 0.5 * (entry.band_first - 1) / (places - 1));
+    perClub.set(String(entry.team_id), Math.max(perClub.get(String(entry.team_id)) || 0, weighed));
+  }
+  const total = [...perClub.values()].reduce((a, b) => a + b, 0);
+  return { decisive: Math.min(1, total / 0.8), entries };
+}
+
+/* The pre-match odds of a fixture as the report priced it, and the goals
+   its scoreline grid expects. */
+function fixtureGoals(report, fixture) {
+  const odds = matchOdds(report.model, fixture.home_rating + surfaceEdge(report.model, fixture.home_id, fixture.away_id), fixture.away_rating);
+  let goals = 0;
+  scoreGrid(report.model, fixture.home_id, fixture.away_id, odds.gap / 400).forEach((row, i) => row.forEach((p, j) => { goals += (i + j) * p; }));
+  return goals;
+}
+
+const clamp01 = (x) => Math.max(0, Math.min(1, x));
+
+/* Of a week's fixtures, the most worth watching, each measure 0 to 1:
+   how decisive it is (`matchStakes`), half the weight; how even, 1 less the
+   gap between the two sides' chances of winning; and its expected goals,
+   from two (none) to four (all). */
 function pickFixture(report, fixtures) {
-  const stakes = [...(report.next_stakes || []), ...(report.high_stakes || [])];
   const scored = fixtures.map((fixture) => {
-    const entries = stakesForFixture(stakes, fixture.match_id);
-    const swing = entries.length ? Math.max(...entries.map((entry) => entry.swing)) : 0;
-    const balance = 1 - Math.abs(fixture.home_win - fixture.away_win);
-    return { fixture, score: (swing + 0.05) * balance };
+    const { decisive } = matchStakes(report, fixture.match_id);
+    const even = 1 - Math.abs(fixture.home_win - fixture.away_win);
+    const goals = fixture.home_rating != null ? clamp01((fixtureGoals(report, fixture) - 2) / 2) : 0;
+    return { fixture, score: 0.5 * decisive + 0.3 * even + 0.2 * goals };
   });
-  const open = scored.filter(({ fixture }) => Math.max(fixture.home_win, fixture.away_win) <= 0.6);
-  return (open.length ? open : scored).reduce((a, b) => (b.score > a.score ? b : a)).fixture;
+  return scored.reduce((a, b) => (b.score > a.score ? b : a)).fixture;
 }
 
 function heroWhen(match) {
@@ -2261,12 +2279,14 @@ function fixtureHero(report, fixture) {
   };
 }
 
-/* How exciting a result was: how far it moved the two clubs' chances of
-   every band (the history snapshots either side of it), weighed by how
-   surprising the result was, its drama -- a tight game (in goals or in xG)
-   or a thrashing nobody saw coming (a margin the scoreline grid gave little
-   chance), whichever is more -- and its goals. */
-function scoreResult(report, match) {
+/* How good a result was to watch, each measure 0 to 1: how decisive the
+   match was on its eve (`matchStakes`, 0.3); how tight, in goals (a draw
+   whole, three goals apart none) and in xG (1.5 apart none) alike (0.2);
+   the shock, the result's own chance from 40 % (none) down to 10 % (all) or
+   a margin the scoreline grid gave little chance, whichever is more (0.25);
+   its chances, two xG (none) to five (all) (0.1); and its goals, six or
+   more all (0.15). */
+function scoreResult(report, match, eve) {
   // Each club's rating going into the match, from its history: the point
   // before the match's own.
   const changes = buildRatingChanges(state.careers);
@@ -2274,24 +2294,16 @@ function scoreResult(report, match) {
     const entry = changes.get(`${id}|${date}`);
     return entry ? entry.rating - entry.change : null;
   };
-  const history = report.history;
-  const bands = report.league.bands;
-  const snapshot = (date, after) => {
-    const dates = history?.dates || [];
-    const k = after ? dates.findIndex((d) => d >= date) : dates.findLastIndex((d) => d < date);
-    return k >= 0 ? k : null;
-  };
   const hr = ratingBefore(match.home_id, match.date);
   const ar = ratingBefore(match.away_id, match.date);
   const odds = hr != null && ar != null
     ? blendOdds(report.model, matchOdds(report.model, hr + surfaceEdge(report.model, match.home_id, match.away_id), ar), match.home_id, match.away_id)
     : null;
   const outcome = match.home_goals > match.away_goals ? 'home_win' : match.home_goals < match.away_goals ? 'away_win' : 'draw';
-  const surprise = odds ? 1 - odds[outcome] : 0;
   const diff = match.home_goals - match.away_goals;
   const margin = Math.abs(diff);
-  const goalsClose = margin <= 1 ? 1 : margin === 2 ? 0.4 : 0;
-  const xgClose = match.xg ? Math.max(0, 1 - Math.abs(match.xg[0] - match.xg[1]) / 1.5) : 0;
+  const goalsTight = clamp01(1 - margin / 3);
+  const xgTight = match.xg ? clamp01(1 - Math.abs(match.xg[0] - match.xg[1]) / 1.5) : goalsTight;
   // The chance of a margin at least this big, this way (or of a draw),
   // from the scoreline grid; a 5-0 nobody expected scores near 1.
   let tail = null;
@@ -2302,29 +2314,27 @@ function scoreResult(report, match) {
       if (diff > 0 ? d >= diff : diff < 0 ? d <= diff : d === 0) tail += p;
     }));
   }
-  const shock = tail == null ? 0 : Math.min(1, -Math.log10(Math.max(tail, 1e-6)) / 2.5);
-  const drama = Math.max(goalsClose, xgClose, shock);
+  const surprise = odds ? clamp01((0.4 - odds[outcome]) / 0.3) : 0;
+  const thrashing = margin >= 2 && tail != null ? clamp01(-Math.log10(Math.max(tail, 1e-6)) / 2.5) : 0;
+  const { decisive, entries } = matchStakes(eve, match.match_id);
+  const chances = match.xg ? clamp01((match.xg[0] + match.xg[1] - 2) / 3) : 0;
   const goals = Math.min(match.home_goals + match.away_goals, 6) / 6;
-  // How far the two clubs' chances of every band moved across the match.
-  const before = snapshot(match.date, false);
-  const after = snapshot(match.date, true);
-  let impact = 0;
+  const score = 0.3 * decisive + 0.2 * (goalsTight + xgTight) / 2 + 0.25 * Math.max(surprise, thrashing)
+    + 0.1 * chances + 0.15 * goals;
+  // What the result did to a club's band, as the eve's report conditioned
+  // it: the stake that moved furthest.
   let shift = null;
-  if (before != null && after != null && before !== after) {
-    for (const id of [match.home_id, match.away_id]) {
-      const team = history.teams.find((h) => String(h.team_id) === String(id));
-      if (!team) continue;
-      const was = bandChances(team.positions[before], bands);
-      const is = bandChances(team.positions[after], bands);
-      bands.forEach((band, b) => {
-        const move = Math.abs(is[b] - was[b]);
-        impact += move;
-        if (!shift || move > shift.move) shift = { move, band, was: was[b], is: is[b], team: id === match.home_id ? match.home : match.away };
-      });
+  for (const entry of entries) {
+    const won = outcome === 'draw' ? null : (outcome === 'home_win') === (String(entry.team_id) === String(match.home_id));
+    const is = won == null ? entry.p_draw : won ? entry.p_favourable : entry.p_unfavourable;
+    if (is == null) continue;
+    const move = Math.abs(is - entry.p_baseline);
+    if (!shift || move > shift.move) {
+      const band = { label: entry.band_label, first: entry.band_first, last: entry.band_last, tone: entry.band_tone };
+      shift = { move, band, was: entry.p_baseline, is, team: entry.team };
     }
   }
-  const excitement = 0.4 * surprise + 0.4 * drama + 0.2 * goals;
-  return { match, odds, shift, tail: margin >= 2 ? tail : null, score: (impact + 0.05) * (0.25 + excitement) };
+  return { match, odds, shift, tail: margin >= 2 ? tail : null, score };
 }
 
 /* A result as the hero shows it: the score, each side's chance before it,
@@ -2380,8 +2390,11 @@ function heroRaceModel(report) {
    race when it has nothing to show. */
 function renderRace(report) {
   prefetchWeekEve(report);
+  const match = state.activeView === 'matches' ? heroMatch(report) : null;
+  // The week's eve is still loading: what the hero shows stays until it is in.
+  if (match === undefined && $('#hero-race').hasChildNodes()) return;
   const hero = (state.activeView === 'table' && heroMovers(report))
-    || (state.activeView === 'matches' && heroMatch(report))
+    || match
     || heroRaceModel(report);
   const list = el('ol', 'race__clubs');
   for (const item of hero.items) {

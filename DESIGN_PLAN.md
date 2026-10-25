@@ -127,25 +127,32 @@ race now holds its height while the rewind scrubs, as the sentence did, so
 the slider never moves under the thumb.
 
 **The hero follows the view** (2026-10-24). Sluttabell keeps the race. Tabell
-shows the month's climber and faller by rating: the biggest rise and fall
-from each club's rating 28 days before the report's latest date (the rating
-history) to now ("+15 rating, KFUM, 1568 → 1583"); an earlier try measured
-expected final place instead and was changed on review. Kamper shows the
-match of the week for the week on show, moving as you page. A week with
-fixtures to play: the fixture whose result swings a club's chance of a band
-most (`next_stakes`, `high_stakes`), weighed by how even it is
-(1 − |home − away|), any side above 60 % ruled out while another match is
-left; it shows home / draw / away and the stake ("Lillestrøm · ECL: 37.5 %
-med seier, 12.6 % med tap"). A week played: the most exciting result, how
-far it moved the two clubs' chances of every band (history snapshots either
-side) weighed by its excitement: 0.4 surprise (1 − its pre-match chance,
-priced from both ratings going in), 0.4 drama and 0.2 goals. Drama is the
-most of: a close margin in goals, a close margin in xG, or a shock -- a
-margin the scoreline grid gave little chance (−log10 of that chance, over
-2.5) -- so a thrashing can lead as well as a tight game (week 15: Viking
-5–0 Bodø/Glimt, a 0.4 % margin, "Modellen ga en så stor seier 0.4 %
-sjanse · Viking · CL: 40.3 % → 68.3 %"). It shows the score, each side's
-chance before the match and the biggest shift. All fall back to the race. On a phone three figures stand
+shows the climber and faller by rating over their last five matches, the
+rating trend's window, so the hero and the table's arrows agree ("+15
+rating, KFUM, 1568 → 1583"; until 2026-10-25 it was four weeks of the rating
+history, and an earlier try measured expected final place instead). Kamper
+shows the match of the week for the week on show, moving as you page. It is
+chosen on the week's eve and kept while the week is played: from the
+rewind's report for the evening before the week's first match, which the
+week's results cannot change, so a result coming in neither drops the match
+nor swaps it (until 2026-10-25 the pick was redone over the fixtures left on
+every refresh). The fixture score, each measure 0 to 1: 0.5 decisive (per
+club, the swing of its band's chance between winning and losing from
+`next_stakes` / `high_stakes`, weighed by how high the band sits, the title
+whole and the bottom place half, the two clubs added, 0.8 counting as all),
+0.3 even (1 − |home − away|) and 0.2 expected goals (two none, four all). It
+shows home / draw / away and the stake ("Lillestrøm · ECL: 37.5 % med seier,
+12.6 % med tap"), then, once played, its result. A week played in full turns
+to its best result: 0.3 decisive (as for a fixture, on the eve), 0.2 tight
+(goals and xG alike: a draw whole, three goals or 1.5 xG apart none), 0.25
+shock (its own pre-match chance from 40 % down to 10 %, or a margin the
+scoreline grid gave little chance, −log10 over 2.5, whichever is more), 0.1
+chances (two to five xG) and 0.15 goals (six all). Week 33 of 2026 is the
+case it was tuned on: on its eve Rosenborg–Viking (a title chaser against a
+Europe chaser, the most decisive even match); played, Aalesund 5–5
+Vålerenga (6.1 xG) over Rosenborg 2–1 Viking (2.9 xG, the expected
+winner's 36 %). It shows the score, each side's chance before the match and
+the stake that moved furthest, as the eve's report conditioned it. All fall back to the race. On a phone three figures stand
 in one row; under 400 px the masthead shows the mark without the name, so
 the division pill and settings fit.
 
