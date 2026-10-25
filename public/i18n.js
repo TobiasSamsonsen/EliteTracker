@@ -3,10 +3,10 @@
 const translations = {
   en: {
     // Tabs
-    'tab.grid': 'Finish Grid',
+    'tab.grid': 'Grid',
     'tab.table': 'Table',
     'tab.ladder': 'Ladder',
-    'tab.compare': 'Compare Clubs',
+    'tab.compare': 'Compare',
     'tab.explore': 'Explore',
     'tab.model': 'Model',
 

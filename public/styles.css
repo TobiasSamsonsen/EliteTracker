@@ -371,6 +371,8 @@ html { scroll-padding-top: 76px; }
 .masthead__views > * { pointer-events: auto; }
 
 .masthead__views::-webkit-scrollbar { display: none; }
+/* A label never breaks: a tab that does not fit goes to the More menu (fitViews). */
+.masthead__views button { white-space: nowrap; }
 
 /* Equal side columns keep the view switch centred on the page whatever the
    wordmark and settings button weigh; the middle can still shrink and scroll. */
