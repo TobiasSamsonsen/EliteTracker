@@ -1159,9 +1159,7 @@ table.standings tbody tr:hover { background: var(--panel-sunk); }
 }
 
 table.standings th.is-sorted { color: var(--ink); }
-/* Figures a step narrower than the text: a scoreboard's set, and a column
-   or two more fits before the table scrolls. */
-table.standings .num { width: 3.2rem; font-variation-settings: "wdth" 85; }
+table.standings .num { width: 3.2rem; }
 table.standings .club { text-align: left; width: 100%; font-weight: 600; }
 table.standings .pos { text-align: center; width: 2.6rem; color: var(--ink-muted); }
 table.standings .sep { border-left: 1px solid var(--rule); }
