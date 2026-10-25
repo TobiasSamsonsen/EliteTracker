@@ -170,12 +170,13 @@ def test_update_xg_records_new_matches_and_survives_a_failed_fetch(tmp_path):
     assert calls.count("bad") == 2 and calls.count("a") == 1
 
 
-def test_update_xg_asks_once_more_after_the_settle_window(tmp_path):
-    """One request when a match is first seen and one once FotMob has settled
-    its xG, then none (the hourly job used to ask every run for two days)."""
+def test_update_xg_asks_again_3_and_24_hours_after_the_whistle(tmp_path):
+    """One request when a match is first seen, one 3 hours after the final
+    whistle and one 24 hours after it, then none (the hourly job used to ask
+    every run for two days)."""
     from datetime import datetime, timedelta, timezone
 
-    from elitetracker.sources.fotmob import SETTLE_HOURS, load_xg, update_xg
+    from elitetracker.sources.fotmob import MATCH_HOURS, load_xg, update_xg
     path = tmp_path / "xg.json"
     calls = []
 
@@ -185,21 +186,46 @@ def test_update_xg_asks_once_more_after_the_settle_window(tmp_path):
 
     kickoff = datetime(2026, 10, 17, 18, 0, tzinfo=timezone.utc)  # "18:00", read as UTC
     games = [match("fresh", "2026-10-17", "A", "B", 2, 0), match("old", "2026-10-01", "A", "B", 3, 1)]
-    at = lambda hours: kickoff + timedelta(hours=hours)
-    assert update_xg(games, path=path, fetch=fetch, delay=0, now=at(3)) == 2
+    at = lambda hours: kickoff + timedelta(hours=MATCH_HOURS + hours)  # hours after the whistle
+    assert update_xg(games, path=path, fetch=fetch, delay=0, now=at(0)) == 2
     assert set(load_xg(path)["pending"]) == {"fresh"}
-    for hours in (4, 5, 30):
+    assert update_xg(games, path=path, fetch=fetch, delay=0, now=at(2.9)) == 0
+    assert update_xg(games, path=path, fetch=fetch, delay=0, now=at(3)) == 1
+    assert set(load_xg(path)["pending"]) == {"fresh"}
+    for hours in (4, 12, 23.9):
         assert update_xg(games, path=path, fetch=fetch, delay=0, now=at(hours)) == 0
-    assert update_xg(games, path=path, fetch=fetch, delay=0, now=at(SETTLE_HOURS + 3)) == 1
+    assert update_xg(games, path=path, fetch=fetch, delay=0, now=at(24)) == 1
     assert load_xg(path)["pending"] == {}
-    assert update_xg(games, path=path, fetch=fetch, delay=0, now=at(SETTLE_HOURS + 10)) == 0
-    assert calls == ["fresh", "old", "fresh"]
+    assert update_xg(games, path=path, fetch=fetch, delay=0, now=at(48)) == 0
+    assert calls == ["fresh", "old", "fresh", "fresh"]
+
+
+def test_update_xg_asks_once_for_missed_refetches(tmp_path):
+    """A match fetched at the whistle whose re-fetch times have all passed
+    (the 48-hour rule's pending entries, or a stalled job) costs one request."""
+    from datetime import datetime, timedelta, timezone
+
+    from elitetracker.sources.fotmob import load_xg, save_xg, update_xg
+    path = tmp_path / "xg.json"
+    save_xg({"matches": {"bodo": [2.216, 1.36]}, "none": [], "pending": {"bodo": "2026-10-24T20:00:08Z"}}, path)
+    calls = []
+
+    def fetch(match_id):
+        calls.append(match_id)
+        return (2.8, 1.35, 1.9, 1.0)
+
+    kickoff = datetime(2026, 10, 24, 18, 0, tzinfo=timezone.utc)
+    games = [match("bodo", "2026-10-24", "A", "B", 0, 1)]
+    assert update_xg(games, path=path, fetch=fetch, delay=0, now=kickoff + timedelta(hours=29)) == 1
+    assert load_xg(path)["matches"]["bodo"] == [2.8, 1.35, 1.9, 1.0] and load_xg(path)["pending"] == {}
+    assert update_xg(games, path=path, fetch=fetch, delay=0, now=kickoff + timedelta(hours=30)) == 0
+    assert calls == ["bodo"]
 
 
 def test_update_xg_marks_a_recent_match_fetched_before_the_rule(tmp_path):
     from datetime import datetime, timedelta, timezone
 
-    from elitetracker.sources.fotmob import SETTLE_HOURS, load_xg, save_xg, update_xg
+    from elitetracker.sources.fotmob import load_xg, save_xg, update_xg
     path = tmp_path / "xg.json"
     save_xg({"matches": {"fresh": [1.0, 0.5]}, "none": []}, path)
     calls = []
@@ -210,9 +236,9 @@ def test_update_xg_marks_a_recent_match_fetched_before_the_rule(tmp_path):
 
     kickoff = datetime(2026, 10, 17, 18, 0, tzinfo=timezone.utc)
     games = [match("fresh", "2026-10-17", "A", "B", 2, 0)]
-    assert update_xg(games, path=path, fetch=fetch, delay=0, now=kickoff + timedelta(hours=5)) == 0
+    assert update_xg(games, path=path, fetch=fetch, delay=0, now=kickoff + timedelta(hours=4)) == 0
     assert "fresh" in load_xg(path)["pending"] and calls == []
-    assert update_xg(games, path=path, fetch=fetch, delay=0, now=kickoff + timedelta(hours=SETTLE_HOURS + 1)) == 1
+    assert update_xg(games, path=path, fetch=fetch, delay=0, now=kickoff + timedelta(hours=5)) == 1
     assert load_xg(path)["matches"]["fresh"] == [1.2, 0.4, 0.9, 0.3]
 
 
