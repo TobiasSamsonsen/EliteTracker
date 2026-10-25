@@ -20,7 +20,7 @@ import time
 import urllib.error
 import urllib.request
 from dataclasses import dataclass
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any
 
@@ -182,9 +182,9 @@ def fetch_match_xg(match_id: str) -> tuple[float, ...] | None:
 
 def load_xg(path: Path = XG_PATH) -> dict[str, Any]:
     """{"matches": {match_id: values}, "none": [ids without shot data],
-    "pending": {match_id: when fetched}} -- `pending` holds the fetches made
-    inside the settle window, still to be asked for once more (`update_xg`,
-    and Sofascore's `update_obos_xg`).
+    "pending": {match_id: when fetched}} -- `pending` holds the matches
+    still to be asked for again (`update_xg`'s re-fetches, and Sofascore's
+    settle window in `update_obos_xg`).
 
     `values` is [home_xg, away_xg] from Sofascore (OBOS-ligaen); from fotmob
     [home_xg, away_xg, home_xgot, away_xgot], and from October 2026 on also
@@ -201,13 +201,15 @@ def save_xg(data: dict[str, Any], path: Path = XG_PATH) -> None:
     os.replace(temp, path)
 
 
-# How long after kickoff FotMob's xG counts as settled. FotMob refines a
-# match's xG after the first post-match pull; the old rule re-fetched every
-# match of the last two days on every run (the hourly job: up to ~48 requests
-# a match). Now a fetch inside this window is marked pending and asked for
-# once more after it, then never again -- the rule Sofascore's OBOS pull
-# follows (`sources.sofascore.pending_obos_xg`).
-SETTLE_HOURS = 48.0
+# When FotMob's xG is asked for again. FotMob refines a match's xG after the
+# first post-match pull (Bodø/Glimt-Vålerenga 2026-10-24: 2.22-1.36 at the
+# whistle, 2.8-1.35 a day later). The first rule re-fetched every match of the
+# last two days on every run (the hourly job: up to ~48 requests a match), the
+# next only once, 48 hours on, so a revision showed two days late. Now a match
+# is fetched when first seen, again 3 hours after the final whistle and a last
+# time 24 hours after it, then never again.
+MATCH_HOURS = 2.0  # kickoff to final whistle: 90 minutes, the break and stoppage time
+REFETCH_HOURS = (3.0, 24.0)  # after the final whistle
 
 
 def _kickoff(match) -> datetime | None:
@@ -222,23 +224,29 @@ def _kickoff(match) -> datetime | None:
         return None
 
 
+def _stamp(moment: datetime) -> str:
+    return moment.strftime("%Y-%m-%dT%H:%M:%SZ")
+
+
 def update_xg(
     matches: list,
     *,
     path: Path = XG_PATH,
     fetch=fetch_match_xg,
     delay: float = 1.0,
-    settle_hours: float = SETTLE_HOURS,
+    refetch_hours: tuple[float, ...] = REFETCH_HOURS,
     now: datetime | None = None,
 ) -> int:
     """Add or refresh shot data for played matches; returns how many were fetched.
 
-    A match is asked for when it was never fetched, or when its last fetch
-    landed inside `settle_hours` of kickoff (recorded under xg.json's
-    `pending`) and the window has since passed: one request when it is first
-    seen, one more once FotMob has settled its numbers. A recorded match with
-    no `pending` entry is final, except one still inside its window, which is
-    marked pending without a request (fetched before this rule existed).
+    A match is asked for when it was never fetched, and again at each of
+    `refetch_hours` after its final whistle that its last fetch (recorded
+    under xg.json's `pending`) came before: one request when it is first
+    seen, then one per re-fetch time; a run that missed several asks once.
+    With none left the entry leaves `pending` and is final. A recorded match
+    with no `pending` entry is final too, except one whose last re-fetch time
+    is still ahead, which is marked pending without a request (fetched before
+    this rule existed).
 
     Never raises: the model falls back to goals for a match without xG, so a
     failed fetch is printed and skipped rather than allowed to block a refresh.
@@ -253,14 +261,21 @@ def update_xg(
             continue
         is_known = match.match_id in data["matches"] or match.match_id in data["none"]
         kickoff = _kickoff(match)
-        settled = kickoff is None or (now - kickoff).total_seconds() >= settle_hours * 3600
-        if is_known and match.match_id not in pending:
-            if not settled:
-                pending[match.match_id] = now.strftime("%Y-%m-%dT%H:%M:%SZ")
+        refetches = [kickoff + timedelta(hours=MATCH_HOURS + hours) for hours in refetch_hours] if kickoff else []
+        if is_known:
+            if match.match_id not in pending:
+                if refetches and now < refetches[-1]:
+                    pending[match.match_id] = _stamp(now)
+                    marked = True
+                continue
+            last = datetime.fromisoformat(pending[match.match_id].replace("Z", "+00:00"))
+            due = next((moment for moment in refetches if moment > last), None)
+            if due is None:
+                del pending[match.match_id]
                 marked = True
-            continue
-        if is_known and not settled:
-            continue
+                continue
+            if now < due:
+                continue
         try:
             shots = fetch(match.match_id)
         except FetchError as exc:
@@ -274,10 +289,10 @@ def update_xg(
             # Remove from "none" if it was previously recorded there
             if match.match_id in data["none"]:
                 data["none"].remove(match.match_id)
-        if settled:
-            pending.pop(match.match_id, None)
+        if any(moment > now for moment in refetches):
+            pending[match.match_id] = _stamp(now)
         else:
-            pending[match.match_id] = now.strftime("%Y-%m-%dT%H:%M:%SZ")
+            pending.pop(match.match_id, None)
         added += 1
         time.sleep(delay)
     if added or marked:
