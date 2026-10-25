@@ -2125,6 +2125,9 @@ footer a { color: var(--ink); }
 #tooltip b { font-weight: 700; }
 /* Secondary line; the tooltip is inverted, so dimmed rather than recoloured. */
 #tooltip .tooltip__muted { opacity: 0.75; font-variant-numeric: tabular-nums; }
+#tooltip .tooltip__matches { border-collapse: collapse; margin-top: 0.2rem; font-variant-numeric: tabular-nums; }
+#tooltip .tooltip__matches td { padding: 0.05rem 0.6rem 0.05rem 0; white-space: nowrap; }
+#tooltip .tooltip__matches td:last-child { padding-right: 0; text-align: right; font-weight: 700; }
 
 /* ---------- state ------------------------------------------------- */
 

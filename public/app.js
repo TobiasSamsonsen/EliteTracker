@@ -2120,29 +2120,25 @@ function heroRace(report, ownId) {
   return { band, through, contenders, own };
 }
 
-/* The month's movers, for the table: the clubs whose rating rose and fell
-   most over the last four weeks (from the rating history, as it stood 28
-   days before the report's latest date, to now). Null until the history has
-   loaded, or when no one has moved five points. */
+/* The movers, for the table: the clubs whose rating rose and fell most over
+   their last five matches, the rating trend's own window
+   (computeRatingTrend), so the hero and the table's arrows agree. Null until
+   the history has loaded, or when no one has moved five points. */
 function heroMovers(report) {
-  const careers = state.careers?.teams;
-  const dates = report.history?.dates || [];
-  if (!careers || !dates.length) return null;
-  const now = dates[dates.length - 1];
-  const then = new Date(Date.parse(`${now}T12:00:00Z`) - 28 * 86400000).toISOString().slice(0, 10);
+  if (!state.careers?.teams) return null;
   const moves = report.table.map((row) => {
-    const points = careers.find((career) => String(career.team_id) === String(row.team_id))?.points || [];
-    let before = null;
-    for (const [date, rating] of points) if (date <= then) before = rating;
-    return before == null ? null : { row, before, now: row.rating, change: row.rating - before };
+    const trend = computeRatingTrend(row.team, report);
+    if (!trend) return null;
+    // From the rating as shown, so the sum adds up.
+    const now = Math.round(row.rating);
+    return { row, before: now - trend.diff, now, change: trend.diff };
   }).filter(Boolean).sort((a, b) => b.change - a.change);
   const up = moves[0];
   const down = moves[moves.length - 1];
   if (!up || up.change < 5) return null;
   const item = (move) => ({
     row: move.row,
-    // The difference of the two ratings as shown, so the sum adds up.
-    figure: signed(Math.round(move.now) - Math.round(move.before)),
+    figure: signed(move.change),
     unit: t('hero.movers.unit'),
     sub: t('hero.movers.from', { from: num(move.before), to: num(move.now) }),
   });
@@ -5302,9 +5298,10 @@ const TREND_CUTS = { mild: 8, strong: 20 };
    expected score), the rating change the chances alone would have produced
    (`xg_form` in the results, from pipeline.xg_form). It is the signal that
    looks ahead -- a recent average tracks the next few matches (r ~0.17) where
-   rating changes, mostly result luck, do not (~0.05). Weights 0.1..0.6 over
-   the last 6 matches, so the latest three carry 71 %. */
-const FORM_WEIGHTS = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6];
+   rating changes, mostly result luck, do not (~0.05; both measured over six
+   matches). Weights 0.2..0.6 over the last 5 matches, the window of the
+   rating trend and the form column, so the latest three carry 75 %. */
+const FORM_WEIGHTS = [0.2, 0.3, 0.4, 0.5, 0.6];
 const FORM_CUTS = { mild: 1, strong: 4 };
 
 function teamMatchSeries(teamName, report) {
@@ -5316,11 +5313,29 @@ function teamMatchSeries(teamName, report) {
     if (r.home_goals == null) continue;
     const isHome = r.home === teamName;
     if (!isHome && r.away !== teamName) continue;
-    if (r.xg_form) xgForm.push(r.xg_form[isHome ? 0 : 1]);
+    // Each value with its match, so a tooltip can say which match it was.
+    const match = {
+      date: r.date,
+      opponent: isHome ? r.away : r.home,
+      home: isHome,
+      goals: isHome ? [r.home_goals, r.away_goals] : [r.away_goals, r.home_goals],
+    };
+    if (r.xg_form) xgForm.push({ ...match, value: r.xg_form[isHome ? 0 : 1] });
     const info = ratingChanges.get(`${isHome ? r.home_id : r.away_id}|${r.date}`);
-    if (info) changes.push(info.change);
+    if (info) changes.push({ ...match, value: info.change });
   }
   return { xgForm, changes };
+}
+
+/* The matches behind a trend or form figure, newest first: date, opponent,
+   home or away, and the score from the club's side. */
+function matchesTip(entries, digits) {
+  const day = (iso) => new Date(`${iso}T12:00:00Z`).toLocaleDateString(localeDate(), { day: 'numeric', month: 'short' });
+  const rows = [...entries].reverse().map((entry) => `<tr><td>${day(entry.date)}</td>`
+    + `<td>${entry.opponent} (${t(entry.home ? 'trend.home' : 'trend.away')})</td>`
+    + `<td>${entry.goals[0]}–${entry.goals[1]}</td><td>${signed(entry.value, digits)}</td></tr>`).join('');
+  return `<br><span class="tooltip__muted">${t('trend.tipLast', { count: entries.length })}</span>`
+    + `<table class="tooltip__matches">${rows}</table>`;
 }
 
 /* Five degrees: strong rise, rise, steady, fall, strong fall. */
@@ -5331,31 +5346,29 @@ function trendDegree(value, { mild, strong }) {
 
 function computeRatingTrend(teamName, report) {
   if (!teamName) return null;
-  const values = teamMatchSeries(teamName, report).changes.slice(-TREND_MATCHES);
-  if (values.length < TREND_MATCHES) return null;
-  const diff = values.reduce((sum, v) => sum + v, 0);
+  const entries = teamMatchSeries(teamName, report).changes.slice(-TREND_MATCHES);
+  if (entries.length < TREND_MATCHES) return null;
+  const diff = entries.reduce((sum, entry) => sum + entry.value, 0);
   const { key, direction } = trendDegree(diff, TREND_CUTS);
   const label = t(`trend.${key}`);
   const total = signed(diff, 0);
   // One line for the table's arrow and for screen readers; the team view
   // shows `tip`, which adds the matches behind the number.
   const detail = t('trend.detail', { label, n: total });
-  const tip = `<b>${label}</b> ${total}`
-    + `<br><span class="tooltip__muted">${t('trend.tipMatches', { count: values.length, list: values.map((v) => signed(v, 0)).join(' ') })}</span>`;
+  const tip = `<b>${label}</b> ${total}${matchesTip(entries, 0)}`;
   return { direction, svg: trendArrowSVG(direction), detail, tip, diff };
 }
 
 function computeXgForm(teamName, report) {
   if (!teamName) return null;
-  const values = teamMatchSeries(teamName, report).xgForm.slice(-FORM_WEIGHTS.length);
-  if (values.length < FORM_WEIGHTS.length) return null;
-  const diff = values.reduce((sum, v, i) => sum + v * FORM_WEIGHTS[i], 0)
+  const entries = teamMatchSeries(teamName, report).xgForm.slice(-FORM_WEIGHTS.length);
+  if (entries.length < FORM_WEIGHTS.length) return null;
+  const diff = entries.reduce((sum, entry, i) => sum + entry.value * FORM_WEIGHTS[i], 0)
     / FORM_WEIGHTS.reduce((a, b) => a + b, 0);
   const { key, direction } = trendDegree(diff, FORM_CUTS);
   const label = t(`form.${key}`);
   const perMatch = signed(diff, 1);
-  const tip = `<b>${label}</b> ${t('form.tipPerMatch', { n: perMatch })}`
-    + `<br><span class="tooltip__muted">${t('trend.tipMatches', { count: values.length, list: values.map((v) => signed(v, 1)).join(' ') })}</span>`;
+  const tip = `<b>${label}</b> ${t('form.tipPerMatch', { n: perMatch })}${matchesTip(entries, 1)}`;
   return { direction, svg: trendArrowSVG(direction), label, detail: t('form.detail', { label, n: perMatch }), tip };
 }
 
