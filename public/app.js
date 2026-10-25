@@ -4860,6 +4860,26 @@ function renderTeamView(report) {
   const bar = el('div', 'switch team-tabs');
   bar.setAttribute('role', 'group');
   bar.setAttribute('aria-label', t('team.tabs'));
+  const drawTab = () => {
+    if (state.teamTab === 'overview') {
+      safeRender(() => renderTeamNow(row, career, report, content), 'now');
+      safeRender(() => renderTeamResults(teamId, teamName, report, content), 'results');
+    } else if (state.teamTab === 'forecast') {
+      safeRender(() => {
+        const section = renderTeamGridRow(teamId, row, report, content);
+        if (section) renderTeamOutlook(section, row, report, teamId);
+      }, 'outlook');
+      safeRender(() => {
+        const section = el('div', 'team-section');
+        renderTeamStakes(section, report, teamId);
+        if (section.childNodes.length) content.appendChild(section);
+      }, 'stakes');
+      safeRender(() => renderTeamFixtures(teamId, teamName, report, content), 'fixtures');
+    } else {
+      if (career?.points?.length >= 2) safeRender(() => renderTeamRatingHistory(career, content), 'ratingHistory');
+      if (career?.seasons?.length) safeRender(() => renderSeasonBySeason(career, teamId, content, report), 'seasons');
+    }
+  };
   for (const [key, label] of tabs) {
     const button = el('button', '', t(label));
     button.type = 'button';
@@ -4868,31 +4888,20 @@ function renderTeamView(report) {
       if (state.teamTab === key) return;
       state.teamTab = key;
       track('select_team_tab', { tab: key });
-      renderTeamView(report);
-      $('.team-tabs [aria-pressed="true"]')?.focus();
+      // Only the group below the tabs is drawn again: the header and the
+      // tabs stay, so the pill slides within its own bar. The view keeps its
+      // height while the group is redrawn, or a chart measuring its box
+      // would lay the page out short and the browser pull the scroll up.
+      for (const other of bar.querySelectorAll('button')) other.setAttribute('aria-pressed', String(other === button));
+      content.style.minHeight = `${content.offsetHeight}px`;
+      while (bar.nextSibling) bar.nextSibling.remove();
+      drawTab();
+      content.style.minHeight = '';
     });
     bar.appendChild(button);
   }
   content.appendChild(bar);
-
-  if (state.teamTab === 'overview') {
-    safeRender(() => renderTeamNow(row, career, report, content), 'now');
-    safeRender(() => renderTeamResults(teamId, teamName, report, content), 'results');
-  } else if (state.teamTab === 'forecast') {
-    safeRender(() => {
-      const section = renderTeamGridRow(teamId, row, report, content);
-      if (section) renderTeamOutlook(section, row, report, teamId);
-    }, 'outlook');
-    safeRender(() => {
-      const section = el('div', 'team-section');
-      renderTeamStakes(section, report, teamId);
-      if (section.childNodes.length) content.appendChild(section);
-    }, 'stakes');
-    safeRender(() => renderTeamFixtures(teamId, teamName, report, content), 'fixtures');
-  } else {
-    if (career?.points?.length >= 2) safeRender(() => renderTeamRatingHistory(career, content), 'ratingHistory');
-    if (career?.seasons?.length) safeRender(() => renderSeasonBySeason(career, teamId, content, report), 'seasons');
-  }
+  drawTab();
 }
 
 function renderTeamRatingHistory(career, content) {
