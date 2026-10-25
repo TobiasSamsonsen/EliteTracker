@@ -170,17 +170,17 @@
       <div class="race" id="hero-race"></div>
     </section>
 
-    <!-- Rewind the whole page to any day the league has played. -->
-    <section class="timeline-section">
-      <div class="panel timeline" id="timeline" hidden>
+    <!-- Rewind the whole page to any day the league has played. It lives in
+         the open view's card, under its heading, and its button in the
+         heading's tools (placeTimeline); here until the first render. -->
+    <button type="button" class="grid-anim-btn timeline-toggle" id="timeline-toggle" aria-expanded="false" aria-controls="timeline" hidden><svg class="grid-anim-btn__icon" viewBox="0 0 12 12" width="11" height="11" aria-hidden="true" focusable="false"><path d="M6 2.5 1.5 6 6 9.5zM11 2.5 6.5 6 11 9.5z" fill="currentColor"/></svg><span data-i18n="timeline.open">Rewind</span></button>
+    <div class="timeline" id="timeline" hidden>
         <div class="timeline__head">
           <div>
             <div class="label" data-i18n="timeline.rewind">Rewind the season</div>
             <p id="timeline-when" data-i18n="timeline.live">Live — everything played so far</p>
           </div>
           <button type="button" class="timeline__now" id="timeline-now" hidden><span class="timeline__now-long" data-i18n="timeline.backToLive">Back to live</span><span class="timeline__now-short" data-i18n="timeline.backToLiveShort">Live</span></button>
-          <!-- A phone keeps the slider folded away until asked for. -->
-          <button type="button" class="timeline__open" id="timeline-open" aria-expanded="false" aria-controls="timeline-control"><span data-i18n="timeline.open">Rewind</span><svg viewBox="0 0 12 12" width="10" height="10" aria-hidden="true" focusable="false"><path d="M2.5 4.5 6 8l3.5-3.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
         </div>
         <div class="timeline__control" id="timeline-control">
           <label class="visually-hidden" for="timeline-range" data-i18n="aria.matchdaySlider">Pick a matchday</label>
@@ -191,8 +191,7 @@
         </div>
         <!-- Said by the slider (its description and hover title), not as a line of its own. -->
         <p class="visually-hidden" id="timeline-note" data-i18n="timeline.note">Everything below uses only the results known on the day you pick.</p>
-      </div>
-    </section>
+    </div>
 
     <!-- Signature: the finishing-position probability matrix. -->
     <section data-section="grid">
@@ -202,7 +201,7 @@
             <h2 data-i18n="grid.title">The finish grid</h2>
             <p data-i18n="grid.desc">Each club’s chance of every place, sorted by likeliest finish.</p>
           </div>
-          <div class="grid-controls">
+          <div class="grid-controls panel__tools">
             <div class="label" id="grid-count"></div>
             <button type="button" class="grid-anim-btn" id="grid-anim-play" aria-pressed="false" data-i18n="title.animateSeason" data-i18n-attr="title" title="Replay the season matchday by matchday"><span class="grid-anim-btn__icon" aria-hidden="true">▶</span><span class="grid-anim-btn__label" data-i18n="anim.play">Play season</span></button>
           </div>
@@ -234,9 +233,11 @@
             <h2 id="table-title" data-i18n="table.title">Table</h2>
             <p data-i18n="table.desc">Pick a club to open its page.</p>
           </div>
-          <div class="table-controls">
-            <button type="button" class="table-control-btn" data-table-mode="current" aria-pressed="true"><span data-i18n="table.view.current">Current</span></button>
-            <button type="button" class="table-control-btn" data-table-mode="prediction" aria-pressed="false"><span data-i18n="table.view.prediction">Prediction</span></button>
+          <div class="panel__tools">
+            <div class="table-controls">
+              <button type="button" class="table-control-btn" data-table-mode="current" aria-pressed="true"><span data-i18n="table.view.current">Current</span></button>
+              <button type="button" class="table-control-btn" data-table-mode="prediction" aria-pressed="false"><span data-i18n="table.view.prediction">Prediction</span></button>
+            </div>
           </div>
         </div>
         <div class="scroller">
@@ -324,7 +325,9 @@
             <h2 data-i18n="ladder.title">The ladder</h2>
             <p data-i18n="ladder.desc">Every club in both divisions on one rating scale.</p>
           </div>
-          <button type="button" class="grid-anim-btn" id="ladder-anim-play" aria-pressed="false" data-i18n="title.animateSeason" data-i18n-attr="title" title="Replay the season matchday by matchday"><span class="grid-anim-btn__icon" aria-hidden="true">▶</span><span class="grid-anim-btn__label" data-i18n="anim.play">Play season</span></button>
+          <div class="panel__tools">
+            <button type="button" class="grid-anim-btn" id="ladder-anim-play" aria-pressed="false" data-i18n="title.animateSeason" data-i18n-attr="title" title="Replay the season matchday by matchday"><span class="grid-anim-btn__icon" aria-hidden="true">▶</span><span class="grid-anim-btn__label" data-i18n="anim.play">Play season</span></button>
+          </div>
         </div>
         <div class="grid-anim-bar" id="ladder-anim-controls" hidden>
           <span class="grid-anim-bar__when" id="ladder-anim-when"></span>
@@ -382,6 +385,7 @@
             <h2 id="explore-title">Explore</h2>
             <p id="explore-desc"></p>
           </div>
+          <div class="panel__tools"></div>
         </div>
         <div id="explore-body"></div>
       </div>

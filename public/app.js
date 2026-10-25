@@ -6189,8 +6189,16 @@ function renderTimeline(report) {
   const day = days[index];
   const live = !state.asof || index === days.length - 1;
   panel.classList.toggle('is-past', !live);
+  // Folded away on the current season, where the live page is what most
+  // come for; open on a past one, which is mostly visited to look back
+  // through. Decided when the season changes, then left to the reader.
+  const season = report.league.season;
+  if (state.timelineSeason !== season) {
+    state.timelineSeason = season;
+    setTimelineOpen(season !== report.league.current_season);
+  }
   // A rewound page always shows its slider, so the way back stays in reach.
-  if (!live) openTimeline();
+  if (!live) setTimelineOpen(true);
   $('#timeline-now').hidden = live;
 
   range.setAttribute('aria-valuetext', live ? t('timeline.scrubLive') : dayLabel(day));
@@ -6212,11 +6220,27 @@ function renderTimeline(report) {
   scale.appendChild(el('span', '', month(last)));
 }
 
-/* On a phone the rewind panel opens folded to one line, the slider a tap
-   away; the CSS folds it only there. Once open it stays open. */
-function openTimeline() {
-  $('#timeline').classList.add('is-open');
-  $('#timeline-open').setAttribute('aria-expanded', 'true');
+/* The rewind panel shows only when its button in the card's heading has
+   opened it (or the season, or a rewound page, has: renderTimeline). */
+function setTimelineOpen(open) {
+  $('#timeline').classList.toggle('is-open', open);
+  $('#timeline-toggle').setAttribute('aria-expanded', String(open));
+}
+
+/* The rewind lives in the open view's card: the panel under its heading,
+   its button among the heading's tools. Hidden, both, on a view that does
+   not follow it or a season with nothing to rewind through. */
+function placeTimeline(shown) {
+  const timeline = $('#timeline');
+  const toggle = $('#timeline-toggle');
+  const head = document.querySelector(`[data-section="${state.activeView}"] .panel > .panel__head`);
+  const tools = head?.querySelector('.panel__tools');
+  if (shown && tools) {
+    if (toggle.parentElement !== tools) tools.appendChild(toggle);
+    if (timeline.previousElementSibling !== head) head.after(timeline);
+  }
+  timeline.hidden = !(shown && tools);
+  toggle.hidden = timeline.hidden;
 }
 
 /* Dragging fires continuously; only the value you settle on is worth a fetch. */
@@ -6584,13 +6608,11 @@ function render() {
 
   // Hide the rewind timeline on views where it isn't relevant
   const noRewind = new Set(['matches', 'compare', 'model', 'team']);
-  const timelineSection = document.querySelector('.timeline-section');
   // In explore only the views of one rewound report follow it (EXPLORE_REWIND);
   // the mountain has its own build-up.
-  if (timelineSection) {
-    timelineSection.hidden = noRewind.has(state.activeView)
-      || (state.activeView === 'explore' && !EXPLORE_REWIND.has(state.exploreItem));
-  }
+  placeTimeline(!noRewind.has(state.activeView)
+    && (state.activeView !== 'explore' || EXPLORE_REWIND.has(state.exploreItem))
+    && liveMatchdaysFor(state.league).length >= 2);
   // Lets the stylesheet slim the league hero down in a club's view, and fit
   // the season mountain to a phone's screen.
   document.body.dataset.view = state.activeView;
@@ -6867,9 +6889,15 @@ function wire() {
 
   $('#timeline-range').addEventListener('input', onTimelineInput);
   $('#timeline-now').addEventListener('click', () => { if (anim.playing) animStop(); rewindTo(null); });
-  $('#timeline-open').addEventListener('click', () => {
-    openTimeline();
-    $('#timeline-range').focus();
+  // Folding the panel on a rewound page goes back to live as well: a page
+  // that shows an old day must keep the slider that says so.
+  $('#timeline-toggle').addEventListener('click', () => {
+    const open = !$('#timeline').classList.contains('is-open');
+    setTimelineOpen(open);
+    if (!open && state.asof) {
+      if (anim.playing) animStop();
+      rewindTo(null);
+    }
   });
 
   for (const select of [$('#compare-a'), $('#compare-b')]) {
