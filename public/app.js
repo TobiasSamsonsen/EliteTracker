@@ -2154,56 +2154,119 @@ function bandChances(positions, bands) {
 }
 
 /* The match of the week, for the matches view, following the week on show.
-   A week with fixtures still to play: of those, the one whose result swings
-   a club's chance of a band the most, weighed by how even it is, so a
-   foregone win does not lead (a side above 60 % rules a match out while any
-   other is left). A week played: the most exciting result, weighing how far
-   it moved the two clubs' chances of every band (the history snapshots
-   either side of it) by its excitement: how surprising the result was, its
-   drama -- a tight game (in goals or in xG) or a thrashing nobody saw coming
-   (a margin the scoreline grid gave little chance), whichever is more -- and
-   its goals. */
+   It is chosen on the week's eve and kept while the week is played, so a
+   result coming in neither drops it nor swaps it for another: chosen from
+   the report as it stood the evening before the week's first match
+   (`weekEve`), which the rest of the week cannot change. Of the week's
+   fixtures, the one whose result swings a club's chance of a band the most,
+   weighed by how even it is (`pickFixture`). Shown as a fixture until it is
+   played, then as its result. Until that report is in (or where there is
+   none) the live report's fixtures stand in; on a week part played, the race.
+   A week played in full: its most exciting result (`scoreResult`). */
 function heroMatch(report) {
   const { timeline, weeks, byWeek, index } = matchesTimeline(report);
   if (!timeline.length) return null;
   const items = byWeek.get(weeks[index]);
   const fixtures = items.filter((item) => !item.played).map((item) => item.match);
   const results = items.filter((item) => item.played).map((item) => item.match);
-  const bare = (chance) => pct(chance).replace(percentSign(), '');
-  const when = (match) => `${t('hero.match.title')} · ${formatDate(match.date)}${match.time ? ` ${match.time}` : ''}`;
-
-  if (fixtures.length) {
-    const stakes = [...(report.next_stakes || []), ...(report.high_stakes || [])];
-    const scored = fixtures.map((fixture) => {
-      const entries = stakesForFixture(stakes, fixture.match_id).sort((a, b) => b.swing - a.swing);
-      const swing = entries.length ? entries[0].swing : 0;
-      const balance = 1 - Math.abs(fixture.home_win - fixture.away_win);
-      return { fixture, stake: entries[0], score: (swing + 0.05) * balance };
-    });
-    const open = scored.filter(({ fixture }) => Math.max(fixture.home_win, fixture.away_win) <= 0.6);
-    const { fixture, stake } = (open.length ? open : scored).reduce((a, b) => (b.score > a.score ? b : a));
-    let note = '';
-    if (stake) {
-      const band = { label: stake.band_label, first: stake.band_first, last: stake.band_last, tone: stake.band_tone };
-      note = t('hero.match.stake', {
-        team: stake.team,
-        band: shortBandLabel(band, report),
-        win: pct(stake.p_favourable),
-        loss: pct(stake.p_unfavourable),
-      });
-    }
-    return {
-      label: when(fixture),
-      items: [
-        { row: { team_id: fixture.home_id, team: fixture.home }, figure: bare(fixture.home_win), unit: '%' },
-        { name: t('hero.match.draw'), figure: bare(fixture.draw), unit: '%', draw: true },
-        { row: { team_id: fixture.away_id, team: fixture.away }, figure: bare(fixture.away_win), unit: '%' },
-      ],
-      note,
-    };
+  if (!fixtures.length) {
+    if (!results.length) return null;
+    return resultHero(report, results.map((match) => scoreResult(report, match)).reduce((a, b) => (b.score > a.score ? b : a)));
   }
-  if (!results.length) return null;
+  const eve = weekEve(report, items);
+  if (eve === undefined && results.length) return null;
+  const ids = new Set(items.map((item) => item.match.match_id));
+  const onEve = (eve?.fixtures || []).filter((match) => ids.has(match.match_id));
+  const pick = onEve.length ? pickFixture(eve, onEve) : null;
+  const played = pick && results.find((match) => match.match_id === pick.match_id);
+  if (played) return resultHero(report, scoreResult(report, played));
+  // The live fixture, for today's odds; a pick moved out of the week gives
+  // way to the live report's own.
+  const fixture = (pick && fixtures.find((match) => match.match_id === pick.match_id)) || pickFixture(report, fixtures);
+  return fixtureHero(report, fixture);
+}
 
+/* The report as it stood the evening before a week's first match: the
+   rewind's report for the last matchday before it, else the pre-season one.
+   Undefined while it loads (the hero is drawn again when it is in), null
+   where there is none. */
+const weekEves = new Map(); // url -> every division's report, or null
+function weekEve(report, items) {
+  const first = items.reduce((min, item) => (item.match.date < min ? item.match.date : min), items[0].match.date);
+  const day = (report.league.matchdays || []).findLast((matchday) => matchday.date < first)?.date || report.league.preseason;
+  if (!day) return null;
+  const url = reportUrl(report.league.season, day);
+  if (!weekEves.has(url)) {
+    weekEves.set(url, undefined);
+    fetchedReport(url)
+      .then((all) => { weekEves.set(url, applyShortNames(all)); })
+      .catch(() => { weekEves.set(url, null); })
+      .then(() => { if (state.activeView === 'matches') renderRace(state.reports[state.league]); });
+  }
+  const all = weekEves.get(url);
+  return all === undefined ? undefined : all?.[report.league.slug] ?? null;
+}
+
+/* On a week part played the hero needs the week's eve: asked for ahead, so
+   the matches view has it when it opens. */
+function prefetchWeekEve(report) {
+  const { timeline, weeks, byWeek, current } = matchesTimeline(report);
+  const items = timeline.length ? byWeek.get(weeks[current]) : [];
+  if (items.some((item) => item.played) && items.some((item) => !item.played)) weekEve(report, items);
+}
+
+/* Of a week's fixtures, the one whose result swings a club's chance of a
+   band the most, weighed by how even it is, so a foregone win does not lead
+   (a side above 60 % rules a match out while any other is left). */
+function pickFixture(report, fixtures) {
+  const stakes = [...(report.next_stakes || []), ...(report.high_stakes || [])];
+  const scored = fixtures.map((fixture) => {
+    const entries = stakesForFixture(stakes, fixture.match_id);
+    const swing = entries.length ? Math.max(...entries.map((entry) => entry.swing)) : 0;
+    const balance = 1 - Math.abs(fixture.home_win - fixture.away_win);
+    return { fixture, score: (swing + 0.05) * balance };
+  });
+  const open = scored.filter(({ fixture }) => Math.max(fixture.home_win, fixture.away_win) <= 0.6);
+  return (open.length ? open : scored).reduce((a, b) => (b.score > a.score ? b : a)).fixture;
+}
+
+function heroWhen(match) {
+  return `${t('hero.match.title')} · ${formatDate(match.date)}${match.time ? ` ${match.time}` : ''}`;
+}
+
+/* A fixture as the hero shows it: the three chances, and what its biggest
+   stake (from the live report) does for a club. */
+function fixtureHero(report, fixture) {
+  const bare = (chance) => pct(chance).replace(percentSign(), '');
+  const stakes = [...(report.next_stakes || []), ...(report.high_stakes || [])];
+  const stake = stakesForFixture(stakes, fixture.match_id).sort((a, b) => b.swing - a.swing)[0];
+  let note = '';
+  if (stake) {
+    const band = { label: stake.band_label, first: stake.band_first, last: stake.band_last, tone: stake.band_tone };
+    note = t('hero.match.stake', {
+      team: stake.team,
+      band: shortBandLabel(band, report),
+      win: pct(stake.p_favourable),
+      loss: pct(stake.p_unfavourable),
+    });
+  }
+  return {
+    label: heroWhen(fixture),
+    items: [
+      { row: { team_id: fixture.home_id, team: fixture.home }, figure: bare(fixture.home_win), unit: '%' },
+      { name: t('hero.match.draw'), figure: bare(fixture.draw), unit: '%', draw: true },
+      { row: { team_id: fixture.away_id, team: fixture.away }, figure: bare(fixture.away_win), unit: '%' },
+    ],
+    note,
+  };
+}
+
+/* How exciting a result was: how far it moved the two clubs' chances of
+   every band (the history snapshots either side of it), weighed by how
+   surprising the result was, its drama -- a tight game (in goals or in xG)
+   or a thrashing nobody saw coming (a margin the scoreline grid gave little
+   chance), whichever is more -- and its goals. */
+function scoreResult(report, match) {
   // Each club's rating going into the match, from its history: the point
   // before the match's own.
   const changes = buildRatingChanges(state.careers);
@@ -2218,53 +2281,55 @@ function heroMatch(report) {
     const k = after ? dates.findIndex((d) => d >= date) : dates.findLastIndex((d) => d < date);
     return k >= 0 ? k : null;
   };
-  const scored = results.map((match) => {
-    const hr = ratingBefore(match.home_id, match.date);
-    const ar = ratingBefore(match.away_id, match.date);
-    const odds = hr != null && ar != null
-      ? blendOdds(report.model, matchOdds(report.model, hr + surfaceEdge(report.model, match.home_id, match.away_id), ar), match.home_id, match.away_id)
-      : null;
-    const outcome = match.home_goals > match.away_goals ? 'home_win' : match.home_goals < match.away_goals ? 'away_win' : 'draw';
-    const surprise = odds ? 1 - odds[outcome] : 0;
-    const diff = match.home_goals - match.away_goals;
-    const margin = Math.abs(diff);
-    const goalsClose = margin <= 1 ? 1 : margin === 2 ? 0.4 : 0;
-    const xgClose = match.xg ? Math.max(0, 1 - Math.abs(match.xg[0] - match.xg[1]) / 1.5) : 0;
-    // The chance of a margin at least this big, this way (or of a draw),
-    // from the scoreline grid; a 5-0 nobody expected scores near 1.
-    let tail = null;
-    if (odds) {
-      tail = 0;
-      scoreGrid(report.model, match.home_id, match.away_id, odds.gap / 400).forEach((row, i) => row.forEach((p, j) => {
-        const d = i - j;
-        if (diff > 0 ? d >= diff : diff < 0 ? d <= diff : d === 0) tail += p;
-      }));
+  const hr = ratingBefore(match.home_id, match.date);
+  const ar = ratingBefore(match.away_id, match.date);
+  const odds = hr != null && ar != null
+    ? blendOdds(report.model, matchOdds(report.model, hr + surfaceEdge(report.model, match.home_id, match.away_id), ar), match.home_id, match.away_id)
+    : null;
+  const outcome = match.home_goals > match.away_goals ? 'home_win' : match.home_goals < match.away_goals ? 'away_win' : 'draw';
+  const surprise = odds ? 1 - odds[outcome] : 0;
+  const diff = match.home_goals - match.away_goals;
+  const margin = Math.abs(diff);
+  const goalsClose = margin <= 1 ? 1 : margin === 2 ? 0.4 : 0;
+  const xgClose = match.xg ? Math.max(0, 1 - Math.abs(match.xg[0] - match.xg[1]) / 1.5) : 0;
+  // The chance of a margin at least this big, this way (or of a draw),
+  // from the scoreline grid; a 5-0 nobody expected scores near 1.
+  let tail = null;
+  if (odds) {
+    tail = 0;
+    scoreGrid(report.model, match.home_id, match.away_id, odds.gap / 400).forEach((row, i) => row.forEach((p, j) => {
+      const d = i - j;
+      if (diff > 0 ? d >= diff : diff < 0 ? d <= diff : d === 0) tail += p;
+    }));
+  }
+  const shock = tail == null ? 0 : Math.min(1, -Math.log10(Math.max(tail, 1e-6)) / 2.5);
+  const drama = Math.max(goalsClose, xgClose, shock);
+  const goals = Math.min(match.home_goals + match.away_goals, 6) / 6;
+  // How far the two clubs' chances of every band moved across the match.
+  const before = snapshot(match.date, false);
+  const after = snapshot(match.date, true);
+  let impact = 0;
+  let shift = null;
+  if (before != null && after != null && before !== after) {
+    for (const id of [match.home_id, match.away_id]) {
+      const team = history.teams.find((h) => String(h.team_id) === String(id));
+      if (!team) continue;
+      const was = bandChances(team.positions[before], bands);
+      const is = bandChances(team.positions[after], bands);
+      bands.forEach((band, b) => {
+        const move = Math.abs(is[b] - was[b]);
+        impact += move;
+        if (!shift || move > shift.move) shift = { move, band, was: was[b], is: is[b], team: id === match.home_id ? match.home : match.away };
+      });
     }
-    const shock = tail == null ? 0 : Math.min(1, -Math.log10(Math.max(tail, 1e-6)) / 2.5);
-    const drama = Math.max(goalsClose, xgClose, shock);
-    const goals = Math.min(match.home_goals + match.away_goals, 6) / 6;
-    // How far the two clubs' chances of every band moved across the match.
-    const before = snapshot(match.date, false);
-    const after = snapshot(match.date, true);
-    let impact = 0;
-    let shift = null;
-    if (before != null && after != null && before !== after) {
-      for (const id of [match.home_id, match.away_id]) {
-        const team = history.teams.find((h) => String(h.team_id) === String(id));
-        if (!team) continue;
-        const was = bandChances(team.positions[before], bands);
-        const is = bandChances(team.positions[after], bands);
-        bands.forEach((band, b) => {
-          const move = Math.abs(is[b] - was[b]);
-          impact += move;
-          if (!shift || move > shift.move) shift = { move, band, was: was[b], is: is[b], team: id === match.home_id ? match.home : match.away };
-        });
-      }
-    }
-    const excitement = 0.4 * surprise + 0.4 * drama + 0.2 * goals;
-    return { match, odds, shift, tail: margin >= 2 ? tail : null, score: (impact + 0.05) * (0.25 + excitement) };
-  });
-  const { match, odds, shift, tail } = scored.reduce((a, b) => (b.score > a.score ? b : a));
+  }
+  const excitement = 0.4 * surprise + 0.4 * drama + 0.2 * goals;
+  return { match, odds, shift, tail: margin >= 2 ? tail : null, score: (impact + 0.05) * (0.25 + excitement) };
+}
+
+/* A result as the hero shows it: the score, each side's chance before it,
+   and a shock or a band it moved. */
+function resultHero(report, { match, odds, shift, tail }) {
   const notes = [];
   if (tail != null && tail < 0.02) notes.push(t('hero.match.shock', { p: pct(tail) }));
   if (shift && shift.move >= 0.02) {
@@ -2272,7 +2337,7 @@ function heroMatch(report) {
   }
   const before = (chance) => (odds ? t('hero.match.before', { p: pct(chance) }) : '');
   return {
-    label: when(match),
+    label: heroWhen(match),
     items: [
       { row: { team_id: match.home_id, team: match.home }, figure: String(match.home_goals), unit: '', sub: before(odds?.home_win) },
       { name: '', figure: '–', unit: '', draw: true },
@@ -2314,6 +2379,7 @@ function heroRaceModel(report) {
    matches the match of the week, the rest the race. Each falls back to the
    race when it has nothing to show. */
 function renderRace(report) {
+  prefetchWeekEve(report);
   const hero = (state.activeView === 'table' && heroMovers(report))
     || (state.activeView === 'matches' && heroMatch(report))
     || heroRaceModel(report);
