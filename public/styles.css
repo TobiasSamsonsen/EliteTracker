@@ -497,6 +497,11 @@ html { scroll-padding-top: 76px; }
   ::view-transition-group(content) { animation: none; }
   ::view-transition-old(content) { animation: view-out 180ms var(--ease) both; }
   ::view-transition-new(content) { animation: view-in 260ms var(--ease) 50ms both; }
+  /* The group stands at the new view's place, at the top of the page, so
+     the old picture is lifted by as far as the page was scrolled
+     (--view-scroll, from switchView): it leaves from where it stood rather
+     than jumping to its top first. */
+  ::view-transition-old(content) { translate: 0 calc(-1 * var(--view-scroll, 0px)); }
 
   /* What floats over the content is captured on its own, so the sliding
      view passes beneath it, and it swaps in place: its old picture dropped,

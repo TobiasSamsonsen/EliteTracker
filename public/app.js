@@ -2571,6 +2571,7 @@ function openExplore(id) {
     return;
   }
   const root = document.documentElement;
+  root.style.setProperty('--view-scroll', `${window.scrollY}px`);
   root.dataset.transition = 'explore';
   before.style.viewTransitionName = 'explore-open';
   let after = null;
@@ -6615,6 +6616,8 @@ function switchView(view, { dir } = {}) {
     return;
   }
   const root = document.documentElement;
+  // The old view's picture leaves from where it stood (see "Switching tab").
+  root.style.setProperty('--view-scroll', `${window.scrollY}px`);
   if (vertical) {
     root.dataset.transition = 'vertical';
     root.style.setProperty('--view-dir', inSheet(view) ? '1' : '-1');
