@@ -694,6 +694,25 @@ html { scroll-padding-top: 76px; }
 .race__club.is-down .race__value { color: var(--outcome-bad-ink); }
 .race__sub { font-size: 0.8125rem; color: var(--ink-faint); }
 .race__note { margin: 0; font-size: 0.875rem; color: var(--ink-muted); }
+/* Everything in the hero stands on its centre: the label, each club's figure,
+   crest and name, the note. A played match is a grid of three equal-ish parts,
+   the score's dash in the middle one and a goal either side at the same
+   distance from it, so the dash is exactly between them. */
+.race { text-align: center; grid-template-columns: minmax(0, 1fr); justify-items: center; }
+.race__clubs { justify-content: center; }
+.race__club { justify-items: center; text-align: center; }
+.race__name { justify-content: center; }
+.race__value small:empty { display: none; }
+.race[data-count] .race__clubs:has(> .is-draw) {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  align-items: start;
+  justify-content: stretch;
+  gap: var(--space-4);
+  width: 100%;
+  max-width: 34rem;
+  margin-inline: auto;
+}
 /* Three side by side on a phone (a match with its draw, or a three-club
    race), rather than two and one left over. */
 @media (max-width: 480px) {
@@ -730,6 +749,8 @@ html { scroll-padding-top: 76px; }
     font-size: 2.5rem;
   }
   .race:is([data-count="4"], [data-count="5"], [data-count="6"], [data-count="7"]) .race__club:nth-child(2) ~ .race__club {
+    justify-items: stretch;
+    text-align: left;
     grid-column: 1 / -1;
     grid-template-columns: minmax(0, 1fr) auto;
     grid-template-areas: "name value";
@@ -741,7 +762,7 @@ html { scroll-padding-top: 76px; }
   .race:is([data-count="4"], [data-count="5"], [data-count="6"], [data-count="7"]) .race__club:nth-child(2) ~ .race__club:nth-child(3) {
     margin-top: var(--space-2);
   }
-  .race:is([data-count="4"], [data-count="5"], [data-count="6"], [data-count="7"]) .race__club:nth-child(2) ~ .race__club .race__name { grid-area: name; }
+  .race:is([data-count="4"], [data-count="5"], [data-count="6"], [data-count="7"]) .race__club:nth-child(2) ~ .race__club .race__name { grid-area: name; justify-content: flex-start; }
   .race:is([data-count="4"], [data-count="5"], [data-count="6"], [data-count="7"]) .race__club:nth-child(2) ~ .race__club .race__value {
     grid-area: value;
     font-size: 1.125rem;
@@ -2856,7 +2877,7 @@ footer a { color: var(--ink); }
   align-items: center;
   justify-content: center;
   flex: none;
-  align-self: flex-start;
+  align-self: center;
   width: 2.5rem;
   height: 2.5rem;
   padding: 0;
@@ -2922,6 +2943,9 @@ footer a { color: var(--ink); }
 
 .team-summary__name {
   font-size: 1.5rem;
+  /* The ellipsis needs overflow hidden, which would shave a descender off the
+     g in Viking at a tight line height. */
+  line-height: 1.3;
   margin: 0;
   white-space: nowrap;
   overflow: hidden;
@@ -3403,8 +3427,14 @@ button.team-mini__row:hover { background: var(--panel-sunk); }
 /* A decisive match as a small chart (see stakeRow). */
 .team-stakes .legend { padding: 0 0 0.35rem; border: 0; background: none; font-size: 0.75rem; }
 .stake__now-key { display: inline-block; width: 2px; height: 0.8rem; background: var(--ink); border-radius: 1px; }
-/* Wide screens: each match a compact unit, not a track the width of the page. */
+/* In between, each match a compact unit, not a track the width of the page; on
+   a wide screen they go two to a row and use the width. */
 .team-stakes__list, .team-stakes .legend { max-width: 36rem; }
+@media (min-width: 961px) {
+  .team-stakes__list, .team-stakes .legend { max-width: none; }
+  .team-stakes__list { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0 2.5rem; }
+  .team-stakes__list > .stake:nth-child(2) { border-top: 0; padding-top: 0.2rem; }
+}
 .stake { padding: 0.55rem 0 0.2rem; border-top: 1px solid var(--rule); }
 .stake:first-child { border-top: 0; padding-top: 0.2rem; }
 .stake__head { display: flex; align-items: center; gap: 0.6rem; min-width: 0; }
