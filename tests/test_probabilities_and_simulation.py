@@ -272,6 +272,18 @@ class TestSimulation:
         for team in projection.teams:
             assert team.current_points <= team.expected_points <= team.current_points + 3 * 4
 
+    def test_expected_points_are_the_median_of_the_runs(self):
+        # A median of whole-point totals is a whole number, and with nothing left
+        # to play it is exactly the points already won.
+        projection = simulate_season(
+            two_team_season(remaining=4), {"A": 1500, "B": 1500}, config=SimulationConfig(simulations=301)
+        )
+        for team in projection.teams:
+            assert team.expected_points == int(team.expected_points)
+        done = simulate_season(two_team_season(remaining=0), {"A": 1500, "B": 1500}, config=SimulationConfig(simulations=50))
+        for team in done.teams:
+            assert team.expected_points == team.current_points
+
     def test_position_probabilities_sum_to_one(self):
         projection = simulate_season(
             two_team_season(), {"A": 1500, "B": 1500}, config=SimulationConfig(simulations=100)
