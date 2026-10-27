@@ -79,7 +79,8 @@ reports and `careers.json` carry them).
 | elo-v13.0 | 2026-10-16 | 28e49b1 | major | xG margin signed by xG; exact xG-implied score; squad-value offseason pull; early-season step; strength shock 0.20; surface edge in Eliteserien; play-offs simulated |
 | elo-v14.0 | 2026-10-16 | 3909841 | major | keeping (xG on target, a club's last 45 matches) as the goals model's fourth part, its chances learnt 90 % from xG; the offseason pull per division (OBOS-ligaen 0.75 / 0.3); surface edge 10 -> 20 |
 | elo-v15.0 | 2026-10-17 | adc21db | major | a club relegated into OBOS-ligaen keeps half its distance from the division's mean, toward a target set by its squad value (Elo 75 points per log value, its first use of squad values; the goals model its own value pull) |
-| elo-v16.0 | 2026-10-17 | b571718 | major | the xG margin unclamped and 0.10 -> 0.12; late-season table stakes on the prediction (`model.stakes`), the season simulation reading them from each run's own table -- **the deployed version** |
+| elo-v16.0 | 2026-10-17 | b571718 | major | the xG margin unclamped and 0.10 -> 0.12; late-season table stakes on the prediction (`model.stakes`), the season simulation reading them from each run's own table |
+| elo-v16.1 | 2026-10-27 | c3dae7e | minor | the prediction's expected points the median of the simulated seasons' points, the mean breaking ties in the order (ratings and match odds unchanged; the backtest is under "xPts and the expected place as medians") -- **the deployed version** |
 
 Unbumped commits that only added output fields (`position_points`, projected
 goals, high-stakes swings, the pre-season view) or touched presentation were
@@ -792,8 +793,8 @@ before shipping, as the rules ask:
   club reaches in half the runs; a place it ends at or above half the time),
   not for accuracy, which the numbers do not show. Whole-number medians tie
   often, so the mean breaks ties in the predicted order.
-- **Version:** the published xPts moved, so the release carrying this needs a
-  MINOR bump (elo-v16.1) under the rules; it takes none until it is released.
+- **Version:** the published xPts moved, so the release carrying this is a
+  MINOR bump, elo-v16.1 (released with the team view redesign, 2026-10-27).
   The season mountain's "expected finish" facts still use the mean place.
 
 ## 🔧 Open items

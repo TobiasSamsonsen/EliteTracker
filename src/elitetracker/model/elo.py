@@ -220,7 +220,12 @@ from dataclasses import dataclass
 #     see it. The season simulation reads it from each run's own table.
 #   Together, both divisions 2016+: -0.00056 log loss (t -2.44), out of
 #   sample -0.00072 (t -2.79); the gap to the closing line +0.00903 -> +0.00835.
-MODEL_VERSION = "elo-v16.0"
+#
+# elo-v16.1 (minor): the prediction's expected points are the median of the
+# simulated seasons' final points, not the mean (the mean breaks ties in the
+# order). Ratings and match odds are unchanged; see PROJECT_STATUS.md, "xPts and
+# the expected place as medians".
+MODEL_VERSION = "elo-v16.1"
 
 # A 400-point rating gap means the stronger side is expected to score 10 times
 # as often as the weaker one; this is the constant that defines the ELO scale.
