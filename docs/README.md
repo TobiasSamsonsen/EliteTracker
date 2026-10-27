@@ -11,6 +11,7 @@ module or command that owns each fact, and links instead of copies.
 | How do I run, build, deploy or republish? What does CI do? | [operations.md](operations.md) |
 | How is `public/` organised? How are the browser's ports of the model tested? | [frontend.md](frontend.md) |
 | Which tracker, labels and domain docs do the agent skills use? | [agents/](agents/) |
+| What UI and view ideas are queued for later (and where do they come from)? | [ui-ideas.md](ui-ideas.md) |
 
 Elsewhere in the repo:
 
