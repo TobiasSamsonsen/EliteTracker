@@ -762,7 +762,7 @@ function setupSeason(root) {
     });
     const likeliest = chances.indexOf(top);
     readout.textContent = t('seasonSummary', {
-      club: club.team, pts: fmt(club.expected_points, 1), place: ordinal(likeliest + 1), p: pct(top),
+      club: club.team, pts: fmt(club.expected_points, 0), place: ordinal(likeliest + 1), p: pct(top),
     });
 
     const caption = document.createElement('summary');

@@ -766,6 +766,36 @@ candidates (shaped home term, gap-dependent blend, calendar-derived rest days)
 are the honest shots at those buckets with data already in hand or one scrape
 away. Nothing ships until a walk-forward says it does.
 
+## 🧪 xPts and the expected place as medians (October 2026) -- shipped on request, evidence neutral
+
+The prediction's expected final points (`expected_points`, the table's xPts and
+the team view's tile) were the mean of the simulated seasons' points; they are
+now the **median**, and the team view's expected place is the median place (the
+first place whose cumulative chance reaches 50 %), where it would have been the
+mean place. The owner expected the median to be the more accurate. Tested
+before shipping, as the rules ask:
+
+- **Method:** both servers on the same seed, so the same simulated runs, one
+  returning the mean (the old code), one the median. Eliteserien 2019-2025, a
+  report at about 25 %, 50 % and 75 % of each season (21 dates, 336 club
+  forecasts), each scored against the club's actual final points and place.
+- **Points:** mean MAE 4.578, RMSE 6.107, bias +0.069; median MAE 4.577, RMSE
+  6.099, bias +0.006. By stage (MAE, mean / median): 25 % 6.077 / 6.054, 50 %
+  4.521 / 4.509, 75 % 3.138 / 3.170. **No difference worth the name**: the
+  distributions of a club's final points are close to symmetric, so the two
+  agree; the median is a touch less biased.
+- **Place:** mean MAE 1.760, RMSE 2.340; median MAE 1.717, RMSE 2.392. By stage
+  (MAE): 25 % 2.259 / 2.196, 50 % 1.754 / 1.714, 75 % 1.268 / 1.241. The median
+  place is a whole place, so it is nearer the truth on average (MAE -2.4 %) and
+  a little worse on the large misses (RMSE +2.2 %): a trade, not a gain.
+- **Verdict:** shipped as the owner asked, for the plainer reading (a total the
+  club reaches in half the runs; a place it ends at or above half the time),
+  not for accuracy, which the numbers do not show. Whole-number medians tie
+  often, so the mean breaks ties in the predicted order.
+- **Version:** the published xPts moved, so the release carrying this needs a
+  MINOR bump (elo-v16.1) under the rules; it takes none until it is released.
+  The season mountain's "expected finish" facts still use the mean place.
+
 ## 🔧 Open items
 
 **Next, in rough order of expected value:**

@@ -121,6 +121,8 @@ class TeamProjection:
     played: int
     # position_probabilities[0] is the chance of finishing 1st.
     position_probabilities: list[float]
+    # The median of the runs' final points (a whole number); the mean, which
+    # a lopsided spread drags, only breaks ties in `projections`' order.
     expected_points: float
     # Season totals averaged over the runs: goals already scored plus the
     # simulated scorelines of the remaining fixtures.
@@ -443,6 +445,7 @@ def simulate_season(
     goals_against_total = np.zeros(count, dtype=np.int64)
     max_points = int(base_points.max(initial=0)) + 3 * fixture_count
     position_hist = np.zeros(count * (max_points + 1), dtype=np.int64)
+    points_hist = np.zeros(count * (max_points + 1), dtype=np.int64)  # [club][points]
     conditionals = np.zeros(fixture_count * 3 * count * count if tally_conditionals else 0, dtype=np.int64)
     fixture_slot = np.arange(fixture_count, dtype=np.int64) * 3
 
@@ -558,6 +561,7 @@ def simulate_season(
         goals_for_total += goals_for.sum(axis=0)
         goals_against_total += goals_against.sum(axis=0)
         position_hist += np.bincount((position * (max_points + 1) + points).ravel(), minlength=position_hist.size)
+        points_hist += np.bincount((club_index * (max_points + 1) + points).ravel(), minlength=points_hist.size)
         if tally_conditionals:
             branch = (fixture_slot + outcome) * count
             for side in (home, away):
@@ -581,6 +585,12 @@ def simulate_season(
         for hist in position_hist.reshape(count, max_points + 1)
     ]
 
+    median_points = [
+        int(np.searchsorted(np.cumsum(hist), halfway))
+        for hist in points_hist.reshape(count, max_points + 1)
+    ]
+    mean_points = {team_id: float(points_total[index]) / config.simulations for index, team_id in enumerate(team_ids)}
+
     simulations = config.simulations
     projections = [
         TeamProjection(
@@ -592,7 +602,7 @@ def simulate_season(
             current_goal_difference=rows[index].goal_difference,
             played=rows[index].played,
             position_probabilities=(counts[index] / simulations).tolist(),
-            expected_points=float(points_total[index] / simulations),
+            expected_points=float(median_points[index]),
             expected_goals_for=float(goals_for_total[index] / simulations),
             expected_goals_against=float(goals_against_total[index] / simulations),
             **({} if tally is None else {
@@ -603,7 +613,7 @@ def simulate_season(
         )
         for index, team_id in enumerate(team_ids)
     ]
-    projections.sort(key=lambda projection: (-projection.expected_points, projection.team))
+    projections.sort(key=lambda projection: (-projection.expected_points, -mean_points[projection.team_id], projection.team))
 
     return SeasonProjection(
         teams=projections,

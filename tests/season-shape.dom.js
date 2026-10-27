@@ -112,13 +112,15 @@ async function main() {
       verticals, horizontals,
     });
   })()`));
-  // The places are coloured by what they are worth, so no edge lines are
-  // drawn over them; a legend under the chart names every band.
-  check('one area per place, no edge lines, no mode line or end marker',
-    overlays.modeLine === 0 && overlays.edges === 0 && overlays.bands === 16 &&
-    overlays.dot === 0 && overlays.end === '', JSON.stringify(overlays));
-  check('legend names every band of the league',
-    overlays.legend === overlays.leagueBands, JSON.stringify(overlays));
+  // The places are a gradient; what they are worth is drawn as lines between
+  // the bands, each named in the margin, so there is no legend under the chart.
+  // A line is kept only for a club it divides, so there may be few or none; the
+  // places the club cannot reach (never 2 % all season) are merged at either
+  // end, so there are at most one area per place.
+  check('areas per place or merged, band lines fewer than the bands, no mode line or end marker',
+    overlays.modeLine === 0 && overlays.edges < overlays.leagueBands &&
+    overlays.bands >= 1 && overlays.bands <= 18 && overlays.dot === 0 && overlays.end === '', JSON.stringify(overlays));
+  check('no legend under the chart', overlays.legend === 0, JSON.stringify(overlays));
   // Position numerals: named inside the bands they belong to, never outside,
   // the final band named like any other, and none sitting on a plot edge
   // (pad.left = 40, plotWidth = 848, edge inset = 14).
@@ -282,25 +284,11 @@ async function main() {
     fallback.hasChart && !/shape data/i.test(fallback.text) &&
     String(fallback.state.season) === '2026', JSON.stringify(fallback));
 
-  // --- Each place takes its band's colour: the title gold, the European
-  // --- places their competition's, the drop red, mid-table neutral and
-  // --- alternating so neighbours stay apart.
-  const fills = JSON.parse(ev(`(() => {
-    const bands = state.reports.eliteserien.league.bands;
-    return JSON.stringify([1, 3, 4, 8, 9, 15].map((p) => shapeColor(p, bands, 16)));
-  })()`));
-  check('places are coloured by what they are worth',
-    /band-champion/.test(fills[0]) && /edge-ecl/.test(fills[1]) && /edge-ecl/.test(fills[2]) &&
-    fills[1] !== fills[2] && /ink-faint/.test(fills[3]) && fills[3] !== fills[4] &&
-    /outcome-bad/.test(fills[5]), JSON.stringify(fills));
-
-  // --- 2025 splits Europa (3rd) from Conference (4th): each keeps its colour.
-  const y2025 = JSON.parse(await ev(`(async () => {
-    const bands = (await loadSeasonReports(2025)).eliteserien.league.bands;
-    return JSON.stringify([shapeColor(3, bands, 16), shapeColor(4, bands, 16)]);
-  })()`));
-  check('2025 colours 3rd as Europa League and 4th as Conference League',
-    /edge-el\b/.test(y2025[0]) && /edge-ecl/.test(y2025[1]), JSON.stringify(y2025));
+  // --- Each place takes a step of the gradient, the best the brightest:
+  // --- every place its own colour.
+  const fills = JSON.parse(ev(`(() => JSON.stringify([1, 3, 4, 8, 9, 15, 16].map((p) => positionColor(p, 16))))()`));
+  check('places are a gradient, one colour each',
+    new Set(fills).size === fills.length, JSON.stringify(fills));
 
   const failed = results.filter((r) => !r.ok);
   console.log(`\n${results.length - failed.length}/${results.length} checks passed`);

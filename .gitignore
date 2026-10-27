@@ -27,3 +27,5 @@ experiments/mobile-audit/*-report.md
 
 # Personal agent-tool config
 .opencode/
+
+.claude/settings.local.json

@@ -87,7 +87,7 @@ which columns belong to which view is noted below.
 | **Rating** | both | Current ELO rating (integer). The arrow shows how far the rating moved over the last 5 matches -- the five in the form column. |
 | **Attack / Defence** | Current | Chances created and conceded per match against an average side, as ±% vs the division average (defence turned round, so higher is better). Colour-coded red→blue pill, sortable by either. |
 | **Form** | Current | Last 5 results as individual W/D/L blocks (blue / grey / red); the column sorts by the points those five total (out of 15). |
-| **xPts** | Prediction | Expected final points — the mean total across the season's simulations (goals so far plus the simulated rest). |
+| **xPts** | Prediction | Expected final points — the median total across the season's simulations (goals so far plus the simulated rest). |
 | **GF / GA / GD** | Prediction | Projected final goals and goal difference, from the same simulations. |
 | **Fix Diff** | Prediction | Expected points per remaining match for a league-average team against this club's run-in, centred on the league's mean run-in (red = harder, green = easier). |
 | **Title / Promotion** | Prediction | Probability of finishing 1st (Title). For OBOS-ligaen the column is Promotion: the summed probability of the top 2 spots. |
@@ -246,9 +246,10 @@ division average, with defence turned round so higher is always better: `+20 %`
 attack means a fifth more than an average side, `+20 %` defence means a fifth
 fewer.
 
-**Expected points (xPts)** is the mean final points over the season's
+**Expected points (xPts)** is the median final points over the season's
 simulations: the goals and points already banked plus the simulated rest of the
-season, not a formula over the remaining fixtures.
+season, not a formula over the remaining fixtures. The median is the total the
+club reaches in half the runs; a lopsided spread drags a mean away from it.
 
 **Fixture difficulty** (Fix Diff) is the one number computed directly from the
 odds: expected points per remaining match for a league-average team against

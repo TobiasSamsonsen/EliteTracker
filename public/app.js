@@ -33,6 +33,7 @@ const state = {
   // Pagination for team focus view.
   teamFixturesPage: 0,
   teamResultsPage: 0,
+  teamResultsOpen: false,
   teamSeasonsPage: 0,
   // Finish-grid animation state.
   anim: {
@@ -1223,7 +1224,7 @@ function dividerRow(boundary) {
     defenceCell.dataset.tableView = 'current';
     defenceCell.appendChild(makePctPill(defencePct, row.defence_k));
     tr.appendChild(defenceCell);
-    const xpTd = el('td', 'num muted', num(row.expected_points, 1));
+    const xpTd = el('td', 'num muted', num(row.expected_points));
     xpTd.dataset.tableView = 'prediction';
     tr.appendChild(xpTd);
 
@@ -2084,12 +2085,14 @@ function setOwnClub(teamId) {
    through: shown first and muted, so a band of several places shows how
    many are left. One from 5 % up is shown as a contender, so an open race
    has its outsiders too. The reader's own club's first open band comes
-   first; else the first open band down the table, so a settled title hands
-   over to the places below it. Null once every band is settled or the
-   season is over. */
+   first, and the race is then that club and its RACE_RIVALS nearest in
+   chance; else the first open band down the table, so a settled title hands
+   over to the places below it, and a club in no open band is left out of
+   it. Null once every band is settled or the season is over. */
 const RACE_OPEN = 0.1;
 const RACE_SHOWN = 0.05;
 const RACE_SETTLED = 0.9;
+const RACE_RIVALS = 2;
 
 function heroRace(report, ownId) {
   // A finished season is told by its champion, even while a relegation
@@ -2100,52 +2103,67 @@ function heroRace(report, ownId) {
     const chance = bandChance(row, band, slug);
     return chance > RACE_OPEN && chance < RACE_SETTLED;
   };
-  const own = ownId ? report.table.find((row) => String(row.team_id) === ownId) : null;
+  const ownRow = ownId ? report.table.find((row) => String(row.team_id) === ownId) : null;
   const bands = report.league.bands;
-  const band = (own && bands.find((b) => open(own, b)))
-    || bands.find((b) => report.table.some((row) => open(row, b)));
+  const ownBand = ownRow && bands.find((b) => open(ownRow, b));
+  const band = ownBand || bands.find((b) => report.table.some((row) => open(row, b)));
   if (!band) return null;
+  // A club in no open band has no place in another band's race.
+  const own = ownBand ? ownRow : null;
   const ranked = report.table
     .map((row) => ({ row, chance: bandChance(row, band, slug) }))
     .filter(({ chance }) => chance > RACE_SHOWN)
     .sort((a, b) => b.chance - a.chance);
+  // The reader's own club is the race: it and its closest rivals, the club
+  // next above it in chance and the club next below, or the nearest two on
+  // the one side when it leads or trails the band.
+  if (own) {
+    const ownChance = bandChance(own, band, slug);
+    const others = ranked.filter(({ row, chance }) => row !== own && chance < RACE_SETTLED);
+    const above = others.filter(({ chance }) => chance >= ownChance).reverse();
+    const below = others.filter(({ chance }) => chance < ownChance);
+    const rivals = (above.length && below.length ? [above[0], below[0]] : above.length ? above : below)
+      .slice(0, RACE_RIVALS);
+    const field = [{ row: own, chance: ownChance }, ...rivals].sort((a, b) => b.chance - a.chance);
+    return { band, through: [], contenders: field, own };
+  }
   // Clubs through first: in a band of several places they show how many are
   // still to play for. Then the contenders, fewer the more are through.
   const through = ranked.filter(({ chance }) => chance >= RACE_SETTLED);
   const room = Math.max(2, 6 - through.length);
-  let contenders = ranked.filter(({ chance }) => chance < RACE_SETTLED).slice(0, room);
-  if (own && !contenders.some(({ row }) => row === own)) {
-    contenders = [...contenders.slice(0, room - 1), { row: own, chance: bandChance(own, band, slug) }];
-  }
+  const contenders = ranked.filter(({ chance }) => chance < RACE_SETTLED).slice(0, room);
   return { band, through, contenders, own };
 }
 
 /* The movers, for the table: the clubs whose rating rose and fell most over
    their last five matches, the rating trend's own window
-   (computeRatingTrend), so the hero and the table's arrows agree. Null until
-   the history has loaded, or when no one has moved five points. */
+   (computeRatingTrend), so the hero and the table's arrows agree; in a young
+   season, over the matches a club has. Each is shown while its move is at
+   least a point, the climber in the good tone and the faller in the bad.
+   Null until the history has loaded, or when no one has moved. */
 function heroMovers(report) {
   if (!state.careers?.teams) return null;
   const moves = report.table.map((row) => {
-    const trend = computeRatingTrend(row.team, report);
-    if (!trend) return null;
+    const entries = teamMatchSeries(row.team, report).changes.slice(-TREND_MATCHES);
+    if (!entries.length) return null;
+    const change = entries.reduce((sum, entry) => sum + entry.value, 0);
     // From the rating as shown, so the sum adds up.
     const now = Math.round(row.rating);
-    return { row, before: now - trend.diff, now, change: trend.diff };
+    return { row, before: now - change, now, change };
   }).filter(Boolean).sort((a, b) => b.change - a.change);
   const up = moves[0];
   const down = moves[moves.length - 1];
-  if (!up || up.change < 5) return null;
-  const item = (move) => ({
+  const item = (move, tone) => ({
     row: move.row,
+    tone,
     figure: signed(move.change),
     unit: t('hero.movers.unit'),
     sub: t('hero.movers.from', { from: num(move.before), to: num(move.now) }),
   });
-  return {
-    label: t('hero.movers.title'),
-    items: down.change <= -5 ? [item(up), item(down)] : [item(up)],
-  };
+  const items = [];
+  if (up && Math.round(up.change) > 0) items.push(item(up, 'up'));
+  if (down && Math.round(down.change) < 0) items.push(item(down, 'down'));
+  return items.length ? { label: t('hero.movers.title'), items } : null;
 }
 
 /* The match of the week, for the matches view, following the week on show.
@@ -2398,7 +2416,7 @@ function renderRace(report) {
     || heroRaceModel(report);
   const list = el('ol', 'race__clubs');
   for (const item of hero.items) {
-    const li = el('li', ['race__club', item.own && 'is-own', item.through && 'is-through', item.draw && 'is-draw'].filter(Boolean).join(' '));
+    const li = el('li', ['race__club', item.own && 'is-own', item.through && 'is-through', item.draw && 'is-draw', item.tone && `is-${item.tone}`].filter(Boolean).join(' '));
     const value = el('b', 'race__value', item.figure);
     value.appendChild(el('small', '', item.unit));
     if (item.through) value.appendChild(el('span', 'visually-hidden', ` (${t('hero.race.through')})`));
@@ -4226,6 +4244,7 @@ function mountainRoot() {
   });
   root.querySelector('#mountain-settings').addEventListener('toggle', (event) => {
     root.querySelector('.mountain__gear').setAttribute('aria-expanded', String(event.newState === 'open'));
+    liftMountain();
   });
   for (const button of root.querySelectorAll('[data-order]')) {
     button.addEventListener('click', () => {
@@ -4349,6 +4368,7 @@ function mountainScene(canvas) {
     renderer.setSize(width, height, false);
     camera.aspect = width / height;
     camera.updateProjectionMatrix();
+    liftMountain();
   }).observe(canvas);
 
   const ray = new THREE.Raycaster();
@@ -4760,7 +4780,9 @@ function frameMountain({ home = false } = {}) {
   // backs off so the whole stack and its labels stay in view.
   const canvas = s.renderer.domElement;
   const aspect = canvas.clientWidth / canvas.clientHeight || 1.5;
-  const opening = new THREE.Vector3(n * 1.45, height * 0.37 + n * 0.9, n * 2.05).multiplyScalar(Math.max(1, 1.6 / aspect));
+  // The back-off grows more slowly than the stage narrows (the power): a
+  // phone's stack filled two thirds of its width, with room to spare.
+  const opening = new THREE.Vector3(n * 1.45, height * 0.37 + n * 0.9, n * 2.05).multiplyScalar(Math.max(1, 1.6 / aspect) ** 0.8);
   // A vertical cut aims at the middle of the wall it leaves (its blocks'
   // extent, as drawn), sized to that wall; the whole mountain at the grid.
   const wall = (mountain.cutTeam || mountain.cutPlace) && mountain.bounds;
@@ -4788,6 +4810,21 @@ function frameMountain({ home = false } = {}) {
     fromCamera: camera.position.clone(), toCamera: position,
     start: performance.now(),
   };
+}
+
+/* With the settings card open on a phone it covers the lower half of the
+   stage: the view shifts so the mountain stands in the room above it. */
+function liftMountain() {
+  const s = mountain.scene;
+  if (!s) return;
+  const { camera, renderer } = s;
+  const width = renderer.domElement.clientWidth;
+  const height = renderer.domElement.clientHeight;
+  const card = mountain.root?.querySelector('.mountain__controls:popover-open');
+  const lift = card && width < 760 ? Math.round(card.getBoundingClientRect().height / 2) : 0;
+  if (lift) camera.setViewOffset(width, height, 0, lift, width, height);
+  else camera.clearViewOffset();
+  camera.updateProjectionMatrix();
 }
 
 /* The mountain takes the whole window between the masthead and, on a phone,
@@ -4890,6 +4927,7 @@ function openTeamView(teamId, fallbackName, { push = true } = {}) {
   state.teamFocusId = teamId;
   state.teamFixturesPage = 0;
   state.teamResultsPage = 0;
+  state.teamResultsOpen = false;
   state.teamSeasonsPage = 0;
   state.activeView = 'team';
   markActiveView();
@@ -4916,8 +4954,8 @@ function renderTeamView(report) {
   back.type = 'button';
   back.innerHTML = '<svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>';
   back.appendChild(el('span', '', t('team.back')));
+  back.setAttribute('aria-label', t('team.back'));
   back.addEventListener('click', () => history.back());
-  content.appendChild(back);
 
   const row = report.table.find((t) => String(t.team_id) === String(teamId));
   const career = careerById(teamId);
@@ -4929,6 +4967,10 @@ function renderTeamView(report) {
   };
 
   safeRender(() => renderTeamSummary(teamId, row, career, report, content), 'summary');
+  // Back is an icon at the head of the summary, not a row of its own.
+  const summaryHead = content.querySelector('.team-summary__header');
+  if (summaryHead) summaryHead.prepend(back);
+  else content.prepend(back);
 
   const tabs = TEAM_TABS.filter(([key]) => key !== 'forecast' || (row && report.model?.matches_remaining > 0));
   if (!tabs.some(([key]) => key === state.teamTab)) state.teamTab = 'overview';
@@ -4937,19 +4979,32 @@ function renderTeamView(report) {
   bar.setAttribute('aria-label', t('team.tabs'));
   const drawTab = () => {
     if (state.teamTab === 'overview') {
-      safeRender(() => renderTeamNow(row, career, report, content), 'now');
-      safeRender(() => renderTeamResults(teamId, teamName, report, content), 'results');
+      // One column on a phone, in this order, the tiles first; on a wide screen
+      // the tiles run across the top, then the glance and the results stand
+      // left and the standing (table, seasons) right.
+      const overview = el('div', 'team-overview');
+      content.appendChild(overview);
+      safeRender(() => renderTeamNow(row, career, report, overview), 'now');
+      safeRender(() => renderTeamGlance(teamId, report, overview), 'glance');
+      const side = el('div', 'team-side');
+      overview.appendChild(side);
+      safeRender(() => renderTeamMiniTable(row, report, side), 'miniTable');
+      safeRender(() => renderTeamPositions(career, side), 'positions');
+      safeRender(() => renderTeamSplit(teamId, report, side), 'split');
+      safeRender(() => renderTeamResults(teamId, teamName, report, overview), 'results');
     } else if (state.teamTab === 'forecast') {
+      const forecast = el('div', 'team-forecast');
+      content.appendChild(forecast);
       safeRender(() => {
-        const section = renderTeamGridRow(teamId, row, report, content);
+        const section = renderTeamGridRow(teamId, row, report, forecast);
         if (section) renderTeamOutlook(section, row, report, teamId);
       }, 'outlook');
       safeRender(() => {
         const section = el('div', 'team-section');
         renderTeamStakes(section, report, teamId);
-        if (section.childNodes.length) content.appendChild(section);
+        if (section.childNodes.length) forecast.appendChild(section);
       }, 'stakes');
-      safeRender(() => renderTeamFixtures(teamId, teamName, report, content), 'fixtures');
+      safeRender(() => renderTeamFixtures(teamId, teamName, report, forecast), 'fixtures');
     } else {
       if (career?.points?.length >= 2) safeRender(() => renderTeamRatingHistory(career, content), 'ratingHistory');
       if (career?.seasons?.length) safeRender(() => renderSeasonBySeason(career, teamId, content, report), 'seasons');
@@ -5072,6 +5127,8 @@ function renderSeasonBySeason(career, teamId, container, currentReport) {
   section.appendChild(head);
 
   const list = el('div', 'seasons-list-compact');
+  // A club that has only played in one division needs no tag on every row.
+  list.classList.toggle('is-one-division', new Set(seasonsDesc.map((record) => record.league)).size === 1);
   section.appendChild(list);
   const pagerBox = el('div', 'seasons-pager');
   if (totalPages > 1) section.appendChild(pagerBox);
@@ -5200,9 +5257,9 @@ function renderSeasonShapeInContainer(season, league, teamId, container, current
     drawTeamShape(report, team, chart, container.clientWidth);
     container.replaceChildren(
       el('div', 'label', t('team.seasonShapeYear', { year: season })),
-      chart,
-      shapeLegend(report)
+      chart
     );
+    syncShapeKey(chart);
     // The rows highlight what is on show, so both branches record it.
     state.activeSeasonShape = { season, league };
     updateActiveSeasonRow(season, league);
@@ -5280,10 +5337,13 @@ function renderTeamSummary(teamId, row, career, report, container) {
   // Your club: the hero follows its races first.
   const ownBtn = el('button', 'team-summary__own');
   ownBtn.type = 'button';
+  // The star alone on a phone; the words stay for a screen reader.
   const paintOwn = () => {
     const mine = ownClub() === String(teamId);
+    const words = mine ? t('team.own.is') : t('team.own.make');
     ownBtn.setAttribute('aria-pressed', String(mine));
-    ownBtn.textContent = mine ? `★ ${t('team.own.is')}` : `☆ ${t('team.own.make')}`;
+    ownBtn.title = words;
+    ownBtn.replaceChildren(el('span', 'team-summary__own-star', mine ? '★' : '☆'), el('span', 'team-summary__own-words', words));
   };
   ownBtn.addEventListener('click', () => {
     setOwnClub(ownClub() === String(teamId) ? null : String(teamId));
@@ -5337,6 +5397,203 @@ function renderTeamSummary(teamId, row, career, report, container) {
 
   card.appendChild(header);
   container.appendChild(card);
+}
+
+/* The overview's first screen, after the club app's: what is next and how the
+   club has played -- the next match in a card, then the last five as score
+   chips (green win, grey draw, red loss) with the opponent's crest under each. */
+function renderTeamGlance(teamId, report, container) {
+  const mine = (m) => String(m.home_id) === String(teamId) || String(m.away_id) === String(teamId);
+  const upcoming = [...(report.fixtures || [])].filter(mine).sort((a, b) => String(a.date).localeCompare(String(b.date))).slice(0, 3);
+  const next = upcoming[0];
+  const last = [...(report.results || [])].filter((m) => mine(m) && m.home_goals != null)
+    .sort((a, b) => a.date.localeCompare(b.date)).slice(-5);
+  if (!next && !last.length) return;
+  const section = el('div', 'team-section team-glance');
+  if (next) {
+    const card = el('div', 'team-card');
+    card.appendChild(el('div', 'label', t('team.nextMatch')));
+    const list = el('div', 'team-matches');
+    const changes = buildRatingChanges(state.careers);
+    upcoming.forEach((fixture, i) => {
+      const line = teamMatchRow(fixture, teamId, report, changes);
+      if (i) line.classList.add('team-match--later');
+      list.appendChild(line);
+    });
+    card.appendChild(list);
+    section.appendChild(card);
+  }
+  if (last.length) {
+    const card = el('div', 'team-card');
+    card.appendChild(el('div', 'label', t('team.lastFive', { n: last.length })));
+    const chips = el('div', 'team-last');
+    for (const match of last) {
+      const home = String(match.home_id) === String(teamId);
+      const [scored, conceded] = home ? [match.home_goals, match.away_goals] : [match.away_goals, match.home_goals];
+      const letter = scored > conceded ? 'W' : scored < conceded ? 'L' : 'D';
+      const opponent = home ? match.away : match.home;
+      const opponentId = home ? match.away_id : match.home_id;
+      const item = el('button', 'team-last__item');
+      item.type = 'button';
+      item.title = `${opponent} (${t(home ? 'team.homeShort' : 'team.awayShort')}) ${scored}–${conceded} · ${formatDate(match.date)}`;
+      item.setAttribute('aria-label', item.title);
+      item.appendChild(el('span', `team-last__score form__chip--${letter.toLowerCase()}`, `${scored}–${conceded}`));
+      const crest = teamLogo(opponentId, opponent);
+      if (crest) item.appendChild(crest);
+      item.addEventListener('click', () => openTeamView(opponentId, opponent));
+      chips.appendChild(item);
+    }
+    card.appendChild(chips);
+    section.appendChild(card);
+  }
+  container.appendChild(section);
+}
+
+/* The division's table in three rows: the club's, with the club above and the
+   one below (or the three leading places for the leader), and a link to the
+   whole. Short columns -- played, goal difference, points -- so it fits. */
+function renderTeamMiniTable(row, report, container) {
+  if (!row) return;
+  const table = [...report.table].sort((a, b) => a.position - b.position);
+  const at = table.findIndex((r) => r.team_id === row.team_id);
+  if (at < 0 || table.length < 3) return;
+  // Five rows with the club in the middle, of which a phone keeps three.
+  const wide = Math.min(5, table.length);
+  const from = Math.max(0, Math.min(at - Math.floor(wide / 2), table.length - wide));
+  const near = Math.max(0, Math.min(at - 1, table.length - 3));
+  const section = el('div', 'team-section');
+  const head = el('div', 'team-section__header');
+  head.appendChild(el('div', 'label', report.league.name));
+  const full = el('button', 'team-mini__full', t('team.fullTable'));
+  full.type = 'button';
+  full.addEventListener('click', () => switchView('table'));
+  head.appendChild(full);
+  section.appendChild(head);
+  const grid = el('div', 'team-mini');
+  const line = (cls, cells) => {
+    const r = el(cls.includes('head') ? 'div' : 'button', `team-mini__row ${cls}`);
+    if (r.tagName === 'BUTTON') r.type = 'button';
+    cells.forEach((cell, i) => r.appendChild(typeof cell === 'string' ? el('span', i === 1 ? 'team-mini__club' : 'team-mini__num', cell) : cell));
+    return r;
+  };
+  // Wins, draws and losses are for a wide screen: the phone keeps P, GD, Pts.
+  const record = (cells) => [
+    cells[0], cells[1], cells[2],
+    ...cells.slice(3, 6).map((v) => el('span', 'team-mini__num team-mini__extra', v)),
+    cells[6], cells[7],
+  ];
+  grid.appendChild(line('team-mini__head', record(['#', t('table.col.club'), t('team.mini.played'), t('form.W'), t('form.D'), t('form.L'), t('team.gd'), t('team.mini.pts')])));
+  table.slice(from, from + wide).forEach((r, k) => {
+    const club = el('span', 'team-mini__club');
+    const crest = teamLogo(r.team_id, r.team);
+    if (crest) club.appendChild(crest);
+    club.appendChild(el('span', '', r.team));
+    const far = from + k < near || from + k >= near + 3;
+    const entry = line(`${r.team_id === row.team_id ? 'is-own' : ''}${far ? ' team-mini__row--far' : ''}`,
+      record([String(r.position), club, String(r.played), String(r.wins ?? ''), String(r.draws ?? ''), String(r.losses ?? ''),
+        signed(r.goal_difference), String(r.points)]));
+    if (r.team_id !== row.team_id) entry.addEventListener('click', () => openTeamView(r.team_id, r.team));
+    else entry.disabled = true;
+    grid.appendChild(entry);
+  });
+  section.appendChild(grid);
+  container.appendChild(section);
+}
+
+/* Where the club finished in its last ten seasons, as a line: the best place at
+   the top, a circle on each year with its place, the line green where the club
+   rose, red where it fell. The divisions share one scale, Eliteserien above
+   OBOS-ligaen under a dashed rule, so a relegation is a drop through it; the
+   division is the circle's colour, a title the gold, the season in play lit.
+   After the club app's "historical table positions". */
+function renderTeamPositions(career, container) {
+  const seasons = (career?.seasons || []).slice(-10);
+  if (seasons.length < 2) return;
+  const LEAGUE_SIZE = 16;
+  const tierOf = (record) => (record.league === 'eliteserien' ? 1 : 2);
+  const rankOf = (record) => record.position + (tierOf(record) === 2 ? LEAGUE_SIZE : 0);
+  const ranks = seasons.map(rankOf);
+  const low = Math.min(...ranks);
+  const high = Math.max(...ranks);
+  const span = Math.max(high - low, 3);
+  const W = 340;
+  const gutter = 44; // the left, where the divisions are named
+  const edge = 20;
+  const top = 16;
+  const bottom = 26;
+  const H = Math.round(Math.min(180, Math.max(104, 48 + span * 7)));
+  const x = (index) => gutter + (index / (seasons.length - 1)) * (W - gutter - edge);
+  const y = (rank) => top + ((rank - low) / span) * (H - top - bottom);
+
+  const section = el('div', 'team-section');
+  section.appendChild(el('div', 'label', t('team.positions')));
+  const svg = svgEl('svg', { class: 'team-positions', viewBox: `0 0 ${W} ${H}`, role: 'img' });
+  svg.setAttribute('aria-label', seasons.map((r) => `${r.season} #${r.position}`).join(', '));
+
+  // The rule between the divisions, when the line crosses it.
+  if (low <= LEAGUE_SIZE && high > LEAGUE_SIZE) {
+    const rule = y(LEAGUE_SIZE + 0.5);
+    svg.appendChild(svgEl('line', { class: 'team-positions__rule', x1: 0, x2: W, y1: rule, y2: rule }));
+    const up = svgEl('text', { class: 'team-positions__tier', x: 2, y: rule - 4 });
+    up.textContent = 'ELITE';
+    const down = svgEl('text', { class: 'team-positions__tier', x: 2, y: rule + 11 });
+    down.textContent = 'OBOS';
+    svg.append(up, down);
+  }
+  for (let i = 1; i < seasons.length; i += 1) {
+    const change = ranks[i - 1] - ranks[i];
+    svg.appendChild(svgEl('line', {
+      class: `team-positions__seg team-positions__seg--${change > 0 ? 'up' : change < 0 ? 'down' : 'flat'}`,
+      x1: x(i - 1), y1: y(ranks[i - 1]), x2: x(i), y2: y(ranks[i]),
+    }));
+  }
+  seasons.forEach((record, i) => {
+    const group = svgEl('g', { class: `team-positions__item${i === seasons.length - 1 ? ' is-now' : ''}` });
+    const title = svgEl('title');
+    title.textContent = `${record.season} \u00b7 ${record.league_name} \u00b7 #${record.position}`;
+    const crowned = tierOf(record) === 1 && record.position === 1;
+    group.append(
+      title,
+      svgEl('circle', { class: `team-positions__dot team-positions__dot--${crowned ? 'champion' : `tier${tierOf(record)}`}`, cx: x(i), cy: y(ranks[i]), r: 11 }),
+    );
+    const number = svgEl('text', { class: 'team-positions__num', x: x(i), y: y(ranks[i]) });
+    number.textContent = String(record.position);
+    const year = svgEl('text', { class: 'team-positions__year', x: x(i), y: H - 8 });
+    year.textContent = String(record.season);
+    group.append(number, year);
+    svg.appendChild(group);
+  });
+  section.appendChild(svg);
+  container.appendChild(section);
+}
+
+/* Home and away side by side: the season's record and goals from each, for a
+   wide screen (a phone has the results list and the table for this). */
+function renderTeamSplit(teamId, report, container) {
+  const split = { home: { p: 0, w: 0, d: 0, l: 0, gf: 0, ga: 0 }, away: { p: 0, w: 0, d: 0, l: 0, gf: 0, ga: 0 } };
+  for (const m of report.results || []) {
+    if (m.home_goals == null) continue;
+    const home = String(m.home_id) === String(teamId);
+    if (!home && String(m.away_id) !== String(teamId)) continue;
+    const side = split[home ? 'home' : 'away'];
+    const [gf, ga] = home ? [m.home_goals, m.away_goals] : [m.away_goals, m.home_goals];
+    side.p += 1;
+    side.gf += gf;
+    side.ga += ga;
+    side[gf > ga ? 'w' : gf < ga ? 'l' : 'd'] += 1;
+  }
+  if (!split.home.p && !split.away.p) return;
+  const section = el('div', 'team-section team-split');
+  section.appendChild(el('div', 'label', t('team.homeAway')));
+  const grid = el('div', 'team-split__grid');
+  const cells = (cls, values) => values.forEach((v, i) => grid.appendChild(el('span', `team-split__cell${i ? ' num' : ''} ${cls}`, v)));
+  cells('team-split__head', ['', t('team.mini.played'), t('form.W'), t('form.D'), t('form.L'), t('team.gf'), t('team.ga'), t('team.mini.pts')]);
+  for (const key of ['home', 'away']) {
+    const x = split[key];
+    cells('', [t(`team.${key}`), x.p, x.w, x.d, x.l, x.gf, x.ga, x.w * 3 + x.d].map(String));
+  }
+  section.appendChild(grid);
+  container.appendChild(section);
 }
 
 /* The overview tab's tiles, big value over a small label: where the club
@@ -5476,34 +5733,110 @@ function renderTeamStakes(card, report, teamId) {
   if (!entries.length && !next) return;
   const box = el('div', 'team-stakes');
   const count = (report.table || []).length || 16;
-  const section = (label, items, dated = false) => {
+  const section = (label, items) => {
     box.appendChild(el('div', 'label', label));
+    if (!box.querySelector('.legend')) box.appendChild(stakeLegend());
     const list = el('ul', 'team-stakes__list');
-    for (const entry of items) list.appendChild(stakeRow(entry, report, count, dated));
+    for (const entry of items) list.appendChild(stakeRow(entry, report, count));
     box.appendChild(list);
   };
+  // The fixture list below marks every decisive match with its dot, so this
+  // list keeps the few that swing a race most, in date order.
+  const swing = (entry) => Math.abs((entry.p_favourable ?? 0) - (entry.p_unfavourable ?? 0));
+  // A wide screen has the room: all of them, beside the fixture list.
+  const limit = window.matchMedia('(min-width: 961px)').matches ? Infinity : STAKES_SHOWN;
+  const byDate = (a, b) => String(a.date).localeCompare(String(b.date));
+  const shown = entries.length > limit
+    ? [...entries].sort((a, b) => swing(b) - swing(a)).slice(0, limit).sort(byDate)
+    : [...entries].sort(byDate);
   if (next) section(t('stake.next', { date: formatDate(next.date) }), [next]);
-  if (entries.length) section(t('stake.title'), entries, true);
+  if (shown.length) section(t('stake.title'), shown);
+  if (shown.length < entries.length) box.appendChild(el('p', 'team-stakes__more', t('stake.more', { n: entries.length - shown.length })));
   card.appendChild(box);
 }
+const STAKES_SHOWN = 3;
 
-function stakeRow(entry, report, count, dated = false) {
+/* What a decisive match does to a race, drawn: a track for the club's chance of
+   it, 0 to 100 %, a pin where each result would leave it -- win, draw, loss --
+   the stretch between them in the race's colour, and a tick where the chance
+   stands now. The words stay as the tooltip and the screen reader's. */
+function stakeLegend() {
+  const legend = teamOddsLegend();
+  const now = el('span', 'legend__key');
+  now.append(el('span', 'stake__now-key'), el('span', '', t('stake.now')));
+  legend.appendChild(now);
+  return legend;
+}
+
+function stakeRow(entry, report, count) {
   const copy = stakeCopy(entry, currentLang);
-  const item = el('li', 'team-stakes__row');
-  const dot = el('span', 'team-stakes__dot');
-  dot.style.background = bandColor({ first: entry.band_first, last: entry.band_last, tone: entry.band_tone, label: entry.band_label }, count);
-  dot.setAttribute('aria-hidden', 'true');
-  item.appendChild(dot);
-  const text = el('span', 'team-stakes__text');
-  text.appendChild(el('span', 'team-stakes__main', `${copy.main} · `));
-  text.appendChild(el('span', 'team-stakes__sub', copy.sub));
+  const band = { first: entry.band_first, last: entry.band_last, tone: entry.band_tone, label: entry.band_label };
+  const color = bandColor(band, count);
+  const item = el('li', 'stake');
+  item.title = `${copy.main} \u00b7 ${copy.sub}`;
+
+  // Who, where and when, on one line under the race's name.
+  const head = el('div', 'stake__head');
+  const race = el('span', 'stake__race');
+  const dot = el('span', 'stake__dot');
+  dot.style.background = color;
+  race.append(dot, el('span', '', bandEdgeName(band)));
+  const who = el('button', 'stake__who');
+  who.type = 'button';
+  who.addEventListener('click', () => openTeamView(entry.opponent_id, entry.opponent));
+  const crest = teamLogo(entry.opponent_id, entry.opponent);
+  if (crest) who.appendChild(crest);
+  who.appendChild(el('span', '', entry.opponent));
   const legs = stakeLegs(entry, report.fixtures || []);
-  if (legs.length >= 2) {
-    text.appendChild(el('span', 'team-stakes__legs', t('stake.legs', { a: formatDate(legs[0].date), b: formatDate(legs[1].date) })));
-  } else if (dated) {
-    text.appendChild(el('span', 'team-stakes__legs', formatDate(entry.date)));
+  const when = legs.length >= 2
+    ? legs.map((leg) => formatDate(leg.date)).join(' \u00b7 ')
+    : `${t(String(entry.home_id) === String(entry.team_id) ? 'team.homeShort' : 'team.awayShort')} \u00b7 ${formatDate(entry.date)}`;
+  head.append(race, who, el('span', 'stake__when', when));
+  item.appendChild(head);
+
+  // The pins. The race's chance after a win is the favourable figure unless the
+  // race is the drop, where a loss is what raises it. The drop's track is
+  // mirrored, so that on every race a win lands to the right and a loss to the
+  // left, the figures printed staying the chance of the race itself.
+  const drop = entry.band_tone === 'relegation';
+  const at = (value) => (drop ? 1 - value : value);
+  const results = [
+    { key: 'win', value: drop ? entry.p_unfavourable : entry.p_favourable },
+    { key: 'draw', value: entry.p_draw },
+    { key: 'loss', value: drop ? entry.p_favourable : entry.p_unfavourable },
+  ].filter((result) => result.value != null);
+  const track = el('div', 'stake__track');
+  track.setAttribute('role', 'img');
+  track.setAttribute('aria-label', `${copy.main} \u00b7 ${copy.sub}`);
+  const values = results.map((result) => at(result.value));
+  const low = Math.min(...values, at(entry.p_baseline));
+  const high = Math.max(...values, at(entry.p_baseline));
+  const span = el('span', 'stake__span');
+  span.style.left = `${low * 100}%`;
+  span.style.width = `${(high - low) * 100}%`;
+  span.style.background = color;
+  track.appendChild(span);
+  const now = el('span', 'stake__now');
+  now.style.left = `${at(entry.p_baseline) * 100}%`;
+  track.appendChild(now);
+  for (const result of results) {
+    const pin = el('span', `stake__pin stake__pin--${result.key}`);
+    pin.style.left = `${at(result.value) * 100}%`;
+    track.appendChild(pin);
   }
-  item.appendChild(text);
+  // The figures: the two ends of the swing, the lower one's right edge at its
+  // pin and the higher one's left edge at its pin, so they never meet; the
+  // draw's and the baseline's are in the tooltip, not on the chart.
+  const ends = results.filter((result) => result.key !== 'draw').sort((a, b) => at(a.value) - at(b.value));
+  ends.forEach((result, index) => {
+    const figure = el('span', `stake__figure stake__figure--${result.key}`, pct(result.value, 0));
+    const lower = index === 0;
+    const near = lower ? at(result.value) < 0.1 : at(result.value) > 0.9;
+    figure.style.left = `${at(result.value) * 100}%`;
+    figure.style.transform = `translateX(${(lower ? !near : near) ? '-100%' : '0'})`;
+    track.appendChild(figure);
+  });
+  item.appendChild(track);
   return item;
 }
 
@@ -5527,14 +5860,15 @@ function xgStat(label, hint, value, division, higherIsBetter) {
   const relative = (v) => (higherIsBetter ? v / average - 1 : 1 - v / average);
   const share = relative(value);
   const widest = Math.max(...division.map((v) => Math.abs(relative(v))), Math.abs(share)) || 1;
-  const item = summaryStat(label, `${signed(share * 100)}${percentSign()}`, hint);
+  // The raw rate and the division average sit in the tooltip, not under the bar.
+  const raw = t('team.xgRaw', { value: num(value, 2), avg: num(average, 2) });
+  const item = summaryStat(label, `${signed(share * 100)}${percentSign()}`, `${hint} · ${raw}`);
   const half = (Math.abs(share) / widest) * 50;
   const bar = el('dd', `team-stats__bar team-stats__bar--${share >= 0 ? 'good' : 'bad'}`);
   bar.setAttribute('aria-hidden', 'true');
   bar.style.setProperty('--from', `${share >= 0 ? 50 : 50 - half}%`);
   bar.style.setProperty('--width', `${half}%`);
   item.appendChild(bar);
-  item.appendChild(el('dd', 'team-stats__note', t('team.xgRaw', { value: num(value, 2), avg: num(average, 2) })));
   return item;
 }
 
@@ -5545,7 +5879,22 @@ function renderTeamGridRow(teamId, row, report, container) {
 
   const wrap = el('div', 'team-grid-row');
   const bands = report.league.bands;
-  for (let i = 0; i < row.position_probabilities.length; i++) {
+  const count = row.position_probabilities.length;
+  // A wide screen shows every place. A phone starts at the first place the club
+  // can finish in and ends at the last, and when that is few the cells keep a
+  // roomy fixed size, the width beyond them filled with blank cells of the same
+  // size rather than left empty (see below, once the row is in the page).
+  const phone = window.matchMedia('(max-width: 760px)').matches;
+  const open = row.position_probabilities.map((prob, i) => (pctShort(prob) ? i : -1)).filter((i) => i >= 0);
+  const [from, to] = phone && open.length ? [open[0], open[open.length - 1]] : [0, count - 1];
+  const roomy = to - from < 8;
+  wrap.classList.toggle('team-grid-row--roomy', roomy);
+  // Never fewer than five cells on a phone: a club whose places lie at the
+  // bottom starts earlier, so there are five places to hold them.
+  const MIN_CELLS = 5;
+  const start = phone && roomy ? Math.max(0, Math.min(from, count - MIN_CELLS)) : from;
+  const last = phone && roomy ? count - 1 : to;
+  for (let i = start; i <= last; i++) {
     const prob = row.position_probabilities[i];
     const position = i + 1;
     const step = heatStep(prob);
@@ -5569,6 +5918,13 @@ function renderTeamGridRow(teamId, row, report, container) {
   }
   section.appendChild(wrap);
   container.appendChild(section);
+  // As many blank cells as the row holds whole, never a clipped one.
+  if (phone && roomy && wrap.firstElementChild) {
+    const gap = 3;
+    const size = wrap.firstElementChild.getBoundingClientRect().width;
+    const fit = size ? Math.floor((wrap.clientWidth + gap) / (size + gap)) : 0;
+    while (wrap.children.length > Math.max(fit, to - start + 1, MIN_CELLS)) wrap.lastElementChild.remove();
+  }
   return section;
 }
 
@@ -5590,6 +5946,14 @@ function renderTeamOutlook(card, row, report, teamId) {
   for (const { band, chance } of races) {
     const name = bandWithPlayoff(row, band, slug) ? `${bandName(band)} (${t('team.playoffIncluded')})` : bandName(band);
     tiles.appendChild(summaryStat(bandEdgeName(band), pct(chance, 0), name));
+  }
+  // A club in none of the races (mid-table, nothing to win or lose) is told
+  // where it is expected to end: the median place, the one the club finishes
+  // at or above in half the runs.
+  if (!races.length) {
+    let running = 0;
+    const median = probs.findIndex((p) => (running += p) >= 0.5) + 1;
+    tiles.appendChild(summaryStat(t('team.expectedPlace'), ordinalShort(median)));
   }
   box.appendChild(tiles);
 
@@ -5661,7 +6025,9 @@ function drawTeamChart(career) {
     );
     if (x(start) - lastSeasonX < (narrow ? 24 : 30)) continue;
     lastSeasonX = x(start);
-    const label = svgEl('text', { class: 'season-label', x: x(start) + 3, y: pad.top + 10 });
+    // Along the foot of the plot, where an axis reads, and clear of the line
+    // when it climbs into the top corner.
+    const label = svgEl('text', { class: 'season-label', x: x(start) + 3, y: pad.top + plotHeight + 12 });
     label.textContent = narrow ? `’${String(record.season).slice(2)}` : String(record.season);
     chart.appendChild(label);
   }
@@ -5683,7 +6049,7 @@ function drawTeamChart(career) {
     })
   );
 
-  const axis = svgEl('text', { class: 'axis-title', x: pad.left, y: height - 6 });
+  const axis = svgEl('text', { class: 'axis-title', x: pad.left, y: height - 3 });
     axis.textContent = t('season.shape.axis');
   chart.appendChild(axis);
 
@@ -5765,17 +6131,29 @@ function teamMatchRow(match, teamId, report, ratingChanges) {
     row.appendChild(result);
   } else {
     const [win, loss] = home ? [match.home_win, match.away_win] : [match.away_win, match.home_win];
-    const odds = el('div', 'odds team-match__odds');
+    // The three chances in figures above a slim bar of the same, each figure in
+    // its outcome's colour, so no segment has to be wide enough to hold one.
+    const odds = el('div', 'team-match__odds');
     odds.setAttribute('role', 'img');
     odds.setAttribute('aria-label', t('aria.teamOdds', { w: pct(win), d: pct(match.draw), l: pct(loss) }));
-    for (const [outcome, value, key] of [['home', win, 'team.oddsWin'], ['draw', match.draw, 'next.draw'], ['away', loss, 'team.oddsLoss']]) {
+    const figures = el('div', 'team-match__pcts');
+    // Columns in the bar's own proportions, so each figure stands over its
+    // segment; a narrow one keeps room for its text rather than overlapping.
+    // Percent, not fractions: fr factors that sum below 1 leave part of the
+    // row unused once a column holds at its minimum, and the last figure
+    // would stop short of the bar's end.
+    figures.style.gridTemplateColumns = [win, match.draw, loss]
+      .map((value) => `minmax(min-content, ${Math.max(value, 0.001) * 100}fr)`).join(' ');
+    const bar = el('div', 'odds');
+    for (const [outcome, value, key, tone] of [['home', win, 'team.oddsWin', 'win'], ['draw', match.draw, 'next.draw', 'draw'], ['away', loss, 'team.oddsLoss', 'loss']]) {
+      figures.appendChild(el('span', `team-match__pct team-match__pct--${tone}`, pct(value, 0)));
       const segment = el('div', 'odds__seg');
       segment.dataset.outcome = outcome;
       segment.style.flex = `${Math.max(value, 0.001)}`;
-      segment.textContent = value >= 0.15 ? pct(value, 0) : '';
       attachTip(segment, `<b>${t(key)}</b><br>${pct(value, 1)}`);
-      odds.appendChild(segment);
+      bar.appendChild(segment);
     }
+    odds.append(figures, bar);
     row.appendChild(odds);
     const stake = (report.high_stakes || []).find((entry) =>
       String(entry.match_id) === String(match.match_id) && String(entry.team_id) === String(teamId));
@@ -5809,7 +6187,7 @@ function renderTeamFixtures(teamId, teamName, report, container) {
   const page = state.teamFixturesPage;
   const fixtures = allFixtures.slice(page * PAGE, (page + 1) * PAGE);
 
-  const section = el('div', 'team-section');
+  const section = el('div', 'team-section team-fc-fixtures');
   const header = el('div', 'team-section__header');
   header.appendChild(el('div', 'label', t('team.upcomingFixtures', { n: allFixtures.length })));
   header.appendChild(teamOddsLegend());
@@ -5842,11 +6220,30 @@ function renderTeamResults(teamId, teamName, report, container) {
   const header = el('div', 'team-section__header');
   header.appendChild(el('div', 'label', t('team.recentResults', { n: allResults.length })));
   section.appendChild(header);
+  const body = el('div', 'team-results');
   const list = el('div', 'team-matches');
   for (const match of matches) list.appendChild(teamMatchRow(match, teamId, report, ratingChanges));
-  section.appendChild(list);
+  body.appendChild(list);
   if (totalPages > 1) {
-    section.appendChild(paginator(page, totalPages, (p) => { state.teamResultsPage = p; renderTeamView(report); }, true));
+    body.appendChild(paginator(page, totalPages, (p) => { state.teamResultsPage = p; state.teamResultsOpen = true; renderTeamView(report); }, true));
+  }
+  section.appendChild(body);
+  // The last five are already above as chips: on a phone the full list waits
+  // behind a button, unless it was open (or paged) a moment ago.
+  if (window.matchMedia('(max-width: 760px)').matches) {
+    const open = !!state.teamResultsOpen;
+    body.hidden = !open;
+    const toggle = el('button', 'team-mini__full', t(open ? 'team.hideResults' : 'team.allResults'));
+    toggle.type = 'button';
+    toggle.setAttribute('aria-expanded', String(open));
+    toggle.addEventListener('click', () => {
+      const show = body.hidden;
+      body.hidden = !show;
+      state.teamResultsOpen = show;
+      toggle.setAttribute('aria-expanded', String(show));
+      toggle.textContent = t(show ? 'team.hideResults' : 'team.allResults');
+    });
+    header.appendChild(toggle);
   }
   container.appendChild(section);
 }
@@ -5856,42 +6253,38 @@ function renderTeamResults(teamId, teamName, report, container) {
    ticks to 4px. `lastShape` is what a window resize redraws when the chart
    crosses that width. */
 const SHAPE_NARROW = 640;
+/* Below this the chart has no room for names in its margin: a key beneath names
+   the lines, and the plot is made taller to fill the box. */
+const SHAPE_COMPACT = 460;
 let lastShape = null;
 
-/* Season-shape fills: each place in the colour of what it is worth -- the
-   band colours of the table's markers -- so the title, Europe and the drop
-   read as areas, where sixteen steps of one blue left 1st and 2nd alike.
-   Places sharing a band fade away from its best place (for the bottom bands,
-   towards the drop); play-offs are a paler version of the band beside them,
-   and mid-table is neutral, alternating so neighbours stay apart. */
-function shapeColor(position, bands, count) {
-  const band = bandFor(bands, position);
-  if (!band) return `color-mix(in srgb, var(--ink-faint) ${position % 2 ? 34 : 22}%, var(--panel))`;
-  const bottom = band.first > count / 2;
-  let step = 0;
-  for (let p = bottom ? band.last : band.first; p !== position; p += bottom ? -1 : 1) {
-    if (bandFor(bands, p) === band) step += 1;
-  }
-  const strength = band.tone === 'playoff' ? 55 : 100;
-  return `color-mix(in srgb, ${bandColor(band, count)} ${Math.max(35, strength - step * 22)}%, var(--panel))`;
+/* Season-shape fills: a gradient down the places, the best the brightest, the
+   same ramp as the finish grid and the season mountain. What a place is worth
+   is drawn as lines between the bands (see drawTeamShape), not as colour. */
+function positionColor(position, count) {
+  const step = seqColor(count > 1 ? (count - position) / (count - 1) : 1);
+  // Sixteen places on a seven-stop ramp differ by a few percent each; every
+  // other one a little lighter keeps 1st and 2nd, 2nd and 3rd, apart.
+  return position % 2 === 0 ? `color-mix(in oklab, ${step}, white 9%)` : step;
 }
 
-/* What the season-shape colours mean, under the chart. */
-function shapeLegend(report) {
-  const legend = el('div', 'legend shape-legend');
-  const bands = report.league.bands;
-  const count = report.table.length;
-  for (const band of bands) {
-    const best = band.first > count / 2 ? band.last : band.first;
-    const position = [best, band.first, band.last].find((p) => bandFor(bands, p) === band);
-    if (position == null) continue;
+/* The key under a phone's chart: a swatch in each line's colour and its name,
+   for the lines drawn. A wide chart names them in its margin, so has none. */
+function syncShapeKey(chart) {
+  const holder = chart.parentElement;
+  if (!holder) return;
+  holder.querySelector('.shape-key')?.remove();
+  const lines = chart.shapeLines || [];
+  if (!chart.shapeCompact || !lines.length) return;
+  const key = el('div', 'legend shape-key');
+  for (const line of lines) {
     const entry = el('span', 'legend__key');
-    const swatch = el('span', 'legend__swatch');
-    swatch.style.background = shapeColor(position, bands, count);
-    entry.append(swatch, el('span', '', bandName(band)));
-    legend.appendChild(entry);
+    const swatch = el('span', 'shape-key__line');
+    swatch.style.background = line.color;
+    entry.append(swatch, el('span', '', line.label));
+    key.appendChild(entry);
   }
-  return legend;
+  chart.after(key);
 }
 
 function drawTeamShape(report, team, chart, boxWidth) {
@@ -5899,19 +6292,69 @@ function drawTeamShape(report, team, chart, boxWidth) {
   const count = report.table.length;
   const snapshots = history.dates.length;
 
+  const cumulative = history.dates.map((_, index) => {
+    const running = [0];
+    for (let position = 0; position < count; position += 1) {
+      running.push(running[position] + team.positions[index][position]);
+    }
+    return running;
+  });
+
+  // The lines between the bands: the lower edge of each top band (title,
+  // Europe, promotion) and the upper edge of each bottom one (play-off, drop).
+  // A line belongs on the chart only for a club it divides: one that spends
+  // most of the season within 2.5 % of the top or the bottom (a title line for
+  // a mid-table club, a drop line for a leader) is left out altogether, and one
+  // that stays is drawn the whole season, not in pieces. One on the same place
+  // as another is drawn once. Each is named in the margin, level with where it
+  // ends, so the margin's width is the longest name.
+  const FRAME = 0.025;
+  const lines = [];
+  const placed = new Set();
+  for (const band of report.league.bands) {
+    const bottom = band.first > count / 2;
+    const edge = bottom ? band.first - 1 : band.last;
+    if (edge < 1 || edge >= count || placed.has(edge)) continue;
+    const values = cumulative.map((run) => run[edge]);
+    const inFrame = values.filter((value) => value > FRAME && value < 1 - FRAME).length;
+    if (inFrame * 2 < snapshots) continue;
+    placed.add(edge);
+    lines.push({ color: bandColor(band, count), values, label: bandEdgeName(band) });
+  }
+
   const box = boxWidth || 900;
   const narrow = box < SHAPE_NARROW;
+  const compact = box < SHAPE_COMPACT;
   const width = narrow ? Math.round(box) : 900;
-  const height = narrow ? 300 : 280;
+  // A phone's plot has the box's whole width now, so it needs less height to read.
+  const height = compact ? 270 : 310;
+  // The margin: a pointer, then the name (smaller on a phone), sized to the
+  // longest name as it is set -- the chart's own font, capitals and tracking --
+  // so no room is left over beside it.
+  const nameSize = compact ? 8.5 : 9;
+  const nameWidth = (text) => {
+    const tracking = text.length * nameSize * (narrow ? 0.04 : 0.05);
+    try {
+      const ctx = document.createElement('canvas').getContext('2d');
+      ctx.font = `700 ${nameSize}px ${getComputedStyle(document.body).fontFamily}`;
+      return ctx.measureText(text.toUpperCase()).width + tracking;
+    } catch {
+      return text.length * nameSize * 0.6 + tracking;
+    }
+  };
+  // A phone has no width to spare: its lines are named in a key beneath instead.
+  const margin = lines.length && !compact ? Math.ceil(Math.max(...lines.map((l) => nameWidth(l.label)))) + 17 : 0;
   // The desktop gutter (40/12 of 900) is a sixth of a phone's 340px box. The
   // narrow box trims it so the bands start where the rating chart's line does
   // above it; the "100%" tick hangs left into the section's own padding.
   const pad = narrow
-    ? { top: 10, right: 6, bottom: 30, left: 20 }
-    : { top: 10, right: 12, bottom: 30, left: 40 };
+    ? { top: 10, right: Math.max(6, margin), bottom: 30, left: 20 }
+    : { top: 10, right: Math.max(12, margin), bottom: 30, left: 40 };
   const plotWidth = width - pad.left - pad.right;
   const plotHeight = height - pad.top - pad.bottom;
-  lastShape = { report, team, chart, narrow };
+  lastShape = { report, team, chart, narrow, compact };
+  chart.shapeLines = lines.map(({ color, label }) => ({ color, label }));
+  chart.shapeCompact = compact;
 
   chart.setAttribute('viewBox', `0 0 ${width} ${height}`);
   chart.replaceChildren();
@@ -5927,14 +6370,6 @@ function drawTeamShape(report, team, chart, boxWidth) {
   const x = (index) => pad.left + (index / (snapshots - 1 || 1)) * plotWidth;
   const y = (cumulative) => pad.top + cumulative * plotHeight;
 
-  const cumulative = history.dates.map((_, index) => {
-    const running = [0];
-    for (let position = 0; position < count; position += 1) {
-      running.push(running[position] + team.positions[index][position]);
-    }
-    return running;
-  });
-
   for (let gridline = 0; gridline <= 4; gridline += 1) {
     const value = gridline / 4;
     chart.appendChild(
@@ -5945,36 +6380,55 @@ function drawTeamShape(report, team, chart, boxWidth) {
     chart.appendChild(label);
   }
 
+  // A place the club never has 2 % of the season is not one it can realistically
+  // finish in. Those at the top and at the bottom are not drawn one sliver at a
+  // time: each end is one neutral band, so the colours and numbers belong to
+  // the places the club is actually in play for.
+  const REACHABLE = 0.02;
+  const reachable = [];
   for (let position = 1; position <= count; position += 1) {
+    if (Math.max(...team.positions.map((snapshot) => snapshot[position - 1])) >= REACHABLE) reachable.push(position);
+  }
+  const firstReach = reachable.length ? reachable[0] : 1;
+  const lastReach = reachable.length ? reachable[reachable.length - 1] : count;
+  const groups = [];
+  if (firstReach > 1) groups.push({ from: 1, to: firstReach - 1, rest: true });
+  for (let position = firstReach; position <= lastReach; position += 1) groups.push({ from: position, to: position });
+  if (lastReach < count) groups.push({ from: lastReach + 1, to: count, rest: true });
+  const groupText = (group) => (group.from === group.to
+    ? ordinalShort(group.from)
+    : `${ordinalShort(group.from)}\u2013${ordinalShort(group.to)}`);
+
+  for (const group of groups) {
     const upper = [];
     const lower = [];
     for (let index = 0; index < snapshots; index += 1) {
-      upper.push(`${x(index)},${y(cumulative[index][position - 1])}`);
-      lower.push(`${x(index)},${y(cumulative[index][position])}`);
+      upper.push(`${x(index)},${y(cumulative[index][group.from - 1])}`);
+      lower.push(`${x(index)},${y(cumulative[index][group.to])}`);
     }
     const band = svgEl('polygon', {
-      class: 'band',
+      class: `band${group.rest ? ' band--rest' : ''}`,
       points: [...upper, ...lower.reverse()].join(' '),
     });
-    band.style.fill = shapeColor(position, report.league.bands, count);
+    band.style.fill = group.rest ? 'color-mix(in srgb, var(--ink-faint) 20%, var(--panel))' : positionColor(group.from, count);
 
-    const bandLabel = bandFor(report.league.bands, position);
+    const single = group.from === group.to;
+    const bandLabel = single ? bandFor(report.league.bands, group.from) : null;
+    const name = single ? ordinal(group.from) : groupText(group);
+    const now = () => {
+      let sum = 0;
+      for (let position = group.from; position <= group.to; position += 1) sum += team.positions[snapshots - 1][position - 1];
+      return sum;
+    };
+    const tip = () => `<b>${name}</b>${bandLabel ? ` \u00b7 ${bandName(bandLabel)}` : ''}<br>` + t('shape.now', { pct: pct(now(), 1) });
     band.setAttribute('role', 'img');
-    band.setAttribute('aria-label', `${ordinal(position)}${bandLabel ? `, ${bandName(bandLabel)}` : ''}`);
-    band.addEventListener('pointerenter', (event) => {
-      const latest = team.positions[snapshots - 1][position - 1];
-      showTooltip(
-        event,
-        `<b>${ordinal(position)}</b>${bandLabel ? ` · ${bandName(bandLabel)}` : ''}<br>` +
-          t('shape.now', { pct: pct(latest, 1) })
-      );
-    });
+    band.setAttribute('aria-label', `${name}${bandLabel ? `, ${bandName(bandLabel)}` : ''}`);
+    band.addEventListener('pointerenter', (event) => showTooltip(event, tip()));
     band.addEventListener('pointermove', moveTooltip);
     band.addEventListener('pointerleave', hideTooltip);
     band.addEventListener('focus', () => {
-      const latest = team.positions[snapshots - 1][position - 1];
       const rect = band.getBoundingClientRect();
-      showTooltip({ clientX: rect.left + rect.width / 2, clientY: rect.top }, `<b>${ordinal(position)}</b>${bandLabel ? ` · ${bandName(bandLabel)}` : ''}<br>` + t('shape.now', { pct: pct(latest, 1) }), band);
+      showTooltip({ clientX: rect.left + rect.width / 2, clientY: rect.top }, tip(), band);
     });
     band.addEventListener('blur', hideTooltip);
     band.setAttribute('tabindex', '0');
@@ -5985,30 +6439,90 @@ function drawTeamShape(report, team, chart, boxWidth) {
     svgEl('line', { class: 'axis-line', x1: pad.left, x2: width - pad.right, y1: y(1), y2: y(1) })
   );
 
-  // Position numbers inside the bands, at each band's thickest snapshot, so
-  // the reader can name a band without a boundary line drawn across it. Bands
-  // too thin to hold the text are left to the tooltip. Ink flips with the ramp
-  // step exactly as heatTextClass does for the grid's cells.
-  const MIN_BAND_LABEL = 16;
-  for (let position = 1; position <= count; position += 1) {
-    let best = 0;
-    let bestAt = 0;
-    for (let index = 0; index < snapshots; index += 1) {
-      const probability = team.positions[index][position - 1];
-      if (probability > best) { best = probability; bestAt = index; }
+  // The lines, in each band's colour on a halo that lifts them off the
+  // gradient, and each named in the margin level with where it ends: a short
+  // pointer in the band's colour to the name in ink (blue words on a
+  // blue-green gradient could not be read). Names that would touch are eased
+  // apart, the pointer bending to keep its own level.
+  const plotRight = pad.left + plotWidth;
+  const tags = lines.map((line) => ({
+    ...line,
+    level: y(line.values[snapshots - 1]),
+    labelY: Math.max(pad.top + 8, Math.min(y(line.values[snapshots - 1]) + 3.5, pad.top + plotHeight - 2)),
+  })).sort((a, b) => a.labelY - b.labelY);
+  tags.forEach((tag, i) => { if (i && tag.labelY - tags[i - 1].labelY < 11) tag.labelY = tags[i - 1].labelY + 11; });
+  for (let i = tags.length - 1; i >= 0; i -= 1) {
+    const ceiling = i === tags.length - 1 ? pad.top + plotHeight + 2 : tags[i + 1].labelY - 11;
+    tags[i].labelY = Math.min(tags[i].labelY, ceiling);
+  }
+  // Held just inside the frame, so a stretch that nears the top or bottom is
+  // not cut in half by it.
+  const inside = (value) => Math.min(Math.max(y(value), pad.top + 1.5), pad.top + plotHeight - 1.5);
+  const pointsOf = (line) => line.values.map((value, index) => `${x(index)},${inside(value)}`).join(' ');
+  for (const line of lines) chart.appendChild(svgEl('polyline', { class: 'band-edge-halo', points: pointsOf(line) }));
+  for (const line of lines) {
+    const stroke = svgEl('polyline', { class: 'band-edge', points: pointsOf(line) });
+    stroke.style.stroke = line.color;
+    chart.appendChild(stroke);
+  }
+  for (const tag of compact ? [] : tags) {
+    const pointer = svgEl('line', {
+      class: 'band-edge-swatch',
+      x1: plotRight + 1, y1: tag.level, x2: plotRight + 11, y2: tag.labelY - 3.5,
+    });
+    pointer.style.stroke = tag.color;
+    chart.appendChild(pointer);
+    const name = svgEl('text', { class: 'band-edge-label', x: plotRight + 15, y: tag.labelY });
+    name.textContent = tag.label;
+    chart.appendChild(name);
+  }
+
+  // Position numbers inside the bands, so the reader can name a band without a
+  // boundary line drawn across it. Each goes where its whole text box lies
+  // inside its own band: every spot along the plot is tried, the band's upper
+  // and lower edge read across the text's width (the edges are straight
+  // between snapshots), and the spot with the most room left over wins, the
+  // numeral centred in that room. A band that nowhere holds the box is left to
+  // the tooltip. Ink flips with the ramp step as heatTextClass does for the
+  // grid's cells.
+  const fontSize = compact ? 8.5 : 8;
+  const boxHeight = fontSize + 3;
+  const spacing = plotWidth / (snapshots - 1 || 1);
+  const edgeAt = (series, px) => {
+    const at = Math.min(Math.max((px - pad.left) / spacing, 0), snapshots - 1);
+    const low = Math.floor(at);
+    const high = Math.min(snapshots - 1, low + 1);
+    return series[low] + (series[high] - series[low]) * (at - low);
+  };
+  for (const group of groups) {
+    const upper = cumulative.map((run) => y(run[group.from - 1]));
+    const lower = cumulative.map((run) => y(run[group.to]));
+    const text = groupText(group);
+    const boxWidth = text.length * fontSize * 0.62 + 3;
+    let best = null;
+    // Centres every half snapshot, with the box kept inside the plot.
+    for (let px = pad.left + boxWidth / 2; px <= pad.left + plotWidth - boxWidth / 2; px += spacing / 2) {
+      const left = px - boxWidth / 2;
+      const right = px + boxWidth / 2;
+      let top = Math.max(edgeAt(upper, left), edgeAt(upper, right));
+      let bottom = Math.min(edgeAt(lower, left), edgeAt(lower, right));
+      for (let index = Math.ceil((left - pad.left) / spacing); index <= Math.floor((right - pad.left) / spacing); index += 1) {
+        top = Math.max(top, upper[index]);
+        bottom = Math.min(bottom, lower[index]);
+      }
+      const room = bottom - top;
+      if (!best || room > best.room) best = { px, room, middle: (top + bottom) / 2 };
     }
-    if (best * plotHeight < MIN_BAND_LABEL) continue;
-    const centre = cumulative[bestAt][position] - best / 2;
-    // A band that peaks on the first or last snapshot would otherwise centre
-    // its numeral half off the plot; hold it a little inside the edge.
-    const NUMERAL_EDGE = 14;
+    if (!best || best.room < boxHeight) continue;
+    const step = group.rest ? 0 : Math.round(((count - group.from) / (count - 1)) * (SEQ_STEPS - 1)) + 1;
     const label = svgEl('text', {
-      class: 'band-pos',
-      x: Math.min(Math.max(x(bestAt), pad.left + NUMERAL_EDGE), pad.left + plotWidth - NUMERAL_EDGE),
-      y: y(centre),
+      class: `band-pos${step >= 5 ? ' band-pos--invert' : ''}`,
+      x: best.px,
+      y: best.middle,
       'text-anchor': 'middle',
     });
-    label.textContent = ordinalShort(position);
+    label.style.fontSize = `${fontSize}px`;
+    label.textContent = text;
     chart.appendChild(label);
   }
 
@@ -6504,6 +7018,8 @@ function resolveTheme() {
     document.documentElement.dataset.resolvedTheme === 'dark' ? '#080f1c' : '#e8edf5';
   for (const button of document.querySelectorAll('[data-theme-choice]')) {
     button.setAttribute('aria-pressed', String(button.dataset.themeChoice === chosen));
+    // With no choice made the device decides: its theme is outlined, not lit.
+    button.toggleAttribute('data-auto', !chosen && button.dataset.themeChoice === document.documentElement.dataset.resolvedTheme);
   }
 }
 
@@ -7696,7 +8212,7 @@ function drawCompareHistory(svg, careerA, careerB, labelA, labelB) {
     svg.appendChild(label);
   }
 
-  const colors = ['var(--home)', '#e0682a'];
+  const colors = ['var(--home)', 'var(--away)'];
   series.forEach((points, index) => {
     if (!points.length) return;
     const line = points.map((point) => `${x(pointTime(point))},${y(point[1])}`).join(' ');
@@ -8248,8 +8764,9 @@ window.addEventListener('resize', () => {
     if (!lastShape || !lastShape.chart.isConnected) return;
     const box = lastShape.chart.getBoundingClientRect().width;
     if (!box) return;
-    if ((box < SHAPE_NARROW) !== lastShape.narrow) {
+    if ((box < SHAPE_NARROW) !== lastShape.narrow || (box < SHAPE_COMPACT) !== lastShape.compact) {
       drawTeamShape(lastShape.report, lastShape.team, lastShape.chart, box);
+      syncShapeKey(lastShape.chart);
     }
   }, 150);
 });
