@@ -1229,11 +1229,9 @@ function dividerRow(boundary) {
     const gdTd = el('td', `num${gdTone(row.goal_difference)}`, row.goal_difference > 0 ? `+${row.goal_difference}` : String(row.goal_difference));
     gdTd.dataset.tableView = 'current';
     tr.appendChild(gdTd);
-    const points = el('td', 'num col--pp pts', String(row.points));
+    const points = el('td', 'num pts', String(row.points));
     points.style.fontWeight = '700';
-    // Prediction shows the points too (on a phone or tablet, see .col--pp),
-    // beside the projected points.
-    points.dataset.tableView = 'current prediction';
+    points.dataset.tableView = 'current';
     tr.appendChild(points);
 
     // Form sits beside the points it explains; the rating opens the model
@@ -1299,7 +1297,7 @@ function dividerRow(boundary) {
 
     // Fixture difficulty: expected points per remaining match for an average
     // side. Red below the league mean (a harder run-in), gray at mean, green above.
-    const fixtureCell = el('td', 'num', '');
+    const fixtureCell = el('td', 'num col--fd', '');
     fixtureCell.dataset.tableView = 'prediction';
     if (row.fixture_difficulty > 0) {
       const value = row.fixture_difficulty;
@@ -1407,6 +1405,9 @@ function seasonBarName(segment, report) {
 }
 
 const SEASON_BAR_MIN = 0.01;
+/* A Conference League segment names its own chance once it is wide enough to
+   hold the figure (a quarter of the bar), so no label spills over a neighbour. */
+const SEASON_BAR_LABEL_MIN = 0.25;
 
 function seasonBarEl(row, report) {
   // A way a season ends with under 1 % is left out: a sliver of colour no
@@ -1419,6 +1420,9 @@ function seasonBarEl(row, report) {
     const part = el('span', `season-bar__part${segment.hatch ? ' is-hatched' : ''}`);
     part.style.flexGrow = String(segment.p);
     part.style.background = segment.band ? bandColor(segment.band, count) : 'var(--rule-strong)';
+    if (segment.band && segment.band.tone === 'europe' && segment.p >= SEASON_BAR_LABEL_MIN) {
+      part.appendChild(el('span', 'season-bar__label', pct(segment.p, 0)));
+    }
     bar.appendChild(part);
     parts.push(`${seasonBarName(segment, report)} ${shareText(segment.p)}`);
   }

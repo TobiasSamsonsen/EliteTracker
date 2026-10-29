@@ -1174,12 +1174,8 @@ table.grid tbody th .team-logo {
 
 /* The phone-sized heading, hidden until the media query calls for it. */
 .sort-btn__short { display: none; }
-/* The points column has two short labels, one per view: "Pts" in Current, where
-   "P" already means played, and "P" in Prediction, beside xP. */
 /* "xP" keeps its lowercase x (expected), which the header's capitals would hide. */
 .sort-btn__short--x { text-transform: none; }
-#standings[data-view="prediction"] .sort-btn__short--cur,
-#standings[data-view="current"] .sort-btn__short--pred { display: none !important; }
 
 /* ---------- standings table --------------------------------------- */
 
@@ -1238,6 +1234,9 @@ table.standings tbody tr:hover { background: var(--panel-sunk); }
 }
 
 .sort-btn:hover { color: var(--ink); }
+/* A header that is not a button (the bar's) has the same box and padding, so its
+   text starts where the bar does; it only is not clickable. */
+.sort-btn--static { cursor: default; pointer-events: none; }
 
 #standings thead th.num .sort-btn { justify-content: flex-end; }
 #standings thead th.club .sort-btn { justify-content: flex-start; }
@@ -1246,9 +1245,16 @@ table.standings tbody tr:hover { background: var(--panel-sunk); }
 /* Reserve the caret's space so a column does not shift when it becomes the
    sorted one. It inherits colour rather than taking an accent, which would
    land at 4.42:1 against the light panel. */
+/* The caret takes no room of its own (it overhangs the cell's padding), so a
+   header's text lines up with its figures whether or not the column is sorted. */
 .sort-btn__caret {
   display: inline-block;
-  min-width: 0.5em;
+  width: 0;
+  min-width: 0;
+  margin-left: -0.3em;
+  overflow: visible;
+  white-space: nowrap;
+  text-indent: 0.3em;
   font-size: 0.9em;
   line-height: 1;
 }
@@ -2516,9 +2522,6 @@ footer a { color: var(--ink); }
      own page. Current keeps #, club, played, GD, points and rating;
      Prediction keeps #, club, xPts, fixtures and the two odds. */
   table.standings .col--extra { display: none; }
-  /* Rating is the headline in Current; in Prediction the phone spends its
-     width on the odds instead, which are that view's point. */
-  #standings[data-view="prediction"] .sep { display: none; }
   table.standings .pos { width: 1.9rem; }
   /* As FotMob's table does it: the number columns take what their figures need
      and no more, and the club column takes the rest, a long name ending in an
@@ -4806,7 +4809,10 @@ body[data-viz="mountain"] > footer { display: none; }
 .season-bar__value[data-tone="champion"] { color: #1a1400; }
 .season-bar__value--start { left: 0; }
 .season-bar__value--end { right: 0; }
-.season-bar__part { display: block; min-width: 2px; }
+.season-bar__part { display: flex; align-items: center; justify-content: center; min-width: 2px; overflow: hidden; }
+/* The Conference League segment's own figure: dark on the dark theme's light green, white on the light theme's deeper green. */
+.season-bar__label { font-size: 0.6875rem; font-weight: 700; line-height: 1; white-space: nowrap; color: #052e16; font-variant-numeric: tabular-nums; }
+:root:not([data-resolved-theme="dark"]) .season-bar__label { color: #fff; }
 .season-bar__part.is-hatched {
   background-image: repeating-linear-gradient(135deg, transparent 0 2px, var(--panel) 2px 4px);
 }
@@ -4832,14 +4838,17 @@ body[data-viz="mountain"] > footer { display: none; }
   .standings .rating-trend { margin-left: 0.15rem; font-size: 0.95rem; }
   /* A band's threshold line may wrap rather than run past the panel's edge. */
   table.standings .zone-divider__wrap { white-space: normal; text-align: center; line-height: 1.25; }
-  #table .panel__head { padding: var(--space-3) var(--space-4); gap: 0.5rem 1rem; align-items: center; }
+  #table .panel__head { padding: var(--space-3) 0.75rem; gap: 0.5rem 0.5rem; align-items: center; }
   #table .panel__head h2 { font-size: 1.125rem; }
-  #table .panel__head p { margin-top: 0.15rem; font-size: 0.75rem; }
-  #table .panel__tools { gap: 0.4rem; }
+  /* The hint under the title goes, and the title and its controls share a row
+     where they fit (they wrap under 360px): the table starts a row higher. */
+  #table .panel__head p { display: none; }
+  #table .panel__head { justify-content: space-between; }
+  #table .panel__tools { gap: 0.3rem; flex-wrap: nowrap; }
   /* The Current / Prediction pill and the Rewind button are the same height
      (36px with their borders) and the same type size, so the row reads as one. */
   #table .table-controls { box-sizing: border-box; height: 36px; padding: 2px; align-items: stretch; }
-  #table .table-control-btn { min-height: 0; padding-inline: 0.7rem; font-size: 0.75rem; }
+  #table .table-control-btn { min-height: 0; padding-inline: 0.6rem; font-size: 0.75rem; }
   #table .panel__tools .timeline-toggle { box-sizing: border-box; height: 36px; min-height: 0; padding-block: 0; padding-inline: 0.7rem; font-size: 0.75rem; }
   #standings .sort-btn { min-width: 0; }
   .standings th:first-child, .standings td:first-child { padding-left: 0.4rem; }
@@ -4861,12 +4870,6 @@ body[data-viz="mountain"] > footer { display: none; }
 /* The goals scored-conceded column (62-23): one column where the separate
    GF and GA are gone, as on FotMob's table. Desktop keeps GF and GA apart. */
 table.standings .col--goals, table.standings .col--xg { display: none; }
-/* The points so far are Current's; in Prediction they sit beside xPts on a
-   phone or tablet where there is room, and stay off the wide desktop table. */
-#standings[data-view="prediction"] .col--pp { display: none; }
-@media (max-width: 760px) {
-  #standings[data-view="prediction"] .col--pp:not([hidden]) { display: table-cell; }
-}
 @media (min-width: 400px) and (max-width: 1023px) {
   table.standings .col--goals:not([hidden]) { display: table-cell; }
 }
@@ -4944,3 +4947,12 @@ table.standings .zone-divider__wrap::after { opacity: 0.32; }
 
 /* Quieter row lines: a rule is there to guide the eye, not to be the loudest thing on the row. */
 table.standings tbody tr:not(.zone-divider) td { border-bottom-color: color-mix(in srgb, var(--rule) 55%, transparent); }
+
+/* The phone's Prediction: no trend arrow beside the rating, and Fix only from
+   375px, so the names keep their room. */
+@media (max-width: 760px) {
+  #standings[data-view="prediction"] .rating-trend { display: none; }
+}
+@media (max-width: 374px) {
+  table.standings .col--fd { display: none; }
+}
