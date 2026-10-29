@@ -2569,8 +2569,14 @@ footer a { color: var(--ink); }
      ellipsis rather than pushing the last column off the screen. */
   table.standings .num { width: auto; }
   table.standings td.club { max-width: 0; }
-  .standings .club-btn { display: flex; align-items: center; max-width: 100%; }
+  .standings .club-btn { display: flex; align-items: center; flex: 1 1 auto; min-width: 0; max-width: 100%; }
   .standings .club-btn__name { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+  /* Columns that give way as the screen narrows, least important first, so a
+     club's name stays readable: the fixtures' difficulty under 400px, the
+     expected goal difference under 380px, wins/draws/losses under 375px. */
+  @media (max-width: 399px) { table.standings .col--sm { display: none; } }
+  @media (max-width: 379px) { table.standings .col--md { display: none; } }
+  @media (max-width: 374px) { table.standings .col--wdl { display: none; } }
   .standings .club-btn .team-logo { flex: none; }
   .fixture-difficulty-pill { min-width: 34px; padding-inline: 4px; font-size: 0.6875rem; }
   .career-table { min-width: 0; }
@@ -4840,18 +4846,23 @@ body[data-viz="mountain"] > footer { display: none; }
 .season-bar__part.is-hatched {
   background-image: repeating-linear-gradient(135deg, transparent 0 2px, var(--panel) 2px 4px);
 }
-/* Under the club's name, on a phone only, and in Prediction only. */
+/* Right of the club's name, on a phone only, and in Prediction only: every
+   bar the same width at the same edge of the club cell, so they line up. */
 .season-bar--inline { display: none; }
+.club-line { display: block; }
 @media (max-width: 760px) {
   /* A phone's width goes to the odds: the bar leaves its column for the club
      cell, under the name and level with it (past the crest). */
   .standings th.season-end, .standings td.season-end { display: none; }
+  /* The club's name and its bar share a line: the name takes the room, the bar a
+     fixed width at the cell's right edge. */
+  .club-line { display: flex; align-items: center; gap: 0.4rem; }
   #standings[data-view="prediction"] .season-bar--inline {
     display: flex;
-    width: 4.5rem;
+    flex: none;
+    width: 2.5rem;
     min-width: 0;
-    height: 0.4rem;
-    margin: 0.25rem 0 0 calc(17px + 0.35rem);
+    height: 0.5rem;
   }
 }
 
@@ -4860,6 +4871,8 @@ body[data-viz="mountain"] > footer { display: none; }
    24px minimum target. The header buttons stay 44px tall but may be as narrow
    as their label, since the columns beneath them are. */
 @media (max-width: 480px) {
+  /* A band's threshold line may wrap rather than run past the panel's edge. */
+  table.standings .zone-divider__wrap { white-space: normal; text-align: center; line-height: 1.25; }
   #table .panel__head { padding: var(--space-3) var(--space-4); gap: 0.5rem 1rem; align-items: center; }
   #table .panel__head h2 { font-size: 1.125rem; }
   #table .panel__head p { margin-top: 0.15rem; font-size: 0.75rem; }
@@ -4874,4 +4887,30 @@ body[data-viz="mountain"] > footer { display: none; }
   .standings th:last-child, .standings td:last-child { padding-right: 0.5rem; }
   #standings th:first-child .sort-btn { padding-left: 0.4rem; }
   #standings th:last-child .sort-btn { padding-right: 0.5rem; }
+}
+
+/* A tablet: the full desktop column set needs about 860px, so below 1024px the
+   ledger columns phones already drop (GF/GA, form, attack and defence; xG for
+   and against) go here too, and the table takes the room it has instead of a
+   720px floor. Nothing scrolls sideways. */
+@media (max-width: 1023px) {
+  table.standings { min-width: 0; }
+  table.standings .col--extra { display: none; }
+}
+
+/* Tablet and down, Prediction: the odds keep their figure and lose their bar
+   (as on a phone), the cells and the bar column are trimmed, so the nine
+   columns fit from 761px. */
+@media (min-width: 761px) and (max-width: 1023px) {
+  .meter__track { display: none; }
+  .meter { gap: 0; }
+  table.standings th, table.standings td { padding-inline: 0.35rem; }
+  #standings .sort-btn { padding-inline: 0.35rem; }
+  .standings .season-end { min-width: 5.5rem; }
+  .season-bar { min-width: 4rem; }
+}
+/* The narrowest phones: cells a little tighter still. */
+@media (max-width: 339px) {
+  table.standings th, table.standings td { padding-inline: 0.15rem; }
+  #standings .sort-btn { padding-inline: 0.15rem; }
 }

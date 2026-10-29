@@ -1215,15 +1215,16 @@ function dividerRow(boundary) {
       event.stopPropagation();
       openTeamView(row.team_id, row.team);
     });
-    club.appendChild(clubButton);
-    club.appendChild(seasonBarEl(row, report, 'season-bar--inline'));
+    const clubLine = el('div', 'club-line');
+    clubLine.append(clubButton, seasonBarEl(row, report, 'season-bar--inline'));
+    club.appendChild(clubLine);
     tr.appendChild(club);
     // 'extra' marks the columns a phone drops -- see .col--extra in the CSS.
     for (const [key, extra] of [
-      ['played', false], ['wins', true], ['draws', true],
-      ['losses', true], ['goals_for', true], ['goals_against', true],
+      ['played', ''], ['wins', ' col--wdl'], ['draws', ' col--wdl'],
+      ['losses', ' col--wdl'], ['goals_for', ' col--extra'], ['goals_against', ' col--extra'],
     ]) {
-      const td = el('td', `num muted${extra ? ' col--extra' : ''}`, String(row[key]));
+      const td = el('td', `num muted${extra}`, String(row[key]));
       td.dataset.tableView = 'current';
       tr.appendChild(td);
     }
@@ -1285,19 +1286,19 @@ function dividerRow(boundary) {
     // simulated rest. Whole goals: a tenth of a goal over a season is noise.
     // Reports built before these totals existed show a dash, not a crash.
     const known = row.expected_goals_for != null;
-    for (const [text, muted] of [
-      [known ? num(row.expected_goals_for) : '—', true],
-      [known ? num(row.expected_goals_against) : '—', true],
-      [known ? signed(row.expected_goal_difference) : '—', false],
+    for (const [text, muted, cls] of [
+      [known ? num(row.expected_goals_for) : '—', true, 'col--extra'],
+      [known ? num(row.expected_goals_against) : '—', true, 'col--extra'],
+      [known ? signed(row.expected_goal_difference) : '—', false, 'col--md'],
     ]) {
-      const td = el('td', `num${muted ? ' muted' : ''} col--extra`, text);
+      const td = el('td', `num${muted ? ' muted' : ''} ${cls}`, text);
       td.dataset.tableView = 'prediction';
       tr.appendChild(td);
     }
 
     // Fixture difficulty: expected points per remaining match for an average
     // side. Red below the league mean (a harder run-in), gray at mean, green above.
-    const fixtureCell = el('td', 'num', '');
+    const fixtureCell = el('td', 'num col--sm', '');
     fixtureCell.dataset.tableView = 'prediction';
     if (row.fixture_difficulty > 0) {
       const value = row.fixture_difficulty;
@@ -1436,8 +1437,12 @@ function seasonBarName(segment, report) {
   return t(segment.band.first < (report.table.length + 1) / 2 ? 'seasonbar.promotedPlayoff' : 'seasonbar.relegatedPlayoff');
 }
 
+const SEASON_BAR_MIN = 0.01;
+
 function seasonBarEl(row, report, className = '') {
-  const segments = seasonOutcomes(row, report.league.bands, report.league.slug);
+  // A way a season ends with under 1 % is left out: a sliver of colour no
+  // reader can see, and the others stay in proportion to one another.
+  const segments = seasonOutcomes(row, report.league.bands, report.league.slug).filter((segment) => segment.p >= SEASON_BAR_MIN);
   const count = report.table.length;
   const bar = el('span', `season-bar${className ? ` ${className}` : ''}`);
   const parts = [];
