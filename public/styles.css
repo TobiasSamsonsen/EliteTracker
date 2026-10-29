@@ -2528,11 +2528,11 @@ footer a { color: var(--ink); }
   .standings .club-btn { display: flex; align-items: center; flex: 1 1 auto; min-width: 0; max-width: 100%; }
   .standings .club-btn__name { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
   /* Columns that give way as the screen narrows, least important first, so a
-     club's name stays readable: the fixtures' difficulty under 405px, the
-     expected goal difference under 400px, wins/draws/losses under 390px. */
-  @media (max-width: 404px) { table.standings .col--sm { display: none; } }
-  @media (max-width: 379px) { table.standings .col--md { display: none; } }
-  @media (max-width: 389px) { table.standings .col--wdl { display: none; } }
+     club's name stays readable: the fixtures' difficulty and the expected goal
+     difference under 350px, wins/draws/losses under 355px. */
+  @media (max-width: 349px) { table.standings .col--sm { display: none; } }
+  @media (max-width: 349px) { table.standings .col--md { display: none; } }
+  @media (max-width: 354px) { table.standings .col--wdl { display: none; } }
   .standings .club-btn .team-logo { flex: none; }
   .fixture-difficulty-pill { min-width: 34px; padding-inline: 4px; font-size: 0.6875rem; }
   .career-table { min-width: 0; }
@@ -4868,7 +4868,7 @@ table.standings .col--goals, table.standings .col--xg { display: none; }
 @media (min-width: 360px) and (max-width: 760px) {
   #standings[data-view="prediction"] .col--pp:not([hidden]) { display: table-cell; }
 }
-@media (min-width: 405px) and (max-width: 1023px) {
+@media (min-width: 400px) and (max-width: 1023px) {
   table.standings .col--goals:not([hidden]) { display: table-cell; }
 }
 /* The projected goals (xG +/-) take more room than the table has between
@@ -4886,6 +4886,9 @@ table.standings .col--goals, table.standings .col--xg { display: none; }
   .season-bar { min-width: 7rem; }
 }
 /* The narrowest phones: cells a little tighter still. */
+@media (max-width: 380px) {
+  .standings th.season-end, .standings td.season-end { min-width: 5rem; width: 5rem; }
+}
 @media (max-width: 339px) {
   table.standings th, table.standings td { padding-inline: 0.15rem; }
   #standings .sort-btn { padding-inline: 0.15rem; }
