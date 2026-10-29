@@ -104,17 +104,6 @@
   --away: #d92b36;
 
 
-  /* Outcome meters in the table. They borrow the qualification-marker colours
-     on purpose: the stripe on a row's leading edge and the bar in its "Win it"
-     column then mean the same thing in the same colour. Blue against red is
-     also the validated diverging pair, holding CVD dE 21.6 light / 19.2 dark
-     -- far clear of green against red, which manages only 12.4.
-
-     Drawn SOLID: diluted into pale washes these collapse to dE ~3, and the two
-     columns would read identically to a colour-blind viewer. Dark mode needs no
-     override, because --outcome-* is already redefined there. */
-  --meter-up: var(--outcome-good);
-  --meter-down: var(--outcome-bad);
 
   /* Division identity: two categories, so two fixed hues. Eliteserien's
      violet keeps clear of --outcome-good, which is the blue that reads as
@@ -1185,6 +1174,12 @@ table.grid tbody th .team-logo {
 
 /* The phone-sized heading, hidden until the media query calls for it. */
 .sort-btn__short { display: none; }
+/* The points column has two short labels, one per view: "Pts" in Current, where
+   "P" already means played, and "P" in Prediction, beside xP. */
+/* "xP" keeps its lowercase x (expected), which the header's capitals would hide. */
+.sort-btn__short--x { text-transform: none; }
+#standings[data-view="prediction"] .sort-btn__short--cur,
+#standings[data-view="current"] .sort-btn__short--pred { display: none !important; }
 
 /* ---------- standings table --------------------------------------- */
 
@@ -1362,45 +1357,6 @@ table.standings .zone-divider__wrap::after {
 
 
 
-/* A probability as a solid bar next to its own number. The bar is at full
-   strength rather than washed out behind the text: at low opacity the green
-   and the red are the same colour to a deuteranope. */
-.meter {
-  display: inline-flex;
-  align-items: center;
-  justify-content: flex-end;
-  gap: 0.45rem;
-  width: 100%;
-}
-
-.meter__track {
-  flex: none;
-  width: 2.5rem;
-  height: 0.45rem;
-  border-radius: 3px;
-  /* Not --panel-sunk: that is also the row hover colour, so the unfilled part
-     of the bar disappeared exactly when you pointed at it. */
-  background: var(--rule);
-  overflow: hidden;
-}
-
-.meter__fill {
-  display: block;
-  height: 100%;
-  border-radius: 3px;
-  background: var(--meter-up);
-}
-
-.meter--down .meter__fill { background: var(--meter-down); }
-
-.meter__value {
-  min-width: 2.6rem; /* "100%" is the widest it now gets */
-  text-align: right;
-  font-variant-numeric: tabular-nums;
-}
-
-/* Nothing to show: drop the track so the column reads as empty, not as zero. */
-.meter--empty .meter__track { visibility: hidden; }
 
 /* ---------- charts ---------------------------------------------- */
 
@@ -2572,10 +2528,10 @@ footer a { color: var(--ink); }
   .standings .club-btn { display: flex; align-items: center; flex: 1 1 auto; min-width: 0; max-width: 100%; }
   .standings .club-btn__name { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
   /* Columns that give way as the screen narrows, least important first, so a
-     club's name stays readable: the fixtures' difficulty under 440px, the
+     club's name stays readable: the fixtures' difficulty under 405px, the
      expected goal difference under 400px, wins/draws/losses under 390px. */
-  @media (max-width: 439px) { table.standings .col--sm { display: none; } }
-  @media (max-width: 399px) { table.standings .col--md { display: none; } }
+  @media (max-width: 404px) { table.standings .col--sm { display: none; } }
+  @media (max-width: 379px) { table.standings .col--md { display: none; } }
   @media (max-width: 389px) { table.standings .col--wdl { display: none; } }
   .standings .club-btn .team-logo { flex: none; }
   .fixture-difficulty-pill { min-width: 34px; padding-inline: 4px; font-size: 0.6875rem; }
@@ -2596,7 +2552,6 @@ footer a { color: var(--ink); }
   .standings .band-mark { margin-right: 0.25rem; }
   .standings .club-btn { gap: 0.35rem; }
   .standings .team-logo { width: 17px; height: 17px; }
-  .standings .meter__value { min-width: 2rem; font-size: 0.75rem; }
   .standings th:first-child, .standings td:first-child { padding-left: 0.5rem; }
   .standings th:last-child, .standings td:last-child { padding-right: 0.85rem; }
   .standings .sort-btn__label { font-size: 0.6875rem; letter-spacing: 0.04em; }
@@ -2606,10 +2561,6 @@ footer a { color: var(--ink); }
   /* One line per club. Left to wrap, "Bodø/Glimt" breaks at the slash, which
      drops the column's min-content width and stacks the name under the crest. */
   .standings .club-btn { white-space: nowrap; text-align: left; }
-  /* The odds keep their number; the bar goes, since the percentage beside it
-     already carries the value. */
-  .meter__track { display: none; }
-  .meter { gap: 0; }
 
   /* Left-aligned so the first view is the one you actually start on. */
   .masthead__views { justify-content: flex-start; }
@@ -2763,7 +2714,6 @@ footer a { color: var(--ink); }
   .panel__head { padding: 0.75rem 0.875rem; }
   .hero { padding-inline: 0.75rem; }
 
-  .standings .meter__value { min-width: 1.5rem; font-size: 0.6875rem; }
 
   /* Ladder row height bump for touch */
   .ladder__track--list .ladder__team { height: 2.75rem; }
@@ -4085,7 +4035,6 @@ button.team-mini__row:hover { background: var(--panel-sunk); }
   .panel__head { padding: 0.75rem 0.875rem; }
   .hero { padding-inline: 0.75rem; }
 
-  .standings .meter__value { min-width: 1.5rem; font-size: 0.6875rem; }
 
   /* Ladder row height bump for touch */
   .ladder__track--list .ladder__team { height: 2.75rem; }
@@ -4836,30 +4785,37 @@ body[data-viz="mountain"] > footer { display: none; }
 /* How it ends (Prediction table): one bar per club, a part wide for each way
    its season can finish, a 2px gap between parts. A result won or lost
    through a play-off is hatched over its band colour. */
-.standings .season-end { min-width: 7rem; }
-.season-bar { display: flex; gap: 2px; width: 100%; min-width: 5rem; height: 0.7rem; border-radius: 3px; overflow: hidden; }
+/* The bar holds its own two figures, so it is taller and wider than a plain
+   bar: the top outcome's chance (the title, or promotion) at its left end,
+   relegation's at its right, white on a dark halo so they read on any
+   segment colour. */
+.standings .season-end { min-width: 13rem; }
+.season-bar { position: relative; display: flex; gap: 2px; width: 100%; min-width: 12rem; height: 1.15rem; border-radius: 4px; overflow: hidden; }
+.season-bar__value {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  padding-inline: 0.35rem;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  pointer-events: none;
+  color: #fff;
+  text-shadow: 0 0 2px rgb(0 0 0 / 0.9), 0 0 3px rgb(0 0 0 / 0.7), 0 1px 1px rgb(0 0 0 / 0.6);
+}
+.season-bar__value--start { left: 0; }
+.season-bar__value--end { right: 0; }
 .season-bar__part { display: block; min-width: 2px; }
 .season-bar__part.is-hatched {
   background-image: repeating-linear-gradient(135deg, transparent 0 2px, var(--panel) 2px 4px);
 }
-/* Right of the club's name, on a phone only, and in Prediction only: every
-   bar the same width at the same edge of the club cell, so they line up. */
-.season-bar--inline { display: none; }
-.club-line { display: block; }
 @media (max-width: 760px) {
-  /* A phone's width goes to the odds: the bar leaves its column for the club
-     cell, under the name and level with it (past the crest). */
-  .standings th.season-end, .standings td.season-end { display: none; }
-  /* The club's name and its bar share a line: the name takes the room, the bar a
-     fixed width at the cell's right edge. */
-  .club-line { display: flex; align-items: center; gap: 0.4rem; }
-  #standings[data-view="prediction"] .season-bar--inline {
-    display: flex;
-    flex: none;
-    width: 2.5rem;
-    min-width: 0;
-    height: 0.5rem;
-  }
+  /* A phone keeps the bar as the table's last column, as wide as the two
+     figure columns (Title and Relegation) it now carries inside itself. */
+  .standings th.season-end, .standings td.season-end { min-width: 5.5rem; width: 5.5rem; }
+  .season-bar { min-width: 0; height: 1rem; }
 }
 
 /* The table view on a narrow phone: a smaller panel title and smaller buttons,
@@ -4867,6 +4823,10 @@ body[data-viz="mountain"] > footer { display: none; }
    24px minimum target. The header buttons stay 44px tall but may be as narrow
    as their label, since the columns beneath them are. */
 @media (max-width: 480px) {
+  /* Smaller figures, Fix pill and bar: the same values in less width, so one more
+     column fits (Fix, from 405px). The names keep their size. */
+  #standings td.num, #standings th.num { font-size: 0.75rem; }
+  .standings .fixture-difficulty-pill { min-width: 28px; padding-inline: 3px; font-size: 0.6875rem; }
   /* Tighter number cells, so the goals column fits from 405px. */
   table.standings th, table.standings td { padding-inline: 0.2rem; }
   #standings .sort-btn { padding-inline: 0.2rem; }
@@ -4905,7 +4865,7 @@ table.standings .col--goals, table.standings .col--xg { display: none; }
 /* The points so far are Current's; in Prediction they sit beside xPts on a
    phone or tablet where there is room, and stay off the wide desktop table. */
 #standings[data-view="prediction"] .col--pp { display: none; }
-@media (min-width: 390px) and (max-width: 760px) {
+@media (min-width: 360px) and (max-width: 760px) {
   #standings[data-view="prediction"] .col--pp:not([hidden]) { display: table-cell; }
 }
 @media (min-width: 405px) and (max-width: 1023px) {
@@ -4917,23 +4877,19 @@ table.standings .col--goals, table.standings .col--xg { display: none; }
   table.standings .col--xg:not([hidden]) { display: table-cell; }
 }
 
-/* Tablet and down, Prediction: the odds keep their figure and lose their bar
-   (as on a phone), the cells and the bar column are trimmed, so the nine
-   columns fit from 761px. */
+/* A tablet: the cells are a little tighter and the bar column a little
+   narrower, so the columns fit from 761px. */
 @media (min-width: 761px) and (max-width: 1023px) {
-  .meter__track { display: none; }
-  .meter { gap: 0; }
   table.standings th, table.standings td { padding-inline: 0.35rem; }
   #standings .sort-btn { padding-inline: 0.35rem; }
-  .standings .season-end { min-width: 5.5rem; }
-  .season-bar { min-width: 4rem; }
+  .standings .season-end { min-width: 7.5rem; }
+  .season-bar { min-width: 7rem; }
 }
 /* The narrowest phones: cells a little tighter still. */
 @media (max-width: 339px) {
   table.standings th, table.standings td { padding-inline: 0.15rem; }
   #standings .sort-btn { padding-inline: 0.15rem; }
-  #standings[data-view="prediction"] .season-bar--inline { width: 2rem; }
-  .club-line { gap: 0.3rem; }
+  .standings th.season-end, .standings td.season-end { min-width: 4.5rem; width: 4.5rem; }
   /* The rating's arrow sat a pixel past the cell's edge, enough to make the
      table scrollable (and fade its edge); a smaller arrow and gap fix it. */
   .standings .rating-trend { margin-left: 0.15rem; font-size: 1rem; overflow: hidden; }

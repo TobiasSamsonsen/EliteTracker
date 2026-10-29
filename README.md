@@ -91,13 +91,11 @@ which columns belong to which view is noted below.
 | **xPts** | Prediction | Expected final points — the median total across the season's simulations (goals so far plus the simulated rest). |
 | **GF / GA / GD** | Prediction | Projected final goals and goal difference, from the same simulations. |
 | **Fix Diff** | Prediction | Expected points per remaining match for a league-average team against this club's run-in, centred on the league's mean run-in (red = harder, green = easier). |
-| **How it ends** | Prediction | One bar per club: a part wide for each way its season can finish (the title, the other Champions League place, Conference League, mid-table, the play-off, relegation; for OBOS-ligaen promotion and its play-off), from the same simulations. A result won or lost through a play-off is hatched. Its ends are the Title / Promotion and Relegation figures beside it. On a phone the bar sits under the club's name, since the width goes to the odds. Hover or tap for the exact shares. |
-| **Title / Promotion** | Prediction | Probability of finishing 1st (Title). For OBOS-ligaen the column is Promotion: the summed probability of the top 2 spots. |
-| **Relegation** | Prediction | Probability of finishing in the relegation zone. |
+| **How it ends** | Prediction | One bar per club: a part wide for each way its season can finish (the title, the other Champions League place, Conference League, mid-table, the play-off, relegation; for OBOS-ligaen promotion and its play-off), from the same simulations. A result won or lost through a play-off is hatched. The chance of the title (or, in OBOS-ligaen, promotion) is printed inside the bar at its left end and the chance of relegation at its right end, so the table has no separate Title and Relegation columns; a part under 1 % is left out. On a phone the bar sits under the club's name, since the width goes to the odds. Hover or tap for the exact shares. |
 
 Every column is sortable. The default sort is league position.
 
-Below 1024px the table never scrolls sideways: the ledger columns drop out (GF/GA, form, attack/defence, xG for and against), the odds keep their figure and lose their bar, and on a phone the *How it ends* bar moves to the right of the club's name. The optional columns return as the screen widens (Fix from 440px, the goals column from 405px, W/D/L and, in Prediction, the points so far from 390px), so every club name shows in full.
+Below 1024px the table never scrolls sideways: the ledger columns drop out (GF/GA, form, attack/defence, xG for and against), the odds keep their figure and lose their bar, and on a phone the *How it ends* bar stays the last column, narrower. The optional columns return as the screen widens (Fix and the goals column from 405px, goal difference from 380px, W/D/L from 390px and, in Prediction, the points so far from 360px), so every club name shows in full.
 
 ### Ladder
 

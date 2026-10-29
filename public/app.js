@@ -1106,14 +1106,6 @@ function renderStandings(report) {
    const bands = report.league.bands;
   const count = report.table.length;
 
-  const promotion = report.league.slug === 'obosligaen';
-  $('#head-first').textContent = promotion ? t('table.promotion') : t('table.champion');
-  $('#head-first-short').textContent = promotion ? t('table.promotionShort') : t('table.championShort');
-  $('#head-first-desc').textContent = promotion
-    ? t('table.promotionDesc')
-    : t('table.championDesc');
-$('#head-last').textContent = t('table.relegation');
-
    const formByTeamName = formByTeam(report.results);
   const rows = standingsRows(report).map((row) => ({
     ...row,
@@ -1215,9 +1207,7 @@ function dividerRow(boundary) {
       event.stopPropagation();
       openTeamView(row.team_id, row.team);
     });
-    const clubLine = el('div', 'club-line');
-    clubLine.append(clubButton, seasonBarEl(row, report, 'season-bar--inline'));
-    club.appendChild(clubLine);
+    club.appendChild(clubButton);
     tr.appendChild(club);
     // 'extra' marks the columns a phone drops -- see .col--extra in the CSS.
     for (const [key, extra] of [
@@ -1322,13 +1312,6 @@ function dividerRow(boundary) {
 
     tr.appendChild(seasonBarCell(row, report));
 
-    const upCell = meterCell(row.up, 'up');
-    upCell.dataset.tableView = 'prediction';
-    tr.appendChild(upCell);
-    const downCell = meterCell(row.down, 'down');
-    downCell.dataset.tableView = 'prediction';
-    tr.appendChild(downCell);
-
     // Clicking anywhere on the row is a mouse convenience on top of that
     // button; it adds no keyboard or ARIA semantics of its own.
     tr.addEventListener('click', () => openTeamView(row.team_id, row.team));
@@ -1406,31 +1389,6 @@ function makeFixturePill(pill, k) {
   pill.style.setProperty('--fd-alpha', alpha.toFixed(3));
 }
 
-const METER_DIGITS = 0;
-
-/* `kind` is 'up' or 'down' -- the good column and the bad one. Colour is a
-   second channel here, not the only one: the columns are labelled, fixed in
-   place, and the percentage is printed beside the bar. */
-function meterCell(value, kind) {
-  const clamped = Math.max(0, Math.min(1, value));
-  const cell = el('td', 'num');
-  // Whole percent: sampling error is +/-0.5pp and the model's own calibration
-  // error is +/-1.5pp, so a tenth of a percent here would be noise dressed as
-  // precision. The bar carries the finer detail.
-  const empty = clamped < smallestShown(METER_DIGITS);
-  const meter = el('span', `meter meter--${kind}${empty ? ' meter--empty' : ''}`);
-
-  const track = el('span', 'meter__track');
-  const fill = el('span', 'meter__fill');
-  fill.style.width = `${clamped * 100}%`;
-  track.appendChild(fill);
-
-  meter.appendChild(track);
-  meter.appendChild(el('span', 'meter__value', pct(value, METER_DIGITS)));
-  cell.appendChild(meter);
-  return cell;
-}
-
 /* The bar for one club, from its outcomes: a segment a part wide, coloured by
    its band (mid-table neutral), hatched where the result runs through a
    play-off. Read aloud, and on hover or tap, as the list of its parts. */
@@ -1442,12 +1400,12 @@ function seasonBarName(segment, report) {
 
 const SEASON_BAR_MIN = 0.01;
 
-function seasonBarEl(row, report, className = '') {
+function seasonBarEl(row, report) {
   // A way a season ends with under 1 % is left out: a sliver of colour no
   // reader can see, and the others stay in proportion to one another.
   const segments = seasonOutcomes(row, report.league.bands, report.league.slug).filter((segment) => segment.p >= SEASON_BAR_MIN);
   const count = report.table.length;
-  const bar = el('span', `season-bar${className ? ` ${className}` : ''}`);
+  const bar = el('span', 'season-bar');
   const parts = [];
   for (const segment of segments) {
     const part = el('span', `season-bar__part${segment.hatch ? ' is-hatched' : ''}`);
@@ -1456,14 +1414,19 @@ function seasonBarEl(row, report, className = '') {
     bar.appendChild(part);
     parts.push(`${seasonBarName(segment, report)} ${shareText(segment.p)}`);
   }
+  // The chance of the top outcome (the title, or promotion) at the bar's far
+  // left and of relegation at its far right, inside the bar; either is left
+  // off under 1 %, like a segment that small.
+  for (const [side, value] of [['start', row.up], ['end', row.down]]) {
+    if (value >= SEASON_BAR_MIN) bar.appendChild(el('span', `season-bar__value season-bar__value--${side}`, pct(value, 0)));
+  }
   bar.setAttribute('role', 'img');
   bar.setAttribute('aria-label', parts.join(', '));
   attachTip(bar, parts.join('<br>'));
   return bar;
 }
 
-/* Its column, on a screen with room; a phone's width is spent on the odds, so
-   the same bar sits under the club's name there (CSS shows one or the other). */
+/* The bar's column: the table's last, at every width (CSS sets how wide). */
 function seasonBarCell(row, report) {
   const cell = el('td', 'season-end');
   cell.dataset.tableView = 'prediction';

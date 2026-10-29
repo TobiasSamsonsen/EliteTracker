@@ -359,10 +359,6 @@ const translations = {
     'table.col.rating': 'Rating',
     'table.col.ratingShort': 'Elo',
     'table.col.form': 'Form',
-    'table.col.champion': 'Champion',
-    'table.col.championShort': 'Title',
-    'table.col.relegation': 'Relegation',
-    'table.col.relegationShort': 'Rel',
     'table.view.current': 'Current',
     'table.view.prediction': 'Prediction',
     'table.col.projGoalsFor': 'GF',
@@ -372,7 +368,7 @@ const translations = {
     'table.col.projGoalDiff': 'GD',
     'table.col.projGoalDiff.desc': ', projected final goal difference',
     'table.col.fixture_difficulty': 'Fix Diff',
-    'table.col.fixture_difficultyShort': 'Fix',
+    'table.col.fixture_difficultyShort': 'FD',
     'table.col.fixture_difficulty.desc': ', expected points a match for an average side with these fixtures; lower is harder',
     'table.noFixturesLeft': 'No matches left to play',
     // Standings column heads and what a screen reader hears after each.
@@ -388,6 +384,8 @@ const translations = {
     'th.goals_against': 'GA', 'th.goals_against.desc': ', goals against',
     'th.goal_difference': 'GD', 'th.goal_difference.desc': ', goal difference',
     'th.points': 'Pts', 'th.points.desc': ', points',
+    'th.pointsPredShort': 'P',
+    'th.expected_pointsShort': 'xP',
     'th.rating.desc': ', Elo rating',
     'th.expected_points': 'xPts', 'th.expected_points.desc': ', expected final points (median)',
     'th.attack.desc': ', chances created vs division average, in percent',
@@ -598,13 +596,6 @@ const translations = {
     'status.retry': 'Try again',
 
     // Table dynamic headers
-    'table.champion': 'Champion',
-    'table.championShort': 'Title',
-    'table.championDesc': ', chance of winning the title',
-    'table.promotion': 'Promotion',
-    'table.promotionShort': 'Up',
-    'table.promotionDesc': ', chance of promotion',
-    'table.relegation': 'Relegation',
 
     // Rating trend
     'trend.strongRise': 'Rating rising fast',
@@ -1019,10 +1010,6 @@ const translations = {
     'table.col.rating': 'Rating',
     'table.col.ratingShort': 'Elo',
     'table.col.form': 'Form',
-    'table.col.champion': 'Mester',
-    'table.col.championShort': 'Titt',
-    'table.col.relegation': 'Nedrykk',
-    'table.col.relegationShort': 'Ned',
     'table.view.current': 'Nåværende',
     'table.view.prediction': 'Prognose',
     'table.col.projGoalsFor': '+',
@@ -1047,6 +1034,8 @@ const translations = {
     'th.goals_against': '−', 'th.goals_against.desc': ', mål imot',
     'th.goal_difference': 'MF', 'th.goal_difference.desc': ', målforskjell',
     'th.points': 'P', 'th.points.desc': ', poeng',
+    'th.pointsPredShort': 'P',
+    'th.expected_pointsShort': 'xP',
     'th.rating.desc': ', Elo-rating',
     'th.expected_points': 'xP', 'th.expected_points.desc': ', forventede sluttpoeng (median)',
     'th.attack.desc': ', skapte sjanser mot divisjonssnittet, i prosent',
@@ -1264,13 +1253,6 @@ const translations = {
     'status.retry': 'Prøv igjen',
 
     // Table dynamic headers
-    'table.champion': 'Mester',
-    'table.championShort': 'Titt',
-    'table.championDesc': ', sjanse for å vinne tittelen',
-    'table.promotion': 'Opprykk',
-    'table.promotionShort': 'Opp',
-    'table.promotionDesc': ', sjanse for opprykk',
-    'table.relegation': 'Nedrykk',
 
     // Rating trend
     'trend.strongRise': 'Ratingen stiger raskt',
