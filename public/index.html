@@ -253,25 +253,22 @@
                 <th class="num" scope="col" aria-sort="none" data-sort-col="played" data-table-view="current">
                   <button type="button" class="sort-btn" data-sort-key="played"><span class="sort-btn__label" data-i18n="th.played">P</span><span class="visually-hidden" data-i18n="th.played.desc">, played</span><span class="sort-btn__caret" aria-hidden="true"></span></button>
                 </th>
-                <th class="num col--extra" scope="col" aria-sort="none" data-sort-col="wins" data-table-view="current">
+                <th class="num" scope="col" aria-sort="none" data-sort-col="wins" data-table-view="current">
                   <button type="button" class="sort-btn" data-sort-key="wins"><span class="sort-btn__label" data-i18n="th.wins">W</span><span class="visually-hidden" data-i18n="th.wins.desc">, wins</span><span class="sort-btn__caret" aria-hidden="true"></span></button>
                 </th>
-                <th class="num col--extra" scope="col" aria-sort="none" data-sort-col="draws" data-table-view="current">
+                <th class="num" scope="col" aria-sort="none" data-sort-col="draws" data-table-view="current">
                   <button type="button" class="sort-btn" data-sort-key="draws"><span class="sort-btn__label" data-i18n="th.draws">D</span><span class="visually-hidden" data-i18n="th.draws.desc">, draws</span><span class="sort-btn__caret" aria-hidden="true"></span></button>
                 </th>
-                <th class="num col--extra" scope="col" aria-sort="none" data-sort-col="losses" data-table-view="current">
+                <th class="num" scope="col" aria-sort="none" data-sort-col="losses" data-table-view="current">
                   <button type="button" class="sort-btn" data-sort-key="losses"><span class="sort-btn__label" data-i18n="th.losses">L</span><span class="visually-hidden" data-i18n="th.losses.desc">, losses</span><span class="sort-btn__caret" aria-hidden="true"></span></button>
                 </th>
-                <th class="num col--extra" scope="col" aria-sort="none" data-sort-col="goals_for" data-table-view="current">
-                  <button type="button" class="sort-btn" data-sort-key="goals_for"><span class="sort-btn__label" data-i18n="th.goals_for">GF</span><span class="visually-hidden" data-i18n="th.goals_for.desc">, goals for</span><span class="sort-btn__caret" aria-hidden="true"></span></button>
-                </th>
-                <th class="num col--extra" scope="col" aria-sort="none" data-sort-col="goals_against" data-table-view="current">
-                  <button type="button" class="sort-btn" data-sort-key="goals_against"><span class="sort-btn__label" data-i18n="th.goals_against">GA</span><span class="visually-hidden" data-i18n="th.goals_against.desc">, goals against</span><span class="sort-btn__caret" aria-hidden="true"></span></button>
+                <th class="num col--goals" scope="col" aria-sort="none" data-sort-col="goals_for" data-table-view="current">
+                  <button type="button" class="sort-btn" data-sort-key="goals_for"><span class="sort-btn__label" data-i18n="th.goals">+/-</span><span class="visually-hidden" data-i18n="th.goals.desc">, goals for and against</span><span class="sort-btn__caret" aria-hidden="true"></span></button>
                 </th>
                 <th class="num" scope="col" aria-sort="none" data-sort-col="goal_difference" data-table-view="current">
                   <button type="button" class="sort-btn" data-sort-key="goal_difference"><span class="sort-btn__label" data-i18n="th.goal_difference">GD</span><span class="visually-hidden" data-i18n="th.goal_difference.desc">, goal difference</span><span class="sort-btn__caret" aria-hidden="true"></span></button>
                 </th>
-                <th class="num" scope="col" aria-sort="none" data-sort-col="points" data-table-view="current">
+                <th class="num pts" scope="col" aria-sort="none" data-sort-col="points" data-table-view="current">
                   <button type="button" class="sort-btn" data-sort-key="points"><span class="sort-btn__label" data-i18n="th.points">Pts</span><span class="visually-hidden" data-i18n="th.points.desc">, points</span><span class="sort-btn__caret" aria-hidden="true"></span></button>
                 </th>
                 <th class="num form col--extra" scope="col" aria-sort="none" data-sort-col="form" data-table-view="current">
@@ -287,25 +284,19 @@
                   <button type="button" class="sort-btn" data-sort-key="defence_pct"><span class="sort-btn__label" data-i18n="team.defence">Defence</span><span class="visually-hidden" data-i18n="th.defence.desc">, chances conceded vs division average; higher is better</span><span class="sort-btn__caret" aria-hidden="true"></span></button>
                 </th>
                 <th class="num" scope="col" aria-sort="none" data-sort-col="expected_points" data-table-view="prediction">
-                  <button type="button" class="sort-btn" data-sort-key="expected_points"><span class="sort-btn__label" data-i18n="th.expected_points">xPts</span><span class="visually-hidden" data-i18n="th.expected_points.desc">, expected final points</span><span class="sort-btn__caret" aria-hidden="true"></span></button>
+                  <button type="button" class="sort-btn" data-sort-key="expected_points"><span class="sort-btn__label" data-i18n="th.expected_points">xPts</span><span class="sort-btn__short sort-btn__short--x" aria-hidden="true" data-i18n="th.expected_pointsShort">xP</span><span class="visually-hidden" data-i18n="th.expected_points.desc">, expected final points</span><span class="sort-btn__caret" aria-hidden="true"></span></button>
                 </th>
-                <th class="num col--extra" scope="col" aria-sort="none" data-sort-col="expected_goals_for" data-table-view="prediction">
-                  <button type="button" class="sort-btn" data-sort-key="expected_goals_for"><span class="sort-btn__label" data-i18n="table.col.projGoalsFor">GF</span><span class="visually-hidden" data-i18n="table.col.projGoalsFor.desc">, projected final goals for: goals so far plus the simulated rest of the season</span><span class="sort-btn__caret" aria-hidden="true"></span></button>
+                <th class="num col--xg" scope="col" aria-sort="none" data-sort-col="expected_goals_for" data-table-view="prediction">
+                  <button type="button" class="sort-btn" data-sort-key="expected_goals_for"><span class="sort-btn__label" data-i18n="th.xgoals">xG +/-</span><span class="visually-hidden" data-i18n="th.xgoals.desc">, projected goals for and against</span><span class="sort-btn__caret" aria-hidden="true"></span></button>
                 </th>
-                <th class="num col--extra" scope="col" aria-sort="none" data-sort-col="expected_goals_against" data-table-view="prediction">
-                  <button type="button" class="sort-btn" data-sort-key="expected_goals_against"><span class="sort-btn__label" data-i18n="table.col.projGoalsAgainst">GA</span><span class="visually-hidden" data-i18n="table.col.projGoalsAgainst.desc">, projected final goals against</span><span class="sort-btn__caret" aria-hidden="true"></span></button>
-                </th>
-                <th class="num col--extra" scope="col" aria-sort="none" data-sort-col="expected_goal_difference" data-table-view="prediction">
+                <th class="num" scope="col" aria-sort="none" data-sort-col="expected_goal_difference" data-table-view="prediction">
                   <button type="button" class="sort-btn" data-sort-key="expected_goal_difference"><span class="sort-btn__label" data-i18n="table.col.projGoalDiff">GD</span><span class="visually-hidden" data-i18n="table.col.projGoalDiff.desc">, projected final goal difference</span><span class="sort-btn__caret" aria-hidden="true"></span></button>
                 </th>
-                <th class="num" scope="col" aria-sort="none" data-sort-col="fixture_difficulty" data-table-view="prediction">
+                <th class="num col--fd" scope="col" aria-sort="none" data-sort-col="fixture_difficulty" data-table-view="prediction">
                   <button type="button" class="sort-btn" data-sort-key="fixture_difficulty"><span class="sort-btn__label" data-i18n="table.col.fixture_difficulty">Fix Diff</span><span class="sort-btn__short" aria-hidden="true" data-i18n="table.col.fixture_difficultyShort">Fix</span><span class="visually-hidden" data-i18n="table.col.fixture_difficulty.desc">, expected points a match for an average side with these fixtures; lower is harder</span><span class="sort-btn__caret" aria-hidden="true"></span></button>
                 </th>
-                <th class="num" scope="col" aria-sort="none" data-sort-col="up" data-table-view="prediction">
-                  <button type="button" class="sort-btn" data-sort-key="up"><span class="sort-btn__label" id="head-first" data-i18n="table.col.champion">Champion</span><span class="sort-btn__short" id="head-first-short" aria-hidden="true" data-i18n="table.col.championShort">Title</span><span class="visually-hidden" id="head-first-desc">, chance of winning the title</span><span class="sort-btn__caret" aria-hidden="true"></span></button>
-                </th>
-                <th class="num" scope="col" aria-sort="none" data-sort-col="down" data-table-view="prediction">
-                  <button type="button" class="sort-btn" data-sort-key="down"><span class="sort-btn__label" id="head-last" data-i18n="table.col.relegation">Relegation</span><span class="sort-btn__short" id="head-last-short" aria-hidden="true" data-i18n="table.col.relegationShort">Rel</span><span class="visually-hidden" id="head-last-desc">, chance of relegation</span><span class="sort-btn__caret" aria-hidden="true"></span></button>
+                <th class="season-end" scope="col" data-table-view="prediction">
+                  <div class="sort-btn sort-btn--static"><span class="sort-btn__label" data-i18n="table.col.seasonEnd">How it ends</span><span class="sort-btn__short" aria-hidden="true" data-i18n="table.col.seasonEndShort">Ends</span></div>
                 </th>
               </tr>
             </thead>
