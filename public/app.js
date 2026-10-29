@@ -1211,8 +1211,8 @@ function dividerRow(boundary) {
     tr.appendChild(club);
     // 'extra' marks the columns a phone drops -- see .col--extra in the CSS.
     for (const [key, extra] of [
-      ['played', ''], ['wins', ' col--wdl'], ['draws', ' col--wdl'],
-      ['losses', ' col--wdl'], ['goals', ' col--goals'], ['goals_for', ' col--extra'], ['goals_against', ' col--extra'],
+      ['played', ''], ['wins', ''], ['draws', ''],
+      ['losses', ''], ['goals', ' col--goals'], ['goals_for', ' col--extra'], ['goals_against', ' col--extra'],
     ]) {
       const td = el('td', `num muted${extra}`, key === 'goals' ? `${row.goals_for}-${row.goals_against}` : String(row[key]));
       td.dataset.tableView = 'current';
@@ -1282,7 +1282,7 @@ function dividerRow(boundary) {
       [known ? `${num(row.expected_goals_for)}-${num(row.expected_goals_against)}` : '—', true, 'col--xg'],
       [known ? num(row.expected_goals_for) : '—', true, 'col--extra'],
       [known ? num(row.expected_goals_against) : '—', true, 'col--extra'],
-      [known ? signed(row.expected_goal_difference) : '—', false, 'col--md'],
+      [known ? signed(row.expected_goal_difference) : '—', false, ''],
     ]) {
       const td = el('td', `num${muted ? ' muted' : ''} ${cls}`, text);
       td.dataset.tableView = 'prediction';
@@ -1291,7 +1291,7 @@ function dividerRow(boundary) {
 
     // Fixture difficulty: expected points per remaining match for an average
     // side. Red below the league mean (a harder run-in), gray at mean, green above.
-    const fixtureCell = el('td', 'num col--sm', '');
+    const fixtureCell = el('td', 'num', '');
     fixtureCell.dataset.tableView = 'prediction';
     if (row.fixture_difficulty > 0) {
       const value = row.fixture_difficulty;

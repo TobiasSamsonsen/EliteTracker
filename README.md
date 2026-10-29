@@ -95,7 +95,7 @@ which columns belong to which view is noted below.
 
 Every column is sortable. The default sort is league position.
 
-Below 1024px the table never scrolls sideways: the ledger columns drop out (GF/GA, form, attack/defence, xG for and against), the odds keep their figure and lose their bar, and on a phone the *How it ends* bar stays the last column, narrower. The optional columns return as the screen widens (W/D/L from 355px, goal difference and Fix from 350px, the goals column from 400px and, in Prediction, the points so far from 360px), so every club name shows in full.
+Below 1024px the table never scrolls sideways: the ledger columns drop out (GF/GA, form, attack/defence, xG for and against), the odds keep their figure and lose their bar, and on a phone the *How it ends* bar stays the last column, narrower. The optional columns return as the screen widens (the goals column from 400px; under 360px the small crests go), so every club name shows in full.
 
 ### Ladder
 
