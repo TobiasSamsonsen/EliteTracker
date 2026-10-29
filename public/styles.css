@@ -721,6 +721,19 @@ html { scroll-padding-top: 76px; }
   .race[data-count="3"] .race__clubs { flex-wrap: nowrap; gap: var(--space-3); }
   .race[data-count="3"] .race__value { font-size: clamp(1.5rem, 7vw, 2.25rem); }
   .race[data-count="3"] .race__name { gap: 0.3rem; }
+  /* A match's two clubs and its draw: the crest above a smaller name that may
+     wrap, so "Kristiansund" stays inside its third down to a 320px phone. */
+  .race[data-count] .race__clubs:has(> .is-draw) { gap: var(--space-2); }
+  .race__clubs:has(> .is-draw) .race__name {
+    flex-direction: column;
+    gap: 0.25rem;
+    min-width: 0;
+    font-size: 0.75rem;
+    line-height: 1.2;
+    overflow-wrap: anywhere;
+  }
+  /* The draw has no crest: it starts as low as the clubs' names do. */
+  .race__clubs:has(> .is-draw) .is-draw .race__name { padding-top: calc(20px + 0.25rem); }
   /* Two stay side by side down to a 320px phone; the movers' figure, with its
      unit, steps down to fit half the width. */
   .race[data-count="2"] .race__clubs {
