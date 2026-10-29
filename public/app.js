@@ -1222,9 +1222,9 @@ function dividerRow(boundary) {
     // 'extra' marks the columns a phone drops -- see .col--extra in the CSS.
     for (const [key, extra] of [
       ['played', ''], ['wins', ' col--wdl'], ['draws', ' col--wdl'],
-      ['losses', ' col--wdl'], ['goals_for', ' col--extra'], ['goals_against', ' col--extra'],
+      ['losses', ' col--wdl'], ['goals', ' col--goals'], ['goals_for', ' col--extra'], ['goals_against', ' col--extra'],
     ]) {
-      const td = el('td', `num muted${extra}`, String(row[key]));
+      const td = el('td', `num muted${extra}`, key === 'goals' ? `${row.goals_for}-${row.goals_against}` : String(row[key]));
       td.dataset.tableView = 'current';
       tr.appendChild(td);
     }
@@ -1287,6 +1287,7 @@ function dividerRow(boundary) {
     // Reports built before these totals existed show a dash, not a crash.
     const known = row.expected_goals_for != null;
     for (const [text, muted, cls] of [
+      [known ? `${num(row.expected_goals_for)}-${num(row.expected_goals_against)}` : '—', true, 'col--xg'],
       [known ? num(row.expected_goals_for) : '—', true, 'col--extra'],
       [known ? num(row.expected_goals_against) : '—', true, 'col--extra'],
       [known ? signed(row.expected_goal_difference) : '—', false, 'col--md'],

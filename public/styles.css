@@ -4892,6 +4892,19 @@ body[data-viz="mountain"] > footer { display: none; }
 @media (max-width: 1023px) {
   table.standings { min-width: 0; }
   table.standings .col--extra { display: none; }
+  /* Header buttons are as wide as their label, not the 44px touch minimum. */
+  #standings .sort-btn { min-width: 0; }
+}
+/* The goals scored-conceded column (62-23): one column where the separate
+   GF and GA are gone, as on FotMob's table. Desktop keeps GF and GA apart. */
+table.standings .col--goals, table.standings .col--xg { display: none; }
+@media (min-width: 430px) and (max-width: 1023px) {
+  table.standings .col--goals:not([hidden]) { display: table-cell; }
+}
+/* The projected goals (xG +/-) take more room than the table has between
+   440 and 520px, and between 761 and 819px. */
+@media (min-width: 520px) and (max-width: 760px), (min-width: 820px) and (max-width: 1023px) {
+  table.standings .col--xg:not([hidden]) { display: table-cell; }
 }
 
 /* Tablet and down, Prediction: the odds keep their figure and lose their bar

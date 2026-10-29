@@ -87,6 +87,7 @@ which columns belong to which view is noted below.
 | **Rating** | both | Current ELO rating (integer). The arrow shows how far the rating moved over the last 5 matches -- the five in the form column. |
 | **Attack / Defence** | Current | Chances created and conceded per match against an average side, as ±% vs the division average (defence turned round, so higher is better). Colour-coded red→blue pill, sortable by either. |
 | **Form** | Current | Last 5 results as individual W/D/L blocks (blue / grey / red); the column sorts by the points those five total (out of 15). |
+| **+/-**, **xG +/-** | Current, Prediction (phones and tablets) | Goals scored-conceded (and projected, from 520px) in one column, as FotMob's table has it, where the separate GF and GA are hidden. |
 | **xPts** | Prediction | Expected final points — the median total across the season's simulations (goals so far plus the simulated rest). |
 | **GF / GA / GD** | Prediction | Projected final goals and goal difference, from the same simulations. |
 | **Fix Diff** | Prediction | Expected points per remaining match for a league-average team against this club's run-in, centred on the league's mean run-in (red = harder, green = easier). |
@@ -95,6 +96,8 @@ which columns belong to which view is noted below.
 | **Relegation** | Prediction | Probability of finishing in the relegation zone. |
 
 Every column is sortable. The default sort is league position.
+
+Below 1024px the table never scrolls sideways: the ledger columns drop out (GF/GA, form, attack/defence, xG for and against), the odds keep their figure and lose their bar, and on a phone the *How it ends* bar moves to the right of the club's name. The optional columns return as the screen widens (Fix from 440px, W/D/L from 390px, the goals column from 430px), so every club name shows in full.
 
 ### Ladder
 
