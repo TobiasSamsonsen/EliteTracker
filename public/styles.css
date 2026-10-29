@@ -2564,14 +2564,27 @@ footer a { color: var(--ink); }
      width on the odds instead, which are that view's point. */
   #standings[data-view="prediction"] .sep { display: none; }
   table.standings .pos { width: 1.9rem; }
+  /* As FotMob's table does it: the number columns take what their figures need
+     and no more, and the club column takes the rest, a long name ending in an
+     ellipsis rather than pushing the last column off the screen. */
+  table.standings .num { width: auto; }
+  table.standings td.club { max-width: 0; }
+  .standings .club-btn { display: flex; align-items: center; max-width: 100%; }
+  .standings .club-btn__name { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+  .standings .club-btn .team-logo { flex: none; }
   .fixture-difficulty-pill { min-width: 34px; padding-inline: 4px; font-size: 0.6875rem; }
   .career-table { min-width: 0; }
   /* table.standings: the base cell rule outranks a bare .standings, which
      left this dead and every cell at 9.6px of side padding. */
-  table.standings th, table.standings td { padding-inline: 0.3rem; }
+  table.standings th, table.standings td { padding-inline: 0.25rem; }
   /* Chrome that carries no data goes before any column does. The sorted column
      is still marked by its ink, and aria-sort still announces the direction. */
   .standings .sort-btn { gap: 0.15rem; }
+  /* A header's side padding sits on its button (#standings thead th has none),
+     so it is trimmed there, to the cell padding beneath it. */
+  #standings .sort-btn { padding-inline: 0.25rem; }
+  #standings th:first-child .sort-btn { padding-left: 0.5rem; }
+  #standings th:last-child .sort-btn { padding-right: 0.85rem; }
   .standings .sort-btn__caret { display: none; }
   .standings .pos { min-width: 0; }
   .standings .band-mark { margin-right: 0.25rem; }
@@ -4840,4 +4853,25 @@ body[data-viz="mountain"] > footer { display: none; }
     height: 0.4rem;
     margin: 0.25rem 0 0 calc(17px + 0.35rem);
   }
+}
+
+/* The table view on a narrow phone: a smaller panel title and smaller buttons,
+   so the figures get the screen. 32px keeps a button clear of WCAG 2.5.8's
+   24px minimum target. The header buttons stay 44px tall but may be as narrow
+   as their label, since the columns beneath them are. */
+@media (max-width: 480px) {
+  #table .panel__head { padding: var(--space-3) var(--space-4); gap: 0.5rem 1rem; align-items: center; }
+  #table .panel__head h2 { font-size: 1.125rem; }
+  #table .panel__head p { margin-top: 0.15rem; font-size: 0.75rem; }
+  #table .panel__tools { gap: 0.4rem; }
+  /* The Current / Prediction pill and the Rewind button are the same height
+     (36px with their borders) and the same type size, so the row reads as one. */
+  #table .table-controls { box-sizing: border-box; height: 36px; padding: 2px; align-items: stretch; }
+  #table .table-control-btn { min-height: 0; padding-inline: 0.7rem; font-size: 0.75rem; }
+  #table .panel__tools .timeline-toggle { box-sizing: border-box; height: 36px; min-height: 0; padding-block: 0; padding-inline: 0.7rem; font-size: 0.75rem; }
+  #standings .sort-btn { min-width: 0; }
+  .standings th:first-child, .standings td:first-child { padding-left: 0.4rem; }
+  .standings th:last-child, .standings td:last-child { padding-right: 0.5rem; }
+  #standings th:first-child .sort-btn { padding-left: 0.4rem; }
+  #standings th:last-child .sort-btn { padding-right: 0.5rem; }
 }

@@ -1210,7 +1210,7 @@ function dividerRow(boundary) {
     clubButton.classList.add('club-btn--crest');
     const crest = teamLogo(row.team_id, row.team);
     if (crest) clubButton.appendChild(crest);
-    clubButton.appendChild(document.createTextNode(row.team));
+    clubButton.appendChild(el('span', 'club-btn__name', row.team));
     clubButton.addEventListener('click', (event) => {
       event.stopPropagation();
       openTeamView(row.team_id, row.team);
