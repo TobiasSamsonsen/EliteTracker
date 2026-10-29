@@ -710,7 +710,9 @@ html { scroll-padding-top: 76px; }
   justify-content: stretch;
   gap: var(--space-4);
   width: 100%;
-  max-width: 34rem;
+  /* Wide enough for three figures at their largest ("56.5 %" at 4rem is about
+     11rem) with the gaps, so the percent signs never run into the next one. */
+  max-width: 40rem;
   margin-inline: auto;
 }
 /* Three side by side on a phone (a match with its draw, or a three-club
