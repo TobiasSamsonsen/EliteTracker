@@ -1231,9 +1231,11 @@ function dividerRow(boundary) {
     const gdTd = el('td', 'num', row.goal_difference > 0 ? `+${row.goal_difference}` : String(row.goal_difference));
     gdTd.dataset.tableView = 'current';
     tr.appendChild(gdTd);
-    const points = el('td', 'num', String(row.points));
+    const points = el('td', 'num col--pp', String(row.points));
     points.style.fontWeight = '700';
-    points.dataset.tableView = 'current';
+    // Prediction shows the points too (on a phone or tablet, see .col--pp),
+    // beside the projected points.
+    points.dataset.tableView = 'current prediction';
     tr.appendChild(points);
 
     // Form sits beside the points it explains; the rating opens the model

@@ -2572,9 +2572,9 @@ footer a { color: var(--ink); }
   .standings .club-btn { display: flex; align-items: center; flex: 1 1 auto; min-width: 0; max-width: 100%; }
   .standings .club-btn__name { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
   /* Columns that give way as the screen narrows, least important first, so a
-     club's name stays readable: the fixtures' difficulty under 405px, the
+     club's name stays readable: the fixtures' difficulty under 440px, the
      expected goal difference under 400px, wins/draws/losses under 390px. */
-  @media (max-width: 404px) { table.standings .col--sm { display: none; } }
+  @media (max-width: 439px) { table.standings .col--sm { display: none; } }
   @media (max-width: 399px) { table.standings .col--md { display: none; } }
   @media (max-width: 389px) { table.standings .col--wdl { display: none; } }
   .standings .club-btn .team-logo { flex: none; }
@@ -4902,6 +4902,12 @@ body[data-viz="mountain"] > footer { display: none; }
 /* The goals scored-conceded column (62-23): one column where the separate
    GF and GA are gone, as on FotMob's table. Desktop keeps GF and GA apart. */
 table.standings .col--goals, table.standings .col--xg { display: none; }
+/* The points so far are Current's; in Prediction they sit beside xPts on a
+   phone or tablet where there is room, and stay off the wide desktop table. */
+#standings[data-view="prediction"] .col--pp { display: none; }
+@media (min-width: 390px) and (max-width: 760px) {
+  #standings[data-view="prediction"] .col--pp:not([hidden]) { display: table-cell; }
+}
 @media (min-width: 405px) and (max-width: 1023px) {
   table.standings .col--goals:not([hidden]) { display: table-cell; }
 }
