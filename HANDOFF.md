@@ -17,7 +17,7 @@ main                       the site: Explore shows attack vs defence, the season
    │   (merges explore/scorecard and explore/calibration, which it replaces) -- released 2026-10-17 (merged into main)
    ├─ explore/luck         luck table -- released 2026-10-16 (merged into main)
    ├─ explore/runin        run-in heatmap
-   ├─ explore/races        race lines
+   ├─ explore/races        race lines -- released as part of ui/season-bar-and-race-lines (rebuilt on the round layers the season mountain uses; this branch can go)
    ├─ explore/stakes       stakes calendar
    ├─ explore/h2h          head to head
    └─ explore/later        the lift, rating river and scorelines: stored code, not wired in

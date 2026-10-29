@@ -926,6 +926,58 @@ function bandWithPlayoff(row, band, slug) {
     || (band.tone === 'top' && slug === 'obosligaen' && row.promotion_probability != null);
 }
 
+/* How one club's season can end, as consecutive segments from the top of the
+   table to the bottom that sum to 1: each place's chance goes to the tightest
+   band holding it (so the title, then the rest of the Champions League
+   places), places in no band are mid-table, and a play-off band is split by
+   what the table's own columns say. Where the report has the play-offs'
+   outcomes (`bandChance`), the part of the play-off place that ends in
+   promotion or relegation becomes its own segment and the rest joins
+   mid-table, so the bar's ends are the figures in the Title / Promotion and
+   Relegation columns of the same row. Each segment is {key, band, p, hatch}:
+   `band` is null for mid-table, `hatch` marks a result won or lost through a
+   play-off. */
+function seasonOutcomes(row, bands, slug) {
+  const probs = row.position_probabilities;
+  const count = probs.length;
+  const segments = [];
+  for (let place = 1; place <= count; place += 1) {
+    const band = bandFor(bands, place);
+    const key = band ? band.label : 'mid';
+    const prev = segments[segments.length - 1];
+    if (prev && prev.key === key) prev.p += probs[place - 1];
+    else segments.push({ key, band, p: probs[place - 1], hatch: false });
+  }
+  const places = (band) => probs.slice(band.first - 1, band.last).reduce((a, b) => a + b, 0);
+  const out = [];
+  for (const segment of segments) {
+    const { band } = segment;
+    const top = band && band.first < (count + 1) / 2;
+    const promotionKnown = band && band.tone === 'playoff' && top && slug === 'obosligaen' && row.promotion_probability != null;
+    const relegationKnown = band && band.tone === 'playoff' && !top && row.relegation_probability != null;
+    if (!promotionKnown && !relegationKnown) {
+      out.push(segment);
+      continue;
+    }
+    // The chance the play-off place's runs end in promotion (or relegation):
+    // the report's total less the places that go straight there.
+    const direct = bands.filter((b) => (promotionKnown ? b.tone === 'top' : b.tone === 'relegation'))
+      .reduce((sum, b) => sum + places(b), 0);
+    const total = promotionKnown ? row.promotion_probability : row.relegation_probability;
+    const through = Math.max(0, Math.min(total - direct, segment.p));
+    const stay = { key: 'mid', band: null, p: segment.p - through, hatch: false };
+    const won = { key: `${segment.key}:through`, band, p: through, hatch: true };
+    out.push(...(promotionKnown ? [won, stay] : [stay, won]));
+  }
+  // Mid-table runs that now touch are one stretch.
+  return out.reduce((merged, segment) => {
+    const prev = merged[merged.length - 1];
+    if (prev && prev.key === 'mid' && segment.key === 'mid') prev.p += segment.p;
+    else merged.push({ ...segment });
+    return merged;
+  }, []).filter((segment) => segment.p > 0);
+}
+
 /* Rows with the two derived probability columns folded in, so sorting can see
    the same values the table shows. */
 function standingsRows(report) {
@@ -1121,7 +1173,7 @@ function dividerRow(boundary) {
       const tr = el('tr', 'zone-divider');
       tr.style.setProperty('--band-color', bandColor(boundary.band, count));
       const td = el('td');
-      td.colSpan = 21;  // full table width (21 columns)
+      td.colSpan = 22;  // full table width (22 columns)
      // Format: "======== Expected CL Threshold: 67p ========"
      const label = el('span', 'zone-divider__wrap',
        t('table.threshold', { band: boundary.label, points: boundary.cut }));
@@ -1164,6 +1216,7 @@ function dividerRow(boundary) {
       openTeamView(row.team_id, row.team);
     });
     club.appendChild(clubButton);
+    club.appendChild(seasonBarEl(row, report, 'season-bar--inline'));
     tr.appendChild(club);
     // 'extra' marks the columns a phone drops -- see .col--extra in the CSS.
     for (const [key, extra] of [
@@ -1262,6 +1315,8 @@ function dividerRow(boundary) {
     }
     tr.appendChild(fixtureCell);
 
+
+    tr.appendChild(seasonBarCell(row, report));
 
     const upCell = meterCell(row.up, 'up');
     upCell.dataset.tableView = 'prediction';
@@ -1369,6 +1424,42 @@ function meterCell(value, kind) {
   meter.appendChild(track);
   meter.appendChild(el('span', 'meter__value', pct(value, METER_DIGITS)));
   cell.appendChild(meter);
+  return cell;
+}
+
+/* The bar for one club, from its outcomes: a segment a part wide, coloured by
+   its band (mid-table neutral), hatched where the result runs through a
+   play-off. Read aloud, and on hover or tap, as the list of its parts. */
+function seasonBarName(segment, report) {
+  if (segment.key === 'mid') return t('seasonbar.mid');
+  if (!segment.hatch) return bandName(segment.band);
+  return t(segment.band.first < (report.table.length + 1) / 2 ? 'seasonbar.promotedPlayoff' : 'seasonbar.relegatedPlayoff');
+}
+
+function seasonBarEl(row, report, className = '') {
+  const segments = seasonOutcomes(row, report.league.bands, report.league.slug);
+  const count = report.table.length;
+  const bar = el('span', `season-bar${className ? ` ${className}` : ''}`);
+  const parts = [];
+  for (const segment of segments) {
+    const part = el('span', `season-bar__part${segment.hatch ? ' is-hatched' : ''}`);
+    part.style.flexGrow = String(segment.p);
+    part.style.background = segment.band ? bandColor(segment.band, count) : 'var(--rule-strong)';
+    bar.appendChild(part);
+    parts.push(`${seasonBarName(segment, report)} ${shareText(segment.p)}`);
+  }
+  bar.setAttribute('role', 'img');
+  bar.setAttribute('aria-label', parts.join(', '));
+  attachTip(bar, parts.join('<br>'));
+  return bar;
+}
+
+/* Its column, on a screen with room; a phone's width is spent on the odds, so
+   the same bar sits under the club's name there (CSS shows one or the other). */
+function seasonBarCell(row, report) {
+  const cell = el('td', 'season-end');
+  cell.dataset.tableView = 'prediction';
+  cell.appendChild(seasonBarEl(row, report));
   return cell;
 }
 
@@ -2599,7 +2690,7 @@ function renderModelCard(report) {
 /* ---------- explore: other ways to look at the numbers -------------- */
 
 /* A gallery of cards, each opening one visualisation in the same panel. */
-const EXPLORE_ITEMS = ['mountain', 'attack', 'luck'];
+const EXPLORE_ITEMS = ['mountain', 'attack', 'luck', 'races'];
 /* The visualisations that follow the rewind slider: they read one day's
    report. The rest take a whole season or every season, or carry time along
    an axis of their own, which the slider would only cut short. */
@@ -2616,6 +2707,11 @@ function exploreThumb(id) {
           style: `fill: var(--seq-${Math.min(SEQ_STEPS, level + 1)})`,
         }));
       }
+    });
+  } else if (id === 'races') {
+    // A few lines crossing on their way up and down.
+    [[70, 62, 40, 22, 14], [20, 30, 48, 60, 72], [50, 44, 50, 66, 80], [80, 76, 72, 74, 78]].forEach((ys, i) => {
+      svg.appendChild(svgEl('polyline', { points: ys.map((v, k) => `${20 + k * 30},${v}`).join(' '), style: `fill: none; stroke: ${raceColour(i)}; stroke-width: 3; stroke-linejoin: round` }));
     });
   } else if (id === 'luck') {
     // Bars either side of zero, longest at the ends.
@@ -2692,6 +2788,7 @@ function renderExplore(report) {
   if (item === 'mountain') return renderMountain(report, body);
   if (item === 'attack') return renderAttackMap(report, body);
   if (item === 'luck') return renderLuck(report, body);
+  if (item === 'races') return renderTimeAxis(item, report, body, renderRaces, false);
   const gallery = el('div', 'explore-gallery');
   for (const id of EXPLORE_ITEMS) {
     const card = el('button', 'explore-card');
@@ -2941,6 +3038,207 @@ async function renderTimeAxis(item, report, body, draw, runIn) {
   if (from && !body.firstChild.matches('.explore-empty')) {
     body.firstChild.prepend(el('p', 'explore-note explore-note--lead', t('explore.runInFrom', { date: whenDate(from) })));
   }
+}
+
+/* ---------- explore: race lines (viz=races) ---------------------------- */
+
+/* One hue per club, in a fixed order by how likely the club is now; a ninth
+   line and on stay a quiet grey rather than a generated colour. */
+const RACE_HUES = [255, 25, 150, 80, 320, 195, 355, 110];
+const raceColour = (index) => (index < RACE_HUES.length ? `oklch(0.66 0.15 ${RACE_HUES[index]})` : 'var(--ink-faint)');
+
+/* Labels at the right end of a chart's lines, nudged apart so none overlap:
+   `items` are {y, ...}; returns them sorted with `y` spread by `gap` and kept
+   between `top` and `bottom`. */
+function spreadLabels(items, gap, top, bottom) {
+  const sorted = [...items].sort((a, b) => a.y - b.y);
+  for (let i = 1; i < sorted.length; i += 1) sorted[i].y = Math.max(sorted[i].y, sorted[i - 1].y + gap);
+  const overflow = sorted.length ? sorted[sorted.length - 1].y - bottom : 0;
+  if (overflow > 0) for (const item of sorted) item.y -= overflow;
+  for (let i = sorted.length - 2; i >= 0; i -= 1) sorted[i].y = Math.min(sorted[i].y, sorted[i + 1].y - gap);
+  for (const item of sorted) item.y = Math.max(item.y, top);
+  return sorted;
+}
+
+/* Each club's chance of one race at every layer of the season mountain
+   (`mountainLayers`: the pre-season, one layer a round, now): the band's
+   places summed. The last layer is the report itself, so each line ends on
+   the figure the table and hero print. Places only: promotion and relegation
+   here leave out the play-offs, which the table counts. */
+function raceSeries(layers, band, table) {
+  const inBand = (places) => (places || []).slice(band.first - 1, band.last).reduce((a, b) => a + b, 0);
+  return table.map((row) => ({
+    team_id: row.team_id,
+    team: row.team,
+    values: layers.map((layer) => inBand(layer.p.get(row.team_id))),
+  }));
+}
+
+/* The biggest move between two neighbouring layers, in any line. */
+function raceSwing(series, layers) {
+  let best = null;
+  for (const s of series) {
+    for (let i = 1; i < s.values.length; i += 1) {
+      const change = s.values[i] - s.values[i - 1];
+      if (!best || Math.abs(change) > Math.abs(best.change)) best = { series: s, index: i, change, from: layers[i - 1], to: layers[i] };
+    }
+  }
+  return best;
+}
+
+/* Each line's change from the last layer at least a week before the latest
+   one (or the first, in a short season) to the latest. */
+function raceWeek(series, layers) {
+  const last = layers.length - 1;
+  if (last < 1) return null;
+  const cutoff = Date.parse(layers[last].date) - 7 * 86400000;
+  let since = 0;
+  for (let i = 0; i < last; i += 1) if (Date.parse(layers[i].date) <= cutoff) since = i;
+  return { since: layers[since].date, changes: series.map((s) => ({ series: s, change: s.values[last] - s.values[since] })) };
+}
+
+/* Where a layer sits along the round axis: the pre-season at 0, round k at k,
+   and "now" at the rounds' worth of matches played, kept past the layer before. */
+function raceRounds(layers, report) {
+  const perRound = report.table.length / 2;
+  const xs = [];
+  for (const layer of layers) {
+    const x = layer.kind === 'pre' ? 0 : layer.kind === 'now' ? report.model.matches_played / perRound : layer.k;
+    xs.push(xs.length ? Math.max(x, xs[xs.length - 1] + 0.25) : x);
+  }
+  return xs;
+}
+
+let raceBand = null;
+let raceToken = 0;
+const raceCache = { report: null, layers: null };
+
+async function renderRaces(report, body) {
+  const token = ++raceToken;
+  const bands = report.league.bands || [];
+  if (raceCache.report !== report) {
+    body.replaceChildren(el('p', 'explore-empty', t('mountain.loading')));
+    raceCache.layers = await mountainLayers(report).catch(() => []);
+    raceCache.report = report;
+  }
+  if (token !== raceToken || state.activeView !== 'explore' || state.exploreItem !== 'races') return;
+  const layers = raceCache.layers;
+  if (layers.length < 3 || !bands.length) {
+    body.replaceChildren(el('p', 'explore-empty', t('races.empty')));
+    return;
+  }
+  const band = bands.find((b) => b.label === raceBand) || bands[0];
+  const wrap = el('div', 'races');
+  const picker = el('div', 'races__picker');
+  picker.setAttribute('role', 'group');
+  picker.setAttribute('aria-label', t('races.pick'));
+  for (const option of bands) {
+    const button = el('button', 'races__race', bandEdgeName(option));
+    button.type = 'button';
+    button.setAttribute('aria-pressed', String(option === band));
+    button.addEventListener('click', () => { raceBand = option.label; renderRaces(report, body); });
+    picker.appendChild(button);
+  }
+  wrap.appendChild(picker);
+  const last = layers.length - 1;
+  const series = raceSeries(layers, band, report.table)
+    .filter((s) => Math.max(...s.values) >= 0.05)
+    .sort((a, b) => b.values[last] - a.values[last]);
+  // Clubs still in the race (1 % or more now) are coloured and named, up to
+  // eight; the ones that fell away stay as quiet lines, named on hover.
+  const inRace = series.filter((s) => s.values[last] >= 0.01).slice(0, RACE_HUES.length);
+  const colours = new Map(series.map((s) => [s, inRace.includes(s) ? raceColour(inRace.indexOf(s)) : raceColour(RACE_HUES.length)]));
+  const svg = svgEl('svg', { class: 'chart', role: 'group', 'aria-label': t('races.aria', { race: bandName(band) }) });
+  wrap.appendChild(svg);
+  body.replaceChildren(wrap);
+
+  const box = wrap.getBoundingClientRect().width || 940;
+  const narrow = box < SHAPE_NARROW;
+  const width = narrow ? Math.round(box) - 32 : 940;
+  const height = narrow ? 320 : 400;
+  const pad = { top: 14, right: narrow ? 92 : 140, bottom: 28, left: 40 };
+  svg.setAttribute('viewBox', `0 0 ${width} ${height}`);
+  const rounds = raceRounds(layers, report);
+  const xMax = rounds[last] || 1;
+  const x = (round) => pad.left + (round / xMax) * (width - pad.left - pad.right);
+  const y = (p) => pad.top + (1 - p) * (height - pad.top - pad.bottom);
+  const text = (className, content, attrs) => {
+    const node = svgEl('text', { class: className, ...attrs });
+    node.textContent = content;
+    svg.appendChild(node);
+    return node;
+  };
+  for (const p of [0, 0.25, 0.5, 0.75, 1]) {
+    svg.appendChild(svgEl('line', { class: p ? 'grid-line' : 'axis-line', x1: pad.left, x2: width - pad.right, y1: y(p), y2: y(p) }));
+    text('tick', `${num(p * 100)}${percentSign()}`, { x: pad.left - 6, y: y(p) + 3.5, 'text-anchor': 'end' });
+  }
+  // The pre-season, then every fifth round (every tenth on a phone).
+  const every = narrow ? 10 : 5;
+  text('tick', t('races.pre'), { x: x(0), y: height - 8, 'text-anchor': 'start' });
+  for (let k = every; k <= xMax - every / 2; k += every) {
+    text('tick', t('races.round', { k }), { x: x(k), y: height - 8, 'text-anchor': 'middle' });
+  }
+  if (!series.length) {
+    text('races__none', t('races.none'), { x: (pad.left + width - pad.right) / 2, y: height / 2, 'text-anchor': 'middle' });
+  }
+
+  // Quiet lines first, so the coloured ones draw over them.
+  const labels = [];
+  [...series].reverse().forEach((s) => {
+    const colour = colours.get(s);
+    const g = svgEl('g', { class: 'races__club', tabindex: 0 });
+    const points = s.values.map((value, i) => `${x(rounds[i])},${y(value)}`).join(' ');
+    g.appendChild(svgEl('polyline', { class: 'races__line', style: `stroke: ${colour}`, points }));
+    g.appendChild(svgEl('polyline', { class: 'races__hit', points }));
+    const now = s.values[last];
+    g.appendChild(svgEl('circle', { class: 'races__end', style: `fill: ${colour}`, cx: x(rounds[last]), cy: y(now), r: 3.5 }));
+    const tip = t('races.tip', { team: s.team, race: bandName(band), first: shareText(s.values[0]), now: shareText(now), high: shareText(Math.max(...s.values)) });
+    g.setAttribute('aria-label', tip);
+    attachTip(g, tip);
+    svg.appendChild(g);
+    if (inRace.includes(s)) labels.push({ y: y(now), text: `${s.team} ${shareText(now)}` });
+  });
+  for (const label of spreadLabels(labels, 13, pad.top + 4, height - pad.bottom)) {
+    text('races__label', label.text, { x: width - pad.right + 10, y: label.y + 4 });
+  }
+
+  // The biggest move from one layer to the next, ringed where it lands.
+  const swing = raceSwing(series, layers);
+  const marked = swing && Math.abs(swing.change) >= 0.05;
+  if (marked) {
+    svg.appendChild(svgEl('circle', { class: 'races__swing', cx: x(rounds[swing.index]), cy: y(swing.series.values[swing.index]), r: 7 }));
+  }
+
+  if (series.length) {
+    const week = raceWeek(series, layers);
+    if (week) {
+      const moved = week.changes.filter((c) => inRace.includes(c.series) && Math.abs(c.change) >= 0.005);
+      if (moved.length) {
+        const row = el('div', 'races__week');
+        row.appendChild(el('span', 'races__week-title', t('races.week', { date: formatDate(week.since) })));
+        for (const { series: s, change } of moved) {
+          const chip = el('span', 'races__chip');
+          chip.appendChild(el('i', 'races__swatch'));
+          chip.lastChild.style.background = colours.get(s);
+          chip.appendChild(document.createTextNode(`${s.team} ${change > 0 ? '▲' : '▼'} ${signed(change * 100, 1)} ${t('races.pp')}`));
+          row.appendChild(chip);
+        }
+        wrap.appendChild(row);
+      }
+    }
+    const alive = series.filter((s) => s.values[last] >= 0.05).length;
+    const facts = [{ value: series[0].team, label: t('races.fact.leader'), text: t('races.fact.leaderText', { pct: shareText(series[0].values[last]) }) }];
+    if (marked) {
+      facts.push({
+        value: swing.series.team,
+        label: t('races.fact.swing'),
+        text: t('races.fact.swingText', { change: `${signed(swing.change * 100, 1)} ${t('races.pp')}`, from: mountainLabel(swing.from), to: mountainLabel(swing.to) }),
+      });
+    }
+    facts.push({ value: String(alive), label: t('races.fact.alive'), text: t('races.fact.aliveText') });
+    wrap.appendChild(exploreFacts(facts));
+  }
+  wrap.appendChild(el('p', 'explore-note', t('races.note')));
 }
 
 /* ---------- explore: luck table (viz=luck) ----------------------------- */

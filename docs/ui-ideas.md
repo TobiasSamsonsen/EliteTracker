@@ -49,12 +49,12 @@ change-this-week figure, risers and fallers.
 
 Ordered by how much I would do them first. The top five are marked.
 
-1. **TOP. "How seasons end" bar in the prediction table.** One stacked bar per
+1. **BUILT (ui/season-bar-and-race-lines).** **TOP. "How seasons end" bar in the prediction table.** One stacked bar per
    club from the place probabilities and the league's bands (title, Europe,
    mid-table, play-off, drop). It condenses what the grid spreads over sixteen
    columns, and it is what a phone can keep when the table drops columns.
    Data: `position_probabilities` and `league.bands`, both in the report. Size S.
-2. **TOP. A race-over-time chart.** One line per contender for a chosen band
+2. **BUILT (ui/season-bar-and-race-lines), as the Explore view "Race lines", one point a round like the season mountain; the change-this-week figure is a row under it, the biggest swing ringed.** **TOP. A race-over-time chart.** One line per contender for a chosen band
    (title, Europe, relegation), the biggest one-day swing annotated, end labels,
    and a "change this week" row. A band picker makes it the relegation story
    too. Data: `report.history` holds every club's place probabilities at each

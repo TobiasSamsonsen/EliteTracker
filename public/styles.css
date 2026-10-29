@@ -4797,3 +4797,47 @@ body[data-viz="mountain"] > footer { display: none; }
 .chart .versions__hit { fill: transparent; }
 .chart .versions__hit:focus-visible { outline: none; fill: var(--panel-sunk); fill-opacity: 0.6; }
 .versions__note { max-width: 760px; margin-left: auto; margin-right: auto; }
+
+/* Race lines: every club's chance of the picked race through the season. */
+.races { padding: 0.75rem 1rem 1rem; }
+.races__picker { display: flex; flex-wrap: wrap; gap: 0.4rem; margin-bottom: 0.75rem; }
+.races__race { padding: 0.35rem 0.75rem; border: 1px solid var(--rule); border-radius: 999px; background: var(--panel); color: var(--ink); font: inherit; font-size: 0.8125rem; cursor: pointer; }
+.races__race[aria-pressed="true"] { border-color: var(--ink); background: var(--ink); color: var(--panel); }
+.chart .races__line { fill: none; stroke-width: 2; stroke-linejoin: round; stroke-linecap: round; }
+/* A wide invisible stroke over each line, so a finger or cursor need not hit two pixels. */
+.chart .races__hit { fill: none; stroke: transparent; stroke-width: 14; stroke-linejoin: round; pointer-events: stroke; }
+.chart .races__end { stroke: var(--panel); stroke-width: 2; }
+.chart .races__club:hover .races__line, .chart .races__club:focus-visible .races__line { stroke-width: 4; }
+.chart .races__club:focus-visible { outline: none; }
+.chart .races__swing { fill: none; stroke: var(--ink); stroke-width: 1.5; }
+.chart .races__label { fill: var(--ink); font-size: 11px; font-weight: 600; }
+.chart .races__none { fill: var(--ink-muted); font-size: 13px; }
+/* The change since a week ago: a swatch (the line's colour), the club, an arrow and the move. */
+.races__week { display: flex; flex-wrap: wrap; align-items: center; gap: 0.35rem 0.5rem; margin-top: 0.75rem; font-size: 0.8125rem; color: var(--ink-muted); }
+.races__week-title { font-weight: 600; margin-right: 0.15rem; }
+.races__chip { display: inline-flex; align-items: center; gap: 0.35rem; padding: 0.15rem 0.55rem; border: 1px solid var(--rule); border-radius: 999px; color: var(--ink); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.races__swatch { width: 0.6rem; height: 0.6rem; border-radius: 50%; flex: none; }
+
+/* How it ends (Prediction table): one bar per club, a part wide for each way
+   its season can finish, a 2px gap between parts. A result won or lost
+   through a play-off is hatched over its band colour. */
+.standings .season-end { min-width: 7rem; }
+.season-bar { display: flex; gap: 2px; width: 100%; min-width: 5rem; height: 0.7rem; border-radius: 3px; overflow: hidden; }
+.season-bar__part { display: block; min-width: 2px; }
+.season-bar__part.is-hatched {
+  background-image: repeating-linear-gradient(135deg, transparent 0 2px, var(--panel) 2px 4px);
+}
+/* Under the club's name, on a phone only, and in Prediction only. */
+.season-bar--inline { display: none; }
+@media (max-width: 760px) {
+  /* A phone's width goes to the odds: the bar leaves its column for the club
+     cell, under the name and level with it (past the crest). */
+  .standings th.season-end, .standings td.season-end { display: none; }
+  #standings[data-view="prediction"] .season-bar--inline {
+    display: flex;
+    width: 4.5rem;
+    min-width: 0;
+    height: 0.4rem;
+    margin: 0.25rem 0 0 calc(17px + 0.35rem);
+  }
+}

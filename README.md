@@ -90,6 +90,7 @@ which columns belong to which view is noted below.
 | **xPts** | Prediction | Expected final points — the median total across the season's simulations (goals so far plus the simulated rest). |
 | **GF / GA / GD** | Prediction | Projected final goals and goal difference, from the same simulations. |
 | **Fix Diff** | Prediction | Expected points per remaining match for a league-average team against this club's run-in, centred on the league's mean run-in (red = harder, green = easier). |
+| **How it ends** | Prediction | One bar per club: a part wide for each way its season can finish (the title, the other Champions League place, Conference League, mid-table, the play-off, relegation; for OBOS-ligaen promotion and its play-off), from the same simulations. A result won or lost through a play-off is hatched. Its ends are the Title / Promotion and Relegation figures beside it. On a phone the bar sits under the club's name, since the width goes to the odds. Hover or tap for the exact shares. |
 | **Title / Promotion** | Prediction | Probability of finishing 1st (Title). For OBOS-ligaen the column is Promotion: the summed probability of the top 2 spots. |
 | **Relegation** | Prediction | Probability of finishing in the relegation zone. |
 
@@ -130,6 +131,16 @@ A visualisation of one division and season follows the division and season
 picked in the title above it. The ones read off a single day follow the rewind
 slider too; the ones with time along an axis of their own take none.
 
+- **Race lines** (`viz=races`) -- every club's chance of one race (pick it:
+  the title, the Champions League places, promotion, the play-off, relegation)
+  over the season, one point a round as in the season mountain (the pre-season,
+  each round's projection from the rewound reports, then now), so the lines end
+  on the table's own figures. Clubs still at 1 % or more are coloured and
+  named, up to eight; the rest stay as grey lines, named on hover. The biggest
+  one-round move is ringed, a row under the chart gives each club's change
+  since a week ago, and the key figures name the likeliest club, the biggest
+  swing and how many are still in it. Promotion and relegation here count
+  places only, leaving out the play-offs that the table counts. Takes no rewind.
 - **Attack vs defence** (`viz=attack`) -- every club placed by its attack and
   defence ratings (expected goals for and against per match against an average
   side), with a trend line through the division's average club, its slope

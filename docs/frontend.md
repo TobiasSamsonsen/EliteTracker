@@ -28,7 +28,7 @@ In file order:
   **high stakes**, **played results**, **hero & model card**,
   **model card: how accurate the model is**, **team** (one club's focus view),
   **compare clubs**
-- **explore**: the gallery, what the further views share, the luck table
+- **explore**: the gallery, what the further views share, race lines, the luck table
 - **season rewind**, **theme**, **skeleton loading helpers**
 - **wiring**: `render()`, the URL parameters, `popstate`, `boot`
 - **analytics**, **mobile gestures**

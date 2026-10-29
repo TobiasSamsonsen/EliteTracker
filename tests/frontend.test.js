@@ -728,3 +728,113 @@ test('the model page builds the score grid and the blend the way model.attack_de
 test('the model page weighs table stakes the way model.stakes does', () => {
   for (const [d, left, tau, p] of GOLDEN.page.pressure) near(pageMath.pressure(d, left, tau), p);
 });
+
+eval(pick('bandFor') + pick('seasonOutcomes'));
+
+const ELITE_BANDS = [
+  { label: 'Champions', first: 1, last: 1, tone: 'champion' },
+  { label: 'Champions League qualification', first: 1, last: 2, tone: 'top' },
+  { label: 'Conference League qualification', first: 3, last: 4, tone: 'europe' },
+  { label: 'Relegation play-off', first: 14, last: 14, tone: 'playoff' },
+  { label: 'Relegation', first: 15, last: 16, tone: 'relegation' },
+];
+const OBOS_BANDS = [
+  { label: 'Champions', first: 1, last: 1, tone: 'champion' },
+  { label: 'Promotion', first: 1, last: 2, tone: 'top' },
+  { label: 'Promotion play-off', first: 3, last: 6, tone: 'playoff' },
+  { label: 'Relegation play-off', first: 14, last: 14, tone: 'playoff' },
+  { label: 'Relegation', first: 15, last: 16, tone: 'relegation' },
+];
+const evenRow = (extra = {}) => ({ position_probabilities: Array.from({ length: 16 }, () => 1 / 16), ...extra });
+const sumOf = (segments) => segments.reduce((total, segment) => total + segment.p, 0);
+
+test('a season bar splits the places by their tightest band and sums to one', () => {
+  const segments = seasonOutcomes(evenRow(), ELITE_BANDS, 'eliteserien');
+  assert.deepEqual(segments.map((s) => s.key), [
+    'Champions', 'Champions League qualification', 'Conference League qualification', 'mid', 'Relegation play-off', 'Relegation',
+  ]);
+  assert.ok(Math.abs(sumOf(segments) - 1) < 1e-12);
+  assert.ok(Math.abs(segments[0].p - 1 / 16) < 1e-12);
+});
+
+test('the bar ends on the figures in the same row once the play-offs are known', () => {
+  // Eliteserien: the 14th place's runs that end in relegation join the drop.
+  const elite = evenRow({ relegation_probability: 0.15 });
+  const eliteSegments = seasonOutcomes(elite, ELITE_BANDS, 'eliteserien');
+  assert.ok(Math.abs(sumOf(eliteSegments) - 1) < 1e-12);
+  const down = eliteSegments.filter((s) => s.band && s.band.tone === 'relegation' || (s.hatch && s.band.tone === 'playoff'));
+  assert.ok(Math.abs(sumOf(down) - 0.15) < 1e-12);
+  assert.ok(eliteSegments[eliteSegments.length - 1].key === 'Relegation' && eliteSegments.some((s) => s.hatch));
+  // OBOS-ligaen: the promotion play-off adds to the places that go straight up.
+  const obos = evenRow({ promotion_probability: 0.3, relegation_probability: 0.15 });
+  const obosSegments = seasonOutcomes(obos, OBOS_BANDS, 'obosligaen');
+  assert.ok(Math.abs(sumOf(obosSegments) - 1) < 1e-12);
+  const up = obosSegments.filter((s) => s.key === 'Champions' || s.key === 'Promotion' || (s.hatch && s.band.first === 3));
+  assert.ok(Math.abs(sumOf(up) - 0.3) < 1e-12);
+});
+
+test('a play-off result cannot take more than its own place offers', () => {
+  const row = evenRow({ relegation_probability: 0.9 });
+  const segments = seasonOutcomes(row, ELITE_BANDS, 'eliteserien');
+  assert.ok(segments.every((s) => s.p > 0));
+  assert.ok(Math.abs(sumOf(segments) - 1) < 1e-12);
+  // An older report without the play-off fields keeps the play-off place whole.
+  assert.ok(seasonOutcomes(evenRow(), ELITE_BANDS, 'eliteserien').some((s) => s.key === 'Relegation play-off' && !s.hatch));
+});
+
+eval(pick('raceSeries') + pick('raceSwing') + pick('raceWeek') + pick('raceRounds') + pick('spreadLabels'));
+
+const raceLayers = [
+  { kind: 'pre', date: '2026-03-13', p: new Map([['A', [0.5, 0.3, 0.2]], ['B', [0.1, 0.2, 0.7]]]) },
+  { kind: 'round', k: 1, date: '2026-03-20', p: new Map([['A', [0.6, 0.3, 0.1]], ['B', [0.1, 0.1, 0.8]]]) },
+  { kind: 'round', k: 2, date: '2026-03-30', p: new Map([['A', [0.9, 0.1, 0]], ['B', [0, 0.1, 0.9]]]) },
+  { kind: 'now', date: '2026-04-02', p: new Map([['A', [0.95, 0.05, 0]], ['B', [0, 0.05, 0.95]]]) },
+];
+const raceTable = [{ team_id: 'A', team: 'A' }, { team_id: 'B', team: 'B' }];
+
+test('race series sum a band at every layer', () => {
+  const [a, b] = raceSeries(raceLayers, { first: 1, last: 2 }, raceTable);
+  assert.deepEqual(a.values.map((v) => Math.round(v * 100) / 100), [0.8, 0.9, 1, 1]);
+  assert.deepEqual(b.values.map((v) => Math.round(v * 100) / 100), [0.3, 0.2, 0.1, 0.05]);
+});
+
+test('the biggest swing is the largest move between neighbouring layers', () => {
+  const series = raceSeries(raceLayers, { first: 1, last: 1 }, raceTable);
+  const swing = raceSwing(series, raceLayers);
+  assert.equal(swing.series.team, 'A');
+  assert.equal(swing.index, 2);
+  assert.ok(Math.abs(swing.change - 0.3) < 1e-12);
+  assert.equal(swing.from.k, 1);
+});
+
+test('the week is measured from the last layer a week or more before the latest', () => {
+  const series = raceSeries(raceLayers, { first: 1, last: 1 }, raceTable);
+  // 2 April less seven days is 26 March: the round 1 layer (20 March) is the last on or before it.
+  const week = raceWeek(series, raceLayers);
+  assert.equal(week.since, '2026-03-20');
+  assert.ok(Math.abs(week.changes[0].change - 0.35) < 1e-12);
+  assert.equal(raceWeek(series, raceLayers.slice(0, 1)), null);
+});
+
+test('layers sit on a round axis: the pre-season at 0, a round at k, now after the last', () => {
+  const report = { table: [{}, {}, {}, {}], model: { matches_played: 5 } };
+  assert.deepEqual(raceRounds(raceLayers, report), [0, 1, 2, 2.5]);
+  const early = { table: [{}, {}], model: { matches_played: 2 } };
+  assert.deepEqual(raceRounds(raceLayers, early), [0, 1, 2, 2.25]);
+});
+
+test('end labels are spread at least a gap apart and kept inside the chart', () => {
+  const out = spreadLabels([{ y: 50 }, { y: 51 }, { y: 52 }, { y: 200 }], 12, 10, 205);
+  const ys = out.map((label) => label.y).sort((a, b) => a - b);
+  for (let i = 1; i < ys.length; i += 1) assert.ok(ys[i] - ys[i - 1] >= 12 - 1e-9);
+  assert.ok(ys[0] >= 10 && ys[ys.length - 1] <= 205);
+});
+
+test('the season bar and race-lines strings exist in both languages', () => {
+  assertBothLanguages([
+    'table.col.seasonEnd', 'seasonbar.mid', 'seasonbar.promotedPlayoff', 'seasonbar.relegatedPlayoff',
+    'explore.races.title', 'explore.races.desc', 'races.empty', 'races.pre', 'races.pick', 'races.aria', 'races.none',
+    'races.tip', 'races.week', 'races.fact.leader', 'races.fact.leaderText', 'races.fact.swing',
+    'races.fact.swingText', 'races.fact.alive', 'races.fact.aliveText', 'races.note',
+  ]);
+});
