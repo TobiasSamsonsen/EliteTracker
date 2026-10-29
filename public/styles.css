@@ -2572,9 +2572,9 @@ footer a { color: var(--ink); }
   .standings .club-btn { display: flex; align-items: center; flex: 1 1 auto; min-width: 0; max-width: 100%; }
   .standings .club-btn__name { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
   /* Columns that give way as the screen narrows, least important first, so a
-     club's name stays readable: the fixtures' difficulty under 440px, the
+     club's name stays readable: the fixtures' difficulty under 405px, the
      expected goal difference under 400px, wins/draws/losses under 390px. */
-  @media (max-width: 439px) { table.standings .col--sm { display: none; } }
+  @media (max-width: 404px) { table.standings .col--sm { display: none; } }
   @media (max-width: 399px) { table.standings .col--md { display: none; } }
   @media (max-width: 389px) { table.standings .col--wdl { display: none; } }
   .standings .club-btn .team-logo { flex: none; }
@@ -4867,6 +4867,10 @@ body[data-viz="mountain"] > footer { display: none; }
    24px minimum target. The header buttons stay 44px tall but may be as narrow
    as their label, since the columns beneath them are. */
 @media (max-width: 480px) {
+  /* Tighter number cells, so the goals column fits from 405px. */
+  table.standings th, table.standings td { padding-inline: 0.2rem; }
+  #standings .sort-btn { padding-inline: 0.2rem; }
+  .standings .rating-trend { margin-left: 0.15rem; font-size: 0.95rem; }
   /* A band's threshold line may wrap rather than run past the panel's edge. */
   table.standings .zone-divider__wrap { white-space: normal; text-align: center; line-height: 1.25; }
   #table .panel__head { padding: var(--space-3) var(--space-4); gap: 0.5rem 1rem; align-items: center; }
@@ -4898,7 +4902,7 @@ body[data-viz="mountain"] > footer { display: none; }
 /* The goals scored-conceded column (62-23): one column where the separate
    GF and GA are gone, as on FotMob's table. Desktop keeps GF and GA apart. */
 table.standings .col--goals, table.standings .col--xg { display: none; }
-@media (min-width: 430px) and (max-width: 1023px) {
+@media (min-width: 405px) and (max-width: 1023px) {
   table.standings .col--goals:not([hidden]) { display: table-cell; }
 }
 /* The projected goals (xG +/-) take more room than the table has between
