@@ -2572,11 +2572,11 @@ footer a { color: var(--ink); }
   .standings .club-btn { display: flex; align-items: center; flex: 1 1 auto; min-width: 0; max-width: 100%; }
   .standings .club-btn__name { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
   /* Columns that give way as the screen narrows, least important first, so a
-     club's name stays readable: the fixtures' difficulty under 400px, the
-     expected goal difference under 380px, wins/draws/losses under 375px. */
-  @media (max-width: 399px) { table.standings .col--sm { display: none; } }
-  @media (max-width: 379px) { table.standings .col--md { display: none; } }
-  @media (max-width: 374px) { table.standings .col--wdl { display: none; } }
+     club's name stays readable: the fixtures' difficulty under 440px, the
+     expected goal difference under 400px, wins/draws/losses under 390px. */
+  @media (max-width: 439px) { table.standings .col--sm { display: none; } }
+  @media (max-width: 399px) { table.standings .col--md { display: none; } }
+  @media (max-width: 389px) { table.standings .col--wdl { display: none; } }
   .standings .club-btn .team-logo { flex: none; }
   .fixture-difficulty-pill { min-width: 34px; padding-inline: 4px; font-size: 0.6875rem; }
   .career-table { min-width: 0; }
@@ -2763,8 +2763,6 @@ footer a { color: var(--ink); }
   .panel__head { padding: 0.75rem 0.875rem; }
   .hero { padding-inline: 0.75rem; }
 
-  /* Hide more table columns on very narrow screens */
-  table.standings .sep { display: none; }
   .standings .meter__value { min-width: 1.5rem; font-size: 0.6875rem; }
 
   /* Ladder row height bump for touch */
@@ -4087,8 +4085,6 @@ button.team-mini__row:hover { background: var(--panel-sunk); }
   .panel__head { padding: 0.75rem 0.875rem; }
   .hero { padding-inline: 0.75rem; }
 
-  /* Hide more table columns on very narrow screens */
-  table.standings .sep { display: none; }
   .standings .meter__value { min-width: 1.5rem; font-size: 0.6875rem; }
 
   /* Ladder row height bump for touch */
@@ -4913,4 +4909,9 @@ body[data-viz="mountain"] > footer { display: none; }
 @media (max-width: 339px) {
   table.standings th, table.standings td { padding-inline: 0.15rem; }
   #standings .sort-btn { padding-inline: 0.15rem; }
+  #standings[data-view="prediction"] .season-bar--inline { width: 2rem; }
+  .club-line { gap: 0.3rem; }
+  /* The rating's arrow sat a pixel past the cell's edge, enough to make the
+     table scrollable (and fade its edge); a smaller arrow and gap fix it. */
+  .standings .rating-trend { margin-left: 0.15rem; font-size: 1rem; overflow: hidden; }
 }
