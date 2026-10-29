@@ -1339,6 +1339,7 @@ body.appendChild(tr);
 
    // Apply the current view mode to the rendered cells.
    applyTableView();
+   fitSeasonBars($('#standings'));
 }
 
 /* Pill for attack/defence % — diverging red–gray–blue ramp.
@@ -1412,51 +1413,89 @@ function seasonBarName(segment, report) {
 }
 
 const SEASON_BAR_MIN = 0.01;
-/* A Conference League segment names its own chance once it is wide enough to
-   hold the figure (a quarter of the bar), so no label spills over a neighbour. */
-const SEASON_BAR_LABEL_MIN = 0.25;
 
 function seasonBarEl(row, report) {
   // A way a season ends with under 1 % is left out: a sliver of colour no
   // reader can see, and the others stay in proportion to one another.
   const segments = seasonOutcomes(row, report.league.bands, report.league.slug).filter((segment) => segment.p >= SEASON_BAR_MIN);
   const count = report.table.length;
+  const promotion = report.league.slug === 'obosligaen';
   const bar = el('span', 'season-bar');
   const parts = [];
+  const hosts = [];
   for (const segment of segments) {
+    const tone = segment.band ? segment.band.tone : 'mid';
     const part = el('span', `season-bar__part${segment.hatch ? ' is-hatched' : ''}`);
     part.style.flexGrow = String(segment.p);
     part.style.background = segment.band ? bandColor(segment.band, count) : 'var(--rule-strong)';
-    if (segment.band && segment.band.tone === 'europe' && segment.p >= SEASON_BAR_LABEL_MIN) {
-      part.appendChild(el('span', 'season-bar__label', pct(segment.p, 0)));
+    part.dataset.tone = tone;
+    // The stretch each end's figure describes: the title (in OBOS-ligaen
+    // promotion, with its play-off) at the left, relegation (with its play-off) at the right.
+    const high = segment.band && segment.band.first < (count + 1) / 2;
+    if (tone === 'champion' || (promotion && (tone === 'top' || (segment.hatch && high)))) part.dataset.group = 'start';
+    else if (tone === 'relegation' || (segment.hatch && segment.band && !high)) part.dataset.group = 'end';
+    // A Conference League segment names its own chance.
+    if (tone === 'europe') {
+      const label = el('span', 'season-bar__label', pct(segment.p, 0));
+      label.dataset.tone = tone;
+      part.appendChild(label);
     }
     bar.appendChild(part);
+    hosts.push(part);
     parts.push(`${seasonBarName(segment, report)} ${shareText(segment.p)}`);
   }
-  // The chance of the top outcome (the title, or promotion) at the bar's far
-  // left and of relegation at its far right, inside the bar; either is left
-  // off under 1 %, like a segment that small.
-  // Each figure is an end cap in its own band's colour (the title's yellow, or
-  // promotion's blue; relegation's red), so it reads on any theme and any
-  // segment, however small the segment under it.
-  const bands = report.league.bands;
-  const promotion = report.league.slug === 'obosligaen';
-  const capBand = {
-    start: promotion ? bands.find((band) => band.tone === 'top') : bandFor(bands, 1),
-    end: bands.find((band) => band.tone === 'relegation'),
-  };
-  for (const [side, value] of [['start', row.up], ['end', row.down]]) {
-    if (value < SEASON_BAR_MIN || !capBand[side]) continue;
-    const cap = el('span', `season-bar__value season-bar__value--${side}`, pct(value, 0));
-    cap.style.background = bandColor(capBand[side], count);
-    cap.dataset.tone = capBand[side].tone;
-    bar.appendChild(cap);
+  // The chance of the top outcome at the bar's far left and of relegation at its
+  // far right; either is left off under 1 %. Each is placed by fitSeasonBars.
+  for (const [side, value, host] of [['start', row.up, hosts.find((part) => part.dataset.group === 'start')], ['end', row.down, hosts.find((part) => part.dataset.group === 'end')]]) {
+    if (!host || !(value >= SEASON_BAR_MIN)) continue;
+    const label = el('span', 'season-bar__label', pct(value, 0));
+    label.dataset.side = side;
+    label.dataset.tone = host.dataset.tone;
+    bar.appendChild(label);
   }
   bar.setAttribute('role', 'img');
   bar.setAttribute('aria-label', parts.join(', '));
   attachTip(bar, parts.join('<br>'));
   return bar;
 }
+
+/* Fit each bar's figures to the stretch they describe, after the bars are on
+   the page and whenever the width changes. A figure that fits is printed inside
+   its stretch, at the bar's end; one that does not (a 4 % relegation chance for a
+   4 % sliver) is a plain tag just inside the neighbouring part of the bar. Either
+   way it is laid over the bar, so no part ever looks wider than its share and no
+   gap between bands is covered. */
+function fitSeasonBars(root = document) {
+  for (const bar of root.querySelectorAll('.season-bar')) {
+    if (!bar.offsetParent) continue;
+    for (const label of bar.querySelectorAll('.season-bar__label')) {
+      label.classList.remove('is-off', 'is-tag');
+      label.style.left = '';
+      label.style.right = '';
+      const { side } = label.dataset;
+      if (!side) {
+        // A part's own figure: shown if it fits the part, otherwise not at all.
+        if (label.parentElement.clientWidth < label.offsetWidth) label.classList.add('is-off');
+        continue;
+      }
+      const group = [...bar.querySelectorAll(`.season-bar__part[data-group="${side}"]`)];
+      const first = group[0];
+      const last = group[group.length - 1];
+      const left = first.offsetLeft;
+      const right = last.offsetLeft + last.offsetWidth;
+      if (right - left >= label.offsetWidth) continue;
+      label.classList.add('is-tag');
+      if (side === 'start') label.style.left = `${right + 4}px`;
+      else label.style.right = `${bar.clientWidth - left + 4}px`;
+    }
+  }
+}
+
+let seasonBarTimer = 0;
+window.addEventListener('resize', () => {
+  clearTimeout(seasonBarTimer);
+  seasonBarTimer = setTimeout(() => fitSeasonBars(), 80);
+});
 
 /* The bar's column: the table's last, at every width (CSS sets how wide). */
 function seasonBarCell(row, report) {

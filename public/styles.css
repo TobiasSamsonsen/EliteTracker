@@ -4785,34 +4785,48 @@ body[data-viz="mountain"] > footer { display: none; }
 /* How it ends (Prediction table): one bar per club, a part wide for each way
    its season can finish, a 2px gap between parts. A result won or lost
    through a play-off is hatched over its band colour. */
-/* The bar holds its own two figures, so it is taller and wider than a plain
-   bar: the top outcome's chance (the title, or promotion) in a cap at its left
-   end, relegation's in a cap at its right. */
+/* The bar holds its own figures (the top outcome's chance at its left end,
+   relegation's at its right, the Conference League's inside its own part), so
+   it is taller and wider than a plain bar. A figure sits inside its segment,
+   where it fits; where it does not it is a plain tag beside the segment. */
 .standings .season-end { min-width: 13rem; }
 .season-bar { position: relative; display: flex; gap: 2px; width: 100%; min-width: 12rem; height: 1.15rem; border-radius: 4px; overflow: hidden; }
-.season-bar__value {
+/* flex-basis 0: a part is as wide as its share and no wider, whatever it holds. */
+.season-bar__part { display: flex; flex-basis: 0; align-items: center; justify-content: center; min-width: 2px; overflow: hidden; }
+.season-bar__label {
+  font-size: 0.6875rem;
+  font-weight: 700;
+  line-height: 1;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+  color: #fff;
+}
+.season-bar__label.is-off { display: none; }
+/* The top outcome's and relegation's figures lie over the bar's two ends. */
+.season-bar__label[data-side] {
   position: absolute;
   top: 0;
   bottom: 0;
   display: flex;
   align-items: center;
-  padding-inline: 0.4rem;
-  font-size: 0.6875rem;
-  font-weight: 700;
-  line-height: 1;
-  font-variant-numeric: tabular-nums;
-  white-space: nowrap;
   pointer-events: none;
-  color: #fff;
 }
-/* The title's yellow is light: dark type on it, white on the blues and the red. */
-.season-bar__value[data-tone="champion"] { color: #1a1400; }
-.season-bar__value--start { left: 0; }
-.season-bar__value--end { right: 0; }
-.season-bar__part { display: flex; align-items: center; justify-content: center; min-width: 2px; overflow: hidden; }
-/* The Conference League segment's own figure: dark on the dark theme's light green, white on the light theme's deeper green. */
-.season-bar__label { font-size: 0.6875rem; font-weight: 700; line-height: 1; white-space: nowrap; color: #052e16; font-variant-numeric: tabular-nums; }
-:root:not([data-resolved-theme="dark"]) .season-bar__label { color: #fff; }
+.season-bar__label[data-side="start"] { left: 0; padding-left: 0.35rem; }
+.season-bar__label[data-side="end"] { right: 0; padding-right: 0.35rem; }
+/* The type on each band: dark on the title's yellow and on the dark theme's light
+   green, white on the blues and the red, the neutral part's own ink. */
+.season-bar__label[data-tone="champion"] { color: #1a1400; }
+.season-bar__label[data-tone="europe"] { color: #052e16; }
+:root:not([data-resolved-theme="dark"]) .season-bar__label[data-tone="europe"] { color: #fff; }
+.season-bar__label[data-tone="mid"] { color: var(--ink); }
+/* White type over the striped play-off part keeps a soft dark edge. */
+.season-bar__label[data-side]:not(.is-tag):not([data-tone="champion"]):not([data-tone="mid"]) { text-shadow: 0 0 2px rgb(0 0 0 / 0.55); }
+/* A figure that does not fit its stretch: plain type just beside it, with the panel's colour as a halo. */
+.season-bar__label.is-tag {
+  padding: 0;
+  color: var(--ink);
+  text-shadow: 0 0 2px var(--panel), 0 0 3px var(--panel), 0 0 4px var(--panel);
+}
 .season-bar__part.is-hatched {
   background-image: repeating-linear-gradient(135deg, transparent 0 2px, var(--panel) 2px 4px);
 }
