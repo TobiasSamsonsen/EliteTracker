@@ -4783,16 +4783,17 @@ body[data-viz="mountain"] > footer { display: none; }
    its season can finish, a 2px gap between parts. A result won or lost
    through a play-off is hatched over its band colour. */
 /* The bar holds its own two figures, so it is taller and wider than a plain
-   bar: the top outcome's chance (the title, or promotion) at its left end,
-   relegation's at its right, white on a dark halo so they read on any
-   segment colour. */
+   bar: the top outcome's chance (the title, or promotion) in a cap at its left
+   end, relegation's in a cap at its right. */
 .standings .season-end { min-width: 13rem; }
 .season-bar { position: relative; display: flex; gap: 2px; width: 100%; min-width: 12rem; height: 1.15rem; border-radius: 4px; overflow: hidden; }
 .season-bar__value {
   position: absolute;
-  top: 50%;
-  transform: translateY(-50%);
-  padding-inline: 0.35rem;
+  top: 0;
+  bottom: 0;
+  display: flex;
+  align-items: center;
+  padding-inline: 0.4rem;
   font-size: 0.6875rem;
   font-weight: 700;
   line-height: 1;
@@ -4800,8 +4801,9 @@ body[data-viz="mountain"] > footer { display: none; }
   white-space: nowrap;
   pointer-events: none;
   color: #fff;
-  text-shadow: 0 0 2px rgb(0 0 0 / 0.9), 0 0 3px rgb(0 0 0 / 0.7), 0 1px 1px rgb(0 0 0 / 0.6);
 }
+/* The title's yellow is light: dark type on it, white on the blues and the red. */
+.season-bar__value[data-tone="champion"] { color: #1a1400; }
 .season-bar__value--start { left: 0; }
 .season-bar__value--end { right: 0; }
 .season-bar__part { display: block; min-width: 2px; }
@@ -4899,3 +4901,46 @@ table.standings .col--goals, table.standings .col--xg { display: none; }
      table scrollable (and fade its edge); a smaller arrow and gap fix it. */
   .standings .rating-trend { margin-left: 0.15rem; font-size: 1rem; overflow: hidden; }
 }
+
+/* ---------- the table, polished ------------------------------------ */
+
+/* A band's stripe runs the whole height of the row, on its leading edge. */
+.standings td.pos { position: relative; }
+.standings .band-mark {
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 3px;
+  height: auto;
+  margin: 0;
+  border-radius: 0 3px 3px 0;
+}
+
+/* A goal difference reads at a glance: blue a gain, red a loss. */
+.standings .gd--up { color: var(--outcome-good-ink); }
+.standings .gd--down { color: var(--outcome-bad-ink); }
+
+/* The points are the table's answer, so their column carries a faint wash. */
+.standings th.pts, .standings td.pts { background: color-mix(in srgb, var(--accent) 6%, transparent); }
+.standings td.pts { color: var(--ink); }
+
+/* A threshold line: a small pill on a faint rule, not a shout across the row. */
+table.standings tr.zone-divider td { padding: 0.45rem 0; }
+table.standings .zone-divider__label {
+  padding: 0.14rem 0.65rem;
+  border: 1px solid color-mix(in srgb, var(--band-color, var(--rule-strong)) 38%, transparent);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--band-color, var(--rule-strong)) 9%, transparent);
+  font-size: 0.625rem;
+  letter-spacing: 0.07em;
+}
+table.standings .zone-divider__wrap::before,
+table.standings .zone-divider__wrap::after { opacity: 0.32; }
+
+/* On a desktop the rows have room to breathe. */
+@media (min-width: 1024px) {
+  table.standings tbody tr:not(.zone-divider) td { padding-block: 0.6rem; }
+  .standings .team-logo { width: 20px; height: 20px; }
+}
+
+/* Quieter row lines: a rule is there to guide the eye, not to be the loudest thing on the row. */
+table.standings tbody tr:not(.zone-divider) td { border-bottom-color: color-mix(in srgb, var(--rule) 55%, transparent); }

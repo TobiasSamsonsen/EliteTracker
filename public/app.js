@@ -163,6 +163,13 @@ const signed = (value, digits = 0) => {
   return (shown > 0 ? '+' : '') + num(shown, digits);
 };
 
+/* A goal difference's tone: blue above zero, red below, as the rest of the
+   site reads a gain and a loss. */
+const gdTone = (value) => {
+  const shown = Math.round(value);
+  return shown > 0 ? ' gd--up' : shown < 0 ? ' gd--down' : '';
+};
+
 const percentSign = () => (currentLang === 'no' ? String.fromCharCode(160) + '%' : '%'); // no-break space
 
 const pct = (value, digits = 1) => {
@@ -1167,8 +1174,9 @@ function dividerRow(boundary) {
       const td = el('td');
       td.colSpan = 22;  // full table width (22 columns)
      // Format: "======== Expected CL Threshold: 67p ========"
-     const label = el('span', 'zone-divider__wrap',
-       t('table.threshold', { band: boundary.label, points: boundary.cut }));
+     const label = el('span', 'zone-divider__wrap');
+     label.appendChild(el('span', 'zone-divider__label',
+       t('table.threshold', { band: boundary.label, points: boundary.cut })));
      td.appendChild(label);
      tr.appendChild(td);
      return tr;
@@ -1218,10 +1226,10 @@ function dividerRow(boundary) {
       td.dataset.tableView = 'current';
       tr.appendChild(td);
     }
-    const gdTd = el('td', 'num', row.goal_difference > 0 ? `+${row.goal_difference}` : String(row.goal_difference));
+    const gdTd = el('td', `num${gdTone(row.goal_difference)}`, row.goal_difference > 0 ? `+${row.goal_difference}` : String(row.goal_difference));
     gdTd.dataset.tableView = 'current';
     tr.appendChild(gdTd);
-    const points = el('td', 'num col--pp', String(row.points));
+    const points = el('td', 'num col--pp pts', String(row.points));
     points.style.fontWeight = '700';
     // Prediction shows the points too (on a phone or tablet, see .col--pp),
     // beside the projected points.
@@ -1282,7 +1290,7 @@ function dividerRow(boundary) {
       [known ? `${num(row.expected_goals_for)}-${num(row.expected_goals_against)}` : '—', true, 'col--xg'],
       [known ? num(row.expected_goals_for) : '—', true, 'col--extra'],
       [known ? num(row.expected_goals_against) : '—', true, 'col--extra'],
-      [known ? signed(row.expected_goal_difference) : '—', false, ''],
+      [known ? signed(row.expected_goal_difference) : '—', false, known ? gdTone(row.expected_goal_difference).trim() : ''],
     ]) {
       const td = el('td', `num${muted ? ' muted' : ''} ${cls}`, text);
       td.dataset.tableView = 'prediction';
@@ -1417,8 +1425,21 @@ function seasonBarEl(row, report) {
   // The chance of the top outcome (the title, or promotion) at the bar's far
   // left and of relegation at its far right, inside the bar; either is left
   // off under 1 %, like a segment that small.
+  // Each figure is an end cap in its own band's colour (the title's yellow, or
+  // promotion's blue; relegation's red), so it reads on any theme and any
+  // segment, however small the segment under it.
+  const bands = report.league.bands;
+  const promotion = report.league.slug === 'obosligaen';
+  const capBand = {
+    start: promotion ? bands.find((band) => band.tone === 'top') : bandFor(bands, 1),
+    end: bands.find((band) => band.tone === 'relegation'),
+  };
   for (const [side, value] of [['start', row.up], ['end', row.down]]) {
-    if (value >= SEASON_BAR_MIN) bar.appendChild(el('span', `season-bar__value season-bar__value--${side}`, pct(value, 0)));
+    if (value < SEASON_BAR_MIN || !capBand[side]) continue;
+    const cap = el('span', `season-bar__value season-bar__value--${side}`, pct(value, 0));
+    cap.style.background = bandColor(capBand[side], count);
+    cap.dataset.tone = capBand[side].tone;
+    bar.appendChild(cap);
   }
   bar.setAttribute('role', 'img');
   bar.setAttribute('aria-label', parts.join(', '));
