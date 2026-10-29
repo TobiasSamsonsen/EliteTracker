@@ -4867,17 +4867,11 @@ body[data-viz="mountain"] > footer { display: none; }
   /* Header buttons are as wide as their label, not the 44px touch minimum. */
   #standings .sort-btn { min-width: 0; }
 }
-/* The goals scored-conceded column (62-23): one column where the separate
-   GF and GA are gone, as on FotMob's table. Desktop keeps GF and GA apart. */
-table.standings .col--goals, table.standings .col--xg { display: none; }
-@media (min-width: 400px) and (max-width: 1023px) {
-  table.standings .col--goals:not([hidden]) { display: table-cell; }
-}
-/* The projected goals (xG +/-) take more room than the table has between
-   440 and 520px, and between 761 and 819px. */
-@media (min-width: 520px) and (max-width: 760px), (min-width: 820px) and (max-width: 1023px) {
-  table.standings .col--xg:not([hidden]) { display: table-cell; }
-}
+/* The goals column (62-23): goals for and against in one, as on FotMob's table.
+   It needs 400px on a phone; the projected one (xG) needs 520px, and does not
+   fit between 761 and 819px. */
+@media (max-width: 399px) { table.standings .col--goals { display: none; } }
+@media (max-width: 519px), (min-width: 761px) and (max-width: 819px) { table.standings .col--xg { display: none; } }
 
 /* A tablet: the cells are a little tighter and the bar column a little
    narrower, so the columns fit from 761px. */
@@ -4955,4 +4949,12 @@ table.standings tbody tr:not(.zone-divider) td { border-bottom-color: color-mix(
 }
 @media (max-width: 374px) {
   table.standings .col--fd { display: none; }
+}
+
+/* On a phone the Fix pill and the bar sit in the middle of their columns, and
+   their headers (FD, ENDS) are centred over them. */
+@media (max-width: 760px) {
+  #standings td.col--fd { text-align: center; }
+  #standings thead th[data-sort-col="fixture_difficulty"] .sort-btn,
+  #standings thead th.season-end .sort-btn { justify-content: center; }
 }

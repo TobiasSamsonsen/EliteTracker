@@ -1029,14 +1029,23 @@ function standingsRows(report) {
    "more is notable" number, so it opens on the largest. */
 const SORT_ASCENDING_FIRST = new Set(['position', 'team']);
 
+/* The goals columns carry two figures, so a tie on the first falls to the second. */
+const SORT_THEN = { goals_for: 'goals_against', expected_goals_for: 'expected_goals_against' };
+
 function sortedStandings(rows) {
   const { key, dir } = state.sort;
   const compare = (a, b) => {
     if (key === 'team') return a.team.localeCompare(b.team, 'nb') * dir;
     const difference = (a[key] - b[key]) * dir;
-    // League position is the tiebreak, so equal values keep table order and
-    // the sort stays stable and predictable.
-    return difference || a.position - b.position;
+    if (difference) return difference;
+    // The goals column holds goals for and goals against: sorted by the first,
+    // equal clubs fall to the second, the other way round (so best first is
+    // most scored, then fewest conceded, and worst first is the reverse).
+    const second = SORT_THEN[key];
+    if (second && a[second] !== b[second]) return (a[second] - b[second]) * -dir;
+    // League position is the last tiebreak, so equal values keep table order
+    // and the sort stays stable and predictable.
+    return a.position - b.position;
   };
   return [...rows].sort(compare);
 }
@@ -1220,7 +1229,7 @@ function dividerRow(boundary) {
     // 'extra' marks the columns a phone drops -- see .col--extra in the CSS.
     for (const [key, extra] of [
       ['played', ''], ['wins', ''], ['draws', ''],
-      ['losses', ''], ['goals', ' col--goals'], ['goals_for', ' col--extra'], ['goals_against', ' col--extra'],
+      ['losses', ''], ['goals', ' col--goals'],
     ]) {
       const td = el('td', `num muted${extra}`, key === 'goals' ? `${row.goals_for}-${row.goals_against}` : String(row[key]));
       td.dataset.tableView = 'current';
@@ -1286,8 +1295,6 @@ function dividerRow(boundary) {
     const known = row.expected_goals_for != null;
     for (const [text, muted, cls] of [
       [known ? `${num(row.expected_goals_for)}-${num(row.expected_goals_against)}` : '—', true, 'col--xg'],
-      [known ? num(row.expected_goals_for) : '—', true, 'col--extra'],
-      [known ? num(row.expected_goals_against) : '—', true, 'col--extra'],
       [known ? signed(row.expected_goal_difference) : '—', false, known ? gdTone(row.expected_goal_difference).trim() : ''],
     ]) {
       const td = el('td', `num${muted ? ' muted' : ''} ${cls}`, text);

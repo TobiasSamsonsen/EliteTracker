@@ -838,3 +838,26 @@ test('the season bar and race-lines strings exist in both languages', () => {
     'races.fact.swingText', 'races.fact.alive', 'races.fact.aliveText', 'races.note',
   ]);
 });
+
+const SORT_THEN = { goals_for: 'goals_against', expected_goals_for: 'expected_goals_against' };
+const sortState = { sort: { key: 'goals_for', dir: -1 } };
+eval(pick('sortedStandings').replace('state.sort', 'sortState.sort'));
+
+test('the goals column sorts by goals for, then goals against, then position', () => {
+  const rows = [
+    { team: 'A', position: 1, goals_for: 30, goals_against: 20 },
+    { team: 'B', position: 2, goals_for: 40, goals_against: 25 },
+    { team: 'C', position: 3, goals_for: 40, goals_against: 15 },
+    { team: 'D', position: 4, goals_for: 40, goals_against: 15 },
+  ];
+  // Best first: most scored, then fewest conceded, then table order.
+  sortState.sort = { key: 'goals_for', dir: -1 };
+  assert.deepEqual(sortedStandings(rows).map((r) => r.team), ['C', 'D', 'B', 'A']);
+  // Worst first is the exact reverse for the figures (and position keeps equal clubs in table order).
+  sortState.sort = { key: 'goals_for', dir: 1 };
+  assert.deepEqual(sortedStandings(rows).map((r) => r.team), ['A', 'B', 'C', 'D']);
+  // The projected goals work the same way.
+  const projected = rows.map((r) => ({ ...r, expected_goals_for: r.goals_for, expected_goals_against: r.goals_against }));
+  sortState.sort = { key: 'expected_goals_for', dir: -1 };
+  assert.deepEqual(sortedStandings(projected).map((r) => r.team), ['C', 'D', 'B', 'A']);
+});
