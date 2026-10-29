@@ -115,6 +115,9 @@
 
   /* Reserved status hues for qualification bands. Each ships with a label. */
   --band-champion: #f2c600;   /* yellow, kept clear of the EL orange in hue */
+  /* The relegation play-off is the same red as relegation, a little softer: the
+     red with a touch of white, in both themes. */
+  --band-relegation-playoff: color-mix(in srgb, var(--outcome-bad) 74%, white);
 
   /* European qualification edges on the season-shape chart.
      CL reuses --outcome-good (blue). EL orange and ECL green chosen for

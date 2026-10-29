@@ -832,7 +832,8 @@ function bandColor(band, count) {
   if (label === 'Champions League qualification') return 'var(--outcome-good)';
   if (label === 'Europa League qualification') return 'var(--edge-el)';
   if (label === 'Conference League qualification') return 'var(--edge-ecl)';
-  if (label === 'Relegation' || label === 'Relegation play-off') return 'var(--outcome-bad)';
+  if (label === 'Relegation') return 'var(--outcome-bad)';
+  if (label === 'Relegation play-off') return 'var(--band-relegation-playoff)';
   if (label === 'Promotion') return 'var(--outcome-good)';
   if (label === 'Promotion play-off') return 'var(--edge-el)';
   // Fallback: good vs bad based on table half
