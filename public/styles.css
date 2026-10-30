@@ -1241,7 +1241,7 @@ table.standings tbody tr:hover { background: var(--panel-sunk); }
    text starts where the bar does; it only is not clickable. */
 .sort-btn--static { cursor: default; pointer-events: none; }
 
-#standings thead th.num .sort-btn { justify-content: flex-end; }
+#standings thead th.num .sort-btn { justify-content: center; }
 #standings thead th.club .sort-btn { justify-content: flex-start; }
 #standings thead th.pos .sort-btn { justify-content: center; }
 
@@ -4969,9 +4969,8 @@ table.standings tbody tr:not(.zone-divider) td { border-bottom-color: color-mix(
 }
 
 /* On a phone the Fix pill and the bar sit in the middle of their columns, and
-   their headers (FD, ENDS) are centred over them. */
+   the bar's header (ENDS) is centred over it like the stat headers. */
 @media (max-width: 760px) {
   #standings td.col--fd { text-align: center; }
-  #standings thead th[data-sort-col="fixture_difficulty"] .sort-btn,
   #standings thead th.season-end .sort-btn { justify-content: center; }
 }
