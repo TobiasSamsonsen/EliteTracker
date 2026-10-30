@@ -39,6 +39,9 @@ class HistoryConfig:
     seed: int = DEFAULT_SEED
     # Cap the number of snapshots so a long season cannot blow up start-up time.
     max_snapshots: int = 20
+    # One snapshot per matchweek instead (see `round_snapshot_dates`); the cap
+    # no longer applies.
+    by_round: bool = False
 
 
 @dataclass
@@ -90,6 +93,28 @@ def snapshot_dates(matches: list[Match], max_snapshots: int) -> list[str]:
     return picked
 
 
+def round_snapshot_dates(matches: list[Match]) -> list[str]:
+    """Pre-season, then the first day each matchweek's worth of games was in.
+
+    A matchweek is half the clubs' worth of matches (rounds are not played on
+    one day, so the date is where the running total first reaches it); the
+    last played day closes the list, so a part-played round still shows.
+    """
+    played = sorted((match for match in matches if match.played), key=lambda match: match.date)
+    if not played:
+        return []
+    preseason = (date.fromisoformat(played[0].date) - timedelta(days=1)).isoformat()
+    per_round = max(1, len({club for match in matches for club in (match.home_id or match.home, match.away_id or match.away)}) // 2)
+    dates = [preseason]
+    for k in range(1, len(played) // per_round + 1):
+        day = played[k * per_round - 1].date
+        if day != dates[-1]:
+            dates.append(day)
+    if played[-1].date != dates[-1]:
+        dates.append(played[-1].date)
+    return dates
+
+
 def _latest_round(matches: list[Match], on: str) -> int | None:
     rounds = [
         match.round
@@ -123,7 +148,8 @@ def build_history(
     prior = prior or AttackDefence()
 
     snapshots = []
-    for on in snapshot_dates(league_matches, config.max_snapshots):
+    for on in (round_snapshot_dates(league_matches) if config.by_round
+               else snapshot_dates(league_matches, config.max_snapshots)):
         rewound_all = as_of_date(all_matches, on)
         rewound_league = as_of_date(league_matches, on)
 

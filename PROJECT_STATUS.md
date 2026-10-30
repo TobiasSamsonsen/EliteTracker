@@ -228,7 +228,9 @@ as nothing instead.
 grid and each history snapshot. A league's grid takes ~0.14s at 50,000 (worst cell 0.63pp,
 RMS 0.08pp against a 2,000,000-run reference; 10,000 was 1.36pp / 0.18pp), so the thinner
 rewound grid (10,000) and history (10,000 live, 2,500 rewound) no longer saved enough to
-justify their error. Rewound views still cap history at 8 snapshots against 20. The
+justify their error. Rewound views take one history snapshot per matchweek (as the season mountain
+reads them, `history.round_snapshot_dates`) instead of 20 sampled days; a late-season rewound
+league report takes ~20s. The
 figures in the older paragraphs and the CI table below are the earlier settings.
 (See `pipeline.rewound_configs`.)
 

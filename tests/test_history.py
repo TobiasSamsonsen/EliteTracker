@@ -6,6 +6,7 @@ from elitetracker.simulation.history import (
     HistoryConfig,
     as_of_date,
     build_history,
+    round_snapshot_dates,
     snapshot_dates,
 )
 
@@ -119,6 +120,43 @@ class TestSnapshotDates:
         ]
         picked = snapshot_dates(games, 6)
         assert picked == sorted(set(picked))
+
+
+class TestRoundSnapshotDates:
+    def four_club_season(self, played):
+        # Two games a day, so a matchweek (two games) is one day.
+        games = []
+        for day in range(1, 5):
+            stamp = f"2026-03-{day:02d}"
+            score = (1, 0) if day <= played else None
+            games += [match(day * 2, "A", "B", stamp, score=score), match(day * 2 + 1, "C", "D", stamp, score=score)]
+        return games
+
+    def test_preseason_then_one_per_matchweek(self):
+        assert round_snapshot_dates(self.four_club_season(3)) == [
+            "2026-02-28", "2026-03-01", "2026-03-02", "2026-03-03",
+        ]
+
+    def test_a_matchweek_spread_over_days_lands_on_its_last_game(self):
+        games = [
+            match(1, "A", "B", "2026-03-01", score=(1, 0)),
+            match(2, "C", "D", "2026-03-02", score=(1, 0)),
+            match(3, "A", "C", "2026-03-08", score=(1, 0)),
+            match(4, "B", "D", "2026-03-09", score=(1, 0)),
+        ]
+        assert round_snapshot_dates(games) == ["2026-02-28", "2026-03-02", "2026-03-09"]
+
+    def test_a_part_played_round_still_gets_the_last_day(self):
+        games = [
+            match(1, "A", "B", "2026-03-01", score=(1, 0)),
+            match(2, "C", "D", "2026-03-01", score=(1, 0)),
+            match(3, "A", "C", "2026-03-08", score=(1, 0)),
+            match(4, "B", "D", "2026-03-09"),
+        ]
+        assert round_snapshot_dates(games) == ["2026-02-28", "2026-03-01", "2026-03-08"]
+
+    def test_nothing_played_gives_no_snapshots(self):
+        assert round_snapshot_dates(self.four_club_season(0)) == []
 
 
 class TestBuildHistory:

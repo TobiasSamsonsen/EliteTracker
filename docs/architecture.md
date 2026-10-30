@@ -73,7 +73,7 @@ closing odds.
   (`tests/test_server.py` holds it to that).
 - **Rewind.** `asof` rewinds a report once, on the fixture list; everything
   downstream follows. Rewound views run the same 50,000
-  simulations but take fewer history snapshots (`pipeline.rewound_configs`).
+  simulations but take one history snapshot per matchweek (`pipeline.rewound_configs`).
 
 ## Decisions not to re-litigate
 

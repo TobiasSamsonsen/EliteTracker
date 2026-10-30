@@ -904,11 +904,11 @@ def rewound_configs(asof: str | None) -> tuple[SimulationConfig, HistoryConfig]:
     """Simulation settings for a live view or a rewound one.
 
     Every simulation runs the same 50,000 runs; a rewound view only takes
-    fewer season-shape snapshots (8 against 20).
+    season-shape snapshots at each matchweek rather than the 20 sampled days.
     """
     if not asof:
         return SimulationConfig(), HistoryConfig()
-    return SimulationConfig(), HistoryConfig(max_snapshots=8)
+    return SimulationConfig(), HistoryConfig(by_round=True)
 
 
 def _matchdays(matches: list[Match]) -> list[dict[str, Any]]:
