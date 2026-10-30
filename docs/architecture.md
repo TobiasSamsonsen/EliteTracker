@@ -72,8 +72,8 @@ closing odds.
   `calibration.json`; `api/server.data_payload` answers the same names live
   (`tests/test_server.py` holds it to that).
 - **Rewind.** `asof` rewinds a report once, on the fixture list; everything
-  downstream follows. Rewound views run thinner simulations
-  (`pipeline.rewound_configs`).
+  downstream follows. Rewound views run the same 50,000
+  simulations but take fewer history snapshots (`pipeline.rewound_configs`).
 
 ## Decisions not to re-litigate
 

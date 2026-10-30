@@ -224,11 +224,13 @@ noise dressed as precision, and no achievable simulation count would have fixed 
 em-dash threshold follows the precision, so a value that would round to a bare `0%` shows
 as nothing instead.
 
-Rewound views (the `?asof=` slider and the static rewind reports) use a **10,000-run** grid
-plus a 2,500 x 8 history, not the live 50,000. At 10,000 the worst grid cell is ~1.31pp --
-still under the model's 1.54pp calibration error -- so dragging back loses no visible
-fidelity, while the ~2,266 rewound reports build roughly 5x faster. The live view keeps
-50,000 for full precision. (See `pipeline.rewound_configs`.)
+**Update 2026-10-30:** every simulation is now 50,000 runs -- the live grid, the rewound
+grid and each history snapshot. A league's grid takes ~0.14s at 50,000 (worst cell 0.63pp,
+RMS 0.08pp against a 2,000,000-run reference; 10,000 was 1.36pp / 0.18pp), so the thinner
+rewound grid (10,000) and history (10,000 live, 2,500 rewound) no longer saved enough to
+justify their error. Rewound views still cap history at 8 snapshots against 20. The
+figures in the older paragraphs and the CI table below are the earlier settings.
+(See `pipeline.rewound_configs`.)
 
 ## 🩹 elo-v4: squad strength — investigated and rejected
 

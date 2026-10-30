@@ -903,15 +903,12 @@ def _next_stakes(
 def rewound_configs(asof: str | None) -> tuple[SimulationConfig, HistoryConfig]:
     """Simulation settings for a live view or a rewound one.
 
-    The rewound view thins both the grid (10,000) and the season-shape history
-    (2,500 x 8) against the live view (50,000 grid). At 10,000 the worst grid
-    cell is ~1.31 pp -- still below the model's 1.54 pp calibration error -- so
-    the small fidelity step as you drag back is invisible at whole-percent
-    display, while rewound reports build roughly 5x faster.
+    Every simulation runs the same 50,000 runs; a rewound view only takes
+    fewer season-shape snapshots (8 against 20).
     """
     if not asof:
         return SimulationConfig(), HistoryConfig()
-    return SimulationConfig(simulations=10_000), HistoryConfig(simulations=2_500, max_snapshots=8)
+    return SimulationConfig(), HistoryConfig(max_snapshots=8)
 
 
 def _matchdays(matches: list[Match]) -> list[dict[str, Any]]:

@@ -28,16 +28,14 @@ from elitetracker.model.elo import EloConfig
 from elitetracker.model.initial_ratings import TeamRating
 from elitetracker.model.ratings import build_rating_table
 from elitetracker.normalize.matches import Match
-from elitetracker.simulation.season import DEFAULT_SEED, SimulationConfig, simulate_season
+from elitetracker.simulation.season import DEFAULT_SEED, DEFAULT_SIMULATIONS, SimulationConfig, simulate_season
 
 
 @dataclass(frozen=True)
 class HistoryConfig:
-    # Fewer runs than the headline projection: this is a trend line read off a
-    # chart, not a number read off a table, and it is computed ~20 times per
-    # league. At 10,000 the worst band is within 1.3pp, below what a stacked
-    # area chart can show.
-    simulations: int = 10_000
+    # The same runs as the headline projection (the simulation is fast enough
+    # now that the trend line need not be thinner than the table).
+    simulations: int = DEFAULT_SIMULATIONS
     seed: int = DEFAULT_SEED
     # Cap the number of snapshots so a long season cannot blow up start-up time.
     max_snapshots: int = 20

@@ -220,7 +220,7 @@ Every tunable parameter in the shipped model:
 | Goals model: offseason pull | 12% / 25% | How far attack/defence regress toward the division each offseason (Eliteserien / OBOS-ligaen), aimed by squad value (0.2 / 0.3) |
 | Goals model: keeping | last 45 matches | The keeper: goals let in against the xG on target faced, against the division (x 0.75), off the other side's expected goals (Eliteserien, where there is xG on target) |
 | Scorelines | attack/defence | Source of scoreline predictions (not ELO) |
-| Simulations | 50,000 | Monte Carlo runs per league (10,000 on rewound views) |
+| Simulations | 50,000 | Monte Carlo runs per league, on rewound views too |
 | Strength shock | ±0.20 | Per-run club strength noise (log-odds), so finishing odds carry rating uncertainty |
 | Surface edge | 20 pts (Eliteserien) | Home side's extra rating when its visitor plays on the other surface (prediction only) |
 | Table stakes | 30 pts / 0.05 log goals | From 24 played: per unit of pressure difference (each side's points from its nearest line of the table against its matches left), on the prediction only; per run in the simulation |
