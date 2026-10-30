@@ -3862,6 +3862,8 @@ button.team-mini__row:hover { background: var(--panel-sunk); }
 
 /* A card heading's buttons: the rewind's, the view's own. */
 .panel__tools { display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; }
+/* The table's Rewind button comes before its Current/Prediction switch. */
+#table .panel__tools .timeline-toggle { order: -1; }
 /* The button's own display would beat [hidden] and leave it as a bare bar
    above the views that have no rewind (a club, Compare, Matches). */
 .timeline-toggle[hidden] { display: none; }
