@@ -861,3 +861,150 @@ test('the goals column sorts by goals for, then goals against, then position', (
   sortState.sort = { key: 'expected_goals_for', dir: -1 };
   assert.deepEqual(sortedStandings(projected).map((r) => r.team), ['C', 'D', 'B', 'A']);
 });
+
+/* The what-if page: the season simulation in public/season-sim.js (which the
+   page runs in a worker) and the pure helpers around it in app.js. */
+const sim = require('../public/season-sim.js');
+eval(pick('parseLocks') + pick('lockParam') + pick('whatIfRows') + pick('whatIfSwing'));
+const shiftedChances = sim.shiftedChances;
+
+// Three clubs, one fixture between A and B; C is far clear of both.
+const flat = (n) => Array.from({ length: 9 }, () => Array(9).fill(1 / 81));
+const league = (fixed, replacements) => ({
+  count: 3, sims: 4000, seed: 11, sd: 0.2,
+  points: [10, 10, 100], gf: [10, 10, 50], ga: [10, 10, 5],
+  fixtures: [{ home: 0, away: 1, win: 0.4, draw: 0.3, grid: flat() }],
+  fixed: [fixed], replacements,
+});
+
+test('the same seed gives the same runs', () => {
+  const a = sim.simulateSeason(league(null));
+  const b = sim.simulateSeason(league(null));
+  assert.deepEqual(Array.from(a.counts), Array.from(b.counts));
+});
+
+test('a locked fixture always takes its score', () => {
+  const run = sim.simulateSeason(league([3, 0]));
+  // A wins 3-0 in every run: A is 2nd, B 3rd, 4000 times.
+  assert.equal(run.counts[0 * 3 + 1], 4000);
+  assert.equal(run.counts[1 * 3 + 2], 4000);
+  assert.equal(run.totals[0] / 4000, 13);
+});
+
+test('a club the lock cannot touch moves by exactly zero', () => {
+  const base = sim.simulateSeason(league(null));
+  const locked = sim.simulateSeason(league([0, 2]));
+  assert.equal(base.counts[2 * 3 + 0], 4000);
+  assert.equal(locked.counts[2 * 3 + 0], 4000);
+  const moved = shiftedChances([[0, 0.5, 0.5], [0, 0.5, 0.5], [1, 0, 0]], base, locked, 4000, 3);
+  assert.deepEqual(moved[2], [1, 0, 0]);
+  moved.forEach((row) => assert.ok(Math.abs(row.reduce((a, b) => a + b, 0) - 1) < 1e-12));
+});
+
+test('nothing locked returns the published chances untouched', () => {
+  const run = sim.simulateSeason(league(null));
+  const published = [[0.1, 0.4, 0.5], [0.2, 0.3, 0.5], [0.6, 0.3, 0.1]];
+  const same = shiftedChances(published, run, run, 4000, 3);
+  published.forEach((row, i) => row.forEach((p, j) => assert.ok(Math.abs(p - same[i][j]) < 1e-12)));
+});
+
+test('a locked past result swaps the real score for the new one', () => {
+  const table = { points: [3, 0, 7], gf: [2, 1, 4], ga: [1, 2, 3] };
+  // A beat B 2-1; make it 0-1.
+  const now = sim.replaceResults(table, [{ home: 0, away: 1, was: [2, 1], now: [0, 1] }]);
+  assert.deepEqual(now.points, [0, 3, 7]);
+  assert.deepEqual(now.gf, [0, 1, 4]);
+  assert.deepEqual(now.ga, [1, 0, 3]);
+  // Through the simulation the swap shows up in the final points.
+  const run = sim.simulateSeason({ ...league([0, 0]), points: [3, 0, 100], replacements: [{ home: 0, away: 1, was: [2, 1], now: [0, 1] }] });
+  assert.equal(run.totals[0] / 4000, 1);
+  assert.equal(run.totals[1] / 4000, 4);
+});
+
+test('the outcome tables hold each outcome\'s own cells and end on 1', () => {
+  const { cells, cum } = sim.outcomeTables(flat());
+  assert.ok(cells[0].every((_, i) => i % 2 || cells[0][i] > cells[0][i + 1]));
+  assert.ok(cells[1].every((_, i) => i % 2 || cells[1][i] === cells[1][i + 1]));
+  cum.forEach((row) => assert.equal(row[row.length - 1], 1));
+});
+
+test('?lock= round-trips, and drops what the report does not have', () => {
+  const locks = parseLocks('5105025:2-1,9:0-0,bad,7:3-');
+  assert.deepEqual([...locks], [['5105025', [2, 1]], ['9', [0, 0]]]);
+  const report = { results: [{ match_id: 9 }], fixtures: [{ match_id: 5105025 }] };
+  assert.equal(lockParam(locks, report), '5105025:2-1,9:0-0');
+  assert.equal(lockParam(locks, { results: [], fixtures: [{ match_id: 5105025 }] }), '5105025:2-1');
+});
+
+test('the swing is the chance that moved furthest', () => {
+  const band = { first: 1, last: 1 };
+  const rows = [
+    { row: { team: 'A' }, bands: [{ band, before: 0.5, after: 0.52 }] },
+    { row: { team: 'B' }, bands: [{ band, before: 0.3, after: 0.1 }] },
+  ];
+  assert.equal(whatIfSwing(rows).row.team, 'B');
+  assert.equal(whatIfSwing([{ row: { team: 'A' }, bands: [{ band, before: 0.5, after: 0.5002 }] }]), null);
+});
+
+test('with nothing locked the rows are the published chances', () => {
+  const report = {
+    model: { simulations: 1000 },
+    league: { bands: [{ first: 1, last: 2 }] },
+    table: [{ team: 'A', expected_points: 60, position_probabilities: [0.6, 0.3, 0.1] }],
+  };
+  const [row] = whatIfRows(report, null);
+  assert.equal(row.pointsAfter, 60);
+  assert.ok(Math.abs(row.bands[0].after - 0.9) < 1e-12 && row.bands[0].after === row.bands[0].before);
+});
+
+/* Re-rating: the port of the Elo replay and the attack/defence update, held to
+   what the Python model makes of the same season (tests/test_rerate.py writes
+   the golden file; its payload is what the report carries as `rerate`). */
+const RERATE = JSON.parse(fs.readFileSync(`${__dirname}/fixtures/rerate.json`, 'utf8'));
+const close = (a, b) => assert.ok(Math.abs(a - b) < 1e-7, `${a} vs ${b}`);
+const sameRatings = (got, want) => {
+  Object.entries(want.elo).forEach(([team, rating]) => close(got.elo[team], rating));
+  Object.entries(want.teams).forEach(([team, values]) => values.forEach((v, i) => close(got.teams[team][i], v)));
+};
+
+test('replaying the season as played gives the ratings the model made', () => {
+  sameRatings(sim.rerateSeason(RERATE.payload, new Map(), []), RERATE.expected.as_played);
+});
+
+test('a changed result and a fixture taken as played re-rate as the model does', () => {
+  const { changed, appended } = RERATE.edits;
+  const got = sim.rerateSeason(RERATE.payload, new Map(Object.entries(changed)), appended);
+  sameRatings(got, RERATE.expected.edited);
+  // And it is a different season: the clubs in those matches moved.
+  const before = sim.rerateSeason(RERATE.payload, new Map(), []);
+  assert.ok(Object.keys(got.elo).some((team) => Math.abs(got.elo[team] - before.elo[team]) > 1));
+});
+
+test('the keeping windows are used, not skipped', () => {
+  // Every club has a full window in the golden season, so keeping is not 0.
+  const { teams } = sim.rerateSeason(RERATE.payload, new Map(), []);
+  assert.ok(Object.values(teams).some((t) => Math.abs(t[3]) > 1e-6));
+});
+
+/* A fixture's card odds: the published ones, moved by the re-rating's ratio. */
+eval(pick('whatIfShown'));
+
+test('a fixture the re-rating did not move shows its published odds', () => {
+  const game = { home_id: 'A', away_id: 'B', home_win: 0.2, draw: 0.25, away_win: 0.55 };
+  const odds = matchOdds(MODEL, 1500, 1500);
+  const base = { win: 0.3, draw: 0.3, odds, model: MODEL };
+  const shown = whatIfShown(game, base, null);
+  assert.ok(Math.abs(shown.home_win - 0.2) < 1e-12 && Math.abs(shown.away_win - 0.55) < 1e-12);
+  assert.equal(shown.scorelines.length, 4);
+  // The likeliest score is of the likeliest result: an away win here.
+  assert.ok(shown.likeliest[1] > shown.likeliest[0]);
+});
+
+test('a home side priced up by the re-rating gains the same share on the card', () => {
+  const game = { home_id: 'A', away_id: 'B', home_win: 0.2, draw: 0.25, away_win: 0.55 };
+  const odds = matchOdds(MODEL, 1500, 1500);
+  const base = { win: 0.3, draw: 0.3, odds, model: MODEL };
+  const shown = whatIfShown(game, base, { win: 0.45, draw: 0.28, odds, model: MODEL });
+  assert.ok(shown.home_win > 0.2 && shown.away_win < 0.55);
+  assert.ok(Math.abs(shown.home_win + shown.draw + shown.away_win - 1) < 1e-12);
+});

@@ -65,7 +65,8 @@ closing odds.
   A new input goes in both, side by side.
 - **The report payload** (`pipeline.build_report`). One dict per league:
   `league`, `model` (also the compare tool's ingredients), `table`,
-  `fixtures`, `results`, `high_stakes`, `next_stakes`, `history`. The
+  `fixtures`, `results`, `rerate` (the season's start state and played matches,
+  for the what-if page's re-rating), `high_stakes`, `next_stakes`, `history`. The
   frontend reads only this, `careers.json` and `calibration.json`.
 - **Two hosts, one URL scheme.** `build_site` writes `report.json`,
   `report-<season>.json`, `report-<season>-<date>.json`, `careers.json` and

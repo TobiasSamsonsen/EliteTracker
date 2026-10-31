@@ -7,6 +7,7 @@ Scripts load with `<script defer>`.
 |---|---|
 | `index.html` + `app.js` + `i18n.js` + `styles.css` | the site |
 | `model.html` + `model.js` | the model page (`/model.html`), self-contained |
+| `season-sim.js` | the what-if page's season simulation (a Web Worker) and its re-rating of the clubs (`rerateSeason`, a port of the Elo and attack/defence updates); also loaded as a plain script and required by the node tests |
 | `thumbs.js` | the sliding pill of every segmented control, on both pages |
 | `i18n.js` | `translations.en` and `translations.no`, one key table each; `t(key, vars)` |
 | `vendor/three/` | three.js r147, vendored; loaded only when the season mountain opens |
@@ -28,7 +29,7 @@ In file order:
   **high stakes**, **played results**, **hero & model card**,
   **model card: how accurate the model is**, **team** (one club's focus view),
   **compare clubs**
-- **explore**: the gallery, what the further views share, race lines, the luck table
+- **explore**: the gallery, what the further views share, race lines, the luck table, **what if** (lock a score on any match, or auto-fill the rest; the Matches cards made editable with a By week / Your changes switch, the clubs re-rated, the chances beside them)
 - **season rewind**, **theme**, **skeleton loading helpers**
 - **wiring**: `render()`, the URL parameters, `popstate`, `boot`
 - **analytics**, **mobile gestures**
@@ -49,7 +50,7 @@ is read at boot and on `popstate`, and written by `render()` and
 ## Tests
 
 `tests/frontend.test.js` (`node --test`) evaluates functions copied out of
-`app.js` and `model.js` (`pick`, which slices a `function name(` declaration
+`app.js` and `model.js`, and requires `season-sim.js` whole (`pick`, which slices a `function name(` declaration
 out of the source; arrow-function constants cannot be picked). The model's
 arithmetic is checked against `tests/fixtures/match_odds.json`, which the
 Python model writes ([model.md](model.md), "The browser's copies").

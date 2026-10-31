@@ -1719,8 +1719,8 @@ table.standings .zone-divider__wrap::after {
   /* Played Results and Next Up: crest only, and a bigger one. The name
      button stays, stretched invisibly over the crest, so a tap still opens
      the club, focus rings the crest and a screen reader still reads the name. */
-  :is(#played-results, #fixtures, #team-content) .played-card__team { position: relative; }
-  :is(#played-results, #fixtures, #team-content) .played-card__team .played-card__team-name {
+  :is(#played-results, #fixtures, #whatif-list, #team-content) .played-card__team { position: relative; }
+  :is(#played-results, #fixtures, #whatif-list, #team-content) .played-card__team .played-card__team-name {
     position: absolute;
     inset: 0;
     max-width: none;
@@ -1728,8 +1728,8 @@ table.standings .zone-divider__wrap::after {
     color: transparent;
     border-radius: 6px;
   }
-  :is(#played-results, #fixtures, #team-content) .played-card__side .team-logo { width: 36px; height: 36px; }
-  :is(#played-results, #fixtures, #team-content) .played-card { gap: 0.25rem; }
+  :is(#played-results, #fixtures, #whatif-list, #team-content) .played-card__side .team-logo { width: 36px; height: 36px; }
+  :is(#played-results, #fixtures, #whatif-list, #team-content) .played-card { gap: 0.25rem; }
 }
 
 @media (max-width: 480px) {
@@ -4976,3 +4976,256 @@ table.standings tbody tr:not(.zone-divider) td { border-bottom-color: color-mix(
   #standings td.col--fd { text-align: center; }
   #standings thead th.season-end .sort-btn { justify-content: center; }
 }
+
+/* ---------- explore: what if (viz=whatif) ------------------------------- */
+
+/* The Matches cards with an editable score, and the chances beside them. */
+.whatif {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.12fr);
+  gap: 1rem 1.25rem;
+  align-items: start;
+  padding: 0 1rem 1rem;
+}
+.whatif__note { grid-column: 1 / -1; margin: 0; }
+.whatif__matches {
+  position: relative;
+  background: var(--panel);
+  border: 1px solid var(--rule);
+  border-radius: var(--radius);
+  overflow: clip;
+}
+.whatif__list, .whatif__impact { scroll-margin-top: 4.75rem; }
+.whatif__bar { display: none; }
+
+.whatif-card { transition: box-shadow 0.15s var(--ease); }
+.whatif-card.is-locked { box-shadow: inset 3px 0 0 var(--accent); }
+.whatif-flag {
+  margin-left: 0.5rem;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--accent-ink);
+}
+
+/* The score: each side's goals between a pair of arrows. */
+.whatif-score { display: flex; align-items: center; gap: 0.3rem; flex: none; }
+.whatif-score__dash { color: var(--ink-faint); font-weight: 700; }
+.whatif-step { display: flex; flex-direction: column; align-items: center; }
+.whatif-step__value {
+  min-width: 1.6ch;
+  text-align: center;
+  font-family: var(--display);
+  font-size: 1.5rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.1;
+  color: var(--ink);
+}
+.whatif-step__value.is-empty { color: var(--ink-faint); font-weight: 400; }
+.whatif-step__btn {
+  display: grid;
+  place-items: center;
+  width: 2.5rem;
+  height: 1.6rem;
+  padding: 0;
+  color: var(--ink-muted);
+  background: none;
+  border: 0;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background-color 0.12s var(--ease), color 0.12s var(--ease);
+}
+.whatif-step__btn:hover:not(:disabled) { background: var(--panel-sunk); color: var(--ink); }
+.whatif-step__btn:active:not(:disabled) { background: var(--rule); }
+.whatif-step__btn:disabled { opacity: 0.25; cursor: default; }
+.whatif-step__btn:focus-visible, .whatif-chip:focus-visible, .whatif-reset:focus-visible,
+.whatif-impact__meta:focus-visible, .whatif__bar:focus-visible, .whatif-auto__summary:focus-visible {
+  outline: 2px solid var(--ink);
+  outline-offset: 2px;
+}
+@media (pointer: coarse) {
+  .whatif-step__btn { height: 2.25rem; width: 2.75rem; }
+  .whatif-chip { min-height: 2.25rem; }
+}
+
+/* The odds across the whole card, the likeliest scorelines beneath them. */
+.whatif-card__foot {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.4rem;
+  min-height: 1.5rem;
+}
+.whatif-card__foot .odds { align-self: stretch; }
+.whatif-chips { display: flex; flex-wrap: wrap; justify-content: center; gap: 0.3rem; }
+.whatif-chip {
+  padding: 0.15rem 0.6rem;
+  font: inherit;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  color: var(--ink-muted);
+  background: var(--panel);
+  border: 1px solid var(--rule);
+  border-radius: 999px;
+  cursor: pointer;
+}
+.whatif-chip:hover { border-color: var(--rule-strong); color: var(--ink); }
+.whatif-chip[aria-pressed="true"] { color: var(--panel); background: var(--ink); border-color: var(--ink); }
+.whatif-reset {
+  padding: 0.25rem 0.4rem;
+  font: inherit;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--accent-ink);
+  background: none;
+  border: 0;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  cursor: pointer;
+}
+
+/* The chances. */
+.whatif__impact {
+  position: sticky;
+  top: 4.75rem;
+  max-height: calc(100vh - 5.75rem);
+  overflow: auto;
+  padding: 0.9rem 1rem 0.5rem;
+  background: var(--panel);
+  border: 1px solid var(--rule);
+  border-radius: var(--radius);
+}
+.whatif-impact__head { display: flex; align-items: center; justify-content: space-between; gap: 1rem; }
+.whatif-impact__title { margin: 0; font-size: 1rem; font-weight: 700; }
+.whatif-impact__line { margin: 0.35rem 0 0.75rem; font-size: 0.875rem; font-weight: 600; line-height: 1.4; }
+.whatif-impact__line--error { color: var(--outcome-bad-ink); }
+.whatif-table__wrap { overflow-x: auto; transition: opacity 0.15s var(--ease); }
+.whatif__impact.is-updating .whatif-table__wrap { opacity: 0.5; }
+.whatif-table { width: 100%; border-collapse: collapse; font-size: 0.8125rem; font-variant-numeric: tabular-nums; }
+.whatif-table th, .whatif-table td { padding: 0.3rem 0.45rem; text-align: right; white-space: nowrap; line-height: 1.25; }
+.whatif-table thead th {
+  background: var(--panel);
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+}
+.whatif-table tbody tr { border-top: 1px solid var(--rule); }
+.whatif-table tbody tr.is-involved { background: color-mix(in srgb, var(--accent) 9%, var(--panel)); }
+.whatif-table .whatif-table__club {
+  position: sticky;
+  left: 0;
+  z-index: 1;
+  text-align: left;
+  font-weight: 600;
+  background: var(--panel);
+}
+.whatif-table tbody tr.is-involved .whatif-table__club { background: color-mix(in srgb, var(--accent) 9%, var(--panel)); }
+.whatif-table .whatif-table__club .team-logo { width: 18px; height: 18px; margin-right: 0.45rem; vertical-align: middle; }
+.whatif-chance { display: block; font-weight: 600; }
+.whatif-delta { display: block; min-height: 1.1em; font-size: 0.6875rem; font-weight: 600; color: var(--ink-muted); }
+.whatif-delta--good { color: var(--outcome-good-ink); }
+.whatif-delta--bad { color: var(--outcome-bad-ink); }
+
+/* Narrow: the cards first, and the headline of the chances stays in view
+   above the tab bar (--whatif-bar-bottom, set when the page is drawn). */
+@media (max-width: 900px) {
+  .whatif { grid-template-columns: minmax(0, 1fr); padding: 0 0.5rem 1rem; }
+  .whatif__impact { position: static; max-height: none; overflow: visible; }
+  .whatif__bar {
+    position: sticky;
+    bottom: var(--whatif-bar-bottom, 0px);
+    z-index: 5;
+    display: block;
+    width: 100%;
+    padding: 0.7rem 1rem;
+    font: inherit;
+    font-size: 0.8125rem;
+    font-weight: 600;
+    line-height: 1.35;
+    text-align: left;
+    color: var(--ink);
+    background: color-mix(in srgb, var(--panel) 94%, transparent);
+    backdrop-filter: blur(12px);
+    border: 0;
+    border-top: 1px solid var(--rule-strong);
+    cursor: pointer;
+  }
+  .whatif__bar.is-quiet { color: var(--ink-muted); font-weight: 500; }
+}
+@media (max-width: 760px) {
+  .whatif-step__value { font-size: 1.25rem; }
+  .whatif-step__btn { width: 2.25rem; }
+  .whatif-table .whatif-table__club { min-width: 6.75rem; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .whatif-card, .whatif-table__wrap { transition: none; }
+}
+.whatif-table thead th { white-space: normal; vertical-align: bottom; line-height: 1.15; }
+.whatif-table thead th:first-child { white-space: nowrap; }
+
+/* Auto-fill: under the pager, above the cards. */
+.whatif-tools { display: flex; flex-wrap: wrap; justify-content: center; gap: 0.5rem; padding: 0.75rem 1rem; border-bottom: 1px solid var(--rule); }
+.whatif-tool {
+  padding: 0.3rem 0.8rem;
+  font: inherit;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--ink);
+  background: var(--panel);
+  border: 1px solid var(--rule-strong);
+  border-radius: 999px;
+  cursor: pointer;
+  transition: background-color 0.12s var(--ease), border-color 0.12s var(--ease);
+}
+.whatif-tool:hover:not(:disabled) { background: var(--panel-sunk); border-color: var(--ink-muted); }
+.whatif-tool:disabled { opacity: 0.4; cursor: default; }
+.whatif-tool[data-fill="clear"] { color: var(--accent-ink); border-color: transparent; background: none; text-decoration: underline; text-underline-offset: 2px; }
+.whatif-tool:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+@media (pointer: coarse), (max-width: 760px) { .whatif-tool { min-height: 2.25rem; } .whatif-tools { padding-inline: 0.5rem; } }
+
+/* By week / Your changes. */
+.whatif-views-row { display: flex; justify-content: center; padding: 0.85rem 1rem 0.2rem; }
+.whatif-views button { display: inline-flex; align-items: center; justify-content: center; gap: 0.4rem; min-width: 7.5rem; }
+.whatif-views button:disabled { opacity: 0.45; cursor: default; }
+.whatif-views__count {
+  min-width: 1.35rem;
+  padding: 0 0.4rem;
+  font-size: 0.6875rem;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.35rem;
+  text-align: center;
+  background: var(--rule);
+  border-radius: 999px;
+}
+.whatif-views button[aria-pressed="true"] .whatif-views__count { background: rgb(255 255 255 / 0.25); }
+.whatif-impact__meta {
+  display: block;
+  margin: 0.4rem 0 0;
+  padding: 0;
+  font: inherit;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--accent-ink);
+  background: none;
+  border: 0;
+  cursor: pointer;
+  text-align: left;
+}
+.whatif-impact__meta:hover { text-decoration: underline; text-underline-offset: 2px; }
+.whatif-auto { border-top: 1px solid var(--rule); }
+.whatif-auto__summary {
+  padding: 0.85rem 1.25rem;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+  cursor: pointer;
+}
+.whatif-auto__summary:hover { color: var(--ink); }

@@ -70,8 +70,12 @@ stood on earlier dates for the history charts.
 
 ## The browser's copies
 
-Two pages redo some of the arithmetic in JavaScript: the compare tool
-(`public/app.js`, "compare clubs") and the model page (`public/model.js`).
+Three pages redo some of the arithmetic in JavaScript: the compare tool
+(`public/app.js`, "compare clubs"), the model page (`public/model.js`) and the
+what-if page (`public/season-sim.js`: the season simulation of
+`simulation/season.py` without the run-in stakes and play-offs, and the season's
+Elo and attack/defence updates replayed with a result changed, from the report's
+`rerate`, `pipeline.rerate_payload`).
 Their golden numbers live in `tests/fixtures/match_odds.json`, which the
 Python model writes and checks (`tests/test_pricing.py`) and the JS tests read
 (`tests/frontend.test.js`). After a deliberate model change:
@@ -83,3 +87,17 @@ node --test tests/frontend.test.js             # then bring the ports up to it
 
 The report's `model` section carries the settings the compare tool needs;
 `model.js` keeps its own copy of the shipped defaults (`DEFAULTS`).
+
+The what-if re-rating has a golden file of its own, `tests/fixtures/rerate.json`
+(`python -m tests.test_rerate`): a small season replayed by the Python model, as played
+and with a result changed and a fixture taken as played, which `rerateSeason` must
+reproduce to 1e-7. On the real 2026 and 2023 seasons it lands on the published ratings
+(Elo to the 0.1 they are rounded to, the goals model to 5e-5) except one OBOS-ligaen
+defence at 3e-4 log goals: a club still keeping against the other division reads that
+division's window as it stood at kickoff. After a change to `elo.py`,
+`attack_defence.py` or `career.replay`, rewrite the file and bring the port up to it.
+
+The season simulation has no golden file: the page moves the published chances by the
+difference of two runs on the same draws, so a term the port lacks (the run-in stakes,
+which put its baseline 1.3 points from the published cells and a fixture's odds up to
+4 off) cancels to first order. Re-check the gap after a change to `season.py`.

@@ -21,7 +21,7 @@ from typing import Any
 
 import numpy as np
 
-from elitetracker.model.attack_defence import ADConfig, AttackDefence, OUTCOME_BLEND
+from elitetracker.model.attack_defence import ADConfig, AttackDefence, KEEPING_LEAGUE_ROWS, OUTCOME_BLEND
 from elitetracker.model.career import SeasonSlice, TeamCareer, build_careers, team_ids
 from elitetracker.model.elo import (
     MODEL_VERSION, EloConfig, effective_home_advantage, era_config, expected_score, xg_implied_score,
@@ -510,6 +510,8 @@ def build_report(
     shots = shot_table(root)
     ratings = build_rating_table(seeds, all_matches, config=elo_config, shots=shots, before=pre_match)
     prior = prior_attack_defence(root, season)
+    start = prior.copy()
+    start.start_season(season)
     ad = prior.copy().replay(all_matches)
     ad.start_season(season)
     playoffs, sim_ratings, sim_ad = _playoffs(slug, season, root, by_league, ratings, ad, simulation, elo_config)
@@ -614,6 +616,7 @@ def build_report(
         "fixtures": _fixtures_payload(matches, ratings, elo_config, ad, league=slug,
                                       stakes=table_stakes.fixture_gaps(matches, lines)),
         "results": _results_payload(matches, pre_match, era, shots=shots),
+        "rerate": rerate_payload(slug, matches, seeds, shots, start, era),
         "high_stakes": high_stakes,
         "next_stakes": _next_stakes(*stakes_inputs),
         "history": _history_payload(
@@ -1107,6 +1110,64 @@ def xg_form(home_rating: float, away_rating: float, home_xg: float, away_xg: flo
     """
     expected = expected_score(home_rating + effective_home_advantage(config, home_rating, away_rating), away_rating)
     return config.k_factor * (xg_implied_score(home_xg, away_xg) - expected)
+
+
+def rerate_payload(
+    slug: str, matches: list[Match], seeds: dict[str, TeamRating], shots: dict[str, tuple[float, ...]],
+    start: AttackDefence, era: EloConfig,
+) -> dict[str, Any]:
+    """What the browser needs to replay one division's season with a result
+    changed (the what-if page re-rates the clubs): the settings of both
+    rating updates, each club's state as the season kicked off (`start`: the
+    goals model after its offseason pull, Elo from `seeds`) and the played
+    matches in kickoff order with their xG. `public/season-sim.js` replays
+    them exactly as `career.replay` and `AttackDefence.observe` do, and a
+    golden file holds the two to each other (`tests/test_rerate.py`).
+
+    The keeping windows are the last matches' (goals let in, xG on target
+    faced). A club whose reference division is another one (just promoted or
+    relegated) reads that division's window as it stood at kickoff."""
+    clubs = sorted({team for match in matches for team in team_ids(match)})
+    cfg = start.config
+    windows = {slug: [list(row) for row in start._keeping_league.get(slug, [])]}
+    state = {}
+    for team in clubs:
+        reference = start._keeping_division.get(team, "")
+        if reference and reference not in windows:
+            windows[reference] = [list(row) for row in start._keeping_league.get(reference, [])]
+        state[team] = {
+            "elo": seeds[team].rating,
+            "attack": start.attack[team],
+            "defence": start.defence[team],
+            "finishing": start.finishing.get(team, 0.0),
+            "keeping": [list(row) for row in start._keeping.get(team, [])],
+            "reference": reference,
+        }
+    played = []
+    for match in sorted((m for m in matches if m.played), key=Match.sort_key):
+        shot = shots.get(match.match_id) or ()
+        played.append([
+            match.match_id, *team_ids(match), match.home_goals, match.away_goals,
+            shot[0] if len(shot) >= 2 else None, shot[1] if len(shot) >= 2 else None,
+            shot[2] if len(shot) >= 4 else None, shot[3] if len(shot) >= 4 else None,
+        ])
+    return {
+        "league": slug,
+        "elo": {
+            "k_factor": era.k_factor, "home_advantage": era.home_advantage,
+            "home_advantage_beta": era.home_advantage_beta, "xg_alpha": era.xg_alpha,
+            "xg_margin": era.xg_margin, "xg_margin_smoothing": era.xg_margin_smoothing,
+        },
+        "ad": {
+            "base": cfg.base, "home": cfg.home, "cap": cfg.cap, "k": cfg.k, "k_shots": cfg.k_shots,
+            "alpha": cfg.alpha, "signal": cfg.signal, "early_boost": cfg.early_boost, "early_tau": cfg.early_tau,
+            "keeping_window": cfg.keeping_window, "keeping_weight": cfg.keeping_weight,
+            "league_rows": KEEPING_LEAGUE_ROWS,
+        },
+        "windows": windows,
+        "start": state,
+        "matches": played,
+    }
 
 
 def _results_payload(

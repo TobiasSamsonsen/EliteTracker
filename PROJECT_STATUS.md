@@ -836,8 +836,24 @@ before shipping, as the rules ask:
 - [ ] Head-to-head tool — current-season record between two clubs is now shown in Compare
       Clubs (filters `report.results` client-side). Cross-season history would need a new
       server-side payload from the normalized match files.
-- [ ] "What-if" simulator — nudge a club's rating and see the grid/table update. Needs
-      on-demand simulation, so it does not fit the static host until that story is settled.
+- [x] "What if" (Explore, `?viz=whatif`): lock an exact score on any match, played or to
+      come (or auto-fill every match with its likeliest score), and see the finishing
+      chances move. The clubs are re-rated for the locks: the season's Elo and
+      attack/defence updates are replayed in the browser from the report's `rerate`
+      (a changed result keeps its xG; a locked fixture counts as played after the rest),
+      the fixtures still to play are priced again, and the season is played 50,000 times
+      in a worker, twice on the same draws, as it stands and with the locks. The published
+      chances and the cards' odds move by the difference, so it fits the static host and
+      an empty page matches the Table. The replay is held to the Python model by a golden
+      file and lands on the published ratings (docs/model.md). The run-in stakes and the
+      play-offs are left out of the browser run (its as-played run is 1.3 points from the
+      published cells at 50,000 runs, both divisions; the paired difference cancels most
+      of that). No `MODEL_VERSION` bump: nothing published changes, though every report
+      now carries `rerate` (about 26 KB), so the site and the past-seasons archive need a
+      rebuild before the page can re-rate their seasons (older reports fall back to
+      today's ratings, with a note).
+- [ ] What-if follow-ups: a rating nudge ("what if this club were stronger"), and play-off
+      chances in the browser run.
 
 ## 📜 Shipped, in order
 
