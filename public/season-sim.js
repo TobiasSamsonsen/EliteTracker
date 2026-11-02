@@ -204,7 +204,9 @@ function rerateSeason(rerate, changed, appended) {
    or null per fixture) and, optionally, `replacements` for played matches
    (`replaceResults`). Returns counts[club * count + place] and each club's
    total points over the runs. Clubs level on points go by goal difference,
-   then goals scored, then index. */
+   then goals scored, then index. With `record` it also returns `runs`: every
+   run's scores and finishing places, for `scenarioAnalysis` (the draws, and so
+   the counts, are the same with or without). */
 function simulateSeason(spec) {
   const { count, sims, sd, fixed } = spec;
   const fixtures = spec.fixtures.map((fixture) => (fixture.cum ? fixture : { ...fixture, ...outcomeTables(fixture.grid) }));
@@ -218,6 +220,8 @@ function simulateSeason(spec) {
   const boost = new Float64Array(count);
   const key = new Float64Array(count);
   const order = new Int32Array(count);
+  const F = fixtures.length;
+  const runs = spec.record ? { scores: new Uint8Array(sims * F), places: new Uint8Array(sims * count), sims, count, F } : null;
   for (let run = 0; run < sims; run += 1) {
     points.set(table.points);
     gf.set(table.gf);
@@ -254,6 +258,8 @@ function simulateSeason(spec) {
         h = fixture.cells[outcome][2 * lo];
         a = fixture.cells[outcome][2 * lo + 1];
       }
+      // A score is kept as two nibbles (15 goals a side is more than any run draws).
+      if (runs) runs.scores[run * F + f] = (Math.min(h, 15) << 4) | Math.min(a, 15);
       if (h > a) points[fixture.home] += 3;
       else if (h === a) { points[fixture.home] += 1; points[fixture.away] += 1; } else points[fixture.away] += 3;
       gf[fixture.home] += h; ga[fixture.home] += a;
@@ -266,9 +272,12 @@ function simulateSeason(spec) {
       while (at > 0 && key[order[at - 1]] < key[c]) { order[at] = order[at - 1]; at -= 1; }
       order[at] = c;
     }
-    for (let place = 0; place < count; place += 1) counts[order[place] * count + place] += 1;
+    for (let place = 0; place < count; place += 1) {
+      counts[order[place] * count + place] += 1;
+      if (runs) runs.places[run * count + order[place]] = place;
+    }
   }
-  return { counts, totals };
+  return { counts, totals, runs };
 }
 
 /* The published finishing chances, moved by what locking changed: per club and
@@ -283,14 +292,209 @@ function shiftedChances(published, baseline, scenario, sims, count) {
   });
 }
 
+/* Which way a packed score (home goals << 4 | away goals) went: 0 a home win,
+   1 a draw, 2 an away win. */
+const SCORE_OUTCOME = Uint8Array.from({ length: 256 }, (_, s) => ((s >> 4) > (s & 15) ? 0 : (s >> 4) === (s & 15) ? 1 : 2));
+
+/* How a club comes to finish in one place. `run0` is the season's recorded runs
+   (`simulateSeason` with `record`); `club` and `place` are indices (place 0 is
+   first). Per fixture result, `prior` is how often it happens in all runs and
+   `cond` how often among the runs that end this way (index fixture * 3 +
+   result: 0 home win, 1 draw, 2 away win). `own` lists the club's fixtures.
+   `key` is up to six of the other clubs' fixtures where a result, or one side
+   not winning (a draw or a loss for it), is clearly more common among the runs
+   that end this way (8 points of share or more): `{ f, outcomes, prior, cond }`,
+   the biggest lift first. It is read off the same shares, not used to pick the season.
+   `typical` is the likeliest season that ends this way. The finish is only a
+   filter, so among the seasons that end this way the likeliest is the one with
+   the highest odds as a whole: the product of its results' shares among all the
+   runs (the fewest and least surprising results). It starts from the best of
+   the recorded runs that end this way and is improved result by result: a
+   result swapped for a likelier one (with its commonest score among the runs
+   that end this way) whenever the club still finishes there, one swap or two at
+   a time. A finish decided on goal difference (level on points with the club
+   beside it) is a toss-up, so it counts as half as likely. The season is built
+   from simulated results, but is not one recorded run. `typical.table[place]`
+   is its final table; its scores are `typical.scores`.
+
+   `tiePenalty` is what that costs in log odds (ln 2 by default; 0 takes the single
+   likeliest run of results even when it ends level on points).
+
+   Fewer than `minHits` runs (or all of them) is `enough: false`: nothing to say. */
+function scenarioAnalysis(spec, club, place, run, { minHits = 25, tiePenalty = Math.LN2 } = {}) {
+  const { scores, places, sims, count, F } = run;
+  const fixtures = spec.fixtures;
+  const own = [];
+  for (let f = 0; f < F; f += 1) if (fixtures[f].home === club || fixtures[f].away === club) own.push(f);
+  const all = new Int32Array(F * 3);
+  const hitN = new Int32Array(F * 3);
+  const exact = new Int32Array(F * 256);
+  const hit = new Uint8Array(sims);
+  let hits = 0;
+  for (let r = 0; r < sims; r += 1) {
+    const won = places[r * count + club] === place ? 1 : 0;
+    hit[r] = won;
+    hits += won;
+    for (let f = 0; f < F; f += 1) {
+      const s = scores[r * F + f];
+      const k = f * 3 + SCORE_OUTCOME[s];
+      all[k] += 1;
+      if (won) { hitN[k] += 1; exact[f * 256 + s] += 1; }
+    }
+  }
+  const result = { club, place, sims, hits, chance: hits / sims, enough: hits >= minHits && hits < sims, own, prior: null, cond: null, key: [], typical: null };
+  if (!result.enough) return result;
+  result.prior = Array.from(all, (n) => n / sims);
+  result.cond = Array.from(hitN, (n) => n / hits);
+
+  // The key fixtures: the result (or a side not winning) whose share rises most.
+  const sets = [[0], [1], [2], [1, 2], [0, 1]];
+  const sum = (shares, f, set) => set.reduce((total, o) => total + shares[f * 3 + o], 0);
+  const own0 = new Set(own);
+  const found = [];
+  for (let f = 0; f < F; f += 1) {
+    if (own0.has(f)) continue;
+    let best = null;
+    for (const outcomes of sets) {
+      const prior = sum(result.prior, f, outcomes);
+      const cond = sum(result.cond, f, outcomes);
+      if (cond - prior >= 0.08 && (!best || cond - prior > best.cond - best.prior)) best = { f, outcomes, prior, cond };
+    }
+    if (best) found.push(best);
+  }
+  result.key = found.sort((x, y) => (y.cond - y.prior) - (x.cond - x.prior)).slice(0, 6);
+
+  const logOdds = (f, o) => Math.log((all[f * 3 + o] + 0.5) / sims);
+  // The score shown for each result: the commonest among the runs that end this way.
+  const modalScore = new Uint8Array(F * 3);
+  const modalCount = new Int32Array(F * 3).fill(-1);
+  for (let f = 0; f < F; f += 1) {
+    for (let sc = 0; sc < 256; sc += 1) {
+      const k = f * 3 + SCORE_OUTCOME[sc];
+      if (exact[f * 256 + sc] > modalCount[k]) { modalCount[k] = exact[f * 256 + sc]; modalScore[k] = sc; }
+    }
+  }
+  const home = Int32Array.from(fixtures, (fixture) => fixture.home);
+  const away = Int32Array.from(fixtures, (fixture) => fixture.away);
+  const pts = new Int32Array(count);
+  const gf = new Int32Array(count);
+  const ga = new Int32Array(count);
+  const standing = (sc) => {
+    pts.set(spec.points); gf.set(spec.gf); ga.set(spec.ga);
+    for (let f = 0; f < F; f += 1) {
+      const h = sc[f] >> 4;
+      const a = sc[f] & 15;
+      pts[home[f]] += h > a ? 3 : h === a ? 1 : 0;
+      pts[away[f]] += a > h ? 3 : h === a ? 1 : 0;
+      gf[home[f]] += h; ga[home[f]] += a; gf[away[f]] += a; ga[away[f]] += h;
+    }
+    // As the simulation ranks them: points, goal difference, goals scored, index.
+    return Array.from({ length: count }, (_, c) => c).sort((x, y) => pts[y] - pts[x] || (gf[y] - ga[y]) - (gf[x] - ga[x]) || gf[y] - gf[x] || x - y);
+  };
+  // How good a season is for this finish: its log odds, less a toss-up's cost; null if the club is elsewhere.
+  const judge = (sc) => {
+    const order = standing(sc);
+    if (order[place] !== club) return null;
+    const level = [order[place - 1], order[place + 1]].some((c) => c != null && pts[c] === pts[club]);
+    let odds = 0;
+    for (let f = 0; f < F; f += 1) odds += logOdds(f, SCORE_OUTCOME[sc[f]]);
+    return odds - (level ? tiePenalty : 0);
+  };
+  const improve = (start) => {
+    const sc = start.slice();
+    let now = judge(sc);
+    for (let round = 0; round < 80; round += 1) {
+      let move = null;
+      const consider = (next, change) => {
+        const value = judge(next);
+        if (value != null && value > (move ? move.value : now) + 1e-9) move = { ...change, value };
+      };
+      for (let f = 0; f < F; f += 1) {
+        const o = SCORE_OUTCOME[sc[f]];
+        for (let to = 0; to < 3; to += 1) {
+          if (to === o || logOdds(f, to) - logOdds(f, o) + tiePenalty <= 1e-9) continue;
+          const next = sc.slice(); next[f] = modalScore[f * 3 + to];
+          consider(next, { f, to: modalScore[f * 3 + to] });
+        }
+      }
+      // No single swap helps: a swap that costs, repaired by one that gains.
+      for (let f = 0; f < F && !move; f += 1) {
+        const o = SCORE_OUTCOME[sc[f]];
+        for (let to = 0; to < 3; to += 1) {
+          if (to === o) continue;
+          const first = sc.slice(); first[f] = modalScore[f * 3 + to];
+          const cost = logOdds(f, to) - logOdds(f, o);
+          for (let g = 0; g < F; g += 1) {
+            if (g === f) continue;
+            const og = SCORE_OUTCOME[first[g]];
+            for (let back = 0; back < 3; back += 1) {
+              if (back === og || cost + logOdds(g, back) - logOdds(g, og) + tiePenalty <= 1e-9) continue;
+              const next = first.slice(); next[g] = modalScore[g * 3 + back];
+              consider(next, { f, to: modalScore[f * 3 + to], g, back: modalScore[g * 3 + back] });
+            }
+          }
+        }
+      }
+      if (!move) break;
+      sc[move.f] = move.to;
+      if (move.g != null) sc[move.g] = move.back;
+      now = move.value;
+    }
+    return { sc, value: now };
+  };
+  // The best few recorded runs that end this way, by the odds of their results.
+  const starts = [];
+  for (let r = 0; r < sims; r += 1) {
+    if (!hit[r]) continue;
+    let odds = 0;
+    for (let f = 0; f < F; f += 1) odds += logOdds(f, SCORE_OUTCOME[scores[r * F + f]]);
+    if (starts.length < 4 || odds > starts[starts.length - 1].odds) {
+      starts.push({ r, odds });
+      starts.sort((x, y) => y.odds - x.odds);
+      if (starts.length > 4) starts.pop();
+    }
+  }
+  let chosen = null;
+  for (const { r } of starts) {
+    const found = improve(Array.from({ length: F }, (_, f) => scores[r * F + f]));
+    if (found.value != null && (!chosen || found.value > chosen.value)) chosen = found;
+  }
+  // Scores the recorded run left (a 5–0 where 1–0 would do) go back to the commonest score of
+  // their result wherever the finish holds, so the season reads like a normal one; goal
+  // difference only stays as the run had it where the finish hangs on it.
+  let valueNow = chosen.value;
+  for (let f = 0; f < F; f += 1) {
+    const common = modalScore[f * 3 + SCORE_OUTCOME[chosen.sc[f]]];
+    if (common === chosen.sc[f]) continue;
+    const next = chosen.sc.slice();
+    next[f] = common;
+    const value = judge(next);
+    if (value != null && value >= valueNow - 1e-9) { chosen.sc = next; valueNow = value; }
+  }
+  const typical = { scores: [], table: [] };
+  const order = standing(chosen.sc);
+  for (let f = 0; f < F; f += 1) typical.scores.push([chosen.sc[f] >> 4, chosen.sc[f] & 15]);
+  order.forEach((c, i) => { typical.table[i] = { club: c, points: pts[c], goalDifference: gf[c] - ga[c], goalsFor: gf[c] }; });
+  result.typical = typical;
+  return result;
+}
+
 if (typeof importScripts === 'function') {
   let cached = null;
+  // The recorded runs of the last report asked about, for the finish grid's clicks.
+  let recorded = null;
   self.onmessage = (event) => {
-    const { id, key, base, scenario } = event.data;
+    const { id, key, base, scenario, club, place, avoidTie } = event.data;
+    if (event.data.type === 'scenario') {
+      if (!recorded || recorded.key !== key) recorded = { key, runs: simulateSeason({ ...base, record: true }).runs };
+      // No club: only the warm-up, so the first click finds the runs made.
+      self.postMessage({ id, analysis: club == null ? null : scenarioAnalysis(base, club, place, recorded.runs, { tiePenalty: avoidTie === false ? 0 : Math.LN2 }) });
+      return;
+    }
     // The as-played run depends on the report alone, so it is kept between locks.
     if (!cached || cached.key !== key) cached = { key, result: simulateSeason(base) };
     self.postMessage({ id, baseline: cached.result, scenario: scenario ? simulateSeason(scenario) : cached.result });
   };
 }
 
-if (typeof module !== 'undefined') module.exports = { mulberry32, outcomeTables, replaceResults, simulateSeason, shiftedChances, xgImplied, eloPair, rerateSeason };
+if (typeof module !== 'undefined') module.exports = { mulberry32, outcomeTables, replaceResults, simulateSeason, scenarioAnalysis, shiftedChances, xgImplied, eloPair, rerateSeason };

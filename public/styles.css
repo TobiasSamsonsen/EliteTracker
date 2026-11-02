@@ -5247,3 +5247,196 @@ table.standings tbody tr:not(.zone-divider) td { border-bottom-color: color-mix(
 .runin__none { background: transparent; }
 /* The cell sets its own ink, so the grid's invert class has to win over it. */
 .runin__cell.cell--invert { color: var(--cell-ink-invert); }
+
+/* ---------- how a finish happens (a grid cell's popup) ------------- */
+
+/* The cell is a button only where there is a season left to play, and not
+   while the season replays. */
+.grid--live .cell:not(.cell--empty) { cursor: pointer; }
+.grid--live.grid-anim .cell { cursor: default; }
+
+body.has-scenario { overflow: hidden; }
+
+.scenario {
+  position: fixed;
+  inset: 0;
+  z-index: 90;
+  display: grid;
+  place-items: center;
+  padding: 1rem;
+}
+.scenario__scrim { position: absolute; inset: 0; background: rgb(0 0 0 / 0.55); }
+.scenario__panel {
+  position: relative;
+  width: min(36rem, 100%);
+  max-height: min(92dvh, 58rem);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  background: var(--panel);
+  border: 1px solid var(--rule);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 1.25rem 1.25rem 1.5rem;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .scenario__panel { animation: scenario-in 0.18s var(--ease); }
+  @keyframes scenario-in { from { opacity: 0; transform: translateY(8px); } }
+}
+
+.scenario__head { display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem; }
+.scenario__eyebrow {
+  margin: 0 0 0.25rem;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--accent-ink);
+}
+.scenario__title {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  margin: 0;
+  font-size: 1.3125rem;
+  line-height: 1.2;
+}
+.scenario__title .team-logo { width: 1.9rem; height: 1.9rem; }
+.scenario__close {
+  flex: none;
+  width: 2rem;
+  height: 2rem;
+  border: 1px solid var(--rule);
+  border-radius: 8px;
+  background: transparent;
+  color: var(--ink-muted);
+  font-size: 1.25rem;
+  line-height: 1;
+  cursor: pointer;
+}
+.scenario__close:hover { color: var(--ink); border-color: var(--rule-strong); }
+
+.scenario__hero { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 0.5rem 1.1rem; margin-top: 1rem; }
+.scenario__figure {
+  margin: 0;
+  font-family: var(--display);
+  font-variation-settings: "wdth" 125;
+  font-weight: 800;
+  font-size: clamp(3rem, 14vw, 4.25rem);
+  line-height: 0.85;
+  letter-spacing: -0.035em;
+  font-variant-numeric: tabular-nums;
+}
+.scenario__figure small { font-size: 0.4em; font-weight: 700; letter-spacing: 0; margin-left: 0.12em; color: var(--ink-muted); }
+.scenario__hero-text { display: grid; gap: 0.15rem; min-width: 0; }
+.scenario__label { margin: 0; font-weight: 600; color: var(--ink-muted); }
+.scenario__sub { margin: 0; font-size: 0.8125rem; color: var(--ink-faint); font-variant-numeric: tabular-nums; }
+
+.scenario__wait { margin: 1.5rem 0 0.5rem; color: var(--ink-muted); font-size: 0.875rem; }
+.scenario__intro { margin-top: 1rem; }
+.scenario__lede { margin: 0 0 0.75rem; font-size: 0.9375rem; line-height: 1.45; }
+.scenario__mode { margin-top: 1rem; }
+.scenario__mode .scenario__howto { margin-top: 0.5rem; }
+.scenario__howto { margin: 0.75rem 0 0; font-size: 0.75rem; line-height: 1.45; color: var(--ink-faint); }
+.scenario__lock {
+  padding: 0.5rem 0.85rem;
+  border: 0;
+  border-radius: 8px;
+  background: var(--accent);
+  color: var(--on-accent);
+  font: inherit;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+.scenario__lock:hover { filter: brightness(1.08); }
+.scenario__close:focus-visible, .scenario__lock:focus-visible, .scenario-all summary:focus-visible {
+  outline: 2px solid var(--accent-ink);
+  outline-offset: 2px;
+}
+
+.scenario-section { margin-top: 1.5rem; }
+.scenario-section__title {
+  margin: 0 0 0.25rem;
+  font-size: 0.75rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.scenario-section__sub { margin: 1rem 0 0.35rem; font-size: 0.75rem; color: var(--ink-muted); font-weight: 600; }
+.scenario-section__lead { margin: 0 0 0.75rem; color: var(--ink-muted); font-size: 0.8125rem; line-height: 1.45; }
+
+.scenario .team-logo { width: 1.1rem; height: 1.1rem; }
+.scenario__title .team-logo { width: 1.9rem; height: 1.9rem; }
+.scenario-side { display: inline-flex; align-items: center; gap: 0.35rem; min-width: 0; }
+
+.scenario-empty { margin: 0; padding: 0.75rem 0.9rem; border-radius: 10px; background: var(--panel-sunk); color: var(--ink-muted); font-size: 0.8125rem; }
+.scenario-matches { display: grid; gap: 0.4rem; }
+.scenario-match { display: flex; align-items: flex-start; gap: 0.6rem; padding: 0.6rem 0.75rem; border-radius: 10px; background: var(--panel-sunk); }
+/* The club's own matches carry its accent on the edge and the chip; the other clubs' matches have neither. */
+.scenario-match.is-own { box-shadow: inset 3px 0 0 var(--accent); }
+.scenario-match .form__chip { margin-top: 0.1rem; flex: none; }
+.scenario-match__body { flex: 1; min-width: 0; }
+.scenario-match__teams { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 0.15rem 0.5rem; font-size: 0.875rem; font-weight: 700; }
+.scenario-match__teams .is-loser { font-weight: 500; color: var(--ink-muted); }
+.scenario-match__score { padding: 0 0.4rem; border-radius: 5px; background: var(--panel); font-variant-numeric: tabular-nums; font-weight: 700; }
+.scenario-match__meta { margin: 0.2rem 0 0; font-size: 0.6875rem; color: var(--ink-muted); text-align: center; }
+.scenario-match__odds { display: flex; align-items: center; gap: 0.6rem; margin-top: 0.45rem; }
+.scenario-match__odds .odds { flex: 1; height: 1.1rem; min-width: 0; padding: 0; margin: 0; overflow: visible; }
+.scenario-match__odds .odds__seg { font-size: 0.625rem; }
+.scenario-match__odds .odds__seg:not(.is-scenario) { opacity: 0.3; color: transparent; }
+.scenario-match__chance { flex: none; font-size: 0.8125rem; font-variant-numeric: tabular-nums; color: var(--ink-muted); white-space: nowrap; }
+.scenario-match__chance strong { color: var(--accent-ink); font-size: 0.9375rem; }
+
+.scenario-table__wrap { overflow-x: auto; }
+.scenario-table { width: 100%; border-collapse: collapse; font-size: 0.8125rem; }
+.scenario-table th { padding: 0.25rem 0.4rem; text-align: left; font-size: 0.6875rem; font-weight: 600; color: var(--ink-muted); }
+.scenario-table td { padding: 0.3rem 0.4rem; border-top: 1px solid var(--rule); font-variant-numeric: tabular-nums; }
+.scenario-table th:nth-child(n+3), .scenario-table td:nth-child(n+3) { text-align: right; }
+.scenario-table__pos span { display: inline-block; min-width: 1.1rem; }
+.scenario-table__move { margin-left: 0.2rem; font-size: 0.625rem; font-weight: 700; }
+.scenario-table__move.is-up { color: var(--outcome-good-ink); }
+.scenario-table__move.is-down { color: var(--outcome-bad-ink); }
+.scenario-table__gain { color: var(--ink-muted); }
+.scenario-table__key { margin-left: 0.4rem; font-size: 0.5rem; color: var(--accent-ink); vertical-align: middle; }
+.scenario-table__pos { width: 3.4rem; white-space: nowrap; color: var(--ink-muted); }
+.scenario-table__pts { font-weight: 700; }
+.scenario-table .is-self td { background: color-mix(in oklab, var(--accent) 14%, transparent); font-weight: 700; }
+
+.scenario-all { margin-top: 1rem; font-size: 0.8125rem; }
+.scenario-all summary { cursor: pointer; color: var(--accent-ink); font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; font-size: 0.75rem; }
+.scenario-all__heading { margin: 1rem 0 0.35rem; font-size: 0.6875rem; letter-spacing: 0.06em; text-transform: uppercase; color: var(--ink-muted); }
+.scenario-all__grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.2rem 0.6rem; }
+.scenario-all__row { padding: 0.2rem 0.4rem; border-radius: 6px; }
+.scenario-all__row .scenario-match__teams { font-size: 0.75rem; gap: 0.1rem 0.35rem; }
+.scenario-all__row .team-logo { display: none; }
+.scenario-all__row.is-own { background: color-mix(in oklab, var(--accent) 14%, transparent); }
+/* Against the odds: a dotted line under the score, no colour (colour here means data). */
+.scenario-all__row.is-odds .scenario-match__score, .scenario-all__legend .is-odds::before { text-decoration: underline dotted var(--ink-faint) 2px; text-underline-offset: 3px; }
+.scenario-all__legend { display: flex; flex-wrap: wrap; gap: 0.4rem 1rem; margin: 0.75rem 0 0; font-size: 0.6875rem; color: var(--ink-muted); }
+.scenario-all__legend span::before { content: ''; display: inline-block; width: 0.55rem; height: 0.55rem; margin-right: 0.35rem; border-radius: 2px; background: var(--rule-strong); }
+.scenario-all__legend .is-own::before { background: color-mix(in oklab, var(--accent) 45%, transparent); }
+.scenario-all__legend .is-odds::before { content: '1–0'; width: auto; height: auto; margin-right: 0.4rem; background: none; font-variant-numeric: tabular-nums; }
+
+/* On a desktop the popup is wider and its explanatory text a step larger. */
+@media (min-width: 761px) {
+  .scenario__panel { width: min(46rem, 100%); padding: 1.5rem 1.75rem 1.75rem; }
+  .scenario__sub, .scenario__wait { font-size: 0.9375rem; }
+  .scenario__lede { font-size: 1.0625rem; line-height: 1.5; }
+  .scenario__howto { font-size: 0.875rem; }
+  .scenario-section__title { font-size: 0.875rem; }
+  .scenario-section__sub { font-size: 0.8125rem; }
+  .scenario-section__lead, .scenario-empty, .explore-note { font-size: 0.9375rem; }
+  .scenario-match__teams { font-size: 1rem; }
+  .scenario-match__meta, .scenario-all__heading, .scenario-all__legend { font-size: 0.8125rem; }
+  .scenario-match__chance { font-size: 0.9375rem; }
+  .scenario-table, .scenario-all { font-size: 0.9375rem; }
+  .scenario-table th { font-size: 0.8125rem; }
+  .scenario-all summary { font-size: 0.8125rem; }
+  .scenario-all__row .scenario-match__teams { font-size: 0.8125rem; }
+}
+
+@media (max-width: 760px) {
+  .scenario { padding: 0; place-items: end center; }
+  .scenario__panel { max-height: 94dvh; border-radius: var(--radius) var(--radius) 0 0; padding: 1rem 1rem 1.5rem; }
+  .scenario-all__grid { grid-template-columns: 1fr; }
+}
+

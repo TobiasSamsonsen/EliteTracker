@@ -7,7 +7,7 @@ Scripts load with `<script defer>`.
 |---|---|
 | `index.html` + `app.js` + `i18n.js` + `styles.css` | the site |
 | `model.html` + `model.js` | the model page (`/model.html`), self-contained |
-| `season-sim.js` | the what-if page's season simulation (a Web Worker) and its re-rating of the clubs (`rerateSeason`, a port of the Elo and attack/defence updates); also loaded as a plain script and required by the node tests |
+| `season-sim.js` | the what-if page's season simulation (a Web Worker) and its re-rating of the clubs (`rerateSeason`, a port of the Elo and attack/defence updates); also the finish grid's "how it happens" analysis (`simulateSeason` with `record`, `scenarioAnalysis`); loaded as a plain script and required by the node tests |
 | `thumbs.js` | the sliding pill of every segmented control, on both pages |
 | `i18n.js` | `translations.en` and `translations.no`, one key table each; `t(key, vars)` |
 | `vendor/three/` | three.js r147, vendored; loaded only when the season mountain opens |
@@ -29,6 +29,7 @@ In file order:
   **high stakes**, **played results**, **hero & model card**,
   **model card: how accurate the model is**, **team** (one club's focus view),
   **compare clubs**
+- **how a finish happens**: a click or Enter on a finish-grid cell opens a popup (`openScenario`, `?scenario=<team id>:<place>`), with the site's own pieces (the chance as the display figure; each match with the Matches page's odds bar over all simulations, the scenario's result lit, and "all → these" beside it; the club's own matches with a chip and an accent edge; the final table with places gained or lost and points taken; a result against the odds in the fold marked by a dotted underline, no colour): the likeliest season that ends this way (the finish is only a filter, so it is the one with the highest odds as a whole: it starts from the best recorded run that ends this way and is improved result by result while the club keeps the finish, a finish level on points counting as half as likely, which a switch in the popup turns off to show the single likeliest run of results, with a note on why avoiding is the default; scores are each result's commonest), with the other clubs' results in it that are clearly more common here than usually (8 points of share or more, six at most; a draw also counts as one side not winning; the season shown is picked to agree with them), the club's own matches with how often each result comes in all simulations and in these, the season's final table, and every result behind a fold (the club's matches lifted out, results the odds had against marked). The key matches (own and other) lock into What if as the scores of that season; What if re-rates the clubs for them, so its figures come out near the popup's, not equal. Runs in the what-if worker; pointing at a cell starts it
 - **explore**: the gallery, what the further views share, race lines, the luck table, **what if** (lock a score on any match, or auto-fill the rest; the Matches cards made editable with a By week / Your changes switch, the clubs re-rated, the chances beside them)
 - **season rewind**, **theme**, **skeleton loading helpers**
 - **wiring**: `render()`, the URL parameters, `popstate`, `boot`

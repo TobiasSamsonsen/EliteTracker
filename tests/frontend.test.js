@@ -928,6 +928,92 @@ test('the outcome tables hold each outcome\'s own cells and end on 1', () => {
   cum.forEach((row) => assert.equal(row[row.length - 1], 1));
 });
 
+/* The finish grid's "how it happens" popup: the recorded runs and what
+   `scenarioAnalysis` reads from them. */
+test('recording the runs does not change them', () => {
+  const plain = sim.simulateSeason(league(null));
+  const kept = sim.simulateSeason({ ...league(null), record: true });
+  assert.deepEqual(Array.from(kept.counts), Array.from(plain.counts));
+  assert.equal(plain.runs, null);
+  const { runs } = kept;
+  assert.equal(runs.scores.length, 4000 * 1);
+  // A club's finishing places over the runs are its counts.
+  for (let club = 0; club < 3; club += 1) {
+    for (let place = 0; place < 3; place += 1) {
+      let seen = 0;
+      for (let r = 0; r < 4000; r += 1) if (runs.places[r * 3 + club] === place) seen += 1;
+      assert.equal(seen, kept.counts[club * 3 + place]);
+    }
+  }
+});
+
+test('the analysis finds the result a finish hangs on, and the typical season shows it', () => {
+  // C is clear; A is 2nd unless it loses to B, so that fixture is the whole story.
+  const spec = league(null);
+  const { runs } = sim.simulateSeason({ ...spec, record: true });
+  const found = sim.scenarioAnalysis(spec, 0, 1, runs);
+  assert.ok(found.enough);
+  assert.deepEqual(found.own, [0]);
+  assert.equal(found.hits, runs.sims * found.chance);
+  // Without a loss: no run that ends this way has B winning, and the shares add up to 1.
+  assert.equal(found.cond[2], 0);
+  assert.ok(found.cond[2] < found.prior[2]);
+  assert.ok(found.cond[0] > found.prior[0]);
+  assert.ok(Math.abs(found.cond.reduce((a, b) => a + b, 0) - 1) < 1e-9);
+  assert.ok(Math.abs(found.prior.reduce((a, b) => a + b, 0) - 1) < 1e-9);
+  // The typical season is a real run of this finish: C first, A second, and A did not lose.
+  assert.equal(found.typical.table[1].club, 0);
+  assert.equal(found.typical.table[0].club, 2);
+  assert.ok(found.typical.scores[0][0] >= found.typical.scores[0][1]);
+});
+
+test('the typical season has the highest odds among those that end this way', () => {
+  // A is 2nd on a win or a draw against B; the season shown takes the likelier of the two.
+  const spec = league(null);
+  const { runs } = sim.simulateSeason({ ...spec, record: true });
+  const found = sim.scenarioAnalysis(spec, 0, 1, runs);
+  const [h, a] = found.typical.scores[0];
+  const shown = h > a ? 0 : h === a ? 1 : 2;
+  const possible = [0, 1, 2].filter((o) => found.cond[o] > 0);
+  const likeliest = possible.reduce((best, o) => (found.prior[o] > found.prior[best] ? o : best), possible[0]);
+  assert.equal(shown, likeliest);
+});
+
+test('the typical season is at least as likely as every recorded run that ends the same way', () => {
+  // Three matches between the same pair: the season built keeps the finish and is no less likely than any recorded one.
+  const spec = { ...league(null), fixtures: [0, 1, 2].map(() => ({ home: 0, away: 1, win: 0.5, draw: 0.3, grid: flat() })), fixed: [null, null, null] };
+  const { runs } = sim.simulateSeason({ ...spec, record: true });
+  const found = sim.scenarioAnalysis(spec, 0, 1, runs);
+  assert.ok(found.enough);
+  assert.equal(found.typical.table[1].club, 0);
+  const odds = (outcomes) => outcomes.reduce((sum, o, f) => sum + Math.log(found.prior[f * 3 + o]), 0);
+  const outcome = (s) => ((s >> 4) > (s & 15) ? 0 : (s >> 4) === (s & 15) ? 1 : 2);
+  let best = -Infinity;
+  for (let r = 0; r < runs.sims; r += 1) {
+    if (runs.places[r * runs.count + 0] !== 1) continue;
+    best = Math.max(best, odds([0, 1, 2].map((f) => outcome(runs.scores[r * runs.F + f]))));
+  }
+  const shown = odds(found.typical.scores.map(([h, a]) => (h > a ? 0 : h === a ? 1 : 2)));
+  assert.ok(shown >= best - 1e-9);
+});
+
+test('a finish level on points is avoided by default, and taken when its penalty is off', () => {
+  // A is 2nd on a win, or on a draw that leaves it level with B (A first on index): the draw is likelier
+  // (40 % against 35 %), but a finish on goal difference counts as half as likely, so by default the win is shown.
+  const spec = { ...league(null), fixtures: [{ home: 0, away: 1, win: 0.35, draw: 0.4, grid: flat() }] };
+  const { runs } = sim.simulateSeason({ ...spec, record: true });
+  const outcome = ([h, a]) => (h > a ? 0 : h === a ? 1 : 2);
+  assert.equal(outcome(sim.scenarioAnalysis(spec, 0, 1, runs).typical.scores[0]), 0);
+  assert.equal(outcome(sim.scenarioAnalysis(spec, 0, 1, runs, { tiePenalty: 0 }).typical.scores[0]), 1);
+});
+
+test('a finish that never happens, or always does, has nothing to explain', () => {
+  const spec = league(null);
+  const { runs } = sim.simulateSeason({ ...spec, record: true });
+  assert.equal(sim.scenarioAnalysis(spec, 0, 0, runs).enough, false);
+  assert.equal(sim.scenarioAnalysis(spec, 2, 0, runs).enough, false);
+});
+
 test('?lock= round-trips, and drops what the report does not have', () => {
   const locks = parseLocks('5105025:2-1,9:0-0,bad,7:3-');
   assert.deepEqual([...locks], [['5105025', [2, 1]], ['9', [0, 0]]]);

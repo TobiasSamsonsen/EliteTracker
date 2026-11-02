@@ -101,3 +101,5 @@ The season simulation has no golden file: the page moves the published chances b
 difference of two runs on the same draws, so a term the port lacks (the run-in stakes,
 which put its baseline 1.3 points from the published cells and a fixture's odds up to
 4 off) cancels to first order. Re-check the gap after a change to `season.py`.
+The finish grid's "how it happens" popup counts on the same runs (`record`), so its shares sit a little off the
+grid's figure.
