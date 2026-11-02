@@ -1010,23 +1010,41 @@ test('a home side priced up by the re-rating gains the same share on the card', 
 });
 eval(pick('runInRows'));
 
-test('run-in rows read each fixture from both sides, hardest run-in first', () => {
+test('run-in rows read each fixture from both sides, easiest run-in first', () => {
   const table = [{ team_id: 'A', team: 'A' }, { team_id: 'B', team: 'B' }, { team_id: 'C', team: 'C' }, { team_id: 'D', team: 'D' }];
   const fixtures = [
     { date: '2026-10-25', home_id: 'B', away_id: 'A', home: 'B', away: 'A', home_win: 0.2, draw: 0.3, away_win: 0.5 },
     { date: '2026-10-18', home_id: 'A', away_id: 'C', home: 'A', away: 'C', home_win: 0.6, draw: 0.25, away_win: 0.15 },
   ];
   const rows = runInRows(table, fixtures);
-  assert.deepEqual(rows.map((row) => row.team_id), ['C', 'B', 'A']);  // D has nothing left
+  assert.deepEqual(rows.map((row) => row.team_id), ['A', 'B', 'C']);  // D has nothing left
   const a = rows.find((row) => row.team_id === 'A');
   assert.deepEqual(a.games.map((g) => [g.date, g.home, g.win]), [['2026-10-18', true, 0.6], ['2026-10-25', false, 0.5]]);
   assert.ok(Math.abs(a.points - (3 * 0.6 + 0.25 + 3 * 0.5 + 0.3) / 2) < 1e-12);
+  assert.ok(Math.abs(a.games[0].points - (3 * 0.6 + 0.25)) < 1e-12);
+});
+
+test('run-in rows can price every game for an average side instead of the club', () => {
+  const table = [{ team_id: 'A', team: 'A' }, { team_id: 'B', team: 'B' }];
+  const fixtures = [
+    { date: '2026-10-18', home_id: 'A', away_id: 'B', home: 'A', away: 'B', home_rating: 1600, away_rating: 1400, home_win: 0.7, draw: 0.2, away_win: 0.1 },
+  ];
+  // The stub reads the opponent's rating and the venue it is given.
+  const seen = [];
+  const rows = runInRows(table, fixtures, (rating, home) => {
+    seen.push([rating, home]);
+    return { win: 0.5, draw: 0.25, loss: 0.25 };
+  });
+  assert.deepEqual(seen, [[1400, true], [1600, false]]);
+  assert.deepEqual(rows.map((row) => row.points), [1.75, 1.75]);
+  assert.equal(rows[0].games[0].win, 0.5);
 });
 
 test('every run-in string exists in both languages', () => {
   assertBothLanguages([
     'explore.runin.title', 'explore.runin.desc', 'runin.empty', 'runin.aria', 'runin.club',
-    'runin.next', 'runin.homeLong', 'runin.awayLong', 'runin.tip', 'runin.fact.hardest',
+    'runin.mode', 'runin.mode.team', 'runin.mode.average', 'runin.note.team', 'runin.note.average',
+    'runin.averageSide', 'runin.next', 'runin.homeLong', 'runin.awayLong', 'runin.tip', 'runin.fact.hardest',
     'runin.fact.easiest', 'runin.fact.runText', 'runin.fact.gap', 'runin.fact.gapText', 'runin.fact.surest',
     'runin.fact.surestText',
   ]);

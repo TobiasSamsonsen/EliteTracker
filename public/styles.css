@@ -5238,7 +5238,8 @@ table.standings tbody tr:not(.zone-divider) td { border-bottom-color: color-mix(
 .runin__club:hover span { text-decoration: underline; }
 .runin__club .team-logo, .runin__cell .team-logo { width: 16px; height: 16px; }
 .runin__avg { padding: 0 0.4rem; color: var(--ink-muted); text-align: right; }
-.runin__cell { min-width: 3.1rem; height: 1.9rem; padding: 0 0.25rem; border-radius: 4px; color: var(--ink); text-align: center; white-space: nowrap; }
+.runin__modes { display: flex; justify-content: center; padding: 0 0 0.6rem; }
+.runin__cell { min-width: 4rem; height: 1.9rem; padding: 0 0.25rem; border-radius: 4px; color: var(--ink); text-align: center; white-space: nowrap; }
 .runin__cell > * { vertical-align: middle; }
 .runin__cell b { margin-left: 0.15rem; font-weight: 600; }
 .runin__venue { margin-left: 0.15rem; font-size: 0.625rem; opacity: 0.8; }

@@ -179,9 +179,12 @@ slider too; the ones with time along an axis of their own take none.
   the luckiest and unluckiest seasons and how much luck is left the season
   after.
 - **Run-in heatmap** (`viz=runin`) -- every club's remaining fixtures in date
-  order, each cell its chance of winning that match, hardest run-in at the
-  top: the fixture-difficulty column, match by match. A finished season shows
-  it as it stood with ten rounds left.
+  order, each cell the points the match is expected to give (3 x win chance +
+  draw chance), easiest run-in at the top by the mean of those. A switch picks
+  whose odds: the club's own, or an average side of the league's (the
+  fixture-difficulty column, match by match, which ranks the fixtures apart
+  from the club's strength). A finished season shows it as it stood with ten
+  rounds left.
 
 ### Model Card
 
