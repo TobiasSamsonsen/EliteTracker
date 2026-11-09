@@ -7176,14 +7176,19 @@
       "id": "9918"
     },
     "status": {
-      "utcTime": "2026-11-02T18:00:00.000Z",
-      "halfs": {
-        "firstHalfStarted": "02.11.2026 19:00:00"
-      },
-      "periodLength": 45,
-      "started": false,
+      "utcTime": "2026-11-02T18:00:00Z",
+      "timezone": "UTC",
+      "finished": true,
+      "started": true,
       "cancelled": false,
-      "finished": false
+      "awarded": false,
+      "scoreStr": "1 - 2",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
     }
   },
   {
@@ -7204,9 +7209,17 @@
     "status": {
       "utcTime": "2026-11-08T12:00:00Z",
       "timezone": "UTC",
-      "started": false,
+      "finished": true,
+      "started": true,
       "cancelled": false,
-      "finished": false
+      "awarded": false,
+      "scoreStr": "3 - 1",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
     }
   },
   {
@@ -7227,9 +7240,17 @@
     "status": {
       "utcTime": "2026-11-08T12:00:00Z",
       "timezone": "UTC",
-      "started": false,
+      "finished": true,
+      "started": true,
       "cancelled": false,
-      "finished": false
+      "awarded": false,
+      "scoreStr": "2 - 3",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
     }
   },
   {
@@ -7250,9 +7271,17 @@
     "status": {
       "utcTime": "2026-11-08T12:00:00Z",
       "timezone": "UTC",
-      "started": false,
+      "finished": true,
+      "started": true,
       "cancelled": false,
-      "finished": false
+      "awarded": false,
+      "scoreStr": "3 - 1",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
     }
   },
   {
@@ -7273,9 +7302,17 @@
     "status": {
       "utcTime": "2026-11-08T12:00:00Z",
       "timezone": "UTC",
-      "started": false,
+      "finished": true,
+      "started": true,
       "cancelled": false,
-      "finished": false
+      "awarded": false,
+      "scoreStr": "0 - 2",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
     }
   },
   {
@@ -7296,9 +7333,17 @@
     "status": {
       "utcTime": "2026-11-08T12:00:00Z",
       "timezone": "UTC",
-      "started": false,
+      "finished": true,
+      "started": true,
       "cancelled": false,
-      "finished": false
+      "awarded": false,
+      "scoreStr": "3 - 1",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
     }
   },
   {
@@ -7319,9 +7364,17 @@
     "status": {
       "utcTime": "2026-11-08T12:00:00Z",
       "timezone": "UTC",
-      "started": false,
+      "finished": true,
+      "started": true,
       "cancelled": false,
-      "finished": false
+      "awarded": false,
+      "scoreStr": "0 - 0",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
     }
   },
   {
@@ -7342,9 +7395,17 @@
     "status": {
       "utcTime": "2026-11-08T12:00:00Z",
       "timezone": "UTC",
-      "started": false,
+      "finished": true,
+      "started": true,
       "cancelled": false,
-      "finished": false
+      "awarded": false,
+      "scoreStr": "2 - 3",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
     }
   },
   {
@@ -7365,9 +7426,17 @@
     "status": {
       "utcTime": "2026-11-08T12:00:00Z",
       "timezone": "UTC",
-      "started": false,
+      "finished": true,
+      "started": true,
       "cancelled": false,
-      "finished": false
+      "awarded": false,
+      "scoreStr": "2 - 0",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
     }
   }
 ]

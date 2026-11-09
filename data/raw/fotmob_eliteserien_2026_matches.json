@@ -6202,29 +6202,6 @@
   {
     "round": "26",
     "roundName": 26,
-    "pageUrl": "/matches/valerenga-vs-kristiansund/2a5qjb#5105046",
-    "id": "5105046",
-    "home": {
-      "name": "Kristiansund",
-      "shortName": "Kristiansund",
-      "id": "8605"
-    },
-    "away": {
-      "name": "Vålerenga",
-      "shortName": "Vålerenga",
-      "id": "8007"
-    },
-    "status": {
-      "utcTime": "2026-11-07T15:00:00Z",
-      "timezone": "UTC",
-      "started": false,
-      "cancelled": false,
-      "finished": false
-    }
-  },
-  {
-    "round": "26",
-    "roundName": 26,
     "pageUrl": "/matches/rosenborg-vs-start/2s5fpa#5105048",
     "id": "5105048",
     "home": {
@@ -6240,9 +6217,17 @@
     "status": {
       "utcTime": "2026-11-07T17:00:00Z",
       "timezone": "UTC",
-      "started": false,
+      "finished": true,
+      "started": true,
       "cancelled": false,
-      "finished": false
+      "awarded": false,
+      "scoreStr": "4 - 1",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
     }
   },
   {
@@ -6263,9 +6248,17 @@
     "status": {
       "utcTime": "2026-11-08T13:30:00Z",
       "timezone": "UTC",
-      "started": false,
+      "finished": true,
+      "started": true,
       "cancelled": false,
-      "finished": false
+      "awarded": false,
+      "scoreStr": "0 - 2",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
     }
   },
   {
@@ -6286,9 +6279,17 @@
     "status": {
       "utcTime": "2026-11-08T16:00:00Z",
       "timezone": "UTC",
-      "started": false,
+      "finished": true,
+      "started": true,
       "cancelled": false,
-      "finished": false
+      "awarded": false,
+      "scoreStr": "3 - 0",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
     }
   },
   {
@@ -6309,9 +6310,17 @@
     "status": {
       "utcTime": "2026-11-08T16:00:00Z",
       "timezone": "UTC",
-      "started": false,
+      "finished": true,
+      "started": true,
       "cancelled": false,
-      "finished": false
+      "awarded": false,
+      "scoreStr": "3 - 2",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
     }
   },
   {
@@ -6332,9 +6341,17 @@
     "status": {
       "utcTime": "2026-11-08T16:00:00Z",
       "timezone": "UTC",
-      "started": false,
+      "finished": true,
+      "started": true,
       "cancelled": false,
-      "finished": false
+      "awarded": false,
+      "scoreStr": "5 - 5",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
     }
   },
   {
@@ -6355,9 +6372,17 @@
     "status": {
       "utcTime": "2026-11-08T16:00:00Z",
       "timezone": "UTC",
-      "started": false,
+      "finished": true,
+      "started": true,
       "cancelled": false,
-      "finished": false
+      "awarded": false,
+      "scoreStr": "5 - 1",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
     }
   },
   {
@@ -6378,9 +6403,52 @@
     "status": {
       "utcTime": "2026-11-08T18:15:00Z",
       "timezone": "UTC",
-      "started": false,
+      "finished": true,
+      "started": true,
       "cancelled": false,
-      "finished": false
+      "awarded": false,
+      "scoreStr": "2 - 2",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
+    }
+  },
+  {
+    "round": "26",
+    "roundName": 26,
+    "pageUrl": "/matches/valerenga-vs-kristiansund/2a5qjb#5105046",
+    "id": "5105046",
+    "home": {
+      "name": "Kristiansund",
+      "shortName": "Kristiansund",
+      "id": "8605"
+    },
+    "away": {
+      "name": "Vålerenga",
+      "shortName": "Vålerenga",
+      "id": "8007"
+    },
+    "status": {
+      "utcTime": "2026-11-09T18:00:00.000Z",
+      "halfs": {
+        "firstHalfStarted": "09.11.2026 19:01:10",
+        "secondHalfStarted": "09.11.2026 20:02:33"
+      },
+      "periodLength": 45,
+      "finished": true,
+      "started": true,
+      "cancelled": false,
+      "awarded": false,
+      "scoreStr": "1 - 0",
+      "reason": {
+        "short": "FT",
+        "shortKey": "fulltime_short",
+        "long": "Full-Time",
+        "longKey": "finished"
+      }
     }
   },
   {
