@@ -998,13 +998,24 @@ test('the typical season is at least as likely as every recorded run that ends t
 });
 
 test('a finish level on points is avoided by default, and taken when its penalty is off', () => {
-  // A is 2nd on a win, or on a draw that leaves it level with B (A first on index): the draw is likelier
-  // (40 % against 35 %), but a finish on goal difference counts as half as likely, so by default the win is shown.
-  const spec = { ...league(null), fixtures: [{ home: 0, away: 1, win: 0.35, draw: 0.4, grid: flat() }] };
+  // B (index 0) and A (index 1) are level on points and goal difference, and both play C, far clear.
+  // A is 2nd if it wins and B loses (23 %), or if both lose (34 %), but then they stay level on
+  // points and the margins of the two defeats decide, which is a toss-up. Counting that chance, the
+  // win is the likelier season; ignoring it, the double defeat is.
+  const match = (home) => ({ home, away: 2, win: 0.4, draw: 0.02, grid: flat() });
+  const spec = {
+    ...league(null), points: [10, 10, 100], gf: [10, 10, 50], ga: [10, 10, 5],
+    fixtures: [match(1), match(0)], fixed: [null, null],
+  };
   const { runs } = sim.simulateSeason({ ...spec, record: true });
   const outcome = ([h, a]) => (h > a ? 0 : h === a ? 1 : 2);
-  assert.equal(outcome(sim.scenarioAnalysis(spec, 0, 1, runs).typical.scores[0]), 0);
-  assert.equal(outcome(sim.scenarioAnalysis(spec, 0, 1, runs, { tiePenalty: 0 }).typical.scores[0]), 1);
+  const counted = sim.scenarioAnalysis(spec, 1, 1, runs).typical;
+  const ignored = sim.scenarioAnalysis(spec, 1, 1, runs, { tiePenalty: 0 }).typical;
+  assert.deepEqual(counted.scores.map(outcome), [0, 2]);
+  assert.deepEqual(ignored.scores.map(outcome), [2, 2]);
+  // The chance it counts is the chance of the margins going A's way, about a half.
+  assert.ok(ignored.finish > 0.3 && ignored.finish < 0.6, String(ignored.finish));
+  assert.equal(counted.finish, 1);
 });
 
 test('the typical season asks only the goal difference the finish needs, spread over cheap scores', () => {

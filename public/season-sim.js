@@ -308,28 +308,30 @@ const SCORE_OUTCOME = Uint8Array.from({ length: 256 }, (_, s) => ((s >> 4) > (s 
    `typical` is the likeliest season that ends this way, found exactly rather than by
    hill-climbing. The finish is only a filter, so the likeliest season is the one
    maximising the chance of its results (each result's share among all the runs,
-   multiplied over the matches) times the chance of the finish given them. Points are
-   fixed by the results, so that second factor is 1 unless clubs are level on points with
-   this one, when goal difference decides: it is then the chance, from the runs' own
-   margins, that the matches left carry the club past exactly as many of them as the finish
-   needs (level on goal difference counts as half). A branch-and-bound search over the
-   matches that can still move the finish (the other matches take their commonest result)
-   cuts any branch that cannot beat the best so far (the chance so far times the best each
-   remaining match could add, with a lower bound on what it costs the other clubs to end
-   where the finish needs) or cannot end with the club here on points; what it returns is the
-   optimum of that product. A second search then picks the scores: each result's commonest score
-   in all runs, except in the matches of clubs level on points with this one, which are
-   searched for the likeliest scores that still hold the finish (goal difference, goals
-   scored, index, as the simulation ranks them), so the lead is the smallest the finish
-   allows, spread over the cheapest scores instead of one big win. `typical.table[place]`
-   is its final table, `typical.scores` its scores, `typical.odds` the chance of its results in
-   all runs and `typical.finish` the chance of the finish given them. `typical.exact` is
-   false when the work `budget` ran out first, or more than two clubs were level (those are
-   taken club by club), so the season is the best found, not proven the best. It is built from
-   simulated results but is not one recorded run.
+   multiplied over the matches, so the matches count as independent, as the popup's
+   per-match figures do) times the chance of the finish given them. Points are fixed by the
+   results, so that second factor is 1 unless clubs are level on points with this one, when
+   goal difference, goals scored and then index decide, as the simulation ranks them: it is then
+   the chance, from the runs' own scores, that the matches left carry the club past exactly as
+   many of them as the finish needs, worked out over all the clubs level together (their matches
+   link them). A branch-and-bound search over the matches that can still move the finish (the
+   others take their commonest result) cuts any branch that cannot beat the best so far (the
+   chance so far times the best each remaining match could add, with a lower bound on what it
+   costs the other clubs to end where the finish needs, and a cheap upper bound on the finish
+   chance before it is worked out in full) or cannot end with the club here on points. It
+   searches with a target that comes down from the best case until a season reaches it, so that
+   season is the optimum of that product, not just a good one. A second search then picks the
+   scores: each result's commonest score in all runs, except in the matches of clubs level on
+   points with this one, which are searched for the likeliest scores that still hold the finish,
+   so the lead is the smallest the finish allows, spread over the cheapest scores instead of one
+   big win. `typical.table[place]` is its final table, `typical.scores` its scores,
+   `typical.odds` the chance of its results in all runs and `typical.finish` the chance of the
+   finish given them. `typical.exact` is false only when the work `budget` ran out or the joint
+   chances grew past what could be followed, so the season is the best found, not proven the
+   best. It is built from simulated results but is not one recorded run.
 
    `tiePenalty` above 0 (the default) counts that finish chance; 0 ignores it, taking the single
-   likeliest run of results even when the finish hangs on a goal-difference toss-up.
+   likeliest run of results even when the finish hangs on goal difference.
 
    Fewer than `minHits` runs (or all of them) is `enough: false`: nothing to say. */
 function scenarioAnalysis(spec, club, place, run, { minHits = 25, tiePenalty = Math.LN2, budget = 8e5 } = {}) {
@@ -407,26 +409,6 @@ function scenarioAnalysis(spec, club, place, run, { minHits = 25, tiePenalty = M
     }
   }
   const scoreOdds = (f, sc) => Math.log(allExact[f * 256 + sc] + 0.5);
-  // The margin of a decided result (a home win by m, an away win by m), as its share of that
-  // result's runs; tiny tails are dropped. A draw has no margin.
-  const margins = Array.from({ length: F * 3 }, () => ({ m: [0], p: [1] }));
-  for (let f = 0; f < F; f += 1) {
-    for (const o of [0, 2]) {
-      const byMargin = new Map();
-      let total = 0;
-      for (const sc of candidates[f * 3 + o]) {
-        const n = allExact[f * 256 + sc];
-        total += n;
-        const m = Math.abs((sc >> 4) - (sc & 15));
-        byMargin.set(m, (byMargin.get(m) || 0) + n);
-      }
-      const keep = [...byMargin].filter(([, n]) => total > 0 && n / total >= 1e-5);
-      const kept = keep.reduce((sum, [, n]) => sum + n, 0) || 1;
-      margins[f * 3 + o] = { m: keep.map(([m]) => m), p: keep.map(([, n]) => n / kept) };
-      if (!keep.length) margins[f * 3 + o] = { m: [1], p: [1] };
-    }
-  }
-
   // Which clubs can still change this finish: those whose final points could land beside the
   // club's. A club that ends above (or below) it whatever happens only matters through its
   // matches against the others. A match between two such clubs takes its commonest result.
@@ -443,69 +425,103 @@ function scenarioAnalysis(spec, club, place, run, { minHits = 25, tiePenalty = M
   const worth = (o) => (o === 0 ? [3, 0] : o === 1 ? [1, 1] : [0, 3]);
 
   // The chance that the club ends exactly where it is wanted, given every result: its place is
-  // set by points, and among clubs level on points by goal difference, which the results leave
-  // open: each match's margin adds to the clubs' goal differences, drawn from the runs' own
-  // margins. The goal differences of all the clubs level with it are followed together (their
-  // matches link them), then every end state says how many of them the club passes; level on
-  // goal difference counts as half, taken club by club.
-  let approximate = false;
+  // set by points, and among clubs level on points by goal difference, then goals scored, then
+  // index, which the results leave open. Every match touching the club or a club level with it
+  // adds its score's goals, drawn from the runs' own scores for that result. Per rival, goal
+  // difference and goals scored against the club's are packed into one number (difference times a
+  // width beyond any goals total, plus goals), so the ranking is just its sign (zero: index).
+  // The numbers of all the rivals are followed together, since their matches link them, and a
+  // rival whose sign can no longer change is set aside as decided.
+  let capped = false;
   const outcome = Uint8Array.from(modal);
+  const scorePmf = new Array(F * 3).fill(null);
+  const pmfOf = (f, o) => {
+    if (scorePmf[f * 3 + o]) return scorePmf[f * 3 + o];
+    const list = candidates[f * 3 + o];
+    let total = 0;
+    for (const sc of list) total += allExact[f * 256 + sc];
+    const kept = list.filter((sc) => total === 0 || allExact[f * 256 + sc] / total >= 1e-7);
+    const mass = kept.reduce((sum, sc) => sum + (total === 0 ? 1 : allExact[f * 256 + sc]), 0) || 1;
+    const made = kept.map((sc) => ({ h: sc >> 4, a: sc & 15, p: (total === 0 ? 1 : allExact[f * 256 + sc]) / mass }));
+    scorePmf[f * 3 + o] = made;
+    return made;
+  };
   const sideGoals = (x, f, o, m) => (x === home[f] ? (o === 0 ? m : o === 2 ? -m : 0) : x === away[f] ? (o === 2 ? m : o === 0 ? -m : 0) : 0);
-  const jointChance = (tied, k) => {
+  const DONE_ABOVE = 1e9;
+  const DONE_BELOW = -1e9;
+  const aboveCounts = (tied) => {
     const T = tied.length;
-    const touched = live.filter((f) => outcome[f] !== 1 && [club, ...tied].some((c) => home[f] === c || away[f] === c));
-    let reach = 0;
-    for (const f of touched) reach += 2 * Math.max(...margins[f * 3 + outcome[f]].m);
-    const lead = tied.map((r) => (spec.gf[club] - spec.ga[club]) - (spec.gf[r] - spec.ga[r]));
-    const offset = reach + Math.max(0, ...lead.map(Math.abs));
-    const width = 2 * offset + 1;
-    const stride = Array.from({ length: T }, (_, t) => width ** t);
-    let states = new Map([[lead.reduce((key, d, t) => key + (d + offset) * stride[t], 0), 1]]);
-    for (const f of touched) {
-      const o = outcome[f];
-      const spread = margins[f * 3 + o];
-      const step = tied.map((r) => sideGoals(club, f, o, 1) - sideGoals(r, f, o, 1));
-      const shifts = spread.m.map((m) => step.reduce((sum, k2, t) => sum + k2 * m * stride[t], 0));
+    const who = [club, ...tied];
+    const touched = live.filter((f) => who.some((c) => home[f] === c || away[f] === c));
+    let goals = 0;
+    for (const f of touched) goals += Math.max(...pmfOf(f, outcome[f]).map(({ h, a }) => h + a));
+    const leadG = tied.map((r) => spec.gf[club] - spec.gf[r]);
+    const width = 2 * (goals + Math.max(0, ...leadG.map(Math.abs))) + 1;
+    const gdOf = (x, f, h, a) => (x === home[f] ? h - a : x === away[f] ? a - h : 0);
+    const gfOf = (x, f, h, a) => (x === home[f] ? h : x === away[f] ? a : 0);
+    const steps = touched.map((f) => pmfOf(f, outcome[f]).map(({ h, a, p }) => ({
+      p, dv: tied.map((r) => (gdOf(club, f, h, a) - gdOf(r, f, h, a)) * width + gfOf(club, f, h, a) - gfOf(r, f, h, a)),
+    })));
+    // What each rival's number can still move by after step s.
+    const swing = Array.from({ length: touched.length + 1 }, () => new Array(T).fill(0));
+    for (let s = touched.length - 1; s >= 0; s -= 1) {
+      for (let t = 0; t < T; t += 1) swing[s][t] = swing[s + 1][t] + Math.max(...steps[s].map(({ dv }) => Math.abs(dv[t])));
+    }
+    const settleDigit = (x, left) => (x >= DONE_ABOVE ? DONE_ABOVE : x <= DONE_BELOW ? DONE_BELOW : x > left ? DONE_ABOVE : x < -left ? DONE_BELOW : x);
+    const start = tied.map((r, t) => settleDigit((spec.gf[club] - spec.ga[club] - spec.gf[r] + spec.ga[r]) * width + leadG[t], swing[0][t]));
+    let states = new Map([[start.join(), { digits: start, p: 1 }]]);
+    for (let s = 0; s < touched.length; s += 1) {
       const next = new Map();
-      for (const [key, p] of states) {
-        for (let j = 0; j < shifts.length; j += 1) {
-          const q = p * spread.p[j];
-          if (q < 1e-13) continue;
-          next.set(key + shifts[j], (next.get(key + shifts[j]) || 0) + q);
+      for (const { digits, p } of states.values()) {
+        for (const { p: q, dv } of steps[s]) {
+          const share = p * q;
+          if (share < 1e-13) continue;
+          const moved = digits.map((x, t) => (x >= DONE_ABOVE || x <= DONE_BELOW ? x : settleDigit(x + dv[t], swing[s + 1][t])));
+          const key = moved.join();
+          const seen = next.get(key);
+          if (seen) seen.p += share; else next.set(key, { digits: moved, p: share });
         }
       }
+      work += Math.ceil(states.size * steps[s].length / 64);
       states = next;
-    }
-    const passes = T - k;
-    let chance = 0;
-    const ways = new Float64Array(T + 1);
-    for (const [key, p] of states) {
-      ways.fill(0);
-      ways[0] = 1;
-      let rest = key;
-      for (let t = 0; t < T; t += 1) {
-        const d = (rest % width) - offset;
-        rest = Math.floor(rest / width);
-        const q = d > 0 ? 1 : d === 0 ? 0.5 : 0;
-        for (let j = t + 1; j >= 0; j -= 1) ways[j] = ways[j] * (1 - q) + (j > 0 ? ways[j - 1] * q : 0);
+      if (states.size > 250000) {
+        // Too many joint states to follow: the small ones are dropped, so the result is no longer exact.
+        capped = true;
+        for (const [key, { p }] of states) if (p < 1e-8) states.delete(key);
       }
-      chance += p * ways[passes];
     }
-    return chance;
+    const dist = new Float64Array(T + 1);
+    for (const { digits, p } of states.values()) {
+      let above = 0;
+      // A negative number is a rival ahead of the club; level on everything, the lower index ranks higher.
+      digits.forEach((x, t) => { if (x <= DONE_BELOW || (x === 0 && tied[t] < club)) above += 1; });
+      dist[above] += p;
+    }
+    return dist;
   };
-  // Up to two clubs level are followed together. More are taken club by club (their ends are
-  // linked, so this is an approximation, and an optimum found with it is flagged inexact).
-  const finishChance = (tied, k) => {
-    if (tied.length <= 2) return jointChance(tied, k);
-    approximate = true;
-    const passes = tied.length - k;
-    const ways = new Float64Array(tied.length + 1);
-    ways[0] = 1;
-    tied.forEach((r, t) => {
-      const q = jointChance([r], 0);
-      for (let j = t + 1; j >= 0; j -= 1) ways[j] = ways[j] * (1 - q) + (j > 0 ? ways[j - 1] * q : 0);
-    });
-    return ways[passes];
+  const memoCounts = new Map();
+  const countsOf = (tied) => {
+    const key = tied.join() + '|' + live.filter((f) => [club, ...tied].some((c) => home[f] === c || away[f] === c)).map((f) => outcome[f]).join('');
+    let dist = memoCounts.get(key);
+    if (!dist) { dist = aboveCounts(tied); memoCounts.set(key, dist); }
+    return dist;
+  };
+  // A bound the cheap way: the chance that exactly k of the tied clubs end above is at most the
+  // chance of any one of the events it needs, summed over which k they are.
+  const finishBound = (tied, k) => {
+    const T = tied.length;
+    if (T > 12) return 1;
+    const q = tied.map((r) => countsOf([r])[1]);
+    let total = 0;
+    for (let set = 0; set < (1 << T); set += 1) {
+      let size = 0;
+      let top = 1;
+      for (let t = 0; t < T; t += 1) {
+        if (set & (1 << t)) { size += 1; top = Math.min(top, q[t]); } else top = Math.min(top, 1 - q[t]);
+      }
+      if (size === k) total += top;
+    }
+    return Math.min(1, total);
   };
 
   // The likeliest way the results go: the one maximising its odds (the runs' shares) times the
@@ -528,7 +544,6 @@ function scenarioAnalysis(spec, club, place, run, { minHits = 25, tiePenalty = M
   let complete = true;
   const LIMIT = budget;
   let work = 0;
-  const memo = new Map();
   const settle = (value) => {
     let above = 0;
     const tied = [];
@@ -541,9 +556,11 @@ function scenarioAnalysis(spec, club, place, run, { minHits = 25, tiePenalty = M
     let total = value;
     let chance = 1;
     if (tied.length) {
-      const keyed = tied.join() + '|' + (place - above) + '|' + live.filter((f) => [club, ...tied].some((c) => home[f] === c || away[f] === c)).map((f) => outcome[f]).join('');
-      chance = memo.get(keyed);
-      if (chance === undefined) { work += 25; chance = finishChance(tied, place - above); memo.set(keyed, chance); }
+      const k = place - above;
+      // Only a leaf that could still beat the best has its finish chance worked out in full.
+      const bound = tied.length === 1 ? 1 : finishBound(tied, k);
+      if (!(bound > 1e-12) || (countFinish ? value + Math.log(bound) : value) <= best + 1e-12) return;
+      chance = countsOf(tied)[k];
       if (!(chance > 1e-12)) return;
       if (countFinish) total += Math.log(chance);
     }
@@ -634,11 +651,11 @@ function scenarioAnalysis(spec, club, place, run, { minHits = 25, tiePenalty = M
     if (work > LIMIT) { complete = false; return; }
     work += 1;
     nodes += 1;
-    if (value + suffix[i] <= best + 1e-12) return;
+    if (value + suffix[i] <= Math.max(best, floor) + 1e-12) return;
     if (!reachable()) return;
     if (left[club] === 0 && i < L) {
       work += 3;
-      if (value + suffix[i] - shortfall(i) <= best + 1e-12) return;
+      if (value + suffix[i] - shortfall(i) <= Math.max(best, floor) + 1e-12) return;
     }
     if (i === L) { settle(value); return; }
     const f = live[i];
@@ -677,9 +694,23 @@ function scenarioAnalysis(spec, club, place, run, { minHits = 25, tiePenalty = M
     }
     settle(value);
   }
-  pts.set(base);
-  outcome.set(modal);
-  descend(0, 0);
+  // Iterative deepening on the target: with the best case (every match its commonest result) as
+  // the target nothing is explored but near-misses, and the target comes down by half a nat until
+  // some season reaches it. That one is the best of all: every season above the target was
+  // searched, and none beat it. It costs far less than searching without a target, where the
+  // search wanders through many seasons before finding a good one.
+  let bottom = 0;
+  for (const f of live) bottom += Math.min(logOdds(f, 0), logOdds(f, 1), logOdds(f, 2));
+  let floor = suffix[0] - 0.5;
+  for (;;) {
+    pts.set(base);
+    outcome.set(modal);
+    left.fill(0);
+    for (const f of live) { left[home[f]] += 1; left[away[f]] += 1; }
+    descend(0, 0);
+    if (!complete || best > floor || floor < bottom) break;
+    floor -= 0.5;
+  }
   if (!bestOutcome) {
     // Nothing found within the budget: the best recorded run's results, not proven the best.
     if (!starts.length) { result.enough = false; return result; }
@@ -754,7 +785,7 @@ function scenarioAnalysis(spec, club, place, run, { minHits = 25, tiePenalty = M
     for (let f = 0; f < F; f += 1) sc[f] = scores[starts[0].r * F + f];
     scoresExact = false;
   }
-  const typical = { scores: [], table: [], exact: complete && scoresExact && !approximate, odds: Math.exp(bestOdds), finish: bestFinish };
+  const typical = { scores: [], table: [], exact: complete && scoresExact && !capped, odds: Math.exp(bestOdds), finish: bestFinish };
   const order = standing(sc);
   for (let f = 0; f < F; f += 1) typical.scores.push([sc[f] >> 4, sc[f] & 15]);
   order.forEach((c, i) => { typical.table[i] = { club: c, points: pts[c], goalDifference: gf[c] - ga[c], goalsFor: gf[c] }; });
