@@ -918,8 +918,17 @@ function scenarioTable(report, club, typical, keyClubs) {
   section.appendChild(scroller);
   if (keyClubs.size) section.appendChild(el('p', 'explore-note', `● ${t('scenario.tableKey')}`));
   const at = typical.table.findIndex((entry) => entry.club === club);
-  if ([typical.table[at - 1], typical.table[at + 1]].some((next) => next && next.points === typical.table[at].points)) {
-    section.appendChild(el('p', 'explore-note', t('scenario.tableLevel', { team: report.table[club].team })));
+  const mine = typical.table[at];
+  const level = [typical.table[at - 1], typical.table[at + 1]].filter((next) => next && next.points === mine.points);
+  if (level.length) {
+    // Level on points: goal difference decides; if that is level too, goals scored; then the table's order.
+    const team = report.table[club].team;
+    const sameGd = level.find((next) => next.goalDifference === mine.goalDifference);
+    const sameGoals = sameGd && level.find((next) => next.goalDifference === mine.goalDifference && next.goalsFor === mine.goalsFor);
+    let note = t('scenario.tableLevel', { team });
+    if (sameGoals) note = t('scenario.tableLevelIndex', { team, other: report.table[sameGoals.club].team });
+    else if (sameGd) note = t('scenario.tableLevelGoals', { team, other: report.table[sameGd.club].team, gd: signed(mine.goalDifference), gf: mine.goalsFor, gfOther: sameGd.goalsFor });
+    section.appendChild(el('p', 'explore-note', note));
   }
   return section;
 }

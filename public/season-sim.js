@@ -474,6 +474,7 @@ function scenarioAnalysis(spec, club, place, run, { minHits = 25, tiePenalty = M
     const start = tied.map((r, t) => settleDigit((spec.gf[club] - spec.ga[club] - spec.gf[r] + spec.ga[r]) * width + leadG[t], swing[0][t]));
     let states = new Map([[start.join(), { digits: start, p: 1 }]]);
     let floorP = 1e-13;
+    let tick = 0;
     for (let s = 0; s < touched.length; s += 1) {
       const next = new Map();
       if (late()) { capped = true; floorP = Math.max(floorP, 1e-6); }
@@ -481,6 +482,8 @@ function scenarioAnalysis(spec, club, place, run, { minHits = 25, tiePenalty = M
         for (const { p: q, dv } of steps[s]) {
           const share = p * q;
           if (share < floorP) continue;
+          // The clock is read inside a step too, since one step can be the whole deadline.
+          if ((tick += 1) % 8192 === 0 && late()) { capped = true; floorP = Math.max(floorP, 1e-6); }
           const moved = digits.map((x, t) => (x >= DONE_ABOVE || x <= DONE_BELOW ? x : settleDigit(x + dv[t], swing[s + 1][t])));
           const key = moved.join();
           const seen = next.get(key);
