@@ -1007,6 +1007,101 @@ test('a finish level on points is avoided by default, and taken when its penalty
   assert.equal(outcome(sim.scenarioAnalysis(spec, 0, 1, runs, { tiePenalty: 0 }).typical.scores[0]), 1);
 });
 
+test('the typical season asks only the goal difference the finish needs, spread over cheap scores', () => {
+  // B (index 0) and A (index 1) are level on points, B two goals better off, and both play the same weak
+  // club at home. A is 2nd only if its win beats B's by more than that. Big wins are rarer than small ones,
+  // so the season shown has A ahead by one goal of difference and no more, and no 1–5-style score.
+  const decay = Array.from({ length: 9 }, (_, i) => Array.from({ length: 9 }, (__, j) => 0.4 ** (i + j)));
+  const total = decay.flat().reduce((a, b) => a + b, 0);
+  const grid = decay.map((row) => row.map((v) => v / total));
+  const spec = {
+    count: 3, sims: 20000, seed: 5, sd: 0.2,
+    points: [10, 10, 100], gf: [10, 10, 50], ga: [8, 10, 5],
+    fixtures: [{ home: 1, away: 2, win: 0.9, draw: 0.05, grid }, { home: 0, away: 2, win: 0.9, draw: 0.05, grid }],
+    fixed: [null, null],
+  };
+  const { runs } = sim.simulateSeason({ ...spec, record: true });
+  const found = sim.scenarioAnalysis(spec, 1, 1, runs);
+  assert.ok(found.enough);
+  const [first, second] = found.typical.table;
+  assert.equal(second.club, 1);
+  assert.equal(first.club, 2);
+  const third = found.typical.table[2];
+  // At most one goal of difference to spare (level on difference is enough when A has scored more).
+  const lead = second.goalDifference - third.goalDifference;
+  assert.ok(lead >= 0 && lead <= 1, String(lead));
+  // A's score is the cheapest way to get there: the biggest margin shown is not a blow-out.
+  const margins = found.typical.scores.map(([h, a]) => Math.abs(h - a));
+  assert.ok(Math.max(...margins) <= 3, margins.join());
+});
+
+test('the typical season is the likeliest way the results can go, checked against every season of small leagues', () => {
+  // Four clubs, three matches, no strength shock, so every season's chance can be counted exactly.
+  // For each club and place, the results of the season shown must be (nearly) as likely, with the
+  // finish, as the likeliest any season could give.
+  const fact = [1, 1, 2, 6, 24, 120, 720, 5040, 40320];
+  const poisson = (lam, mu) => {
+    const g = fact.map((_, i) => fact.map((__, j) => Math.exp(-lam) * lam ** i / fact[i] * Math.exp(-mu) * mu ** j / fact[j]));
+    const total = g.flat().reduce((a, b) => a + b, 0);
+    return g.map((row) => row.map((v) => v / total));
+  };
+  const result = (h, a) => (h > a ? 0 : h === a ? 1 : 2);
+  let seed = 4242;
+  const rnd = () => { seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0; return seed / 4294967296; };
+  const pairs = [[0, 1], [2, 3], [0, 2]];
+  let checked = 0;
+  for (let trial = 0; trial < 24; trial += 1) {
+    const fixtures = pairs.map(([home, away]) => {
+      const grid = poisson(0.8 + rnd() * 1.2, 0.6 + rnd());
+      let win = 0;
+      let draw = 0;
+      grid.forEach((row, i) => row.forEach((p, j) => { if (i > j) win += p; else if (i === j) draw += p; }));
+      return { home, away, win, draw, grid };
+    });
+    const spec = {
+      count: 4, sims: 40000, seed: 1 + trial, sd: 0,
+      points: Array.from({ length: 4 }, () => 10 + Math.floor(rnd() * 4)),
+      gf: Array.from({ length: 4 }, () => 20 + Math.floor(rnd() * 4)),
+      ga: Array.from({ length: 4 }, () => 20 + Math.floor(rnd() * 4)),
+      fixtures, fixed: [null, null, null],
+    };
+    const club = Math.floor(rnd() * 4);
+    const place = Math.floor(rnd() * 4);
+    const cells = fixtures.map((fixture) => {
+      const list = [];
+      fixture.grid.forEach((row, i) => row.forEach((p, j) => { if (p > 2e-4) list.push([i, j, p]); }));
+      return list;
+    });
+    const standing = (picked) => {
+      const pt = spec.points.slice();
+      const g = spec.gf.slice();
+      const a = spec.ga.slice();
+      picked.forEach(([h, x], f) => {
+        const [H, A] = pairs[f];
+        pt[H] += h > x ? 3 : h === x ? 1 : 0; pt[A] += x > h ? 3 : h === x ? 1 : 0;
+        g[H] += h; a[H] += x; g[A] += x; a[A] += h;
+      });
+      return [0, 1, 2, 3].sort((x, y) => pt[y] - pt[x] || (g[y] - a[y]) - (g[x] - a[x]) || g[y] - g[x] || x - y);
+    };
+    const byResults = new Map();
+    for (const c0 of cells[0]) for (const c1 of cells[1]) for (const c2 of cells[2]) {
+      if (standing([c0, c1, c2])[place] !== club) continue;
+      const key = [c0, c1, c2].map(([h, a]) => result(h, a)).join('');
+      byResults.set(key, (byResults.get(key) || 0) + c0[2] * c1[2] * c2[2]);
+    }
+    const best = Math.max(0, ...byResults.values());
+    if (best < 0.01) continue;
+    const { runs } = sim.simulateSeason({ ...spec, record: true });
+    const found = sim.scenarioAnalysis(spec, club, place, runs);
+    if (!found.enough) continue;
+    checked += 1;
+    const shown = found.typical.scores.map(([h, a]) => result(h, a)).join('');
+    assert.equal(standing(found.typical.scores)[place], club);
+    assert.ok((byResults.get(shown) || 0) >= 0.9 * best, `trial ${trial}: ${shown} is ${(byResults.get(shown) || 0) / best} of the best`);
+  }
+  assert.ok(checked >= 12, String(checked));
+});
+
 test('a finish that never happens, or always does, has nothing to explain', () => {
   const spec = league(null);
   const { runs } = sim.simulateSeason({ ...spec, record: true });
