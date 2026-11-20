@@ -326,15 +326,18 @@ const SCORE_OUTCOME = Uint8Array.from({ length: 256 }, (_, s) => ((s >> 4) > (s 
    so the lead is the smallest the finish allows, spread over the cheapest scores instead of one
    big win. `typical.table[place]` is its final table, `typical.scores` its scores,
    `typical.odds` the chance of its results in all runs and `typical.finish` the chance of the
-   finish given them. `typical.exact` is false only when the work `budget` ran out or the joint
-   chances grew past what could be followed, so the season is the best found, not proven the
-   best. It is built from simulated results but is not one recorded run.
+   finish given them. `typical.exact` is false only when the work `budget` or the wall-clock
+   `deadline` (ms) ran out, or the joint chances grew past what could be followed, so the season
+   is the best found, not proven the best; that is the case early in a season, with a hundred
+   matches or more left. It is built from simulated results but is not one recorded run.
 
    `tiePenalty` above 0 (the default) counts that finish chance; 0 ignores it, taking the single
    likeliest run of results even when the finish hangs on goal difference.
 
    Fewer than `minHits` runs (or all of them) is `enough: false`: nothing to say. */
-function scenarioAnalysis(spec, club, place, run, { minHits = 25, tiePenalty = Math.LN2, budget = 8e5 } = {}) {
+function scenarioAnalysis(spec, club, place, run, { minHits = 25, tiePenalty = Math.LN2, budget = 8e5, deadline = 1500 } = {}) {
+  const startedAt = Date.now();
+  const late = () => Date.now() - startedAt > deadline;
   const { scores, places, sims, count, F } = run;
   const fixtures = spec.fixtures;
   const own = [];
@@ -470,25 +473,25 @@ function scenarioAnalysis(spec, club, place, run, { minHits = 25, tiePenalty = M
     const settleDigit = (x, left) => (x >= DONE_ABOVE ? DONE_ABOVE : x <= DONE_BELOW ? DONE_BELOW : x > left ? DONE_ABOVE : x < -left ? DONE_BELOW : x);
     const start = tied.map((r, t) => settleDigit((spec.gf[club] - spec.ga[club] - spec.gf[r] + spec.ga[r]) * width + leadG[t], swing[0][t]));
     let states = new Map([[start.join(), { digits: start, p: 1 }]]);
+    let floorP = 1e-13;
     for (let s = 0; s < touched.length; s += 1) {
       const next = new Map();
+      if (late()) { capped = true; floorP = Math.max(floorP, 1e-6); }
       for (const { digits, p } of states.values()) {
         for (const { p: q, dv } of steps[s]) {
           const share = p * q;
-          if (share < 1e-13) continue;
+          if (share < floorP) continue;
           const moved = digits.map((x, t) => (x >= DONE_ABOVE || x <= DONE_BELOW ? x : settleDigit(x + dv[t], swing[s + 1][t])));
           const key = moved.join();
           const seen = next.get(key);
           if (seen) seen.p += share; else next.set(key, { digits: moved, p: share });
+          // Too many joint states: from here the small ones are dropped, so the result is no longer exact.
+          if (next.size > 300000 && floorP < 1e-8) { capped = true; floorP = 1e-8; }
+          if (next.size > 1200000) { capped = true; floorP = Math.min(1, floorP * 100); }
         }
       }
       work += Math.ceil(states.size * steps[s].length / 64);
       states = next;
-      if (states.size > 250000) {
-        // Too many joint states to follow: the small ones are dropped, so the result is no longer exact.
-        capped = true;
-        for (const [key, { p }] of states) if (p < 1e-8) states.delete(key);
-      }
     }
     const dist = new Float64Array(T + 1);
     for (const { digits, p } of states.values()) {
@@ -587,13 +590,22 @@ function scenarioAnalysis(spec, club, place, run, { minHits = 25, tiePenalty = M
   // place below it. Each club on its own takes the cheapest of its remaining results that
   // moves it across the club's points (a match shared by two clubs is charged half to each,
   // so the sum never exceeds what the one change really costs); the cheapest few clubs pay.
-  const slot = new Map(live.map((f, j) => [f, j]));
   const atClub = Array.from({ length: count }, () => []);
   live.forEach((f, j) => { atClub[home[f]].push(j); atClub[away[f]].push(j); });
-  const shortfall = (i) => {
+  const modalCost = live.map((f) => [0, 1, 2].map((o) => (logOdds(f, modal[f]) - logOdds(f, o)) / 2));
+  // A lower bound on what the matches still to decide (from index i) must cost for this finish.
+  // The club ends on some points P; every other club then has to end where the finish needs it
+  // relative to P: no more than "place" above, no more than count - 1 - place below. Each club on
+  // its own takes its cheapest results to end on a given total (a match shared by two clubs is
+  // charged half to each, so the sum never exceeds what the one change really costs; their
+  // picks need not agree, which only loosens the bound); the bound is the cheapest P, with the
+  // club's own cost to reach it, and the cheapest few clubs paying to cross it.
+  // Once the club's own results are in its points are fixed, and only the clubs that would
+  // end on the wrong side of them need a table.
+  const fixedCost = (i) => {
     const target = pts[club];
-    const cheapUp = [];
-    const cheapDown = [];
+    const up = [];
+    const down = [];
     let high = 0;
     let low = 0;
     for (let c = 0; c < count; c += 1) {
@@ -605,57 +617,118 @@ function scenarioAnalysis(spec, club, place, run, { minHits = 25, tiePenalty = M
         const f = live[j];
         const mine = home[f] === c ? 0 : 1;
         modalPts += worth(modal[f])[mine];
-        rest.push({ f, mine });
+        rest.push({ j, mine });
       }
-      if (modalPts > target) {
-        high += 1;
-        // The cheapest way to end on target or less.
-        let table = new Map([[pts[c], 0]]);
-        for (const { f, mine } of rest) {
-          const next = new Map();
-          for (const [at, spent] of table) {
-            for (let o = 0; o < 3; o += 1) {
-              const to = at + worth(o)[mine];
-              const price = spent + (logOdds(f, modal[f]) - logOdds(f, o)) / 2;
-              if (price < (next.get(to) ?? Infinity)) next.set(to, price);
-            }
+      if (modalPts === target) continue;
+      let cost = new Float64Array(3 * rest.length + 1).fill(Infinity);
+      cost[0] = 0;
+      for (const { j, mine } of rest) {
+        const next = new Float64Array(cost.length).fill(Infinity);
+        for (let t = 0; t < cost.length; t += 1) {
+          if (cost[t] === Infinity) continue;
+          for (let o = 0; o < 3; o += 1) {
+            const at = t + worth(o)[mine];
+            const price = cost[t] + modalCost[j][o];
+            if (price < next[at]) next[at] = price;
           }
-          table = next;
         }
-        let cheapest = Infinity;
-        for (const [at, spent] of table) if (at <= target && spent < cheapest) cheapest = spent;
-        cheapUp.push(cheapest);
-      } else if (modalPts < target) {
-        low += 1;
-        let table = new Map([[pts[c], 0]]);
-        for (const { f, mine } of rest) {
-          const next = new Map();
-          for (const [at, spent] of table) {
-            for (let o = 0; o < 3; o += 1) {
-              const to = at + worth(o)[mine];
-              const price = spent + (logOdds(f, modal[f]) - logOdds(f, o)) / 2;
-              if (price < (next.get(to) ?? Infinity)) next.set(to, price);
-            }
-          }
-          table = next;
-        }
-        let cheapest = Infinity;
-        for (const [at, spent] of table) if (at >= target && spent < cheapest) cheapest = spent;
-        cheapDown.push(cheapest);
+        cost = next;
       }
+      let cheapest = Infinity;
+      for (let t = 0; t < cost.length; t += 1) {
+        const end = pts[c] + t;
+        if ((modalPts > target ? end <= target : end >= target) && cost[t] < cheapest) cheapest = cost[t];
+      }
+      if (modalPts > target) { high += 1; up.push(cheapest); } else { low += 1; down.push(cheapest); }
     }
-    const pay = (costs, n) => costs.sort((x, y) => x - y).slice(0, Math.max(0, n)).reduce((a, b) => a + b, 0) + (costs.length < n ? Infinity : 0);
-    return pay(cheapUp, high - place) + pay(cheapDown, low - (count - 1 - place));
+    const pay = (costs, n) => {
+      if (n <= 0) return 0;
+      if (costs.length < n) return Infinity;
+      costs.sort((x, y) => x - y);
+      let sum = 0;
+      for (let k = 0; k < n; k += 1) sum += costs[k];
+      return sum;
+    };
+    return pay(up, high - place) + pay(down, low - (count - 1 - place));
+  };
+  const lowerCost = (i) => {
+    if (left[club] === 0) return fixedCost(i);
+    const tables = new Array(count);
+    for (let c = 0; c < count; c += 1) {
+      const rest = [];
+      let modalPts = pts[c];
+      for (const j of atClub[c]) {
+        if (j < i) continue;
+        const f = live[j];
+        const mine = home[f] === c ? 0 : 1;
+        modalPts += worth(modal[f])[mine];
+        rest.push({ j, mine });
+      }
+      let cost = new Float64Array(3 * rest.length + 1).fill(Infinity);
+      cost[0] = 0;
+      for (const { j, mine } of rest) {
+        const next = new Float64Array(cost.length).fill(Infinity);
+        for (let t = 0; t < cost.length; t += 1) {
+          if (cost[t] === Infinity) continue;
+          for (let o = 0; o < 3; o += 1) {
+            const at = t + worth(o)[mine];
+            const price = cost[t] + modalCost[j][o];
+            if (price < next[at]) next[at] = price;
+          }
+        }
+        cost = next;
+      }
+      // Cheapest to end on this much or less (at most), or this much or more (at least).
+      const atMost = Float64Array.from(cost);
+      for (let t = 1; t < atMost.length; t += 1) if (atMost[t - 1] < atMost[t]) atMost[t] = atMost[t - 1];
+      const atLeast = Float64Array.from(cost);
+      for (let t = atLeast.length - 2; t >= 0; t -= 1) if (atLeast[t + 1] < atLeast[t]) atLeast[t] = atLeast[t + 1];
+      tables[c] = { cost, atMost, atLeast, modalPts };
+    }
+    let cheapest = Infinity;
+    const own = tables[club];
+    for (let t = 0; t < own.cost.length; t += 1) {
+      if (own.cost[t] === Infinity) continue;
+      const target = pts[club] + t;
+      const up = [];
+      const down = [];
+      let high = 0;
+      let low = 0;
+      for (let c = 0; c < count; c += 1) {
+        if (c === club) continue;
+        const tab = tables[c];
+        const index = target - pts[c];
+        if (tab.modalPts > target) {
+          high += 1;
+          up.push(index < 0 ? Infinity : tab.atMost[Math.min(index, tab.atMost.length - 1)]);
+        } else if (tab.modalPts < target) {
+          low += 1;
+          down.push(index >= tab.atLeast.length ? Infinity : tab.atLeast[Math.max(0, index)]);
+        }
+      }
+      const pay = (costs, n) => {
+        if (n <= 0) return 0;
+        if (costs.length < n) return Infinity;
+        costs.sort((x, y) => x - y);
+        let sum = 0;
+        for (let k = 0; k < n; k += 1) sum += costs[k];
+        return sum;
+      };
+      const total = own.cost[t] + pay(up, high - place) + pay(down, low - (count - 1 - place));
+      if (total < cheapest) cheapest = total;
+    }
+    return cheapest;
   };
   const descend = (i, value) => {
-    if (work > LIMIT) { complete = false; return; }
+    if (!complete) return;
+    if (work > LIMIT || ((nodes & 127) === 0 && late())) { complete = false; return; }
     work += 1;
     nodes += 1;
     if (value + suffix[i] <= Math.max(best, floor) + 1e-12) return;
     if (!reachable()) return;
-    if (left[club] === 0 && i < L) {
-      work += 3;
-      if (value + suffix[i] - shortfall(i) <= Math.max(best, floor) + 1e-12) return;
+    if (i < L) {
+      work += left[club] === 0 ? 3 : 3 + Math.ceil(count * (L - i) / 40);
+      if (value + suffix[i] - lowerCost(i) <= Math.max(best, floor) + 1e-12) return;
     }
     if (i === L) { settle(value); return; }
     const f = live[i];
@@ -693,6 +766,59 @@ function scenarioAnalysis(spec, club, place, run, { minHits = 25, tiePenalty = M
       value += logOdds(f, o);
     }
     settle(value);
+  }
+  // A first answer worth beating, from the best of those: its results changed one match at a time
+  // while the season (the chance of its results times that of the finish) improves.
+  if (bestOutcome) {
+    const appraise = () => {
+      let above = 0;
+      const level = [];
+      for (let c = 0; c < count; c += 1) {
+        if (c === club) continue;
+        if (pts[c] > pts[club]) above += 1;
+        else if (pts[c] === pts[club]) level.push(c);
+      }
+      if (place < above || place > above + level.length) return null;
+      let value = 0;
+      for (const f of live) value += logOdds(f, outcome[f]);
+      // Only the odds of the results are climbed (the finish just has to be possible); the finish
+      // chance is worked out once, for the season it ends on.
+      return { total: value, value, level, above };
+    };
+    pts.set(base);
+    outcome.set(modal);
+    for (const f of live) {
+      outcome[f] = bestOutcome[f];
+      const [h, a] = worth(outcome[f]);
+      pts[home[f]] += h; pts[away[f]] += a;
+    }
+    let now = appraise();
+    for (let round = 0; round < 40 && now && !late() && complete; round += 1) {
+      let moved = false;
+      for (const f of live) {
+        const was = outcome[f];
+        for (let o = 0; o < 3 && !late(); o += 1) {
+          if (o === was || o === outcome[f]) continue;
+          const [h0, a0] = worth(outcome[f]);
+          const [h1, a1] = worth(o);
+          pts[home[f]] += h1 - h0; pts[away[f]] += a1 - a0;
+          const before = outcome[f];
+          outcome[f] = o;
+          const next = appraise();
+          if (next && next.total > now.total + 1e-9) { now = next; moved = true; } else {
+            pts[home[f]] -= h1 - h0; pts[away[f]] -= a1 - a0;
+            outcome[f] = before;
+          }
+        }
+      }
+      if (!moved) break;
+    }
+    if (now) {
+      let chance = 1;
+      if (now.level.length) chance = countsOf(now.level)[place - now.above];
+      const total = countFinish ? now.value + Math.log(chance) : now.value;
+      if (chance > 1e-12 && total > best + 1e-12) { best = total; bestOutcome = outcome.slice(); bestFinish = chance; bestOdds = now.value; }
+    }
   }
   // Iterative deepening on the target: with the best case (every match its commonest result) as
   // the target nothing is explored but near-misses, and the target comes down by half a nat until
@@ -750,7 +876,7 @@ function scenarioAnalysis(spec, club, place, run, { minHits = 25, tiePenalty = M
     let bestScores = null;
     let steps = 0;
     const walk = (i, value) => {
-      if (steps > LIMIT) { scoresExact = false; return; }
+      if (steps > LIMIT || (steps & 255) === 0 && late()) { scoresExact = false; steps = LIMIT + 1; return; }
       steps += 1;
       if (value + rest[i] <= bestScore + 1e-12) return;
       let sure = 0;

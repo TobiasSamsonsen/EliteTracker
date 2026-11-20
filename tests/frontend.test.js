@@ -1108,9 +1108,32 @@ test('the typical season is the likeliest way the results can go, checked agains
     checked += 1;
     const shown = found.typical.scores.map(([h, a]) => result(h, a)).join('');
     assert.equal(standing(found.typical.scores)[place], club);
-    assert.ok((byResults.get(shown) || 0) >= 0.9 * best, `trial ${trial}: ${shown} is ${(byResults.get(shown) || 0) / best} of the best`);
+    assert.ok((byResults.get(shown) || 0) >= 0.98 * best, `trial ${trial}: ${shown} is ${(byResults.get(shown) || 0) / best} of the best`);
   }
   assert.ok(checked >= 12, String(checked));
+});
+
+test('a season with many matches left still answers quickly, with the finish held', () => {
+  // Eight clubs, every pair to play (28 matches), so the search cannot be run to the end in time:
+  // it answers by the deadline with the best season found, flagged as not proven, and the club
+  // still finishes where asked.
+  const decay = Array.from({ length: 9 }, (_, i) => Array.from({ length: 9 }, (__, j) => 0.45 ** (i + j)));
+  const total = decay.flat().reduce((a, b) => a + b, 0);
+  const grid = decay.map((row) => row.map((v) => v / total));
+  const fixtures = [];
+  for (let home = 0; home < 8; home += 1) for (let away = home + 1; away < 8; away += 1) fixtures.push({ home, away, win: 0.42 + 0.01 * ((home + away) % 3), draw: 0.26, grid });
+  const spec = {
+    count: 8, sims: 3000, seed: 3, sd: 0.2,
+    points: [20, 20, 19, 19, 18, 18, 17, 17], gf: Array(8).fill(30), ga: Array(8).fill(30),
+    fixtures, fixed: fixtures.map(() => null),
+  };
+  const { runs } = sim.simulateSeason({ ...spec, record: true });
+  const started = Date.now();
+  const found = sim.scenarioAnalysis(spec, 3, 4, runs, { deadline: 300 });
+  assert.ok(Date.now() - started < 4000, String(Date.now() - started));
+  assert.ok(found.enough);
+  assert.equal(found.typical.table[4].club, 3);
+  assert.equal(found.typical.scores.length, fixtures.length);
 });
 
 test('a finish that never happens, or always does, has nothing to explain', () => {
