@@ -2971,11 +2971,21 @@ footer a { color: var(--ink); }
   text-overflow: ellipsis;
 }
 
+/* Your club and the share button, one row under the name. */
+.team-summary__actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  flex: none;
+  margin-top: var(--space-1);
+}
+/* Outranks the general .share-btn rule's auto margin, which would push it right. */
+.team-summary .team-summary__actions > .share-btn { margin: 0; }
+
 /* Your club: a quiet pill, lit in the accent once chosen. */
 .team-summary__own {
   appearance: none;
-  align-self: flex-start;
-  margin-top: var(--space-1);
+  min-height: 2rem;
   padding: 0.25rem 0.75rem;
   border: 1px solid var(--rule-strong);
   border-radius: 999px;
@@ -2990,11 +3000,13 @@ footer a { color: var(--ink); }
 .team-summary__own:hover { color: var(--ink); border-color: var(--ink-faint); }
 .team-summary__own[aria-pressed="true"] { color: var(--accent-ink); border-color: var(--accent-ink); }
 .team-summary__own-words { margin-left: 0.35rem; }
-/* On a phone the star stands alone beside the name, a tap target of its own. */
+/* On a phone the star stands alone under the name, the share button beside
+   it: beside the name, the two took its width and cut it short. */
 @media (max-width: 760px) {
-  .team-summary__name-block { flex-direction: row; align-items: center; gap: 0.5rem; }
+  .team-summary__name-block { gap: 0.25rem; }
   .team-summary__own-words { display: none; }
-  .team-summary__own { align-self: center; margin-top: 0; padding: 0.25rem 0.6rem; min-height: 2rem; font-size: 1rem; line-height: 1; }
+  .team-summary__actions { margin-top: 0; }
+  .team-summary__own { padding: 0.25rem 0.6rem; font-size: 1rem; line-height: 1; }
 }
 
 .team-summary__rating-block {
@@ -4127,12 +4139,6 @@ button.team-mini__row:hover { background: var(--panel-sunk); }
     align-items: center;
     justify-items: start;
   }
-  /* The share button at the right end of the rating's line (as on a
-     desktop, after the rating), out of the flow: in it, it took a third row
-     of its own, or width from the name or the rating's line. The line starts
-     under the 56px crest and the header's 0.5rem gap. */
-  .team-summary__header:has(> .share-btn) { position: relative; }
-  .team-summary__header > .share-btn { position: absolute; top: calc(56px + 0.5rem + 0.1rem); right: 0; margin: 0; }
   .team-summary__rating-pos { line-height: 1.25; }
   .team-summary__trend { font-size: 2rem; }
   /* Key and verdict wrap as wholes, never mid-phrase. */

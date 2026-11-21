@@ -38,7 +38,7 @@ const state = {
   whatIfAuto: new Set(),
   // Which list the what-if page shows: 'week' or 'changes'; whether the auto-filled group is open.
   whatIfView: 'week',
-  runInMode: 'team',
+  runInMode: 'average',
   whatIfAutoOpen: false,
   whatIfWeek: null,
   // Pagination for team focus view.
@@ -6452,7 +6452,7 @@ function renderRunIn(report, body) {
     for (const button of bar.children) button.setAttribute('aria-pressed', String(state.runInMode === button.dataset.mode));
     drawRunIn(report, content, state.runInMode === 'average');
   };
-  for (const mode of ['team', 'average']) {
+  for (const mode of ['average', 'team']) {
     const button = el('button', '', t(`runin.mode.${mode}`));
     button.type = 'button';
     button.dataset.mode = mode;
@@ -7409,8 +7409,10 @@ function renderTeamView(report) {
   const summaryHead = content.querySelector('.team-summary__header');
   if (summaryHead) summaryHead.prepend(back);
   else content.prepend(back);
-  // Shared as the club's card (share.js) while it plays in the season shown, else as the link.
-  if (summaryHead) summaryHead.appendChild(shareButton({ title: teamName, image: row ? () => shareClub(report, teamId) : null }));
+  // Shared as the club's card (share.js) while it plays in the season shown,
+  // else as the link; beside "Make this your club", the club's other action.
+  const clubActions = content.querySelector('.team-summary__actions');
+  if (clubActions) clubActions.appendChild(shareButton({ title: teamName, image: row ? () => shareClub(report, teamId) : null }));
 
   const tabs = TEAM_TABS.filter(([key]) => key !== 'forecast' || (row && report.model?.matches_remaining > 0));
   if (!tabs.some(([key]) => key === state.teamTab)) state.teamTab = 'overview';
@@ -7791,7 +7793,10 @@ function renderTeamSummary(teamId, row, career, report, container) {
     paintOwn();
   });
   paintOwn();
-  nameBlock.appendChild(ownBtn);
+  // The club's actions in one row: your club, then the share button (renderTeamView).
+  const actions = el('div', 'team-summary__actions');
+  actions.appendChild(ownBtn);
+  nameBlock.appendChild(actions);
   header.appendChild(nameBlock);
 
   // Rating block: [arrow + rating] / position
