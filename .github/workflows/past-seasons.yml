@@ -52,6 +52,7 @@ jobs:
           name: season-${{ matrix.season }}
           path: |
             public/data/report-${{ matrix.season }}*.json
+            public/data/timeline-${{ matrix.season }}.json
             public/data/build-manifest-${{ matrix.season }}.json
           if-no-files-found: error
           retention-days: 1

@@ -212,7 +212,7 @@ test('an empty range has no index, so the slider stays hidden', () => {
 globalThis.localStorage = globalThis.localStorage || { getItem: () => 'en', setItem: () => {} };
 globalThis.document = globalThis.document || { querySelectorAll: () => [], getElementById: () => null, documentElement: {} };
 const i18nSrc = fs.readFileSync(`${__dirname}/../public/i18n.js`, 'utf8');
-eval(i18nSrc + pick('bandName') + pick('bandEdgeName') + pick('stakePct') + pick('teamStakes') + pick('nextStake') + pick('stakesForFixture') + pick('stakeLegs') + pick('stakeCopy') + pick('stakeTip'));
+eval(i18nSrc + pick('bandName') + pick('bandEdgeName') + pick('stakePct') + pick('teamStakes') + pick('nextStake') + pick('stakesForFixture') + pick('stakeLegs') + pick('stakeCopy') + pick('stakeTip') + pick('timelineReports') + pick('clubSlug') + pick('esc'));
 
 const NBSP = String.fromCharCode(160);
 const titleStake = {
@@ -1263,4 +1263,49 @@ test('every run-in string exists in both languages', () => {
     'runin.fact.easiest', 'runin.fact.runText', 'runin.fact.gap', 'runin.fact.gapText', 'runin.fact.surest',
     'runin.fact.surestText',
   ]);
+});
+
+/* A repeated key in an object literal is silently won by the later copy, so
+   the parsed table cannot show it; the source can. */
+test('i18n.js has no repeated key within a language, and the two languages share every key', () => {
+  const [enBlock, noBlock] = i18nSrc.split(/^  no: \{$/m);
+  const keysOf = (block) => [...block.matchAll(/^\s+'([^']+)':/gm)].map((m) => m[1]);
+  const [en, no] = [keysOf(enBlock), keysOf(noBlock)];
+  const repeats = (keys) => keys.filter((key, i) => keys.indexOf(key) !== i);
+  assert.deepEqual(repeats(en), [], 'repeated en keys');
+  assert.deepEqual(repeats(no), [], 'repeated no keys');
+  assert.deepEqual(en.filter((key) => !no.includes(key)), [], 'en keys missing from no');
+  assert.deepEqual(no.filter((key) => !en.includes(key)), [], 'no keys missing from en');
+});
+
+test('a timeline date becomes report-shaped tables, named from the loaded report', () => {
+  const timeline = { season: 2025, dates: {
+    '2025-03-01': {
+      eliteserien: [[1, 2, 1500.5, [0.25, 0.75]], ['2', 1, 1490, [0.75, 0.25]]],
+      obosligaen: [[9, 1, 1400, [1]]],
+    },
+  } };
+  const names = new Map([['1', 'Viking'], ['2', 'Brann'], ['9', 'Aalesund']]);
+  const day = timelineReports(timeline, '2025-03-01', names);
+  assert.deepEqual(day.eliteserien.table[0], { team_id: 1, team: 'Viking', position: 2, rating: 1500.5, position_probabilities: [0.25, 0.75] });
+  assert.equal(day.eliteserien.table[1].team, 'Brann', 'a string id still finds its name');
+  assert.equal(day.obosligaen.table[0].team, 'Aalesund');
+  assert.equal(timelineReports(timeline, '2025-03-02', names), null);
+  assert.equal(timelineReports(null, '2025-03-01', names), null);
+});
+
+test('club slugs fold æøå and punctuation, the same as pages.py', () => {
+  assert.equal(clubSlug('Bodø/Glimt'), 'bodo-glimt');
+  assert.equal(clubSlug('Sarpsborg 08'), 'sarpsborg-08');
+  assert.equal(clubSlug('Ullensaker/Kisa'), 'ullensaker-kisa');
+  assert.equal(clubSlug('Strømsgodset'), 'stromsgodset');
+  assert.equal(clubSlug('Åsane'), 'asane');
+  assert.equal(clubSlug('Lillestrøm'), 'lillestrom');
+  assert.equal(clubSlug('Kvik Halden'), 'kvik-halden');
+});
+
+test('esc makes a club name safe to put in the tooltip markup', () => {
+  assert.equal(esc('Bodø/Glimt'), 'Bodø/Glimt');
+  assert.equal(esc('A & B <i>"x"</i>'), 'A &amp; B &lt;i&gt;&quot;x&quot;&lt;/i&gt;');
+  assert.equal(esc(12), '12');
 });

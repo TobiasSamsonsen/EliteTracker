@@ -5,6 +5,11 @@ __pycache__/
 *.egg-info/
 .pytest_cache/
 public/data/
+# Written by build_site (pages.py), next to index.html
+public/klubb/
+public/utforsk/
+public/obos-ligaen/
+public/sitemap.xml
 past-seasons.tar.gz
 .firebase/
 .agents/

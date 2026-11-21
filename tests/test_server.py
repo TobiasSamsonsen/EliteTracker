@@ -31,3 +31,25 @@ def test_every_name_the_static_build_writes_is_served(monkeypatch, tmp_path):
         payload, status = server.data_payload(tmp_path, name)
         assert status == 200, name
     assert server.data_payload(tmp_path, "nope.json")[1] == 404
+
+
+def test_a_club_address_without_a_page_opens_the_app(tmp_path):
+    import threading
+    import urllib.request
+    from functools import partial
+    from http.server import ThreadingHTTPServer
+
+    (tmp_path / "index.html").write_text("<html>the app</html>", encoding="utf-8")
+    (tmp_path / "app.js").write_text("// js", encoding="utf-8")
+    httpd = ThreadingHTTPServer(("127.0.0.1", 0), partial(server.Handler, directory=str(tmp_path)))
+    threading.Thread(target=httpd.serve_forever, daemon=True).start()
+    try:
+        base = f"http://127.0.0.1:{httpd.server_address[1]}"
+        assert b"the app" in urllib.request.urlopen(f"{base}/klubb/viking/?view=team").read()
+        assert b"// js" in urllib.request.urlopen(f"{base}/app.js").read()
+        with __import__("pytest").raises(urllib.error.HTTPError) as missing:
+            urllib.request.urlopen(f"{base}/missing.js")
+        assert missing.value.code == 404
+    finally:
+        httpd.shutdown()
+        httpd.server_close()

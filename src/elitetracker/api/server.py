@@ -95,6 +95,11 @@ class Handler(SimpleHTTPRequestHandler):
     def do_GET(self) -> None:  # noqa: N802 - name fixed by BaseHTTPRequestHandler
         path = self.path.split("?", 1)[0]
         if not path.startswith("/data/"):
+            # The site's club and tool addresses (/klubb/viking/) are static
+            # pages on Firebase; locally the same address opens the app, whose
+            # query names the view.
+            if "." not in path.rsplit("/", 1)[-1] and not Path(self.translate_path(path)).exists():
+                self.path = "/index.html" + self.path[len(path):]
             return super().do_GET()
         if self.reload:
             reload_inputs()

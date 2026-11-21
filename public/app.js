@@ -134,11 +134,13 @@ const el = (tag, className, text) => {
 /* Club crests, served locally from the prebuilt logo bundle so the page stays
    dependency-free at render time. Keyed by the same fotmob team id the data
    uses, so a missing crest fails silently rather than breaking a row. */
-const teamLogo = (teamId, name) => {
+/* `decorative`: the club's name is written beside the crest, so a screen
+   reader would hear it twice; the crest then has no alt text of its own. */
+const teamLogo = (teamId, name, decorative = false) => {
   if (!teamId) return null;
   const img = el('img', 'team-logo');
   img.src = `/logos/${teamId}.webp`;
-  img.alt = name;
+  img.alt = decorative ? '' : name;
   img.loading = 'lazy';
   img.title = name;
   return img;
@@ -262,6 +264,7 @@ function heatTextClass(step) {
 
 const tooltip = $('#tooltip');
 let tooltipTrigger = null;
+let gridPeek = null; // the finish-grid cell a first touch tap has shown the readout for
 
 function showTooltip(event, html, triggerElement = null) {
   tooltip.innerHTML = html;
@@ -308,10 +311,17 @@ function moveTooltip(event) {
   tooltip.style.top = `${Math.max(8, y)}px`;
 }
 
+/* Club names go into the readout as markup; escape them so a name with an
+   ampersand or an angle bracket can never break it. */
+function esc(text) {
+  return String(text).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+
 function hideTooltip() {
   tooltip.dataset.show = 'false';
   tooltipTrigger?.removeAttribute('aria-describedby');
   tooltipTrigger = null;
+  gridPeek = null;
 }
 
 /* A hover readout that also works on touch. A tap fires pointerenter and then
@@ -495,7 +505,7 @@ function buildGrid(report, tableData, record = null) {
       cell.tip = () => {
         const live = anim.gridTableData?.find((r) => r.team_id === row.team_id);
         const prob = live ? live.position_probabilities[index] : probability;
-        return `<b>${row.team}</b> ${ordinal(position)}<br>${pct(prob, 2)}` + (band ? `<br>${bandName(band)}` : '');
+        return `<b>${esc(row.team)}</b> ${ordinal(position)}<br>${pct(prob, 2)}` + (band ? `<br>${bandName(band)}` : '');
       };
       // Roving tabindex: one stop for the whole grid, arrows move within it.
       cell.setAttribute('tabindex', rowIndex === 0 && index === 0 ? '0' : '-1');
@@ -505,9 +515,11 @@ function buildGrid(report, tableData, record = null) {
       cell.addEventListener('click', () => {
         // Not while the season replays (the cells then show another day), and not on a cell that is nothing or certain.
         if (anim.gridTableData || probability < 0.005 || probability > 0.9995) return;
+        // Touch: the first tap reads the cell (the legend says so), the second opens it.
+        if (coarsePointer.matches && gridPeek !== cell) { gridPeek = cell; return; }
         openScenario(report, row.team_id, position, cell);
       });
-      cell.addEventListener('pointerleave', hideTooltip);
+      cell.addEventListener('pointerleave', (event) => { if (event.pointerType !== 'touch') hideTooltip(); });
       cell.addEventListener('focus', () => {
         scenarioWarm(report);
         table.querySelectorAll('[role="gridcell"]').forEach((c) => { c.tabIndex = -1; });
@@ -649,7 +661,7 @@ function scenarioUrl(value) {
   const params = new URLSearchParams(window.location.search);
   if (value) params.set('scenario', value);
   else params.delete('scenario');
-  window.history.replaceState(null, '', `${window.location.pathname}?${params.toString()}${window.location.hash}`);
+  window.history.replaceState(entryState(), '', `${window.location.pathname}?${params.toString()}${window.location.hash}`);
 }
 
 function closeScenario({ restore = true } = {}) {
@@ -663,6 +675,90 @@ function closeScenario({ restore = true } = {}) {
   Object.assign(scenarioState, { root: null, trigger: null, untrap: null, onKey: null });
   scenarioUrl(null);
   if (restore && trigger?.isConnected) trigger.focus({ preventScroll: true });
+}
+
+/* Address of the page on show. build_site writes a static page for each
+   club of the current season and each Explore tool (pages.py); the app keeps
+   the view in the query as well, so a link that predates the pages, or one to
+   a club with no page, still opens the same view. `clubSlug` and
+   `EXPLORE_SLUGS` mirror pages.py (a test compares them). */
+const EXPLORE_SLUGS = {
+  mountain: 'sesongfjellet', attack: 'angrep-mot-forsvar', luck: 'flakstabellen',
+  races: 'kapplopene', whatif: 'hva-om', runin: 'restprogrammet',
+};
+const routeClubs = new Set(); // slugs of the clubs that have a page, set at boot
+
+function clubSlug(name) {
+  return name.toLowerCase().replace(/æ/g, 'ae').replace(/ø/g, 'o').replace(/å/g, 'a')
+    .normalize('NFD').replace(/\p{M}/gu, '').replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+}
+
+function routePath() {
+  if (state.activeView === 'team' && state.teamFocusId) {
+    const slug = clubSlug(String(teamNameById(state.teamFocusId)));
+    if (routeClubs.has(slug)) return `/klubb/${slug}/`;
+  } else if (state.activeView === 'explore' && EXPLORE_SLUGS[state.exploreItem]) {
+    return `/utforsk/${EXPLORE_SLUGS[state.exploreItem]}/`;
+  }
+  return state.league === 'eliteserien' ? '/' : '/obos-ligaen/';
+}
+
+/* The query, plus what a route page names (its <meta name="et-route">) for
+   whatever the query leaves out. Only until boot has finished: after that the
+   address is the whole truth, and a stale route must not answer for it. */
+function pageParams() {
+  const params = new URLSearchParams(window.location.search);
+  if (booted) return params;
+  try {
+    const route = JSON.parse(document.querySelector('meta[name="et-route"]')?.content || '{}');
+    // A query that names a view or a club is a link of its own: the route then
+    // only says which division the page belongs to.
+    const own = params.has('view') || params.has('team');
+    for (const [key, value] of Object.entries(route)) if (!params.has(key) && (!own || key === 'league')) params.set(key, value);
+  } catch {
+    // A malformed route leaves the address as it is.
+  }
+  return params;
+}
+
+/* The history entry's state follows the view on show: a club's entry remembers
+   the club only while that club is open, so Back from a later club lands on a
+   club or on the view the reader left, never on a stale one. */
+function entryState() {
+  return state.activeView === 'team' && state.teamFocusId ? { team: true, teamId: state.teamFocusId } : null;
+}
+
+/* The links on Matches and Table into the Explore tools. */
+function openTool(id) {
+  if (anim.playing) animStop();
+  state.activeView = 'explore';
+  markActiveView();
+  openExplore(id);
+}
+
+/* The address already carries what the reader built (?lock=, ?scenario=,
+   ?team=), so sharing it is copying it. */
+function copyLinkButton() {
+  const button = el('button', 'whatif-tool copy-link', t('share.copy'));
+  button.type = 'button';
+  button.addEventListener('click', async () => {
+    const url = window.location.href;
+    try {
+      await navigator.clipboard.writeText(url);
+    } catch {
+      const box = el('textarea');
+      box.value = url;
+      box.style.cssText = 'position:fixed;opacity:0';
+      document.body.appendChild(box);
+      box.select();
+      try { document.execCommand('copy'); } catch { /* nothing more to try */ }
+      box.remove();
+    }
+    button.textContent = t('share.copied');
+    clearTimeout(button.copiedTimer);
+    button.copiedTimer = setTimeout(() => { button.textContent = t('share.copy'); }, 1600);
+  });
+  return button;
 }
 
 function openScenario(report, teamId, position, trigger = null) {
@@ -688,7 +784,7 @@ function openScenario(report, teamId, position, trigger = null) {
   heading.appendChild(el('p', 'scenario__eyebrow', t('scenario.eyebrow')));
   const title = el('h2', 'scenario__title');
   title.id = 'scenario-title';
-  const crest = teamLogo(row.team_id, row.team);
+  const crest = teamLogo(row.team_id, row.team, true);
   if (crest) title.appendChild(crest);
   title.appendChild(document.createTextNode(t('scenario.title', { team: row.team, place: ordinal(position) })));
   heading.appendChild(title);
@@ -696,7 +792,7 @@ function openScenario(report, teamId, position, trigger = null) {
   close.type = 'button';
   close.setAttribute('aria-label', t('scenario.close'));
   close.addEventListener('click', () => closeScenario());
-  head.append(heading, close);
+  head.append(heading, copyLinkButton(), close);
 
   // The chance as the site's display figure, with what it is counted on in one quiet line.
   const chance = pct(row.position_probabilities[place], 1);
@@ -771,7 +867,7 @@ function scenarioSection(title, lead) {
 
 function scenarioSide(row) {
   const side = el('span', 'scenario-side');
-  const crest = teamLogo(row.team_id, row.team);
+  const crest = teamLogo(row.team_id, row.team, true);
   if (crest) side.appendChild(crest);
   side.appendChild(el('span', '', row.team));
   return side;
@@ -1022,9 +1118,60 @@ function renderGrid(report) {
 
 /* ---------- finish-grid animation ---------------------------------- */
 
+/* One file per season holds every matchday's club rows (bundles.py), in place
+   of a full report per day. A season published before that file existed has
+   none; its callers then fall back to the per-day reports. */
+const timelines = new Map();
+function fetchTimeline(season) {
+  if (!timelines.has(season)) {
+    timelines.set(season, fetch(`/data/timeline-${season}.json`)
+      .then((response) => (response.ok ? response.json() : null))
+      .catch(() => null));
+  }
+  return timelines.get(season);
+}
+
+/* One timeline date as report-shaped tables: just the fields the animation and
+   the mountain read. Names come from `names` (team id to name, as the loaded
+   report spells them), since the file holds ids only. Null for a date it lacks. */
+function timelineReports(timeline, date, names) {
+  const day = timeline?.dates?.[date];
+  if (!day) return null;
+  const reports = {};
+  for (const [slug, rows] of Object.entries(day)) {
+    reports[slug] = {
+      table: rows.map(([teamId, position, rating, probabilities]) => ({
+        team_id: teamId, team: names.get(String(teamId)), position, rating, position_probabilities: probabilities,
+      })),
+    };
+  }
+  return reports;
+}
+
+/* The Luck table and the scorecard read the same few fields from every
+   season's report; seasons-summary.json (bundles.py) holds just those, shaped
+   like the reports, so one fetch replaces one per season. Null where the file
+   is missing, and each season then falls back to its own report. */
+let seasonsSummary = null;
+function fetchSummary() {
+  seasonsSummary = seasonsSummary || fetch('/data/seasons-summary.json')
+    .then((response) => (response.ok ? response.json() : null))
+    .then((data) => {
+      for (const season of Object.values(data?.seasons || {})) applyShortNames(season);
+      return data;
+    })
+    .catch(() => null);
+  return seasonsSummary;
+}
+
 async function prefetchAnimReports() {
   const days = liveMatchdaysFor(state.league);
   if (days.length < 2) return null;
+  const timeline = await fetchTimeline(state.season);
+  const names = new Map(Object.values(state.reports).flatMap((r) => r.table.map((row) => [String(row.team_id), row.team])));
+  const quick = new Map();
+  days.forEach((d, i) => { const day = timelineReports(timeline, d.date, names); if (day) quick.set(i, day); });
+  if (quick.size === days.length) return quick;
   const fetched = await Promise.all(
     days.map((d) => fetch(reportUrl(state.season, d.date)).then((r) => (r.ok ? r.json().then(applyShortNames) : null))),
   );
@@ -1623,7 +1770,7 @@ function dividerRow(boundary) {
       const tr = el('tr', 'zone-divider');
       tr.style.setProperty('--band-color', bandColor(boundary.band, count));
       const td = el('td');
-      td.colSpan = 22;  // full table width (22 columns)
+      td.colSpan = $('#standings thead tr').children.length;  // the full table width
      // Format: "======== Expected CL Threshold: 67p ========"
      const label = el('span', 'zone-divider__wrap');
      label.appendChild(el('span', 'zone-divider__label',
@@ -1659,7 +1806,7 @@ function dividerRow(boundary) {
     const clubButton = el('button', 'club-btn');
     clubButton.type = 'button';
     clubButton.classList.add('club-btn--crest');
-    const crest = teamLogo(row.team_id, row.team);
+    const crest = teamLogo(row.team_id, row.team, true);
     if (crest) clubButton.appendChild(crest);
     clubButton.appendChild(el('span', 'club-btn__name', row.team));
     clubButton.addEventListener('click', (event) => {
@@ -1771,7 +1918,9 @@ function dividerRow(boundary) {
     // button; it adds no keyboard or ARIA semantics of its own.
     tr.addEventListener('click', () => openTeamView(row.team_id, row.team));
 
-    // Insert divider row AFTER this row if there's a boundary here (visual position)
+    // A boundary keyed N sits above the row shown N-th (the key is already
+    // shifted one place down, see dividerBoundaries), so the divider goes in
+    // before that row.
     if (dividerBoundaries.has(visualIndex + 1)) {
       body.appendChild(dividerRow(dividerBoundaries.get(visualIndex + 1)));
     }
@@ -2215,6 +2364,9 @@ function sideBlock(name, id, away, nameClass = 'played-card__team-name') {
   if (crest) {
     crest.addEventListener('click', () => openTeamView(id, name));
     crest.style.cursor = 'pointer';
+    // The name button beside it is the control; the crest is a mouse extra.
+    crest.alt = '';
+    crest.setAttribute('aria-hidden', 'true');
   }
   for (const node of away ? [crest, nameBtn] : [nameBtn, crest]) if (node) team.appendChild(node);
   return team;
@@ -2996,7 +3148,7 @@ function renderRace(report) {
     value.appendChild(el('small', '', item.unit));
     if (item.through) value.appendChild(el('span', 'visually-hidden', ` (${t('hero.race.through')})`));
     const name = el('span', 'race__name');
-    const crest = item.row && teamLogo(item.row.team_id, item.row.team);
+    const crest = item.row && teamLogo(item.row.team_id, item.row.team, true);
     if (crest) name.appendChild(crest);
     name.appendChild(document.createTextNode(item.row ? item.row.team : item.name));
     if (item.own) {
@@ -3472,7 +3624,7 @@ function renderAttackMap(report, body) {
     const club = svgEl('g', { class: 'attack-map__club', tabindex: 0, role: 'button', 'aria-label': `${row.team}: ${lines.join('. ')}` });
     club.appendChild(svgEl('circle', { cx, cy, r: crest / 2 + 2 }));
     club.appendChild(svgEl('image', { href: `/logos/${row.team_id}.webp`, x: cx - crest / 2, y: cy - crest / 2, width: crest, height: crest }));
-    attachTip(club, `<b>${row.team}</b><br>${lines.join('<br>')}`);
+    attachTip(club, `<b>${esc(row.team)}</b><br>${lines.join('<br>')}`);
     club.addEventListener('click', () => openTeamView(row.team_id, row.team));
     club.addEventListener('keydown', (event) => {
       if (event.key !== 'Enter' && event.key !== ' ') return;
@@ -3504,6 +3656,8 @@ const fetchedReport = (url) => {
     mountainReports.set(url, fetch(url)
       .then((res) => { if (!res.ok) throw new Error(`HTTP ${res.status}`); return res.json(); })
       .catch((error) => { mountainReports.delete(url); throw error; }));
+    // A phone scrubbing through seasons would otherwise keep every parsed report.
+    if (mountainReports.size > 30) mountainReports.delete(mountainReports.keys().next().value);
   }
   return mountainReports.get(url);
 };
@@ -3879,8 +4033,9 @@ async function renderLuck(report, body) {
   const token = ++luckToken;
   const { slug, seasons = [] } = report.league;
   if (!body.querySelector('.luck')) body.replaceChildren(el('p', 'explore-empty', t('luck.all.loading')));
-  const reports = await Promise.all(seasons.map((season) =>
-    fetchedReport(reportUrl(season)).then((all) => applyShortNames(all)[slug]).catch(() => null)));
+  const summary = await fetchSummary();
+  const reports = await Promise.all(seasons.map((season) => summary?.seasons?.[season]?.[slug]
+    || fetchedReport(reportUrl(season)).then((all) => applyShortNames(all)[slug]).catch(() => null)));
   if (token !== luckToken || state.activeView !== 'explore' || state.exploreItem !== 'luck') return;
   const loaded = reports.filter((r) => r && r.results);
   const chances = luckChances(loaded);
@@ -3976,7 +4131,7 @@ function drawLuckSeason(report, wrap, rows) {
     g.appendChild(value);
     const tip = t('luck.tip', { points: row.points, usual: num(row.usual, 1), luck: signed(row.luck, 1), n: row.matches });
     g.setAttribute('aria-label', `${row.team}: ${tip}. ${luckUsualText(row)}`);
-    attachTip(g, `<b>${row.team}</b><br>${tip}<br><span class="tooltip__muted">${luckUsualText(row)}</span>`);
+    attachTip(g, `<b>${esc(row.team)}</b><br>${tip}<br><span class="tooltip__muted">${luckUsualText(row)}</span>`);
     g.addEventListener('click', () => openTeamView(row.team_id, row.team));
     g.addEventListener('keydown', (event) => {
       if (event.key !== 'Enter' && event.key !== ' ') return;
@@ -4148,7 +4303,7 @@ function drawLuckSeasons(report, section, { counted, rows }, trend) {
     if (champion) g.appendChild(svgEl('image', { href: `/logos/${row.team_id}.webp`, x: cx - crest / 2, y: cy - crest / 2, width: crest, height: crest }));
     const tip = t('luck.all.tip', { season: row.season, points: row.points, usual: num(row.usual, 1), luck: signed(row.luck, 1), finish: finish(row) });
     g.setAttribute('aria-label', `${row.team} ${tip} ${luckUsualText(row)}`);
-    attachTip(g, `<b>${row.team}</b> ${tip}<br><span class="tooltip__muted">${luckUsualText(row)}</span>`);
+    attachTip(g, `<b>${esc(row.team)}</b> ${tip}<br><span class="tooltip__muted">${luckUsualText(row)}</span>`);
     svg.appendChild(g);
   }
   section.appendChild(el('p', 'explore-note', t(counted.some((c) => c.season === shown) ? 'luck.all.legendShown' : 'luck.all.legend', { season: shown })));
@@ -4621,7 +4776,7 @@ function renderWhatIf(report, body) {
       const tr = el('tr', involved.has(String(entry.row.team_id)) ? 'is-involved' : '');
       const club = el('th', 'whatif-table__club');
       club.scope = 'row';
-      const crest = teamLogo(entry.row.team_id, entry.row.team);
+      const crest = teamLogo(entry.row.team_id, entry.row.team, true);
       if (crest) club.appendChild(crest);
       club.appendChild(el('span', '', entry.row.team));
       tr.appendChild(club);
@@ -4652,7 +4807,7 @@ function renderWhatIf(report, body) {
     const text = lockParam(state.whatIfLocks, report);
     if (text) params.set('lock', text);
     else params.delete('lock');
-    window.history.replaceState(null, '', `${window.location.pathname}?${params.toString()}${window.location.hash}`);
+    window.history.replaceState(entryState(), '', `${window.location.pathname}?${params.toString()}${window.location.hash}`);
   };
 
   const schedule = () => {
@@ -4760,6 +4915,7 @@ function renderWhatIf(report, body) {
     if (names.includes('all')) button('all', t('whatif.fillAll'), () => fill('all'), !open, t('whatif.fillHint'));
     if (names.includes('clear') && [...state.whatIfAuto].some((id) => state.whatIfLocks.has(id))) button('clear', t('whatif.clearFill'), clearFill, false);
     if (names.includes('reset')) button('reset', t('whatif.resetAll'), resetAll, false);
+    if (names.includes('reset') && state.whatIfLocks.size) row.appendChild(copyLinkButton());
     return row;
   };
 
@@ -4990,6 +5146,14 @@ function scorecardHits(rows, field = 'miss') {
    (archives built before the pre-season view), else nothing. With them,
    last season's call where the build has the season before. */
 async function scorecardSeason(season, slug, seasons) {
+  // The summary holds this season's call and final table already.
+  const stored = (await fetchSummary())?.seasons?.[season]?.[slug];
+  if (stored) {
+    if (stored.model.matches_remaining || !stored.pre) return [];
+    const rows = scorecardRows(season, stored.pre, stored.table);
+    const before = seasons.includes(season - 1) ? (await fetchSummary()).seasons[season - 1] : null;
+    return before ? scorecardLastSeason(rows, before) : rows;
+  }
   // The live view, fetched here rather than through loadSeasonReports, which
   // hands back the rewound copy when the reader has rewound this season.
   const live = (await fetchedReport(reportUrl(season)))[slug];
@@ -5072,7 +5236,7 @@ async function renderScorecard(report, body) {
     const head = t('scorecard.cellTip', { called: ordinalShort(called), finished: ordinalShort(finished) });
     const clubs = [...list].sort((a, b) => b.season - a.season).map((row) => `${row.team} ${row.season}`).join(', ');
     dot.setAttribute('aria-label', `${head}: ${clubs}`);
-    attachTip(dot, `<b>${head}</b><br>${clubs}`);
+    attachTip(dot, `<b>${head}</b><br>${esc(clubs)}`);
     svg.appendChild(dot);
   }
 
@@ -5681,7 +5845,7 @@ function drawRunIn(report, content, average) {
   for (const row of rows) {
     const tr = el('tr');
     const name = el('th', 'runin__club');
-    const crest = teamLogo(row.team_id, row.team);
+    const crest = teamLogo(row.team_id, row.team, true);
     if (crest) name.appendChild(crest);
     name.appendChild(el('span', '', row.team));
     name.addEventListener('click', () => openTeamView(row.team_id, row.team));
@@ -5763,7 +5927,8 @@ async function mountainLayers(report) {
   const days = report.league.matchdays || [];
   const lastDate = days.length ? days[days.length - 1].date : null;
   const probs = (r) => new Map(r.table.map((row) => [row.team_id, row.position_probabilities]));
-  const reportOn = (date) => fetchedReport(reportUrl(season, date));
+  const reportOn = (date) => fetchTimeline(season)
+    .then((timeline) => timelineReports(timeline, date, new Map()) || fetchedReport(reportUrl(season, date)));
   const layers = [];
   const preseason = report.league.preseason;
   const history = report.history || {};
@@ -6014,7 +6179,7 @@ function mountainScene(canvas) {
     const meta = hit && s.meta[s.faceBlock[Math.floor(hit.faceIndex / 2)]];
     if (!meta) { hideTooltip(); return; }
     const [layer, team, place, p] = meta;
-    showTooltip(event, `<b>${team.name}</b><br>${mountainLabel(layer)} · ${formatDate(layer.date)}<br>`
+    showTooltip(event, `<b>${esc(team.name)}</b><br>${mountainLabel(layer)} · ${formatDate(layer.date)}<br>`
       + `${t('mountain.tip', { place, p: pct(p) })}<br>${t('mountain.tipRank', { finish: team.finish, predicted: team.predicted, now: team.now })}`, canvas);
   };
   let downAt = null;
@@ -6563,7 +6728,7 @@ function openTeamView(teamId, fallbackName, { push = true } = {}) {
   state.teamSeasonsPage = 0;
   state.activeView = 'team';
   markActiveView();
-  if (push) history.pushState({ team: true }, '');
+  if (push) history.pushState({ team: true, teamId }, '');
   render();
   window.scrollTo({ top: 0, behavior: 'instant' });
 }
@@ -6603,6 +6768,7 @@ function renderTeamView(report) {
   const summaryHead = content.querySelector('.team-summary__header');
   if (summaryHead) summaryHead.prepend(back);
   else content.prepend(back);
+  if (summaryHead) summaryHead.appendChild(copyLinkButton());
 
   const tabs = TEAM_TABS.filter(([key]) => key !== 'forecast' || (row && report.model?.matches_remaining > 0));
   if (!tabs.some(([key]) => key === state.teamTab)) state.teamTab = 'overview';
@@ -7117,7 +7283,7 @@ function renderTeamMiniTable(row, report, container) {
   grid.appendChild(line('team-mini__head', record(['#', t('table.col.club'), t('team.mini.played'), t('form.W'), t('form.D'), t('form.L'), t('team.gd'), t('team.mini.pts')])));
   table.slice(from, from + wide).forEach((r, k) => {
     const club = el('span', 'team-mini__club');
-    const crest = teamLogo(r.team_id, r.team);
+    const crest = teamLogo(r.team_id, r.team, true);
     if (crest) club.appendChild(crest);
     club.appendChild(el('span', '', r.team));
     const far = from + k < near || from + k >= near + 3;
@@ -7416,7 +7582,7 @@ function stakeRow(entry, report, count) {
   const who = el('button', 'stake__who');
   who.type = 'button';
   who.addEventListener('click', () => openTeamView(entry.opponent_id, entry.opponent));
-  const crest = teamLogo(entry.opponent_id, entry.opponent);
+  const crest = teamLogo(entry.opponent_id, entry.opponent, true);
   if (crest) who.appendChild(crest);
   who.appendChild(el('span', '', entry.opponent));
   const legs = stakeLegs(entry, report.fixtures || []);
@@ -7537,7 +7703,7 @@ function renderTeamGridRow(teamId, row, report, container) {
 
     const band = bandFor(bands, position);
     cell.addEventListener('pointerenter', (event) =>
-      showTooltip(event, `<b>${row.team}</b> ${ordinal(position)}<br>${pct(prob, 2)}` + (band ? `<br>${bandName(band)}` : ''))
+      showTooltip(event, `<b>${esc(row.team)}</b> ${ordinal(position)}<br>${pct(prob, 2)}` + (band ? `<br>${bandName(band)}` : ''))
     );
     cell.addEventListener('pointermove', moveTooltip);
     cell.addEventListener('pointerleave', hideTooltip);
@@ -7706,7 +7872,7 @@ function drawTeamChart(career) {
     const when = new Date(times[index]).toLocaleDateString(localeDate(), {
       day: 'numeric', month: 'short', year: 'numeric',
     });
-    showTooltip(event, `<b>${career.team}</b><br>${when}<br>${t('chart.rating', { n: points[index][1] })}`);
+    showTooltip(event, `<b>${esc(career.team)}</b><br>${when}<br>${t('chart.rating', { n: points[index][1] })}`);
   });
   surface.addEventListener('pointerleave', () => {
     crosshair.style.opacity = '0';
@@ -8052,7 +8218,7 @@ function drawTeamShape(report, team, chart, boxWidth) {
       for (let position = group.from; position <= group.to; position += 1) sum += team.positions[snapshots - 1][position - 1];
       return sum;
     };
-    const tip = () => `<b>${name}</b>${bandLabel ? ` \u00b7 ${bandName(bandLabel)}` : ''}<br>` + t('shape.now', { pct: pct(now(), 1) });
+    const tip = () => `<b>${esc(name)}</b>${bandLabel ? ` \u00b7 ${bandName(bandLabel)}` : ''}<br>` + t('shape.now', { pct: pct(now(), 1) });
     band.setAttribute('role', 'img');
     band.setAttribute('aria-label', `${name}${bandLabel ? `, ${bandName(bandLabel)}` : ''}`);
     band.addEventListener('pointerenter', (event) => showTooltip(event, tip()));
@@ -8244,7 +8410,7 @@ function attachTeamShapeCrosshair(chart, report, team, geometry) {
 
     showTooltip(
       event,
-      `<b>${team.team}</b> · ${played === 0 ? t('shape.preseason') : when}<br>` +
+      `<b>${esc(team.team)}</b> · ${played === 0 ? t('shape.preseason') : when}<br>` +
         `${t('shape.rating', { n: team.ratings[index] })} · ${t('shape.mostLikely', { n: ordinal(best + 1) })} (${pct(probabilities[best])})<br>` +
         `${top ? `${t('shape.topN', { n: top.last, pct: pct(sum(top)) })} · ` : ''}${t('shape.bottomN', { n: count - (relegation ? relegation.first - 1 : count), pct: pct(sum(relegation)) })}`
     );
@@ -8822,7 +8988,7 @@ function render() {
   const params = new URLSearchParams(window.location.search);
   params.set('view', state.activeView);
   if (state.activeView === 'team' && state.teamFocusId) {
-    const teamName = (state.reports[state.league].table.find((t) => t.team_id === state.teamFocusId) || {}).team;
+    const teamName = (state.reports[state.league].table.find((t) => String(t.team_id) === String(state.teamFocusId)) || careerById(state.teamFocusId) || {}).team;
     if (teamName) params.set('team', teamName);
     else params.delete('team');
   } else {
@@ -8830,6 +8996,7 @@ function render() {
   }
   if (state.activeView === 'explore' && state.exploreItem) params.set('viz', state.exploreItem);
   else params.delete('viz');
+  if (state.activeView !== 'compare') params.delete('compare'); // renderCompare writes it
   const locked = state.activeView === 'explore' && state.exploreItem === 'whatif' ? lockParam(state.whatIfLocks, report) : '';
   if (locked) params.set('lock', locked);
   else params.delete('lock');
@@ -8846,15 +9013,29 @@ function render() {
   // view, team, season and rewind links all fold into their division's page.
   const meta = { league: report.league.name, season: report.league.season, chances: t(`meta.chances.${state.league}`) };
   document.title = t('meta.title', meta);
+  if (state.activeView === 'team' && state.teamFocusId) {
+    document.title = t('meta.team.title', { team: teamNameById(state.teamFocusId), season: meta.season });
+  } else if (state.activeView === 'explore' && EXPLORE_ITEMS.includes(state.exploreItem)) {
+    document.title = t('meta.tool.title', { tool: t(`explore.${state.exploreItem}.title`), league: meta.league, season: meta.season });
+  }
   document.querySelector('meta[name=description]').content = t('meta.desc', meta);
+  // What if has nothing to change once the season is played.
+  const whatIfLink = document.querySelector('[data-open-tool="whatif"]');
+  if (whatIfLink) whatIfLink.hidden = !(report.model?.matches_remaining > 0);
+  // The newest result the numbers rest on (the report holds no build time).
+  const through = report.league.matchdays?.at(-1)?.date;
+  $('#footer-data').textContent = through
+    ? t('footer.data', { date: new Date(`${through}T12:00:00Z`).toLocaleDateString(localeDate(), { day: 'numeric', month: 'long', year: 'numeric' }) })
+    : '';
   let canonical = document.querySelector('link[rel=canonical]');
   if (!canonical) {
     canonical = document.createElement('link');
     canonical.rel = 'canonical';
     document.head.appendChild(canonical);
   }
-  canonical.href = `https://elitetracker.no/${state.league === 'eliteserien' ? '' : `?league=${state.league}`}`;
-  window.history.replaceState(null, '', `${window.location.pathname}?${params.toString()}${window.location.hash}`);
+  const route = routePath();
+  canonical.href = `https://elitetracker.no${route}`;
+  window.history.replaceState(entryState(), '', `${route}?${params.toString()}${window.location.hash}`);
   // After the title, which the page view carries.
   pageView();
   state._prevActiveView = state.activeView;
@@ -9102,7 +9283,18 @@ function wire() {
     render();
   });
 
-  window.addEventListener('popstate', () => {
+  document.addEventListener('click', (event) => {
+    const link = event.target.closest('[data-open-tool]');
+    if (link) openTool(link.dataset.openTool);
+  });
+
+  window.addEventListener('popstate', (event) => {
+    // An entry pushed by openTeamView remembers its club, so Back from club B
+    // lands on club A instead of leaving the team view.
+    if (event.state?.teamId != null) {
+      openTeamView(event.state.teamId, null, { push: false });
+      return;
+    }
     if (!state.teamFocusId) return;
     state.teamFocusId = null;
     applyViewParameter();
@@ -9126,7 +9318,7 @@ function applySortParameter() {
 }
 
 function applyLeagueParameter() {
-  const league = new URLSearchParams(window.location.search).get('league');
+  const league = pageParams().get('league');
   if (!league || !state.reports[league]) return;
   state.league = league;
   for (const button of document.querySelectorAll('[data-league]')) {
@@ -9137,9 +9329,9 @@ function applyLeagueParameter() {
 /* Team is matched on name so a shared link stays readable. Applied after the
    first render, once the club list exists. */
 function applyTeamParameter() {
-  const wanted = new URLSearchParams(window.location.search).get('team');
+  const wanted = pageParams().get('team');
   if (!wanted) return;
-  const pool = state.careers?.teams || state.reports[state.league].table || [];
+  const pool = state.careers?.teams || Object.values(state.reports).flatMap((r) => r.table);
   const club = pool.find((team) => team.team.toLowerCase() === wanted.toLowerCase());
   if (club) openTeamView(club.team_id, club.team, { push: false });
 }
@@ -9246,7 +9438,7 @@ function closeSheet() {
 /* ?view=grid makes any view linkable. Applied early so the first render
    shows the requested view instead of the default table. */
 function applyViewParameter() {
-  const params = new URLSearchParams(window.location.search);
+  const params = pageParams();
   const asked = params.get('view');
   // Next Up and Played Results were merged into Matches; old links still land.
   const view = asked === 'next-up' || asked === 'played' ? 'matches' : asked;
@@ -9339,7 +9531,7 @@ function allTeams() {
 }
 
 function teamNameById(id) {
-  return allTeams().find((team) => String(team.team_id) === String(id))?.team || id;
+  return allTeams().find((team) => String(team.team_id) === String(id))?.team || careerById(id)?.team || id;
 }
 
 function careerById(id) {
@@ -9464,7 +9656,7 @@ function oddsBar(homeName, awayName, entry) {
     segment.dataset.outcome = outcome;
     segment.style.flex = `${Math.max(value, 0.001)}`;
     segment.textContent = value >= 0.12 ? pct(value, 0) : '';
-    segment.addEventListener('pointerenter', (event) => showTooltip(event, `<b>${who}</b><br>${pct(value, 1)}`));
+    segment.addEventListener('pointerenter', (event) => showTooltip(event, `<b>${esc(who)}</b><br>${pct(value, 1)}`));
     segment.addEventListener('pointermove', moveTooltip);
     segment.addEventListener('pointerleave', hideTooltip);
     odds.appendChild(segment);
@@ -9490,6 +9682,13 @@ function populateCompare(report) {
   const byRating = [...allTeams()].sort((x, y) => y.rating - x.rating);
   a.value = byRating[0].team_id;
   b.value = byRating[1]?.team_id || byRating[0].team_id;
+  // A shared link names the pair (?compare=<home id>:<away id>).
+  const [homeId, awayId] = (new URLSearchParams(window.location.search).get('compare') || '').split(':');
+  const has = (select, id) => [...select.options].some((option) => option.value === id);
+  if (homeId !== awayId && has(a, homeId) && has(b, awayId)) {
+    a.value = homeId;
+    b.value = awayId;
+  }
 }
 
 let compareMenuEl = null;
@@ -9575,7 +9774,7 @@ function openCompareMenu(box, side, report) {
       option.setAttribute('aria-selected', 'true');
       selectedIndex = i;
     }
-    const crest = teamLogo(team.team_id, team.team);
+    const crest = teamLogo(team.team_id, team.team, true);
     if (crest) option.appendChild(crest);
     option.appendChild(el('span', 'compare__option-name', team.team));
     option.addEventListener('click', () => {
@@ -9618,6 +9817,10 @@ function renderCompare(report) {
   for (const option of $('#compare-b').options) option.disabled = option.value === aId;
   const homeId = aId;
   const awayId = bId;
+  // The pair in the address, so the page can be shared.
+  const pair = new URLSearchParams(window.location.search);
+  pair.set('compare', `${aId}:${bId}`);
+  window.history.replaceState(entryState(), '', `${window.location.pathname}?${pair.toString()}${window.location.hash}`);
   const homeName = teamNameById(homeId);
   const awayName = teamNameById(awayId);
 
@@ -9630,6 +9833,7 @@ function renderCompare(report) {
   // Fictional match: the two clubs, who hosts, and the model's odds + scorelines.
   const matchBlock = el('div', 'compare__block');
   matchBlock.appendChild(el('h3', 'compare__subhead', t('compare.match')));
+  matchBlock.appendChild(copyLinkButton());
 
   const teamsRow = el('div', 'compare__teams');
   const homeBlock = compareTeamBlock(homeId, homeName, homeRating, teamLogo(homeId, homeName), t('compare.home'));
@@ -9895,7 +10099,7 @@ function drawCompareHistory(svg, careerA, careerB, labelA, labelB) {
     line.setAttribute('x2', px);
     line.style.opacity = '1';
     const when = new Date(pointTime(pa)).toLocaleDateString(localeDate(), { month: 'short', year: 'numeric' });
-    showTooltip(event, `<b>${labelA}</b> ${Math.round(pa[1])} · <b>${labelB}</b> ${Math.round(pb[1])}<br>${when}`);
+    showTooltip(event, `<b>${esc(labelA)}</b> ${Math.round(pa[1])} · <b>${esc(labelB)}</b> ${Math.round(pb[1])}<br>${when}`);
   });
   surface.addEventListener('pointerleave', () => {
     line.style.opacity = '0';
@@ -9938,13 +10142,17 @@ async function boot() {
     $('#content').hidden = false;
 
     // Read before the first render, which rewrites the query string.
-    const params = new URLSearchParams(window.location.search);
+    const params = pageParams();
+    for (const r of Object.values(state.reports)) for (const row of r.table) routeClubs.add(clubSlug(row.team));
     applyLeagueParameter();
     applySortParameter();
     applyViewParameter();
     // A club link can name a club only careers.json knows (one from another
     // season), so that one link waits for it.
-    if (params.get('team')) await attachCareers(careersLoad);
+    // (a club in this season's tables, which a club page names, need not wait for it)
+    const wantedClub = params.get('team')?.toLowerCase();
+    const inTables = Object.values(state.reports).some((r) => r.table.some((row) => row.team.toLowerCase() === wantedClub));
+    if (wantedClub && !inTables) await attachCareers(careersLoad);
     applyTeamParameter();
 
     render();
@@ -10369,10 +10577,8 @@ function handleOrientationChange() {
   // Close any open menus/sheets on orientation change
   closeAllMenus();
 
-  // Re-render if needed (e.g., grid animation bar)
-  if (state.anim.playing) {
-    renderAnimBar();
-  }
+  // The animation bar is a scaleX fraction of its track, so a new width
+  // needs no redraw.
 }
 
 window.addEventListener('orientationchange', handleOrientationChange);

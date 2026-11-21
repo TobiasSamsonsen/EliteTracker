@@ -80,7 +80,7 @@
     </div>
     <div class="masthead__end">
       <div class="league-picker" id="league-picker"></div>
-      <button type="button" id="settings-btn" class="settings-btn" aria-label="Settings" aria-expanded="false" aria-controls="settings-menu">
+      <button type="button" id="settings-btn" class="settings-btn" data-i18n="aria.settings" data-i18n-attr="aria-label" aria-label="Settings" aria-expanded="false" aria-controls="settings-menu">
       <svg viewBox="0 0 16 16" width="18" height="18" fill="currentColor" aria-hidden="true"><path d="M8 1a1 1 0 0 1 1 1v.7a5 5 0 0 1 2.1 1.2l.5-.5a1 1 0 1 1 1.4 1.4l-.5.5A5 5 0 0 1 13.3 7H14a1 1 0 1 1 0 2h-.7a5 5 0 0 1-1.2 2.1l.5.5a1 1 0 1 1-1.4 1.4l-.5-.5A5 5 0 0 1 9 13.3V14a1 1 0 1 1-2 0v-.7a5 5 0 0 1-2.1-1.2l-.5.5a1 1 0 0 1-1.4-1.4l.5-.5A5 5 0 0 1 2.7 9H2a1 1 0 1 1 0-2h.7a5 5 0 0 1 1.2-2.1L3.4 4.4a1 1 0 1 1 1.4-1.4l.5.5A5 5 0 0 1 7 2.7V2a1 1 0 0 1 1-1Zm0 4a3 3 0 1 0 0 6 3 3 0 0 0 0-6Z"/></svg>
       </button>
     </div>
@@ -109,14 +109,14 @@
       <div class="sheet__divider" aria-hidden="true"></div>
       <div class="sheet__setting">
         <span class="sheet__setting-label" data-i18n="sheet.theme">Theme</span>
-        <div class="switch switch--theme" role="group" aria-label="Theme">
+        <div class="switch switch--theme" role="group" data-i18n="aria.colourTheme" data-i18n-attr="aria-label" aria-label="Theme">
           <button type="button" data-theme-choice="light" aria-pressed="false" data-i18n="theme.light">Light</button>
           <button type="button" data-theme-choice="dark" aria-pressed="false" data-i18n="theme.dark">Dark</button>
         </div>
       </div>
       <div class="sheet__setting">
         <span class="sheet__setting-label" data-i18n="sheet.lang">Language</span>
-        <div class="switch switch--lang" role="group" aria-label="Language">
+        <div class="switch switch--lang" role="group" data-i18n="aria.language" data-i18n-attr="aria-label" aria-label="Language">
           <button type="button" data-lang="no" aria-pressed="true">NO</button>
           <button type="button" data-lang="en" aria-pressed="false">EN</button>
         </div>
@@ -145,14 +145,14 @@
 <div id="settings-menu" class="popover-menu" role="group" data-i18n="aria.settings" data-i18n-attr="aria-label" aria-label="Settings" hidden>
   <div class="popover-menu__item">
     <span class="popover-menu__label" data-i18n="sheet.theme">Theme</span>
-    <div class="switch switch--theme" role="group" aria-label="Theme">
+    <div class="switch switch--theme" role="group" data-i18n="aria.colourTheme" data-i18n-attr="aria-label" aria-label="Theme">
       <button type="button" data-theme-choice="light" aria-pressed="false" data-i18n="theme.light">Light</button>
       <button type="button" data-theme-choice="dark" aria-pressed="false" data-i18n="theme.dark">Dark</button>
     </div>
   </div>
   <div class="popover-menu__item">
     <span class="popover-menu__label" data-i18n="sheet.lang">Language</span>
-    <div class="switch switch--lang" role="group" aria-label="Language">
+    <div class="switch switch--lang" role="group" data-i18n="aria.language" data-i18n-attr="aria-label" aria-label="Language">
       <button type="button" data-lang="no" aria-pressed="true">NO</button>
       <button type="button" data-lang="en" aria-pressed="false">EN</button>
     </div>
@@ -239,6 +239,10 @@
               <button type="button" class="table-control-btn" data-table-mode="prediction" aria-pressed="false"><span data-i18n="table.view.prediction">Prediction</span></button>
             </div>
           </div>
+        </div>
+        <div class="tool-links">
+          <button type="button" data-open-tool="luck" data-i18n="toollink.luck">Luck table →</button>
+          <button type="button" data-open-tool="runin" data-i18n="toollink.runin">Run-in heatmap →</button>
         </div>
         <div class="scroller">
           <table class="standings" id="standings" aria-labelledby="table-title">
@@ -347,6 +351,9 @@
           </div>
           <div class="label" id="fixture-count"></div>
         </div>
+        <div class="tool-links">
+          <button type="button" data-open-tool="whatif" data-i18n="toollink.whatif">Change results in What if →</button>
+        </div>
         <div class="fixtures" id="fixtures"></div>
         <div class="legend" id="odds-legend"></div>
       </div>
@@ -422,6 +429,7 @@
 </main>
 
 <footer class="shell">
+  <div id="footer-data" class="footer__data"></div>
   <div id="footer-text">EliteTracker — Eliteserien og OBOS-ligaen, sesongene 2015–2026. Utviklet av Tobias Samsonsen.</div>
   <div class="footer__links">
     <a href="/personvern.html" data-i18n="consent.privacy">Personvern</a> ·

@@ -48,6 +48,8 @@ closing odds.
 | `simulation/playoffs.py`, `history.py` | the post-season ties; the projection as it stood on each date |
 | `pipeline.py` | league specs and bands, the model's inputs, `build_report` and every payload section |
 | `build_site.py` | every view as static JSON, with the incremental-rebuild stamps |
+| `bundles.py` | `timeline-<season>.json` and `seasons-summary.json`: compact aggregates of the reports on disk |
+| `pages.py` | the route pages (`/klubb/<slug>/`, `/utforsk/<slug>/`, `/obos-ligaen/`) and `sitemap.xml` |
 | `api/server.py` | the same `/data/*.json` names, built on request |
 | `research.py`, `backtest_cli.py` | research commands: odds, xG backfills, market values, calibration |
 
@@ -71,7 +73,9 @@ closing odds.
 - **Two hosts, one URL scheme.** `build_site` writes `report.json`,
   `report-<season>.json`, `report-<season>-<date>.json`, `careers.json` and
   `calibration.json`; `api/server.data_payload` answers the same names live
-  (`tests/test_server.py` holds it to that).
+  (`tests/test_server.py` holds it to that). The derived `timeline-<season>.json`
+  and `seasons-summary.json` are static-only: the frontend falls back to the
+  reports when they are missing.
 - **Rewind.** `asof` rewinds a report once, on the fixture list; everything
   downstream follows. Rewound views run the same 50,000
   simulations but take one history snapshot per matchweek (`pipeline.rewound_configs`).

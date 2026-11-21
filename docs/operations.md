@@ -34,7 +34,9 @@ not run any of these: run them before pushing.
   on pull requests (a preview channel): unpacks the `past-seasons` and
   `current` release assets into `public/data`, builds the current season
   only, deploys to Firebase, and on a push re-uploads the current season as
-  the `current` asset.
+  the `current` asset. The same build writes the route pages and the
+  sitemap, and fills in any `timeline-<season>.json` the archive lacks (see
+  below).
 - **`past-seasons.yml`**, by hand: rebuilds every past season, one job each,
   replaces the `past-seasons` asset and starts a deploy.
 
@@ -61,10 +63,40 @@ or build on your machine and upload the asset:
 ```bash
 python -m elitetracker.build_site          # every season
 CURRENT=$(python -c 'from elitetracker.pipeline import current_season; print(current_season())')
-tar -czf past-seasons.tar.gz -C public/data $(cd public/data && ls report-*.json | grep -v "^report-$CURRENT")
+tar -czf past-seasons.tar.gz -C public/data $(cd public/data && ls report-*.json timeline-*.json | grep -v "^report-$CURRENT" | grep -v "^timeline-$CURRENT")
 gh release upload past-seasons past-seasons.tar.gz --clobber
 ```
 
 The deploy unpacks it into `public/data/`, then builds the current season
 over it. Without the asset it still deploys, with only the current season
 browsable.
+
+## Bundles, route pages and caching
+
+Three kinds of file are derived from the reports rather than simulated, each
+written by the `build_site` run:
+
+- `timeline-<season>.json` (`bundles.py`): every matchday's club rows
+  (position, rating, finish chances), read by *Play season* and the *Season
+  mountain* in place of ~70 report fetches. A past season's comes in the
+  `past-seasons` asset (`past-seasons.yml` uploads it); one the asset lacks
+  is built from the unpacked reports during the deploy (about ten seconds for
+  all twelve seasons), so the archive does not need rebuilding for it.
+- `seasons-summary.json` (`bundles.py`): the slice of every season's live
+  report the *Luck table* and the prediction scorecard read. Rewritten on every
+  build, since the current season's part moves with each result.
+- the route pages and `sitemap.xml` (`pages.py`), beside `index.html`:
+  `/obos-ligaen/`, `/klubb/<slug>/` for every club in the current season and
+  `/utforsk/<slug>/` for each Explore tool, each a copy of `index.html` with its
+  own title, description, canonical address and social card. All git-ignored;
+  CI writes them.
+
+The frontend falls back to the per-date and per-season reports wherever a
+bundle is missing (an older archive, the local server, which does not serve
+them), so none of these is required to run.
+
+Firebase caches `/vendor/**` for 30 days; `/data/**`, `.js`, `.css` and
+`.html` stay `no-cache` (they revalidate, mostly as 304s). A rewound report
+must not be marked immutable: a model release re-rates old reports under the
+same file name. After changing a vendored file, check the header on a preview
+channel (`curl -I`), since `/vendor/**` also matches the `.js` rule above it.

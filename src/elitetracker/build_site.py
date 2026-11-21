@@ -9,6 +9,11 @@ Files written for every season:
     report.json                     current season, both leagues
     report-<season>.json            live view of that season
     report-<season>-<date>.json     rewound to a matchday (both leagues)
+    timeline-<season>.json          every matchday's club rows in one file
+    seasons-summary.json            what Luck and the scorecard read, every season
+                                    (both from bundles.py)
+
+and, beside index.html, the route pages and sitemap.xml (pages.py).
 
 plus careers.json. Rewound reports use exactly the same config the server
 applies to a rewound request (see pipeline.rewound_configs), so the static
@@ -40,7 +45,9 @@ for _threads in ("OPENBLAS_NUM_THREADS", "OMP_NUM_THREADS", "MKL_NUM_THREADS"):
     os.environ.setdefault(_threads, "1")
 
 
+from elitetracker.bundles import write_summary, write_timelines
 from elitetracker.model.elo import MODEL_VERSION, EloConfig
+from elitetracker.pages import build_pages
 from elitetracker.pipeline import (
     LEAGUE_SPECS,
     NORMALIZED_DIR,
@@ -289,6 +296,22 @@ def build_site(
     if previous.get("careers.json") != careers_digest or not (out_dir / "careers.json").exists():
         write_payload(out_dir / "careers.json", careers_payload(careers, root=root))
     stamps["careers.json"] = careers_digest
+
+    # The compact per-season timelines the animation and the mountain read.
+    # Built from the report files on disk, for the seasons just rebuilt and for
+    # any season (a past one from the archive) that has none yet.
+    written = write_timelines(out_dir, {spec[0] for spec in specs})
+    if written:
+        print(f"wrote {len(written)} timeline(s)", flush=True)
+    # The Luck table's and the scorecard's slice of every season, rewritten each
+    # build: the current season's part changes with every result.
+    write_summary(out_dir)
+
+    # One entry page per club, tool and division, and the sitemap, next to
+    # index.html (skipped where there is none, e.g. a build into a scratch dir).
+    pages = build_pages(out_dir.parent, out_dir)
+    if pages:
+        print(f"wrote {len(pages)} route page(s)", flush=True)
 
     # The Explore view's match-odds calibration: one walk-forward over every
     # season (about a second), so it is simply rewritten each build.

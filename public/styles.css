@@ -2648,11 +2648,6 @@ footer a { color: var(--ink); }
   .skeleton-fixture { height: 4rem; border-radius: var(--radius); margin-bottom: 0.5rem; }
   .skeleton-played-card { height: 3.5rem; border-radius: 0; border-bottom: 1px solid var(--rule); }
 
-  /* Touch ripple effect for interactive elements */
-  .touch-ripple { position: relative; overflow: hidden; }
-  .touch-ripple::after { content: ''; position: absolute; inset: 0; background: currentColor; opacity: 0; border-radius: inherit; pointer-events: none; }
-  .touch-ripple:active::after { animation: ripple 0.3s var(--ease); opacity: 0.1; }
-  @keyframes ripple { 0% { transform: scale(0.5); opacity: 0.15; } 100% { transform: scale(2.5); opacity: 0; } }
 
   /* Improved momentum scrolling for tables */
   .scroller { -webkit-overflow-scrolling: touch; scroll-behavior: auto; }
@@ -5440,3 +5435,12 @@ body.has-scenario { overflow: hidden; }
   .scenario-all__grid { grid-template-columns: 1fr; }
 }
 
+/* Links from Matches and Table into the Explore tools. */
+.tool-links { display: flex; flex-wrap: wrap; gap: 0.25rem 1.25rem; padding: 0.5rem 1.25rem 0; }
+.tool-links button { padding: 0.25rem 0; font: inherit; font-size: 0.8125rem; font-weight: 600; color: var(--accent-ink); background: none; border: 0; cursor: pointer; }
+.tool-links button:hover { text-decoration: underline; text-underline-offset: 2px; }
+.tool-links button:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+.tool-links [hidden] { display: none; }
+.copy-link { flex: none; align-self: center; margin-inline-start: auto; }
+.scenario__head .copy-link { margin-inline-start: auto; margin-inline-end: 0.5rem; }
+.footer__data { margin-bottom: 0.25rem; }

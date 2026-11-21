@@ -854,6 +854,54 @@ before shipping, as the rules ask:
       today's ratings, with a note).
 - [ ] What-if follow-ups: a rating nudge ("what if this club were stronger"), and play-off
       chances in the browser run.
+- [ ] Switch analytics from Google Analytics (and the consent banner) to a cookieless
+      provider (parked 2026-11-21, no code changed). The case, from the frontend audit:
+      the banner stacks above the mobile bottom bar, and many Norwegian visitors decline
+      or block GA, so counts are low. Constraints: no self-hosting, no paid plan.
+      **Umami Cloud Hobby**: free, 100,000 events a month, **1 website**, 6 months of
+      retention, no API; Umami's pages do not say whether Hobby needs a card or what
+      happens past 100,000 (extra events are not offered on Hobby per the comparison
+      table), and every page view and custom event counts, so estimate the volume from
+      GA first. **GoatCounter**: free for reasonable non-commercial use, cookieless, no
+      event cap found. **Cloudflare Web Analytics**: free, but its no-cookie claim is
+      disputed. If it is built: turn Umami's auto-tracking off (`data-auto-track="false"`,
+      the app rewrites the URL with `replaceState` on every render) and call
+      `umami.track` from `track()` and `pageView()`; remove the consent banner, the
+      consent storage and the cookie-clearing reload together; rewrite `personvern.html`;
+      state the dependency case under AGENTS.md. Check Nkom's and Datatilsynet's current
+      guidance before dropping the banner. Needs the user to create the account.
+- [ ] Left over from the frontend audit (batch 1, 2026-11-21), parked for later. The rest
+      of that audit is done: summary bundles (`bundles.py`), route pages (`pages.py`),
+      Back button, copy links, tool links, footer date, grid two-tap, i18n, Compare URL,
+      crest `alt`, tooltip escaping, report-cache cap, vendor cache. Expected effect of
+      each item still open, from the audit and from checking the code:
+      - **Share image (PNG)** on the finish grid, What if and team cards, with a small
+        "elitetracker.no" watermark. Audit: high impact, shares to X, Discord and
+        r/NorskFotball. The grid is an HTML table, so it needs a canvas dependency (a case
+        under AGENTS.md) or a fragile SVG workaround, and a visual check; effort is higher
+        than the audit says.
+      - **Mobile bottom bar: Explore in place of Ladder.** Audit: surfaces six views users
+        rarely find (What if, Luck and more). The links from Matches and Table already
+        capture much of this; the swap costs the Ladder its mobile slot. A navigation
+        decision for the owner.
+      - **Split `app.js` into ES modules.** Audit: low to medium, medium effort,
+        maintainability only. It would break `tests/frontend.test.js` (`pick` slices
+        functions out of the source by indentation), and AGENTS.md rules out unrequested
+        refactors. Do it only with a plan for the tests.
+      - **One bounded report cache.** Audit: medium, low effort (iOS memory, 50 to 100 MB of
+        parsed JSON). Mostly captured already: `fetchedReport` is capped at 30 and the
+        bundles cut the reports loaded. Left: `seasonReportCache`, `weekEves` and
+        `scenarioResults` are still unbounded.
+      - **More CSS deduplication.** Audit: zero risk, 200 to 250 fewer lines, no user-visible
+        change. One duplicate (`.touch-ripple`) is removed; overlapping 760px and 480px
+        blocks for `.played-card`, `.compare__team` and `.season-row-compact` remain.
+      - **Crest `alt` on the remaining crest-only sites**, where no club name is written
+        beside the crest (run-in cells, opponent chips, compare blocks). Nine sites with a
+        visible name are done.
+      Still unchecked from the same work: Firebase header precedence for `/vendor/**`
+      (`curl -I` on a preview channel), the CI workflows end to end, and a phone check
+      (grid two-tap, copy-link placement, tool links, footer line, club-to-club Back, a
+      route page's head after deploy).
 
 ## 📜 Shipped, in order
 
