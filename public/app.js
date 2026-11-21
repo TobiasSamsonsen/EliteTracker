@@ -3899,6 +3899,37 @@ function overviewTools() {
   return tools;
 }
 
+/* The Explore tools (and the ladder) a view leads on to (data-tools), under its panel's head:
+   each its thumbnail, name and what it shows, as on the overview. Rebuilt
+   only when the language changes. What if goes once the season is played,
+   and a foot with nothing left in it goes with it. */
+function renderToolLinks(report) {
+  const open = report.model?.matches_remaining > 0;
+  for (const foot of document.querySelectorAll('.tool-links[data-tools]')) {
+    if (foot.dataset.lang !== currentLang) {
+      foot.dataset.lang = currentLang;
+      const list = el('div', 'tool-links__list');
+      for (const id of foot.dataset.tools.split(' ')) {
+        // A view of its own (the ladder) opens as that view.
+        const view = !EXPLORE_ITEMS.includes(id);
+        const copy = view ? id : `explore.${id}`;
+        const tool = el('button', 'overview-tool');
+        tool.type = 'button';
+        if (view) tool.addEventListener('click', () => switchView(id));
+        else tool.dataset.openTool = id;
+        const text = el('span', 'overview-tool__text');
+        text.append(el('span', 'overview-tool__title', t(`${copy}.title`)), el('span', 'overview-tool__desc', t(`${copy}.desc`)));
+        tool.append(exploreThumb(id), text);
+        list.appendChild(tool);
+      }
+      foot.replaceChildren(el('div', 'label', t('toollink.heading')), list);
+    }
+    const whatIf = foot.querySelector('[data-open-tool="whatif"]');
+    if (whatIf) whatIf.hidden = !open;
+    foot.hidden = ![...foot.querySelectorAll('.overview-tool')].some((tool) => !tool.hidden);
+  }
+}
+
 /* The Explore tools on a phone: one large button, its picture the first
    four tools' thumbnails two by two, its tools named under its title. */
 const OVERVIEW_EXPLORE_THUMBS = 4;
@@ -3965,6 +3996,13 @@ function exploreThumb(id) {
         }));
       }
     }
+  } else if (id === 'ladder') {
+    // Clubs of both divisions stacked on one rating axis, low to high.
+    svg.appendChild(svgEl('line', { class: 'explore-thumb__avg', x1: 14, x2: 146, y1: 72, y2: 72 }));
+    [[24, 0, 2], [36, 0, 2], [36, 1, 2], [50, 0, 2], [62, 0, 2], [62, 1, 2], [62, 2, 1], [76, 0, 2], [76, 1, 1],
+      [90, 0, 1], [90, 1, 2], [104, 0, 1], [104, 1, 1], [118, 0, 1], [118, 1, 1], [134, 0, 1]].forEach(([x, level, tier]) => {
+      svg.appendChild(svgEl('circle', { cx: x, cy: 62 - level * 13, r: 5.5, style: `fill: var(--tier-${tier})` }));
+    });
   } else {
     svg.appendChild(svgEl('line', { class: 'explore-thumb__avg', x1: 82, x2: 82, y1: 10, y2: 80 }));
     svg.appendChild(svgEl('line', { class: 'explore-thumb__avg', x1: 16, x2: 144, y1: 46, y2: 46 }));
@@ -9610,6 +9648,8 @@ function render() {
     section.hidden = !views.includes(state.activeView);
   }
 
+  renderToolLinks(report);
+
   // Hide the rewind timeline on views where it isn't relevant
   const noRewind = new Set(['matches', 'compare', 'model', 'team']);
   // In explore only the views of one rewound report follow it (EXPLORE_REWIND);
@@ -9712,9 +9752,6 @@ function render() {
     document.title = t('meta.tool.title', { tool: t(`explore.${state.exploreItem}.title`), league: meta.league, season: meta.season });
   }
   document.querySelector('meta[name=description]').content = t('meta.desc', meta);
-  // What if has nothing to change once the season is played.
-  const whatIfLink = document.querySelector('[data-open-tool="whatif"]');
-  if (whatIfLink) whatIfLink.hidden = !(report.model?.matches_remaining > 0);
   // The newest result the numbers rest on (the report holds no build time).
   const through = report.league.matchdays?.at(-1)?.date;
   $('#footer-data').textContent = through

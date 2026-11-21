@@ -1643,7 +1643,7 @@ table.standings .zone-divider__wrap::after {
 .fixture__lines {
   display: flex;
   flex-wrap: nowrap;
-  gap: 0.9rem;
+  gap: 0.3rem;
   overflow: hidden;
   justify-content: center;
   margin: 0 auto;
@@ -1651,7 +1651,12 @@ table.standings .zone-divider__wrap::after {
   max-width: 380px;
 }
 
+/* A likeliest scoreline as a pill, as the score chips in What if. */
 .fixture__line {
+  padding: 0.15rem 0.6rem;
+  background: var(--panel-sunk);
+  border: 1px solid var(--rule);
+  border-radius: 999px;
   font-size: 0.6875rem;
   font-weight: 600;
   color: var(--ink-muted);
@@ -3230,7 +3235,6 @@ button.team-mini__row:hover { background: var(--panel-sunk); }
 /* A button that leads to another page: a real, bordered button in the same
    pill as the other secondary buttons, never a bare text link. */
 .team-mini__full,
-.tool-links button,
 .whatif-reset,
 .whatif-impact__meta {
   appearance: none;
@@ -3252,14 +3256,13 @@ button.team-mini__row:hover { background: var(--panel-sunk); }
   transition: background 0.15s var(--ease), border-color 0.15s var(--ease), box-shadow 0.15s var(--ease);
 }
 .team-mini__full:hover,
-.tool-links button:hover,
 .whatif-reset:hover,
 .whatif-impact__meta:hover {
   background: var(--panel-sunk);
   border-color: var(--rule-strong);
   box-shadow: var(--glow-hover);
 }
-.tool-links button:focus-visible, .team-mini__full:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+.team-mini__full:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
 .team-section__header:has(> .team-mini__full) { display: flex; align-items: baseline; justify-content: space-between; }
 
 /* Team view fixtures and results: one compact row per match from the club's
@@ -4213,8 +4216,8 @@ button.team-mini__row:hover { background: var(--panel-sunk); }
 
   /* Tighter gaps: the odds bar keeps its row layout at every width */
   .fixture__odds-col { gap: 0.25rem; }
-  .fixture__lines { gap: 0.6rem; }
-  .fixture__line { font-size: 0.6875rem; }
+  .fixture__lines { gap: 0.25rem; }
+  .fixture__line { padding-inline: 0.45rem; }
 
   /* Week pagination: larger touch targets */
   .fixtures .played-nav__btn { min-height: 44px; min-width: 44px; padding: 0.4rem 0.75rem; }
@@ -5473,9 +5476,29 @@ body.has-scenario { overflow: hidden; }
   .scenario-all__grid { grid-template-columns: 1fr; }
 }
 
-/* Links from Matches and Table into the Explore tools. */
-.tool-links { display: flex; flex-wrap: wrap; gap: 0.5rem; padding: 0.75rem 1.25rem 0; }
+/* Under a panel's head: the Explore tools that take its numbers further, as
+   the overview's tool cards (renderToolLinks), centred. Cards keep one
+   width, so one or two do not stretch across the panel. */
+.tool-links { display: grid; justify-items: center; gap: var(--space-2); padding: var(--space-3) var(--space-5); border-bottom: 1px solid var(--rule); }
+.tool-links__list { display: flex; flex-wrap: wrap; justify-content: center; gap: var(--space-1) var(--space-4); width: 100%; }
+.tool-links .overview-tool { width: 20rem; max-width: 100%; }
 .tool-links [hidden] { display: none; }
+/* Matches: one card in the head's corner, over the count of matches; the
+   nav's name stands in for the heading, and the card's thumbnail lines up
+   with the count's right edge. */
+.panel__aside { display: grid; justify-items: end; gap: var(--space-2); }
+/* The title and description at the top, level with the card, not below it. */
+.panel__head:has(> .panel__aside) { align-items: flex-start; }
+.tool-links--head { padding: 0; border: 0; }
+.tool-links--head > .label { display: none; }
+.tool-links--head .overview-tool { margin-inline-end: calc(-1 * var(--space-2)); }
+@media (max-width: 760px) {
+  .tool-links { padding: var(--space-3); }
+  .tool-links .overview-tool { width: 100%; grid-template-columns: 5rem minmax(0, 1fr); }
+  .panel__aside { flex: 1 1 100%; justify-items: stretch; }
+  .tool-links--head { padding: 0; }
+  .tool-links--head .overview-tool { margin-inline: calc(-1 * var(--space-2)); width: calc(100% + 2 * var(--space-2)); }
+}
 .share-btn:not(.overview-card__share) { align-self: center; margin-inline-start: auto; }
 /* In the popup's head: a pair with the close button, its size and shape, on
    its line at the top, half the head's gap between them. */
@@ -5486,7 +5509,9 @@ body.has-scenario { overflow: hidden; }
   margin-inline: auto -0.5rem;
   border-radius: 8px;
   background: transparent;
+  color: var(--ink-muted);
 }
+.scenario__head .share-btn:hover { background: transparent; border-color: var(--accent); box-shadow: none; color: var(--accent-ink); }
 .scenario__head .share-btn svg { width: 16px; height: 16px; }
 .footer__data { margin-bottom: 0.25rem; }
 
@@ -5963,6 +5988,10 @@ body.has-scenario { overflow: hidden; }
   .overview-champion__club { font-size: 1.25rem; gap: 0.5rem; }
   .overview-champion__club .team-logo { width: 1.5rem; height: 1.5rem; }
   .overview-champion__points { font-size: 1.125rem; }
+  /* Places 2-4: a closer row and smaller points, so an eleven-letter name
+     ("Kongsvinger") fits whole beside them. */
+  .overview-top__row { gap: var(--space-2); }
+  .overview-top__points { font-size: 1rem; }
   .overview__links { grid-template-columns: minmax(0, 1fr); gap: var(--space-3); }
   .overview-explore { display: grid; grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: "thumbs arrow" "text text"; gap: var(--space-3); }
   .overview-explore__thumbs { grid-area: thumbs; }
@@ -5978,24 +6007,24 @@ body.has-scenario { overflow: hidden; }
 
 /* ---------- sharing (share.js) ------------------------------------- */
 
-/* The share button: the share icon in a round button, the site's quiet pill
-   until hovered. */
+/* The share button: the share icon in a round button, the height, fill and
+   hover of the secondary buttons beside it (Play season, Rewind). */
 .share-btn {
   appearance: none;
   display: inline-grid;
   place-items: center;
   flex: none;
-  width: 2.25rem;
-  height: 2.25rem;
+  width: 2rem;
+  height: 2rem;
   padding: 0;
   border: 1px solid var(--rule);
   border-radius: 999px;
-  background: var(--panel-sunk);
-  color: var(--ink-muted);
+  background: var(--panel);
+  color: var(--ink);
   cursor: pointer;
-  transition: color 0.15s var(--ease), border-color 0.15s var(--ease), background 0.15s var(--ease);
+  transition: background 0.15s var(--ease), border-color 0.15s var(--ease), box-shadow 0.15s var(--ease);
 }
-.share-btn:hover { color: var(--accent-ink); border-color: var(--accent); }
+.share-btn:hover { background: var(--panel-sunk); border-color: var(--rule-strong); box-shadow: var(--glow-hover); }
 .share-btn:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
 /* In an overview card's head: above the card's stretched button, beside the arrow. */
 .overview-card__head .share-btn { position: relative; z-index: 1; width: 2rem; height: 2rem; margin: -0.35rem 0 -0.35rem var(--space-2); }

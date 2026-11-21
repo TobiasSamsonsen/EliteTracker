@@ -213,10 +213,7 @@
             <button type="button" class="grid-anim-btn" id="grid-anim-play" aria-pressed="false" data-i18n="title.animateSeason" data-i18n-attr="title" title="Replay the season matchday by matchday"><span class="grid-anim-btn__icon" aria-hidden="true">▶</span><span class="grid-anim-btn__label" data-i18n="anim.play">Play season</span></button>
           </div>
         </div>
-        <div class="tool-links">
-          <button type="button" data-open-tool="mountain" data-i18n="toollink.mountain">Season mountain →</button>
-          <button type="button" data-open-tool="races" data-i18n="toollink.races">Race lines →</button>
-        </div>
+        <nav class="tool-links" data-tools="mountain races" data-i18n="toollink.heading" data-i18n-attr="aria-label" aria-label="Explore further"></nav>
         <div class="grid-anim-bar" id="grid-anim-controls" hidden>
           <span class="grid-anim-bar__when" id="grid-anim-when"></span>
           <span class="grid-anim-bar__track" aria-hidden="true"><span class="grid-anim-bar__fill" id="grid-anim-fill"></span></span>
@@ -251,10 +248,7 @@
             </div>
           </div>
         </div>
-        <div class="tool-links">
-          <button type="button" data-open-tool="luck" data-i18n="toollink.luck">Luck table →</button>
-          <button type="button" data-open-tool="runin" data-i18n="toollink.runin">Run-in heatmap →</button>
-        </div>
+        <nav class="tool-links" data-tools="luck runin ladder" data-i18n="toollink.heading" data-i18n-attr="aria-label" aria-label="Explore further"></nav>
         <div class="scroller">
           <table class="standings" id="standings" aria-labelledby="table-title">
             <thead>
@@ -335,9 +329,7 @@
             <button type="button" class="grid-anim-btn" id="ladder-anim-play" aria-pressed="false" data-i18n="title.animateSeason" data-i18n-attr="title" title="Replay the season matchday by matchday"><span class="grid-anim-btn__icon" aria-hidden="true">▶</span><span class="grid-anim-btn__label" data-i18n="anim.play">Play season</span></button>
           </div>
         </div>
-        <div class="tool-links">
-          <button type="button" data-open-tool="attack" data-i18n="toollink.attack">Attack against defence →</button>
-        </div>
+        <nav class="tool-links" data-tools="attack" data-i18n="toollink.heading" data-i18n-attr="aria-label" aria-label="Explore further"></nav>
         <div class="grid-anim-bar" id="ladder-anim-controls" hidden>
           <span class="grid-anim-bar__when" id="ladder-anim-when"></span>
           <span class="grid-anim-bar__track" aria-hidden="true"><span class="grid-anim-bar__fill" id="ladder-anim-fill"></span></span>
@@ -363,10 +355,11 @@
             <h2 data-i18n="matches.title">Matches</h2>
             <p data-i18n="matches.desc">Week by week: results so far, and odds and likeliest scorelines for the matches to come.</p>
           </div>
-          <div class="label" id="fixture-count"></div>
-        </div>
-        <div class="tool-links">
-          <button type="button" data-open-tool="whatif" data-i18n="toollink.whatif">Change results in What if →</button>
+          <!-- What if in the head's corner, over the count of matches played and left. -->
+          <div class="panel__aside">
+            <nav class="tool-links tool-links--head" data-tools="whatif" data-i18n="toollink.heading" data-i18n-attr="aria-label" aria-label="Explore further"></nav>
+            <div class="label" id="fixture-count"></div>
+          </div>
         </div>
         <div class="fixtures" id="fixtures"></div>
         <div class="legend" id="odds-legend"></div>
