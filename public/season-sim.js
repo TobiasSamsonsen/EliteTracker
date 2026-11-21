@@ -283,10 +283,24 @@ function simulateSeason(spec) {
 /* The published finishing chances, moved by what locking changed: per club and
    place, published + (locked run - as-played run) / runs, floored at 0 and
    renormalised to a row of 1. With nothing locked the two runs are the same
-   run and the published chances come back as they were. */
+   run and the published chances come back as they were.
+
+   The shift alone cannot reach a certainty: the published chances and the
+   as-played run are two different simulations of the same season, so what the
+   published chances hold that the run does not (a few tenths of a point in a place
+   the lock then rules out) stays behind and keeps a secured title at 99 %. So what
+   the lock decides is taken from the locked run, whatever was published: a place
+   every run of it gives the club is the club's finish for sure, and a place the
+   as-played run gave it and the locked run never does is out. */
 function shiftedChances(published, baseline, scenario, sims, count) {
   return published.map((chances, club) => {
-    const moved = chances.map((p, place) => Math.max(0, p + (scenario.counts[club * count + place] - baseline.counts[club * count + place]) / sims));
+    const at = (place) => club * count + place;
+    const settled = chances.findIndex((_, place) => scenario.counts[at(place)] === sims && baseline.counts[at(place)] !== sims);
+    if (settled >= 0) return chances.map((_, place) => (place === settled ? 1 : 0));
+    const moved = chances.map((p, place) => {
+      if (scenario.counts[at(place)] === 0 && baseline.counts[at(place)] > 0) return 0;
+      return Math.max(0, p + (scenario.counts[at(place)] - baseline.counts[at(place)]) / sims);
+    });
     const total = moved.reduce((a, b) => a + b, 0) || 1;
     return moved.map((p) => p / total);
   });

@@ -7,6 +7,8 @@ const state = {
   league: 'eliteserien',
   season: null,
   careers: null,
+  // All-time meetings (h2h.json), fetched when Compare first wants them.
+  h2h: null,
   // Default view is the league table as it actually stands.
   sort: { key: 'position', dir: 1 },
   // Table view mode: 'current' shows live stats, 'prediction' shows model stats.
@@ -102,12 +104,6 @@ function applyShortNames(reports) {
 
 function applyShortNamesToCareers(careers) {
   for (const team of careers?.teams || []) team.team = shortName(team.team);
-  for (const meetings of Object.values(careers?.head_to_head || {})) {
-    for (const match of meetings) {
-      match.home = shortName(match.home);
-      match.away = shortName(match.away);
-    }
-  }
   return careers;
 }
 
@@ -1875,6 +1871,7 @@ function dividerRow(boundary) {
     defenceCell.appendChild(makePctPill(defencePct, row.defence_k));
     tr.appendChild(defenceCell);
     const xpTd = el('td', 'num muted', num(row.expected_points));
+    if (row.mean_points != null) xpTd.title = t('table.xpMean', { mean: num(row.mean_points, 1) });
     xpTd.dataset.tableView = 'prediction';
     tr.appendChild(xpTd);
 
@@ -2505,6 +2502,16 @@ function stakeFlag(stakes, report) {
   return flag;
 }
 
+/* What moved a fixture's odds beyond the ratings, as short tags: the surface
+   edge and the run-in's table pressure, in Elo points for the side they favour.
+   The report leaves a term out when it moved nothing (and older ones lack both). */
+function fixtureModifiers(fixture) {
+  const tag = (key, elo) => (elo
+    ? t(key, { team: elo > 0 ? fixture.home : fixture.away, elo: num(Math.abs(elo)) })
+    : null);
+  return [tag('fixture.surfaceTag', fixture.surface_elo), tag('fixture.stakesTag', fixture.stakes_elo)].filter(Boolean);
+}
+
 function buildFixtureCard(fixture, stakes, report) {
   const card = el('div', 'played-card');
   card.appendChild(el('div', 'played-card__date', formatDate(fixture.date) + (fixture.time ? ` \u00b7 ${fixture.time}` : '')));
@@ -2561,6 +2568,9 @@ function buildFixtureCard(fixture, stakes, report) {
     }
     card.appendChild(lines);
   }
+  // What moved the odds beyond the ratings, under the scorelines.
+  const modifiers = fixtureModifiers(fixture);
+  if (modifiers.length) card.appendChild(el('div', 'fixture__mods', modifiers.join(' · ')));
 
   return card;
 }
@@ -3291,7 +3301,10 @@ function renderModelCard(report) {
     rows.push([t('model.homeAdvantageBeta'), model.home_advantage_beta]);
   }
   if (model.surface) rows.push([t('model.surfaceEdge'), `${model.surface.edge} ${t('model.pts')}`]);
-  if (model.stakes) rows.push([t('model.stakes'), t('model.stakesValue', { elo: model.stakes.elo, from: model.stakes.from })]);
+  if (model.stakes) {
+    rows.push([t('model.stakes'), t('model.stakesValue', { elo: model.stakes.elo, from: model.stakes.from })]);
+    rows.push([t('model.stakesScope'), t('model.stakesScopeValue')]);
+  }
   if (model.attack_defence.keeping_window) {
     rows.push([t('model.keeping'), t('model.keepingValue', { n: model.attack_defence.keeping_window })]);
   }
@@ -3307,6 +3320,8 @@ function renderModelCard(report) {
     [t('model.outcomeOdds'), t('model.outcomeOddsValue')],
     [t('model.scorelines'), t('model.scorelinesValue')],
     [t('model.simulations'), num(model.simulations)],
+    [t('model.tiebreak'), t('model.tiebreakValue')],
+    [t('model.expectedPoints'), t('model.expectedPointsValue')],
   );
   if (model.strength_sd) {
     rows.push([t('model.strengthSd'), `±${model.strength_sd}`]);
@@ -4500,12 +4515,18 @@ function whatIfRows(report, runs) {
   const published = report.table.map((row) => row.position_probabilities);
   const after = runs ? shiftedChances(published, runs.baseline, runs.scenario, sims, count) : published;
   const share = (chances, band) => chances.slice(band.first - 1, band.last).reduce((a, b) => a + b, 0);
-  return report.table.map((row, i) => ({
-    row,
-    pointsBefore: row.expected_points,
-    pointsAfter: row.expected_points + (runs ? (runs.scenario.totals[i] - runs.baseline.totals[i]) / sims : 0),
-    bands: report.league.bands.map((band) => ({ band, before: share(published[i], band), after: share(after[i], band) })),
-  }));
+  return report.table.map((row, i) => {
+    // The scenario's delta is a difference of means, so it goes on the mean
+    // (reports from before the field was added fall back to the median).
+    const mean = row.mean_points ?? row.expected_points;
+    return {
+      row,
+      pointsBefore: mean,
+      pointsAfter: mean + (runs ? (runs.scenario.totals[i] - runs.baseline.totals[i]) / sims : 0),
+      shownDigits: row.mean_points == null ? 0 : 1,
+      bands: report.league.bands.map((band) => ({ band, before: share(published[i], band), after: share(after[i], band) })),
+    };
+  });
 }
 
 /* The one club-and-band chance the scenario moved furthest, or null. */
@@ -4781,7 +4802,7 @@ function renderWhatIf(report, body) {
       club.appendChild(el('span', '', entry.row.team));
       tr.appendChild(club);
       const points = el('td', 'whatif-table__pts');
-      points.appendChild(el('span', 'whatif-chance', String(Math.round(entry.pointsAfter))));
+      points.appendChild(el('span', 'whatif-chance', num(entry.pointsAfter, entry.shownDigits)));
       points.appendChild(delta(entry.pointsAfter - entry.pointsBefore, 1, entry.pointsAfter > entry.pointsBefore));
       tr.appendChild(points);
       for (const { band, before, after } of entry.bands) {
@@ -5542,7 +5563,11 @@ function calibrationFacts(data) {
       text: t('calib.fact.kellyText', {
         bets: num(kelly.bets), roi: `${signed(kelly.roi * 100, 1)}${percentSign()}`,
         end: pct(kelly.bankroll, 0), drawdown: pct(kelly.max_drawdown, 0),
-      }),
+      }) + (kelly.flat_roi != null
+        ? t('calib.fact.kellyFlat', { flat: `${signed(kelly.flat_roi * 100, 1)}${percentSign()}` })
+        : '') + (kelly.pinnacle_share != null
+        ? t('calib.fact.kellyBooks', { pinnacle: pct(kelly.pinnacle_share, 0) })
+        : ''),
     });
   }
   return facts;
@@ -6800,6 +6825,7 @@ function renderTeamView(report) {
       safeRender(() => {
         const section = el('div', 'team-section');
         renderTeamStakes(section, report, teamId);
+        renderRivalWatch(section, report, teamId);
         if (section.childNodes.length) forecast.appendChild(section);
       }, 'stakes');
       safeRender(() => renderTeamFixtures(teamId, teamName, report, forecast), 'fixtures');
@@ -7554,6 +7580,83 @@ function renderTeamStakes(card, report, teamId) {
 }
 const STAKES_SHOWN = 3;
 
+/* A rival match's entry in words: where the club's chance of the race goes with
+   the result that helps it and with the one that hurts it. */
+function rivalCopy(entry) {
+  const result = (key) => t(`rival.${key}`);
+  return {
+    main: `${entry.home} – ${entry.away}`,
+    sub: t('rival.line', {
+      base: pct(entry.p_baseline, 0),
+      best: pct(entry.p_helps, 0), bestResult: result(entry.helps),
+      worst: pct(entry.p_hurts, 0), worstResult: result(entry.hurts),
+    }),
+  };
+}
+
+/* The three results of a rival match as a decisive match's track draws them: the
+   match's home win, draw and away win (blue, grey, red, as the odds bars have
+   them), each at the club's chance of the race after it. */
+function rivalResults(entry) {
+  return [
+    { key: 'win', value: entry.p_home_win },
+    { key: 'draw', value: entry.p_draw },
+    { key: 'loss', value: entry.p_away_win },
+  ].filter((result) => result.value != null);
+}
+
+/* One rival match, in the decisive matches' form: the race and the match with its
+   date on one line, the race's track under it. */
+function rivalRow(entry, count) {
+  const copy = rivalCopy(entry);
+  const band = { first: entry.band_first, last: entry.band_last, tone: entry.band_tone, label: entry.band_label };
+  const color = bandColor(band, count);
+  const item = el('li', 'stake');
+  item.title = `${copy.main} · ${copy.sub}`;
+  const head = el('div', 'stake__head');
+  const race = el('span', 'stake__race');
+  const dot = el('span', 'stake__dot');
+  dot.style.background = color;
+  race.append(dot, el('span', '', bandEdgeName(band)));
+  head.append(race, el('span', 'stake__match', copy.main), el('span', 'stake__when', formatDate(entry.date)));
+  item.appendChild(head);
+  item.appendChild(stakeTrack(rivalResults(entry), entry.p_baseline, color, entry.band_tone === 'relegation', `${copy.main} · ${copy.sub}`));
+  return item;
+}
+
+/* The legend of a rival match's track: the match's results, and where the club stands now. */
+function rivalLegend() {
+  const legend = el('div', 'legend team-match__legend');
+  for (const [outcome, key] of [['home', 'next.homeWin'], ['draw', 'next.draw'], ['away', 'next.awayWin']]) {
+    const entry = el('span', 'legend__key');
+    const swatch = el('span', 'legend__swatch');
+    swatch.style.background = `var(--${outcome})`;
+    entry.append(swatch, el('span', '', t(key)));
+    legend.appendChild(entry);
+  }
+  const now = el('span', 'legend__key');
+  now.append(el('span', 'stake__now-key'), el('span', '', t('stake.now')));
+  legend.appendChild(now);
+  return legend;
+}
+
+/* Other clubs' matches that move a race the club has a chance in, drawn as the
+   decisive matches are: the club's chance of the race after each result of the
+   match. Nothing is drawn for a club with none (and reports from before
+   `rival_watch` have none). */
+function renderRivalWatch(card, report, teamId) {
+  const entries = ((report && report.rival_watch) || []).filter((entry) => String(entry.team_id) === String(teamId));
+  if (!entries.length) return;
+  const count = (report.table || []).length || 16;
+  const box = el('div', 'team-stakes team-rivals');
+  box.appendChild(el('div', 'label', t('rival.title')));
+  box.appendChild(rivalLegend());
+  const list = el('ul', 'team-stakes__list');
+  for (const entry of entries) list.appendChild(rivalRow(entry, count));
+  box.appendChild(list);
+  card.appendChild(box);
+}
+
 /* What a decisive match does to a race, drawn: a track for the club's chance of
    it, 0 to 100 %, a pin where each result would leave it -- win, draw, loss --
    the stretch between them in the race's colour, and a tick where the chance
@@ -7564,6 +7667,48 @@ function stakeLegend() {
   now.append(el('span', 'stake__now-key'), el('span', '', t('stake.now')));
   legend.appendChild(now);
   return legend;
+}
+
+/* The track of a stake: the chance of the race, 0 to 100 %, a pin where each
+   result would leave it (`results`: win, draw, loss, each with the chance it
+   leaves), the stretch between them in the race's colour and a tick where the
+   chance stands now. The drop's track is mirrored, so that on every race a win
+   lands to the right and a loss to the left, the figures printed staying the
+   chance of the race itself. `words` is the tooltip and the screen reader's. */
+function stakeTrack(results, baseline, color, drop, words) {
+  const at = (value) => (drop ? 1 - value : value);
+  const track = el('div', 'stake__track');
+  track.setAttribute('role', 'img');
+  track.setAttribute('aria-label', words);
+  const values = results.map((result) => at(result.value));
+  const low = Math.min(...values, at(baseline));
+  const high = Math.max(...values, at(baseline));
+  const span = el('span', 'stake__span');
+  span.style.left = `${low * 100}%`;
+  span.style.width = `${(high - low) * 100}%`;
+  span.style.background = color;
+  track.appendChild(span);
+  const now = el('span', 'stake__now');
+  now.style.left = `${at(baseline) * 100}%`;
+  track.appendChild(now);
+  for (const result of results) {
+    const pin = el('span', `stake__pin stake__pin--${result.key}`);
+    pin.style.left = `${at(result.value) * 100}%`;
+    track.appendChild(pin);
+  }
+  // The figures: the two ends of the swing, the lower one's right edge at its
+  // pin and the higher one's left edge at its pin, so they never meet; the
+  // draw's and the baseline's are in the tooltip, not on the chart.
+  const ends = results.filter((result) => result.key !== 'draw').sort((a, b) => at(a.value) - at(b.value));
+  ends.forEach((result, index) => {
+    const figure = el('span', `stake__figure stake__figure--${result.key}`, pct(result.value, 0));
+    const lower = index === 0;
+    const near = lower ? at(result.value) < 0.1 : at(result.value) > 0.9;
+    figure.style.left = `${at(result.value) * 100}%`;
+    figure.style.transform = `translateX(${(lower ? !near : near) ? '-100%' : '0'})`;
+    track.appendChild(figure);
+  });
+  return track;
 }
 
 function stakeRow(entry, report, count) {
@@ -7592,48 +7737,13 @@ function stakeRow(entry, report, count) {
   head.append(race, who, el('span', 'stake__when', when));
   item.appendChild(head);
 
-  // The pins. The race's chance after a win is the favourable figure unless the
-  // race is the drop, where a loss is what raises it. The drop's track is
-  // mirrored, so that on every race a win lands to the right and a loss to the
-  // left, the figures printed staying the chance of the race itself.
   const drop = entry.band_tone === 'relegation';
-  const at = (value) => (drop ? 1 - value : value);
   const results = [
     { key: 'win', value: drop ? entry.p_unfavourable : entry.p_favourable },
     { key: 'draw', value: entry.p_draw },
     { key: 'loss', value: drop ? entry.p_favourable : entry.p_unfavourable },
   ].filter((result) => result.value != null);
-  const track = el('div', 'stake__track');
-  track.setAttribute('role', 'img');
-  track.setAttribute('aria-label', `${copy.main} \u00b7 ${copy.sub}`);
-  const values = results.map((result) => at(result.value));
-  const low = Math.min(...values, at(entry.p_baseline));
-  const high = Math.max(...values, at(entry.p_baseline));
-  const span = el('span', 'stake__span');
-  span.style.left = `${low * 100}%`;
-  span.style.width = `${(high - low) * 100}%`;
-  span.style.background = color;
-  track.appendChild(span);
-  const now = el('span', 'stake__now');
-  now.style.left = `${at(entry.p_baseline) * 100}%`;
-  track.appendChild(now);
-  for (const result of results) {
-    const pin = el('span', `stake__pin stake__pin--${result.key}`);
-    pin.style.left = `${at(result.value) * 100}%`;
-    track.appendChild(pin);
-  }
-  // The figures: the two ends of the swing, the lower one's right edge at its
-  // pin and the higher one's left edge at its pin, so they never meet; the
-  // draw's and the baseline's are in the tooltip, not on the chart.
-  const ends = results.filter((result) => result.key !== 'draw').sort((a, b) => at(a.value) - at(b.value));
-  ends.forEach((result, index) => {
-    const figure = el('span', `stake__figure stake__figure--${result.key}`, pct(result.value, 0));
-    const lower = index === 0;
-    const near = lower ? at(result.value) < 0.1 : at(result.value) > 0.9;
-    figure.style.left = `${at(result.value) * 100}%`;
-    figure.style.transform = `translateX(${(lower ? !near : near) ? '-100%' : '0'})`;
-    track.appendChild(figure);
-  });
+  const track = stakeTrack(results, entry.p_baseline, color, drop, `${copy.main} · ${copy.sub}`);
   item.appendChild(track);
   return item;
 }
@@ -9909,9 +10019,10 @@ function renderCompare(report) {
     drawCompareHistory(svg, careerA, careerB, teamNameById(aId), teamNameById(bId));
   }
 
-  // Head-to-head: all-time results between the two clubs from careers data.
+  // Head-to-head: all-time results between the two clubs (h2h.json, fetched on first use).
   const h2hKey = [aId, bId].sort().join('\t');
-  const h2hAll = (state.careers?.head_to_head || {})[h2hKey] || [];
+  requestH2h();
+  const h2hAll = (state.h2h || {})[h2hKey] || [];
   const h2h = h2hAll.filter(
     (r) => (r.home_id === aId && r.away_id === bId) || (r.home_id === bId && r.away_id === aId),
   );
@@ -10187,6 +10298,42 @@ async function boot() {
    each result moved (the table's trend arrows, the results' deltas), club
    histories and head-to-heads. */
 const CAREER_VIEWS = new Set(['table', 'matches', 'team', 'compare']);
+
+/* The all-time meetings between clubs (/data/h2h.json): the Compare page's
+   alone, and most of what careers.json used to hold, so they are fetched when
+   Compare first asks and it is drawn again when they land. Compact on the wire
+   ([date, season, home_id, away_id, goals, goals, home_name, away_name], the
+   names as indexes), expanded here to what the page reads. */
+function expandH2h(data) {
+  const names = (data.names || []).map(shortName);
+  const meetings = {};
+  for (const [key, rows] of Object.entries(data.matches || {})) {
+    meetings[key] = rows.map(([date, season, homeId, awayId, homeGoals, awayGoals, home, away]) => ({
+      date, season, home_id: homeId, away_id: awayId, home_goals: homeGoals, away_goals: awayGoals,
+      home: names[home], away: names[away],
+    }));
+  }
+  return meetings;
+}
+
+let h2hRequested = false;
+function requestH2h() {
+  if (state.h2h || h2hRequested) return;
+  h2hRequested = true;
+  fetch('/data/h2h.json')
+    .then((response) => {
+      if (!response.ok) throw new Error(`/data/h2h.json ${response.status}`);
+      return response.json();
+    })
+    .then((data) => {
+      state.h2h = expandH2h(data);
+      if (state.activeView === 'compare') render();
+    })
+    .catch((error) => {
+      console.warn('[Boot] h2h.json unavailable', error);
+      track('load_error', { file: 'h2h', message: error.message });
+    });
+}
 
 /* Puts careers.json on the state once it lands; true when it did. A failure
    leaves those views without club history, and says so. */

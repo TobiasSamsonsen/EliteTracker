@@ -1608,6 +1608,13 @@ table.standings .zone-divider__wrap::after {
   flex: none;
 }
 
+.fixture__mods {
+  margin-top: 0.35rem;
+  font-size: 0.75rem;
+  color: var(--ink-muted);
+  text-align: center;
+}
+
 .fixture__lines {
   display: flex;
   flex-wrap: nowrap;
@@ -3447,6 +3454,8 @@ button.team-mini__row:hover { background: var(--panel-sunk); }
   cursor: pointer;
 }
 .stake__who span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+/* A rival match's name in a stake row: the club button's size, not clickable. */
+.stake__match { min-width: 0; font-size: 0.875rem; font-weight: 600; color: var(--ink); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .stake__who:hover span { text-decoration: underline; }
 .stake__when { margin-left: auto; flex: none; font-size: 0.75rem; color: var(--ink-faint); white-space: nowrap; }
 .stake__track {

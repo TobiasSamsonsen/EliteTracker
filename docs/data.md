@@ -6,10 +6,11 @@
 |---|---|---|
 | `normalized/<league>_<season>_matches.json` | every fixture and result, canonical `Match` schema | `refresh` (hourly in CI) |
 | `normalized/<league>_<season>_standings.json` | final tables (2014, 2015, 2025); 2014 seeds the ratings | by hand |
+| `normalized/playoff_outcomes.json` | how each finished season's play-offs went (2015-2025): bracket winner, who went down; checked against the next season's membership | by hand, once a season |
 | `normalized/uefa_ranks.json` | Norway's UEFA rank per season (the European places) | `refresh` |
 | `xg.json` | xG per match: fotmob (Eliteserien, with xG on target) and Sofascore (OBOS-ligaen) | `refresh`; `research xg-obos` |
 | `market_values.json` | Transfermarkt squad value per club-season | `research market-values`, once a year |
-| `odds_closing.json`, `odds_closing_prices.json` | football-data.co.uk closing odds, the benchmark | `research odds --refresh` |
+| `odds_closing.json`, `odds_closing_prices.json`, `odds_closing_books.json` (the book each price came from) | football-data.co.uk closing odds, the benchmark | `research odds --refresh` |
 | `model_versions.json` | the model-accuracy view's history of versions | `experiments/improvements/version_history.py combine` |
 | `raw/` | raw source payloads and the football-data CSV | the fetchers |
 

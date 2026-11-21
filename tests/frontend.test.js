@@ -641,6 +641,7 @@ test('the calibration band is the 95 % Wilson interval, inside 0-1', () => {
 });
 
 test('every calibration string exists in both languages', () => {
+  assertBothLanguages(['calib.fact.kellyFlat', 'calib.fact.kellyBooks', 'table.xpMean']);
   assertBothLanguages([
     'calib.loading', 'calib.empty', 'calib.aria',
     'calib.x', 'calib.y', 'calib.tip', 'calib.model', 'calib.elo',
@@ -674,7 +675,7 @@ test('every version-history string exists in both languages', () => {
     'versions.xg', 'versions.tipXg', 'versions.fact.xg', 'versions.fact.xgText', 'versions.fact.xgMarket', 'versions.tipStep', 'versions.note', 'versions.fact.skill', 'versions.fact.skillText', 'versions.fact.step',
     'versions.fact.stepText', 'versions.fact.gap', 'versions.fact.gapText',
     ...['elo-v1', 'elo-v2', 'elo-v3', 'elo-v5', 'elo-v6', 'elo-v7', 'elo-v8', 'elo-v9', 'elo-v10', 'elo-v11',
-      'elo-v11.1', 'elo-v12.0', 'elo-v13.0', 'elo-v14.0', 'elo-v15.0', 'elo-v16.0'].map((v) => `versions.v.${v}`),
+      'elo-v11.1', 'elo-v12.0', 'elo-v13.0', 'elo-v14.0', 'elo-v15.0', 'elo-v16.0', 'elo-v16.1', 'elo-v17.0'].map((v) => `versions.v.${v}`),
   ]);
 });
 
@@ -689,8 +690,8 @@ const pagePick = (name) => {
 const pageMath = new Function(`
   ${pageSrc.match(/^const (XG_MARGIN|XG_SMOOTHING|GOAL_CAP) = .*;$/gm).join('\n')}
   ${['expectedScore', 'eloOdds', 'xgScore', 'ratingChange', 'poisson', 'lowScore', 'scoreGrid', 'outcomeOf',
-    'gridOdds', 'blendOdds', 'scorelines', 'pressure'].map(pagePick).join('\n')}
-  return { eloOdds, xgScore, ratingChange, scoreGrid, gridOdds, blendOdds, scorelines, pressure };
+    'gridOdds', 'blendOdds', 'scorelines', 'pressure', 'tiltForStakes'].map(pagePick).join('\n')}
+  return { eloOdds, xgScore, ratingChange, scoreGrid, gridOdds, blendOdds, scorelines, pressure, tiltForStakes };
 `)();
 const MODERN = { k_factor: 30, home_advantage: 60, xg_alpha: 0.3, draw_base: 0.26, draw_scale: 375 };
 const near = (actual, expected) => {
@@ -723,6 +724,16 @@ test('the model page builds the score grid and the blend the way model.attack_de
   near(blended, b.odds);
   const cells = pageMath.scorelines(grid, blended);
   near([cells[1][1], cells[1][0], cells[2][1]], [b['1-1'], b['1-0'], b['2-1']]);
+});
+
+test('the model page prices a match carrying table stakes the way pricing does', () => {
+  const s = GOLDEN.page.stakes;
+  const [lam, mu] = pageMath.tiltForStakes(s.rates, s.stakes_elo, s.model);
+  const elo = pageMath.eloOdds(s.gap + s.stakes_elo, GOLDEN.page.config);
+  near(pageMath.blendOdds(elo, pageMath.gridOdds(pageMath.scoreGrid(lam, mu, s.rho)), s.weight), s.odds);
+  // No stakes: the rates stand.
+  assert.deepEqual(pageMath.tiltForStakes(s.rates, 0, s.model), s.rates);
+  assert.deepEqual(pageMath.tiltForStakes(s.rates, 12, undefined), s.rates);
 });
 
 test('the model page weighs table stakes the way model.stakes does', () => {
@@ -899,6 +910,27 @@ test('a club the lock cannot touch moves by exactly zero', () => {
   const moved = shiftedChances([[0, 0.5, 0.5], [0, 0.5, 0.5], [1, 0, 0]], base, locked, 4000, 3);
   assert.deepEqual(moved[2], [1, 0, 0]);
   moved.forEach((row) => assert.ok(Math.abs(row.reduce((a, b) => a + b, 0) - 1) < 1e-12));
+});
+
+test('a lock that settles a club\'s finish shows it as exactly certain, whatever was published', () => {
+  // A wins 3-0 in every run: A is 2nd in all 4000, whatever the published chances (a
+  // run of its own, so a few tenths of a point sit in places the lock rules out).
+  const base = sim.simulateSeason(league(null));
+  const locked = sim.simulateSeason(league([3, 0]));
+  assert.equal(locked.counts[0 * 3 + 1], 4000);
+  const published = [[0.002, 0.97, 0.028], [0.1, 0.05, 0.85], [0.898, 0, 0.102]];
+  const moved = shiftedChances(published, base, locked, 4000, 3);
+  assert.deepEqual(moved[0], [0, 1, 0]);
+  moved.forEach((row) => assert.ok(Math.abs(row.reduce((a, b) => a + b, 0) - 1) < 1e-12));
+});
+
+test('a place only the as-played run gave a club is out once a lock rules it out', () => {
+  const base = sim.simulateSeason(league(null));
+  const locked = sim.simulateSeason(league([3, 0]));
+  // B finishes 3rd in every locked run; the as-played run had it 2nd and 3rd.
+  const moved = shiftedChances([[0.1, 0.8, 0.1], [0.05, 0.1, 0.85], [0.85, 0.1, 0.05]], base, locked, 4000, 3);
+  assert.equal(moved[1][0] + moved[1][1], 0);
+  assert.equal(moved[1][2], 1);
 });
 
 test('nothing locked returns the published chances untouched', () => {
@@ -1172,6 +1204,23 @@ test('with nothing locked the rows are the published chances', () => {
   assert.ok(Math.abs(row.bands[0].after - 0.9) < 1e-12 && row.bands[0].after === row.bands[0].before);
 });
 
+test('what-if points are the mean plus a difference of means, not the median', () => {
+  const report = {
+    model: { simulations: 1000 },
+    league: { bands: [{ first: 1, last: 2 }] },
+    table: [{ team: 'A', expected_points: 60, mean_points: 59.4, position_probabilities: [0.6, 0.3, 0.1] }],
+  };
+  const [none] = whatIfRows(report, null);
+  assert.equal(none.pointsBefore, 59.4);
+  assert.equal(none.shownDigits, 1);
+  const [moved] = whatIfRows(report, { baseline: { totals: [60000], counts: [] }, scenario: { totals: [62500], counts: [] } });
+  assert.ok(Math.abs(moved.pointsAfter - 61.9) < 1e-9 && moved.pointsBefore === 59.4);
+  // An older report has only the median.
+  const [old] = whatIfRows({ ...report, table: [{ ...report.table[0], mean_points: undefined }] }, null);
+  assert.equal(old.pointsBefore, 60);
+  assert.equal(old.shownDigits, 0);
+});
+
 /* Re-rating: the port of the Elo replay and the attack/defence update, held to
    what the Python model makes of the same season (tests/test_rerate.py writes
    the golden file; its payload is what the report carries as `rerate`). */
@@ -1199,6 +1248,72 @@ test('the keeping windows are used, not skipped', () => {
   // Every club has a full window in the golden season, so keeping is not 0.
   const { teams } = sim.rerateSeason(RERATE.payload, new Map(), []);
   assert.ok(Object.values(teams).some((t) => Math.abs(t[3]) > 1e-6));
+});
+
+/* The tags on a fixture card: what moved its odds beyond the ratings. */
+const num = (value, digits = 0) => value.toFixed(digits);   // app.js's, without the locale
+eval(pick('fixtureModifiers'));
+
+test('a fixture card names the surface edge and table pressure that moved its odds', () => {
+  setLang('en');
+  const game = { home: 'Brann', away: 'Viking', surface_elo: 20, stakes_elo: -21.4 };
+  assert.deepEqual(fixtureModifiers(game), ['Surface edge for Brann: +20 Elo', 'Table pressure for Viking: +21 Elo']);
+  setLang('no');
+  assert.deepEqual(fixtureModifiers(game), ['Underlagsfordel for Brann: +20 Elo', 'Tabellpress for Viking: +21 Elo']);
+  // Nothing moved, or an older report without the terms: no tags.
+  assert.deepEqual(fixtureModifiers({ home: 'A', away: 'B' }), []);
+  setLang('en');
+});
+
+/* Rival watch: a rival match's entry in words. */
+const pct = (value) => `${Math.round(value * 100)} %`;   // app.js's, without the locale
+eval(pick('rivalCopy') + pick('rivalResults'));
+
+test('a rival match says what each result does to the club', () => {
+  const entry = { home: 'Brann', away: 'Viking', p_baseline: 0.31, helps: 'home', p_helps: 0.42, hurts: 'away', p_hurts: 0.12 };
+  setLang('en');
+  assert.deepEqual(rivalCopy(entry), { main: 'Brann – Viking', sub: '31 % → 42 % with a home win, 12 % with an away win' });
+  setLang('no');
+  assert.equal(rivalCopy(entry).sub, '31 % → 42 % ved hjemmeseier, 12 % ved borteseier');
+  setLang('en');
+});
+
+test('the model card strings added with elo-v17.0 exist in both languages', () => {
+  assertBothLanguages(['model.stakesScope', 'model.stakesScopeValue', 'model.tiebreak', 'model.tiebreakValue',
+    'model.expectedPoints', 'model.expectedPointsValue']);
+});
+
+/* The head-to-head meetings come as a compact file the Compare page expands. */
+const shortName = (name) => name.replace('Fotballklubb', 'FK');   // app.js's maps clubs to short names
+eval(pick('expandH2h'));
+
+test('head-to-head meetings expand to what the Compare page reads', () => {
+  const meetings = expandH2h({
+    names: ['A Fotballklubb', 'B'],
+    matches: { 'a\tb': [['2020-05-01', 2020, 'a', 'b', 2, 1, 0, 1], ['2021-05-01', 2021, 'b', 'a', 0, 0, 1, 0]] },
+  });
+  assert.deepEqual(meetings['a\tb'][0], {
+    date: '2020-05-01', season: 2020, home_id: 'a', away_id: 'b', home_goals: 2, away_goals: 1, home: 'A FK', away: 'B',
+  });
+  assert.equal(meetings['a\tb'][1].home, 'B');
+  assert.deepEqual(expandH2h({}), {});
+});
+
+test('a rival match draws its three results as the decisive matches do', () => {
+  const entry = { p_home_win: 0.42, p_draw: 0.3, p_away_win: 0.12 };
+  assert.deepEqual(rivalResults(entry), [
+    { key: 'win', value: 0.42 }, { key: 'draw', value: 0.3 }, { key: 'loss', value: 0.12 },
+  ]);
+  // A thin draw branch leaves the draw's pin out, as a decisive match's does.
+  assert.deepEqual(rivalResults({ ...entry, p_draw: null }).map((result) => result.key), ['win', 'loss']);
+});
+
+test('the rival-watch strings exist in both languages', () => {
+  assertBothLanguages(['rival.title', 'rival.line', 'rival.home', 'rival.draw', 'rival.away']);
+});
+
+test('the fixture-card tag strings exist in both languages', () => {
+  assertBothLanguages(['fixture.surfaceTag', 'fixture.stakesTag']);
 });
 
 /* A fixture's card odds: the published ones, moved by the re-rating's ratio. */

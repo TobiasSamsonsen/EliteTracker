@@ -15,7 +15,7 @@ Files written for every season:
 
 and, beside index.html, the route pages and sitemap.xml (pages.py).
 
-plus careers.json. Rewound reports use exactly the same config the server
+plus careers.json and h2h.json. Rewound reports use exactly the same config the server
 applies to a rewound request (see pipeline.rewound_configs), so the static
 site shows the same numbers the local one would.
 
@@ -55,6 +55,7 @@ from elitetracker.pipeline import (
     build_all_careers,
     build_report,
     careers_payload,
+    h2h_payload,
     current_season,
     inputs_digest,
     load_matches,
@@ -185,10 +186,13 @@ def _build_view(spec: tuple[int, str | None, bool]) -> str:
     """Both leagues for one view, written to disk. Runs in a worker process."""
     season, asof, is_default = spec
     simulation, history = rewound_configs(asof)
+    # The two leagues' play-offs meet (Eliteserien's 14th, OBOS-ligaen's bracket
+    # winner): each simulates its season once and the other report reuses it.
+    share: dict[str, Any] = {}
     report = {
         slug: build_report(
             slug, season, root=_ROOT, careers=_CAREERS, elo_config=_ELO,
-            simulation=simulation, history=history, asof=asof,
+            simulation=simulation, history=history, asof=asof, share=share,
         )
         for slug in LEAGUE_SPECS
     }
@@ -296,6 +300,11 @@ def build_site(
     if previous.get("careers.json") != careers_digest or not (out_dir / "careers.json").exists():
         write_payload(out_dir / "careers.json", careers_payload(careers, root=root))
     stamps["careers.json"] = careers_digest
+    # The all-time meetings, which only Compare reads: a file of their own, fetched
+    # when Compare wants it, so they stay off the careers every page loads.
+    if previous.get("h2h.json") != careers_digest or not (out_dir / "h2h.json").exists():
+        write_payload(out_dir / "h2h.json", h2h_payload(root))
+    stamps["h2h.json"] = careers_digest
 
     # The compact per-season timelines the animation and the mountain read.
     # Built from the report files on disk, for the seasons just rebuilt and for

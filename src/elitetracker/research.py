@@ -254,6 +254,12 @@ def calibration_payload(score_from: int = 2016, root=NORMALIZED_DIR) -> dict:
     # Matches on one date in id order: a set iterates in hash order, which
     # differs run to run and moved the bankroll's drawdown with it.
     order = sorted(common, key=lambda mid: (dates[mid], mid))
+    kelly = {key: (round(value, 4) if isinstance(value, float) else value)
+             for key, value in benchmark.kelly(model_es, prices, order).items()} if common else None
+    books = benchmark.load_books()
+    if kelly and books and order:
+        # The market average is no single tradable price: say how much of the pool it is.
+        kelly["pinnacle_share"] = round(sum(books.get(mid) == "PSC" for mid in order) / len(order), 4)
     return {
         "version": MODEL_VERSION,
         "first_season": score_from,
@@ -273,8 +279,7 @@ def calibration_payload(score_from: int = 2016, root=NORMALIZED_DIR) -> dict:
             for (i, j), (chance, count) in sorted(scorelines.items())
         ] if shipped.matches else [],
         "market": market,
-        "kelly": {key: (round(value, 4) if isinstance(value, float) else value)
-                  for key, value in benchmark.kelly(model_es, prices, order).items()} if common else None,
+        "kelly": kelly,
         # Every model version's odds on the same matches, from each release's own
         # code (experiments/improvements/version_history.py, rerun per release).
         "versions": json.loads(VERSIONS_PATH.read_text(encoding="utf-8")) if VERSIONS_PATH.exists() else None,

@@ -284,6 +284,17 @@ class TestSimulation:
         for team in done.teams:
             assert team.expected_points == team.current_points
 
+    def test_mean_points_sit_beside_the_median(self):
+        projection = simulate_season(
+            two_team_season(remaining=4), {"A": 1500, "B": 1500}, config=SimulationConfig(simulations=301)
+        )
+        for team in projection.teams:
+            assert team.current_points <= team.mean_points <= team.current_points + 3 * 4
+            assert abs(team.mean_points - team.expected_points) < 3
+        done = simulate_season(two_team_season(remaining=0), {"A": 1500, "B": 1500}, config=SimulationConfig(simulations=50))
+        for team in done.teams:
+            assert team.mean_points == team.current_points
+
     def test_position_probabilities_sum_to_one(self):
         projection = simulate_season(
             two_team_season(), {"A": 1500, "B": 1500}, config=SimulationConfig(simulations=100)
@@ -321,6 +332,23 @@ class TestSimulation:
         by_team = {team.team: team for team in projection.teams}
         assert by_team["B"].position_probabilities[0] > 0.9
         assert by_team["B"].position_probabilities[0] > by_team["A"].position_probabilities[0]
+
+    def test_clubs_level_on_everything_finish_in_the_order_of_today_s_table(self):
+        """Level on points, goal difference and goals scored with nothing left
+        to play, the club higher in today's table (which carries the
+        head-to-head tiebreak) finishes higher, every run."""
+        played = [
+            match(1, "Z", "C", day=1, score=(1, 0)),
+            match(2, "Y", "D", day=2, score=(1, 0)),
+        ]
+        for games in (played, played + [match(3, "C", "D", day=9, score=(0, 0))]):
+            order = [row.team for row in table_from_matches(games)]
+            projection = simulate_season(
+                games, {"Z": 1500, "Y": 1500, "C": 1500, "D": 1500}, config=SimulationConfig(simulations=200),
+            )
+            by_team = {team.team: team for team in projection.teams}
+            for place, name in enumerate(order):
+                assert by_team[name].position_probabilities[place] == 1.0
 
     def test_goal_difference_moves_within_a_simulation(self):
         """Regression: tied teams must not be split on today's goal difference.

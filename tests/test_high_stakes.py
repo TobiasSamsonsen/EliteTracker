@@ -14,8 +14,10 @@ import pytest
 
 from elitetracker.model.table import table_from_matches
 from elitetracker.normalize.matches import Match
+import numpy as np
+
 from elitetracker.pipeline import (
-    RUN_IN_ROUNDS, Band, _compute_high_stakes, _next_stakes, build_all_careers, build_report,
+    RUN_IN_ROUNDS, Band, _compute_high_stakes, _next_stakes, _rival_watch, build_all_careers, build_report,
 )
 from elitetracker.simulation.history import HistoryConfig
 from elitetracker.simulation.season import SimulationConfig, simulate_season
@@ -49,13 +51,14 @@ def match(match_id, home, away, day=1, score=None):
     )
 
 
-def tallies(outcomes, clubs=2, positions=2):
+def tallies(outcomes, positions=2):
     """One fixture's conditional tally: `outcomes` maps an outcome
-    code to {club index: position counts}; missing cells are zero."""
-    fixture = [[[0] * positions for _ in range(clubs)] for _ in range(3)]
-    for outcome, per_club in outcomes.items():
-        for club, counts in per_club.items():
-            fixture[outcome][club] = counts
+    code to {side: position counts} (0 the home club, 1 the away
+    club); missing cells are zero."""
+    fixture = [[[0] * positions for _ in range(2)] for _ in range(3)]
+    for outcome, per_side in outcomes.items():
+        for side, counts in per_side.items():
+            fixture[outcome][side] = counts
     return fixture
 
 
@@ -123,10 +126,11 @@ class TestPairingCollapse:
             1: {0: [500, 500], 1: [500, 500]},
             2: {0: [0, 1000], 1: [1000, 0]},
         })
+        # (B is at home in f1: the home side's counts come first.)
         leg1 = tallies({
-            0: {0: [375, 1125], 1: [1125, 375]},
+            0: {0: [1125, 375], 1: [375, 1125]},
             1: {0: [750, 750], 1: [750, 750]},
-            2: {0: [1125, 375], 1: [375, 1125]},
+            2: {0: [375, 1125], 1: [1125, 375]},
         })
         conditionals = [leg0, leg1]
         clubs = ["A", "B"]
@@ -261,7 +265,7 @@ class TestNextStakes:
         fixture = tallies({
             0: {0: [600, 400, 0]},
             2: {0: [500, 0, 500]},
-        }, clubs=3, positions=3)
+        }, positions=3)
         bands = (Band("Champions", 1, 1, "champion"), Band("Relegation", 3, 3, "relegation"))
         entries = _next_stakes(
             [fixture], ["A", "B", "C"], [match("f0", "A", "B")],
@@ -270,6 +274,84 @@ class TestNextStakes:
         assert [(e["team_id"], e["band_tone"]) for e in entries] == [("A", "relegation")]
         assert entries[0]["p_favourable"] == 0.5
         assert entries[0]["p_unfavourable"] == 0.0
+
+
+class TestRivalWatch:
+    """Other clubs' matches that move a club's band chance."""
+
+    def watch(self, title_by_result, drop_by_result, fixtures=None, baseline=(0.5, 0.2)):
+        # Clubs A, B, C; fixture 0 is B v C, so A is not playing in it.
+        rivals = np.zeros((1, 3, 3, 2), dtype=np.int64)
+        for k in range(3):
+            rivals[0, k, 0] = (title_by_result[k], drop_by_result[k])
+        runs = np.array([[1000, 1000, 1000]])
+        bands = (Band("Champions", 1, 1, "champion"), Band("Relegation", 3, 3, "relegation"))
+        fixtures = fixtures or [match("f0", "B", "C")]
+        return _rival_watch(rivals, runs, ["A", "B", "C"], fixtures, {"A": [baseline[0], 0.3, baseline[1]]},
+                            bands, SimulationConfig(simulations=3000))
+
+    def test_the_result_that_helps_and_the_one_that_hurts_are_named_per_race(self):
+        entries = self.watch([800, 500, 200], [100, 400, 700])
+        title = next(e for e in entries if e["band_tone"] == "champion")
+        assert (title["helps"], title["p_helps"], title["hurts"], title["p_hurts"]) == ("home", 0.8, "away", 0.2)
+        assert title["swing"] == pytest.approx(0.6) and title["p_baseline"] == 0.5
+        # The track draws all three results: home win, draw, away win.
+        assert (title["p_home_win"], title["p_draw"], title["p_away_win"]) == (0.8, 0.5, 0.2)
+        assert (title["home"], title["away"], title["match_id"]) == ("B", "C", "f0")
+
+    def test_the_drop_is_helped_by_the_lower_figure(self):
+        # A's relegation chance is 10 % after a B win and 70 % after a C win:
+        # a B win helps, whatever the title figures do.
+        entries = self.watch([500, 500, 500], [100, 400, 700], baseline=(0.5, 0.3))
+        drop = next(e for e in entries if e["band_tone"] == "relegation")
+        assert (drop["helps"], drop["p_helps"], drop["hurts"], drop["p_hurts"]) == ("home", 0.1, "away", 0.7)
+
+    def test_one_entry_per_match_on_the_race_it_moves_most(self):
+        entries = self.watch([800, 500, 200], [250, 400, 450], baseline=(0.5, 0.3))
+        assert [e["band_tone"] for e in entries] == ["champion"]   # 0.6 beats 0.2
+
+    def test_a_clubs_own_matches_and_small_swings_are_left_off(self):
+        assert self.watch([800, 500, 200], [100, 400, 700], fixtures=[match("f0", "A", "C")]) == []
+        assert self.watch([505, 500, 495], [300, 300, 310]) == []
+
+    def test_clubs_out_of_a_race_and_thin_branches_are_left_off(self):
+        # A has a 5 % title chance and a 5 % drop chance: no entry for either.
+        assert self.watch([800, 500, 200], [100, 400, 700], baseline=(0.05, 0.05)) == []
+        rivals = np.zeros((1, 3, 3, 2), dtype=np.int64)
+        rivals[0, :, 0, 0] = (80, 50, 20)
+        thin = np.array([[100, 100, 100]])
+        assert _rival_watch(rivals, thin, ["A", "B", "C"], [match("f0", "B", "C")], {"A": [0.5, 0.3, 0.2]},
+                            (Band("Champions", 1, 1, "champion"),), SimulationConfig(simulations=3000)) == []
+
+    def test_nothing_without_the_tallies(self):
+        assert _rival_watch(None, None, ["A"], [match("f0", "B", "C")], {}, BANDS) == []
+
+    def test_the_tally_matches_the_conditionals_for_the_clubs_playing(self):
+        """For the two clubs in a fixture the band tally is the position tally
+        summed over the band's places, and every fixture's outcomes cover the runs."""
+        games = league_matches()
+        edges = ((1, 1), (2, 4))
+        config = SimulationConfig(simulations=400, seed=3)
+        projection = simulate_season(games, RATINGS, config=config, rival_bands=edges)
+        unplayed = [game for game in games if not game.played]
+        order = [row.team_id for row in table_from_matches(games)]
+        assert (projection.rival_runs.sum(axis=1) == config.simulations).all()
+        for fixture_index, game in enumerate(unplayed):
+            for side, club_id in enumerate((game.home_id, game.away_id)):
+                club = order.index(club_id)
+                for outcome in range(3):
+                    positions = projection.conditionals[fixture_index][outcome][side]
+                    for band, (first, last) in enumerate(edges):
+                        assert projection.rivals[fixture_index][outcome][club][band] == sum(positions[first - 1:last])
+        # The bands cover every place, so any club's branches add up to the run count.
+        assert (projection.rivals.sum(axis=(1, 3)) == config.simulations).all()
+
+    def test_the_finishing_odds_are_the_same_with_the_tally_on(self):
+        games = league_matches()
+        config = SimulationConfig(simulations=400, seed=3)
+        plain = simulate_season(games, RATINGS, config=config)
+        watched = simulate_season(games, RATINGS, config=config, rival_bands=((1, 1), (2, 4)))
+        assert [t.position_probabilities for t in plain.teams] == [t.position_probabilities for t in watched.teams]
 
 
 class TestSimulation:
@@ -282,13 +364,10 @@ class TestSimulation:
             config=SimulationConfig(simulations=400, seed=3),
         )
         unplayed = [game for game in league_matches() if not game.played]
-        order = [row.team_id for row in table_from_matches(league_matches())]
-        index_of = {team_id: index for index, team_id in enumerate(order)}
         for fixture_index, game in enumerate(unplayed):
-            for club_id in (game.home_id, game.away_id):
-                club = index_of[club_id]
+            for side in (0, 1):
                 total = sum(
-                    sum(branch[club]) for branch in projection.conditionals[fixture_index]
+                    sum(branch[side]) for branch in projection.conditionals[fixture_index]
                 )
                 assert total == projection.simulations
 
@@ -300,27 +379,20 @@ class TestSimulation:
             games, RATINGS, config=SimulationConfig(simulations=400, seed=3)
         )
         unplayed = [game for game in games if not game.played]
-        order = [row.team_id for row in table_from_matches(games)]
-        index_of = {team_id: index for index, team_id in enumerate(order)}
-        played_count = {
-            team_id: sum(
-                1 for game in unplayed if team_id in (game.home_id, game.away_id)
-            )
-            for team_id in order
-        }
         for team in projection.teams:
-            club = index_of[team.team_id]
+            # The fixtures the club plays, each as the side it is on.
+            sides = [
+                (fixture_index, 0 if game.home_id == team.team_id else 1)
+                for fixture_index, game in enumerate(unplayed)
+                if team.team_id in (game.home_id, game.away_id)
+            ]
             for position in range(len(projection.teams)):
                 tally = sum(
-                    projection.conditionals[fixture_index][outcome][club][position]
-                    for fixture_index in range(len(unplayed))
+                    projection.conditionals[fixture_index][outcome][side][position]
+                    for fixture_index, side in sides
                     for outcome in range(3)
                 )
-                expected = (
-                    played_count[team.team_id]
-                    * projection.simulations
-                    * team.position_probabilities[position]
-                )
+                expected = len(sides) * projection.simulations * team.position_probabilities[position]
                 assert tally == pytest.approx(expected)
 
     def test_the_same_seed_reproduces_the_same_stakes(self):

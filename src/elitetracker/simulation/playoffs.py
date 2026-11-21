@@ -8,8 +8,19 @@ Three places are settled by knockout ties rather than by the table (NFF's
   3rd. In 2015-2018 it was 3rd v 6th and 4th v 5th, the winners meeting at the
   higher-placed club's ground.
 * The bracket winner meets Eliteserien's 14th over two legs for the place in
-  Eliteserien: promotion for the one, relegation for the other.
+  Eliteserien: promotion for the one, relegation for the other. This is one tie
+  with two views (OBOS-ligaen's promotion final, Eliteserien's survival tie),
+  drawn from a random stream of its own (`TIE_STREAM`) with the same pairing,
+  leg order and shocks in both, so the two divisions' reports agree run by run:
+  Eliteserien's play-off relegations and OBOS-ligaen's play-off promotions are
+  the same runs, and add up to the same number.
 * OBOS-ligaen's 14th meets a second-tier side over two legs to stay up.
+
+Each kind of draw has a stream of its own (the bracket `[seed, 1]`, the
+inter-division tie `[seed, 3]`, OBOS-ligaen's survival tie `[seed, 4]`), so what
+one division plays does not depend on what the other division's report has played
+before it, and a bracket played alone for the division above is the bracket the
+full play-offs play.
 
 A tie level after 90 minutes (or 180 over two legs) goes to extra time and
 penalties. Extra time settles about half of them (30 minutes at Norwegian
@@ -39,6 +50,10 @@ from elitetracker.normalize.matches import Match
 EXTRA_TIME_DECIDES = 0.5
 # The ladder replaced semi-finals in this season's play-off.
 LADDER_FROM = 2019
+# The random streams (`np.random.default_rng([seed, n])`): the bracket, the one
+# tie both divisions play, and the survival tie against the tier below. (Stream
+# 2 draws the tier-below side's shocks in `pipeline._playoffs`.)
+BRACKET_STREAM, TIE_STREAM, SURVIVAL_STREAM = 1, 3, 4
 
 
 @dataclass(frozen=True)
@@ -60,13 +75,16 @@ class Playoffs:
     the bracket winner meets over two legs for promotion (None: the bracket
     is played for its winner only, as the division above needs it).
     `survival_position` must win a two-legged tie against `survival` to stay
-    up."""
+    up; with `survival_from_below` that tie is the promotion final seen from the
+    division above (`survival` is the bracket winner, who hosts the first leg
+    as in the division below's own `final`)."""
 
     bracket: tuple[int, ...] = ()
     ladder: bool = True
     final: Opponent | None = None
     survival_position: int | None = None
     survival: Opponent | None = None
+    survival_from_below: bool = False
 
 
 @dataclass
@@ -100,13 +118,15 @@ class Knockout:
         elo_config: EloConfig,
         on: str,
         blend: bool,
-        rng: np.random.Generator,
+        seed: int,
     ):
         from elitetracker.simulation.season import _fixtures  # season imports this module
 
         self.playoffs = playoffs
         self.count = len(team_ids)
-        self.rng = rng
+        self.rng = np.random.default_rng([seed, BRACKET_STREAM])
+        self.tie_rng = np.random.default_rng([seed, TIE_STREAM])
+        self.survival_rng = np.random.default_rng([seed, SURVIVAL_STREAM])
         extra = []
         for opponent in (playoffs.final, playoffs.survival):
             if opponent is not None:
@@ -160,29 +180,31 @@ class Knockout:
         through = odds[:, 0] + odds[:, 1] * _advance_on_draw(odds[:, 0], odds[:, 2])
         return np.where(self.rng.random(len(home)) < through, home, away)
 
-    def _leg(self, home: np.ndarray, away: np.ndarray, shock: np.ndarray) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+    def _leg(self, home: np.ndarray, away: np.ndarray, shock: np.ndarray, rng: np.random.Generator,
+             ) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
         """One leg's scoreline (home goals, away goals) and the home side's odds."""
         from elitetracker.simulation.season import SCORELINE_TABLES, TABLE_WIDTH
 
         row, odds = self._odds(home, away, shock)
-        roll = self.rng.random(len(home))
+        roll = rng.random(len(home))
         outcome = (roll >= odds[:, 0]).astype(np.int64) + (roll >= odds[:, 0] + odds[:, 1])
-        slot = self.rng.random(len(home)) * TABLE_WIDTH
+        slot = rng.random(len(home)) * TABLE_WIDTH
         column = slot.astype(np.int64)
         table = (row * 3 + outcome) * TABLE_WIDTH
         column = np.where(slot - column < self.fixtures.accept[table + column], column, self.fixtures.alias[table + column])
         cells = SCORELINE_TABLES.reshape(3 * TABLE_WIDTH, 2)[outcome * TABLE_WIDTH + column]
         return cells[:, 0], cells[:, 1], odds
 
-    def _two_legs(self, side: np.ndarray, other: np.ndarray, shock: np.ndarray) -> np.ndarray:
-        """Whether `side` wins a home-and-away tie against `other` on aggregate,
-        extra time and penalties after the second leg if level."""
-        first_home, first_away, odds_home = self._leg(side, other, shock)
-        second_home, second_away, odds_away = self._leg(other, side, shock)
+    def _two_legs(self, side: np.ndarray, other: np.ndarray, shock: np.ndarray, rng: np.random.Generator,
+                  ) -> np.ndarray:
+        """Whether `side` (at home in the first leg) wins a home-and-away tie against
+        `other` on aggregate, extra time and penalties after the second leg if level."""
+        first_home, first_away, odds_home = self._leg(side, other, shock, rng)
+        second_home, second_away, odds_away = self._leg(other, side, shock, rng)
         margin = (first_home - first_away) - (second_home - second_away)
         win = (odds_home[:, 0] + odds_away[:, 2]) / 2.0
         loss = (odds_home[:, 2] + odds_away[:, 0]) / 2.0
-        level = self.rng.random(len(side)) < _advance_on_draw(win, loss)
+        level = rng.random(len(side)) < _advance_on_draw(win, loss)
         return (margin > 0) | ((margin == 0) & level)
 
     def _bracket(self, order: np.ndarray, shock: np.ndarray) -> np.ndarray:
@@ -216,9 +238,20 @@ class Knockout:
             tally.winner_club.append(winner)
             tally.winner_shock.append(own_shock[np.arange(runs), winner])
             if self.playoffs.final is not None:
-                promoted = self._two_legs(winner, self.final_index[rows], shock)
+                promoted = self._two_legs(winner, self.final_index[rows], shock, self.tie_rng)
                 tally.promoted += np.bincount(winner[promoted], minlength=self.count)
         if self.playoffs.survival is not None:
             club = order[:, self.playoffs.survival_position - 1]
-            stayed = self._two_legs(club, self.survival_index[rows], shock)
+            if self.playoffs.survival_from_below:
+                # The same tie as the division below's final: its side at home first.
+                stayed = ~self._two_legs(self.survival_index[rows], club, shock, self.tie_rng)
+            else:
+                stayed = self._two_legs(club, self.survival_index[rows], shock, self.survival_rng)
             tally.relegated += np.bincount(club[~stayed], minlength=self.count)
+
+
+def play_runs(knockout: Knockout, order: np.ndarray, shock: np.ndarray, chunk: int, tally: PlayoffTally) -> None:
+    """Play the play-offs of runs already simulated (`order`, `shock` per run, the
+    runs a simulation kept), chunk by chunk as a simulation's own loop would."""
+    for start in range(0, len(order), chunk):
+        knockout.play(order[start:start + chunk], shock[start:start + chunk], start, tally)

@@ -3,6 +3,7 @@ fixtures' gaps, and the season simulation pricing the run-in from each run's
 own table."""
 
 from collections import namedtuple
+from dataclasses import replace
 from datetime import date, timedelta
 
 import numpy as np
@@ -16,7 +17,6 @@ from elitetracker.model.probabilities import match_probabilities
 from elitetracker.model.stakes import (
     STAKES_ELO, STAKES_FROM, distance, fixture_gaps, lines, pressure, run_pressures, season_gaps,
 )
-from elitetracker.model.table import table_from_matches
 from elitetracker.normalize.matches import Match
 from elitetracker.simulation.season import STAKES_GAPS, SimulationConfig, _fixtures, simulate_season
 
@@ -90,10 +90,20 @@ def test_season_gaps_cover_the_run_in_only():
     assert all(-1.0 <= g <= 1.0 for g in gaps.values()) and any(abs(g) > 0.5 for g in gaps.values())
 
 
-def test_fixture_gaps_count_the_matches_played_by_then():
-    matches = season(20)
-    gaps = fixture_gaps(matches, lines(OBOS_LIKE, 16))
-    assert set(gaps) == {m.match_id for m in matches if not m.played and round_of(m.match_id) >= STAKES_FROM}
+def test_fixture_gaps_price_only_the_next_match_of_both_sides():
+    """Today's table is the table before a side's next match and no later one:
+    the run-in fixtures beyond it get no gap until they come up."""
+    cuts = lines(OBOS_LIKE, 16)
+    matches = season(24)
+    gaps = fixture_gaps(matches, cuts)
+    assert set(gaps) == {m.match_id for m in matches if round_of(m.match_id) == STAKES_FROM}
+    assert not any(round_of(mid) > STAKES_FROM for mid in gaps)
+    # Nobody has reached the run-in yet: nothing is priced, however near the end.
+    assert fixture_gaps(season(20), cuts) == {}
+    # A match postponed past the round after it is no longer its sides' next.
+    late = (date(2026, 3, 1) + timedelta(days=7 * 26)).isoformat()
+    moved = [replace(m, date=late) if m.match_id == "24-0" else m for m in matches]
+    assert "24-0" not in fixture_gaps(moved, cuts)
 
 
 def test_the_backtest_moves_only_the_run_in():
@@ -141,17 +151,15 @@ def test_each_run_prices_the_run_in_from_its_own_table():
     config = SimulationConfig(simulations=100_000, seed=3, strength_sd=0.0)
     projection = simulate_season(matches, ratings, config=config, stakes_lines=cuts)
     unplayed = [m for m in matches if not m.played]
-    # The conditionals' club axis is the live table's order.
-    index = {row.team_id: i for i, row in enumerate(table_from_matches(matches))}
     strongest = max(first, key=lambda m: abs(gaps[m.match_id]))
     assert abs(gaps[strongest.match_id]) > 0.4
     for m in first:
         f = unplayed.index(m)
-        home_wins = sum(projection.conditionals[f][0][index[m.home_id]])
+        home_wins = sum(projection.conditionals[f][0][0])
         expected = match_probabilities(1500.0 + STAKES_ELO * gaps[m.match_id], 1500.0, EloConfig()).home_win
         sd = (expected * (1 - expected) / config.simulations) ** 0.5
         assert abs(home_wins / config.simulations - expected) < 5 * sd
     plain = match_probabilities(1500.0, 1500.0, EloConfig()).home_win
     f = unplayed.index(strongest)
-    share = sum(projection.conditionals[f][0][index[strongest.home_id]]) / config.simulations
+    share = sum(projection.conditionals[f][0][0]) / config.simulations
     assert abs(share - plain) > 6 * (plain * (1 - plain) / config.simulations) ** 0.5

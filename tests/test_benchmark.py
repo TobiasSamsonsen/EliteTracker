@@ -84,9 +84,43 @@ def test_build_odds_keeps_the_raw_prices_beside_the_probabilities(tmp_path):
         writer.writeheader()
         writer.writerow({"Date": "02/05/2026", "Home": "Odd", "Away": "KFUM Oslo", "PSCH": "1.8", "PSCD": "3.6", "PSCA": "4.5"})
     benchmark.build_odds([match("a", "2026-05-02", "Odds Ballklubb", "KFUM", 1, 0)], csv_path=csv_path,
-                         out=tmp_path / "odds.json", prices_out=tmp_path / "prices.json")
+                         out=tmp_path / "odds.json", prices_out=tmp_path / "prices.json",
+                         books_out=tmp_path / "books.json")
     assert benchmark.load_prices(tmp_path / "prices.json") == {"a": (1.8, 3.6, 4.5)}
+    assert benchmark.load_books(tmp_path / "books.json") == {"a": "PSC"}
     assert abs(sum(benchmark.load_odds(tmp_path / "odds.json")["a"]) - 1.0) < 1e-4
+
+
+def test_the_book_behind_each_price_is_kept(tmp_path):
+    """Pinnacle where the row has it, the market average (not one tradable price) where not."""
+    csv_path = tmp_path / "nor.csv"
+    with csv_path.open("w", newline="", encoding="utf-8") as handle:
+        writer = csv.DictWriter(handle, fieldnames=["Date", "Home", "Away", "PSCH", "PSCD", "PSCA", "AvgCH", "AvgCD", "AvgCA"])
+        writer.writeheader()
+        writer.writerow({"Date": "02/05/2026", "Home": "Start", "Away": "Brann", "PSCH": "2", "PSCD": "3.5", "PSCA": "4",
+                         "AvgCH": "1.9", "AvgCD": "3.4", "AvgCA": "3.9"})
+        writer.writerow({"Date": "09/05/2026", "Home": "Brann", "Away": "Start", "PSCH": "", "PSCD": "", "PSCA": "",
+                         "AvgCH": "1.6", "AvgCD": "3.8", "AvgCA": "5.5"})
+    benchmark.build_odds([match("a", "2026-05-02", "Start", "Brann", 1, 0), match("b", "2026-05-09", "Brann", "Start", 2, 0)],
+                         csv_path=csv_path, out=tmp_path / "odds.json", prices_out=tmp_path / "prices.json",
+                         books_out=tmp_path / "books.json")
+    assert benchmark.load_books(tmp_path / "books.json") == {"a": "PSC", "b": "AvgC"}
+    assert benchmark.load_prices(tmp_path / "prices.json")["b"] == (1.6, 3.8, 5.5)
+
+
+def test_an_exact_club_name_beats_one_that_merely_contains_another(tmp_path):
+    """"Odd" sits inside "Hødd": with both in the file, neither join may be dropped."""
+    csv_path = tmp_path / "nor.csv"
+    with csv_path.open("w", newline="", encoding="utf-8") as handle:
+        writer = csv.DictWriter(handle, fieldnames=["Date", "Home", "Away", "PSCH", "PSCD", "PSCA"])
+        writer.writeheader()
+        writer.writerow({"Date": "02/05/2026", "Home": "Odd", "Away": "Hodd", "PSCH": "1.8", "PSCD": "3.6", "PSCA": "4.5"})
+        writer.writerow({"Date": "09/05/2026", "Home": "Hodd", "Away": "Odd", "PSCH": "2.5", "PSCD": "3.3", "PSCA": "2.8"})
+    joined, unmatched = benchmark.build_odds(
+        [match("a", "2026-05-02", "Odd", "Hødd", 1, 0), match("b", "2026-05-09", "Hødd", "Odd", 0, 0)],
+        csv_path=csv_path, out=tmp_path / "odds.json", prices_out=tmp_path / "prices.json")
+    assert joined == 2 and unmatched == []
+    assert benchmark.load_prices(tmp_path / "prices.json")["b"] == (2.5, 3.3, 2.8)
 
 
 def test_kelly_stakes_only_on_an_edge_and_caps_the_stake():
@@ -101,3 +135,5 @@ def test_kelly_stakes_only_on_an_edge_and_caps_the_stake():
     # Quarter Kelly would be 0.25 * 0.2 / 1.0 = 5 %, so the 2.5 % cap binds: +2.5 % then -2.5 %.
     assert abs(k["bankroll"] - 1.025 * 0.975) < 1e-12
     assert abs(k["roi"] - 0.0) < 1e-12 and abs(k["max_drawdown"] - 0.025) < 1e-12
+    # One unit on each bet: +1.0 at 2.0, then -1.0.
+    assert abs(k["flat_roi"] - 0.0) < 1e-12

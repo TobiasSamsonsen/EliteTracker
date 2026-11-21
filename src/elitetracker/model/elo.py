@@ -25,7 +25,7 @@ Defaults are fitted by walk-forward backtest over every season held (see
 from __future__ import annotations
 
 import math
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 
 # Versions are elo-vMAJOR.MINOR, bumped once per release (a change set that is
 # deployed), never per working step; rejected or unreleased work takes no
@@ -225,7 +225,19 @@ from dataclasses import dataclass
 # simulated seasons' final points, not the mean (the mean breaks ties in the
 # order). Ratings and match odds are unchanged; see PROJECT_STATUS.md, "xPts and
 # the expected place as medians".
-MODEL_VERSION = "elo-v16.1"
+#
+# elo-v17.0 (major): the published fixtures' table stakes are priced for a
+# side's next match only (the table as it stands is that match's table); the
+# later run-in fixtures keep the plain odds until they come up, where they had
+# today's point gaps with October's matches left. The season simulation's
+# tiebreak between clubs level on points, goal difference and goals scored now
+# favours the club higher in today's table (it favoured the lower one). Batch 3
+# (also in this release): the one play-off tie both divisions play is the same draw
+# in both reports, and a finished season's play-offs are taken as they went; the
+# average club's displayed rates carry the division's mean finishing and keeping;
+# `era_config` keeps settings changed on its base. See PROJECT_STATUS.md, "Model
+# and simulation audit, batch 2" and "Engine, play-offs and payload audit, batch 3".
+MODEL_VERSION = "elo-v17.0"
 
 # A 400-point rating gap means the stronger side is expected to score 10 times
 # as often as the weaker one; this is the constant that defines the ELO scale.
@@ -324,11 +336,15 @@ def era_config(
 
     Every replay takes a `config_for(season)` of this shape. The shipped
     rule applies to both divisions together, which is what the
-    backtest prefers.
+    backtest prefers. Without a `modern` config it is `base` with the modern
+    K and xG weight, so a setting changed on `base` (the offseason regression
+    of `build_site --regression`, say) holds in every season; with the
+    defaults it is `MODERN_CONFIG`.
     """
+    config = base or EloConfig()
     if season >= BOUNDARY_SEASON:
-        return modern or MODERN_CONFIG
-    return base or EloConfig()
+        return modern or replace(config, k_factor=MODERN_K, xg_alpha=MODERN_XG_ALPHA)
+    return config
 
 
 def effective_home_advantage(config: EloConfig, home_rating: float, away_rating: float) -> float:

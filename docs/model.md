@@ -30,7 +30,8 @@ Its rates make a Dixon-Coles score grid (0-8 goals a side).
 1. **Elo side** (`elo_odds`): the home rating plus the prediction-time terms
    the ratings never carry -- the surface edge (Eliteserien only,
    `normalize/surfaces.py`) and the table stakes in the run-in
-   (`model/stakes.py`) -- into the three-way Elo odds
+   (`model/stakes.py`, for a side's next match only: the table as it stands is that
+   match's table) -- into the three-way Elo odds
    (`model/probabilities.py`).
 2. **Goals side**: the goals model's rates at the gap the Elo odds were priced
    at, with the stakes on the goals too, into the score grid.
@@ -47,10 +48,17 @@ arrays (`simulation/season.py`, `_fixtures`) from `goal_rates` and
 
 `simulation/season.py` plays the remaining fixtures 50,000 times from the
 live table, at each fixture's odds, with one strength shock per club per run
-(`STRENGTH_SD`). The run-in's stakes come from each run's own table. Play-offs
-(`simulation/playoffs.py`) are played inside every run, against the other
-division's simulated club; `simulation/history.py` re-runs the projection as it
-stood on earlier dates for the history charts.
+(`STRENGTH_SD`). The run-in's stakes come from each run's own table. Clubs
+level on points, goal difference and goals scored finish in the order of today's
+table (which carries the head-to-head tiebreak), as `public/season-sim.js`
+ranks them. Play-offs
+(`simulation/playoffs.py`) are played over each run's finish, against the other
+division's simulated club: each division is simulated once per view (the other's
+report reuses it) and the one tie both play (OBOS-ligaen's bracket winner against
+Eliteserien's 14th) is drawn once, from its own random stream, so the two reports
+agree on it run by run. A finished season whose play-offs are in
+`playoff_outcomes.json` takes them as they went. `simulation/history.py` re-runs the
+projection as it stood on earlier dates for the history charts.
 
 ## Changing the model
 

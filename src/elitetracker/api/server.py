@@ -30,6 +30,7 @@ from elitetracker.pipeline import (
     build_all_careers,
     build_report,
     careers_payload,
+    h2h_payload,
     current_season,
     reload_inputs,
     rewound_configs,
@@ -49,12 +50,22 @@ def careers(root: Path) -> dict[str, Any]:
 
 
 @functools.cache
-def report(root: Path, slug: str, season: int, asof: str | None) -> Any:
+def reports(root: Path, season: int, asof: str | None) -> dict[str, Any]:
+    """Both leagues' reports of a view, built together: the leagues' play-offs meet,
+    so each simulates its season once and the other's report reuses it."""
     simulation, history = rewound_configs(asof)
-    return build_report(
-        slug, season, root=root, careers=careers(root),
-        simulation=simulation, history=history, asof=asof,
-    )
+    share: dict[str, Any] = {}
+    return {
+        slug: build_report(
+            slug, season, root=root, careers=careers(root),
+            simulation=simulation, history=history, asof=asof, share=share,
+        )
+        for slug in LEAGUE_SPECS
+    }
+
+
+def report(root: Path, slug: str, season: int, asof: str | None) -> Any:
+    return reports(root, season, asof)[slug]
 
 
 @functools.cache
@@ -66,6 +77,8 @@ def data_payload(root: Path, name: str) -> tuple[Any, int]:
     """What the static build would have written under /data/<name>, plus a status."""
     if name == "careers.json":
         return careers_payload(careers(root), root=root), 200
+    if name == "h2h.json":
+        return h2h_payload(root), 200
     if name == "calibration.json":
         return calibration(root), 200
     match = _REPORT_NAME.fullmatch(name)
@@ -105,7 +118,7 @@ class Handler(SimpleHTTPRequestHandler):
             reload_inputs()
             careers.cache_clear()
             calibration.cache_clear()
-            report.cache_clear()
+            reports.cache_clear()
         try:
             self._json(*data_payload(self.root, path.removeprefix("/data/")))
         except BrokenPipeError:

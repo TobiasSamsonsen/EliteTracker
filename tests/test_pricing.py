@@ -7,6 +7,7 @@ After a deliberate model change, rewrite the golden file from the repo root
 with `python -m tests.test_pricing`, then bring the JS ports up to it."""
 
 import json
+import math
 from dataclasses import replace
 from pathlib import Path
 
@@ -18,7 +19,7 @@ from elitetracker.model.attack_defence import (
 from elitetracker.model.elo import EloConfig
 from elitetracker.model.pricing import SURFACE_LEAGUE, elo_odds, match_odds
 from elitetracker.model.probabilities import MatchProbabilities, _draw_model_probabilities
-from elitetracker.model.stakes import STAKES_ELO, pressure
+from elitetracker.model.stakes import STAKES_ELO, STAKES_GOALS, pressure
 from elitetracker.normalize.matches import Match
 from elitetracker.normalize.surfaces import SURFACE_EDGE
 from elitetracker.pipeline import _fixtures_payload
@@ -88,8 +89,22 @@ def golden() -> dict:
             "blend": {"gap": 110, "weight": 0.25, "odds": odds(page_blend),
                       "1-1": cells[(1, 1)], "1-0": cells[(1, 0)], "2-1": cells[(2, 1)]},
             "pressure": [[d, left, 0.8, pressure(d, left, 0.8)] for d, left in ((0, 3), (4, 3), (6, 10))],
+            # A published match with table stakes (Pi diff 0.4): the Elo gap and the goal rates both move.
+            "stakes": stakes_case(page),
         },
     }
+
+
+def stakes_case(page):
+    """What the model page's match figure must reproduce for a match carrying stakes."""
+    diff = 0.4
+    rates = [1.6 * math.exp(STAKES_GOALS * diff), 1.1 * math.exp(-STAKES_GOALS * diff)]
+    grid = score_grid(*rates, -0.05)
+    elo = _draw_model_probabilities(110 + STAKES_ELO * diff, page)
+    blended = blend_outcomes(elo, grid, 0.25)
+    return {"rates": [1.6, 1.1], "rho": -0.05, "gap": 110, "stakes_elo": STAKES_ELO * diff, "weight": 0.25,
+            "model": {"elo": STAKES_ELO, "goals": STAKES_GOALS},
+            "odds": [blended.home_win, blended.draw, blended.away_win]}
 
 
 def close(saved, worked_out, where="golden"):
@@ -148,6 +163,21 @@ def test_the_published_fixtures_and_the_season_simulation_agree(home_beta, blend
     for match, home_win in zip(matches, simulated.home_win):
         elo = elo_odds(match, ratings[match.home_id], ratings[match.away_id], config, "obosligaen")
         assert float(home_win) == pytest.approx(match_odds(elo, ad, match).odds.home_win, abs=1e-12)
+
+
+def test_a_published_fixture_names_the_terms_that_moved_its_odds():
+    """The surface edge and the table stakes ride on the fixture, in Elo points
+    for the home side, and only when they moved it (the card tags them)."""
+    config, ad = app_state()
+    ratings = {"8422": 1600.0, "A": 1500.0, "B": 1500.0}   # 8422 (Rosenborg) plays on grass
+    matches = [fixture("8422", "A", match_id="grass"), fixture("A", "B", match_id="turf")]
+    rows = {row["match_id"]: row for row in
+            _fixtures_payload(matches, ratings, config, ad, league=SURFACE_LEAGUE, stakes={"turf": -0.5})}
+    assert rows["grass"]["surface_elo"] == SURFACE_EDGE and "stakes_elo" not in rows["grass"]
+    assert rows["turf"]["stakes_elo"] == -0.5 * STAKES_ELO and "surface_elo" not in rows["turf"]
+    # Outside the surface league there is no edge, and no stakes means no tags.
+    plain = _fixtures_payload(matches, ratings, config, ad, league="obosligaen")
+    assert not any(key in row for row in plain for key in ("surface_elo", "stakes_elo"))
 
 
 if __name__ == "__main__":

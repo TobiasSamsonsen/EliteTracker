@@ -19,7 +19,7 @@ from pathlib import Path
 from elitetracker.model.attack_defence import ADConfig, AttackDefence, KEEPING_LEAGUE_ROWS
 from elitetracker.model.career import SeasonSlice
 from elitetracker.model.elo import era_config
-from elitetracker.model.initial_ratings import TeamRating
+from elitetracker.model.initial_ratings import TeamRating, rating_for_unseeded_team
 from elitetracker.model.ratings import build_rating_table
 from elitetracker.normalize.matches import Match
 from elitetracker.pipeline import rerate_payload
@@ -47,9 +47,10 @@ def season(year, league, clubs, rounds, rng, shots, *, played=True, first_id=0):
     return matches
 
 
-def build():
+def build(unseeded: str | None = None):
     """(payload, edits, expected before, expected after): the payload the
-    report would carry, the changes made, and the Python model's ratings."""
+    report would carry, the changes made, and the Python model's ratings.
+    `unseeded` leaves one club out of the seeds (a club the careers do not have yet)."""
     rng = random.Random(7)
     shots: dict[str, tuple[float, ...]] = {}
     last = season(2025, "eliteserien", ELITE, 5, rng, shots) + season(2025, "obosligaen", OBOS, 5, rng, shots)
@@ -67,6 +68,8 @@ def build():
     start.start_season(2026)
     seeds = {team: TeamRating(team, team, round(1450 + 40 * i + rng.uniform(-5, 5), 1)) for i, team in enumerate(ELITE)}
     era = era_config(2026)
+    if unseeded:
+        seeds.pop(unseeded)
     payload = rerate_payload("eliteserien", this, seeds, shots, start, era)
 
     def expected(matches):
@@ -107,6 +110,12 @@ def rounded(value):
 
 def test_the_golden_file_is_what_the_model_makes():
     assert json.loads(GOLDEN.read_text(encoding="utf-8")) == rounded(json.loads(json.dumps(golden())))
+
+
+def test_a_club_missing_from_the_careers_starts_at_the_ladder_floor():
+    payload = build(unseeded="C")[0]
+    assert payload["start"]["C"]["elo"] == rating_for_unseeded_team()
+    assert payload["start"]["A"]["elo"] != rating_for_unseeded_team()
 
 
 def test_the_payload_carries_each_clubs_start_and_the_played_matches():

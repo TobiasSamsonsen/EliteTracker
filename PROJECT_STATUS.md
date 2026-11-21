@@ -80,7 +80,8 @@ reports and `careers.json` carry them).
 | elo-v14.0 | 2026-10-16 | 3909841 | major | keeping (xG on target, a club's last 45 matches) as the goals model's fourth part, its chances learnt 90 % from xG; the offseason pull per division (OBOS-ligaen 0.75 / 0.3); surface edge 10 -> 20 |
 | elo-v15.0 | 2026-10-17 | adc21db | major | a club relegated into OBOS-ligaen keeps half its distance from the division's mean, toward a target set by its squad value (Elo 75 points per log value, its first use of squad values; the goals model its own value pull) |
 | elo-v16.0 | 2026-10-17 | b571718 | major | the xG margin unclamped and 0.10 -> 0.12; late-season table stakes on the prediction (`model.stakes`), the season simulation reading them from each run's own table |
-| elo-v16.1 | 2026-10-27 | c3dae7e | minor | the prediction's expected points the median of the simulated seasons' points, the mean breaking ties in the order (ratings and match odds unchanged; the backtest is under "xPts and the expected place as medians") -- **the deployed version** |
+| elo-v17.0 | 2026-11-21 | the batches 2-3 commit | major | batches 2 and 3 of the model and simulation audits (batch 3: one shared play-off tie, finished seasons' play-offs as played, displayed average rates, `era_config`, payloads): published run-in stakes only for a side's next match (the later fixtures' odds change); the simulation's last tiebreak favours the club higher in today's table (a MINOR change, so the release is MAJOR) -- **the deployed version** |
+| elo-v16.1 | 2026-10-27 | c3dae7e | minor | the prediction's expected points the median of the simulated seasons' points, the mean breaking ties in the order (ratings and match odds unchanged; the backtest is under "xPts and the expected place as medians") |
 
 Unbumped commits that only added output fields (`position_points`, projected
 goals, high-stakes swings, the pre-season view) or touched presentation were
@@ -3484,3 +3485,268 @@ byte-identical; the feature is a derived view on existing Monte Carlo runs.
 **Files.** `src/elitetracker/simulation/season.py`, `src/elitetracker/pipeline.py`,
 `tests/test_high_stakes.py` (new), `public/app.js`, `public/i18n.js`,
 `public/styles.css`, `tests/frontend.test.js`.
+
+## Model and simulation audit, batch 2 (November 2026) - elo-v17.0
+
+Source: an outside read of `stakes.py`, `season.py`, `probabilities.py` and
+`benchmark.py` (`elitetracker_model_simulation_audit_batch_2.md`). Every claim
+was checked against the code; two were real bugs, three were fixes of
+presentation or plumbing, two were left as notes.
+
+**1. Published run-in stakes for a side's next match only (match odds change,
+MAJOR).** `fixture_gaps` priced every unplayed fixture of a side with 24 played
+by its date from **today's** points gaps with the matches left that date would
+bring: a fixture three months out got July's gap against October's `r`. The
+backtest and the simulation always used the table before the match's date, so
+the published numbers were a third quantity nothing had measured. Now a fixture
+is priced only when it is both sides' next match (no unplayed fixture of either
+dated before it), where today's table is the table before its date and
+`season_gaps`' arithmetic applies; later fixtures keep the plain odds until they
+come up. The simulation (each run's own table) is untouched. The backtest is
+unchanged, so no new scores: a deliberate fix to what is published, not a model
+term. Rejected for now: averaging the stakes-adjusted odds over the runs (the
+audit's option B) -- a run-averaged price nothing has measured, and plumbing from
+the simulation into the fixture payload for the same number on the next round.
+Effect on the real data (Eliteserien and OBOS-ligaen 2026 rewound to 20 Sep and
+11 Oct, 50,000 runs): 38 of 72, 42 of 65, 39 of 56 and 29 of 41 published
+fixtures change, the largest move in any outcome 2.8, 2.8, 4.1 and 4.4 pp.
+
+**2. The simulation's last tiebreak was inverted (MINOR).** Clubs level on
+simulated points, goal difference and goals scored were separated by today's
+table index, but the descending sort gave the *lower-placed* club the win;
+`public/season-sim.js` and the scenario copy (`scenario.tableLevelIndex`) say the
+other way, and elo-v12.1 meant it so (today's table carries the head-to-head
+tiebreak). One term: `count - 1 - club_index`. A random permutation was
+rejected: it contradicts that copy and the table's head-to-head. Effect, same
+seed: no club's finishing chance moves more than 0.08 pp, expected points not at
+all (a three-way tie on points, goal difference and goals scored is rare).
+
+**3. `conditionals` is `fixtures x 3 x 2 x clubs`, not `x clubs x clubs`.** A
+fixture only ever tallied its own two clubs, so 14 of 16 club slices were zero.
+The axis is now the side (0 home, 1 away): 8x fewer cells to `bincount` and
+`tolist()` at 16 clubs. `high_stakes` and `next_stakes` are deep-equal before and
+after on all four rewound builds above (built with the tiebreak held at the old
+rule, so the tally change is isolated). The audit's alternative, a "Rival Watch" view of the matches
+that move *other* clubs' chances, was then built beside it (item 3b below)
+rather than instead of it.
+
+**3b. Rival Watch (`rival_watch`).** Tallying every club's position per
+fixture is what the old tensor did and what 3 removed, so this tallies the
+chance of each *band* instead, for all clubs, as one matrix product a chunk of
+the runs' outcome indicators with their band indicators
+(`simulate_season(rival_bands=...)`, `SeasonProjection.rivals`): a 50,000-run
+Eliteserien build stays at 18 s (it was 17 s). `_rival_watch` lists, per club, up
+to three matches between *other* clubs that move a band it has at least 10 %
+of by at least 3 pp (`MIN_RIVAL_SWING`, a judgement, not a fitted value;
+smaller than the decisive matches' 25 pp since no decisiveness is claimed): the
+result that helps it, the one that hurts it, and its chance after each, the drop
+read the other way round. The team view's forecast tab shows them as "Other
+matches that matter", both languages, each drawn with the decisive matches' track
+(the club's chance of the race after the match's home win, draw and away win, in the odds
+bars' blue, grey and red, with the same legend and tick for where it stands now). For the clubs playing, the band tally
+equals the position tally summed over the band, a test. Eliteserien 2026 at 11
+Oct: 33 entries for 11 clubs, 12 KB. Output field only, finishing odds
+unchanged, so no version number.
+
+**4. What if and xPts.** `expected_points` stays the median (the owner's
+call, elo-v16.1); the report now also carries `mean_points` (1 decimal). The
+what-if page added a difference of *means* to the median; it now starts from the
+mean and shows it with a decimal, with a line in its note that the points are
+the average over the runs and Tabell's xPts the median. (First tried as whole
+points: at zero locks the rounded mean then differed from Tabell's median for
+2-6 of 16 clubs on the four rewound builds, the contradiction the audit set out
+to remove, hence the decimal and the note.) Tabell keeps the median and shows
+the mean in the xPts cell's tooltip. Reports from before the field fall back to
+the median. The audit's second point, the what-if bands omitting play-offs, is already stated on the page
+("Play-offs are left out", `whatif.note`) and the browser simulation has none,
+so the bands stay the places.
+
+**5. Fixture cards name the terms that moved the odds.** The fixtures payload
+carries `surface_elo` and `stakes_elo` (Elo points for the home side, absent
+when under half a point), shown as muted tags on the Matches cards in both
+languages. Presentation only.
+
+**6. `benchmark.py`.** An exact folded name now beats a substring hit, and
+several hits warn (`Odd` sits inside `Hødd`; either in the file used to drop both).
+Rebuilt on today's football-data CSV into scratch paths: the 2,816 stored joins
+are all there with identical prices (32 newer matches on top, 1 unmatched).
+The market average is no single tradable price, and it is 243 of the 2,848
+joined matches (8.5 %; Pinnacle 2,605, Bet365 none; 211 of the 2,816 stored, and
+Pinnacle prices 91.8 % of the 2,400 matches Kelly scores), too many to wave away:
+`build_odds` now records the book of each join (`data/odds_closing_books.json`,
+written here for the 2,816 stored ones from that rebuild; the stored odds and
+prices are unchanged) and the Kelly sentence on the Accuracy card states the
+Pinnacle share of the matches priced once `research` has put it in the payload.
+`kelly()` is not restricted to Pinnacle: that would cut the sample by a tenth
+and change the published bankroll for a purity the disclosure already covers.
+`kelly()` also returns `flat_roi` (one unit on each bet), shown beside the
+compounded figures. Neither number is in the served payload until the next
+`research` run.
+
+**7a. Strength shock in the goal margins: bounded, not shipped.** The shock moves
+win odds but the scoreline is drawn from the baseline table, so margins are a
+little under-dispersed; that matters only where goal difference breaks a tie on
+points. Upper bound on what it could move: the same seed with the goal-difference
+and goals-scored tiebreaks removed altogether (ties go to today's table) moves
+the finishing chances by 0.47-0.55 pp on average per club and place and by
+6.0-8.0 pp at most (Eliteserien and OBOS-ligaen 2026 at 20 Sep and 11 Oct). A
+variance correction is a fraction of that, there is no ground truth to calibrate
+it on (no history of simulated against realised goal difference), and a
+hand-made margin tilt would be a free parameter fitted to nothing. Not built; a
+baseline for a re-test if goal-difference calibration is ever measured.
+
+**7b. 70 %+ favourites: where the compression sits.** Walk-forward 2016+, both
+divisions, matches where a side is priced at 70 % or more (predicted -> realised):
+Elo alone, home 75.9 % -> 78.0 % (n 359) and away 73.9 % -> 67.9 % (n 28), pooled
+75.8 % -> 77.3 %; the shipped blend, home 76.4 % -> 79.7 % (n 315) and away
+75.8 % -> 79.5 % (n 39), pooled 76.3 % -> 79.7 % (+3.3 pp, about 1.6 standard
+errors). Elo's own curve is within noise (+1.5 pp, 0.7 se); the gap is wider after
+the blend, so the compression, if real, enters with the goals model (its grid or
+the blend weight `blend_gamma`), not with the Elo scale or the draw curve. Not
+distinguishable further without a fit; no change made.
+
+**Not rerun.** `data/model_versions.json` (every version on the same matches)
+needs the release commit, so it is run at release, as the notes above say; the
+backtest is unchanged, so elo-v17.0 should repeat elo-v16.1's scores.
+
+**Model card and model page.** The model card (the hero's settings grid) gains
+three rows (stakes on published odds: next match of both sides; the simulation's
+tie order; expected points: median of the runs). `model.html` is brought to
+elo-v17.0 (it still said v16.0) with: stakes on published fixtures for a side's
+next match only and the match-card tags (section 8), the simulation's tie order
+and the median xPts (9), Rival Watch beside the decisive matches (10) and the
+closing price's book (11), in both languages; `model.js`'s `PAGE_VERSION` is
+v17.0, and the version-history strings exist for v16.1 and v17.0 for when
+`data/model_versions.json` is rerun at release.
+
+**Open, to investigate later: the strength shock in the goal margins (7.1).**
+Not built, on purpose: the model has no statement of how a club's per-run shock
+should change its goal rates (it moves win odds only), and nothing to fit one
+on. What a test would need: a history of simulated against realised goal
+difference to calibrate the margins on (the season-shape history snapshots keep
+only finishing chances), then a candidate (for instance scoreline weights tilted
+by the run's shock, constrained to leave the outcome odds exactly as they are)
+scored on that. Baseline for the re-test: the whole goal-difference tiebreak
+moves finishing chances 0.5 pp on average, 6-8 pp at most (7a). 7b is the other
+open diagnostic: the 70 %+ favourite gap (+3.3 pp, 1.6 se) sits after the
+blend, so look at the goals grid and `blend_gamma`.
+
+**Deferred.** The shipped payloads (`flat_roi`, `pinnacle_share`) wait for a
+`research` run.
+
+## Engine, play-offs and payload audit, batch 3 (November 2026) - elo-v17.0
+
+Source: `elitetracker_engine_play_offs_payload_audit_batch_3.md`. The version stays
+elo-v17.0 (nothing is released); what moves published numbers is folded into its row.
+
+**4. The 70 %+ favourites, re-tested (nothing ships).** `experiments/improvements/
+favourites_batch3.py` and `recalibration.py`, elo-v17.0, both divisions 2016+
+(4,800 matches), shipped odds log loss 0.99490; priced 70 %+ is 354 matches, 76.3 %
+priced, 79.7 % won. Paired against the shipped odds (change in log loss, t; walk-forward
+2018+ picks the value on the seasons before):
+
+| candidate | fixed value, best | walk-forward 2018+ | >= 70 % bin |
+|---|---|---|---|
+| `spread` 1.00-1.30 (the audit's grid cap) | 1.15: -0.00013 (t -0.84), 1.20: -0.00013 (t -0.42), 1.30: +0.00025 | +0.00013 (t +0.53), picks 1.00-1.20 | 392 at 76.6 %, won 79.1 % (1.15) |
+| `blend_gamma` 0-0.40 | 0.05: -0.00000; 0.40: +0.00012 | +0.00000, picks 0 / 0.05 | unchanged |
+| Davidson draw model (nu 0.6-0.8, theta scale 0.9-1.2) | worse at every setting: +0.00039 (nu 0.7, scale 1.2, t +2.32) to +0.00154 | +0.00048 (t +1.70), second half t +2.33 | 305 at 76.1 %, won 80.0 % |
+| temperature (`recalibration.py`) | picks 0.99-1.06 | +0.00003 (t +0.11) | 391 at 76.6 %, won 78.8 % |
+| favourite stretch 70 %+, lookup table, isotonic | -0.00020 (t -0.95); +0.00071..+0.00159; +0.01079 | | |
+
+The spread's old cap is not binding: its optimum is flat from 1.10 to 1.25 (the 1.15-1.20
+gain is -0.00013 with t below 1), and it was swept to 1.20 before (1.10-1.15 wanted, `spread`
++0.00036 in 1.11). Davidson's draw layer is worse everywhere. Nothing clears the ship bar
+(out of sample, both halves); the +3.3 pp gap stays as 7b describes it.
+
+**5. `inputs_digest` scoped to the season.** Reports of 2016 and 2018 built from a root
+holding only the files up to 2018 are identical to the full-root ones but for
+`league.seasons` and `league.current_season`, so a season's digest now leaves out later
+seasons' matches and xG and stamps the seasons on offer instead: a 2026 weekend no longer
+restamps 2015-2025.
+
+**6. `era_config`, `rerate_payload`.** `era_config(season, base)` returned the fixed
+`MODERN_CONFIG` from 2022 and so dropped a setting changed on `base` (`build_site
+--regression`); it is now `base` with the modern K and xG weight (the defaults give
+`MODERN_CONFIG` exactly; an explicit `modern` still wins). `rerate_payload` seats a club
+missing from the careers at the ladder floor, as the rating replay does.
+
+**7.1 The average club's rates.** `rates_against_average` took the division's mean
+defence and not its mean finishing or keeping, so the average side's scoring and
+conceding rates did not match. Both means are in now (display only: the table's attack and
+defence columns and the attack trend, the odds untouched). League-average goals scored /
+conceded, Eliteserien 2026: 1.644 / 1.472 -> 1.525 / 1.517; OBOS-ligaen 1.923 / 1.911 ->
+1.923 / 1.926 (the rest is the exponential of a mean).
+
+**7.2 The tier-below side in the survival tie.** Simulated against the record (the 2026
+simulation; 2015-2025 results from the play-off files below): OBOS-ligaen's 14th loses 33.9 %
+of the time, 6 of 11 did (P(6 or more) 0.13 at 33.9 %); Eliteserien's 14th goes down in 36.8 %,
+5 of 11 did (P 0.38). Both inside binomial noise: no change.
+
+**7.3 `table_from_matches`.** A call takes 0.12 ms, so the three repeats in `build_report`
+read one `live_table` and nothing else changes (no speed claimed).
+
+**7.4 Extra time at the second leg's host.** Not changed: the leg order is not constant
+(2015 final: Jerv at home first and Start second; 2018 relegation play-off: KFUM at home
+first, Aasane second; 2022 and 2024: OBOS-ligaen's 14th at home first), so there is no
+rule to encode; the tie keeps the neutral average.
+
+**3 and 7.2's data. Finished seasons' play-offs as they went.** `data/normalized/
+playoff_outcomes.json` (2015-2025): who won OBOS-ligaen's bracket, whether it beat
+Eliteserien's 14th, and whether each 14th went down. Five seasons (2017, 2019, 2021, 2023,
+2025) are read off the next season's membership, the six where Eliteserien's 14th stayed
+up (2015, 2016, 2018, 2020, 2022, 2024) have their bracket winner from the season's English
+Wikipedia articles (Jerv, Jerv, Aalesund, Sogndal, Kongsvinger, Moss; the 2022 and 2024
+Eliteserien finals' own pages do not exist, but the winner is whoever is not in Eliteserien
+next season); every flag is checked against the membership (`tests/test_playoffs.py`).
+A view of a finished season with every match played takes these as 1 or 0 instead of
+simulating them (a rewound view of the same season is simulated again); 2026 is not in
+the file.
+
+**2. One play-off tie, played the same in both divisions.** OBOS-ligaen's promotion final
+and Eliteserien's survival tie were two draws of the same tie (different pairing order and
+random numbers), and each report re-simulated the other division. Now each division is
+simulated once per view (the other's report reuses it, `share`), its runs are kept
+(`keep_runs`), and the play-offs are played over them: the bracket on stream [seed, 1], the
+inter-division tie on its own stream [seed, 3] with the OBOS-ligaen club at home first in
+both views, OBOS-ligaen's survival tie on [seed, 4]. Eliteserien's play-off relegations
+and OBOS-ligaen's play-off promotions are then the same runs and add up to the same number:
+2026 live 0.3676 and 0.3676 (before 0.3632 and 0.3625; 2019 mid-season 0.4914 and 0.4905,
+now 0.4937 and 0.4937). Position probabilities, everything but the play-off columns, are
+unchanged on 2026 (live and 11 Oct), 2019 and 2016 (the old bracket format); the play-off
+columns move by at most 0.55 pp (new random streams). Timing, both leagues, 2026 live: 29.2
+s against 28.5 s before: the audit's "2x faster" does not hold (the simulation is a small
+part of a view, and the other division's simulation was already the cheaper one without
+its tallies); the gain is consistency.
+
+**1. Payloads.** `xgot` is out of the results (nothing read it; the what-if page has its
+own in `rerate`). The head-to-head meetings left `careers.json` for a file of their own,
+`h2h.json`, in compact rows with the club names as indexes, fetched when Compare first asks:
+`careers.json` 1,129,086 -> 339,183 bytes (-70 %), `h2h.json` 261,473 (793,416 as objects). Not
+done: `rerate` (22.8 and 18.8 KB) and `history` (39.3 and 38.7 KB) in every rewound report, about 40 % of each league's
+report. `rerate` is read synchronously by the what-if page and `history` by many views from the
+rewound report itself (a rewound view's snapshots are by round, not the live ones), so
+splitting them needs asynchronous loading and a browser check this pass did not have.
+
+**Fixed: What if did not show 100 % for a club whose finish the locks settle.** Reproduced
+in Node with the page's own code (`whatIfRows` over `season-sim.js`'s two runs, the 2026
+Eliteserien report, Bodø/Glimt winning every match they have left and Viking losing theirs): the
+locked run has Bodø/Glimt champion in 50,000 of 50,000 runs, the page showed 99.26 %. The cause
+was the one suspected: a club's chance after a lock is the published chance plus the difference
+between the locked and the as-played run, and the published chances and the browser's
+as-played run are two different simulations (the browser's leave out the run-in stakes and the
+play-offs and use their own random stream: 77.5 % of runs against 76.8 % published), so what the
+published figures held in places the lock rules out stayed behind after the floor at 0 and the
+renormalisation. `shiftedChances` now takes what a lock decides from the locked run: a place
+every locked run gives the club (that the as-played run did not already) is its finish for sure
+(100 %, the rest 0), and a place the as-played run gave it and the locked run never does is out;
+the shift stands everywhere else. The same case now reads 100.00 %; with nothing locked the
+published chances still come back untouched. Two tests (`tests/frontend.test.js`).
+
+**The model page.** The match-by-match figure prices a pair that is a published next
+match with its table stakes (`stakes_elo`, and the goals tilt `tiltForStakes`, held to the
+Python model by a golden case) so its odds are the published ones, and says whether the
+published odds carry stakes. The other figures read the report and need no change; the
+version-history chart (`data/model_versions.json`) is unchanged: elo-v16.1 and elo-v17.0
+leave the backtest's odds alone (v17.0 changes only what is published for later fixtures and
+the play-off columns), so by the chart's own rule they are not scored, and its rerun
+waits for the release commit as above.

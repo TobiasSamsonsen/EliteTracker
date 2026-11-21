@@ -68,10 +68,12 @@ closing odds.
 - **The report payload** (`pipeline.build_report`). One dict per league:
   `league`, `model` (also the compare tool's ingredients), `table`,
   `fixtures`, `results`, `rerate` (the season's start state and played matches,
-  for the what-if page's re-rating), `high_stakes`, `next_stakes`, `history`. The
-  frontend reads only this, `careers.json` and `calibration.json`.
+  for the what-if page's re-rating), `high_stakes`, `next_stakes`, `rival_watch` (other clubs' matches that move a club's
+  race, from the simulation's per-fixture band tally), `history`. The
+  frontend reads only this, `careers.json`, `h2h.json` (the Compare page's head-to-head
+  meetings, fetched when it asks) and `calibration.json`.
 - **Two hosts, one URL scheme.** `build_site` writes `report.json`,
-  `report-<season>.json`, `report-<season>-<date>.json`, `careers.json` and
+  `report-<season>.json`, `report-<season>-<date>.json`, `careers.json`, `h2h.json` and
   `calibration.json`; `api/server.data_payload` answers the same names live
   (`tests/test_server.py` holds it to that). The derived `timeline-<season>.json`
   and `seasons-summary.json` are static-only: the frontend falls back to the

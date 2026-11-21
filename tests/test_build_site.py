@@ -65,6 +65,7 @@ def stubbed(monkeypatch, tmp_path):
     monkeypatch.setattr(build_site, "preseason_date", lambda season, root: "2026-04-30")
     monkeypatch.setattr(build_site, "build_all_careers", lambda root, **kw: {})
     monkeypatch.setattr(build_site, "careers_payload", lambda careers, **kw: {})
+    monkeypatch.setattr(build_site, "h2h_payload", lambda *a, **kw: {})
     monkeypatch.setattr(build_site, "calibration_payload", lambda **kw: {})
     monkeypatch.setattr(build_site, "Pool", _SyncPool)
     monkeypatch.setattr(build_site, "available_seasons", lambda root: [2024, 2025, 2026])
@@ -83,6 +84,7 @@ def test_only_season_builds_just_that_season(stubbed, tmp_path):
         "report-2026-2026-05-01.json",
         "report-2026-2026-05-08.json",
         "careers.json",
+        "h2h.json",
         "calibration.json",
     ]
     # No past-season files are written.

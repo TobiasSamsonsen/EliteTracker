@@ -41,7 +41,7 @@ from elitetracker.model.stakes import STAKES_FROM, run_pressures
 from elitetracker.model.table import TableRow, table_from_matches
 from elitetracker.normalize.matches import Match
 from elitetracker.normalize.standings import POINTS_FOR_DRAW, POINTS_FOR_WIN
-from elitetracker.simulation.playoffs import Knockout, Opponent, Playoffs, PlayoffTally
+from elitetracker.simulation.playoffs import Knockout, Opponent, Playoffs, PlayoffTally, play_runs
 
 # Chosen by measurement, not taste. Monte Carlo error falls as 1/sqrt(N), and
 # the point of diminishing returns is set by the model's own accuracy: elo-v3
@@ -128,6 +128,9 @@ class TeamProjection:
     # simulated scorelines of the remaining fixtures.
     expected_goals_for: float = 0.0
     expected_goals_against: float = 0.0
+    # The mean of the runs' final points, beside the median: what a difference of
+    # means (the what-if page) is added to, and what orders clubs on one median.
+    mean_points: float = 0.0
     # With play-offs (`simulation.playoffs`): the chance of winning the
     # promotion bracket, of going up through its final, and of going down
     # through the survival tie.
@@ -146,15 +149,28 @@ class SeasonProjection:
     # position_points[0] is the median points of the team finishing 1st.
     position_points: list[int] | None = None
     strength_sd: float = 0.0
-    # conditionals[fixture][outcome][club][position] counts the runs in which that
-    # club finished in that position *given* that fixture came out that way
-    # (0 home win, 1 draw, 2 away win). Index order matches `_fixtures`, so
-    # fixture i here is the i-th unplayed match in `matches`.
+    # conditionals[fixture][outcome][side][position] counts the runs in which that
+    # fixture's home (side 0) or away (side 1) club finished in that position
+    # *given* that fixture came out that way (0 home win, 1 draw, 2 away win).
+    # Index order matches `_fixtures`, so fixture i here is the i-th unplayed
+    # match in `matches`.
     conditionals: list[list[list[list[int]]]] | None = None
     # Run by run, for the other division's play-off tie: the bracket winner
     # (with a bracket) and the club at `keep_position`, each with its shock.
     bracket_winners: Opponent | None = None
     kept: Opponent | None = None
+    # With `rival_bands`: rivals[fixture][outcome][club][band] counts the runs in
+    # which the club finished inside that band *given* the fixture's outcome,
+    # for every club and not only the two playing (the matches that matter to
+    # *other* clubs); rival_runs[fixture][outcome] is how many runs had that outcome.
+    rivals: np.ndarray | None = None
+    rival_runs: np.ndarray | None = None
+    # With `keep_runs`: the clubs in simulation order, and every run's finishing
+    # order (club index per place, best first) and strength shocks, so the
+    # play-offs can be played afterwards (`pipeline`, with the other division's).
+    club_ids: tuple[str, ...] = ()
+    run_order: np.ndarray | None = None
+    run_shock: np.ndarray | None = None
 
 
 # The score grid's cells, row-major (home goals i, away goals j), split by the
@@ -360,6 +376,8 @@ def simulate_season(
     keep_position: int | None = None,
     league: str = "",
     stakes_lines: tuple[int, ...] = (),
+    rival_bands: tuple[tuple[int, int], ...] = (),
+    keep_runs: bool = False,
 ) -> SeasonProjection:
     """`ad` is the attack/defence state as of the matches given; the outcome odds
     are its blend with the Elo odds. Without one every club is an average side,
@@ -375,7 +393,12 @@ def simulate_season(
     played in, for its match odds (`model.pricing`); the play-off ties go
     without the surface edge.
     `stakes_lines` (`pipeline.stakes_lines`) switches on the run-in's table
-    stakes, each run's from its own table; the play-off ties go without."""
+    stakes, each run's from its own table; the play-off ties go without.
+    `rival_bands` (first, last places) tallies, for every club, its chance of
+    each band given each fixture's outcome (`rivals`): one matrix product of the
+    runs' outcome and band indicators a chunk, so it costs a fraction of the
+    per-fixture position tallies above. `keep_runs` keeps every run's finishing
+    order and shocks (`run_order`, `run_shock`) for `play_postseason`."""
     config = config or SimulationConfig()
     elo_config = elo_config or EloConfig()
     blend = ad is not None
@@ -423,7 +446,10 @@ def simulate_season(
     # Clubs level on simulated points are separated on simulated goal
     # difference, then simulated goals scored. Both accrue from the scorelines
     # drawn below, so the tiebreak is the finish as simulated -- not today's
-    # table, which already has this season's points baked into it.
+    # table, which already has this season's points baked into it. Level on
+    # all three, the club higher in today's table (which carries the
+    # head-to-head tiebreak) finishes higher; `public/season-sim.js` ranks the
+    # same way.
     #
     # The sort key packs points | goal_difference | goals_for | index into one
     # integer, best first. Goal difference is signed, so it is shifted by a
@@ -434,9 +460,11 @@ def simulate_season(
     index_width = count.bit_length()
     club_index = np.arange(count, dtype=np.int64)
 
-    # Tallies. counts[club][position]; conditionals[fixture][outcome][club]
-    # [position] counts the runs in which that club finished there *given*
-    # that fixture came out that way (the high-stakes swings); position_hist
+    # Tallies. counts[club][position]; conditionals[fixture][outcome][side]
+    # [position] counts the runs in which that fixture's home (side 0) or away
+    # (side 1) club finished there *given* that fixture came out that way (the
+    # high-stakes swings; a fixture moves only its own two clubs' tallies, so
+    # the other clubs take no cells); position_hist
     # [position][points] gives the median points per finishing position, which
     # the frontend states as a band's threshold.
     counts = np.zeros(count * count, dtype=np.int64)
@@ -446,8 +474,11 @@ def simulate_season(
     max_points = int(base_points.max(initial=0)) + 3 * fixture_count
     position_hist = np.zeros(count * (max_points + 1), dtype=np.int64)
     points_hist = np.zeros(count * (max_points + 1), dtype=np.int64)  # [club][points]
-    conditionals = np.zeros(fixture_count * 3 * count * count if tally_conditionals else 0, dtype=np.int64)
+    conditionals = np.zeros(fixture_count * 3 * 2 * count if tally_conditionals else 0, dtype=np.int64)
     fixture_slot = np.arange(fixture_count, dtype=np.int64) * 3
+    band_count = len(rival_bands)
+    rival_tally = np.zeros((fixture_count * 3, count * band_count)) if rival_bands else None
+    rival_runs = np.zeros(fixture_count * 3) if rival_bands else None
 
     # The run-in, by date: its fixtures, their rows in the stakes odds, each
     # club's matches left on that date, and how many fixtures (in date order)
@@ -478,10 +509,12 @@ def simulate_season(
         keep_position = None
     if playoffs is not None:
         knockout = Knockout(playoffs, team_ids, ratings, ad, elo_config, max(match.date for match in matches),
-                            blend, np.random.default_rng([config.seed, 1]))
+                            blend, config.seed)
         tally = PlayoffTally(*(np.zeros(count, dtype=np.int64) for _ in range(3)), [], [])
     kept_club: list[np.ndarray] = []
     kept_shock: list[np.ndarray] = []
+    run_orders: list[np.ndarray] = []
+    run_shocks: list[np.ndarray] = []
     done = 0
     while done < config.simulations:
         runs = min(SIMULATION_CHUNK, config.simulations - done)
@@ -546,11 +579,20 @@ def simulate_season(
         packed = (
             ((points << goals_width) + (goals_for - goals_against + offset_gd)) << goals_width
         ) + goals_for
-        packed = (packed << index_width) + club_index
+        packed = (packed << index_width) + (count - 1 - club_index)  # descending sort: the lower index wins
         order = np.argsort(-packed, axis=1)  # club per finishing position, best first
         position = np.empty_like(order)
         position[np.arange(runs)[:, None], order] = club_index
 
+        if keep_runs:
+            run_orders.append(order)
+            run_shocks.append(shock)
+        if rival_bands:
+            happened = (outcome[:, :, None] == np.arange(3)).reshape(runs, -1).astype(np.float32)
+            inside = np.stack([(position >= first - 1) & (position < last) for first, last in rival_bands],
+                              axis=2).reshape(runs, -1).astype(np.float32)
+            rival_tally += happened.T @ inside  # whole numbers below 2**24: exact in float32
+            rival_runs += happened.sum(axis=0)
         if knockout is not None:
             knockout.play(order, shock, done - runs, tally)
         if keep_position is not None:
@@ -563,21 +605,17 @@ def simulate_season(
         position_hist += np.bincount((position * (max_points + 1) + points).ravel(), minlength=position_hist.size)
         points_hist += np.bincount((club_index * (max_points + 1) + points).ravel(), minlength=points_hist.size)
         if tally_conditionals:
-            branch = (fixture_slot + outcome) * count
-            for side in (home, away):
-                cells = (branch + side) * count + position[:, side]
+            branch = (fixture_slot + outcome) * 2
+            for side_index, side in enumerate((home, away)):
+                cells = (branch + side_index) * count + position[:, side]
                 conditionals += np.bincount(cells.ravel(), minlength=conditionals.size)
 
     counts = counts.reshape(count, count)
     if tally_conditionals:
-        conditionals = conditionals.reshape(fixture_count, 3, count, count)
+        conditionals = conditionals.reshape(fixture_count, 3, 2, count)
         # Each run leaves a fixture's two clubs in exactly one outcome branch,
-        # so per club the three branches must sum to the run count.
-        for fixture_index in range(fixture_count):
-            for club in (home[fixture_index], away[fixture_index]):
-                assert conditionals[fixture_index, :, club].sum() == config.simulations, (
-                    f"branch tally mismatch at fixture {fixture_index}"
-                )
+        # so per side the three branches must sum to the run count.
+        assert (conditionals.sum(axis=(1, 3)) == config.simulations).all(), "branch tally mismatch"
 
     halfway = (config.simulations + 1) // 2
     position_points = [
@@ -605,6 +643,7 @@ def simulate_season(
             expected_points=float(median_points[index]),
             expected_goals_for=float(goals_for_total[index] / simulations),
             expected_goals_against=float(goals_against_total[index] / simulations),
+            mean_points=mean_points[team_id],
             **({} if tally is None else {
                 "playoff_win": float(tally.bracket_wins[index] / simulations),
                 "promoted_via_playoff": float(tally.promoted[index] / simulations),
@@ -624,7 +663,61 @@ def simulate_season(
         position_points=position_points,
         strength_sd=strength_sd,
         conditionals=conditionals.tolist() if tally_conditionals else None,
+        rivals=np.rint(rival_tally).astype(np.int64).reshape(fixture_count, 3, count, band_count) if rival_bands else None,
+        rival_runs=np.rint(rival_runs).astype(np.int64).reshape(fixture_count, 3) if rival_bands else None,
         bracket_winners=Opponent(tuple(team_ids), np.concatenate(tally.winner_club), np.concatenate(tally.winner_shock))
         if tally is not None and tally.winner_club else None,
         kept=Opponent(tuple(team_ids), np.concatenate(kept_club), np.concatenate(kept_shock)) if kept_club else None,
+        club_ids=tuple(team_ids),
+        run_order=np.concatenate(run_orders) if keep_runs else None,
+        run_shock=np.concatenate(run_shocks) if keep_runs else None,
     )
+
+
+def kept_at(projection: SeasonProjection, position: int) -> Opponent:
+    """The club that finished `position` in every run, with its shock: what a
+    division above or below plays its tie against (`keep_position`, afterwards)."""
+    order, shock = projection.run_order, projection.run_shock
+    club = order[:, position - 1]
+    return Opponent(projection.club_ids, club, shock[np.arange(len(order)), club])
+
+
+def postseason_tally(
+    projection: SeasonProjection, playoffs: Playoffs, ratings: dict[str, float], ad: AttackDefence,
+    elo_config: EloConfig, on: str, blend: bool = True,
+) -> PlayoffTally:
+    """`playoffs` played over the runs `projection` kept (`keep_runs`), without
+    touching it. The draws are those `simulate_season(playoffs=...)` would make
+    on the same runs."""
+    count = len(projection.club_ids)
+    knockout = Knockout(playoffs, list(projection.club_ids), ratings, ad, elo_config, on, blend, projection.seed)
+    tally = PlayoffTally(*(np.zeros(count, dtype=np.int64) for _ in range(3)), [], [])
+    play_runs(knockout, projection.run_order, projection.run_shock, SIMULATION_CHUNK, tally)
+    return tally
+
+
+def bracket_winners(projection: SeasonProjection, bracket: tuple[int, ...], ladder: bool,
+                    ratings: dict[str, float], ad: AttackDefence, elo_config: EloConfig, on: str) -> Opponent:
+    """The promotion bracket's winner of every run (club and shock), for the
+    division above to play its tie against; the bracket `play_postseason` plays."""
+    tally = postseason_tally(projection, Playoffs(bracket=bracket, ladder=ladder), ratings, ad, elo_config, on)
+    return Opponent(projection.club_ids, np.concatenate(tally.winner_club), np.concatenate(tally.winner_shock))
+
+
+def play_postseason(
+    projection: SeasonProjection, playoffs: Playoffs, ratings: dict[str, float], ad: AttackDefence,
+    elo_config: EloConfig, on: str, blend: bool = True,
+) -> PlayoffTally:
+    """Play `playoffs` over the kept runs and write each club's chances into its
+    `playoff_win`, `promoted_via_playoff` and `relegated_via_playoff`."""
+    tally = postseason_tally(projection, playoffs, ratings, ad, elo_config, on, blend)
+    index = {team_id: i for i, team_id in enumerate(projection.club_ids)}
+    for team in projection.teams:
+        i = index[team.team_id]
+        team.playoff_win = float(tally.bracket_wins[i] / projection.simulations)
+        team.promoted_via_playoff = float(tally.promoted[i] / projection.simulations)
+        team.relegated_via_playoff = float(tally.relegated[i] / projection.simulations)
+    if tally.winner_club:
+        projection.bracket_winners = Opponent(
+            projection.club_ids, np.concatenate(tally.winner_club), np.concatenate(tally.winner_shock))
+    return tally

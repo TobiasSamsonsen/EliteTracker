@@ -21,6 +21,7 @@ from __future__ import annotations
 
 import csv
 import json
+import logging
 import math
 import re
 import unicodedata
@@ -32,12 +33,16 @@ from elitetracker.model.backtest import Scorecard
 from elitetracker.model.probabilities import AWAY_WIN, DRAW, HOME_WIN, MatchProbabilities, outcome_of
 from elitetracker.normalize.matches import Match
 
+_log = logging.getLogger(__name__)
+
 CSV_URL = "https://www.football-data.co.uk/new/NOR.csv"
 CSV_PATH = Path("data/raw/football-data_NOR.csv")
 ODDS_PATH = Path("data/odds_closing.json")
 # The same matches' raw closing prices (decimal, home/draw/away), for the
 # power and Shin de-vig and the staking simulation.
 PRICES_PATH = Path("data/odds_closing_prices.json")
+# Which book each of those prices came from ("PSC" Pinnacle, "AvgC" market average, "B365C" Bet365).
+BOOKS_PATH = Path("data/odds_closing_books.json")
 DEVIG_METHODS = ("proportional", "power", "shin")
 
 # Our registered names that neither equal nor contain the bookmaker's spelling.
@@ -66,17 +71,24 @@ def download_csv(path: Path = CSV_PATH) -> Path:
     return path
 
 
-def _closing_prices(row: dict[str, str]) -> tuple[float, float, float] | None:
-    """Closing decimal prices of the best book the row has: Pinnacle, else the
-    market average, else Bet365."""
+def _closing_book(row: dict[str, str]) -> tuple[str, tuple[float, float, float]] | None:
+    """The best book the row has (Pinnacle, else the market average, else
+    Bet365) and its closing decimal prices. The average is no single tradable
+    price, so which book a match was priced at is kept (`BOOKS_PATH`)."""
     for prefix in ("PSC", "AvgC", "B365C"):
         try:
             prices = tuple(float(row[prefix + side]) for side in "HDA")
         except (KeyError, ValueError):
             continue
         if all(price > 1.0 for price in prices):
-            return prices  # type: ignore[return-value]
+            return prefix, prices  # type: ignore[return-value]
     return None
+
+
+def _closing_prices(row: dict[str, str]) -> tuple[float, float, float] | None:
+    """Closing decimal prices of the best book the row has (`_closing_book`)."""
+    found = _closing_book(row)
+    return found[1] if found else None
 
 
 def _prices(row: dict[str, str]) -> tuple[float, float, float] | None:
@@ -117,35 +129,43 @@ def devig(prices: tuple[float, float, float], method: str = "proportional") -> t
 
 
 def build_odds(matches: list[Match], csv_path: Path = CSV_PATH, out: Path = ODDS_PATH,
-               prices_out: Path | None = None) -> tuple[int, list[str]]:
+               prices_out: Path | None = None, books_out: Path | None = None) -> tuple[int, list[str]]:
     """Join our played matches to the CSV rows; returns (joined, unmatched match ids).
 
     Writes the proportionally de-vigged probabilities to `out` and the raw
     closing prices beside it (`<out>_prices.json` unless `prices_out` says
-    otherwise; for the default `out` that is PRICES_PATH)."""
+    otherwise; for the default `out` that is PRICES_PATH) and the book each
+    price came from beside that (`<out>_books.json`, BOOKS_PATH by default)."""
     with csv_path.open(encoding="utf-8-sig") as handle:
         rows = list(csv.DictReader(handle))
-    by_pair: dict[tuple[str, str], list[tuple[date, tuple[float, float, float]]]] = {}
+    by_pair: dict[tuple[str, str], list[tuple[date, str, tuple[float, float, float]]]] = {}
     names: set[str] = set()
     for row in rows:
-        prices = _closing_prices(row)
-        if prices is None:
+        found = _closing_book(row)
+        if found is None:
             continue
+        book, prices = found
         day, month, year = row["Date"].split("/")
         when = date(int(year), int(month), int(day))
-        by_pair.setdefault((fold(row["Home"]), fold(row["Away"])), []).append((when, prices))
+        by_pair.setdefault((fold(row["Home"]), fold(row["Away"])), []).append((when, book, prices))
         names.update((row["Home"], row["Away"]))
 
     resolved: dict[str, str] = {}
 
     def theirs(ours: str) -> str | None:
         if ours not in resolved:
-            hits = {fold(name) for name in names if same_club(ours, name)}
-            resolved[ours] = hits.pop() if len(hits) == 1 else None
+            # An exact spelling wins; only without one is a name taken to be
+            # contained in the other ("Odd" is inside "Hødd").
+            exact = {fold(name) for name in names if fold(name) == fold(ours)}
+            hits = exact or {fold(name) for name in names if same_club(ours, name)}
+            if len(hits) > 1:
+                _log.warning("%r matches several bookmaker clubs %s; its matches stay unjoined", ours, sorted(hits))
+            resolved[ours] = next(iter(hits)) if len(hits) == 1 else None
         return resolved[ours]
 
     odds: dict[str, list[float]] = {}
     raw: dict[str, list[float]] = {}
+    books: dict[str, str] = {}
     unmatched: list[str] = []
     for match in matches:
         if not match.played:
@@ -153,16 +173,19 @@ def build_odds(matches: list[Match], csv_path: Path = CSV_PATH, out: Path = ODDS
         home, away = theirs(match.home), theirs(match.away)
         when = date.fromisoformat(match.date)
         candidates = by_pair.get((home, away), []) if home and away else []
-        hit = next((p for d, p in candidates if abs((d - when).days) <= 1), None)
+        hit = next(((b, p) for d, b, p in candidates if abs((d - when).days) <= 1), None)
         if hit is None:
             unmatched.append(match.match_id)
         else:
-            odds[match.match_id] = [round(value, 5) for value in devig(hit)]
-            raw[match.match_id] = list(hit)
+            books[match.match_id], prices = hit
+            odds[match.match_id] = [round(value, 5) for value in devig(prices)]
+            raw[match.match_id] = list(prices)
     out.parent.mkdir(parents=True, exist_ok=True)
     out.write_text(json.dumps(odds, indent=0) + "\n", encoding="utf-8")
     prices_out = prices_out or out.with_name(f"{out.stem}_prices{out.suffix}")
     prices_out.write_text(json.dumps(raw, indent=0) + "\n", encoding="utf-8")
+    books_out = books_out or out.with_name(f"{out.stem}_books{out.suffix}")
+    books_out.write_text(json.dumps(books, indent=0) + "\n", encoding="utf-8")
     return len(odds), unmatched
 
 
@@ -176,6 +199,13 @@ def load_prices(path: Path = PRICES_PATH) -> dict[str, tuple[float, float, float
         return {}
     with path.open(encoding="utf-8") as handle:
         return {key: tuple(value) for key, value in json.load(handle).items()}
+
+
+def load_books(path: Path = BOOKS_PATH) -> dict[str, str]:
+    if not path.exists():
+        return {}
+    with path.open(encoding="utf-8") as handle:
+        return json.load(handle)
 
 
 def market_cards(prices: dict[str, tuple[float, float, float]], matches: list[Match]) -> dict[str, Scorecard]:
@@ -202,10 +232,11 @@ def kelly(
     model from ruin), at most `cap` of the bankroll on one match, and only
     where the edge p * price - 1 is at least `min_edge`. `order` is the
     chronological match order; the bankroll compounds along it. ROI is
-    profit over stakes, each stake counted as its fraction of the bankroll.
+    profit over stakes, each stake counted as its fraction of the bankroll;
+    `flat_roi` is the return on one unit staked on each of the same bets.
     """
     bankroll = peak = 1.0
-    drawdown = staked = profit = 0.0
+    drawdown = staked = profit = flat_profit = 0.0
     bets = wins = 0
     for match_id in order:
         if match_id not in card.predictions or match_id not in prices:
@@ -218,6 +249,7 @@ def kelly(
             continue
         stake = min(cap, fraction * edge / (price - 1.0))
         won = key == outcome
+        flat_profit += price - 1.0 if won else -1.0
         bets += 1
         wins += won
         staked += stake
@@ -230,6 +262,7 @@ def kelly(
         "bets": bets,
         "hit_rate": wins / bets if bets else float("nan"),
         "roi": profit / staked if staked else float("nan"),
+        "flat_roi": flat_profit / bets if bets else float("nan"),
         "bankroll": bankroll,
         "max_drawdown": drawdown,
     }

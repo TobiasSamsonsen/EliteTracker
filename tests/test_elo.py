@@ -2,9 +2,14 @@ import math
 
 import pytest
 
+from dataclasses import replace
+
 from elitetracker.model.elo import (
+    BOUNDARY_SEASON,
     MODEL_VERSION,
+    MODERN_CONFIG,
     EloConfig,
+    era_config,
     actual_score,
     draw_probability,
     expected_score,
@@ -12,6 +17,24 @@ from elitetracker.model.elo import (
     updated_pair,
     xg_implied_score,
 )
+
+
+class TestEraConfig:
+    def test_the_defaults_are_the_legacy_and_the_modern_config(self):
+        assert era_config(BOUNDARY_SEASON - 1) == EloConfig()
+        assert era_config(BOUNDARY_SEASON) == MODERN_CONFIG
+        assert MODERN_CONFIG == replace(EloConfig(), k_factor=MODERN_CONFIG.k_factor, xg_alpha=MODERN_CONFIG.xg_alpha)
+
+    def test_a_changed_base_setting_holds_in_the_modern_era_too(self):
+        base = EloConfig(season_regression=0.92, home_advantage=55.0)
+        old, new = era_config(BOUNDARY_SEASON - 1, base), era_config(BOUNDARY_SEASON, base)
+        assert old == base
+        assert (new.season_regression, new.home_advantage) == (0.92, 55.0)
+        assert (new.k_factor, new.xg_alpha) == (MODERN_CONFIG.k_factor, MODERN_CONFIG.xg_alpha)
+
+    def test_an_explicit_modern_config_wins(self):
+        modern = EloConfig(k_factor=40.0)
+        assert era_config(BOUNDARY_SEASON, EloConfig(season_regression=0.92), modern) is modern
 
 
 class TestExpectedScore:
@@ -130,7 +153,7 @@ class TestConfig:
         assert config.season_regression == pytest.approx(0.88)
 
     def test_model_version_is_declared(self):
-        assert MODEL_VERSION == "elo-v16.1"
+        assert MODEL_VERSION == "elo-v17.0"
 
     def test_xg_alpha_default(self):
         config = EloConfig()

@@ -278,9 +278,14 @@ class AttackDefence:
         peers = [t for (year, t), lg in self.divisions.items() if year == season and lg == league and t in self.attack]
         mean_attack = sum(self.attack[t] for t in peers) / len(peers) if peers else 0.0
         mean_defence = sum(self.defence[t] for t in peers) / len(peers) if peers else 0.0
+        # The average side finishes as the division's average does (the offseason
+        # pull regresses finishing toward that mean, which is not 0), so what a
+        # club concedes to it carries the same term what it scores does.
+        mean_finishing = sum(self.finishing.get(t, 0.0) for t in peers) / len(peers) if peers else 0.0
+        mean_keeping = sum(self.keeping(t) for t in peers) / len(peers) if peers else 0.0
         scored = math.exp(cfg.base + cfg.spread * (self.attack.get(team_id, mean_attack) - mean_defence
-                                                   + self.finishing.get(team_id, 0.0)))
-        conceded = math.exp(cfg.base + cfg.spread * (mean_attack - self.defence.get(team_id, mean_defence)
+                                                   + self.finishing.get(team_id, 0.0) - mean_keeping))
+        conceded = math.exp(cfg.base + cfg.spread * (mean_attack + mean_finishing - self.defence.get(team_id, mean_defence)
                                                      - self.keeping(team_id)))
         return scored, conceded
 

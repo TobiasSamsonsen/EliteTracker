@@ -16,9 +16,13 @@ points on the Elo side, and the goals model's rates times exp(+-STAKES_GOALS
 times it). Like the surface edge, the ratings never see it.
 
 The table is the one before the match's date. In the season simulation that
-is each run's own simulated table (`simulation.season`); for a published
-fixture it is the table as it stands, with each side's matches left counted
-from the schedule (`fixture_gaps`).
+is each run's own simulated table (`simulation.season`). A published fixture
+has only the table as it stands, which is the table before its date for a
+side's next match and no longer for a later one (the clubs in between will
+have moved by then): `fixture_gaps` prices the next match of both sides and
+leaves the later fixtures at the plain odds until they come up (elo-v17.0;
+before it the later ones were priced from today's gaps with their own matches
+left, which mixed July's table with October's run-in).
 
 Measured on elo-v15.0 (PROJECT_STATUS.md, "IMPROVEMENTS2.md, phases 1 and
 2"): the 968 matches 2016+ with both sides past 24 played, where the away side
@@ -104,24 +108,21 @@ def season_gaps(matches: list[Match], cuts: tuple[int, ...]) -> dict[str, float]
 
 
 def fixture_gaps(matches: list[Match], cuts: tuple[int, ...]) -> dict[str, float]:
-    """P_home - P_away for every unplayed fixture of one league season, from
-    the table as it stands, each side's matches played by then counted from
-    the schedule."""
+    """P_home - P_away for the unplayed fixtures of one league season that are
+    both sides' next match, from the table as it stands (which is then the
+    table before their date, as in `season_gaps`); later fixtures are left
+    out, and so priced without stakes."""
     table = table_from_matches(matches)
     rounds = 2 * (len(table) - 1)
     points = {row.team_id: row.points for row in table}
     played = {row.team_id: row.played for row in table}
     unplayed = [m for m in matches if not m.played]
-
-    def by_then(match: Match) -> dict[str, int]:
-        done = dict(played)
-        for other in unplayed:
-            if other.date < match.date:
-                for t in team_ids(other):
-                    done[t] = done.get(t, 0) + 1
-        return done
-
-    return _gaps(points, played, cuts, rounds, ((m.match_id, *team_ids(m), by_then(m)) for m in unplayed))
+    next_date: dict[str, str] = {}
+    for m in unplayed:
+        for t in team_ids(m):
+            next_date[t] = min(m.date, next_date.get(t, m.date))
+    upcoming = [m for m in unplayed if all(next_date[t] == m.date for t in team_ids(m))]
+    return _gaps(points, played, cuts, rounds, ((m.match_id, *team_ids(m), None) for m in upcoming))
 
 
 def run_pressures(points: np.ndarray, left: np.ndarray, cuts: tuple[int, ...],

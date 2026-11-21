@@ -160,11 +160,13 @@ class TestRewind:
             shots={"1": (1.234, 0.5, 0.9, 0.2)},
         )
         assert with_xg["xg"] == [1.23, 0.5]
-        assert with_xg["xgot"] == [0.9, 0.2]
-        assert "xg" not in without and "xgot" not in without
+        assert "xg" not in without
+        # xG on target is not shipped with the results: nothing reads it there (the
+        # what-if page's re-rating has its own copy in `rerate`).
+        assert "xgot" not in with_xg and "xgot" not in without
 
-    def test_results_leave_out_xgot_the_source_lacks(self):
-        """Sofascore (OBOS-ligaen) has xG but no xG on target: no xgot key."""
+    def test_results_of_a_source_without_xg_on_target_carry_xg_alone(self):
+        """Sofascore (OBOS-ligaen) has xG but no xG on target."""
         (result,) = pipeline._results_payload([match(1, "A", "B", "2026-03-01")], shots={"1": (1.4, 0.7)})
         assert result["xg"] == [1.4, 0.7]
         assert "xgot" not in result

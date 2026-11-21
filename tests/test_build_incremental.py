@@ -54,6 +54,43 @@ def stamp(root, asof=None, regression=0.88):
     return build_site.view_stamp(root, 2026, asof, season_regression=regression)
 
 
+class TestSeasonScoping:
+    """A season's view reads its own season and the ones before it."""
+
+    def both(self, root, season, played=True):
+        for league in ("eliteserien", "obosligaen"):
+            write_league(root, [match(f"{season}-{league}", f"{season}-05-01", played=played)], league, season)
+
+    def stamp_of(self, root, season):
+        return build_site.view_stamp(root, season, None, season_regression=0.88)
+
+    def test_a_new_weekend_leaves_an_earlier_season_alone(self, tmp_path):
+        root = tmp_path / "normalized"
+        self.both(root, 2018)
+        self.both(root, 2026, played=False)
+        write_xg(root, {"2018-eliteserien": [1.0, 0.5], "2026-eliteserien": [1.2, 0.4]})
+        before = (self.stamp_of(root, 2018), self.stamp_of(root, 2026), build_site.careers_stamp(root, season_regression=0.88))
+        self.both(root, 2026, played=True)
+        write_xg(root, {"2018-eliteserien": [1.0, 0.5], "2026-eliteserien": [1.9, 0.1]})
+        after = (self.stamp_of(root, 2018), self.stamp_of(root, 2026), build_site.careers_stamp(root, season_regression=0.88))
+        assert after[0] == before[0]                      # 2018 reads nothing of 2026
+        assert after[1] != before[1] and after[2] != before[2]
+
+    def test_a_change_to_the_season_itself_still_restamps_it(self, tmp_path):
+        root = tmp_path / "normalized"
+        self.both(root, 2018)
+        before = self.stamp_of(root, 2018)
+        write_league(root, [match("changed", "2018-05-01")], "eliteserien", 2018)
+        assert self.stamp_of(root, 2018) != before
+
+    def test_a_new_season_file_restamps_every_season_through_the_seasons_on_offer(self, tmp_path):
+        root = tmp_path / "normalized"
+        self.both(root, 2018)
+        before = self.stamp_of(root, 2018)
+        self.both(root, 2019)
+        assert self.stamp_of(root, 2018) != before
+
+
 class TestPrefixStamping:
     def test_a_later_result_leaves_an_earlier_rewind_alone(self, two_matches):
         """The whole point: September's data must not invalidate May's view."""
@@ -183,6 +220,7 @@ class TestManifest:
         monkeypatch.setattr(build_site, "matchday_dates", lambda root, season: ["2026-05-08"])
         monkeypatch.setattr(build_site, "build_all_careers", lambda root, **kw: {})
         monkeypatch.setattr(build_site, "careers_payload", lambda careers, **kw: {})
+        monkeypatch.setattr(build_site, "h2h_payload", lambda *a, **kw: {})
         monkeypatch.setattr(build_site, "calibration_payload", lambda **kw: {})
         monkeypatch.setattr(build_site, "Pool", _SyncPool)
         try:

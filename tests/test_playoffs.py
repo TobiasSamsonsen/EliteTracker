@@ -88,6 +88,72 @@ def test_play_offs_leave_the_finishing_chances_alone_and_hand_over_their_runs():
         assert seventh[index] == pytest.approx(by_team(plain, "position_probabilities")[team][6])
 
 
+def small():
+    from elitetracker.simulation.history import HistoryConfig
+
+    return dict(simulation=SimulationConfig(simulations=2_000), history=HistoryConfig(simulations=100, max_snapshots=2))
+
+
+def test_the_recorded_play_offs_agree_with_who_played_where_the_next_season():
+    """Every flag in data/normalized/playoff_outcomes.json is the next season's
+    membership: the bracket winner went up if (and only if) Eliteserien's 14th
+    went down, each 14th stayed if it is in its division the next season."""
+    from elitetracker.model.table import table_from_matches
+    from elitetracker.pipeline import NORMALIZED_DIR, _matches_path, load_matches, playoff_outcomes
+
+    def table(slug, season):
+        return table_from_matches(load_matches(_matches_path(slug, season, NORMALIZED_DIR)))
+
+    outcomes = playoff_outcomes()
+    assert sorted(outcomes) == list(range(2015, 2026))
+    for season, outcome in outcomes.items():
+        elite, obos = table("eliteserien", season), table("obosligaen", season)
+        next_elite = {row.team_id for row in table("eliteserien", season + 1)}
+        next_obos = {row.team_id for row in table("obosligaen", season + 1)}
+        assert outcome["bracket_winner"] in {row.team_id for row in obos[2:6]}
+        assert outcome["eliteserien_14th"] == elite[13].team_id and outcome["obosligaen_14th"] == obos[13].team_id
+        assert outcome["promoted"] == (outcome["bracket_winner"] in next_elite)
+        assert outcome["promoted"] == outcome["eliteserien_14th_relegated"] == (outcome["eliteserien_14th"] not in next_elite)
+        assert outcome["obosligaen_14th_relegated"] == (outcome["obosligaen_14th"] not in next_obos)
+        # Nobody else from the bracket went up.
+        assert {row.team_id for row in obos[2:6]} & next_elite <= {outcome["bracket_winner"]}
+
+
+def test_a_finished_seasons_play_offs_are_as_they_went_not_simulated():
+    from elitetracker.pipeline import build_report, playoff_outcomes
+
+    outcome = playoff_outcomes()[2017]   # Ranheim (4th) beat Sogndal (Eliteserien 14th)
+    obos = build_report("obosligaen", 2017, **small())["table"]
+    by_id = {row["team_id"]: row for row in obos}
+    assert by_id[outcome["bracket_winner"]]["promotion_probability"] == 1.0
+    assert by_id[outcome["bracket_winner"]]["playoff_win_probability"] == 1.0
+    assert sum(row["promotion_probability"] for row in obos) == pytest.approx(3.0)
+    assert by_id[outcome["obosligaen_14th"]]["relegation_probability"] == 1.0
+    assert sum(row["relegation_probability"] for row in obos) == pytest.approx(3.0)
+    elite = build_report("eliteserien", 2017, **small())["table"]
+    assert {row["team_id"] for row in elite if row["relegation_probability"] == 1.0} >= {outcome["eliteserien_14th"]}
+    assert sum(row["relegation_probability"] for row in elite) == pytest.approx(3.0)
+    # A rewound view of the same season is mid-season again: simulated, not settled.
+    rewound = build_report("obosligaen", 2017, asof="2017-08-01", **small())["table"]
+    assert all(0.0 < row["playoff_win_probability"] < 1.0 for row in rewound if row["position_probabilities"][3] > 0.2)
+
+
+def test_the_two_divisions_play_one_tie_and_agree_on_it():
+    """OBOS-ligaen's promotions through the final and Eliteserien's relegations
+    through the same tie are the same runs: their chances add up to the same
+    number, whether the two reports share their simulations or not."""
+    from elitetracker.pipeline import build_report
+
+    config = small()
+    shared: dict = {}
+    both = {slug: build_report(slug, 2026, share=shared, **config)["table"] for slug in ("eliteserien", "obosligaen")}
+    alone = {slug: build_report(slug, 2026, **config)["table"] for slug in ("eliteserien", "obosligaen")}
+    assert both == alone
+    down = sum(row["relegation_probability"] - sum(row["position_probabilities"][14:]) for row in both["eliteserien"])
+    up = sum(row["promotion_probability"] - sum(row["position_probabilities"][:2]) for row in both["obosligaen"])
+    assert down > 0.05 and down == pytest.approx(up, abs=2e-5)
+
+
 def test_reports_count_the_play_offs_between_the_direct_places_and_the_play_off_places():
     """On the real 2026 data: promotion lies between the top two and the top
     six, relegation between 15th-16th and 14th-16th, and only OBOS-ligaen has

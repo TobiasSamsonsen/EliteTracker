@@ -4,13 +4,13 @@
    numbers. */
 
 // The version the page's text describes; a newer one in the report raises a note.
-const PAGE_VERSION = 'elo-v16.0';
+const PAGE_VERSION = 'elo-v17.0';
 // Not in the report: the xG margin and its smoothing (model/elo.py) and the
 // grid's goal cap (model/attack_defence.py).
 const XG_MARGIN = 0.12;
 const XG_SMOOTHING = 0.25;
 const GOAL_CAP = 8;
-// elo-v16.0's settings, for the figures until the report is in (or if it
+// elo-v17.0's settings (unchanged since elo-v16.0), for the figures until the report is in (or if it
 // never comes).
 const DEFAULTS = {
   k_factor: 30, home_advantage: 60, xg_alpha: 0.3, draw_base: 0.26, draw_scale: 375,
@@ -132,6 +132,15 @@ function scorelines(grid, odds) {
   }));
 }
 
+/* model/pricing.py goal_rates with the table stakes: the home side's expected
+   goals times e^(ψ·Π diff), the away side's divided by it; `stakesElo` is the
+   Elo the stakes add (STAKES_ELO · Π diff, as the report carries it). */
+function tiltForStakes(rates, stakesElo, stakes) {
+  if (!stakesElo || !stakes) return rates;
+  const tilt = Math.exp(stakes.goals * (stakesElo / stakes.elo));
+  return [rates[0] * tilt, rates[1] / tilt];
+}
+
 /* model/stakes.py pressure. */
 function pressure(distance, left, tau) {
   return Math.exp(-Math.max(0, distance - 1) / (tau * Math.max(left, 1)));
@@ -158,10 +167,12 @@ const TEXT = {
     barsAria: 'Stablede søyler: oddsene fra Elo, fra målmodellen og blandet',
     heatAria: 'Rutenett: sjansen for hvert resultat, hjemmelagets mål nedover og bortelagets bortover',
     homeGoals: 'Hjemmelagets mål', awayGoals: 'Bortelagets mål',
-    eloLine: 'Elo: Δ = {home} + {h}{surface} − {away} = {gap}.',
+    eloLine: 'Elo: Δ = {home} + {h}{surface}{stakes} − {away} = {gap}.',
     surface: ' + {s} (underlag)',
+    stakes: ' + {s} (tabellpress)',
     goalsLine: 'Målmodellen: {home} {lam} – {mu} {away} i forventede mål.',
-    published: 'Publisert for kampen {date}, med tabellinnsats: hjemmeseier {h}, uavgjort {d}, borteseier {a}.',
+    published: 'Publisert for kampen {date}: hjemmeseier {h}, uavgjort {d}, borteseier {a}.',
+    publishedStakes: 'Publisert for kampen {date}, med tabellinnsats: hjemmeseier {h}, uavgjort {d}, borteseier {a}.',
     top: 'Mest sannsynlige resultater: {list}.',
     sameClub: 'Velg to forskjellige klubber.',
     noReport: 'Dagens tall kunne ikke lastes, så figurene med klubber står tomme.',
@@ -194,10 +205,12 @@ const TEXT = {
     barsAria: 'Stacked bars: the odds from Elo, from the goals model and blended',
     heatAria: 'Grid: the chance of each scoreline, home goals down and away goals across',
     homeGoals: 'Home goals', awayGoals: 'Away goals',
-    eloLine: 'Elo: Δ = {home} + {h}{surface} − {away} = {gap}.',
+    eloLine: 'Elo: Δ = {home} + {h}{surface}{stakes} − {away} = {gap}.',
     surface: ' + {s} (surface)',
+    stakes: ' + {s} (table stakes)',
     goalsLine: 'Goals model: {home} {lam} – {mu} {away} in expected goals.',
-    published: 'Published for the match on {date}, with table stakes: home win {h}, draw {d}, away win {a}.',
+    published: 'Published for the match on {date}: home win {h}, draw {d}, away win {a}.',
+    publishedStakes: 'Published for the match on {date}, with table stakes: home win {h}, draw {d}, away win {a}.',
     top: 'Likeliest scorelines: {list}.',
     sameClub: 'Pick two different clubs.',
     noReport: 'Today’s numbers could not be loaded, so the figures with clubs are empty.',
@@ -551,9 +564,14 @@ function setupMatch(root) {
     const away = row(awayId);
     const grass = m.surface ? m.surface.grass : null;
     const edge = grass && grass.includes(homeId) !== grass.includes(awayId) ? m.surface.edge : 0;
-    const gap = home.rating + edge + m.home_advantage - away.rating;
+    // A published match that is both sides' next in the run-in carries table stakes
+    // (`stakes_elo`, Elo for the home side); the pair is priced with them, so the
+    // figure's odds are the published ones. Any other pair has none.
+    const fixture = data.fixtures.find((match) => match.home_id === homeId && match.away_id === awayId);
+    const stakes = fixture && fixture.stakes_elo ? fixture.stakes_elo : 0;
+    const gap = home.rating + edge + stakes + m.home_advantage - away.rating;
     const elo = eloOdds(gap, m);
-    const [lam, mu] = goalRates(ad.teams[homeId], ad.teams[awayId], ad);
+    const [lam, mu] = tiltForStakes(goalRates(ad.teams[homeId], ad.teams[awayId], ad), stakes, m.stakes);
     const grid = scoreGrid(lam, mu, ad.rho);
     const own = gridOdds(grid);
     const blended = blendOdds(elo, own, ad.outcome_blend);
@@ -570,17 +588,17 @@ function setupMatch(root) {
     const top = cells.flatMap((cellRow, i) => cellRow.map((value, j) => [i, j, value]))
       .sort((a, b) => b[2] - a[2]).slice(0, 5)
       .map(([i, j, value]) => `${i}–${j} ${pct(value)}`).join(', ');
-    const fixture = data.fixtures.find((match) => match.home_id === homeId && match.away_id === awayId);
     const lines = [
       t('eloLine', {
         home: fmt(home.rating), h: fmt(m.home_advantage), away: fmt(away.rating), gap: signed(gap),
         surface: edge ? t('surface', { s: fmt(edge) }) : '',
+        stakes: stakes ? t('stakes', { s: signed(stakes, 1) }) : '',
       }),
       t('goalsLine', { home: home.team, away: away.team, lam: fmt(lam, 2), mu: fmt(mu, 2) }),
       t('top', { list: top }),
     ];
     if (fixture) {
-      lines.push(t('published', {
+      lines.push(t(stakes ? 'publishedStakes' : 'published', {
         date: shortDate(fixture.date), h: pct(fixture.home_win), d: pct(fixture.draw), a: pct(fixture.away_win),
       }));
     }

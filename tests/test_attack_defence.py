@@ -2,6 +2,8 @@
 
 import math
 
+import pytest
+
 from elitetracker.model.attack_defence import (
     ADConfig, AttackDefence, blend_outcomes, conditional_scorelines, outcome_probabilities, score_grid, top_scorelines,
 )
@@ -136,6 +138,18 @@ def test_copy_is_independent_and_rates_against_average_are_readable():
     assert twin.attack["A"] > model.attack["A"]
     scored, conceded = model.rates_against_average("A", "eliteserien", 2020)
     assert scored > conceded > 0
+
+
+def test_the_average_clubs_rates_are_symmetric():
+    """Against an average side a club's log scoring rate and log conceding rate
+    average to the same number across the division: the average side finishes as
+    the division's average does, whatever that is."""
+    data = slices((2020, "eliteserien", [match("1", "2020-05-01", "A", "B", 2, 0)]))
+    model = AttackDefence.from_slices(data, ADConfig(k=0.1)).replay(data[0].matches)
+    model.attack, model.defence = {"A": 0.3, "B": -0.1}, {"A": 0.05, "B": 0.15}
+    model.finishing = {"A": 0.4, "B": 0.1}
+    rates = [model.rates_against_average(club, "eliteserien", 2020) for club in ("A", "B")]
+    assert sum(math.log(scored) for scored, _ in rates) == pytest.approx(sum(math.log(conceded) for _, conceded in rates))
 
 
 def test_blend_outcomes_interpolates_between_elo_and_the_grid():
