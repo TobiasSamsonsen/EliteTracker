@@ -824,9 +824,10 @@ before shipping, as the rules ask:
       `research xg-obos --seasons 2020-2026` if it ever appears.
 - [ ] Re-test the offseason pull (0.88 vs 1.00) after 2027, when the modern era has
       one more season in it. The case is written up under elo-v11.
-- [ ] Sofascore also has xG for Eliteserien. Comparing it against fotmob's on the
-      same 1,600 matches would say how much of the model's xG noise is the provider's,
-      and an average of the two would be a cheap variance reduction if they disagree.
+- [x] Sofascore's Eliteserien xG against fotmob's — done and closed: the two feeds
+      agree (886 matches with both, 3.17 against 3.08 a match, r 0.857) and averaging
+      them in is worth nothing (+0.00010 / +0.00030). See elo-v13.0, "1.5 provider
+      calibration". Not to be re-run.
 
 - [x] Rebuild and re-upload the past-seasons archive: done on elo-v16.0
       (`past-seasons.yml` on a914f25, 2026-10-17), so 2015–2025 carry
