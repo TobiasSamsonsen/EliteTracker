@@ -1338,6 +1338,27 @@ test('a home side priced up by the re-rating gains the same share on the card', 
   assert.ok(shown.home_win > 0.2 && shown.away_win < 0.55);
   assert.ok(Math.abs(shown.home_win + shown.draw + shown.away_win - 1) < 1e-12);
 });
+/* Which locks a fixture is priced after: those of earlier weeks only. */
+eval(pick('weekStart') + pick('whatIfStages'));
+
+test('weeks start on Monday, in order as text', () => {
+  assert.equal(weekStart('2026-11-21'), '2026-11-16'); // a Saturday
+  assert.equal(weekStart('2026-11-22'), '2026-11-16'); // the Sunday ends the same week
+  assert.equal(weekStart('2026-11-23'), '2026-11-23'); // a Monday starts the next
+  assert.ok(weekStart('2026-12-31') < weekStart('2027-01-04'));
+});
+
+test('a locked fixture moves only the fixtures of later weeks', () => {
+  const games = ['2026-11-21', '2026-11-22', '2026-11-28', '2026-11-29', '2026-12-05'].map((date) => ({ game: { date } }));
+  // Nothing locked: every fixture at the published ratings.
+  assert.deepEqual(whatIfStages(games, []), [0, 0, 0, 0, 0]);
+  // A lock this Sunday leaves Saturday's match, and the Sunday's, alone.
+  assert.deepEqual(whatIfStages(games, [1]), [0, 0, 1, 1, 1]);
+  // Locks next week leave this week as it was, and count for the week after.
+  assert.deepEqual(whatIfStages(games, [2, 3]), [0, 0, 0, 0, 2]);
+  assert.deepEqual(whatIfStages(games, [0, 2]), [0, 0, 1, 1, 2]);
+});
+
 eval(pick('runInRows'));
 
 test('run-in rows read each fixture from both sides, easiest run-in first', () => {

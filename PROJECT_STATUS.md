@@ -846,7 +846,7 @@ before shipping, as the rules ask:
       chances move. The clubs are re-rated for the locks: the season's Elo and
       attack/defence updates are replayed in the browser from the report's `rerate`
       (a changed result keeps its xG; a locked fixture counts as played after the rest),
-      the fixtures still to play are priced again, and the season is played 50,000 times
+      the fixtures still to play are priced again (each only on the locked fixtures of earlier weeks, so a week's own odds stay as they were whatever is locked in it or later; a changed result counts for all), and the season is played 50,000 times
       in a worker, twice on the same draws, as it stands and with the locks. The published
       chances and the cards' odds move by the difference, so it fits the static host and
       an empty page matches the Table. The replay is held to the Python model by a golden

@@ -2737,6 +2737,25 @@ function buildRatingChanges(careers) {
 }
 
 /* ISO week number from an ISO date string. */
+/* The Monday that starts a date's ISO week, as YYYY-MM-DD: weeks in order,
+   the same weeks `isoWeek` numbers. */
+function weekStart(dateStr) {
+  const d = new Date(`${dateStr}T12:00:00Z`);
+  d.setUTCDate(d.getUTCDate() + 1 - (d.getUTCDay() || 7));
+  return d.toISOString().slice(0, 10);
+}
+
+/* Which locked fixtures each fixture is priced after: those in earlier weeks
+   only, so a score set this week, or later, leaves this week's odds as they
+   were. `games` are the fixtures in order ({ game }), `locked` the indices of
+   the locked ones. Returns, per fixture, how many of `locked` (taken in order)
+   come in weeks before its own. */
+function whatIfStages(games, locked) {
+  const weeks = games.map(({ game }) => weekStart(game.date));
+  const lockedWeeks = locked.map((i) => weeks[i]);
+  return weeks.map((week) => lockedWeeks.filter((other) => other < week).length);
+}
+
 function isoWeek(dateStr) {
   const d = new Date(`${dateStr}T12:00:00Z`);
   const day = d.getUTCDay() || 7;
@@ -5059,11 +5078,13 @@ function whatIfModel(report, rated) {
   return { ...report.model, attack_defence: { ...ad, teams: { ...ad.teams, ...rated.teams } } };
 }
 
-/* Every fixture priced the way the compare tool does it, at the ratings of
-   `rated` (null: the report's), with the grid its score is drawn from. */
-function whatIfPrice(report, prepared, rated) {
+/* Every fixture (or those at `indices`) priced the way the compare tool does
+   it, at the ratings of `rated` (null: the report's), with the grid its score
+   is drawn from. */
+function whatIfPrice(report, prepared, rated, indices = null) {
   const model = whatIfModel(report, rated);
-  return prepared.games.map(({ home, away, game }) => {
+  const games = indices ? indices.map((i) => prepared.games[i]) : prepared.games;
+  return games.map(({ home, away, game }) => {
     const homeRating = rated ? rated.elo[game.home_id] : game.home_rating;
     const awayRating = rated ? rated.elo[game.away_id] : game.away_rating;
     const odds = matchOdds(model, homeRating + surfaceEdge(model, game.home_id, game.away_id), awayRating);
@@ -5207,7 +5228,8 @@ function whatIfStepper(side, name, value, onStep) {
     button.addEventListener('click', () => onStep(side, dir));
     return button;
   };
-  box.append(arrow(1), el('span', `whatif-step__value${value == null ? ' is-empty' : ''}`, value == null ? '–' : String(value)), arrow(-1));
+  // No score yet: an empty slot, waiting to be filled.
+  box.append(arrow(1), el('span', `whatif-step__value${value == null ? ' is-empty' : ''}`, value == null ? '' : String(value)), arrow(-1));
   return box;
 }
 
@@ -5229,7 +5251,21 @@ function whatIfCard(item, step, set, shown, auto) {
   const date = el('div', 'played-card__date', formatDate(match.date)
     + (match.round ? ` · ${t('played.round', { n: match.round })}` : '')
     + (!played && match.time ? ` · ${match.time}` : ''));
-  if (lock) date.appendChild(el('span', 'whatif-flag', t(played ? 'whatif.changed' : auto ? 'whatif.filled' : 'whatif.locked')));
+  // A set score is flagged in the date line, and the flag is its undo: back
+  // to the real score of a result, or no score on a fixture.
+  if (lock) {
+    const label = played ? t('whatif.was', { score: `${actual[0]}–${actual[1]}` }) : t(auto ? 'whatif.filled' : 'whatif.locked');
+    const undo = played ? t('whatif.backTo', { score: `${actual[0]}–${actual[1]}` }) : t('whatif.clear');
+    const flag = el('button', 'whatif-flag', label);
+    flag.type = 'button';
+    flag.title = undo;
+    flag.setAttribute('aria-label', `${label}: ${undo}`);
+    const icon = svgEl('svg', { viewBox: '0 0 24 24', width: 10, height: 10, 'aria-hidden': 'true', focusable: 'false', fill: 'none', stroke: 'currentColor', 'stroke-width': 3, 'stroke-linecap': 'round' });
+    icon.appendChild(svgEl('path', { d: 'M6 6l12 12M18 6L6 18' }));
+    flag.appendChild(icon);
+    flag.addEventListener('click', () => set(item, null));
+    date.appendChild(flag);
+  }
   card.appendChild(date);
 
   const matchup = el('div', 'played-card__matchup');
@@ -5264,12 +5300,6 @@ function whatIfCard(item, step, set, shown, auto) {
     }
     foot.appendChild(chips);
   }
-  if (lock) {
-    const back = el('button', 'whatif-reset', played ? t('whatif.backTo', { score: `${actual[0]}–${actual[1]}` }) : t('whatif.clear'));
-    back.type = 'button';
-    back.addEventListener('click', () => set(item, null));
-    foot.appendChild(back);
-  }
   card.appendChild(foot);
   return card;
 }
@@ -5292,8 +5322,7 @@ function renderWhatIf(report, body) {
   const cards = new Map();
   let runs = null;
   let failure = null;
-  // The clubs as the locks leave them, and the fixtures priced at them.
-  let rated = null;
+  // The fixtures priced at the clubs as the locks before them leave them.
   let priced = null;
 
   const wrap = el('div', 'whatif');
@@ -5305,32 +5334,47 @@ function renderWhatIf(report, body) {
   impact.setAttribute('aria-label', t('whatif.impact.title'));
   const left = el('div', 'whatif__matches');
   left.append(list, bar);
-  const note = el('p', 'explore-note whatif__note', t('whatif.note'));
-  if (!prepared.rerate) note.append(' ', t('whatif.noRerate'));
-  wrap.append(note, left, impact);
+  // How it works sits under the chances, closed; only a report that cannot
+  // re-rate says so up front, since it changes what the numbers mean.
+  if (!prepared.rerate) wrap.appendChild(el('p', 'explore-note whatif__note', t('whatif.noRerate')));
+  wrap.append(left, impact);
+  let howOpen = false;
   body.replaceChildren(wrap);
   bar.addEventListener('click', () => impact.scrollIntoView({ behavior: 'smooth', block: 'start' }));
   // The summary bar sits above the phone's tab bar, whatever height that has.
   const tabs = $('#mobilebar');
   wrap.style.setProperty('--whatif-bar-bottom', `${tabs && getComputedStyle(tabs).display !== 'none' ? tabs.offsetHeight : 0}px`);
 
-  // Re-rate the clubs for the locks, a few milliseconds: the season's 240
-  // matches replayed, then every fixture priced again.
+  // Re-rate the clubs for the locks, a few milliseconds a replay of the
+  // season's 240 matches. A changed result counts for every fixture; a locked
+  // fixture counts as played, in the order the fixtures come, only for the
+  // fixtures of later weeks: this week's odds stay as they were whatever is
+  // set this week or after. One replay per week with locks before it.
   const rerate = () => {
     const locks = activeLocks();
-    rated = null;
     priced = null;
     if (!locks.size || !prepared.rerate) return;
     const changed = new Map();
-    const appended = [];
     for (const [id, score] of locks) if (prepared.played.has(id)) changed.set(id, score);
-    // A locked fixture counts as played, in the order the fixtures come.
-    for (const { game } of prepared.games) {
+    const kickoff = (i) => `${prepared.games[i].game.date} ${prepared.games[i].game.time || ''}`;
+    const locked = prepared.games.map((_, i) => i)
+      .filter((i) => locks.has(String(prepared.games[i].game.match_id)))
+      .sort((a, b) => kickoff(a).localeCompare(kickoff(b)) || a - b);
+    const rows = locked.map((i) => {
+      const { game } = prepared.games[i];
       const score = locks.get(String(game.match_id));
-      if (score) appended.push([String(game.match_id), String(game.home_id), String(game.away_id), score[0], score[1], null, null, null, null]);
+      return [String(game.match_id), String(game.home_id), String(game.away_id), score[0], score[1], null, null, null, null];
+    });
+    const stages = whatIfStages(prepared.games, locked);
+    const byStage = new Map();
+    stages.forEach((stage, i) => (byStage.get(stage) || byStage.set(stage, []).get(stage)).push(i));
+    priced = new Array(prepared.games.length);
+    for (const [stage, indices] of byStage) {
+      const prices = !stage && !changed.size
+        ? indices.map((i) => prepared.baseline[i])
+        : whatIfPrice(report, prepared, rerateSeason(prepared.rerate, changed, rows.slice(0, stage)), indices);
+      indices.forEach((at, k) => { priced[at] = prices[k]; });
     }
-    rated = rerateSeason(prepared.rerate, changed, appended);
-    priced = whatIfPrice(report, prepared, rated);
   };
 
   const shownFor = (match) => {
@@ -5424,7 +5468,9 @@ function renderWhatIf(report, body) {
       tr.appendChild(points);
       for (const { band, before, after } of entry.bands) {
         const cell = el('td');
-        cell.appendChild(el('span', 'whatif-chance', pct(after, 1)));
+        // A chance that rounds to nothing recedes, so the live ones stand out.
+        const text = pct(after, 1);
+        cell.appendChild(el('span', `whatif-chance${text === '—' ? ' is-nil' : ''}`, text));
         // More of a good band is good news, more of a bad one is not.
         const good = band.first < (count + 1) / 2;
         cell.appendChild(delta((after - before) * 100, 1, good ? after > before : after < before));
@@ -5436,7 +5482,14 @@ function renderWhatIf(report, body) {
     const scroller = el('div', 'whatif-table__wrap');
     scroller.appendChild(table);
     impact.appendChild(scroller);
-    impact.appendChild(el('p', 'explore-note', t('whatif.tableNote')));
+    // The method and how to read the table, closed until asked for; it stays
+    // as the reader left it while the panel is redrawn.
+    const how = el('details', 'luck-how whatif-how');
+    how.open = howOpen;
+    how.addEventListener('toggle', () => { howOpen = how.open; });
+    how.appendChild(el('summary', 'luck-how__title', t('whatif.how')));
+    how.append(el('p', '', t('whatif.note')), el('p', '', t('whatif.tableNote')));
+    impact.appendChild(how);
   };
 
   // The locks in the address, so a reload or a shared link brings them back.
@@ -5577,6 +5630,8 @@ function renderWhatIf(report, body) {
   };
   const viewsRow = views();
   // Built once, so the pill slides; only its marks follow the state.
+  // Always shown, Your changes disabled until there is one: a switch that came
+  // in with the first change pushed every card down under the pointer.
   const showViews = (count) => {
     for (const button of viewsRow.querySelectorAll('button')) {
       button.setAttribute('aria-pressed', String(state.whatIfView === button.dataset.view));
@@ -5598,7 +5653,7 @@ function renderWhatIf(report, body) {
       fill: active.dataset.fill,
       view: active.dataset.view,
       chip: active.classList.contains('whatif-chip') ? [...active.parentNode.children].indexOf(active) : -1,
-      reset: active.classList.contains('whatif-reset'),
+      reset: active.classList.contains('whatif-flag'),
     };
   };
 
