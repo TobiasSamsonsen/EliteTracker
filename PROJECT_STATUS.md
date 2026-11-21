@@ -120,6 +120,9 @@ from 2020 and OBOS-ligaen from 2023 -- 1.06251; Eliteserien 1.05915). The closin
 | elo-v14.0 | 1.00062 | 5.8 % | 6.0 % | 7.4 % | -0.00190 (-3.99) |
 | elo-v15.0 | 1.00030 | 5.8 % | 6.0 % | 7.3 % | -0.00032 (-1.60) |
 | elo-v16.0 | 0.99966 | 5.9 % | 6.0 % | 7.4 % | -0.00064 (-2.60) |
+| elo-v17.0 | 0.99966 | 5.9 % | 6.0 % | 7.4 % | 0.00000 (0.00) |
+
+elo-v17.0 scores exactly as elo-v16.0 here: its changes (stakes on the published odds of a side's next match only, the simulation's last tiebreak) touch the odds of unplayed fixtures and the season simulation, not the walk-forward odds of the 4,800 past matches. elo-v16.1 is not scored (the match odds are unchanged).
 
 elo-v11 shows nothing because its gain was data (OBOS-ligaen xG), which every
 version reads here; elo-v10 needed its era switch passed explicitly, as its
