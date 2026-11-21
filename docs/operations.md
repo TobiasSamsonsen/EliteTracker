@@ -36,7 +36,10 @@ not run any of these: run them before pushing.
   only, deploys to Firebase, and on a push re-uploads the current season as
   the `current` asset. The same build writes the route pages and the
   sitemap, and fills in any `timeline-<season>.json` the archive lacks (see
-  below).
+  below). Firebase Hosting keeps only the latest releases (Hosting, Release
+  history, Release storage settings; set 2026-11-21). Unlimited, it kept every
+  deploy: a matchday adds a few MB, but a model release changes every report
+  (~330 MB), and the copies reached 9.7 of the project's 10 GB.
 - **`past-seasons.yml`**, by hand: rebuilds every past season, one job each,
   replaces the `past-seasons` asset and starts a deploy.
 

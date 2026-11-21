@@ -52,7 +52,7 @@
     document.documentElement.dataset.resolvedTheme === 'dark' ? '#080f1c' : '#e8edf5';
 </script>
 <link rel="stylesheet" href="/styles.css">
-<link rel="icon" href="/icons/mark.svg" type="image/svg+xml">
+<link rel="icon" href="/icons/favicon.svg" type="image/svg+xml">
 </head>
 <body>
 <!-- The season mountain's contour map, drawn by renderBackdrop. -->
@@ -68,14 +68,12 @@
     <div class="masthead__views">
       <div class="switch" role="group" data-i18n="aria.chooseView" data-i18n-attr="aria-label" aria-label="Choose a view">
         <span class="switch__thumb" aria-hidden="true" hidden></span>
-        <button type="button" data-view="grid" aria-pressed="true"><span data-i18n="tab.grid">Grid</span></button>
+        <button type="button" data-view="overview" aria-pressed="true"><span data-i18n="tab.overview">Overview</span></button>
         <button type="button" data-view="table" aria-pressed="false"><span data-i18n="tab.table">Table</span></button>
         <button type="button" data-view="matches" aria-pressed="false"><span data-i18n="tab.matches">Matches</span></button>
-        <button type="button" data-view="ladder" aria-pressed="false"><span data-i18n="tab.ladder">Ladder</span></button>
-        <button type="button" data-view="compare" aria-pressed="false"><span data-i18n="tab.compare">Compare</span></button>
+        <button type="button" data-view="grid" aria-pressed="false"><span data-i18n="tab.grid">Grid</span></button>
         <button type="button" data-view="explore" aria-pressed="false"><span data-i18n="tab.explore">Explore</span></button>
-        <button type="button" data-view="model" aria-pressed="false"><span data-i18n="tab.model">Model Card</span></button>
-        <button type="button" class="views-more" id="views-more" aria-pressed="false" aria-expanded="false" aria-controls="views-more-menu" hidden><span data-i18n="mob.more">More</span><svg viewBox="0 0 12 12" width="10" height="10" aria-hidden="true" focusable="false"><path d="M2.5 4.5 6 8l3.5-3.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+        <button type="button" class="views-more" id="views-more" aria-pressed="false" aria-expanded="false" aria-controls="views-more-menu"><span data-i18n="mob.more">More</span><svg viewBox="0 0 12 12" width="10" height="10" aria-hidden="true" focusable="false"><path d="M2.5 4.5 6 8l3.5-3.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
       </div>
     </div>
     <div class="masthead__end">
@@ -91,10 +89,10 @@
      existing click wiring, ?view= deep links and active marking all apply. -->
 <nav class="mobilebar" id="mobilebar" data-i18n="aria.chooseView" data-i18n-attr="aria-label" aria-label="Choose a view">
     <span class="mobilebar__thumb" aria-hidden="true" hidden></span>
-    <button type="button" class="mobilebar__item" data-view="grid" aria-pressed="true"><svg class="mobilebar__icon" viewBox="0 0 16 16" aria-hidden="true" focusable="false" fill="currentColor"><rect x="1.5" y="1.5" width="3.6" height="3.6" rx=".5"/><rect x="6.2" y="1.5" width="3.6" height="3.6" rx=".5"/><rect x="10.9" y="1.5" width="3.6" height="3.6" rx=".5"/><rect x="1.5" y="6.2" width="3.6" height="3.6" rx=".5"/><rect x="6.2" y="6.2" width="3.6" height="3.6" rx=".5"/><rect x="10.9" y="6.2" width="3.6" height="3.6" rx=".5"/><rect x="1.5" y="10.9" width="3.6" height="3.6" rx=".5"/><rect x="6.2" y="10.9" width="3.6" height="3.6" rx=".5"/><rect x="10.9" y="10.9" width="3.6" height="3.6" rx=".5"/></svg><span data-i18n="mob.grid">Grid</span></button>
+    <button type="button" class="mobilebar__item" data-view="overview" aria-pressed="true"><svg class="mobilebar__icon" viewBox="0 0 16 16" aria-hidden="true" focusable="false" fill="currentColor"><rect x="1.5" y="1.5" width="6" height="7" rx=".8"/><rect x="9" y="1.5" width="5.5" height="4" rx=".8"/><rect x="9" y="7" width="5.5" height="7.5" rx=".8"/><rect x="1.5" y="10" width="6" height="4.5" rx=".8"/></svg><span data-i18n="mob.overview">Overview</span></button>
     <button type="button" class="mobilebar__item" data-view="table" aria-pressed="false"><svg class="mobilebar__icon" viewBox="0 0 16 16" aria-hidden="true" focusable="false" fill="currentColor"><rect x="1.5" y="2.5" width="13" height="2.2" rx=".6"/><rect x="1.5" y="6.9" width="13" height="2.2" rx=".6"/><rect x="1.5" y="11.3" width="13" height="2.2" rx=".6"/></svg><span data-i18n="mob.table">Table</span></button>
     <button type="button" class="mobilebar__item" data-view="matches" aria-pressed="false"><svg class="mobilebar__icon" viewBox="0 0 16 16" aria-hidden="true" focusable="false" fill="currentColor"><rect x="1.8" y="3" width="12.4" height="11.2" rx="1.6" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M1.8 6.6h12.4" stroke="currentColor" stroke-width="1.6"/><path d="M5.2 1.6v2.6M10.8 1.6v2.6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg><span data-i18n="mob.matches">Matches</span></button>
-    <button type="button" class="mobilebar__item" data-view="ladder" aria-pressed="false"><svg class="mobilebar__icon" viewBox="0 0 16 16" aria-hidden="true" focusable="false" fill="currentColor"><rect x="1.5" y="9" width="3.4" height="5.5" rx=".6"/><rect x="6.3" y="5" width="3.4" height="9.5" rx=".6"/><rect x="11.1" y="1.5" width="3.4" height="13" rx=".6"/></svg><span data-i18n="mob.ladder">Ladder</span></button>
+    <button type="button" class="mobilebar__item" data-view="grid" aria-pressed="false"><svg class="mobilebar__icon" viewBox="0 0 16 16" aria-hidden="true" focusable="false" fill="currentColor"><rect x="1.5" y="1.5" width="3.6" height="3.6" rx=".5"/><rect x="6.2" y="1.5" width="3.6" height="3.6" rx=".5"/><rect x="10.9" y="1.5" width="3.6" height="3.6" rx=".5"/><rect x="1.5" y="6.2" width="3.6" height="3.6" rx=".5"/><rect x="6.2" y="6.2" width="3.6" height="3.6" rx=".5"/><rect x="10.9" y="6.2" width="3.6" height="3.6" rx=".5"/><rect x="1.5" y="10.9" width="3.6" height="3.6" rx=".5"/><rect x="6.2" y="10.9" width="3.6" height="3.6" rx=".5"/><rect x="10.9" y="10.9" width="3.6" height="3.6" rx=".5"/></svg><span data-i18n="mob.grid">Grid</span></button>
     <button type="button" class="mobilebar__item mobilebar__more" id="more-button"
             aria-expanded="false" aria-controls="more-sheet"><svg class="mobilebar__icon" viewBox="0 0 16 16" aria-hidden="true" focusable="false" fill="currentColor"><circle cx="3" cy="8" r="1.6"/><circle cx="8" cy="8" r="1.6"/><circle cx="13" cy="8" r="1.6"/></svg><span data-i18n="mob.more">More</span></button>
 </nav>
@@ -103,8 +101,9 @@
   <div class="sheet__scrim" data-close-sheet></div>
   <div class="sheet__panel" role="dialog" aria-modal="true" data-i18n="aria.moreViews" data-i18n-attr="aria-label" aria-label="More views">
     <div class="sheet__grip" aria-hidden="true"></div>
-      <button type="button" class="sheet__item" data-view="compare" aria-pressed="false"><span data-i18n="mob.compare">Compare clubs</span></button>
       <button type="button" class="sheet__item" data-view="explore" aria-pressed="false"><span data-i18n="mob.explore">Explore</span></button>
+      <button type="button" class="sheet__item" data-view="ladder" aria-pressed="false"><span data-i18n="mob.ladder">Ladder</span></button>
+      <button type="button" class="sheet__item" data-view="compare" aria-pressed="false"><span data-i18n="mob.compare">Compare clubs</span></button>
       <button type="button" class="sheet__item" data-view="model" aria-pressed="false"><span data-i18n="mob.model">Model card</span></button>
       <div class="sheet__divider" aria-hidden="true"></div>
       <div class="sheet__setting">
@@ -124,15 +123,16 @@
   </div>
 </div>
 
-<!-- The views the masthead has no room for (fitViews), as on a phone's More sheet. -->
+<!-- More: Ladder, Compare and the model card always; a primary view only when the masthead has no room for it (fitViews). -->
 <div id="views-more-menu" class="popover-menu" role="group" data-i18n="aria.moreViews" data-i18n-attr="aria-label" aria-label="More views" hidden>
-  <button type="button" class="popover-menu__btn" data-view="grid" aria-pressed="false" hidden><span data-i18n="tab.grid">Grid</span></button>
+  <button type="button" class="popover-menu__btn" data-view="overview" aria-pressed="false" hidden><span data-i18n="tab.overview">Overview</span></button>
   <button type="button" class="popover-menu__btn" data-view="table" aria-pressed="false" hidden><span data-i18n="tab.table">Table</span></button>
   <button type="button" class="popover-menu__btn" data-view="matches" aria-pressed="false" hidden><span data-i18n="tab.matches">Matches</span></button>
-  <button type="button" class="popover-menu__btn" data-view="ladder" aria-pressed="false" hidden><span data-i18n="tab.ladder">Ladder</span></button>
-  <button type="button" class="popover-menu__btn" data-view="compare" aria-pressed="false" hidden><span data-i18n="tab.compare">Compare</span></button>
+  <button type="button" class="popover-menu__btn" data-view="grid" aria-pressed="false" hidden><span data-i18n="tab.grid">Grid</span></button>
   <button type="button" class="popover-menu__btn" data-view="explore" aria-pressed="false" hidden><span data-i18n="tab.explore">Explore</span></button>
-  <button type="button" class="popover-menu__btn" data-view="model" aria-pressed="false" hidden><span data-i18n="tab.model">Model Card</span></button>
+  <button type="button" class="popover-menu__btn" data-view="ladder" aria-pressed="false"><span data-i18n="tab.ladder">Ladder</span></button>
+  <button type="button" class="popover-menu__btn" data-view="compare" aria-pressed="false"><span data-i18n="tab.compare">Compare</span></button>
+  <button type="button" class="popover-menu__btn" data-view="model" aria-pressed="false"><span data-i18n="tab.model">Model Card</span></button>
 </div>
 
 <!-- Division and season, opened from the masthead pill; out here so they open over the masthead. -->
@@ -193,6 +193,13 @@
         <p class="visually-hidden" id="timeline-note" data-i18n="timeline.note">Everything below uses only the results known on the day you pick.</p>
     </div>
 
+    <!-- Both divisions on one page: the races, the round, the movers and the Explore tools (renderOverview). No heading of its own. -->
+    <section data-section="overview" hidden>
+      <div class="panel">
+        <div class="overview" id="overview-body"></div>
+      </div>
+    </section>
+
     <!-- Signature: the finishing-position probability matrix. -->
     <section data-section="grid">
       <div class="panel">
@@ -205,6 +212,10 @@
             <div class="label" id="grid-count"></div>
             <button type="button" class="grid-anim-btn" id="grid-anim-play" aria-pressed="false" data-i18n="title.animateSeason" data-i18n-attr="title" title="Replay the season matchday by matchday"><span class="grid-anim-btn__icon" aria-hidden="true">▶</span><span class="grid-anim-btn__label" data-i18n="anim.play">Play season</span></button>
           </div>
+        </div>
+        <div class="tool-links">
+          <button type="button" data-open-tool="mountain" data-i18n="toollink.mountain">Season mountain →</button>
+          <button type="button" data-open-tool="races" data-i18n="toollink.races">Race lines →</button>
         </div>
         <div class="grid-anim-bar" id="grid-anim-controls" hidden>
           <span class="grid-anim-bar__when" id="grid-anim-when"></span>
@@ -323,6 +334,9 @@
           <div class="panel__tools">
             <button type="button" class="grid-anim-btn" id="ladder-anim-play" aria-pressed="false" data-i18n="title.animateSeason" data-i18n-attr="title" title="Replay the season matchday by matchday"><span class="grid-anim-btn__icon" aria-hidden="true">▶</span><span class="grid-anim-btn__label" data-i18n="anim.play">Play season</span></button>
           </div>
+        </div>
+        <div class="tool-links">
+          <button type="button" data-open-tool="attack" data-i18n="toollink.attack">Attack against defence →</button>
         </div>
         <div class="grid-anim-bar" id="ladder-anim-controls" hidden>
           <span class="grid-anim-bar__when" id="ladder-anim-when"></span>
@@ -460,6 +474,7 @@
 <script src="/thumbs.js" defer></script>
 <script src="/i18n.js" defer></script>
 <script src="/season-sim.js" defer></script>
+<script src="/share.js" defer></script>
 <script src="/app.js" defer></script>
 </body>
 </html>

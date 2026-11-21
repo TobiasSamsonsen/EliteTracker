@@ -23,7 +23,7 @@ Core model: Elo + xG attack/defence Poisson grid (version in `MODEL_VERSION`, `m
 - `simulation/`: Monte Carlo season outcomes (`season.py`, `history.py`)
 - `pipeline.py`: Central data builder connecting models to JSON report payloads
 - `api/server.py` & `build_site.py`: Live HTTP server and static JSON site generator
-- `public/`: Dependency-free vanilla JS/HTML frontend (`app.js`, `i18n.js`)
+- `public/`: Dependency-free vanilla JS/HTML frontend (`app.js`, `i18n.js`, `share.js`)
 - `docs/`: Lookup pages (`README.md` is the index): architecture, model, data and scraping rules, operations, frontend
 
 ---

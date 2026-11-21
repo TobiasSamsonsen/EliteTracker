@@ -20,9 +20,9 @@ const state = {
   rewindTimer: null,
   // Key of the league+season the compare pickers were last populated for.
   compareKey: '',
-  // Active view tab: 'grid', 'table', 'ladder', 'matches', 'compare', 'explore', 'team', 'model'
+  // Active view tab: 'overview', 'grid', 'table', 'ladder', 'matches', 'compare', 'explore', 'team', 'model'
   // ?view= still wins -- see applyViewParameter.
-  activeView: 'grid',
+  activeView: 'overview',
   // Open visualisation in the explore view (?viz=); null shows the gallery.
   exploreItem: null,
   _prevActiveView: null,
@@ -732,31 +732,6 @@ function openTool(id) {
   openExplore(id);
 }
 
-/* The address already carries what the reader built (?lock=, ?scenario=,
-   ?team=), so sharing it is copying it. */
-function copyLinkButton() {
-  const button = el('button', 'whatif-tool copy-link', t('share.copy'));
-  button.type = 'button';
-  button.addEventListener('click', async () => {
-    const url = window.location.href;
-    try {
-      await navigator.clipboard.writeText(url);
-    } catch {
-      const box = el('textarea');
-      box.value = url;
-      box.style.cssText = 'position:fixed;opacity:0';
-      document.body.appendChild(box);
-      box.select();
-      try { document.execCommand('copy'); } catch { /* nothing more to try */ }
-      box.remove();
-    }
-    button.textContent = t('share.copied');
-    clearTimeout(button.copiedTimer);
-    button.copiedTimer = setTimeout(() => { button.textContent = t('share.copy'); }, 1600);
-  });
-  return button;
-}
-
 function openScenario(report, teamId, position, trigger = null) {
   const club = report.table.findIndex((row) => String(row.team_id) === String(teamId));
   if (club < 0 || position < 1 || position > report.table.length || !scenarioAvailable(report)) return;
@@ -788,7 +763,11 @@ function openScenario(report, teamId, position, trigger = null) {
   close.type = 'button';
   close.setAttribute('aria-label', t('scenario.close'));
   close.addEventListener('click', () => closeScenario());
-  head.append(heading, copyLinkButton(), close);
+  // Shared as the club's chance of this place (share.js), or as the link.
+  head.append(heading, shareButton({
+    title: () => t('scenario.title', { team: row.team, place: ordinal(position) }),
+    image: () => shareFinish(report, row.team_id, position),
+  }), close);
 
   // The chance as the site's display figure, with what it is counted on in one quiet line.
   const chance = pct(row.position_probabilities[place], 1);
@@ -810,9 +789,12 @@ function openScenario(report, teamId, position, trigger = null) {
       if (token !== scenarioState.token || mine !== latest) return;
       heroSub.textContent = t('scenario.heroSub', { n: num(analysis.hits), total: num(sims), left: num(report.fixtures.length) });
       scenarioFill(body, report, club, analysis);
-      // The buttons the body now holds belong in the focus loop.
+      // The buttons the body now holds belong in the focus loop; focus stays
+      // where the reader had it (trapFocus moves it to the first button).
+      const active = document.activeElement;
       scenarioState.untrap?.();
       scenarioState.untrap = trapFocus(panel);
+      (panel.contains(active) && active !== document.body ? active : close).focus();
     }).catch(() => {
       if (token !== scenarioState.token || mine !== latest) return;
       body.replaceChildren(el('p', 'scenario__wait', t('scenario.failed')));
@@ -826,6 +808,9 @@ function openScenario(report, teamId, position, trigger = null) {
   const onKey = (event) => { if (event.key === 'Escape') closeScenario(); };
   document.addEventListener('keydown', onKey);
   Object.assign(scenarioState, { root, trigger, onKey, untrap: trapFocus(panel) });
+  // The popup opens on its close button, as before it had a share button
+  // ahead of it.
+  close.focus();
   scenarioUrl(`${row.team_id}:${position}`);
 
   load();
@@ -992,7 +977,7 @@ function scenarioTable(report, club, typical, keyClubs) {
     const place = el('td', 'scenario-table__pos');
     place.appendChild(el('span', '', String(i + 1)));
     const moved = now.position - (i + 1);
-    if (moved) place.appendChild(el('small', `scenario-table__move ${moved > 0 ? 'is-up' : 'is-down'}`, `${moved > 0 ? '▲' : '▼'}${Math.abs(moved)}`));
+    if (moved) place.appendChild(el('small', `scenario-table__move ${moved > 0 ? 'is-up' : 'is-down'}`, changeText(moved)));
     if (band) place.style.boxShadow = `inset 3px 0 0 ${bandColor(band, count)}`;
     const team = el('td', 'scenario-table__club');
     team.appendChild(scenarioSide(now));
@@ -1434,6 +1419,16 @@ function ordinalShort(n) {
   const suffix = ['th', 'st', 'nd', 'rd'][(n % 100 - 20) % 10] || ['th', 'st', 'nd', 'rd'][n % 100] || 'th';
   return `${n}${suffix}`;
 }
+
+/* One notation for the same fact in every view (DESIGN_PLAN, Round 1 item 4;
+   written out in docs/frontend.md). A rank standing alone is `3.` in
+   Norwegian and `#3` in English, each language's own way (a rank inside a
+   sentence stays an ordinal: "3rd place"); a
+   change is an arrow and its size, ▲ up and ▼ down, in the outcome colours,
+   with no sign (the arrow is the sign). Only for a change that rounds to
+   something: callers leave a zero out. */
+const rankText = (n) => (currentLang === 'no' ? `${n}.` : `#${n}`);
+const changeText = (value, digits = 0) => `${value > 0 ? '▲' : '▼'} ${num(Math.abs(value), digits)}`;
 
 /* ---------- legends ----------------------------------------------- */
 
@@ -2151,7 +2146,7 @@ function layoutLadder(teams, track, maxStack = 0) {
 
   if (list) {
     for (const team of teams) {
-      team._tip = `#${team._rank}  ${team.team}  ${Math.round(team.rating)}`;
+      team._tip = `${rankText(team._rank)}  ${team.team}  ${Math.round(team.rating)}`;
       team._top = `${LADDER_HEAD + (team._rank - 1) * LADDER_ROW}rem`;
       team._left = '0';
       team._x = along(fraction(team.rating));
@@ -2178,7 +2173,7 @@ function layoutLadder(teams, track, maxStack = 0) {
   const rowHeight = depth <= 1 ? 0 : 2.2;
 
   for (const team of teams) {
-    team._tip = `#${team._rank}  ${team.team}  ${Math.round(team.rating)}`;
+    team._tip = `${rankText(team._rank)}  ${team.team}  ${Math.round(team.rating)}`;
     team._top = `${0.5 + team._stack * rowHeight}rem`;
     team._left = `${pos(team.rating)}%`;
   }
@@ -2559,7 +2554,11 @@ function buildFixtureCard(fixture, stakes, report) {
     const lines = el('div', 'fixture__lines');
     for (const line of fixture.scorelines.slice(0, 4)) {
       const chip = el('span', 'fixture__line');
-      chip.textContent = `${line.home_goals}-${line.away_goals} ${pct(line.probability, 0)}`;
+      // The score reads first, its chance after it in a quieter tone: run
+      // together, "1-2 10 %" read as one string of digits.
+      const score = el('span', 'fixture__score');
+      score.textContent = `${line.home_goals}–${line.away_goals}`;
+      chip.append(score, ` ${pct(line.probability, 0)}`);
       chip.setAttribute(
         'aria-label',
         t('aria.scoreline', { score: `${line.home_goals}-${line.away_goals}`, pct: pct(line.probability, 1) })
@@ -2591,7 +2590,7 @@ function playedCard(match, ratingChanges) {
     if (info.change !== 0) {
       const up = info.change > 0;
       node.appendChild(el('span', `played-card__delta played-card__delta--${up ? 'up' : 'down'}`,
-        `${up ? '+' : ''}${info.change} ${up ? '\u25B2' : '\u25BC'}`));
+        changeText(info.change)));
     }
     return node;
   };
@@ -2817,9 +2816,9 @@ function setOwnClub(teamId) {
 }
 
 /* The hero's race: the clubs still contending for one band, side by side. A
-   band is open while some club's chance of it lies between 10 % and 90 %
-   (symmetric: a leader at 90 % leaves the rest 10 %). A club above 90 % is
-   through: shown first and muted, so a band of several places shows how
+   band is open while some club's chance of it lies between 10 % and 95 %. A
+   club from 95 % up is through (the site's one threshold for "as good as
+   certain"): shown first and muted, so a band of several places shows how
    many are left. One from 5 % up is shown as a contender, so an open race
    has its outsiders too. The reader's own club's first open band comes
    first, and the race is then that club and its RACE_RIVALS nearest in
@@ -2828,7 +2827,7 @@ function setOwnClub(teamId) {
    it. Null once every band is settled or the season is over. */
 const RACE_OPEN = 0.1;
 const RACE_SHOWN = 0.05;
-const RACE_SETTLED = 0.9;
+const RACE_SETTLED = 0.95;
 const RACE_RIVALS = 2;
 
 function heroRace(report, ownId) {
@@ -2894,6 +2893,7 @@ function heroMovers(report) {
     row: move.row,
     tone,
     figure: signed(move.change),
+    change: move.change,
     unit: t('hero.movers.unit'),
     sub: t('hero.movers.from', { from: num(move.before), to: num(move.now) }),
   });
@@ -2912,7 +2912,17 @@ function heroMovers(report) {
    in full turns to its best result (`scoreResult`). Undefined while the
    eve's report loads: the hero stays as it is until it is in. */
 function heroMatch(report) {
-  const { timeline, weeks, byWeek, index } = matchesTimeline(report);
+  const pick = weekMatch(report);
+  if (!pick) return pick;
+  return pick.result ? resultHero(report, pick.result) : fixtureHero(report, pick.fixture);
+}
+
+/* The match of the week as data, for the matches view's hero and the
+   overview: `{ fixture }` before it is played, `{ result }` (`scoreResult`)
+   after. `week` is the matches view's week index; null for the week the view
+   opens on. Null with no matches, undefined while the week's eve loads. */
+function weekMatch(report, week = state.matchesWeek) {
+  const { timeline, weeks, byWeek, index } = matchesTimeline(report, week);
   if (!timeline.length) return null;
   const items = byWeek.get(weeks[index]);
   const fixtures = items.filter((item) => !item.played).map((item) => item.match);
@@ -2920,27 +2930,32 @@ function heroMatch(report) {
   const eve = weekEve(report, items);
   if (eve === undefined) return undefined;
   if (!fixtures.length) {
-    return resultHero(report, results.map((match) => scoreResult(report, match, eve)).reduce((a, b) => (b.score > a.score ? b : a)));
+    return { result: results.map((match) => scoreResult(report, match, eve)).reduce((a, b) => (b.score > a.score ? b : a)) };
   }
   const ids = new Set(items.map((item) => item.match.match_id));
   const onEve = (eve?.fixtures || []).filter((match) => ids.has(match.match_id));
   const pick = onEve.length ? pickFixture(eve, onEve) : null;
   const played = pick && results.find((match) => match.match_id === pick.match_id);
-  if (played) return resultHero(report, scoreResult(report, played, eve));
+  if (played) return { result: scoreResult(report, played, eve) };
   // The live fixture, for today's odds; without an eve, or with its pick
   // moved out of the week, the live report chooses.
-  const fixture = (pick && fixtures.find((match) => match.match_id === pick.match_id)) || pickFixture(report, fixtures);
-  return fixtureHero(report, fixture);
+  return { fixture: (pick && fixtures.find((match) => match.match_id === pick.match_id)) || pickFixture(report, fixtures) };
 }
 
 /* The report as it stood the evening before a week's first match: the
    rewind's report for the last matchday before it, else the pre-season one.
    Undefined while it loads (the hero is drawn again when it is in), null
    where there is none. */
-const weekEves = new Map(); // url -> every division's report, or null
 function weekEve(report, items) {
   const first = items.reduce((min, item) => (item.match.date < min ? item.match.date : min), items[0].match.date);
-  const day = (report.league.matchdays || []).findLast((matchday) => matchday.date < first)?.date || report.league.preseason;
+  return divisionOnDay(report, (report.league.matchdays || []).findLast((matchday) => matchday.date < first)?.date || report.league.preseason);
+}
+
+/* A division's report as of an earlier day of its season, fetched once and
+   kept: undefined while it loads (the matches hero and the overview are drawn
+   again when it is in), null where there is none. */
+const weekEves = new Map(); // url -> every division's report, or null
+function divisionOnDay(report, day) {
   if (!day) return null;
   const url = reportUrl(report.league.season, day);
   if (!weekEves.has(url)) {
@@ -2948,7 +2963,10 @@ function weekEve(report, items) {
     fetchedReport(url)
       .then((all) => { weekEves.set(url, applyShortNames(all)); })
       .catch(() => { weekEves.set(url, null); })
-      .then(() => { if (state.activeView === 'matches') renderRace(state.reports[state.league]); });
+      .then(() => {
+        if (state.activeView === 'matches') renderRace(state.reports[state.league]);
+        if (state.activeView === 'overview') renderOverview();
+      });
   }
   const all = weekEves.get(url);
   return all === undefined ? undefined : all?.[report.league.slug] ?? null;
@@ -2993,14 +3011,17 @@ const clamp01 = (x) => Math.max(0, Math.min(1, x));
    how decisive it is (`matchStakes`), half the weight; how even, 1 less the
    gap between the two sides' chances of winning; and its expected goals,
    from two (none) to four (all). */
-function pickFixture(report, fixtures) {
-  const scored = fixtures.map((fixture) => {
+function scoreFixtures(report, fixtures) {
+  return fixtures.map((fixture) => {
     const { decisive } = matchStakes(report, fixture.match_id);
     const even = 1 - Math.abs(fixture.home_win - fixture.away_win);
     const goals = fixture.home_rating != null ? clamp01((fixtureGoals(report, fixture) - 2) / 2) : 0;
     return { fixture, score: 0.5 * decisive + 0.3 * even + 0.2 * goals };
   });
-  return scored.reduce((a, b) => (b.score > a.score ? b : a)).fixture;
+}
+
+function pickFixture(report, fixtures) {
+  return scoreFixtures(report, fixtures).reduce((a, b) => (b.score > a.score ? b : a)).fixture;
 }
 
 function heroWhen(match) {
@@ -3143,14 +3164,9 @@ function heroRaceModel(report) {
 /* The hero follows the view: the table shows the month's movers, the
    matches the match of the week, the rest the race. Each falls back to the
    race when it has nothing to show. */
-function renderRace(report) {
-  prefetchWeekEve(report);
-  const match = state.activeView === 'matches' ? heroMatch(report) : null;
-  // The week's eve is still loading: what the hero shows stays until it is in.
-  if (match === undefined && $('#hero-race').hasChildNodes()) return;
-  const hero = (state.activeView === 'table' && heroMovers(report))
-    || match
-    || heroRaceModel(report);
+/* The figures of a hero, side by side: each club's figure large, its crest and
+   name under it. The page's hero and the overview's blocks draw them alike. */
+function raceList(hero) {
   const list = el('ol', 'race__clubs');
   for (const item of hero.items) {
     const li = el('li', ['race__club', item.own && 'is-own', item.through && 'is-through', item.draw && 'is-draw', item.tone && `is-${item.tone}`].filter(Boolean).join(' '));
@@ -3171,6 +3187,18 @@ function renderRace(report) {
     if (item.sub) li.appendChild(el('span', 'race__sub', item.sub));
     list.appendChild(li);
   }
+  return list;
+}
+
+function renderRace(report) {
+  prefetchWeekEve(report);
+  const match = state.activeView === 'matches' ? heroMatch(report) : null;
+  // The week's eve is still loading: what the hero shows stays until it is in.
+  if (match === undefined && $('#hero-race').hasChildNodes()) return;
+  const hero = (state.activeView === 'table' && heroMovers(report))
+    || match
+    || heroRaceModel(report);
+  const list = raceList(hero);
   const box = $('#hero-race');
   box.dataset.count = String(hero.items.length);
   box.replaceChildren(el('div', 'race__label label', hero.label), list);
@@ -3335,6 +3363,553 @@ function renderModelCard(report) {
   }
   const accuracy = $('#model-accuracy');
   if (accuracy) renderAccuracy(report, accuracy);
+}
+
+
+/* ---------- overview: both divisions on one page --------------------- */
+
+/* Built from what the other views already draw, so it adds composition and no
+   figure of its own. Each division opens on its title race (one bar split
+   between the contenders), then a card per other open race (a bar per club),
+   then the match of the week as Kamper picks it beside the climber and the
+   faller, then two tiles on to its table and its matches. Every chance carries
+   its move since the last round, in the table's arrows. A finished division
+   opens on its champion, the next places under it, then its promotion and
+   relegation cards. Every block opens the page it summarises (its name is a
+   button stretched over it), and a club in it opens the club. One button into
+   the Explore tools closes the page. */
+const OVERVIEW_DIVISIONS = ['eliteserien', 'obosligaen'];
+const OVERVIEW_RACE_CLUBS = 4;
+const OVERVIEW_DONE_CLUBS = 6;
+const OVERVIEW_TOP_ROWS = 4;
+const OVERVIEW_TITLE_CLUBS = 5;
+/* A chance's move, in percentage points, for the table's arrow: past `strong`
+   the arrow stands upright, any other move leans (`trendDegree`). */
+const CHANCE_CUTS = { mild: 0, strong: 10 };
+
+/* The races still open (RACE_OPEN to RACE_SETTLED, as the hero reads them), in
+   the order the league lists its bands, with the clubs that have a chance of
+   one from RACE_SHOWN up. The title has a row of its own, and a play-off is
+   not a race of its own: relegation and promotion already count it
+   (`bandChance`), so each division has one card for the bottom and one for the
+   top. */
+function overviewRaces(report) {
+  if (report.model.matches_remaining === 0) return [];
+  const slug = report.league.slug;
+  return report.league.bands
+    .filter((band) => band.tone !== 'playoff' && band.tone !== 'champion')
+    .map((band) => {
+      const ranked = report.table
+        .map((row) => ({ row, chance: bandChance(row, band, slug) }))
+        .filter(({ chance }) => chance > RACE_SHOWN)
+        .sort((a, b) => b.chance - a.chance);
+      return ranked.some(({ chance }) => chance > RACE_OPEN && chance < RACE_SETTLED) ? { band, ranked } : null;
+    })
+    .filter(Boolean);
+}
+
+/* The round the division has reached, of the rounds a season has (every club
+   meets every other twice). Null before the first. */
+function overviewRound(report) {
+  const played = Math.max(0, ...(report.results || []).map((match) => Number(match.round) || 0));
+  return played ? { n: played, total: (report.table.length - 1) * 2 } : null;
+}
+
+/* The match of the round most worth watching by the live report alone: the
+   fallback while the match of the week's eve loads (`weekMatch`). */
+function overviewKeyMatch(report) {
+  const upcoming = [...(report.fixtures || [])]
+    .sort((a, b) => `${a.date} ${a.time || ''}`.localeCompare(`${b.date} ${b.time || ''}`));
+  if (!upcoming.length) return null;
+  const week = isoWeek(upcoming[0].date);
+  const round = upcoming.filter((fixture) => isoWeek(fixture.date) === week);
+  return scoreFixtures(report, round).reduce((a, b) => (b.score > a.score ? b : a)).fixture;
+}
+
+/* The division as it stood before the round now being played (the latest
+   round with a result): the report of the last matchday before that round's
+   first match, or the pre-season one. Undefined while it loads, null with no
+   round played or no report. */
+function overviewBefore(report) {
+  const results = report.results || [];
+  const round = Math.max(0, ...results.map((match) => Number(match.round) || 0));
+  if (!round) return null;
+  const first = results
+    .filter((match) => Number(match.round) === round)
+    .reduce((min, match) => (match.date < min ? match.date : min), '9999-12-31');
+  const day = (report.league.matchdays || []).findLast((matchday) => matchday.date < first)?.date || report.league.preseason;
+  return divisionOnDay(report, day);
+}
+
+/* A club's row in an earlier report of its division, or null. */
+function rowIn(before, row) {
+  return before?.table?.find((other) => String(other.team_id) === String(row.team_id)) || null;
+}
+
+/* A chance's move since the last round, drawn as the table draws a rating's
+   (`trendArrowSVG`: upright past CHANCE_CUTS.strong, leaning below it) with
+   its size in percentage points. In the good tone when the move is good for
+   the club, so a relegation chance that falls is good. Null when it rounds to
+   nothing or there is nothing to compare with. */
+function chanceChange(now, before, { bad = false, digits = 0 } = {}) {
+  if (before == null || now == null) return null;
+  const points = (now - before) * 100;
+  const shown = Math.round(points * 10 ** digits) / 10 ** digits;
+  if (!shown) return null;
+  const { direction } = trendDegree(points, CHANCE_CUTS);
+  const change = el('span', `overview-change ${(points > 0) !== bad ? 'is-good' : 'is-bad'}`);
+  const arrow = el('span', 'overview-change__arrow');
+  arrow.innerHTML = trendArrowSVG(direction);
+  change.append(arrow, `${num(Math.abs(shown), digits)}${percentSign()}`);
+  const text = t('overview.change', { n: signed(shown, digits) });
+  change.title = text;
+  change.setAttribute('role', 'img');
+  change.setAttribute('aria-label', text);
+  return change;
+}
+
+/* Show a view of the division a link or card sits under. */
+function showDivision(slug) {
+  if (state.league === slug) return;
+  state.league = slug;
+  for (const button of document.querySelectorAll('[data-league]')) {
+    button.setAttribute('aria-pressed', String(button.dataset.league === slug));
+  }
+}
+
+function openDivisionView(slug, view, tableView) {
+  showDivision(slug);
+  if (tableView) toggleTableView(tableView);
+  switchView(view);
+}
+
+/* A race card opens the race lines of its division, on that race. */
+function openRaceLines(slug, band) {
+  showDivision(slug);
+  raceBand = band.label;
+  openTool('races');
+}
+
+/* A club as a button: its crest and name, opening its page. */
+function clubButton(row, className) {
+  const button = el('button', className);
+  button.type = 'button';
+  const crest = teamLogo(row.team_id, row.team, true);
+  if (crest) {
+    crest.alt = '';
+    crest.setAttribute('aria-hidden', 'true');
+    button.appendChild(crest);
+  }
+  button.appendChild(document.createTextNode(row.team));
+  button.addEventListener('click', () => openTeamView(row.team_id, row.team));
+  return button;
+}
+
+/* The head of a block that opens a page: its name as the button (stretched
+   over the whole block in CSS, so a click anywhere on it that is not a club
+   opens the page) and a caption saying what the figures are, as one line of
+   text that may wrap. No arrow: the whole card lifts on hover. */
+function overviewCardHead(title, caption, go) {
+  const head = el('div', 'overview-card__head');
+  const button = el('button', 'overview-card__open', title);
+  button.type = 'button';
+  button.addEventListener('click', go);
+  const label = el('span', 'overview-card__label');
+  label.append(button);
+  if (caption) label.append(el('span', 'overview-card__caption', caption));
+  head.append(label);
+  return head;
+}
+
+/* A place in a final table, marked in its band's colour as the table marks it. */
+function placeBadge(report, position) {
+  const place = el('span', 'overview-top__place', String(position));
+  const band = bandFor(report.league.bands, position);
+  if (band) {
+    place.style.setProperty('--strip', bandColor(band, report.table.length));
+    place.title = bandName(band);
+  }
+  return place;
+}
+
+/* A finished division's champion, in the title race's row: the club and its
+   points in display type, the next places smaller under it. Opens the final
+   table. */
+function overviewChampionCard(report) {
+  const rows = [...report.table].sort((a, b) => a.position - b.position);
+  const [first] = rows;
+  if (!first) return null;
+  const band = report.league.bands.find((b) => b.tone === 'champion') || { label: 'Champions', first: 1, last: 1, tone: 'champion' };
+  const card = el('div', 'overview-card overview-title overview-champion');
+  card.style.setProperty('--band-color', bandColor(band, report.table.length));
+  card.appendChild(overviewCardHead(t('band.Champions'), t('overview.tableFinal'), () => openDivisionView(report.league.slug, 'table', 'current')));
+  const lead = el('div', 'overview-champion__lead');
+  lead.append(clubButton(first, 'overview-champion__club'), el('b', 'overview-champion__points', t('overview.pointsShort', { n: num(first.points) })));
+  card.appendChild(lead);
+  const rest = el('ol', 'overview-champion__rest');
+  for (const row of rows.slice(1, OVERVIEW_TOP_ROWS)) {
+    const item = el('li', 'overview-top__row');
+    item.append(placeBadge(report, row.position), clubButton(row, 'overview-race__name'),
+      el('b', 'overview-top__points', t('overview.pointsShort', { n: num(row.points) })));
+    rest.appendChild(item);
+  }
+  if (rest.children.length) card.appendChild(rest);
+  return card;
+}
+
+/* A finished division's outcomes, as races: promotion (OBOS-ligaen) and
+   relegation, with the clubs already through and those still in a play-off
+   with their chance of it. */
+function overviewOutcomes(report) {
+  const slug = report.league.slug;
+  return report.league.bands
+    .filter((band) => band.tone === 'relegation' || (band.tone === 'top' && slug === 'obosligaen'))
+    .map((band) => {
+      const ranked = report.table
+        .map((row) => ({ row, chance: bandChance(row, band, slug) }))
+        .filter(({ chance }) => chance > 0.001)
+        .sort((a, b) => b.chance - a.chance);
+      return ranked.length ? { band, ranked } : null;
+    })
+    .filter(Boolean);
+}
+
+/* A race at a glance: a card in the band's own colour, a row per club with
+   its chance large (and its move since the last round) and a bar under it. A
+   club already through is told in words once the season is over, and greyed
+   while it is still on. */
+function overviewRaceCard(report, { band, ranked }, finished) {
+  const slug = report.league.slug;
+  const before = finished ? null : overviewBefore(report);
+  const card = el('div', finished ? 'overview-card overview-race is-finished' : 'overview-card overview-race');
+  card.style.setProperty('--band-color', bandColor(band, report.table.length));
+  const withPlayoff = ranked.some(({ row }) => bandWithPlayoff(row, band, slug));
+  const pending = finished && ranked.some(({ chance }) => chance < 0.999);
+  const caption = pending ? t('overview.inPlayoff') : !finished && withPlayoff ? t('overview.playoffIncluded') : '';
+  const head = overviewCardHead(bandName(band), caption, () => openRaceLines(slug, band));
+  // The race as a picture (share.js), as the title race has it.
+  head.append(shareButton({
+    title: () => `${bandName(band)} · ${report.league.name} ${report.league.season}`,
+    image: () => shareRace(report, { band, ranked }, finished),
+    className: 'overview-card__share',
+  }));
+  card.appendChild(head);
+  const list = el('ol', 'overview-race__list');
+  for (const { row, chance } of ranked.slice(0, finished ? OVERVIEW_DONE_CLUBS : OVERVIEW_RACE_CLUBS)) {
+    const done = finished && chance >= 0.999;
+    const item = el('li', done || chance >= RACE_SETTLED ? 'overview-race__club is-through' : 'overview-race__club');
+    const value = el('span', 'overview-race__value');
+    const old = rowIn(before, row);
+    const change = old && chanceChange(chance, bandChance(old, band, slug), { bad: band.tone === 'relegation' });
+    if (change) value.append(change);
+    value.append(el('b', done ? 'overview-race__figure is-done' : 'overview-race__figure',
+      done ? t(band.tone === 'relegation' ? 'overview.relegated' : 'overview.promoted') : pct(chance, chance < 0.1 ? 1 : 0)));
+    item.append(clubButton(row, 'overview-race__name'), value);
+    // A club already up or down needs no bar: the words say it.
+    if (!done) {
+      const bar = el('span', 'overview-race__bar');
+      bar.style.setProperty('--p', `${Math.round(chance * 100)}%`);
+      bar.setAttribute('aria-hidden', 'true');
+      item.append(bar);
+    }
+    list.appendChild(item);
+  }
+  card.dataset.count = String(list.children.length);
+  card.appendChild(list);
+  return card;
+}
+
+/* The title race: the clubs with a chance worth showing, two at least. */
+function overviewTitleRace(report) {
+  const band = report.league.bands.find((b) => b.tone === 'champion') || { label: 'Champions', first: 1, last: 1, tone: 'champion' };
+  const ranked = report.table
+    .map((row) => ({ row, chance: row.position_probabilities[0] }))
+    .sort((a, b) => b.chance - a.chance)
+    .filter(({ chance }, i) => i < 2 || chance > RACE_SHOWN);
+  return { band, ranked };
+}
+
+/* The title race, the row the division leads with: each contender's chance in
+   display type, with its move since the last round, over one bar split between
+   them, as long as its chance. The favourite's share is the title gold and the
+   rest of the field one dim slate (CSS): no medal colour, since silver would
+   name a second place and a second gold dulls the favourite's share. The
+   field's segments are told apart by the gaps and their order, the clubs' own
+   from left to right. Whatever the clubs shown leave over is the bar's bare
+   track at the end. */
+function overviewTitleCard(report, { band, ranked }) {
+  const slug = report.league.slug;
+  const before = overviewBefore(report);
+  const card = el('div', 'overview-card overview-title');
+  card.style.setProperty('--band-color', bandColor(band, report.table.length));
+  const head = overviewCardHead(t('hero.race.title'), '', () => openRaceLines(slug, band));
+  // The title race as a picture (share.js), or the overview's link, at the
+  // head's right.
+  head.append(shareButton({
+    title: () => `${t('hero.race.title')} · ${report.league.name} ${report.league.season}`,
+    image: () => shareTitleRace(report),
+    className: 'overview-card__share',
+  }));
+  card.appendChild(head);
+  const shown = ranked.slice(0, OVERVIEW_TITLE_CLUBS);
+  const clubs = el('ol', 'overview-title__clubs');
+  clubs.dataset.count = String(shown.length);
+  const bar = el('div', 'overview-title__bar');
+  bar.setAttribute('aria-hidden', 'true');
+  shown.forEach(({ row, chance }) => {
+    const item = el('li', 'overview-title__club');
+    const value = el('span', 'overview-title__value');
+    value.append(el('b', 'overview-title__figure', pct(chance, 1)));
+    const old = rowIn(before, row);
+    const change = old && chanceChange(chance, old.position_probabilities[0], { digits: 1 });
+    if (change) value.append(change);
+    item.append(value, clubButton(row, 'overview-race__name'));
+    clubs.appendChild(item);
+    const segment = el('span', 'overview-title__seg');
+    segment.style.flex = String(Math.max(chance, 0.002));
+    bar.appendChild(segment);
+  });
+  const rest = 1 - shown.reduce((sum, { chance }) => sum + chance, 0);
+  if (rest > 0.005) {
+    const segment = el('span', 'overview-title__seg is-rest');
+    segment.style.flex = String(rest);
+    bar.appendChild(segment);
+  }
+  card.append(clubs, bar);
+  return card;
+}
+
+/* What a fixture decides, one line per club with a stake in it: its biggest
+   band (for the line's colour mark), and the sentence, its chance with a win
+   and with a defeat; the home side first. */
+function stakeSentences(report, fixture) {
+  const best = new Map();
+  for (const stake of stakesForFixture([...(report.next_stakes || []), ...(report.high_stakes || [])], fixture.match_id)) {
+    const id = String(stake.team_id);
+    if (!best.has(id) || stake.swing > best.get(id).swing) best.set(id, stake);
+  }
+  return [fixture.home_id, fixture.away_id].map((id) => best.get(String(id))).filter(Boolean).map((stake) => {
+    const band = { label: stake.band_label, first: stake.band_first, last: stake.band_last, tone: stake.band_tone };
+    return {
+      band,
+      text: t('overview.stake', { band: bandEdgeName(band), team: stake.team, win: pct(stake.p_favourable, 0), loss: pct(stake.p_unfavourable, 0) }),
+    };
+  });
+}
+
+/* One side of the match of the week's board: the club's crest large over its
+   name (one button, opening the club), and a line under it. */
+function matchSide(row, sub, className) {
+  const side = el('div', `overview-match__side ${className}`);
+  const button = el('button', 'overview-match__club');
+  button.type = 'button';
+  const crest = teamLogo(row.team_id, row.team, true);
+  if (crest) button.appendChild(crest);
+  button.appendChild(el('span', 'overview-match__name', row.team));
+  button.addEventListener('click', () => openTeamView(row.team_id, row.team));
+  side.appendChild(button);
+  if (sub) side.appendChild(el('span', 'overview-match__sub', sub));
+  return side;
+}
+
+/* The match of the week, the one Kamper's hero shows (`weekMatch`, the week
+   the matches view opens on), as a scoreboard: each club's crest large over
+   its name, the kick-off time between them before the match and the score
+   after (the loser then steps back), the odds bar under the board before it
+   and each side's chance as it stood before the match under it after; then what the match decides or did, a line per club marked in
+   its band's colour. While the week's eve loads, the live report's pick. */
+function overviewMatch(report) {
+  const pick = weekMatch(report, null);
+  const fixture = pick?.fixture || (pick === undefined ? overviewKeyMatch(report) : null);
+  const result = pick?.result || null;
+  const match = fixture || result?.match;
+  if (!match) return null;
+  const block = el('div', `overview-card overview-match${result ? ' is-played' : ''}`);
+  block.appendChild(overviewCardHead(t('hero.match.title'), formatDate(match.date), () => openDivisionView(report.league.slug, 'matches')));
+  const home = { team_id: match.home_id, team: match.home };
+  const away = { team_id: match.away_id, team: match.away };
+  const body = el('div', 'overview-match__body');
+  const board = el('div', 'overview-match__board');
+  const notes = [];
+  if (fixture) {
+    board.append(
+      matchSide(home, null, 'is-home'),
+      el('b', 'overview-match__time', fixture.time || '–'),
+      matchSide(away, null, 'is-away'));
+    body.append(board, oddsBar(fixture.home, fixture.away, fixture));
+    notes.push(...stakeSentences(report, fixture));
+  } else {
+    const hero = resultHero(report, result);
+    const diff = match.home_goals - match.away_goals;
+    board.append(
+      matchSide(home, hero.items[0].sub, `is-home${diff < 0 ? ' is-lost' : ''}`),
+      el('b', 'overview-match__score', `${match.home_goals}–${match.away_goals}`),
+      matchSide(away, hero.items[2].sub, `is-away${diff > 0 ? ' is-lost' : ''}`));
+    body.append(board);
+    if (hero.note) notes.push({ band: result.shift?.move >= 0.02 ? result.shift.band : null, text: hero.note });
+  }
+  block.appendChild(body);
+  if (notes.length) {
+    const list = el('ul', 'overview-match__notes');
+    for (const { band, text } of notes) {
+      const item = el('li', 'overview-match__note', text);
+      if (band) item.style.setProperty('--mark', bandColor(band, report.table.length));
+      list.appendChild(item);
+    }
+    block.appendChild(list);
+  }
+  return block;
+}
+
+/* The climber and the faller over the last five matches, each under its own
+   label, its rating change in the table's arrow (`trendArrowSVG`, the table's
+   cuts and colours) and its rating before and after. It opens the ladder. */
+function overviewMovers(report) {
+  const movers = heroMovers(report);
+  if (!movers) return null;
+  const card = el('div', 'overview-card overview-race overview-movers');
+  card.appendChild(overviewCardHead(t('overview.moversTitle'), t('overview.moversCaption'), () => openDivisionView(report.league.slug, 'ladder')));
+  const list = el('ol', 'overview-race__list');
+  for (const item of movers.items) {
+    const li = el('li', 'overview-race__club overview-movers__club');
+    const { direction } = trendDegree(item.change, TREND_CUTS);
+    const value = el('span', `overview-race__value overview-movers__value rating-trend--${direction}`);
+    const arrow = el('span', 'overview-change__arrow');
+    arrow.innerHTML = trendArrowSVG(direction);
+    arrow.setAttribute('aria-hidden', 'true');
+    value.append(arrow, el('b', 'overview-race__figure', num(Math.abs(Math.round(item.change)))));
+    value.setAttribute('aria-label', signed(item.change));
+    li.append(
+      el('span', 'overview-movers__label', t(item.tone === 'up' ? 'overview.climber' : 'overview.faller')),
+      clubButton(item.row, 'overview-race__name'), value,
+      el('span', 'overview-race__sub', t('overview.ratingFrom', { range: item.sub })));
+    list.appendChild(li);
+  }
+  card.appendChild(list);
+  return card;
+}
+
+function overviewDivision(report) {
+  const slug = report.league.slug;
+  const live = report.model.matches_remaining > 0;
+  const group = el('div', 'overview__division');
+  const head = el('div', 'overview__division-head');
+  const name = el('h2', 'overview__division-name', report.league.name);
+  name.dataset.tier = slug === 'eliteserien' ? '1' : '2';
+  const round = overviewRound(report);
+  head.appendChild(name);
+  if (round) head.appendChild(el('span', 'overview__round', t('overview.round', round)));
+  group.appendChild(head);
+
+  // The title race (or the champion) leads, a row of its own; the other races
+  // under it.
+  const lead = live ? overviewTitleCard(report, overviewTitleRace(report)) : overviewChampionCard(report);
+  if (lead) group.appendChild(lead);
+  const races = live ? overviewRaces(report) : overviewOutcomes(report);
+  if (races.length) {
+    const cards = el('div', 'overview__races');
+    for (const entry of races) cards.appendChild(overviewRaceCard(report, entry, !live));
+    cards.dataset.count = String(cards.children.length);
+    group.appendChild(cards);
+  }
+  if (live) {
+    const match = overviewMatch(report);
+    const movers = overviewMovers(report);
+    if (match || movers) {
+      const pair = el('div', 'overview__pair');
+      if (match) pair.appendChild(match);
+      if (movers) pair.appendChild(movers);
+      group.appendChild(pair);
+    }
+  }
+  group.appendChild(overviewDivisionLinks(report, round));
+  return group;
+}
+
+/* A tile that leads on: its name in the accent colour, a fact from behind it
+   and an arrow. */
+function overviewTile(title, fact, go, className = '') {
+  const button = el('button', `overview-link ${className}`.trim());
+  button.type = 'button';
+  const text = el('span', 'overview-link__text');
+  text.append(el('span', 'overview-link__title', title));
+  if (fact) text.append(el('span', 'overview-link__fact', fact));
+  const arrow = el('span', 'overview-link__arrow', '→');
+  arrow.setAttribute('aria-hidden', 'true');
+  button.append(text, arrow);
+  button.addEventListener('click', go);
+  return button;
+}
+
+/* The way on from a division: its table (who tops it) and its matches (when
+   the next round starts and how many it has), two tiles across the width. */
+function overviewDivisionLinks(report, round) {
+  const slug = report.league.slug;
+  const leader = [...report.table].sort((a, b) => a.position - b.position)[0];
+  const remaining = report.model.matches_remaining;
+  const upcoming = [...(report.fixtures || [])]
+    .sort((a, b) => `${a.date} ${a.time || ''}`.localeCompare(`${b.date} ${b.time || ''}`));
+  let matchesFact = t('overview.matchesDone');
+  if (remaining > 0 && upcoming.length) {
+    const week = isoWeek(upcoming[0].date);
+    const count = upcoming.filter((fixture) => isoWeek(fixture.date) === week).length;
+    matchesFact = t(count === 1 ? 'overview.nextOne' : 'overview.next', { date: formatDate(upcoming[0].date), n: num(count) });
+  }
+  const links = el('nav', 'overview__links');
+  links.setAttribute('aria-label', report.league.name);
+  links.append(
+    overviewTile(t('tab.table'),
+      remaining === 0 ? t('overview.tableFinal')
+        : round && leader ? t('overview.tableFact', { team: leader.team, points: num(leader.points) }) : t('overview.tableFresh'),
+      () => openDivisionView(slug, 'table')),
+    overviewTile(t('tab.matches'), matchesFact, () => openDivisionView(slug, 'matches')));
+  return links;
+}
+
+function renderOverview() {
+  // A page built before the overview existed has no place for it.
+  const body = $('#overview-body');
+  if (!body) return;
+  const blocks = OVERVIEW_DIVISIONS.map((slug) => state.reports[slug]).filter(Boolean).map(overviewDivision);
+  blocks.push(overviewTools(), overviewExploreButton());
+  body.replaceChildren(...blocks);
+}
+
+/* The Explore tools on a desktop or a tablet: a heading with a button to
+   the gallery, then every tool as its thumbnail, name and what it shows. On a
+   phone (CSS) the one button below stands in for it. */
+function overviewTools() {
+  const tools = el('div', 'overview__division overview__explore');
+  const head = el('div', 'overview__division-head');
+  const all = el('button', 'team-mini__full', t('overview.allTools'));
+  all.type = 'button';
+  all.addEventListener('click', () => switchView('explore'));
+  head.append(el('h2', 'overview__division-name', t('overview.tools')), all);
+  const strip = el('div', 'overview__tools');
+  for (const id of EXPLORE_ITEMS) {
+    const tool = el('button', 'overview-tool');
+    tool.type = 'button';
+    const text = el('span', 'overview-tool__text');
+    text.append(el('span', 'overview-tool__title', t(`explore.${id}.title`)), el('span', 'overview-tool__desc', t(`explore.${id}.desc`)));
+    tool.append(exploreThumb(id), text);
+    tool.addEventListener('click', () => openTool(id));
+    strip.appendChild(tool);
+  }
+  tools.append(head, strip);
+  return tools;
+}
+
+/* The Explore tools on a phone: one large button, its picture the first
+   four tools' thumbnails two by two, its tools named under its title. */
+const OVERVIEW_EXPLORE_THUMBS = 4;
+function overviewExploreButton() {
+  const button = overviewTile(t('overview.exploreTitle'), EXPLORE_ITEMS.map((id) => t(`explore.${id}.title`)).join(' · '),
+    () => switchView('explore'), 'overview-explore');
+  const thumbs = el('span', 'overview-explore__thumbs');
+  thumbs.setAttribute('aria-hidden', 'true');
+  for (const id of EXPLORE_ITEMS.slice(0, OVERVIEW_EXPLORE_THUMBS)) thumbs.appendChild(exploreThumb(id));
+  button.prepend(thumbs);
+  return button;
 }
 
 
@@ -3894,7 +4469,7 @@ async function renderRaces(report, body) {
           const chip = el('span', 'races__chip');
           chip.appendChild(el('i', 'races__swatch'));
           chip.lastChild.style.background = colours.get(s);
-          chip.appendChild(document.createTextNode(`${s.team} ${change > 0 ? '▲' : '▼'} ${signed(change * 100, 1)} ${t('races.pp')}`));
+          chip.appendChild(document.createTextNode(`${s.team} ${changeText(change * 100, 1)} ${t('races.pp')}`));
           row.appendChild(chip);
         }
         wrap.appendChild(row);
@@ -4739,7 +5314,11 @@ function renderWhatIf(report, body) {
       const reset = el('button', 'whatif-reset', t('whatif.resetAll'));
       reset.type = 'button';
       reset.addEventListener('click', resetAll);
-      head.appendChild(reset);
+      // The changed results live in the address (?lock=): shared as the
+      // link, from the panel that shows what they do, in either tab.
+      const actions = el('div', 'whatif-impact__actions');
+      actions.append(reset, shareButton({ title: () => t('share.whatif') }));
+      head.appendChild(actions);
     }
     impact.appendChild(head);
 
@@ -4936,7 +5515,6 @@ function renderWhatIf(report, body) {
     if (names.includes('all')) button('all', t('whatif.fillAll'), () => fill('all'), !open, t('whatif.fillHint'));
     if (names.includes('clear') && [...state.whatIfAuto].some((id) => state.whatIfLocks.has(id))) button('clear', t('whatif.clearFill'), clearFill, false);
     if (names.includes('reset')) button('reset', t('whatif.resetAll'), resetAll, false);
-    if (names.includes('reset') && state.whatIfLocks.size) row.appendChild(copyLinkButton());
     return row;
   };
 
@@ -5689,7 +6267,7 @@ function renderVersionHistory(report, body, data) {
   const ends = series.map(({ key, label }) => ({ label, v: rows[rows.length - 1][key] }));
   for (const { short, value } of markets) ends.push({ label: short, v: value });
   const placed = ends.map((end) => ({ ...end, at: y(end.v) })).sort((a, b) => a.at - b.at);
-  for (let i = 1; i < placed.length; i += 1) placed[i].at = Math.max(placed[i].at, placed[i - 1].at + 13);
+  for (let i = 1; i < placed.length; i += 1) placed[i].at = Math.max(placed[i].at, placed[i - 1].at + 15);
   if (!narrow) {
     for (const end of placed) {
       text('versions__label', `${end.label} ${num(end.v, 1)}${percentSign()}`, { x: width - pad.right + 8, y: end.at + 4 });
@@ -6793,7 +7371,8 @@ function renderTeamView(report) {
   const summaryHead = content.querySelector('.team-summary__header');
   if (summaryHead) summaryHead.prepend(back);
   else content.prepend(back);
-  if (summaryHead) summaryHead.appendChild(copyLinkButton());
+  // Shared as the club's card (share.js) while it plays in the season shown, else as the link.
+  if (summaryHead) summaryHead.appendChild(shareButton({ title: teamName, image: row ? () => shareClub(report, teamId) : null }));
 
   const tabs = TEAM_TABS.filter(([key]) => key !== 'forecast' || (row && report.model?.matches_remaining > 0));
   if (!tabs.some(([key]) => key === state.teamTab)) state.teamTab = 'overview';
@@ -7000,7 +7579,7 @@ function createCompactSeasonRow(record, teamId, container, currentReport, active
 
   // Position only (league shown via badge)
   const mainCell = el('div', 'season-row-compact__main');
-  mainCell.appendChild(el('div', 'season-row-compact__pos', `#${record.position}`));
+  mainCell.appendChild(el('div', 'season-row-compact__pos', rankText(record.position)));
   // The season still being played: its place is today's, not a final one.
   const live = String(record.season) === String(currentReport.league.current_season)
     && state.reports?.[record.league]?.league?.season === record.season
@@ -7203,7 +7782,7 @@ function renderTeamSummary(teamId, row, career, report, container) {
   allTeams.sort((a, b) => b.rating - a.rating);
   const crossRank = allTeams.findIndex((t) => String(t.team_id) === String(teamId));
   const totalTeams = allTeams.length || report.table.length;
-  ratingBlock.appendChild(el('span', 'team-summary__rating-pos', t('team.rankOf', { rank: ordinalShort(crossRank >= 0 ? crossRank + 1 : (row?.position ?? 0)), total: totalTeams })));
+  ratingBlock.appendChild(el('span', 'team-summary__rating-pos', t('team.rankOf', { rank: rankText(crossRank >= 0 ? crossRank + 1 : (row?.position ?? 0)), total: totalTeams })));
   // How the club has played by its chances, labelled: an unlabelled second
   // arrow would read as a second opinion on the rating.
   const form = computeXgForm(teamName, report);
@@ -7426,7 +8005,7 @@ function renderTeamNow(row, career, report, container) {
   const section = el('div', 'team-section team-now');
   if (row) {
     const table = el('dl', 'team-stats');
-    table.appendChild(summaryStat(t('team.position'), ordinalShort(row.position)));
+    table.appendChild(summaryStat(t('team.position'), rankText(row.position)));
     table.appendChild(summaryStat(t('team.points'), String(row.points)));
     table.appendChild(summaryStat(t('team.gd'), signed(row.goal_difference)));
     table.appendChild(summaryStat(t('team.played'), String(row.played)));
@@ -7861,7 +8440,7 @@ function renderTeamOutlook(card, row, report, teamId) {
   if (!races.length) {
     let running = 0;
     const median = probs.findIndex((p) => (running += p) >= 0.5) + 1;
-    tiles.appendChild(summaryStat(t('team.expectedPlace'), ordinalShort(median)));
+    tiles.appendChild(summaryStat(t('team.expectedPlace'), rankText(median)));
   }
   box.appendChild(tiles);
 
@@ -8032,7 +8611,7 @@ function teamMatchRow(match, teamId, report, ratingChanges) {
     }
     const info = ratingChanges.get(`${teamId}|${match.date}`);
     if (info) {
-      const delta = el('span', `team-match__delta${info.change > 0 ? ' up' : info.change < 0 ? ' down' : ''}`, signed(info.change));
+      const delta = el('span', `team-match__delta${info.change > 0 ? ' up' : info.change < 0 ? ' down' : ''}`, info.change ? changeText(info.change) : '0');
       delta.title = t('team.ratingAfter', { n: info.rating });
       result.appendChild(delta);
     }
@@ -8658,7 +9237,8 @@ function placeTimeline(shown) {
   const head = document.querySelector(`[data-section="${state.activeView}"] .panel > .panel__head`);
   const tools = head?.querySelector('.panel__tools');
   if (shown && tools) {
-    if (toggle.parentElement !== tools) tools.appendChild(toggle);
+    // Before the heading's share button, which stays last.
+    if (toggle.parentElement !== tools) tools.insertBefore(toggle, tools.querySelector(':scope > .share-btn'));
     if (timeline.previousElementSibling !== head) head.after(timeline);
   }
   timeline.hidden = !(shown && tools);
@@ -9056,6 +9636,9 @@ function render() {
   clearSkeleton(state._prevActiveView);
   clearSkeleton(state.activeView);
   switch (state.activeView) {
+    case 'overview':
+      renderOverview();
+      break;
     case 'table':
       renderStandings(report);
       renderBandLegend(report);
@@ -9159,7 +9742,7 @@ function render() {
 function switchView(view, { dir } = {}) {
   closeSheet();
   if (anim.playing && view !== state.activeView) animStop();
-  const order = [...document.querySelectorAll('.masthead__views [data-view]')].map((tab) => tab.dataset.view);
+  const order = VIEW_ORDER;
   const from = order.indexOf(state.activeView);
   const to = order.indexOf(view);
   const inSheet = (v) => !!document.querySelector(`.sheet__item[data-view="${v}"]`);
@@ -9304,6 +9887,11 @@ function wire() {
   $('#timeline-forward').addEventListener('click', () => stepMatchday(1));
 
   $('#grid-anim-play').addEventListener('click', animStart);
+  // The finish grid as a picture (share.js), or its link.
+  $('[data-section="grid"] .panel__tools').append(shareButton({
+    title: () => `${t('grid.title')} · ${state.reports[state.league]?.league.name || ''}`,
+    image: () => shareFinishGrid(state.reports[state.league]),
+  }));
   // Leaving the grid always clears its readout, even when the cell that had
   // the pointer was moved or replaced mid-animation and fires no leave itself.
   $('#grid').addEventListener('pointerleave', hideTooltip);
@@ -9456,27 +10044,49 @@ function applyTeamParameter() {
    marked when the open view is among them. Measured rather than set by a
    breakpoint, since the labels' width differs by language. A phone hides the
    whole strip for its bottom bar. */
+/* The views in the navigation's order: the five the masthead always shows,
+   then the three under More. A slide between views moves this way. */
+const VIEW_ORDER = ['overview', 'table', 'matches', 'grid', 'explore', 'ladder', 'compare', 'model'];
+
+/* The masthead's right-hand group keeps the width it has with every picker
+   on show, so the views that hide the division picker (the overview, the
+   ladder, ...) leave its room empty rather than hand it to the tabs, and the
+   tabs never move between views. */
+function reserveMastheadEnd() {
+  const end = $('.masthead__end');
+  if (!end) return;
+  end.style.minWidth = '';
+  document.body.classList.add('masthead-measure');
+  const width = end.getBoundingClientRect().width;
+  document.body.classList.remove('masthead-measure');
+  end.style.minWidth = `${Math.ceil(width)}px`;
+}
+
+/* The masthead's tabs: the five primary views, More always after them (the
+   ladder, the compare tool and the model card). Only when the window is too
+   narrow for all five does one fold into More, from the end; what folds
+   depends on the window's width alone, never on the view open. */
 function fitViews() {
   const holder = $('.masthead__views');
   const more = $('#views-more');
   if (!holder || !more) return;
+  reserveMastheadEnd();
   const tabs = [...holder.querySelectorAll('.switch [data-view]')];
   const items = new Map([...document.querySelectorAll('#views-more-menu [data-view]')].map((item) => [item.dataset.view, item]));
   for (const tab of tabs) {
     tab.hidden = false;
     items.get(tab.dataset.view).hidden = true;
   }
-  more.hidden = true;
   const fits = () => holder.scrollWidth <= holder.clientWidth + 1;
   if (holder.offsetParent && !fits()) {
-    more.hidden = false;
     for (const tab of [...tabs].reverse()) {
-      if (fits()) break;
+      if (fits() || tab.dataset.view === 'overview') break;
       tab.hidden = true;
       items.get(tab.dataset.view).hidden = false;
     }
   }
-  more.setAttribute('aria-pressed', String(tabs.some((tab) => tab.hidden && tab.dataset.view === state.activeView)));
+  const inMenu = [...items.values()].some((item) => !item.hidden && item.dataset.view === state.activeView);
+  more.setAttribute('aria-pressed', String(inMenu));
 }
 
 function markActiveView() {
@@ -9552,7 +10162,7 @@ function applyViewParameter() {
   const asked = params.get('view');
   // Next Up and Played Results were merged into Matches; old links still land.
   const view = asked === 'next-up' || asked === 'played' ? 'matches' : asked;
-  const validViews = new Set(['table', 'grid', 'ladder', 'matches', 'compare', 'explore', 'team', 'model']);
+  const validViews = new Set(['overview', 'table', 'grid', 'ladder', 'matches', 'compare', 'explore', 'team', 'model']);
   if (view && validViews.has(view)) {
     state.activeView = view;
     if (EXPLORE_ITEMS.includes(params.get('viz'))) state.exploreItem = params.get('viz');
@@ -9942,8 +10552,21 @@ function renderCompare(report) {
 
   // Fictional match: the two clubs, who hosts, and the model's odds + scorelines.
   const matchBlock = el('div', 'compare__block');
-  matchBlock.appendChild(el('h3', 'compare__subhead', t('compare.match')));
-  matchBlock.appendChild(copyLinkButton());
+  // The heading and its share button on one line. The pair is in the address
+  // (?compare=): shared as the match's picture or the link.
+  const matchHead = el('div', 'compare__head');
+  matchHead.appendChild(el('h3', 'compare__subhead', t('compare.match')));
+  matchBlock.appendChild(matchHead);
+  matchHead.appendChild(shareButton({
+    title: `${homeName} – ${awayName}`,
+    image: () => shareMatch({
+      label: `${t('compare.match')} · ${t('share.season', { season: report.league.season })}`,
+      home: { id: homeId, name: homeName, rating: homeRating },
+      away: { id: awayId, name: awayName, rating: awayRating },
+      odds,
+      cells: topScorelines(report.model, odds, homeId, awayId, 49),
+    }),
+  }));
 
   const teamsRow = el('div', 'compare__teams');
   const homeBlock = compareTeamBlock(homeId, homeName, homeRating, teamLogo(homeId, homeName), t('compare.home'));
@@ -10297,7 +10920,7 @@ async function boot() {
 /* The views that read careers.json, drawn again when it lands: the rating
    each result moved (the table's trend arrows, the results' deltas), club
    histories and head-to-heads. */
-const CAREER_VIEWS = new Set(['table', 'matches', 'team', 'compare']);
+const CAREER_VIEWS = new Set(['overview', 'table', 'matches', 'team', 'compare']);
 
 /* The all-time meetings between clubs (/data/h2h.json): the Compare page's
    alone, and most of what careers.json used to hold, so they are fetched when

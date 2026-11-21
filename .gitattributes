@@ -1,0 +1,5 @@
+# LF in every checkout, Windows included. build_site stamps each view with a
+# hash of the source and data files' bytes (build-manifest.json); a CRLF
+# checkout (core.autocrlf=true) hashes differently from CI's LF one, so a local
+# build rebuilt every view instead of the new matchdays.
+* text=auto eol=lf

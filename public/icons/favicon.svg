@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="5 5 22 22">
+  <!-- The favicon: the masthead's mark exactly (index.html, .wordmark__mark),
+       cropped to its cells with no tile, so it reads at 16 px. The cells take
+       the page's ink for the browser's scheme (light ink on a dark tab strip,
+       dark on a light one) and the lead cell the accent blue. The tiled
+       icons/mark.svg stays the source of the PNG icons and the share image. -->
+  <style>
+    .cell { fill: #0f1828; }
+    @media (prefers-color-scheme: dark) { .cell { fill: #e8edf5; } }
+  </style>
+  <rect x="5.5" y="5.5" width="6" height="6" rx="1.2" fill="#1f5eff"/>
+  <rect class="cell" x="13" y="5.5" width="6" height="6" rx="1.2" opacity=".35"/>
+  <rect class="cell" x="20.5" y="5.5" width="6" height="6" rx="1.2" opacity=".1"/>
+  <rect class="cell" x="5.5" y="13" width="6" height="6" rx="1.2" opacity=".35"/>
+  <rect class="cell" x="13" y="13" width="6" height="6" rx="1.2"/>
+  <rect class="cell" x="20.5" y="13" width="6" height="6" rx="1.2" opacity=".35"/>
+  <rect class="cell" x="5.5" y="20.5" width="6" height="6" rx="1.2" opacity=".1"/>
+  <rect class="cell" x="13" y="20.5" width="6" height="6" rx="1.2" opacity=".35"/>
+  <rect class="cell" x="20.5" y="20.5" width="6" height="6" rx="1.2"/>
+</svg>

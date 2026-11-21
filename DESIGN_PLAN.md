@@ -34,20 +34,23 @@ about it.
 |---|---|---|---|---|
 | 1 | Type at display scale | Lando Norris, Lusion | 1 | ◐ |
 | 5 | Card typography and spacing | Field Rank | 1 | ◐ |
-| 4 | One notation everywhere | Field Rank | 1 | ☐ |
+| 4 | One notation everywhere | Field Rank | 1 | ◐ |
 | 3 | A mark and a motif | Lando Norris | 1 | ◐ |
-| 6 | Motion that explains | Lusion, Lando Norris | 2 | ☐ |
-| 11 | Colour that changes as you scroll | Lando Norris | 2 | ☐ |
-| 2 | Headlines written from the data | The Immortals, Lando Norris | 2 | ☐ |
-| 8 | The season as an experience | Lusion, The Immortals | 3 | ☐ |
-| 7 | Club colours on the club page | — | 3 | ☐ |
-| 10 | A sign-off footer | Lando Norris | 4 | ☐ |
-| 9 | Share cards per club | — | 4 | ☐ |
+| 12 | Overview page and a way into Explore | — | 2 | ◐ |
+| 6 | Motion that explains | Lusion, Lando Norris | 3 | ☐ |
+| 11 | Colour that changes as you scroll | Lando Norris | 3 | ☐ |
+| 2 | Headlines written from the data | The Immortals, Lando Norris | 3 | ☐ |
+| 8 | The season as an experience | Lusion, The Immortals | 4 | ☐ |
+| 7 | Club colours on the club page | — | 4 | ☐ |
+| 10 | A sign-off footer | Lando Norris | 5 | ☐ |
+| 9 | Share cards per club | — | 5 | ☐ |
 
 **Why this order.** Round 1 changes how the site looks at rest: type,
 spacing and a mark. Everything later builds on it, and it is cheap to try.
-Round 2 makes it feel alive. Round 3 is the larger work (a story page, club
-colours), worth doing once the base is settled. Round 4 is finishing.
+Round 2 is the overview page: it fronts the numbers the later rounds will
+dress up, and it builds on Round 1's type and cards as they are. Round 3 makes
+it feel alive. Round 4 is the larger work (a story page, club colours), worth
+doing once the base is settled. Round 5 is finishing.
 
 **Not doing** (unless a test says otherwise): smooth-scroll or animation
 libraries (Lenis, GSAP); scroll-jacking; a loading screen in front of the data
@@ -156,6 +159,9 @@ the stake that moved furthest, as the eve's report conditioned it. All fall back
 in one row; under 400 px the masthead shows the mark without the name, so
 the division pill and settings fit.
 
+**Variant B deferred (2026-11-21).** It depends on variant A being kept, which
+has no decision yet, and it needs a second font with its case.
+
 **Decision:**
 
 ### 5. Card typography and spacing
@@ -198,6 +204,13 @@ carry one because its cards hold little. Taken out again (labels back in
 Archivo). The model card's steps lost their boxes (boxes in a box in a
 panel) and are plain columns. The spacing stays.
 
+**Built (2026-11-21).** The "→" panel links, with the overview: each block
+there leads on with the club page's quiet link style ("Alle kamper →",
+"Hele tabellen →", "Kappløpene →", "Alle verktøy →"), and Sluttabell and
+Stige gained links into the Explore tools. Variant B (a table with no box)
+is **deferred**: it is a comparison prototype that restyles Tabell, and
+nothing has been decided about the cards it would replace.
+
 **Decision:**
 
 ### 4. One notation everywhere
@@ -215,6 +228,22 @@ brand.
 - [ ] Once kept, write the notation into `docs/frontend.md`.
 
 **Decide by.** Does the same fact look the same in every view?
+
+**Built (2026-11-21).** `rankText` and `changeText` (`app.js`, by
+`ordinalShort`), written out in `docs/frontend.md`. A rank standing alone is
+`#3` in English and `3.` in Norwegian (changed 2026-11-21 from `#3` in both,
+on review of the share pictures): the club page's rating rank ("1. av 32 på
+rating"), the ladder's tooltip, the club's season rows,
+its place tile and its expected place. A change is an arrow and its size,
+▲ up and ▼ down, no sign: the played results' rating change, the club
+page's match rows, the finish-grid popup's place move, the race lines'
+change chip and the overview's movers. Two departures from the spec, with
+reasons: no monospace (item 5's review took it out; the figures keep
+Archivo with tabular numbers), and the thin bar under a probability only
+where the figure stands alone (the overview's race cards), not in the
+table, the grid or the odds bars, which already show the value. The
+table's five-step rating trend arrows are a trend, not a change figure, and
+stay. A rank inside a sentence ("3rd place") stays an ordinal.
 
 **Decision:**
 
@@ -266,7 +295,259 @@ each place was over time from 2025 alone.)
 
 ---
 
-## Round 2: alive
+## Round 2: an overview page, and a way into Explore
+
+Planned 2026-11-21 from a walk through every page (desktop, and 390 px in a
+frame). Nothing here is built. **Published numbers: none change** (every figure
+is already in the report), so there is no `MODEL_VERSION` bump.
+
+### What the walk found
+
+- The first thing a visitor meets is the finish grid (Sluttabell). It is the
+  densest view; the answer to "what is going on in the league" is spread over
+  the hero, Tabell, Kamper and Utforsk.
+- The hero changes with the view (`renderRace`: Tabell shows `heroMovers`,
+  Kamper `heroMatch`, the rest `heroRaceModel`). So no single place shows the
+  race, the week and the movers together.
+- Explore is the seventh of seven tabs and, on a phone, inside **Mer**. Its six
+  tools (Sesongfjellet, Angrep mot forsvar, Flakstabellen, Kappløpene, Hva om,
+  Restprogrammet) are reached only through its own gallery, whose thumbnails
+  are large (two per row, about 250 px tall) and carry no number.
+- Other views link into Explore in two places only: Tabell ("Flakstabellen →",
+  "Restprogrammet →") and Kamper ("Endre resultater i Hva om →").
+
+### The page: Oversikt (`?view=overview`)
+
+Built only from builders that exist, so it adds composition, not logic.
+
+| # | Section | Reuses | Notes |
+|---|---|---|---|
+| 1 | The race | `heroRace` / `heroRaceModel` | Already null-safe (settled or finished season). |
+| 2 | Three race cards: title, Europe, relegation | `league.bands`, `bandChance` | Clubs at 5 % or more, most likely first. Bands come from the league, so OBOS-ligaen's play-off bands work without a special case. |
+| 3 | This round's key matches (2-3) | `pickFixture`, `buildFixtureCard`, `stakes` | Link "Alle kamper →". Hidden when no round is left (archived or finished season). |
+| 4 | Risers and fallers | `heroMovers` | Needs `state.careers`; hidden until loaded, as in Tabell. |
+| 5 | Utforsk strip | `exploreThumb`, `explore.<id>.title/desc` | Six compact cards (three per row on desktop, a horizontal row on a phone), each opening its tool directly through `openExplore`. |
+
+**Change since last round** (on the race cards) and **a live number on each
+Explore card** are phase 3: the first needs the history reports
+(`mountainLayers`, async, already cached for Kappløpene), the second needs the
+explore renderers' facts split from their drawing. Neither is free, so neither
+blocks phases 1-2.
+
+### Making Explore reachable (the other half)
+
+1. The Utforsk strip on Oversikt (above).
+2. Contextual links, in the pattern Tabell and Kamper already use: Sluttabell
+   -> Sesongfjellet and Kappløpene; Stige -> Angrep mot forsvar; Klubb ->
+   Angrep mot forsvar. Small, `public/` only.
+3. Smaller gallery thumbnails in Explore itself (grid, not the 16:9 shape:
+   `.explore-morph` depends on the aspect ratio for the open animation).
+
+### Navigation
+
+- Desktop: Oversikt first in the strip; check the **Mer** overflow still
+  collapses cleanly with eight tabs.
+- Phone: four view slots plus **Mer**; Oversikt takes one, so **Stige** moves
+  into the sheet (the thinnest page in the walk).
+
+### States to design for, and test
+
+Pre-season (nothing played: no movers, no key matches, race from the prior);
+archived season (no next round: section 3 hidden, race null, champion told);
+finished season; OBOS-ligaen (different bands, play-off); Norwegian and
+English; light and dark; 390 px with no sideways scroll.
+
+### Places to touch
+
+`activeView` default and `validViews` (`app.js` near 9559); the URL builder by
+`EXPLORE_SLUGS` (near 680); `index.html` (strip, mobile bar, sheet, popover);
+both languages in `i18n.js`; `pages.py`, the sitemap and `tests/test_pages.py`
+(route mirrors); `tests/frontend.test.js`. No new dependency.
+
+### Phases
+
+1. **The view, at its own route, in the nav; `/` still opens Sluttabell.**
+   Reversible, sections 1-5, the contextual links.
+2. **Oversikt becomes the landing page**; Sluttabell gets its own path. Titles,
+   og tags, canonical and the sitemap change, and so does what every search
+   result lands on.
+3. Change since last round on the race cards; a live number per Explore card.
+
+**Built (2026-11-21), phases 1 and 2.** `?view=overview`, the first tab and
+the default view, so `/` and `/obos-ligaen/` open it (the route pages carry no
+view, so `pages.py` is unchanged; Sluttabell is `?view=grid`). The hero above
+it is section 1; below it come the other open races (one card per band from
+`league.bands`, between `RACE_OPEN` and `RACE_SETTLED`, without the band the
+hero shows, at most four, a thin bar under each chance), the three matches
+most worth watching in the next round (`scoreFixtures`, the score the match
+of the week is chosen with), the climber and faller, and the six Explore
+tools as thumbnails (three across; the gallery itself is now three across
+too, two under 1000 px). Blocks with nothing to show are left out, so a
+finished season (checked on 2025 and on OBOS-ligaen 2026) shows the champion,
+the movers and the tools. On the phone bar Oversikt replaces Stige, which
+moved into the sheet; on a desktop Utforsk moved ahead of Stige so it stays
+in the strip when the masthead has room for six tabs. Contextual links:
+Sluttabell to the season mountain and race lines, Stige to attack against
+defence. Checked in Chrome: the live season in Norwegian dark and English light at
+about 1520 px wide, Norwegian dark at 390 px (a frame; no sideways scroll),
+the finished 2025 season, OBOS-ligaen (as `/obos-ligaen/` and by query) and
+the pre-season (rewound to 13 March 2026: five clubs in the race, four race
+cards, the round's matches, no movers). Not checked: English at 390 px, light
+at 390 px, and 1440 exactly.
+
+**Revised after review (2026-11-21).** The page has no title and no heading
+over each kind of block; it covers both divisions (a small division name over
+each group, the hero hidden here, the division picker with it). Each division
+has one card per open race in the band's own colour (relegation red, the
+Champions League blue), and the play-off is not a card of its own: the
+relegation card's chance already includes it (`bandChance`), as does the
+promotion card's in OBOS-ligaen. A finished division shows its champion. Two
+matches per division, then the movers, then links to that division's table and
+matches; the Explore tools close the page.
+
+**Second revision (2026-11-21), after looking at eloserien.samsonsen.org's
+overview, and a third after the owner said the second was a copy of it.** The
+idea taken from it is only that an overview opens each division with its
+headline figures and the round's key match; everything is drawn in
+EliteTracker's own voice. Each division has the hero's display figures in
+miniature (the title race, the round's key match as home, draw and away),
+shared with the page's hero through `raceList`; a card in the band's own colour
+for each other open race (relegation, with its play-off, in red); the clubs on
+the move as chips, and for a finished division who went up and down; divisions
+told apart by a hairline and the ladder's identity hue, not by boxes. Dropped
+as too close to the reference: the split title bar and its sentence, the key
+match as a card with an odds bar, the highest-rating list and the biggest-change
+card. Every block is one button (a race block opens the race lines on that race,
+the match block opens Kamper, the champion block the final table), and a club
+in it opens the club.
+
+**Fourth revision (2026-11-21), after the owner was not happy with the third.**
+A second look at eloserien.samsonsen.org, for principles rather than layout.
+*Worth taking:* each block answers a plain question; a sentence under the
+numbers says why they are what they are (the gap, what a match moves); a
+finished division takes one labelled line, not a block; every group of chips
+has a label. *Not worth taking:* the boxed sub-cards inside one panel, the
+highest-rating list (little information), the underlined text links, and the
+long About text. *What the third revision got wrong:* the key match as three
+equal display figures with decimals (no favourite stands out, and the stake
+note read as jargon); a finished division headed by its points total, not its
+champion; chips with no label, and in "+40 rating" against the site's own ▲ ▼
+notation; the Explore thumbnails took half the page and said nothing. *Built:*
+each division opens with a sentence (`overviewLede`); every race, the title
+included, is a corner of the finish grid (the places it is decided in, the
+grid's cells and band strip, the band's chance at the end), a view the
+reference has no counterpart for and the site's signature; the key match is
+Kamper's own row with its biggest stake as a sentence; chips are grouped under
+labels (rating over the last five matches, promoted, relegated, play-off still
+on with its chance); the Explore tools are a compact list with each tool's
+description. Checked in Chrome: live season (Norwegian dark, English light),
+390 px frame (no sideways scroll), the finished 2025 season, the pre-season
+(13 March 2026: four races, two by two).
+
+**Fifth revision (2026-11-21): glanceable.** The owner found the fourth
+cluttered, wanted bars on the race cards, and found OBOS-ligaen's section very
+bad. The finish-grid corners were too dense to read at a glance and are gone.
+Each race card is now a club per row with its chance large (display type) and
+a thick bar in the band's colour, four clubs at most, no caption beyond
+"play-off included"; a two-club race (most often the title) takes display
+size. The key match lost Kamper's row (ratings, scorelines, modifiers, dots):
+the two clubs over one odds bar and its stake in one sentence, with the movers
+as a small card beside it (▲ ▼, rating before and after). A finished division
+is the champion's sentence and a promotion and a relegation card: the clubs
+already up or down in words with no bar, a hairline, then the clubs still in a
+play-off with their chance and bar; the chips are gone. Checked: live season
+(desktop, 390 px frame, no sideways scroll), finished 2025, the pre-season in
+light.
+
+Then, on the owner's word, the title race was raised to a row of its own,
+with a bar like the reference's: each contender's chance in display type (the
+first at the left, the last at the right) over one bar split between them in
+proportion. Not the reference's gold-and-silver: a second colour reads as
+"second place", which breaks with three contenders. A darker gold for the
+rest was tried and dropped on the owner's word (it reads as a lesser prize),
+and so was one gold for every segment (the favourite's share no longer stood
+out at a glance). Settled: the favourite's share in the title gold, the rest of
+the field in one dim slate (no medal colour), told apart by the gaps and by
+their order (the clubs' own, left to right); what the shown clubs leave over is
+the bare track. Up to five contenders (the
+pre-season has five); on a phone three to a row.
+
+The sentence that opened each division was removed on the owner's word: the
+division now opens on the title race. A finished division, whose champion
+only the sentence named, gets a champion card in that row instead: the club in
+display type, its points and margin over second in small type.
+
+The Tabell and Kamper buttons in each division's heading did not fit there and
+were too easy to miss (owner). They are now two tiles across the width at the
+end of the division: the name in the accent colour with a fact from behind it
+(who tops the table and on how many points, or "the final table"; how many
+matches are left, or that all are played) and an arrow that moves on hover.
+The heading keeps only the name and the round.
+
+A finished division also shows its final table's top four (owner), as the
+first card in the row with promotion and relegation: place (marked in its
+band's colour, as the table marks it), club and points; it opens the table.
+
+**Review round (2026-11-21), owner's answers to eight suggestions.**
+1. *Change since the last round*, built: every live chance shows its move
+   against the report of the last matchday before the latest round's first
+   match, in the table's rating arrows (`trendArrowSVG`, upright past 10
+   percentage points) and the good or bad tone for the club (a relegation
+   chance that falls is good); the movers card takes the same arrows. The
+   phase 3 item deferred above is done: the earlier report is one cached fetch.
+2. *Settled clubs* stay where they are; the site's one "as good as certain"
+   threshold (`RACE_SETTLED`, the heroes' races and the overview) is now 95 %,
+   not 90 % (the 10 %-90 % wording above predates it).
+3. *Champion*: one enlarged card, the club and its points in display type,
+   places 2-4 smaller under it; the separate top-four card is gone.
+4. *Kamper tile*: when the next round starts and how many matches it has.
+5. *Top padding*: kept; on a phone it is already 16 px.
+6. *Match of the week*: the one Kamper's hero shows (`weekMatch`, now shared
+   by both), with a stake line for each club before it and each side's chance
+   before it under the score after.
+7. *Movers*: "Climber" and "Faller" labels, the table's arrows and colours, the
+   rating before and after.
+8. *Explore*: one large button naming the six tools (later: on a phone only,
+   with the first four thumbnails; the tool list as before on wider screens).
+
+**Every width, every point of a season (2026-11-21).** Swept in Chrome at 22
+widths (320-1600px, both sides of each breakpoint) through ten states
+(pre-season, round one, April, May, July, September, 1 November with
+OBOS-ligaen live, its last day, today, the finished 2025 season), Norwegian
+and English, checking for sideways scroll, content outside its card,
+overlapping figures and cut-off names, then by eye. Fixed: three or more title
+contenders now wrap in columns with the change under the figure (they ran out
+of their columns at 761px and on phones); the narrowest phones (380px and
+under) get two contenders a row, stacked tiles, a smaller champion and the
+Explore thumbnails over their text; the match of the week's names wrap on a
+phone; three race cards where two fit give the third the whole row, and the
+champion's places 2-4 go one column unless three fit (container queries); the
+movers caption is "Siste fem kamper" (the rows already say "Rating").
+
+**Deferred, with reasons.**
+- *Change since last round on the race cards* (phase 3): it needs the history
+  reports (`mountainLayers`, async) moved into a shared function; a later job.
+- *A live number on each Explore card* (phase 3): it means separating six
+  renderers' facts from their drawing code.
+- *A link from the club page to attack against defence*: the club view has no
+  panel head to hang it on yet.
+- With eight tabs the masthead has room for six on a typical desktop:
+  Sammenlign and Modell sit under **Mer** (Utforsk was moved up so it stays).
+- The route pages under `public/klubb/`, `utforsk/` and `obos-ligaen/` are
+  build output (git-ignored); old local copies lack the overview, so run
+  `build_site` (or `pages.build_pages`) after pulling. The overview's render
+  returns quietly where its block is missing.
+
+Phase 2 was built on the go-ahead to implement Rounds 1 and 2; to put
+Sluttabell back as the landing page is one line (`activeView` in the state).
+
+**Decision:**
+
+**Decision:**
+
+---
+
+## Round 3: alive
 
 ### 6. Motion that explains
 
@@ -347,7 +628,7 @@ which never changes.
 
 ---
 
-## Round 3: the bigger pieces
+## Round 4: the bigger pieces
 
 ### 8. The season as an experience
 
@@ -386,7 +667,7 @@ colours losing their meaning?
 
 ---
 
-## Round 4: finishing
+## Round 5: finishing
 
 ### 10. A sign-off footer
 
