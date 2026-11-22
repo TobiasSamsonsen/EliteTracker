@@ -3480,6 +3480,31 @@ button.team-mini__row:hover { background: var(--panel-sunk); }
   font-size: 0.9375rem;
 }
 .team-match:last-child { border-bottom: 0; }
+/* The forecast tab's fixtures: the likeliest scores between the opponent and
+   the odds. On a desktop the odds bar takes the larger share of the room the
+   name leaves, never under its usual 13rem; the scores keep a fixed column
+   (three pills of two-digit chances fit), so the bars line up row to row. */
+.team-match--lines { grid-template-columns: 6.25rem 1.5rem minmax(0, 1fr) auto auto; }
+.team-match__lines { display: flex; gap: 0.3rem; }
+@media (min-width: 761px) {
+  .team-match--lines { grid-template-columns: 6.25rem 1.5rem minmax(0, 1fr) 13rem minmax(13rem, 1.5fr); }
+  .team-match--lines .team-match__lines { justify-content: flex-end; }
+  .team-match--lines .team-match__odds { width: auto; }
+}
+/* A narrow desktop has no room for a scores column beside the name: the
+   scores go under the name, and the bar keeps the right-hand side. */
+@media (min-width: 761px) and (max-width: 1099px) {
+  .team-match--lines {
+    grid-template-columns: 6.25rem 1.5rem minmax(0, 1fr) minmax(13rem, 1.5fr);
+    grid-template-areas: "date venue opp odds" "date venue lines odds";
+    row-gap: 0.35rem;
+  }
+  .team-match--lines .team-match__date { grid-area: date; }
+  .team-match--lines .team-match__venue { grid-area: venue; }
+  .team-match--lines .team-match__opponent { grid-area: opp; }
+  .team-match--lines .team-match__lines { grid-area: lines; justify-content: flex-start; }
+  .team-match--lines .team-match__odds { grid-area: odds; }
+}
 .team-match__date { font-size: 0.8125rem; color: var(--ink-muted); font-variant-numeric: tabular-nums; }
 .team-match__venue {
   font-size: 0.6875rem;
@@ -3541,6 +3566,12 @@ button.team-mini__row:hover { background: var(--panel-sunk); }
   .team-match__xg { display: none; }
   .team-section__header:has(.team-match__legend) { flex-wrap: wrap; row-gap: 0.4rem; }
   .team-match__legend { flex-basis: 100%; }
+  /* The scores take a line of their own under the name and date. */
+  .team-match--lines {
+    grid-template-columns: 1.25rem 2.25rem minmax(0, 1fr) auto;
+    grid-template-areas: "venue crest opp result" "venue crest date result" ". . lines lines";
+  }
+  .team-match__lines { grid-area: lines; margin-top: 0.35rem; }
 }
 
 /* Matches: a part-played week puts a heading over its results and fixtures. */

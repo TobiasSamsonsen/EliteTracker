@@ -9536,8 +9536,10 @@ function drawTeamChart(career) {
    side: date, home or away, the opponent, then the three-way odds as win /
    draw / loss, or the result with its score the club's way round, the xG and
    what it did to the rating. The league-wide cards, centred on both clubs,
-   repeated this club's own name and rating in every row. */
-function teamMatchRow(match, teamId, report, ratingChanges) {
+   repeated this club's own name and rating in every row. With scorelines (the
+   forecast tab's fixture list), a fixture also shows its likeliest scores,
+   the club's way round as its results are. */
+function teamMatchRow(match, teamId, report, ratingChanges, { scorelines = false } = {}) {
   const home = String(match.home_id) === String(teamId);
   const row = el('div', 'team-match');
   row.appendChild(el('span', 'team-match__date', formatDate(match.date)));
@@ -9598,12 +9600,30 @@ function teamMatchRow(match, teamId, report, ratingChanges) {
       bar.appendChild(segment);
     }
     odds.append(figures, bar);
+    if (scorelines && match.scorelines?.length) {
+      row.classList.add('team-match--lines');
+      row.appendChild(teamMatchLines(match.scorelines, home));
+    }
     row.appendChild(odds);
     const stake = (report.high_stakes || []).find((entry) =>
       String(entry.match_id) === String(match.match_id) && String(entry.team_id) === String(teamId));
     if (stake) label.appendChild(stakeDot(stake, report.table.length));
   }
   return row;
+}
+
+/* A fixture's three likeliest scores as the fixture cards' pills, turned to
+   the club's side: scored first, conceded second. */
+function teamMatchLines(scorelines, home) {
+  const lines = el('div', 'team-match__lines');
+  for (const line of scorelines.slice(0, 3)) {
+    const [scored, conceded] = home ? [line.home_goals, line.away_goals] : [line.away_goals, line.home_goals];
+    const chip = el('span', 'fixture__line');
+    chip.append(el('span', 'fixture__score', `${scored}–${conceded}`), ` ${pct(line.probability, 0)}`);
+    chip.setAttribute('aria-label', t('aria.scoreline', { score: `${scored}-${conceded}`, pct: pct(line.probability, 1) }));
+    lines.appendChild(chip);
+  }
+  return lines;
 }
 
 /* Win, draw and loss in the odds bars' colours, said once above the rows. */
@@ -9637,7 +9657,7 @@ function renderTeamFixtures(teamId, teamName, report, container) {
   header.appendChild(teamOddsLegend());
   section.appendChild(header);
   const list = el('div', 'team-matches');
-  for (const fixture of fixtures) list.appendChild(teamMatchRow(fixture, teamId, report));
+  for (const fixture of fixtures) list.appendChild(teamMatchRow(fixture, teamId, report, undefined, { scorelines: true }));
   section.appendChild(list);
   if (totalPages > 1) {
     section.appendChild(paginator(page, totalPages, (p) => { state.teamFixturesPage = p; renderTeamView(report); }));
