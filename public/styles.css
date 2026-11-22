@@ -419,8 +419,10 @@ html { scroll-padding-top: 76px; }
   white-space: nowrap; /* the model badge stays beside the name */
 }
 
-/* The mark: a corner of the finish grid, as in public/icons/mark.svg. */
-.wordmark__mark { width: 1.15em; height: 1.15em; flex: none; align-self: center; fill: currentColor; }
+/* The mark: a corner of the finish grid, as in public/icons/mark.svg.
+   Centring takes it to the middle of Archivo's line box, which sits 0.06em
+   below the middle of the capitals; the lift levels it with the name. */
+.wordmark__mark { width: 1.15em; height: 1.15em; flex: none; align-self: center; translate: 0 -0.06em; fill: currentColor; }
 .wordmark__lead { fill: var(--accent); }
 .wordmark__name { font-weight: inherit; }
 /* Under 370px the name and the division and season pill overflow the bar

@@ -357,6 +357,17 @@ function measureText(ctx, text, { size = 20, weight = 600, wide = false } = {}) 
   return width;
 }
 
+/* The height of a capital in the share font, from the glyph's own bounds
+   (Archivo's caps are about 0.69 of the size, the fallback's differ). */
+function shareCapHeight(ctx, size, weight = 600, wide = false) {
+  ctx.save();
+  ctx.font = `${weight} ${size}px Archivo, system-ui, sans-serif`;
+  if ('fontStretch' in ctx) ctx.fontStretch = wide ? 'expanded' : 'normal';
+  const ascent = ctx.measureText('E').actualBoundingBoxAscent;
+  ctx.restore();
+  return ascent || size * 0.69;
+}
+
 function shareRect(ctx, x, y, w, h, r, color) {
   ctx.fillStyle = color;
   ctx.beginPath();
@@ -388,16 +399,21 @@ function shareFrame(ctx, labelText) {
   ctx.fillStyle = glow;
   ctx.fillRect(0, 0, SW, SH);
   paintText(ctx, labelText, pad, pad + 6 * u, { size: 16 * u, weight: 600, color: SC.muted, label: true, maxWidth: SW - pad * 2, fit: true });
-  // The foot: the mark's nine cells, the name, the address.
+  // The foot: the mark's nine cells, the name, the address. The cells are
+  // centred on the name's capitals (its cap height, measured), not on a
+  // fixed offset from the baseline, so they sit level at every size.
   const foot = SH - pad + 8;
+  const nameBase = foot - 3;
+  const nameSize = 20 * u;
   const cell = 7.5 * u;
   const gap = 2 * u;
+  const markTop = nameBase - shareCapHeight(ctx, nameSize, 800, true) / 2 - (cell * 3 + gap * 2) / 2;
   [1, 0.35, 0.1, 0.35, 1, 0.35, 0.1, 0.35, 1].forEach((alpha, i) => {
     ctx.globalAlpha = alpha;
-    shareRect(ctx, pad + (i % 3) * (cell + gap), foot - 26 * u + Math.floor(i / 3) * (cell + gap), cell, cell, 1.5, i === 0 ? SC.accent : SC.ink);
+    shareRect(ctx, pad + (i % 3) * (cell + gap), markTop + Math.floor(i / 3) * (cell + gap), cell, cell, 1.5, i === 0 ? SC.accent : SC.ink);
   });
   ctx.globalAlpha = 1;
-  paintText(ctx, 'ELITETRACKER', pad + 36 * u, foot - 3, { size: 20 * u, weight: 800, wide: true });
+  paintText(ctx, 'ELITETRACKER', pad + 36 * u, nameBase, { size: nameSize, weight: 800, wide: true });
   paintText(ctx, window.location.host, SW - pad, foot - 3, { size: 18 * u, weight: 600, color: SC.faint, align: 'right' });
   const top = pad + 34 * u;
   const bottom = foot - 50 * u;
