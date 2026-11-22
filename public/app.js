@@ -261,7 +261,6 @@ function heatTextClass(step) {
 
 const tooltip = $('#tooltip');
 let tooltipTrigger = null;
-let gridPeek = null; // the finish-grid cell a first touch tap has shown the readout for
 
 function showTooltip(event, html, triggerElement = null) {
   tooltip.innerHTML = html;
@@ -318,7 +317,6 @@ function hideTooltip() {
   tooltip.dataset.show = 'false';
   tooltipTrigger?.removeAttribute('aria-describedby');
   tooltipTrigger = null;
-  gridPeek = null;
 }
 
 /* A hover readout that also works on touch. A tap fires pointerenter and then
@@ -512,8 +510,6 @@ function buildGrid(report, tableData, record = null) {
       cell.addEventListener('click', () => {
         // Not while the season replays (the cells then show another day), and not on a cell that is nothing or certain.
         if (anim.gridTableData || probability < 0.005 || probability > 0.9995) return;
-        // Touch: the first tap reads the cell (the legend says so), the second opens it.
-        if (coarsePointer.matches && gridPeek !== cell) { gridPeek = cell; return; }
         openScenario(report, row.team_id, position, cell);
       });
       cell.addEventListener('pointerleave', (event) => { if (event.pointerType !== 'touch') hideTooltip(); });
@@ -1450,9 +1446,16 @@ function renderGridLegend(report) {
   key.appendChild(el('span', '', t('grid.legend.likely')));
   legend.appendChild(key);
 
-  // Where a click opens how it happens (a season left to play), the hint says so.
+  // Where a square opens what it takes (a season left to play), the view's
+  // description says so, for touch and mouse alike; the legend adds the
+  // mouse's decimals, and on touch, where a tap opens it, nothing more.
   const opens = scenarioAvailable(report) ? 'Open' : '';
-  legend.appendChild(el('span', '', t(coarsePointer.matches ? `grid.legend.hintTouch${opens}` : `grid.legend.hint${opens}`)));
+  const desc = $('#grid-desc');
+  desc.dataset.i18n = opens ? 'grid.descOpen' : 'grid.desc';
+  desc.textContent = t(desc.dataset.i18n);
+  if (!(coarsePointer.matches && opens)) {
+    legend.appendChild(el('span', '', t(coarsePointer.matches ? 'grid.legend.hintTouch' : `grid.legend.hint${opens}`)));
+  }
 }
 
 function renderBandLegend(report) {
@@ -4017,12 +4020,33 @@ function exploreThumb(id) {
       }
     }
   } else if (id === 'playoff') {
-    // A hundred seasons as a hundred squares, in the two divisions' colours.
-    for (let i = 0; i < 100; i += 1) {
-      svg.appendChild(svgEl('rect', {
-        x: 27 + (i % 20) * 5.4, y: 18 + Math.floor(i / 20) * 5.4 * 2, width: 4.4, height: 9.8, rx: 1,
-        style: `fill: var(${i < 63 ? '--tier-1' : '--tier-2'})`,
-      }));
+    // The bracket as the page draws it: three OBOS-ligaen matches climbing the
+    // ladder, then the tie with Eliteserien's 14th. A club's slot is filled in its
+    // division's colour; a slot still to be won is an outline, fed by the line
+    // from the match before.
+    const width = 28;
+    const top = (i) => 58 - i * 13;
+    for (let i = 0; i < 4; i += 1) {
+      const x = 10 + i * 37;
+      const slots = i === 0 ? ['--tier-2', '--tier-2'] : i === 3 ? [null, '--tier-1'] : ['--tier-2', null];
+      slots.forEach((fill, s) => {
+        svg.appendChild(svgEl('rect', {
+          x, y: top(i) + s * 10, width, height: 8, rx: 2,
+          style: fill ? `fill: var(${fill})` : 'fill: none; stroke: var(--ink-faint); stroke-width: 1.4; stroke-dasharray: 3 2',
+        }));
+      });
+      if (i === 3) {
+        svg.appendChild(svgEl('rect', { x: x - 3, y: top(i) - 3, width: width + 6, height: 24, rx: 4, style: 'fill: none; stroke: var(--tier-1); stroke-width: 1.6' }));
+      }
+      if (i < 3) {
+        // From the middle of this match to the open slot of the next.
+        const to = i === 2 ? top(i + 1) + 4 : top(i + 1) + 14;
+        const mid = x + width + 4.5;
+        svg.appendChild(svgEl('path', {
+          d: `M${x + width} ${top(i) + 9} H${mid} V${to} H${x + 37}`,
+          style: 'fill: none; stroke: var(--ink-faint); stroke-width: 1.4',
+        }));
+      }
     }
   } else if (id === 'ladder') {
     // Clubs of both divisions stacked on one rating axis, low to high.
