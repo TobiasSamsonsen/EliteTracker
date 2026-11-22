@@ -1445,3 +1445,89 @@ test('esc makes a club name safe to put in the tooltip markup', () => {
   assert.equal(esc('A & B <i>"x"</i>'), 'A &amp; B &lt;i&gt;&quot;x&quot;&lt;/i&gt;');
   assert.equal(esc(12), '12');
 });
+
+/* The relegation play-off page's grid: rows and columns from the published pairs. */
+eval(/const PLAYOFF_MIN_SHARE = [^;]+;/.exec(src)[0] + pick('playoffGrid'));
+
+test('the play-off grid sums each club\'s pairings and how often the Eliteserien club stays up', () => {
+  const tie = {
+    teams: { a: 'A', b: 'B', x: 'X', y: 'Y', z: 'Z' },
+    pairs: [
+      { top: 'a', bottom: 'x', p: 0.3, stay: 0.5 },
+      { top: 'a', bottom: 'y', p: 0.1, stay: 0.7 },
+      { top: 'b', bottom: 'x', p: 0.4, stay: 0.4 },
+      { top: 'b', bottom: 'z', p: 0.19, stay: 0.6 },
+      { top: 'b', bottom: 'y', p: 0.01, stay: 1 },
+    ],
+  };
+  const grid = playoffGrid(tie);
+  assert.deepEqual(grid.rows.map((row) => row.id), ['b', 'a']);
+  assert.deepEqual(grid.cols.map((col) => col.id), ['x', 'z', 'y']);
+  assert.ok(Math.abs(grid.rows[0].total - 0.6) < 1e-12 && Math.abs(grid.rows[1].total - 0.4) < 1e-12);
+  assert.ok(Math.abs(grid.rows[1].stay - (0.15 + 0.07) / 0.4) < 1e-12);
+  assert.ok(Math.abs(grid.total - 1) < 1e-12);
+  assert.ok(Math.abs(grid.stay - (0.15 + 0.07 + 0.16 + 0.114 + 0.01)) < 1e-12);
+  assert.equal(grid.cells.get('b|z').stay, 0.6);
+  // A club under the share is off the grid but still in the overall figure.
+  const thin = playoffGrid(tie, 0.15);
+  assert.deepEqual(thin.cols.map((col) => col.id), ['x', 'z']);
+  assert.ok(Math.abs(thin.stay - grid.stay) < 1e-12);
+});
+
+test('every relegation play-off string exists in both languages', () => {
+  assertBothLanguages([
+    'explore.playoff.title', 'explore.playoff.desc', 'playoff.empty', 'playoff.lead', 'playoff.note', 'playoff.how',
+    'playoff.v', 'playoff.settled.stayed', 'playoff.settled.down', 'playoff.aria', 'playoff.tip',
+    'playoff.headline.es', 'playoff.headline.obos', 'playoff.waffle.aria', 'playoff.side.es', 'playoff.side.obos',
+    'playoff.how.title', 'playoff.bracket.note', 'playoff.bracket.noteOld', 'playoff.round.1', 'playoff.round.2',
+    'playoff.round.3', 'playoff.round.final', 'playoff.semi', 'playoff.tie', 'playoff.leg1', 'playoff.leg2',
+    'playoff.winnerOf1', 'playoff.winnerOf2', 'playoff.winnerOfSemi', 'playoff.bracketWinner',
+    'playoff.eliteserien14th', 'playoff.obosPlace', 'playoff.who', 'playoff.who.es', 'playoff.who.obos',
+    'playoff.of100', 'playoff.rowTail', 'playoff.colTail', 'playoff.others', 'playoff.ties', 'playoff.ties.note',
+    'playoff.card.freq', 'playoff.all', 'playoff.allNote',
+    'playoff.survival.title', 'playoff.survival.text', 'playoff.survival.row', 'playoff.survival.stays',
+    'playoff.likely', 'playoff.pairingTip',
+  ]);
+});
+
+eval(pick('playoffOf100') + pick('playoffCards'));
+
+test('the play-off page counts in whole seasons out of a hundred', () => {
+  assert.equal(playoffOf100(0.631), '63');
+  assert.equal(playoffOf100(0.004), '<1');
+  assert.equal(playoffOf100(0.9951), '100');
+});
+
+test('the likeliest matches are the common pairings, most common first, capped', () => {
+  const tie = { pairs: [
+    { top: 'a', bottom: 'x', p: 0.005, stay: 0.5 }, { top: 'a', bottom: 'y', p: 0.2, stay: 0.4 },
+    { top: 'b', bottom: 'x', p: 0.3, stay: 0.6 }, { top: 'b', bottom: 'y', p: 0.02, stay: 0.7 },
+  ] };
+  assert.deepEqual(playoffCards(tie).map((pair) => `${pair.top}${pair.bottom}`), ['bx', 'ay', 'by']);
+  assert.deepEqual(playoffCards(tie, 0.01, 2).map((pair) => `${pair.top}${pair.bottom}`), ['bx', 'ay']);
+});
+
+eval(pick('playoffLikely'));
+
+test('a bracket match lists its three likeliest pairings, and none once either side is settled', () => {
+  const pair = (home, away, p) => ({ home, away, p });
+  const open = [pair('a', 'x', 0.2), pair('b', 'y', 0.5), pair('c', 'x', 0.005), pair('d', 'x', 0.25), pair('e', 'y', 0.045)];
+  assert.deepEqual(playoffLikely(open).map((x) => x.home), ['b', 'd', 'a']);
+  assert.deepEqual(playoffLikely([pair('a', 'x', 1)]), []);
+  assert.deepEqual(playoffLikely([pair('a', 'x', 0.004)]), []);
+  // The ladder's seed at home every time: the pairings only repeat the other slot.
+  assert.deepEqual(playoffLikely([pair('a', 'x', 0.6), pair('a', 'y', 0.4)]), []);
+  assert.deepEqual(playoffLikely([pair('a', 'z', 0.6), pair('b', 'z', 0.4)]), []);
+});
+
+eval(pick('playoffWinners'));
+
+test('a bracket match\'s winners add each pairing\'s chance of each side going through', () => {
+  const winners = playoffWinners([
+    { home: 'a', away: 'b', p: 0.6, home_win: 0.5 },
+    { home: 'a', away: 'c', p: 0.4, home_win: 0.25 },
+  ]);
+  assert.equal(winners[0].id, 'a');
+  const share = Object.fromEntries(winners.map((w) => [w.id, w.chance]));
+  assert.ok(Math.abs(share.a - 0.4) < 1e-12 && Math.abs(share.b - 0.3) < 1e-12 && Math.abs(share.c - 0.3) < 1e-12);
+});

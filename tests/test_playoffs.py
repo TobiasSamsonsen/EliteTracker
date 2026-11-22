@@ -174,3 +174,65 @@ def test_reports_count_the_play_offs_between_the_direct_places_and_the_play_off_
                 assert "promotion_probability" not in row
         if slug == "obosligaen":
             assert sum(row["playoff_win_probability"] for row in table) == pytest.approx(1.0)
+
+
+def test_the_shared_tie_is_published_pairing_by_pairing_and_agrees_in_both_reports():
+    """Eliteserien's 14th v OBOS-ligaen's bracket winner is one tie: both reports
+    carry the same pairs (the Explore page's matrix), they cover almost every run,
+    and the upper club's survival is what the table's play-off relegation adds."""
+    from elitetracker.pipeline import build_report
+
+    elite = build_report("eliteserien", 2017, asof="2017-08-01", **small())
+    obos = build_report("obosligaen", 2017, asof="2017-08-01", **small())
+    tie, other = elite["relegation_playoff"], obos["relegation_playoff"]
+    assert tie["settled"] is False and tie["pairs"] == other["pairs"]
+    assert 0.99 < sum(pair["p"] for pair in tie["pairs"]) <= 1.0 + 1e-6
+    assert all(0.0 <= pair["stay"] <= 1.0 for pair in tie["pairs"])
+    assert {pair["top"] for pair in tie["pairs"]} <= {row["team_id"] for row in elite["table"]}
+    assert {pair["bottom"] for pair in tie["pairs"]} <= {row["team_id"] for row in obos["table"]}
+    assert all(team in tie["teams"] for pair in tie["pairs"] for team in (pair["top"], pair["bottom"]))
+    # Eliteserien's play-off relegations are the pairs' losses (to rounding of the thin pairs).
+    down = {row["team_id"]: row["relegation_probability"] for row in elite["table"]}
+    lost = {}
+    for pair in tie["pairs"]:
+        lost[pair["top"]] = lost.get(pair["top"], 0.0) + pair["p"] * (1.0 - pair["stay"])
+    for team, share in lost.items():
+        assert down[team] >= share - 1e-3
+    # OBOS-ligaen's survival tie is only in its own report.
+    assert "survival" not in tie and 0.99 < sum(row["p"] for row in other["survival"]) <= 1.0 + 1e-6
+
+
+def test_a_finished_seasons_tie_is_the_one_that_was_played():
+    from elitetracker.pipeline import build_report, playoff_outcomes
+
+    outcome = playoff_outcomes()[2017]
+    for slug in ("eliteserien", "obosligaen"):
+        tie = build_report(slug, 2017, **small())["relegation_playoff"]
+        assert tie["settled"] is True
+        assert tie["pairs"] == [{"top": outcome["eliteserien_14th"], "bottom": outcome["bracket_winner"], "p": 1.0,
+                                 "stay": 0.0 if outcome["eliteserien_14th_relegated"] else 1.0}]
+    assert tie["survival"][0]["team_id"] == outcome["obosligaen_14th"]
+
+
+def test_the_bracket_is_published_match_by_match_and_agrees_in_both_reports():
+    """OBOS-ligaen's play-off, match by match: every match covers almost every run,
+    the last match's winners are the tie's lower side, and both reports agree."""
+    from elitetracker.pipeline import build_report
+
+    elite = build_report("eliteserien", 2023, asof="2023-09-01", **small())["relegation_playoff"]
+    obos = build_report("obosligaen", 2023, asof="2023-09-01", **small())["relegation_playoff"]
+    assert elite["bracket"] == obos["bracket"] and len(obos["bracket"]) == 3
+    for match in obos["bracket"]:
+        assert 0.99 < sum(pair["p"] for pair in match) <= 1.0 + 1e-6
+        assert all(0.0 <= pair["home_win"] <= 1.0 for pair in match)
+        assert all(pair["home"] in obos["teams"] and pair["away"] in obos["teams"] for pair in match)
+    # The final's winners are the bracket winners the tie is played against.
+    final = {}
+    for pair in obos["bracket"][2]:
+        final[pair["home"]] = final.get(pair["home"], 0.0) + pair["p"] * pair["home_win"]
+        final[pair["away"]] = final.get(pair["away"], 0.0) + pair["p"] * (1 - pair["home_win"])
+    tie = {}
+    for pair in obos["pairs"]:
+        tie[pair["bottom"]] = tie.get(pair["bottom"], 0.0) + pair["p"]
+    for team, share in tie.items():
+        assert abs(final.get(team, 0.0) - share) < 2e-3

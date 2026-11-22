@@ -5325,6 +5325,131 @@ table.standings tbody tr:not(.zone-divider) td { border-bottom-color: color-mix(
 /* The cell sets its own ink, so the grid's invert class has to win over it. */
 .runin__cell.cell--invert { color: var(--cell-ink-invert); }
 
+/* ---------- explore: relegation play-off (viz=playoff) ---------------- */
+
+/* Colour is division throughout: Eliteserien in --tier-1, OBOS-ligaen in --tier-2,
+   as on the ladder. Neither side of the tie is the bad one, so no good/bad tones. */
+.playoff { --es: var(--tier-1); --obos: var(--tier-2); display: grid; gap: 2rem; padding: 1rem 1rem 1.25rem; }
+.playoff__view { display: grid; gap: 2.25rem; min-width: 0; }
+/* The site spaces sections apart on its own; here the grid's gap does it. */
+.playoff > *, .playoff__view > * { margin-block: 0; }
+.playoff__view > .playoff__headline { margin-top: -1rem; }
+.playoff__lead { margin: 0; max-width: 38rem; color: var(--ink-muted); font-size: 0.9375rem; line-height: 1.5; }
+.playoff__section { display: grid; gap: 0.75rem; min-width: 0; }
+.playoff__heading { margin: 0; font-family: var(--display); font-size: 1.25rem; font-weight: 800; font-variation-settings: "wdth" 112; letter-spacing: -0.005em; }
+.playoff__intro { margin: -0.35rem 0 0.25rem; max-width: 40rem; color: var(--ink-muted); font-size: 0.8125rem; line-height: 1.5; }
+
+/* The answer: a sentence, and a hundred seasons as a hundred squares. */
+.playoff__headline { display: grid; gap: 0.9rem; max-width: 40rem; }
+.playoff__answer { margin: 0; font-family: var(--display); font-size: clamp(1.35rem, 3.2vw, 1.85rem); font-weight: 700; font-variation-settings: "wdth" 108; line-height: 1.25; text-wrap: balance; }
+.playoff__answer-n { font-size: 1.45em; font-weight: 800; font-variation-settings: "wdth" 125; font-variant-numeric: tabular-nums; }
+.playoff__waffle { display: grid; grid-template-columns: repeat(20, minmax(0, 1fr)); gap: 3px; max-width: 32rem; }
+.playoff__season { aspect-ratio: 1; border-radius: 2px; }
+.playoff__season--es { background: var(--es); }
+.playoff__season--obos { background: var(--obos); }
+.playoff__key { display: flex; flex-wrap: wrap; gap: 0.4rem 1.25rem; font-size: 0.8125rem; font-weight: 600; }
+.playoff__key-item { display: inline-flex; align-items: center; gap: 0.45rem; }
+.playoff__key-item i { width: 0.75rem; height: 0.75rem; border-radius: 2px; }
+.playoff__key-item--es i { background: var(--es); }
+.playoff__key-item--obos i { background: var(--obos); }
+
+/* The knockout table: a column per round, a card per match. The ladder climbs:
+   each round sits a step above the one before, the tie at the top. */
+.playoff__scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+.playoff__rounds { display: flex; align-items: flex-start; gap: 1.75rem; min-width: max-content; margin: 0; padding: 0.25rem 0 0.5rem; list-style: none; }
+.playoff__rounds--ladder .playoff__round { margin-top: calc(var(--step) * 1.6rem); }
+.playoff__round { position: relative; display: grid; gap: 0.2rem; width: 14rem; }
+.playoff__round-title { font-size: 0.875rem; font-weight: 700; }
+.playoff__round-date { color: var(--ink-muted); font-size: 0.75rem; }
+.playoff__match { position: relative; display: grid; gap: 0.35rem; margin-top: 0.4rem; padding: 0.45rem; border-radius: 8px; background: var(--panel-sunk); }
+/* The line on to the next round leaves from the middle of a match. */
+.playoff__rounds--ladder .playoff__round:not(:last-child) .playoff__match::after { content: ""; position: absolute; left: 100%; top: 50%; width: 1.75rem; border-top: 2px solid var(--rule); }
+.playoff__round--tie .playoff__match { outline: 2px solid var(--es); outline-offset: -2px; }
+.playoff__slot { display: grid; gap: 0.15rem; padding: 0.3rem 0.5rem; border-left: 3px solid; border-radius: 3px; background: var(--panel); }
+.playoff__slot--es { border-color: var(--es); }
+.playoff__slot--obos { border-color: var(--obos); }
+.playoff__slot--winner { border-left: 3px dashed var(--rule); background: transparent; color: var(--ink-muted); font-size: 0.8125rem; }
+.playoff__slot-label { color: var(--ink-muted); font-size: 0.6875rem; font-weight: 600; }
+.playoff__slot-club { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; font-size: 0.8125rem; }
+.playoff__slot-chance { color: var(--ink-muted); font-size: 0.75rem; font-variant-numeric: tabular-nums; }
+/* Under a match whose clubs are not settled yet: the pairings it most likely comes to. */
+.playoff__pairings { display: grid; gap: 0.2rem; margin-top: 0.15rem; padding: 0.4rem 0.5rem 0.1rem; border-top: 1px solid var(--rule); }
+.playoff__pairing { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; font-size: 0.75rem; border-radius: 3px; }
+.playoff__pairing:focus-visible { outline: 2px solid var(--ink); outline-offset: 1px; }
+.playoff__pairing-names { display: inline-flex; align-items: center; gap: 0.25rem; min-width: 0; font-weight: 600; white-space: nowrap; }
+.playoff__pairing-names .team-logo { flex: none; width: 14px; height: 14px; }
+.playoff__pairing-v { color: var(--ink-faint); }
+
+/* Who ends up in it: the two sides of the tie next to each other. */
+.playoff__sides { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1.5rem 2.5rem; }
+.playoff__side { display: grid; gap: 0.7rem; align-content: start; }
+.playoff__side-title { display: flex; align-items: center; gap: 0.5rem; margin: 0 0 0.15rem; font-size: 0.9375rem; font-weight: 700; }
+.playoff__side-title::before { content: ""; width: 0.75rem; height: 0.75rem; border-radius: 2px; background: currentColor; }
+.playoff__side--es .playoff__side-title::before { background: var(--es); }
+.playoff__side--obos .playoff__side-title::before { background: var(--obos); }
+.playoff__line { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 0.2rem 0.75rem; font-size: 0.8125rem; }
+.playoff__of100 { font-weight: 700; font-variant-numeric: tabular-nums; }
+.playoff__bar { grid-column: 1 / -1; height: 0.45rem; border-radius: 99px; background: var(--panel-sunk); overflow: hidden; }
+.playoff__bar-fill { display: block; height: 100%; border-radius: 99px; }
+.playoff__side--es .playoff__bar-fill { background: var(--es); }
+.playoff__side--obos .playoff__bar-fill { background: var(--obos); }
+.playoff__tail { grid-column: 1 / -1; color: var(--ink-muted); font-size: 0.75rem; }
+.playoff__club--rest { color: var(--ink-muted); font-weight: 500; }
+
+/* The likeliest ties, as scoreboards. */
+.playoff__cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(17rem, 1fr)); gap: 0.75rem; }
+.playoff__card { display: grid; gap: 0.45rem; align-content: start; padding: 0.75rem 0.85rem 0.85rem; border-radius: 10px; background: var(--panel-sunk); }
+.playoff__freq { margin: 0 0 0.1rem; color: var(--ink-muted); font-size: 0.75rem; }
+.playoff__card-club { display: flex; align-items: center; justify-content: space-between; gap: 0.75rem; }
+.playoff__card-chance { font-family: var(--display); font-size: 1.125rem; font-weight: 800; font-variant-numeric: tabular-nums; }
+.playoff__card-club--es .playoff__card-chance { color: var(--es); }
+.playoff__card-club--obos .playoff__card-chance { color: var(--obos); }
+.playoff__split { display: flex; height: 0.45rem; margin-top: 0.15rem; overflow: hidden; border-radius: 99px; }
+.playoff__split-es { background: var(--es); }
+.playoff__split-obos { background: var(--obos); }
+.playoff__split > :last-child { flex: 1; }
+.playoff__split-rest { background: var(--panel-sunk); }
+
+.playoff__club { appearance: none; display: inline-flex; align-items: center; gap: 0.45rem; min-width: 0; padding: 0; border: 0; background: none; color: var(--ink); font: inherit; font-weight: 600; text-align: left; cursor: pointer; }
+.playoff__club span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.playoff__club:hover span { text-decoration: underline; }
+.playoff__club:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+.playoff__club .team-logo { flex: none; width: 18px; height: 18px; }
+.playoff__club--col { flex-direction: column; gap: 0.2rem; font-size: 0.75rem; }
+.playoff__club--col .team-logo { width: 22px; height: 22px; }
+
+/* Every pairing, closed until asked for. */
+.playoff__all { padding-top: 1rem; border-top: 1px solid var(--rule); }
+.playoff__all > summary, .playoff__how > summary { cursor: pointer; font-weight: 700; }
+.playoff__all[open] > summary { margin-bottom: 0.6rem; }
+.playoff__how { margin-top: 1rem; }
+.playoff__how > summary { color: var(--ink-muted); font-size: 0.8125rem; font-weight: 600; }
+.playoff__how[open] > summary { margin-bottom: 0.5rem; }
+.playoff__table { border-collapse: separate; border-spacing: 3px; font-size: 0.8125rem; font-variant-numeric: tabular-nums; }
+.playoff__table th, .playoff__table td { padding: 0.2rem 0.4rem; white-space: nowrap; }
+.playoff__corner, .playoff__row { position: sticky; left: 0; z-index: 1; min-width: 8.5rem; background: var(--panel); text-align: left; }
+.playoff__col { min-width: 4.5rem; vertical-align: bottom; }
+.playoff__cell { height: 2.1rem; min-width: 4.5rem; border-radius: 5px; color: var(--ink); font-weight: 700; text-align: center; }
+.playoff__cell:focus-visible { outline: 2px solid var(--ink); outline-offset: 1px; }
+.playoff__none { background: transparent; }
+
+.playoff__settled { display: grid; gap: 0.5rem; }
+.playoff__settled .explore-note { margin: 0; }
+.playoff__versus { display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem 0.75rem; font-size: 1.125rem; }
+.playoff__v { color: var(--ink-muted); }
+.playoff__survival { padding-top: 1.5rem; border-top: 1px solid var(--rule); }
+.playoff__survival-row { display: grid; grid-template-columns: minmax(8rem, 11rem) minmax(8rem, 11rem) minmax(5rem, 14rem) auto; align-items: center; gap: 0.75rem; font-size: 0.8125rem; }
+.playoff__survival-p { color: var(--ink-muted); }
+.playoff__survival-stay { font-variant-numeric: tabular-nums; }
+
+@media (max-width: 760px) {
+  .playoff { padding: 0.75rem 0.75rem 1rem; }
+  .playoff__waffle { grid-template-columns: repeat(10, minmax(0, 1fr)); max-width: 17rem; }
+  .playoff__sides { grid-template-columns: 1fr; }
+  .playoff__survival-row { grid-template-columns: 1fr auto; row-gap: 0.35rem; }
+  .playoff__survival-row .playoff__split { grid-column: 1 / -1; grid-row: 3; }
+}
+
 /* ---------- how a finish happens (a grid cell's popup) ------------- */
 
 /* The cell is a button only where there is a season left to play, and not

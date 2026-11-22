@@ -56,7 +56,7 @@ ranks them. Play-offs
 division's simulated club: each division is simulated once per view (the other's
 report reuses it) and the one tie both play (OBOS-ligaen's bracket winner against
 Eliteserien's 14th) is drawn once, from its own random stream, so the two reports
-agree on it run by run. A finished season whose play-offs are in
+agree on it run by run; the tie is published pairing by pairing (`relegation_playoff` in the report, for the Explore page). A finished season whose play-offs are in
 `playoff_outcomes.json` takes them as they went. `simulation/history.py` re-runs the
 projection as it stood on earlier dates for the history charts.
 

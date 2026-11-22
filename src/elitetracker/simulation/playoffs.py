@@ -98,6 +98,22 @@ class PlayoffTally:
     relegated: np.ndarray
     winner_club: list[np.ndarray]
     winner_shock: list[np.ndarray]
+    # The one tie both divisions play, pairing by pairing: `tie_runs[top, bottom]`
+    # counts the runs that put the upper division's club (`top`) against the lower
+    # division's bracket winner (`bottom`), `tie_stays` those the top club won; both
+    # on the axis of `ids` (this division's clubs, then the other division's).
+    tie_runs: np.ndarray | None = None
+    tie_stays: np.ndarray | None = None
+    ids: tuple[str, ...] = ()
+    # Per club, runs that ended in the survival tie against the tier below, and
+    # runs the club won it (not the tie from the division below, which is `tie_*`).
+    survival_runs: np.ndarray | None = None
+    survival_stays: np.ndarray | None = None
+    # The bracket's matches in order (the ladder's three rounds, or the two semi-finals
+    # and the final), pairing by pairing: `match_runs[match, home, away]` counts the
+    # runs that played it, `match_home_wins` those the home side won.
+    match_runs: np.ndarray | None = None
+    match_home_wins: np.ndarray | None = None
 
 
 def _advance_on_draw(win: np.ndarray, loss: np.ndarray) -> np.ndarray:
@@ -207,21 +223,41 @@ class Knockout:
         level = rng.random(len(side)) < _advance_on_draw(win, loss)
         return (margin > 0) | ((margin == 0) & level)
 
-    def _bracket(self, order: np.ndarray, shock: np.ndarray) -> np.ndarray:
-        """The bracket's winner (club index) in every run."""
+    def _bracket(self, order: np.ndarray, shock: np.ndarray, tally: PlayoffTally) -> np.ndarray:
+        """The bracket's winner (club index) in every run, each match counted in `tally`."""
         at = {place: order[:, place - 1] for place in self.playoffs.bracket}
         first, second, third, fourth = self.playoffs.bracket
+        played = 0
+
+        def match(home: np.ndarray, away: np.ndarray) -> np.ndarray:
+            nonlocal played
+            winner = self._single(home, away, shock)
+            self._count_match(tally, played, home, away, winner == home)
+            played += 1
+            return winner
+
         if self.playoffs.ladder:
-            winner = self._single(at[third], at[fourth], shock)
-            winner = self._single(at[second], winner, shock)
-            return self._single(at[first], winner, shock)
-        upper = self._single(at[first], at[fourth], shock)
-        lower = self._single(at[second], at[third], shock)
+            winner = match(at[third], at[fourth])
+            winner = match(at[second], winner)
+            return match(at[first], winner)
+        upper = match(at[first], at[fourth])
+        lower = match(at[second], at[third])
         # The higher-placed of the two semi-final winners hosts.
         rank = np.empty_like(order)
         rank[np.arange(len(order))[:, None], order] = np.arange(order.shape[1])
         upper_hosts = rank[np.arange(len(order)), upper] < rank[np.arange(len(order)), lower]
-        return self._single(np.where(upper_hosts, upper, lower), np.where(upper_hosts, lower, upper), shock)
+        return match(np.where(upper_hosts, upper, lower), np.where(upper_hosts, lower, upper))
+
+    def _count_match(self, tally: PlayoffTally, index: int, home: np.ndarray, away: np.ndarray,
+                     home_won: np.ndarray) -> None:
+        """Add a chunk of one bracket match to the tally, pairing by pairing."""
+        size = self.count
+        if tally.match_runs is None:
+            tally.match_runs = np.zeros((3, size, size), dtype=np.int64)
+            tally.match_home_wins = np.zeros((3, size, size), dtype=np.int64)
+        flat = home * size + away
+        tally.match_runs[index] += np.bincount(flat, minlength=size * size).reshape(size, size)
+        tally.match_home_wins[index] += np.bincount(flat[home_won], minlength=size * size).reshape(size, size)
 
     def play(self, order: np.ndarray, own_shock: np.ndarray, first_run: int, tally: PlayoffTally) -> None:
         """Play a chunk of runs (`order`: club per finishing place, best first)."""
@@ -233,21 +269,39 @@ class Knockout:
             if opponent is not None:
                 shock[np.arange(runs), mapped[rows]] = opponent.shock[rows]
         if self.playoffs.bracket:
-            winner = self._bracket(order, shock)
+            winner = self._bracket(order, shock, tally)
             tally.bracket_wins += np.bincount(winner, minlength=self.count)
             tally.winner_club.append(winner)
             tally.winner_shock.append(own_shock[np.arange(runs), winner])
             if self.playoffs.final is not None:
                 promoted = self._two_legs(winner, self.final_index[rows], shock, self.tie_rng)
                 tally.promoted += np.bincount(winner[promoted], minlength=self.count)
+                self._count_tie(tally, self.final_index[rows], winner, ~promoted)
         if self.playoffs.survival is not None:
             club = order[:, self.playoffs.survival_position - 1]
             if self.playoffs.survival_from_below:
                 # The same tie as the division below's final: its side at home first.
                 stayed = ~self._two_legs(self.survival_index[rows], club, shock, self.tie_rng)
+                self._count_tie(tally, club, self.survival_index[rows], stayed)
             else:
                 stayed = self._two_legs(club, self.survival_index[rows], shock, self.survival_rng)
+                if tally.survival_runs is None:
+                    tally.survival_runs = np.zeros(self.count, dtype=np.int64)
+                    tally.survival_stays = np.zeros(self.count, dtype=np.int64)
+                tally.survival_runs += np.bincount(club, minlength=self.count)
+                tally.survival_stays += np.bincount(club[stayed], minlength=self.count)
             tally.relegated += np.bincount(club[~stayed], minlength=self.count)
+
+    def _count_tie(self, tally: PlayoffTally, top: np.ndarray, bottom: np.ndarray, top_stays: np.ndarray) -> None:
+        """Add a chunk of the shared tie to the tally, pairing by pairing."""
+        size = len(self.ids)
+        if tally.tie_runs is None:
+            tally.tie_runs = np.zeros((size, size), dtype=np.int64)
+            tally.tie_stays = np.zeros((size, size), dtype=np.int64)
+            tally.ids = tuple(self.ids)
+        flat = top * size + bottom
+        tally.tie_runs += np.bincount(flat, minlength=size * size).reshape(size, size)
+        tally.tie_stays += np.bincount(flat[top_stays], minlength=size * size).reshape(size, size)
 
 
 def play_runs(knockout: Knockout, order: np.ndarray, shock: np.ndarray, chunk: int, tally: PlayoffTally) -> None:

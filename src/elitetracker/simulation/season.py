@@ -171,6 +171,16 @@ class SeasonProjection:
     club_ids: tuple[str, ...] = ()
     run_order: np.ndarray | None = None
     run_shock: np.ndarray | None = None
+    # With play-offs: the tie both divisions play, pairing by pairing (the upper
+    # division's club, the lower division's bracket winner, the share of runs that
+    # paired them, the share of those the upper club won), and per club the share
+    # of runs it played the survival tie against the tier below and the share of
+    # those it won. A finished season's play-offs fill these with what happened.
+    tie_pairs: list[tuple[str, str, float, float]] | None = None
+    survival_ties: dict[str, tuple[float, float]] | None = None
+    # With a promotion bracket: its matches in order, each pairing by pairing (home,
+    # away, the share of runs that played it, the share of those the home side won).
+    bracket_matches: list[list[tuple[str, str, float, float]]] | None = None
 
 
 # The score grid's cells, row-major (home goals i, away goals j), split by the
@@ -696,11 +706,26 @@ def postseason_tally(
     return tally
 
 
+def _bracket_matches(projection: SeasonProjection, tally: PlayoffTally) -> list[list[tuple[str, str, float, float]]]:
+    """The bracket's matches from a tally, each pairing as (home, away, share of runs, home win share)."""
+    ids = projection.club_ids
+    matches = []
+    for runs, wins in zip(tally.match_runs, tally.match_home_wins):
+        homes, aways = np.nonzero(runs)
+        matches.append([
+            (ids[h], ids[a], float(runs[h, a] / projection.simulations), float(wins[h, a] / runs[h, a]))
+            for h, a in zip(homes.tolist(), aways.tolist())
+        ])
+    return matches
+
+
 def bracket_winners(projection: SeasonProjection, bracket: tuple[int, ...], ladder: bool,
                     ratings: dict[str, float], ad: AttackDefence, elo_config: EloConfig, on: str) -> Opponent:
     """The promotion bracket's winner of every run (club and shock), for the
-    division above to play its tie against; the bracket `play_postseason` plays."""
+    division above to play its tie against; the bracket `play_postseason` plays.
+    Its matches are kept on `projection` (`bracket_matches`) for the division above's report."""
     tally = postseason_tally(projection, Playoffs(bracket=bracket, ladder=ladder), ratings, ad, elo_config, on)
+    projection.bracket_matches = _bracket_matches(projection, tally)
     return Opponent(projection.club_ids, np.concatenate(tally.winner_club), np.concatenate(tally.winner_shock))
 
 
@@ -720,4 +745,19 @@ def play_postseason(
     if tally.winner_club:
         projection.bracket_winners = Opponent(
             projection.club_ids, np.concatenate(tally.winner_club), np.concatenate(tally.winner_shock))
+    if tally.match_runs is not None:
+        projection.bracket_matches = _bracket_matches(projection, tally)
+    if tally.tie_runs is not None:
+        tops, bottoms = np.nonzero(tally.tie_runs)
+        projection.tie_pairs = [
+            (tally.ids[top], tally.ids[bottom], float(tally.tie_runs[top, bottom] / projection.simulations),
+             float(tally.tie_stays[top, bottom] / tally.tie_runs[top, bottom]))
+            for top, bottom in zip(tops.tolist(), bottoms.tolist())
+        ]
+    if tally.survival_runs is not None:
+        projection.survival_ties = {
+            team_id: (float(tally.survival_runs[i] / projection.simulations),
+                      float(tally.survival_stays[i] / tally.survival_runs[i]))
+            for team_id, i in index.items() if tally.survival_runs[i]
+        }
     return tally

@@ -46,6 +46,7 @@ EXPLORE = {
     "races": "kapplopene",
     "whatif": "hva-om",
     "runin": "restprogrammet",
+    "playoff": "nedrykkskvalik",
 }
 
 LEAGUE_NAMES = {"eliteserien": "Eliteserien", "obosligaen": "OBOS-ligaen"}

@@ -634,6 +634,10 @@ def build_report(
         "results": _results_payload(matches, pre_match, era, shots=shots),
         "rerate": rerate_payload(slug, matches, seeds, shots, start, era),
         "high_stakes": high_stakes,
+        **({"relegation_playoff": tie} if (tie := _relegation_playoff_payload(
+            projection, by_league, _settled_outcome(season, root, by_league) is not None,
+            next((run.bracket_matches for run in (projection, *share.values()) if run.bracket_matches), None),
+        )) else {}),
         "next_stakes": _next_stakes(*stakes_inputs),
         "rival_watch": _rival_watch(
             projection.rivals, projection.rival_runs, stakes_inputs[1], stakes_inputs[2], stakes_inputs[3],
@@ -679,9 +683,21 @@ def playoff_outcomes(root: Path = NORMALIZED_DIR) -> dict[int, dict[str, Any]]:
     return {int(season): outcome for season, outcome in json.loads(path.read_text(encoding="utf-8")).items()}
 
 
+def _settled_outcome(season: int, root: Path, by_league: dict[str, list[Match]]) -> dict[str, Any] | None:
+    """The play-offs as they went, for a season that is over and has them on file."""
+    outcome = playoff_outcomes(root).get(season)
+    played = all(match.played for league_matches in by_league.values() for match in league_matches)
+    return outcome if outcome and played else None
+
+
 def _settle_playoffs(projection: SeasonProjection, slug: str, outcome: dict[str, Any]) -> None:
     """The play-off chances of a season whose play-offs are over: 1 or 0, as they went."""
     winner, down = outcome.get("bracket_winner"), set()
+    if winner and outcome.get("eliteserien_14th"):
+        stayed = 0.0 if outcome.get("eliteserien_14th_relegated") else 1.0
+        projection.tie_pairs = [(outcome["eliteserien_14th"], winner, 1.0, stayed)]
+    if slug == "obosligaen" and outcome.get("obosligaen_14th"):
+        projection.survival_ties = {outcome["obosligaen_14th"]: (1.0, 0.0 if outcome.get("obosligaen_14th_relegated") else 1.0)}
     if outcome.get("eliteserien_14th_relegated"):
         down.add(("eliteserien", outcome["eliteserien_14th"]))
     if outcome.get("obosligaen_14th_relegated"):
@@ -726,8 +742,8 @@ def _postseason(
     it and OBOS-ligaen's promotions through it are the same runs. The other
     division's runs are its own report's base simulation (`share`)."""
     simulation = simulation or SimulationConfig()
-    outcome = playoff_outcomes(root).get(season)
-    if outcome and all(match.played for league_matches in by_league.values() for match in league_matches):
+    outcome = _settled_outcome(season, root, by_league)
+    if outcome:
         _settle_playoffs(projection, slug, outcome)
         return
     bracket, survival = _playoff_bands(slug, season, root)
@@ -773,6 +789,52 @@ def _postseason(
         survival_from_below=from_below,
     )
     play_postseason(projection, playoffs, sim_ratings, sim_ad, elo_config, on)
+
+
+# A pairing of the shared play-off tie is published from this share of the runs
+# (10 of 50,000); rarer ones are noise and would only crowd the page's matrix.
+MIN_TIE_PAIR = 0.0002
+
+
+def _relegation_playoff_payload(
+    projection: SeasonProjection, by_league: dict[str, list[Match]], settled: bool,
+    bracket: list[list[tuple[str, str, float, float]]] | None = None,
+) -> dict[str, Any] | None:
+    """The tie between Eliteserien's 14th and OBOS-ligaen's bracket winner,
+    pairing by pairing (the Explore page's matrix), and in OBOS-ligaen's report
+    its 14th's survival tie against the tier below. Both divisions' reports carry
+    the same pairs: they are the same runs. `bracket` is OBOS-ligaen's play-off match by
+    match (from whichever division's simulation played it), each pairing with its share
+    of the runs and the home side's win share. None where the season has no such play-off."""
+    pairs = [pair for pair in projection.tie_pairs or [] if pair[2] >= MIN_TIE_PAIR]
+    survival = projection.survival_ties or {}
+    if not pairs and not survival:
+        return None
+    names = {}
+    for league_matches in by_league.values():
+        for match in league_matches:
+            names[match.home_id or match.home] = match.home
+            names[match.away_id or match.away] = match.away
+    matches = [[pair for pair in match if pair[2] >= MIN_TIE_PAIR] for match in bracket or []]
+    used = ({team for top, bottom, _, _ in pairs for team in (top, bottom)} | set(survival)
+            | {team for match in matches for home, away, _, _ in match for team in (home, away)})
+    return {
+        "settled": settled,
+        "teams": {team: names.get(team, team) for team in sorted(used)},
+        "pairs": [
+            {"top": top, "bottom": bottom, "p": round(share, 6), "stay": round(stay, 4)}
+            for top, bottom, share, stay in sorted(pairs, key=lambda pair: -pair[2])
+        ],
+        **({"bracket": [
+            [{"home": home, "away": away, "p": round(share, 6), "home_win": round(win, 4)}
+             for home, away, share, win in sorted(match, key=lambda pair: -pair[2])]
+            for match in matches
+        ]} if matches and not settled else {}),
+        **({"survival": [
+            {"team_id": team, "p": round(share, 6), "stay": round(stay, 4)}
+            for team, (share, stay) in sorted(survival.items(), key=lambda item: -item[1][0])
+        ]} if survival else {}),
+    }
 
 
 # A club must already have at least this chance of finishing in a
