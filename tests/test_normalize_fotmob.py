@@ -107,3 +107,19 @@ class TestNormalizeMatches:
     def test_deduplicates(self):
         assert len(normalize_matches([raw_match(), raw_match()])) == 1
 
+
+
+def test_play_off_matches_keep_who_fotmob_knocked_out():
+    from elitetracker.normalize.fotmob import normalize_playoff_matches
+
+    raw = [
+        {"id": "2", "home": {"name": "Stabæk", "id": "9918"}, "away": {"name": "Odd", "id": "7988"},
+         "status": {"utcTime": "2026-11-29T13:30:00Z", "finished": False, "cancelled": False}, "eliminatedTeamId": None},
+        {"id": "1", "home": {"name": "Odd", "id": "7988"}, "away": {"name": "Bryne", "id": "8531"},
+         "status": {"utcTime": "2026-11-22T12:30:00.000Z", "finished": True, "cancelled": False, "scoreStr": "1 - 0"},
+         "eliminatedTeamId": "8531"},
+    ]
+    first, second = normalize_playoff_matches(raw)
+    assert (first["match_id"], first["date"], first["time"], first["home_goals"], first["eliminated"]) == (
+        "1", "2026-11-22", "13:30", 1, "8531")
+    assert second["played"] is False and second["home_goals"] is None and second["time"] == "14:30"

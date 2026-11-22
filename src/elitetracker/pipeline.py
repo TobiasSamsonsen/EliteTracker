@@ -267,7 +267,7 @@ def build_all_careers(
 ) -> dict[str, TeamCareer]:
     return build_careers(
         load_slices(root), seed_ratings(root, seeding=seeding),
-        config=elo_config, shots=shot_table(root), values=market_values(root),
+        config=elo_config, shots=shot_table(root), values=market_values(root), playoffs=playoff_played(root),
     )
 
 
@@ -445,6 +445,17 @@ def inputs_digest(root: Path = NORMALIZED_DIR, season: int | None = None, asof: 
                 record.update(played=False, home_goals=None, away_goals=None)
             records.append(record)
 
+    # The play-off matches move the ratings and the play-off's chances: as the
+    # match files, a later season's left out and a result after `asof` unplayed.
+    for year, fixtures in sorted(playoff_matches(root).items()):
+        if season is not None and year > season:
+            continue
+        for fixture in fixtures:
+            record = {"playoff": year, **fixture}
+            if asof and fixture["played"] and fixture["date"] > asof:
+                record.update(played=False, home_goals=None, away_goals=None, eliminated=None)
+            records.append(record)
+
     # Only xG for matches this view knows about. xG arriving for a later match
     # (a later date, or a later season) must not invalidate an earlier view.
     scoped = season is not None
@@ -524,7 +535,10 @@ def build_report(
     era = era_config(season, elo_config)
     pre_match: dict[str, tuple[float, float]] = {}
     shots = shot_table(root)
-    ratings = build_rating_table(seeds, all_matches, config=elo_config, shots=shots, before=pre_match)
+    # The play-off matches played by then move the ratings too (elo-v18.0), so a
+    # finished one reprices the matches after it; the goals model leaves them out.
+    ratings = build_rating_table(seeds, all_matches + playoff_played(root, asof).get(season, []),
+                                 config=elo_config, shots=shots, before=pre_match)
     prior = prior_attack_defence(root, season)
     start = prior.copy()
     start.start_season(season)
@@ -637,6 +651,7 @@ def build_report(
         **({"relegation_playoff": tie} if (tie := _relegation_playoff_payload(
             projection, by_league, _settled_outcome(season, root, by_league) is not None,
             next((run.bracket_matches for run in (projection, *share.values()) if run.bracket_matches), None),
+            playoff_matches(root).get(season, []),
         )) else {}),
         "next_stakes": _next_stakes(*stakes_inputs),
         "rival_watch": _rival_watch(
@@ -681,6 +696,99 @@ def playoff_outcomes(root: Path = NORMALIZED_DIR) -> dict[int, dict[str, Any]]:
     if not path.exists():
         return {}
     return {int(season): outcome for season, outcome in json.loads(path.read_text(encoding="utf-8")).items()}
+
+
+# This season's play-off matches as fotmob lists them, played and to come
+# (`refresh.refresh_playoffs`), beside the match files.
+PLAYOFF_FIXTURES_FILE = "playoff_fixtures.json"
+
+
+def playoff_matches(root: Path = NORMALIZED_DIR) -> dict[int, list[dict[str, Any]]]:
+    """Per season, the play-off matches stored by `refresh` (`normalize_playoff_matches`)."""
+    path = Path(root) / PLAYOFF_FIXTURES_FILE
+    if not path.exists():
+        return {}
+    return {int(season): matches for season, matches in json.loads(path.read_text(encoding="utf-8")).items()}
+
+
+def playoff_played(root: Path = NORMALIZED_DIR, asof: str | None = None) -> dict[int, list[Match]]:
+    """Per season, the play-off matches played (by `asof`, where given), as the
+    rating replay takes them."""
+    out: dict[int, list[Match]] = {}
+    for season, fixtures in playoff_matches(root).items():
+        games = [
+            Match(match_id=fixture["match_id"], date=fixture["date"], time=fixture["time"], home=fixture["home"],
+                  away=fixture["away"], home_goals=fixture["home_goals"], away_goals=fixture["away_goals"],
+                  played=True, kickoff_utc=fixture["kickoff_utc"], home_id=fixture["home_id"],
+                  away_id=fixture["away_id"])
+            for fixture in fixtures if fixture["played"] and (asof is None or fixture["date"] <= asof)
+        ]
+        if games:
+            out[season] = games
+    return out
+
+
+def _sides(match: dict[str, Any]) -> tuple[str, str]:
+    return match["home_id"] or match["home"], match["away_id"] or match["away"]
+
+
+def _went_through(match: dict[str, Any]) -> str | None:
+    """Who a played single match sent through: the side fotmob did not knock
+    out, else the side that scored more (level and unmarked: not known yet)."""
+    if not match["played"]:
+        return None
+    home, away = _sides(match)
+    if match.get("eliminated") in (home, away):
+        return away if match["eliminated"] == home else home
+    if match["home_goals"] != match["away_goals"]:
+        return home if match["home_goals"] > match["away_goals"] else away
+    return None
+
+
+def playoff_tie(matches: list[dict[str, Any]]) -> tuple[list[dict[str, Any]], str | None]:
+    """The two-legged tie among a season's play-off matches (the one pairing that
+    meets twice) and who won it once both legs are played: the side fotmob did
+    not knock out, else the side ahead on aggregate."""
+    pairs: dict[frozenset, list[dict[str, Any]]] = {}
+    for match in matches:
+        pairs.setdefault(frozenset(_sides(match)), []).append(match)
+    legs = next((legs for legs in pairs.values() if len(legs) == 2), [])
+    if len(legs) < 2 or not all(leg["played"] for leg in legs):
+        return legs, None
+    sides = set(_sides(legs[0]))
+    knocked = next((leg["eliminated"] for leg in legs if leg.get("eliminated") in sides), None)
+    if knocked:
+        return legs, next(side for side in sides if side != knocked)
+    goals = dict.fromkeys(sides, 0)
+    for leg in legs:
+        home, away = _sides(leg)
+        goals[home] += leg["home_goals"]
+        goals[away] += leg["away_goals"]
+    first, second = sorted(sides)
+    return legs, None if goals[first] == goals[second] else max(sides, key=goals.get)
+
+
+def _bracket_decided(matches: list[dict[str, Any]], runs: SeasonProjection, bracket: tuple[int, ...],
+                     ladder: bool) -> tuple[tuple[int, str], ...]:
+    """The ladder's matches already played, as `Playoffs.decided`: a match is
+    known by its host, the higher seed (5th, then 4th, then 3rd), once the
+    table is final (every run has the same club in that place)."""
+    if not ladder or len(bracket) != 4 or runs.run_order is None:
+        return ()
+    hosts = {bracket[2]: 0, bracket[1]: 1, bracket[0]: 2}
+    place_of = {}
+    for place in hosts:
+        clubs = runs.run_order[:, place - 1]
+        if (clubs == clubs[0]).all():
+            place_of[runs.club_ids[clubs[0]]] = place
+    legs = playoff_tie(matches)[0]
+    decided = []
+    for match in matches:
+        through = None if match in legs else _went_through(match)
+        index = hosts.get(place_of.get(_sides(match)[0]))
+        if through is not None and index is not None:
+            decided.append((index, through))
+    return tuple(sorted(decided))
 
 
 def _settled_outcome(season: int, root: Path, by_league: dict[str, list[Match]]) -> dict[str, Any] | None:
@@ -755,6 +863,9 @@ def _postseason(
     on = max(match.date for league_matches in by_league.values() for match in league_matches)
     final = survival_opponent = None
     from_below = False
+    # The play-off matches played so far go as they went in every run.
+    played = playoff_matches(root).get(season, [])
+    decided = _bracket_decided(played, projection, places(bracket), ladder) if bracket else ()
     for other in LEAGUE_SPECS:
         if other == slug or not by_league.get(other):
             continue
@@ -765,7 +876,9 @@ def _postseason(
             final = kept_at(runs, other_survival.first)
         if survival and other_bracket:
             # Our survival place meets their bracket winner: the same tie.
-            survival_opponent = bracket_winners(runs, places(other_bracket), ladder, ratings, ad, elo_config, on)
+            survival_opponent = bracket_winners(
+                runs, places(other_bracket), ladder, ratings, ad, elo_config, on,
+                decided=_bracket_decided(played, runs, places(other_bracket), ladder))
             from_below = True
     sim_ratings, sim_ad = ratings, ad
     if survival and bracket and survival_opponent is None:
@@ -786,7 +899,7 @@ def _postseason(
     playoffs = Playoffs(
         bracket=places(bracket), ladder=ladder, final=final,
         survival_position=survival.first if survival else None, survival=survival_opponent,
-        survival_from_below=from_below,
+        survival_from_below=from_below, decided=decided, tie_through=playoff_tie(played)[1],
     )
     play_postseason(projection, playoffs, sim_ratings, sim_ad, elo_config, on)
 
@@ -799,13 +912,16 @@ MIN_TIE_PAIR = 0.0002
 def _relegation_playoff_payload(
     projection: SeasonProjection, by_league: dict[str, list[Match]], settled: bool,
     bracket: list[list[tuple[str, str, float, float]]] | None = None,
+    fixtures: list[dict[str, Any]] | None = None,
 ) -> dict[str, Any] | None:
     """The tie between Eliteserien's 14th and OBOS-ligaen's bracket winner,
     pairing by pairing (the Explore page's matrix), and in OBOS-ligaen's report
     its 14th's survival tie against the tier below. Both divisions' reports carry
     the same pairs: they are the same runs. `bracket` is OBOS-ligaen's play-off match by
     match (from whichever division's simulation played it), each pairing with its share
-    of the runs and the home side's win share. None where the season has no such play-off."""
+    of the runs and the home side's win share; `fixtures`, the play-off's matches
+    fotmob lists, played and to come (the page puts each beside its pairing).
+    None where the season has no such play-off."""
     pairs = [pair for pair in projection.tie_pairs or [] if pair[2] >= MIN_TIE_PAIR]
     survival = projection.survival_ties or {}
     if not pairs and not survival:
@@ -816,8 +932,13 @@ def _relegation_playoff_payload(
             names[match.home_id or match.home] = match.home
             names[match.away_id or match.away] = match.away
     matches = [[pair for pair in match if pair[2] >= MIN_TIE_PAIR] for match in bracket or []]
+    fixtures = [] if settled else (fixtures or [])
     used = ({team for top, bottom, _, _ in pairs for team in (top, bottom)} | set(survival)
-            | {team for match in matches for home, away, _, _ in match for team in (home, away)})
+            | {team for match in matches for home, away, _, _ in match for team in (home, away)}
+            | {team for fixture in fixtures for team in _sides(fixture)})
+    for fixture in fixtures:
+        for team, name in zip(_sides(fixture), (fixture["home"], fixture["away"])):
+            names.setdefault(team, name)
     return {
         "settled": settled,
         "teams": {team: names.get(team, team) for team in sorted(used)},
@@ -834,6 +955,11 @@ def _relegation_playoff_payload(
             {"team_id": team, "p": round(share, 6), "stay": round(stay, 4)}
             for team, (share, stay) in sorted(survival.items(), key=lambda item: -item[1][0])
         ]} if survival else {}),
+        **({"matches": [
+            {"home": _sides(fixture)[0], "away": _sides(fixture)[1], "date": fixture["date"], "time": fixture["time"],
+             "home_goals": fixture["home_goals"], "away_goals": fixture["away_goals"]}
+            for fixture in fixtures
+        ]} if fixtures else {}),
     }
 
 

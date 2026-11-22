@@ -6,6 +6,7 @@
 |---|---|---|
 | `normalized/<league>_<season>_matches.json` | every fixture and result, canonical `Match` schema | `refresh` (hourly in CI) |
 | `normalized/<league>_<season>_standings.json` | final tables (2014, 2015, 2025); 2014 seeds the ratings | by hand |
+| `normalized/playoff_fixtures.json` | the running season's play-off matches as fotmob lists them (its "Eliteserien Qualification", league 60): OBOS-ligaen's ladder and the tie with Eliteserien's 14th, played and to come; played ones go as they went in every simulated run | `refresh`, only while the play-off is on |
 | `normalized/playoff_outcomes.json` | how each finished season's play-offs went (2015-2025): bracket winner, who went down; checked against the next season's membership | by hand, once a season |
 | `normalized/uefa_ranks.json` | Norway's UEFA rank per season (the European places) | `refresh` |
 | `xg.json` | xG per match: fotmob (Eliteserien, with xG on target) and Sofascore (OBOS-ligaen) | `refresh`; `research xg-obos` |
@@ -40,7 +41,11 @@ Transfermarkt. A rate limit, an IP ban or a Cloudflare block would force it
 onto paid APIs and break the site. So:
 
 - Never add HTTP requests per match or per run to `refresh` or
-  `research xg-obos`.
+  `research xg-obos`. The one exception, asked for in November 2026, is the
+  play-off (`refresh.refresh_playoffs`): one fotmob page, only from
+  OBOS-ligaen's last round until the tie is decided, and inside that window
+  only the first time, after a kickoff still without a result, and at
+  06 and 18 UTC (`PLAYOFF_CHECK_HOURS`); a failed fetch is skipped.
 - Never re-scrape past seasons in bulk from tests, CI or model sweeps, and
   never loop over extra endpoints (no Sofascore for Eliteserien, no extra
   fotmob endpoints).

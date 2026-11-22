@@ -5653,6 +5653,9 @@ table.standings tbody tr:not(.zone-divider) td { border-bottom-color: color-mix(
 .playoff__slot-label { color: var(--ink-muted); font-size: 0.6875rem; font-weight: 600; }
 .playoff__slot-club { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; font-size: 0.8125rem; }
 .playoff__slot-chance { color: var(--ink-muted); font-size: 0.75rem; font-variant-numeric: tabular-nums; }
+/* The match as fotmob lists it: its kickoff, or the score once played. */
+.playoff__fixture { margin: 0; padding: 0 0.5rem; color: var(--ink-muted); font-size: 0.75rem; font-variant-numeric: tabular-nums; }
+.playoff__fixture--played { color: var(--ink); font-weight: 700; }
 /* Under a match whose clubs are not settled yet: the pairings it most likely comes to. */
 .playoff__pairings { display: grid; gap: 0.2rem; margin-top: 0.15rem; padding: 0.4rem 0.5rem 0.1rem; border-top: 1px solid var(--rule); }
 .playoff__pairing { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; font-size: 0.75rem; border-radius: 3px; }

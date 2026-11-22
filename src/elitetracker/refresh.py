@@ -6,7 +6,9 @@ normalizes it, runs the same consistency checks a hand-written file would get,
 and replaces ``data/normalized/<league>_<season>_matches.json``.
 
 It also stores Norway's UEFA association rank for the season
-(``uefa_ranks.json``), which decides the league places that lead into Europe.
+(``uefa_ranks.json``), which decides the league places that lead into Europe,
+and, while the play-off after the season is on, its matches
+(``playoff_fixtures.json``, `refresh_playoffs`).
 
 Nothing here touches the model; the rating replay, table and simulations read
 the normalized files on every run, so once the files are current the
@@ -33,12 +35,13 @@ from datetime import date, datetime, timezone
 from pathlib import Path
 from typing import Any, Callable, Iterable
 
-from elitetracker.normalize.fotmob import normalize_matches
-from elitetracker.normalize.matches import dump
+from elitetracker.normalize.fotmob import normalize_matches, normalize_playoff_matches
+from elitetracker.normalize.matches import NormalizationError, dump
 from elitetracker.pipeline import (
-    NORMALIZED_DIR, UEFA_RANKS_FILE, _europe_by_rank, current_season, load_matches,
+    NORMALIZED_DIR, PLAYOFF_FIXTURES_FILE, UEFA_RANKS_FILE, _europe_by_rank, current_season, load_matches,
+    playoff_outcomes, playoff_tie,
 )
-from elitetracker.sources.fotmob import LEAGUES, FetchError, fetch_matches, update_xg
+from elitetracker.sources.fotmob import LEAGUES, FetchError, fetch_matches, fetch_qualification, update_xg
 from elitetracker.sources.sofascore import (
     SofascoreBlocked, pending_obos_xg, update_obos_xg,
 )
@@ -139,6 +142,57 @@ def refresh_uefa_rank(
         print(f"UEFA rank {season}: Norway {rank}")
 
 
+# While the play-off waits for its next fixture to be listed, ask at these
+# UTC hours only (the scheduled refresh runs hourly): two requests a day.
+PLAYOFF_CHECK_HOURS = (6, 18)
+
+
+def refresh_playoffs(
+    root: Path = NORMALIZED_DIR,
+    season: int | None = None,
+    *,
+    fetch: Callable[[int], list[dict[str, Any]]] = fetch_qualification,
+    now: datetime | None = None,
+) -> None:
+    """Store the season's play-off matches (`playoff_fixtures.json`) from fotmob.
+
+    One request, and only while the play-off is on: from OBOS-ligaen's last
+    round until the tie with Eliteserien's 14th is decided or the season's
+    outcome is on file. Inside that window it asks the first time, after any
+    kickoff still without a result, and otherwise at `PLAYOFF_CHECK_HOURS` for
+    newly listed fixtures. Non-fatal: on a failed fetch the stored matches stand.
+    """
+    root = Path(root)
+    season = season or current_season(root)
+    now = now or datetime.now(timezone.utc)
+    obos = root / f"obosligaen_{season}_matches.json"
+    if not obos.exists() or not all(match.played for match in load_matches(obos)):
+        return
+    if season in playoff_outcomes(root):
+        return
+    path = root / PLAYOFF_FIXTURES_FILE
+    stored = json.loads(path.read_text(encoding="utf-8")) if path.exists() else {}
+    entry = stored.get(str(season))
+    if entry is not None:
+        if playoff_tie(entry)[1] is not None:
+            return  # decided: nothing left to learn
+        overdue = any(not match["played"] and match["kickoff_utc"]
+                      and datetime.fromisoformat(match["kickoff_utc"].replace("Z", "+00:00")) < now
+                      for match in entry)
+        if not overdue and now.hour not in PLAYOFF_CHECK_HOURS:
+            return
+    try:
+        matches = normalize_playoff_matches(fetch(season))
+    except (FetchError, NormalizationError) as exc:
+        print(f"Play-offs skipped: {exc}")
+        return
+    if matches != entry:
+        stored[str(season)] = matches
+        path.write_text(json.dumps(dict(sorted(stored.items())), indent=1, ensure_ascii=False) + "\n", encoding="utf-8")
+        played = sum(match["played"] for match in matches)
+        print(f"Play-offs {season}: {len(matches)} matches ({played} played)")
+
+
 def _in_ci() -> bool:
     return bool(os.environ.get("GITHUB_ACTIONS"))
 
@@ -153,6 +207,7 @@ def main(argv: list[str] | None = None) -> int:
     args = parser.parse_args(argv)
     refresh_matches(args.root, season=args.season, refresh_guard=not args.force)
     refresh_uefa_rank(args.root, args.season)
+    refresh_playoffs(args.root, args.season)
     # The attack/defence ratings and the Elo update both run on xG where there
     # is any: fotmob for Eliteserien, Sofascore for OBOS (fotmob has no shotmap
     # for the second division). Top up both for anything newly played.

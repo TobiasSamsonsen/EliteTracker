@@ -56,6 +56,23 @@ LEAGUES: dict[str, League] = {
 }
 
 
+# The play-offs after the season (fotmob's "Eliteserien Qualification"):
+# OBOS-ligaen's ladder and its winner's tie with Eliteserien's 14th. Not in
+# LEAGUES: it has no round robin, and `refresh` asks for it only while it is on.
+QUALIFICATION = League("qualification", "Eliteserien qualification", 60, "eliteserien-qualification", 0)
+
+
+def fetch_qualification(season: int) -> list[dict[str, Any]]:
+    """The season's play-off matches as fotmob lists them (none yet: empty)."""
+    url = _url(QUALIFICATION, "matches", season)
+    props = _page_props(_download(url), url)
+    _assert_season(props, season, url)
+    matches = props.get("fixtures", {}).get("allMatches") or []
+    if not isinstance(matches, list):
+        raise FetchError(f"{url}: play-off matches are not a list")
+    return matches
+
+
 def league(slug: str) -> League:
     try:
         return LEAGUES[slug]

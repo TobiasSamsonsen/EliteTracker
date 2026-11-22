@@ -720,11 +720,14 @@ def _bracket_matches(projection: SeasonProjection, tally: PlayoffTally) -> list[
 
 
 def bracket_winners(projection: SeasonProjection, bracket: tuple[int, ...], ladder: bool,
-                    ratings: dict[str, float], ad: AttackDefence, elo_config: EloConfig, on: str) -> Opponent:
+                    ratings: dict[str, float], ad: AttackDefence, elo_config: EloConfig, on: str,
+                    decided: tuple[tuple[int, str], ...] = ()) -> Opponent:
     """The promotion bracket's winner of every run (club and shock), for the
-    division above to play its tie against; the bracket `play_postseason` plays.
+    division above to play its tie against; the bracket `play_postseason` plays
+    (`decided`: its matches already played, as `Playoffs.decided`).
     Its matches are kept on `projection` (`bracket_matches`) for the division above's report."""
-    tally = postseason_tally(projection, Playoffs(bracket=bracket, ladder=ladder), ratings, ad, elo_config, on)
+    tally = postseason_tally(projection, Playoffs(bracket=bracket, ladder=ladder, decided=decided),
+                             ratings, ad, elo_config, on)
     projection.bracket_matches = _bracket_matches(projection, tally)
     return Opponent(projection.club_ids, np.concatenate(tally.winner_club), np.concatenate(tally.winner_shock))
 

@@ -57,7 +57,11 @@ division's simulated club: each division is simulated once per view (the other's
 report reuses it) and the one tie both play (OBOS-ligaen's bracket winner against
 Eliteserien's 14th) is drawn once, from its own random stream, so the two reports
 agree on it run by run; the tie is published pairing by pairing (`relegation_playoff` in the report, for the Explore page). A finished season whose play-offs are in
-`playoff_outcomes.json` takes them as they went. `simulation/history.py` re-runs the
+`playoff_outcomes.json` takes them as they went. While the play-off is on,
+`refresh` keeps its matches in `playoff_fixtures.json`: a played one goes as it
+went in every run, and moves both clubs' Elo like a league match (in the
+season's ratings and the career replay, so it carries into the next season;
+the goals model leaves it out), which reprices the matches after it. `simulation/history.py` re-runs the
 projection as it stood on earlier dates for the history charts.
 
 ## Changing the model

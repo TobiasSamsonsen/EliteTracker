@@ -237,7 +237,7 @@ from dataclasses import dataclass, replace
 # average club's displayed rates carry the division's mean finishing and keeping;
 # `era_config` keeps settings changed on its base. See PROJECT_STATUS.md, "Model
 # and simulation audit, batch 2" and "Engine, play-offs and payload audit, batch 3".
-MODEL_VERSION = "elo-v17.0"
+MODEL_VERSION = "elo-v18.0"
 
 # A 400-point rating gap means the stronger side is expected to score 10 times
 # as often as the weaker one; this is the constant that defines the ELO scale.

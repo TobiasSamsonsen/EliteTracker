@@ -77,7 +77,10 @@ class Playoffs:
     `survival_position` must win a two-legged tie against `survival` to stay
     up; with `survival_from_below` that tie is the promotion final seen from the
     division above (`survival` is the bracket winner, who hosts the first leg
-    as in the division below's own `final`)."""
+    as in the division below's own `final`). `decided` holds the bracket's
+    matches already played, as (match index in bracket order, winner's id):
+    every run that pairs that winner there sends it through; `tie_through`, the
+    winner of the two-legged tie between the divisions once it is played."""
 
     bracket: tuple[int, ...] = ()
     ladder: bool = True
@@ -85,6 +88,8 @@ class Playoffs:
     survival_position: int | None = None
     survival: Opponent | None = None
     survival_from_below: bool = False
+    decided: tuple[tuple[int, str], ...] = ()
+    tie_through: str | None = None
 
 
 @dataclass
@@ -149,6 +154,8 @@ class Knockout:
                 extra += [team for team in opponent.team_ids if team not in team_ids and team not in extra]
         self.ids = list(team_ids) + extra
         self.index_of = {team: index for index, team in enumerate(self.ids)}
+        self.decided = {match: self.index_of[winner] for match, winner in playoffs.decided if winner in self.index_of}
+        self.tie_through = self.index_of.get(playoffs.tie_through) if playoffs.tie_through else None
         # The other division's clubs map into this simulation's club axis.
         self.final_index = self._mapped(playoffs.final)
         self.survival_index = self._mapped(playoffs.survival)
@@ -231,7 +238,12 @@ class Knockout:
 
         def match(home: np.ndarray, away: np.ndarray) -> np.ndarray:
             nonlocal played
+            # Drawn even when already played, so the random stream stays the one
+            # every report plays; a played match then goes as it went.
             winner = self._single(home, away, shock)
+            if played in self.decided:
+                through = self.decided[played]
+                winner = np.where((home == through) | (away == through), through, winner)
             self._count_match(tally, played, home, away, winner == home)
             played += 1
             return winner
@@ -274,14 +286,16 @@ class Knockout:
             tally.winner_club.append(winner)
             tally.winner_shock.append(own_shock[np.arange(runs), winner])
             if self.playoffs.final is not None:
-                promoted = self._two_legs(winner, self.final_index[rows], shock, self.tie_rng)
+                promoted = self._settled(self._two_legs(winner, self.final_index[rows], shock, self.tie_rng),
+                                         winner, self.final_index[rows])
                 tally.promoted += np.bincount(winner[promoted], minlength=self.count)
                 self._count_tie(tally, self.final_index[rows], winner, ~promoted)
         if self.playoffs.survival is not None:
             club = order[:, self.playoffs.survival_position - 1]
             if self.playoffs.survival_from_below:
                 # The same tie as the division below's final: its side at home first.
-                stayed = ~self._two_legs(self.survival_index[rows], club, shock, self.tie_rng)
+                stayed = self._settled(~self._two_legs(self.survival_index[rows], club, shock, self.tie_rng),
+                                       club, self.survival_index[rows])
                 self._count_tie(tally, club, self.survival_index[rows], stayed)
             else:
                 stayed = self._two_legs(club, self.survival_index[rows], shock, self.survival_rng)
@@ -291,6 +305,14 @@ class Knockout:
                 tally.survival_runs += np.bincount(club, minlength=self.count)
                 tally.survival_stays += np.bincount(club[stayed], minlength=self.count)
             tally.relegated += np.bincount(club[~stayed], minlength=self.count)
+
+    def _settled(self, won: np.ndarray, side: np.ndarray, other: np.ndarray) -> np.ndarray:
+        """`won` (side beat other in the tie), with the played tie's result in every
+        run that pairs its winner; drawn first either way, as `_bracket` does."""
+        through = self.tie_through
+        if through is None:
+            return won
+        return np.where(side == through, True, np.where(other == through, False, won))
 
     def _count_tie(self, tally: PlayoffTally, top: np.ndarray, bottom: np.ndarray, top_stays: np.ndarray) -> None:
         """Add a chunk of the shared tie to the tally, pairing by pairing."""

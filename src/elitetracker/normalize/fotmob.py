@@ -96,6 +96,25 @@ def normalize_match(raw: dict[str, Any]) -> Match:
     )
 
 
+def normalize_playoff_matches(raw_matches: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """The play-off matches (`fotmob.fetch_qualification`) as stored in
+    `playoff_fixtures.json`: a match's fields, plus the club fotmob marks as
+    knocked out once a tie is over (`eliminated`), which settles one that went
+    to penalties."""
+    out = []
+    for raw in raw_matches:
+        if is_cancelled(raw):
+            continue
+        match = normalize_match(raw)
+        out.append({
+            "match_id": match.match_id, "date": match.date, "time": match.time, "kickoff_utc": match.kickoff_utc,
+            "home": match.home, "home_id": match.home_id, "away": match.away, "away_id": match.away_id,
+            "home_goals": match.home_goals, "away_goals": match.away_goals, "played": match.played,
+            "eliminated": clean_text(raw.get("eliminatedTeamId")),
+        })
+    return sorted(out, key=lambda match: (match["kickoff_utc"], match["match_id"]))
+
+
 def is_cancelled(raw: dict[str, Any]) -> bool:
     """An abandoned or cancelled fixture, which is not part of the schedule.
 

@@ -80,8 +80,9 @@ reports and `careers.json` carry them).
 | elo-v14.0 | 2026-10-16 | 3909841 | major | keeping (xG on target, a club's last 45 matches) as the goals model's fourth part, its chances learnt 90 % from xG; the offseason pull per division (OBOS-ligaen 0.75 / 0.3); surface edge 10 -> 20 |
 | elo-v15.0 | 2026-10-17 | adc21db | major | a club relegated into OBOS-ligaen keeps half its distance from the division's mean, toward a target set by its squad value (Elo 75 points per log value, its first use of squad values; the goals model its own value pull) |
 | elo-v16.0 | 2026-10-17 | b571718 | major | the xG margin unclamped and 0.10 -> 0.12; late-season table stakes on the prediction (`model.stakes`), the season simulation reading them from each run's own table |
-| elo-v17.0 | 2026-11-21 | the batches 2-3 commit | major | batches 2 and 3 of the model and simulation audits (batch 3: one shared play-off tie, finished seasons' play-offs as played, displayed average rates, `era_config`, payloads): published run-in stakes only for a side's next match (the later fixtures' odds change); the simulation's last tiebreak favours the club higher in today's table (a MINOR change, so the release is MAJOR) -- **the deployed version** |
+| elo-v17.0 | 2026-11-21 | the batches 2-3 commit | major | batches 2 and 3 of the model and simulation audits (batch 3: one shared play-off tie, finished seasons' play-offs as played, displayed average rates, `era_config`, payloads): published run-in stakes only for a side's next match (the later fixtures' odds change); the simulation's last tiebreak favours the club higher in today's table (a MINOR change, so the release is MAJOR) |
 | elo-v16.1 | 2026-10-27 | c3dae7e | minor | the prediction's expected points the median of the simulated seasons' points, the mean breaking ties in the order (ratings and match odds unchanged; the backtest is under "xPts and the expected place as medians") |
+| elo-v18.0 | 2026-11-22 | the play-off automation commit | major | the running season's play-off matches fetched by `refresh` (`playoff_fixtures.json`): a played ladder match, and the tie once both legs are played, go as they went in every run; a played play-off match moves both clubs' Elo (new data the ratings read). Absorbs the unreleased elo-v17.1 (the play-off results alone) -- **the deployed version** |
 
 Unbumped commits that only added output fields (`position_points`, projected
 goals, high-stakes swings, the pre-season view) or touched presentation were
@@ -2106,6 +2107,44 @@ decisive matches by race and date). The scoreline check over 5,183 matches: 1-1
 11.4 % against 10.9 % expected, 0-0 5.0 % against 5.8 %, 2-2 6.1 % against
 5.5 %. Which views stay is the owner's call after seeing them (seven kept;
 they wait on `explore/*` branches -- see "Explore: which views stay").
+
+## 🔁 The play-off from fotmob (elo-v18.0, November 2026) - shipped
+
+The play-off was simulated whole until `playoff_outcomes.json` got the season
+by hand, so a ladder match already played was still a coin. `refresh` now
+reads fotmob's "Eliteserien Qualification" (league 60) into
+`playoff_fixtures.json` (`refresh_playoffs`): one page, only from OBOS-ligaen's
+last round until the tie is decided, and then only at first sight, after a
+kickoff still without a result, and at 06 and 18 UTC (the scraping rules'
+one exception, `docs/data.md`). A played ladder match is known by its host
+(5th, 4th, 3rd, once the table is final) and its winner goes through in every
+run; the tie (the pairing that meets twice) settles promotion and relegation
+once both legs are played, by fotmob's `eliminatedTeamId` or the aggregate.
+The draws are taken either way, so the random streams stay as they were.
+The page shows each match's score, or its kickoff. Not done: a first leg's
+score carried into the second, and OBOS-ligaen's 14th's tie with the tier below.
+
+2026 on 22 November: Odd 1-0 Bryne (5th v 6th). Odd's 51 % for that match is
+now 100 %, Stabæk - Odd (29 November, 14:30) is the certain second match
+(Stabæk 73 %), and the tie's pairings move a little (Kristiansund - Stabæk 18.0 %
+-> 19.5 % of the runs).
+
+**The play-off moves the Elo ratings.** A played play-off match is rated like a
+league match (OBOS-ligaen's config, goals only: these matches have no xG on
+disk), in kickoff order, in both the season's ratings (`build_rating_table`) and
+the career replay (`career.replay`'s `playoffs`), so it reprices the play-off's
+later matches and carries into next season's seeds; it joins no table and no
+division's offseason pull. The goals model leaves it out. Odd 1-0 Bryne: Odd
+1406.7 -> 1420.5, Bryne 1437.7 -> 1423.9; Stabæk - Odd's home win 73.1 % ->
+72.7 %. Play-off results are also stamped in `inputs_digest` now (before this,
+a new result would not have rebuilt a cached view).
+
+Not backtested: no earlier season's play-off matches are on disk (only
+`playoff_outcomes.json`'s winners), and a test needs them, fotmob's league 60
+for 2015-2025 (11 pages, a manual opt-in backfill under the scraping rules).
+About five matches a season, so the effect on next-season odds is small either
+way. Shipped on the owner's call as a MAJOR bump (new data the ratings read),
+which absorbs the unreleased elo-v17.1.
 
 ## 🔎 IMPROVEMENTS.md, checked item by item (October 2026)
 

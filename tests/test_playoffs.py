@@ -236,3 +236,73 @@ def test_the_bracket_is_published_match_by_match_and_agrees_in_both_reports():
         tie[pair["bottom"]] = tie.get(pair["bottom"], 0.0) + pair["p"]
     for team, share in tie.items():
         assert abs(final.get(team, 0.0) - share) < 2e-3
+
+
+def test_a_played_ladder_match_goes_as_it_went_in_every_run():
+    """5th v 6th already played (F won away at E): F is through in every run, and
+    E cannot win the bracket; the rest of the ladder is still drawn."""
+    wins = by_team(run(Playoffs(bracket=(3, 4, 5, 6), ladder=True, decided=((0, "F"),))), "playoff_win")
+    assert wins["E"] == 0.0 and wins["F"] > 0.0
+    assert sum(wins.values()) == pytest.approx(1.0)
+    both = by_team(run(Playoffs(bracket=(3, 4, 5, 6), ladder=True, decided=((0, "F"), (1, "D"), (2, "D")))),
+                   "playoff_win")
+    assert both["D"] == pytest.approx(1.0)
+
+
+def test_a_played_tie_settles_promotion_and_relegation():
+    runs = 20_000
+    zeros = np.zeros(runs, dtype=np.intp)
+    other = Opponent(("X",), zeros, np.zeros(runs))
+    ladder = dict(bracket=(3, 4, 5, 6), ladder=True, decided=((0, "E"), (1, "D"), (2, "C")))
+    promoted = by_team(run(Playoffs(final=other, tie_through="C", **ladder)), "promoted_via_playoff")
+    assert promoted["C"] == pytest.approx(1.0)
+    kept = by_team(run(Playoffs(final=other, tie_through="X", **ladder)), "promoted_via_playoff")
+    assert sum(kept.values()) == 0.0
+
+
+def test_the_stored_play_off_matches_say_who_went_through():
+    from elitetracker.pipeline import _bracket_decided, _went_through, playoff_tie
+
+    def game(home, away, goals=None, eliminated=None):
+        return {"home": home, "home_id": home, "away": away, "away_id": away, "played": goals is not None,
+                "home_goals": goals and goals[0], "away_goals": goals and goals[1], "eliminated": eliminated,
+                "date": "2026-11-22", "time": "14:30", "kickoff_utc": "2026-11-22T13:30:00Z"}
+
+    assert _went_through(game("E", "F", (1, 0))) == "E"
+    assert _went_through(game("E", "F", (1, 1), eliminated="E")) == "F"   # on penalties
+    assert _went_through(game("E", "F", (1, 1))) is None and _went_through(game("E", "F")) is None
+    legs = [game("C", "X", (2, 1)), game("X", "C", (1, 0))]
+    assert playoff_tie(legs + [game("E", "F", (1, 0))]) == (legs, None)   # level on aggregate, unmarked
+    assert playoff_tie([legs[0], game("X", "C", (0, 0))])[1] == "C"
+    assert playoff_tie([legs[0], game("X", "C", (1, 0), eliminated="C")])[1] == "X"
+    assert playoff_tie([legs[0], game("X", "C")])[1] is None
+
+    # A finished table (C 3rd ... F 6th in every run): each match is known by its host.
+    class Runs:
+        club_ids = TEAMS
+        run_order = np.tile(np.arange(len(TEAMS)), (5, 1))
+    played = [game("E", "F", (0, 2)), game("D", "F", (3, 1)), game("C", "D")] + legs
+    assert _bracket_decided(played, Runs, (3, 4, 5, 6), True) == ((0, "F"), (1, "D"))
+
+
+def test_a_play_off_result_restamps_a_live_view_but_not_an_earlier_rewind(tmp_path):
+    import json
+    import shutil
+
+    from elitetracker.pipeline import NORMALIZED_DIR, inputs_digest, playoff_played
+
+    for path in NORMALIZED_DIR.glob("*_standings.json"):
+        shutil.copy(path, tmp_path / path.name)
+    fixture = {"match_id": "p1", "date": "2026-11-22", "time": "13:30", "kickoff_utc": "2026-11-22T12:30:00Z",
+               "home": "Odd", "home_id": "7988", "away": "Bryne", "away_id": "8531",
+               "home_goals": None, "away_goals": None, "played": False, "eliminated": None}
+    write = lambda f: (tmp_path / "playoff_fixtures.json").write_text(json.dumps({"2026": [f]}), encoding="utf-8")
+    write(fixture)
+    live, rewind = inputs_digest(tmp_path, 2026), inputs_digest(tmp_path, 2026, "2026-11-20")
+    assert playoff_played(tmp_path) == {}
+    write({**fixture, "home_goals": 1, "away_goals": 0, "played": True})
+    assert inputs_digest(tmp_path, 2026) != live
+    assert inputs_digest(tmp_path, 2026, "2026-11-20") == rewind
+    assert inputs_digest(tmp_path, 2025) == inputs_digest(tmp_path, 2025)
+    assert [m.match_id for m in playoff_played(tmp_path)[2026]] == ["p1"]
+    assert playoff_played(tmp_path, "2026-11-21") == {}

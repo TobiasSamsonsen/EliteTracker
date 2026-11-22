@@ -641,6 +641,7 @@ test('the calibration band is the 95 % Wilson interval, inside 0-1', () => {
 });
 
 test('every calibration string exists in both languages', () => {
+  assertBothLanguages(['playoff.fixture.kickoff']);
   assertBothLanguages(['calib.fact.kellyFlat', 'calib.fact.kellyBooks', 'calib.fact.kellyBands',
     'calib.fact.nt', 'calib.fact.ntText', 'table.xpMean']);
   assertBothLanguages([

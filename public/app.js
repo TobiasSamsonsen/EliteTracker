@@ -7236,6 +7236,15 @@ function playoffBracket(report, grid, tie) {
     return box;
   };
 
+  // The play-off's matches fotmob lists (`tie.matches`): a bracket match takes the
+  // one among its pairings, the tie its two legs (the pairing that meets twice).
+  const fixtures = tie.matches || [];
+  const pairing = (fixture) => `${fixture.home}|${fixture.away}`;
+  const bracketFixture = (index) => fixtures.find((fixture) => (tie.bracket?.[index] || [])
+    .some((pair) => pairing(pair) === pairing(fixture)));
+  const sides = (fixture) => [fixture.home, fixture.away].sort().join('|');
+  const legs = fixtures.filter((fixture) => fixtures.filter((other) => sides(other) === sides(fixture)).length === 2);
+
   let played = 0; // the bracket's matches in order, as `tie.bracket` lists them
   const wrap = el('section', 'playoff__section');
   wrap.appendChild(el('h3', 'playoff__heading', t('playoff.how.title')));
@@ -7258,10 +7267,14 @@ function playoffBracket(report, grid, tie) {
       // The tie's pairings have a section of their own below, so only the
       // bracket's matches list theirs.
       if (!round.legs) {
+        const fixture = bracketFixture(played);
+        if (fixture) match.appendChild(playoffFixture(tie, fixture, calendar?.rounds[index]));
         const pairings = (tie.bracket?.[played] || []).map((pair) => ({ ...pair, tip: t('playoff.pairingTip', { home: tie.teams[pair.home], away: tie.teams[pair.away], p: pct(pair.p, 1), win: pct(pair.home_win, 0) }) }));
         played += 1;
         const list = playoffPairings(tie, pairings);
         if (list) match.appendChild(list);
+      } else {
+        legs.forEach((leg, i) => match.appendChild(playoffFixture(tie, leg, calendar?.legs[i])));
       }
       column.appendChild(match);
     }
@@ -7270,6 +7283,18 @@ function playoffBracket(report, grid, tie) {
   scroller.appendChild(columns);
   wrap.appendChild(scroller);
   return wrap;
+}
+
+/* One play-off match as fotmob lists it: the score once played, else its kickoff
+   (the date only where it is not the one the round's heading already gives). */
+function playoffFixture(tie, fixture, roundDate) {
+  const home = tie.teams[fixture.home] || fixture.home;
+  const away = tie.teams[fixture.away] || fixture.away;
+  const done = fixture.home_goals != null;
+  const when = [fixture.date !== roundDate ? formatDate(fixture.date) : '', fixture.time || ''].filter(Boolean).join(' ');
+  return el('p', `playoff__fixture${done ? ' playoff__fixture--played' : ''}`, done
+    ? `${home} ${fixture.home_goals}–${fixture.away_goals} ${away}`
+    : t('playoff.fixture.kickoff', { when }));
 }
 
 /* Who wins one of the bracket's matches (its pairings from `tie.bracket`): each

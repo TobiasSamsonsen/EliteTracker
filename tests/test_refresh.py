@@ -213,3 +213,47 @@ class TestCiSkipsObosXg:
         monkeypatch.setattr(refresh, "update_obos_xg", fake)
         refresh.main(["--root", str(tmp_path), "--season", "2026"])
         assert seen["only"] == ["77"]
+
+def test_play_offs_are_asked_for_only_while_they_are_on(tmp_path):
+    from datetime import datetime, timezone
+
+    from elitetracker.normalize.matches import Match, dump
+    from elitetracker.refresh import refresh_playoffs
+
+    def obos(played):
+        dump([Match(match_id="m", date="2026-11-15", time="15:00", home="A", away="B", home_goals=1 if played else None,
+                    away_goals=0 if played else None, played=played, home_id="A", away_id="B",
+                    kickoff_utc="2026-11-15T14:00:00Z")],
+             tmp_path / "obosligaen_2026_matches.json")
+
+    calls = []
+    fixture = {"id": "1", "home": {"name": "Odd", "id": "7988"}, "away": {"name": "Bryne", "id": "8531"},
+               "status": {"utcTime": "2026-11-29T13:30:00Z", "finished": False, "cancelled": False}}
+
+    def fetch(season):
+        calls.append(season)
+        return [fixture]
+
+    at = lambda day, hour: datetime(2026, 11, day, hour, 5, tzinfo=timezone.utc)
+    obos(False)
+    refresh_playoffs(tmp_path, 2026, fetch=fetch, now=at(22, 10))
+    assert calls == []                                   # OBOS-ligaen still playing
+    obos(True)
+    refresh_playoffs(tmp_path, 2026, fetch=fetch, now=at(22, 10))
+    assert calls == [2026]                               # first sight
+    stored = json.loads((tmp_path / "playoff_fixtures.json").read_text(encoding="utf-8"))["2026"]
+    assert stored[0]["home_id"] == "7988" and stored[0]["played"] is False
+    refresh_playoffs(tmp_path, 2026, fetch=fetch, now=at(23, 10))
+    assert calls == [2026]                               # nothing due, off-hours
+    refresh_playoffs(tmp_path, 2026, fetch=fetch, now=at(23, 18))
+    assert calls == [2026] * 2                           # a check hour
+    refresh_playoffs(tmp_path, 2026, fetch=fetch, now=at(29, 15))
+    assert calls == [2026] * 3                           # kicked off, no result yet
+
+    def failing(season):
+        raise FetchError("HTTP 429")
+    refresh_playoffs(tmp_path, 2026, fetch=failing, now=at(29, 16))   # non-fatal, stored matches stand
+    assert json.loads((tmp_path / "playoff_fixtures.json").read_text(encoding="utf-8"))["2026"] == stored
+    (tmp_path / "playoff_outcomes.json").write_text('{"2026": {}}', encoding="utf-8")
+    refresh_playoffs(tmp_path, 2026, fetch=fetch, now=at(29, 18))
+    assert calls == [2026] * 3                           # on file by hand: done

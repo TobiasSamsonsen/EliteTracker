@@ -97,6 +97,10 @@ def relegated_values(
     return {t: logs[t] - mean if t in logs else 0.0 for t in down}
 
 
+# The division whose Elo config rates a play-off match.
+PLAYOFF_CONFIG_LEAGUE = "obosligaen"
+
+
 def replay(
     slices: list[SeasonSlice],
     seeds: dict[str, float],
@@ -105,6 +109,7 @@ def replay(
     *,
     config_for: Callable[[str, int], EloConfig] | None = None,
     values: dict[int, dict[str, float]] | None = None,
+    playoffs: dict[int, list[Match]] | None = None,
 ) -> Iterator[tuple[int, list[SeasonSlice], dict[str, float], Iterator[tuple[Match, tuple[float, float]]]]]:
     """Replay every season in order against one shared rating table.
 
@@ -127,11 +132,17 @@ def replay(
     ``values`` (season -> team_id -> squad value) places a club relegated into
     OBOS-ligaen by its value from the season before (elo-v15.0); without it
     such a club still takes the relegated pull, with no value shift.
+
+    ``playoffs`` (season -> matches) are the play-off matches after the season
+    (elo-v18.0): rated in kickoff order among the season's own matches, with
+    OBOS-ligaen's config (the ladder is its clubs'), but outside the slices, so
+    they make no club a member of a division and no table.
     """
     config = config or EloConfig()
     config_for = config_for or (lambda league, season: era_config(season, config))
     shots = shots or {}
     values = values or {}
+    playoffs = playoffs or {}
     ratings = dict(seeds)
     seasons = sorted({slice_.season for slice_ in slices})
     previous: dict[str, str] = {}
@@ -168,13 +179,14 @@ def replay(
                         ratings[team_id] = mean + regression * (ratings[team_id] - mean)
         previous = active
 
-        for slice_ in in_season:
-            for match in slice_.matches:
-                for team_id in team_ids(match):
-                    ratings.setdefault(team_id, rating_for_unseeded_team())
+        extra = [match for match in playoffs.get(season, []) if match.played]
+        for match in [match for slice_ in in_season for match in slice_.matches] + extra:
+            for team_id in team_ids(match):
+                ratings.setdefault(team_id, rating_for_unseeded_team())
 
         played = sorted(
-            ((match, slice_.league) for slice_ in in_season for match in slice_.matches if match.played),
+            [(match, slice_.league) for slice_ in in_season for match in slice_.matches if match.played]
+            + [(match, PLAYOFF_CONFIG_LEAGUE) for match in extra],
             key=lambda pair: Match.sort_key(pair[0]),
         )
 
@@ -205,8 +217,10 @@ def build_careers(
     shots: dict[str, tuple[float, ...]] | None = None,
     config_for: Callable[[str, int], EloConfig] | None = None,
     values: dict[int, dict[str, float]] | None = None,
+    playoffs: dict[int, list[Match]] | None = None,
 ) -> dict[str, TeamCareer]:
-    """Replay every season in order and record each club's rating over time."""
+    """Replay every season in order and record each club's rating over time
+    (the play-off matches after a season too, `replay`'s `playoffs`)."""
     config = config or EloConfig()
     careers: dict[str, TeamCareer] = {}
     first_season = min((slice_.season for slice_ in slices), default=None)
@@ -220,7 +234,7 @@ def build_careers(
 
     ratings_by_id = {team_id: seed.rating for team_id, seed in seeds.items()}
     for season, in_season, ratings, matches in replay(
-        slices, ratings_by_id, config, shots=shots, config_for=config_for, values=values,
+        slices, ratings_by_id, config, shots=shots, config_for=config_for, values=values, playoffs=playoffs,
     ):
         rating_start: dict[str, float] = {}
         for slice_ in in_season:
@@ -241,7 +255,8 @@ def build_careers(
                     careers[team_id].points.append((snapshot_date, round(rating, 1)))
                 snapshot_pending = False
             for team_id in team_ids(match):
-                careers[team_id].points.append((match.date, round(ratings[team_id], 1)))
+                if team_id in careers:  # a play-off side from outside the data has none
+                    careers[team_id].points.append((match.date, round(ratings[team_id], 1)))
 
         for slice_ in in_season:
             for position, row in enumerate(table_from_matches(slice_.matches), 1):

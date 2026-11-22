@@ -281,3 +281,22 @@ def test_a_club_relegated_into_obos_ligaen_is_placed_by_its_squad_value():
     # Without values the relegated pull still applies, toward the plain mean.
     plain = [dict(r) for s, _, r, _ in replay(slices, seeds, config) if s == 2021][0]
     assert plain["A"] == pytest.approx(1475 + 0.25 * 125)
+
+
+def test_a_play_off_match_moves_the_ratings_but_makes_no_table_or_membership():
+    """elo-v18.0: a play-off match after the season is rated like any match, in
+    kickoff order, and its rating reaches the next season; it adds no season
+    record, so the club's division is still its league's."""
+    slices = [top(2020, [match(1, "A", "B", "2020-05-01", (1, 1))]),
+              top(2021, [match(2, "A", "B", "2021-05-01", (1, 1))])]
+    playoff = {2020: [match("p1", "B", "A", "2020-11-22", (3, 0))]}
+    plain = build_careers(slices, SEEDS, config=NEUTRAL)
+    with_playoff = build_careers(slices, SEEDS, config=NEUTRAL, playoffs=playoff)
+    assert with_playoff["B"].points[1] == ("2020-11-22", pytest.approx(with_playoff["B"].points[1][1]))
+    assert with_playoff["B"].points[1][1] > plain["B"].points[0][1]
+    # The win carries into 2021: B starts it higher than without the play-off.
+    assert with_playoff["B"].seasons[1].rating_start > plain["B"].seasons[1].rating_start
+    assert [record.league for record in with_playoff["B"].seasons] == ["top", "top"]
+    # An unplayed play-off match changes nothing.
+    unplayed = build_careers(slices, SEEDS, config=NEUTRAL, playoffs={2020: [match("p2", "B", "A", "2020-11-29")]})
+    assert unplayed["B"].seasons[1].rating_start == plain["B"].seasons[1].rating_start

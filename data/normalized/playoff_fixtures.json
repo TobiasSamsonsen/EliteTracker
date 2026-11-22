@@ -1,0 +1,32 @@
+{
+ "2026": [
+  {
+   "match_id": "6629688",
+   "date": "2026-11-22",
+   "time": "13:30",
+   "kickoff_utc": "2026-11-22T12:30:00Z",
+   "home": "Odds Ballklubb",
+   "home_id": "7988",
+   "away": "Bryne",
+   "away_id": "8531",
+   "home_goals": 1,
+   "away_goals": 0,
+   "played": true,
+   "eliminated": null
+  },
+  {
+   "match_id": "6736172",
+   "date": "2026-11-29",
+   "time": "14:30",
+   "kickoff_utc": "2026-11-29T13:30:00Z",
+   "home": "Stabæk",
+   "home_id": "9918",
+   "away": "Odds Ballklubb",
+   "away_id": "7988",
+   "home_goals": null,
+   "away_goals": null,
+   "played": false,
+   "eliminated": null
+  }
+ ]
+}
