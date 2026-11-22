@@ -6,7 +6,7 @@
 |---|---|---|
 | `normalized/<league>_<season>_matches.json` | every fixture and result, canonical `Match` schema | `refresh` (hourly in CI) |
 | `normalized/<league>_<season>_standings.json` | final tables (2014, 2015, 2025); 2014 seeds the ratings | by hand |
-| `normalized/playoff_fixtures.json` | the running season's play-off matches as fotmob lists them (its "Eliteserien Qualification", league 60): OBOS-ligaen's ladder and the tie with Eliteserien's 14th, played and to come; played ones go as they went in every simulated run | `refresh`, only while the play-off is on |
+| `normalized/playoff_fixtures.json` | every season's play-off matches as fotmob lists them (its "Eliteserien Qualification", league 60): OBOS-ligaen's bracket and the tie with Eliteserien's 14th, played and to come; played ones move the Elo ratings, and in the running season go as they went in every simulated run | `refresh` (the running season, only while the play-off is on); `research playoffs` (2015-2025, a manual backfill) |
 | `normalized/playoff_outcomes.json` | how each finished season's play-offs went (2015-2025): bracket winner, who went down; checked against the next season's membership | by hand, once a season |
 | `normalized/uefa_ranks.json` | Norway's UEFA rank per season (the European places) | `refresh` |
 | `xg.json` | xG per match: fotmob (Eliteserien, with xG on target) and Sofascore (OBOS-ligaen) | `refresh`; `research xg-obos` |
@@ -56,8 +56,8 @@ onto paid APIs and break the site. So:
   `PROJECT_STATUS.md`, and if a backfill is ever needed, make it a manual,
   opt-in command: one request at a time, a jittered 4-8 s wait between
   requests, the file saved after every match, honest headers, and a stop at
-  the first 403 or 429. `research xg` and `research market-values` follow
-  this.
+  the first 403 or 429. `research xg`, `research market-values` and
+  `research playoffs` follow this.
 
 ## Once a year, after the season
 

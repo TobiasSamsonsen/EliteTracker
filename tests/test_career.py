@@ -300,3 +300,17 @@ def test_a_play_off_match_moves_the_ratings_but_makes_no_table_or_membership():
     # An unplayed play-off match changes nothing.
     unplayed = build_careers(slices, SEEDS, config=NEUTRAL, playoffs={2020: [match("p2", "B", "A", "2020-11-29")]})
     assert unplayed["B"].seasons[1].rating_start == plain["B"].seasons[1].rating_start
+
+
+def test_the_backtest_rates_play_off_matches_but_never_scores_them():
+    from elitetracker.model.backtest import walk_forward
+
+    slices = [top(2020, [match(1, "A", "B", "2020-05-01", (1, 1))]),
+              top(2021, [match(2, "A", "B", "2021-05-01", (1, 1))])]
+    seeds = {"A": 1600.0, "B": 1400.0}
+    playoff = {2020: [match("p1", "B", "A", "2020-11-22", (3, 0))]}
+    plain = walk_forward(slices, seeds, NEUTRAL, score_from_season=2020)
+    rated = walk_forward(slices, seeds, NEUTRAL, score_from_season=2020, playoffs=playoff)
+    assert set(rated.predictions) == set(plain.predictions) == {"1", "2"}
+    # B's play-off win makes it likelier in 2021's match.
+    assert rated.predictions["2"][0].away_win > plain.predictions["2"][0].away_win

@@ -711,6 +711,12 @@ def playoff_matches(root: Path = NORMALIZED_DIR) -> dict[int, list[dict[str, Any
     return {int(season): matches for season, matches in json.loads(path.read_text(encoding="utf-8")).items()}
 
 
+def save_playoff_matches(stored: dict[str, list[dict[str, Any]]], root: Path = NORMALIZED_DIR) -> None:
+    """Write `playoff_fixtures.json` (season -> matches), LF line endings on every platform."""
+    text = json.dumps(dict(sorted(stored.items())), indent=1, ensure_ascii=False) + "\n"
+    (Path(root) / PLAYOFF_FIXTURES_FILE).write_bytes(text.encode("utf-8"))
+
+
 def playoff_played(root: Path = NORMALIZED_DIR, asof: str | None = None) -> dict[int, list[Match]]:
     """Per season, the play-off matches played (by `asof`, where given), as the
     rating replay takes them."""

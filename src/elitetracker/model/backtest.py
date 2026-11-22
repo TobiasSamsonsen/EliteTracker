@@ -136,8 +136,12 @@ def walk_forward(
     config_for: Callable[[str, int], EloConfig] | None = None,
     values: dict[int, dict[str, float]] | None = None,
     stakes: dict[str, float] | None = None,
+    playoffs: dict[int, list[Match]] | None = None,
 ) -> Scorecard:
     """Replay every season in order, scoring only from `score_from_season` on.
+
+    ``playoffs`` (season -> the play-off matches after it, `pipeline.playoff_played`)
+    move the ratings as in production (elo-v18.0) but are never scored.
 
     Both divisions share one rating pool and the offseason regression is applied
     per division, exactly as in production (see `career.replay`).
@@ -165,9 +169,12 @@ def walk_forward(
     config_for = config_for or (lambda lg, season: era_config(season, config))
     card = Scorecard(name=name)
     match_league = {m.match_id: s.league for s in slices for m in s.matches}
-    for season, _, _, matches in replay(slices, seeds, config, shots=shots, config_for=config_for, values=values):
+    for season, _, _, matches in replay(slices, seeds, config, shots=shots, config_for=config_for, values=values,
+                                        playoffs=playoffs):
         for match, (home_before, away_before) in matches:
-            match_in = match_league.get(match.match_id, "")
+            if match.match_id not in match_league:
+                continue  # a play-off match: rated, not scored
+            match_in = match_league[match.match_id]
             if season >= score_from_season and (league is None or match_in == league):
                 card.observe(
                     elo_odds(match, home_before, away_before, config_for(match_in, season), match_in,
@@ -187,6 +194,7 @@ def shipped_cards(
     league: str | None = None,
     scorelines: dict[tuple[int, int], list[float]] | None = None,
     stakes: dict[str, float] | None = None,
+    playoffs: dict[int, list[Match]] | None = None,
 ) -> tuple[Scorecard, Scorecard]:
     """Elo alone and the odds the site shows (Elo blended with the
     attack/defence grid), walk-forward on the same matches.
@@ -195,10 +203,10 @@ def shipped_cards(
     SCORELINE_CAP a side, "4" meaning 4 or more) [the summed predicted chance,
     the times it happened] over the scored matches: the site's scoreline
     model (`conditional_scorelines`) against the results. `stakes` as in
-    `walk_forward`, in both models."""
+    `walk_forward`, in both models; `playoffs` in Elo only, as in production."""
     stakes = stakes or {}
     elo = walk_forward(slices, seeds, EloConfig(), score_from_season=score_from_season, name="elo",
-                       shots=shots, league=league, values=values, stakes=stakes)
+                       shots=shots, league=league, values=values, stakes=stakes, playoffs=playoffs)
     shipped = Scorecard(name="elo + attack/defence")
     ad = AttackDefence.from_slices(slices, ADConfig(), shots=shots, values=values)
     for match in sorted((m for s in slices for m in s.matches if m.played), key=Match.sort_key):

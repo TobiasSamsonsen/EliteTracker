@@ -82,7 +82,7 @@ reports and `careers.json` carry them).
 | elo-v16.0 | 2026-10-17 | b571718 | major | the xG margin unclamped and 0.10 -> 0.12; late-season table stakes on the prediction (`model.stakes`), the season simulation reading them from each run's own table |
 | elo-v17.0 | 2026-11-21 | the batches 2-3 commit | major | batches 2 and 3 of the model and simulation audits (batch 3: one shared play-off tie, finished seasons' play-offs as played, displayed average rates, `era_config`, payloads): published run-in stakes only for a side's next match (the later fixtures' odds change); the simulation's last tiebreak favours the club higher in today's table (a MINOR change, so the release is MAJOR) |
 | elo-v16.1 | 2026-10-27 | c3dae7e | minor | the prediction's expected points the median of the simulated seasons' points, the mean breaking ties in the order (ratings and match odds unchanged; the backtest is under "xPts and the expected place as medians") |
-| elo-v18.0 | 2026-11-22 | the play-off automation commit | major | the running season's play-off matches fetched by `refresh` (`playoff_fixtures.json`): a played ladder match, and the tie once both legs are played, go as they went in every run; a played play-off match moves both clubs' Elo (new data the ratings read). Absorbs the unreleased elo-v17.1 (the play-off results alone) -- **the deployed version** |
+| elo-v18.0 | 2026-11-22 | the play-off automation commit | major | the running season's play-off matches fetched by `refresh` (`playoff_fixtures.json`): a played ladder match, and the tie once both legs are played, go as they went in every run; a played play-off match moves both clubs' Elo (new data the ratings read); with the follow-up commit, every season's play-off matches 2015-2025 (`research playoffs`) in the replay too, so every season from 2016 starts from ratings that saw the play-off before it, and the backtest and the calibration view rate them. Absorbs the unreleased elo-v17.1 (the play-off results alone); deployed in two pushes the same evening, one version on the owner's call -- **the deployed version** |
 
 Unbumped commits that only added output fields (`position_points`, projected
 goals, high-stakes swings, the pre-season view) or touched presentation were
@@ -122,6 +122,10 @@ from 2020 and OBOS-ligaen from 2023 -- 1.06251; Eliteserien 1.05915). The closin
 | elo-v15.0 | 1.00030 | 5.8 % | 6.0 % | 7.3 % | -0.00032 (-1.60) |
 | elo-v16.0 | 0.99966 | 5.9 % | 6.0 % | 7.4 % | -0.00064 (-2.60) |
 | elo-v17.0 | 0.99966 | 5.9 % | 6.0 % | 7.4 % | 0.00000 (0.00) |
+| elo-v18.0 | 0.99960 | 5.9 % | 6.0 % | 7.5 % | -0.00006 (-1.10) |
+
+elo-v18.0 gains through the play-off matches in the Elo replay (every season's
+opening ratings); its v17.0 run reproduced the stored row to the last digit.
 
 elo-v17.0 scores exactly as elo-v16.0 here: its changes (stakes on the published odds of a side's next match only, the simulation's last tiebreak) touch the odds of unplayed fixtures and the season simulation, not the walk-forward odds of the 4,800 past matches. elo-v16.1 is not scored (the match odds are unchanged).
 
@@ -2139,12 +2143,32 @@ division's offseason pull. The goals model leaves it out. Odd 1-0 Bryne: Odd
 72.7 %. Play-off results are also stamped in `inputs_digest` now (before this,
 a new result would not have rebuilt a cached view).
 
-Not backtested: no earlier season's play-off matches are on disk (only
-`playoff_outcomes.json`'s winners), and a test needs them, fotmob's league 60
-for 2015-2025 (11 pages, a manual opt-in backfill under the scraping rules).
-About five matches a season, so the effect on next-season odds is small either
-way. Shipped on the owner's call as a MAJOR bump (new data the ratings read),
-which absorbs the unreleased elo-v17.1.
+A MAJOR bump (new data the ratings read), which absorbs the unreleased
+elo-v17.1. The first push carried 2026's play-off only, which no earlier
+season's ratings can see.
+
+**The backfill, and the test (same release).** `research playoffs` read fotmob's
+league 60 for 2015-2025 (11 pages, 4-8 s apart): 49 matches, 54 with 2026's.
+Every club was already in the data, and the tie's winner agrees with
+`playoff_outcomes.json` in all eight two-legged seasons; 2019 was level on
+aggregate (Start through on away goals, which fotmob does not mark), and in
+2020 and 2021 the tie was one match. The replay (`career.replay`'s
+`playoffs`) now rates them every season, so each season's opening ratings move;
+the backtest rates them without scoring them (`walk_forward`'s `playoffs`).
+`experiments/improvements/playoff_elo.py`, with against without, every league
+match 2016+ (5,255):
+
+| | log loss | Brier | RPS |
+|---|---|---|---|
+| shipped, all | -0.00006 (t -1.10) | -0.00004 (t -1.06) | -0.00002 (t -1.05) |
+| shipped, 2016-2020 / 2021+ | -0.00004 (t -0.68) / -0.00007 (t -0.87) | | |
+| shipped, Eliteserien / OBOS-ligaen | -0.00003 (t -0.72) / -0.00008 (t -0.87) | | |
+| Elo alone, all | -0.00011 (t -0.55) | -0.00007 (t -0.49) | -0.00003 (t -0.49) |
+
+Better in both halves and both divisions, on every score: shipped under the
+small-change bar (both halves, no knob to fit). Too small to show in the model
+view's version history (0.006 points of skill), so `model_versions.json` was
+not rerun for it.
 
 ## 🔎 IMPROVEMENTS.md, checked item by item (October 2026)
 

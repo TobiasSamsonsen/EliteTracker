@@ -43,6 +43,7 @@ RELEASED = {
     "elo-v6": "2026-08-29", "elo-v7": "2026-09-11", "elo-v8": "2026-09-13", "elo-v9": "2026-09-13",
     "elo-v10": "2026-09-16", "elo-v11": "2026-09-16", "elo-v11.1": "2026-09-16", "elo-v12.0": "2026-09-25",
     "elo-v13.0": "2026-10-16", "elo-v14.0": "2026-10-16", "elo-v15.0": "2026-10-17", "elo-v16.0": "2026-10-17", "elo-v17.0": "2026-11-21",
+    "elo-v18.0": "2026-11-22",
 }
 
 
@@ -140,6 +141,9 @@ def predict(out_path: str) -> None:
                 kwargs["values"] = P.market_values()
             if _accepts(B.shipped_cards, "stakes"):
                 kwargs["stakes"] = P.stakes_table()
+            if _accepts(B.shipped_cards, "playoffs"):
+                # elo-v18.0 on: the play-off matches move the Elo ratings.
+                kwargs["playoffs"] = P.playoff_played()
             _, card = B.shipped_cards(slices, seeds, score_from_season=FIRST, **kwargs)
             for mid, (odds, _) in card.predictions.items():
                 keep(mid, odds, season_of[mid])

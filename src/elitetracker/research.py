@@ -23,7 +23,9 @@ from pathlib import Path
 
 from elitetracker.model import benchmark
 from elitetracker.model.backtest import Scorecard, paired, reliability, restrict, shipped_cards
-from elitetracker.pipeline import NORMALIZED_DIR, load_matches, load_slices, market_values, seed_ratings, shot_table, stakes_table
+from elitetracker.pipeline import (
+    NORMALIZED_DIR, load_matches, load_slices, market_values, playoff_played, seed_ratings, shot_table, stakes_table,
+)
 from elitetracker.sources.fotmob import FetchError, fetch_match_xg, load_xg, save_xg
 from elitetracker.sources.sofascore import DEFAULT_DELAY
 
@@ -83,6 +85,40 @@ def cmd_xg(args: argparse.Namespace) -> int:
             print(f"  {index}/{len(todo)} ({match.date})", flush=True)
     save_xg(data)
     print(f"done: {len(data['matches'])} with xG, {len(data['none'])} without")
+    return 0
+
+
+def cmd_playoffs(args: argparse.Namespace) -> int:
+    """The finished seasons' play-off matches (fotmob's "Eliteserien
+    Qualification", league 60) into `playoff_fixtures.json`, which `refresh`
+    keeps only for the running season. The manual, opt-in backfill of the
+    scraping rules: one page a season, a jittered wait of `--delay` to twice
+    that between them, the file saved after every season, and a stop at the
+    first 403 or 429. Seasons already stored are skipped unless --refresh."""
+    import random
+
+    from elitetracker.normalize.fotmob import normalize_playoff_matches
+    from elitetracker.pipeline import playoff_matches, save_playoff_matches
+    from elitetracker.sources.fotmob import fetch_qualification
+
+    parts = [int(part) for part in args.seasons.split("-")]
+    first, last = (parts[0], parts[0]) if len(parts) == 1 else parts
+    stored = {str(season): matches for season, matches in playoff_matches().items()}
+    todo = [season for season in range(first, last + 1) if args.refresh or str(season) not in stored]
+    for index, season in enumerate(todo):
+        if index:
+            time.sleep(random.uniform(args.delay, 2 * args.delay))
+        try:
+            matches = normalize_playoff_matches(fetch_qualification(season))
+        except FetchError as exc:
+            if "HTTP 403" in str(exc) or "HTTP 429" in str(exc):
+                print(f"  stopping at {season}: {exc}")
+                return 1
+            print(f"  skipped {season}: {exc}")
+            continue
+        stored[str(season)] = matches
+        save_playoff_matches(stored)
+        print(f"  {season}: {len(matches)} matches, {sum(match['played'] for match in matches)} played", flush=True)
     return 0
 
 
@@ -185,7 +221,8 @@ def market_comparison(score_from: int) -> int:
     seeds = {team_id: seed.rating for team_id, seed in seed_ratings().items()}
     dates = {m.match_id: m.date for s in slices for m in s.matches}
     elo, shipped = shipped_cards(slices, seeds, score_from_season=score_from, shots=shot_table(),
-                                 values=market_values(), league="eliteserien", stakes=stakes_table())
+                                 values=market_values(), league="eliteserien", stakes=stakes_table(),
+                                 playoffs=playoff_played())
     matches = [m for s in slices for m in s.matches
                if s.league == "eliteserien" and int(m.date[:4]) >= score_from]
     prices = benchmark.load_prices()
@@ -237,7 +274,7 @@ def calibration_payload(score_from: int = 2016, root=NORMALIZED_DIR) -> dict:
     seeds = {team_id: seed.rating for team_id, seed in seed_ratings(root).items()}
     scorelines: dict[tuple[int, int], list[float]] = {}
     elo, shipped = shipped_cards(slices, seeds, score_from_season=score_from, shots=shot_table(root), values=market_values(root),
-                                 scorelines=scorelines, stakes=stakes_table(root))
+                                 scorelines=scorelines, stakes=stakes_table(root), playoffs=playoff_played(root))
     dates = {m.match_id: m.date for s in slices for m in s.matches}
     league = {m.match_id: s.league for s in slices for m in s.matches}
     es = [m for s in slices for m in s.matches if s.league == "eliteserien" and int(m.date[:4]) >= score_from]
@@ -322,6 +359,9 @@ def main(argv: list[str] | None = None) -> int:
     obos = sub.add_parser("xg-obos"); obos.add_argument("--seasons", default="2023-2026")
     obos.add_argument("--delay", type=float, default=DEFAULT_DELAY)
     obos.set_defaults(func=cmd_xg_obos)
+    playoffs = sub.add_parser("playoffs"); playoffs.add_argument("--seasons", default="2015-2025")
+    playoffs.add_argument("--delay", type=float, default=4.0); playoffs.add_argument("--refresh", action="store_true")
+    playoffs.set_defaults(func=cmd_playoffs)
     run = sub.add_parser("run"); run.add_argument("--score-from", type=int, default=2022); run.set_defaults(func=cmd_run)
     values = sub.add_parser("market-values"); values.add_argument("--season", required=True, help="YYYY or YYYY-YYYY")
     values.add_argument("--dry-run", action="store_true"); values.set_defaults(func=cmd_market_values)

@@ -39,7 +39,7 @@ from elitetracker.normalize.fotmob import normalize_matches, normalize_playoff_m
 from elitetracker.normalize.matches import NormalizationError, dump
 from elitetracker.pipeline import (
     NORMALIZED_DIR, PLAYOFF_FIXTURES_FILE, UEFA_RANKS_FILE, _europe_by_rank, current_season, load_matches,
-    playoff_outcomes, playoff_tie,
+    playoff_outcomes, playoff_tie, save_playoff_matches,
 )
 from elitetracker.sources.fotmob import LEAGUES, FetchError, fetch_matches, fetch_qualification, update_xg
 from elitetracker.sources.sofascore import (
@@ -188,7 +188,7 @@ def refresh_playoffs(
         return
     if matches != entry:
         stored[str(season)] = matches
-        path.write_text(json.dumps(dict(sorted(stored.items())), indent=1, ensure_ascii=False) + "\n", encoding="utf-8")
+        save_playoff_matches(stored, root)
         played = sum(match["played"] for match in matches)
         print(f"Play-offs {season}: {len(matches)} matches ({played} played)")
 
