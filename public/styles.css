@@ -233,6 +233,7 @@ body {
   /* The contour backdrop spans the whole page from here. */
   position: relative;
   min-height: 100vh;
+  min-height: 100dvh; /* a phone's visible height, browser bars included */
   background:
     radial-gradient(1400px 640px at 50% -260px, var(--glow), transparent 70%) no-repeat,
     var(--paper);
@@ -398,7 +399,10 @@ html { scroll-padding-top: 76px; }
   .masthead__views .switch button { padding-inline: 0.65rem; }
 }
 
-.masthead__end { display: flex; align-items: center; gap: 1rem; margin-left: auto; }
+/* Its contents sit at the right of the width it keeps (reserveMastheadEnd):
+   where a view hides the division picker, the season stays where it is with
+   the division beside it, rather than sliding left into the room. */
+.masthead__end { display: flex; align-items: center; justify-content: flex-end; gap: 1rem; margin-left: auto; }
 
 .wordmark {
   font-family: var(--display);
@@ -419,10 +423,10 @@ html { scroll-padding-top: 76px; }
 .wordmark__mark { width: 1.15em; height: 1.15em; flex: none; align-self: center; fill: currentColor; }
 .wordmark__lead { fill: var(--accent); }
 .wordmark__name { font-weight: inherit; }
-/* Under 400px the name, the division pill and the settings button overflow
-   the bar, so the mark stands alone, larger; the name stays for screen
-   readers. */
-@media (max-width: 399px) {
+/* Under 370px the name and the division and season pill overflow the bar
+   (the settings button is in the More sheet on a phone), so the mark stands
+   alone, larger; the name stays for screen readers. */
+@media (max-width: 369px) {
   .wordmark__mark { width: 1.75rem; height: 1.75rem; }
   .wordmark__name {
     position: absolute;
@@ -1064,6 +1068,99 @@ table.grid tbody th .team-logo {
   .cell:hover { transform: none; }
 }
 
+/* ---------- the finish grid on a phone: zones, or every place ----------- */
+
+/* The switch and the zones are a phone's (renderGridZones); a wider screen
+   has room for the whole grid and shows only that. */
+.grid-mode, .grid-zones-wrap, .grid__code { display: none; }
+@media (max-width: 760px) {
+  .grid-mode { display: inline-flex; }
+  /* Zones: the zone table in the grid's place, except while the season
+     replays, which paints the grid. */
+  [data-section="grid"][data-grid-mode="zones"]:not(:has(table.grid-anim, .grid-loading)) .grid-zones-wrap { display: block; }
+  [data-section="grid"][data-grid-mode="zones"]:not(:has(table.grid-anim, .grid-loading)) .scroller--grid { display: none; }
+
+  .grid-zones-wrap { padding: var(--space-2) var(--space-3) var(--space-3); }
+  .grid-zones { width: 100%; border-collapse: separate; border-spacing: 3px; font-variant-numeric: tabular-nums; }
+  .grid-zones thead th {
+    padding: 0.35rem 0 0.4rem;
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: var(--ink-muted);
+    text-align: center;
+    box-shadow: inset 0 3px 0 var(--band-color, transparent);
+  }
+  .grid-zones .grid-zones__corner { text-align: left; box-shadow: none; padding-left: 1.65rem; }
+  .grid-zones { table-layout: fixed; }
+  .grid-zones__club, .grid-zones .grid-zones__corner { width: 42%; text-align: left; }
+  .grid-zones__open {
+    display: flex;
+    align-items: center;
+    gap: 0.45rem;
+    width: 100%;
+    min-height: 44px;
+    padding: 0;
+    border: 0;
+    background: none;
+    color: var(--ink);
+    font: inherit;
+    font-size: 0.875rem;
+    font-weight: 600;
+    text-align: left;
+    cursor: pointer;
+  }
+  .grid-zones__pos { flex: none; width: 1.2rem; text-align: right; color: var(--ink-faint); font-size: 0.75rem; font-weight: 500; }
+  .grid-zones__name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .grid-zones .team-logo { width: 20px; height: 20px; flex: none; }
+  .grid-zones .cell { width: auto; height: 44px; border-radius: 6px; font-size: 0.875rem; font-weight: 700; letter-spacing: 0; cursor: pointer; }
+  .grid-zones tbody tr:active .cell { filter: brightness(0.92); }
+
+  /* Every place: the grid at a readable size (32px squares, 11px figures),
+     scrolling sideways under a club column pinned at the left, the club in
+     its crest and three letters. */
+  [data-section="grid"][data-grid-mode="all"] .grid-wrap { padding: 0.75rem; }
+  [data-section="grid"][data-grid-mode="all"] table.grid { width: auto; table-layout: auto; border-spacing: 2px; font-size: 0.6875rem; margin-inline: 0; }
+  [data-section="grid"][data-grid-mode="all"] table.grid tr > :first-child { width: auto; }
+  [data-section="grid"][data-grid-mode="all"] table.grid thead th { min-width: 2rem; font-size: 0.6875rem; }
+  [data-section="grid"][data-grid-mode="all"] table.grid tbody th { padding-right: 0.4rem; }
+  [data-section="grid"][data-grid-mode="all"] table.grid tbody th .team-logo { width: 16px; height: 16px; margin-right: 0.3rem; }
+  [data-section="grid"][data-grid-mode="all"] table.grid .grid__code { display: inline; font-size: 0.6875rem; font-weight: 700; vertical-align: middle; }
+  [data-section="grid"][data-grid-mode="all"] .cell { width: 2rem; min-width: 2rem; height: 2rem; border-radius: 3px; letter-spacing: 0; }
+}
+
+/* A club's chance of every place (openFinishSheet): a row per place, a
+   finger tall, edged in its band's colour, with the bar scaled to the
+   club's likeliest place. */
+.finish-sheet__places { display: grid; gap: 2px; margin: 0.75rem 0 0; padding: 0; list-style: none; }
+.finish-sheet__place {
+  display: grid;
+  grid-template-columns: 2.25rem minmax(0, 1fr) 3.75rem 7.5rem;
+  align-items: center;
+  gap: 0.6rem;
+  min-height: 44px;
+  padding-left: 0.5rem;
+  border-left: 3px solid var(--band-color, transparent);
+  font-variant-numeric: tabular-nums;
+}
+.finish-sheet__pos { font-size: 0.875rem; font-weight: 700; }
+.finish-sheet__bar { position: relative; height: 10px; border-radius: 999px; background: var(--rule); overflow: hidden; }
+.finish-sheet__bar::before { content: ""; position: absolute; inset: 0 auto 0 0; width: var(--p); border-radius: inherit; background: var(--band-color, var(--accent)); }
+.finish-sheet__pct { font-size: 0.875rem; font-weight: 700; text-align: right; }
+.finish-sheet__go {
+  min-height: 44px;
+  padding: 0 0.6rem;
+  border: 1px solid var(--rule);
+  border-radius: 999px;
+  background: var(--panel-sunk);
+  color: var(--accent-ink);
+  font: inherit;
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+.finish-sheet__place.is-quiet { color: var(--ink-faint); }
+.finish-sheet__team { width: 100%; min-height: 44px; margin-top: var(--space-4); }
+
 /* One segment per column, marking what that finishing place is worth. Lives in
    the table head (.grid__bands) so it inherits the column geometry. */
 .band-strip__seg {
@@ -1400,6 +1497,14 @@ table.standings .zone-divider__wrap::after {
 .chart .axis-line { stroke: var(--rule-strong); stroke-width: 1; }
 .chart .grid-line { stroke: var(--rule); stroke-width: 1; stroke-dasharray: 2 3; }
 .chart .tick { fill: var(--ink-muted); font-size: 10px; font-variant-numeric: tabular-nums; }
+/* A phone shrinks every chart to its width (about nine tenths of the drawn
+   size), which took 10px labels under 10px on screen: the labels are drawn a
+   step larger there, so none renders under 10px. */
+@media (max-width: 760px) {
+  svg.chart :is(.tick, .axis-title, .season-label, .band-pos) { font-size: 11.5px; }
+  svg.team-positions .team-positions__year { font-size: 11.5px; }
+  svg.team-positions :is(.team-positions__tier, .team-positions__num) { font-size: 11px; }
+}
 .chart .crosshair { stroke: var(--ink); stroke-width: 1; stroke-dasharray: 3 2; pointer-events: none; }
 .chart .axis-title { fill: var(--ink-muted); font-size: 10px; letter-spacing: 0.12em; text-transform: uppercase; }
 
@@ -2081,17 +2186,10 @@ table.standings .zone-divider__wrap::after {
   .compare__team-name { font-size: 0.95rem; }
   .compare__team-rating { font-size: 1.3rem; }
   .compare__swap-center { width: 44px; height: 44px; font-size: 1.1rem; }
-  .compare__scoreline { font-size: 0.85rem; padding: 0.25rem 0.6rem; min-width: 4rem; gap: 0.3rem; }
+  .compare__scoreline { font-size: 0.85rem; padding: 0.25rem 0.6rem; min-width: auto; flex: 1 1 45%; gap: 0.3rem; }
   .compare__scoreline-prob { font-size: 0.7rem; }
 }
 
-@media (max-width: 760px) {
-  .compare__scoreline { min-width: auto; flex: 1 1 45%; }
-}
-
-@media (max-width: 480px) {
-  .compare__h2h-record { font-size: 1.1rem; }
-}
 
 /* ---------- model card -------------------------------------------- */
 
@@ -2198,11 +2296,24 @@ footer a { color: var(--ink); }
   padding: 0.4rem 0.9rem;
   cursor: pointer;
 }
+.consent__short { display: none; }
+/* On a phone: the short wording (the privacy page and the footer link carry
+   the rest) beside the two answers, equal in weight, on one compact row, so
+   the overview stays in view above it. */
 @media (max-width: 760px) {
-  .consent { bottom: calc(52px + env(safe-area-inset-bottom, 0px)); }
-  /* On a phone they get a line of their own, side by side, half each. */
-  .consent__actions { flex: 1 1 100%; }
-  .consent__actions button { flex: 1; min-height: 44px; }
+  .consent {
+    bottom: calc(52px + env(safe-area-inset-bottom, 0px));
+    flex-wrap: nowrap;
+    gap: 0.6rem;
+    padding: 0.5rem 0.75rem;
+    font-size: 0.75rem;
+    line-height: 1.35;
+  }
+  .consent__long { display: none; }
+  .consent__short { display: inline; }
+  .consent p { flex: 1 1 auto; min-width: 0; }
+  .consent__actions { gap: 0.4rem; }
+  .consent__actions button { min-height: 44px; padding-inline: 0.75rem; }
 }
 
 /* ---------- tooltip ----------------------------------------------- */
@@ -2243,7 +2354,65 @@ footer a { color: var(--ink); }
 }
 /* While it stands in for the page it is a screen tall, so the footer starts
    below the fold rather than jumping down past the arriving content. */
-.status:has(+ #content[hidden]) { min-height: 100vh; }
+.status:has(+ #content[hidden]) { min-height: 100vh; min-height: 100dvh; }
+/* The skeleton under the loading line (index.html): a panel's head, then
+   cards (the overview, a club), rows (the table, the matches) or a block of
+   squares (the finish grid), whichever view the address opens on
+   (html[data-boot-view], set before the first paint). It shimmers unless
+   the reader has asked for less motion. */
+.status:has(> .skeleton-boot) { padding: 0; text-align: left; }
+.status:has(> .skeleton-boot) > .status__text {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+.skeleton-boot {
+  display: grid;
+  gap: var(--space-4);
+  padding: var(--space-5);
+  background: var(--panel);
+  border: 1px solid var(--rule);
+  border-radius: var(--radius);
+}
+.skeleton-boot__head { display: grid; gap: var(--space-2); }
+.skeleton-boot__cards, .skeleton-boot__rows, .skeleton-boot__grid { display: none; }
+html:not([data-boot-view]) .skeleton-boot__cards,
+html[data-boot-view="cards"] .skeleton-boot__cards { display: grid; gap: var(--space-3); }
+html[data-boot-view="table"] .skeleton-boot__rows { display: grid; gap: 6px; }
+html[data-boot-view="grid"] .skeleton-boot__grid { display: block; }
+.skel {
+  display: block;
+  border-radius: 8px;
+  background: linear-gradient(90deg, var(--panel-sunk) 25%, var(--rule) 50%, var(--panel-sunk) 75%);
+  background-size: 200% 100%;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .skel { animation: boot-shimmer 1.5s ease-in-out infinite; }
+}
+@keyframes boot-shimmer { from { background-position: 200% 0; } to { background-position: -200% 0; } }
+.skel--title { width: 40%; height: 1.6rem; }
+.skel--line { width: 75%; height: 0.9rem; }
+.skel--card { height: 9rem; border-radius: 12px; }
+.skel--short { height: 6rem; }
+.skel--row { height: 2.25rem; border-radius: 6px; }
+/* A grid of squares: the shimmer seen through the panel-coloured gaps. */
+.skel--grid {
+  height: 24rem;
+  border-radius: 4px;
+  -webkit-mask: linear-gradient(90deg, #000 calc(100% - 2px), transparent 0) 0 0 / calc(100% / 16) 100%,
+    linear-gradient(#000 calc(100% - 2px), transparent 0) 0 0 / 100% 1.5rem;
+  -webkit-mask-composite: source-in;
+  mask: linear-gradient(90deg, #000 calc(100% - 2px), transparent 0) 0 0 / calc(100% / 16) 100%,
+    linear-gradient(#000 calc(100% - 2px), transparent 0) 0 0 / 100% 1.5rem;
+  mask-composite: intersect;
+}
+@media (max-width: 480px) {
+  .skeleton-boot { margin-inline: calc(-1 * var(--gutter)); border-inline: 0; border-radius: 0; padding: var(--space-4); }
+}
+
 .status__retry {
   appearance: none;
   margin-left: 0.5rem;
@@ -2420,9 +2589,16 @@ footer a { color: var(--ink); }
     padding: 0 0.75rem;
     border-radius: var(--radius);
     cursor: pointer;
+    /* Each view with its icon, as the tab bar's, so the sheet reads as the
+       bar's continuation rather than a list of words. */
+    display: flex;
+    align-items: center;
+    gap: 0.85rem;
   }
+  .sheet__icon { width: 18px; height: 18px; flex: none; color: var(--ink-muted); }
 
   .sheet__item[aria-pressed="true"] { color: var(--accent-ink); background: var(--panel-sunk); }
+  .sheet__item[aria-pressed="true"] .sheet__icon { color: currentColor; }
 
   .sheet__divider {
     height: 1px;
@@ -2607,9 +2783,6 @@ footer a { color: var(--ink); }
   /* Left-aligned so the first view is the one you actually start on. */
   .masthead__views { justify-content: flex-start; }
 
-  /* Team grid row: smaller cells on a phone */
-  .team-grid-row__cell { height: 1.5rem; font-size: 0.5625rem; }
-  .team-grid-row__pos { font-size: 0.5rem; }
   .team-summary__name { font-size: 1.25rem; }
   .team-summary__rating { font-size: 1.75rem; }
 
@@ -2688,10 +2861,10 @@ footer a { color: var(--ink); }
   .skeleton-played-card { height: 3.5rem; border-radius: 0; border-bottom: 1px solid var(--rule); }
 
 
-  /* Improved momentum scrolling for tables */
-  .scroller { -webkit-overflow-scrolling: touch; scroll-behavior: auto; }
-  .scroller:has(> table) { scroll-snap-type: x mandatory; }
-  .scroller > table { scroll-snap-align: start; }
+  /* Wide tables scroll freely with native momentum. A mandatory x snap with
+     the table as its only snap point pulled every swipe back to the left
+     edge; overscroll stays inside the table instead of paging the browser. */
+  .scroller { -webkit-overflow-scrolling: touch; scroll-behavior: auto; overscroll-behavior-x: contain; }
   #content > section { margin-block: 0; }
   .hero { padding-bottom: 0.25rem; }
 
@@ -2701,8 +2874,11 @@ footer a { color: var(--ink); }
   .scroller:has(> table.standings) { container-type: inline-size; }
   table.standings .zone-divider__wrap { position: sticky; left: 0; width: 100cqi; }
 
-  /* A tighter masthead on small screens. */
+  /* A tighter masthead on small screens. Theme and language are in the More
+     sheet on a phone, so the settings button goes: the mark, the name and the
+     division and season pill get the bar to themselves. */
   .masthead__inner { gap: 0.7rem 1rem; min-height: 0; padding-block: 0.7rem; }
+  #settings-btn { display: none; }
   .wordmark { font-size: 0.95rem; }
   .masthead__views .switch button { padding: 0.3rem 0.5rem; font-size: 0.75rem; }
 
@@ -2713,19 +2889,29 @@ footer a { color: var(--ink); }
      375px screen, which is most of a table column. */
   :root { --gutter: 0.75rem; }
 
+  /* A view's panel runs edge to edge, as an app's sheet does: a card inside
+     a card cost the cards in it (the overview's races, a club's figures) the
+     gutter twice over. Rules above and below still part it from the page. */
+  main .panel {
+    margin-inline: calc(-1 * var(--gutter));
+    border-inline: 0;
+    border-radius: 0;
+    box-shadow: none;
+  }
+  /* Where the hero is empty (the views listed under "The league hero only
+     where it is the page's own story"), the panel starts under the masthead,
+     as Explore's does, not a strip of page below it: the empty hero gives
+     back #content's gap. */
+  body:is([data-view="overview"], [data-view="team"], [data-view="ladder"], [data-view="compare"], [data-view="model"], [data-view="explore"]) #content > .hero { margin-bottom: -1rem; }
+
   /* Less generous panel padding so the wide tables and controls get the
      maximum usable width on small phones. */
   .panel__head, .timeline { padding: 0.9rem 1rem; }
 
   .standings .club-btn--crest .team-logo { width: 16px; height: 16px; margin-right: 0.3rem; }
   .standings .band-mark { margin-right: 0.2rem; }
-  .grid-wrap { padding: 1rem; }
   .legend { padding: 0.8rem 1rem; }
   .fixture { padding: 0.65rem 1rem; }
-
-  /* Two model-card columns; the long Norwegian labels need the padding back. */
-  .panel .model-grid div { padding: 0.8rem 0.9rem; }
-  .model-grid { grid-template-columns: 1fr; }
 
   /* Tighter wordmark on small phones. */
   .wordmark { font-size: 0.8rem; letter-spacing: 0; }
@@ -2737,39 +2923,6 @@ footer a { color: var(--ink); }
   .league-picker .hero-title-part { padding-inline: 0.6rem; }
   .popover-menu--picker .popover-menu__btn { padding-inline: calc(0.6rem - 4px); }
 
-  /* Grid animation controls: ensure they fit */
-  .grid-anim-bar { padding: 0.5rem 1rem; gap: 0.5rem; }
-  .grid-anim-bar__when { min-width: 0; font-size: 0.75rem; }
-  .grid-anim-speed button { min-width: 2.5rem; padding: 0.2rem 0.4rem; font-size: 0.6875rem; }
-}
-
-/* ---- 360px and below: extreme narrow ---- */
-@media (max-width: 360px) {
-  .grid-wrap { padding: 0.5rem 0.25rem; }
-  .cell { font-size: 0.5rem; letter-spacing: -0.05em; }
-  .ladder__track--list { --scale-w: 38%; }
-  .panel__head { padding: 0.75rem 0.875rem; }
-  .hero { padding-inline: 0.75rem; }
-
-
-  /* Ladder row height bump for touch */
-  .ladder__track--list .ladder__team { height: 2.75rem; }
-  .ladder__track--list .ladder__rank { font-size: 0.6875rem; }
-  .ladder__track--list .ladder__name { font-size: 0.8125rem; }
-  .ladder__track--list .ladder__rating { font-size: 0.75rem; }
-  .ladder__track--list .ladder__team img { width: 1.125rem; height: 1.125rem; }
-
-  /* Team focus tighter */
-  .team-summary__name { font-size: 1.125rem; }
-  .team-summary__rating { font-size: 2rem; }
-  .team-stats__value { font-size: 1.25rem; }
-  .team-stats__label { font-size: 0.6875rem; }
-  .team-stats__tile { padding: 0.5rem 0.35rem; }
-
-  /* Compare clubs tighter */
-  .compare__team-name { font-size: 0.875rem; }
-  .compare__team-rating { font-size: 1.1rem; }
-  .compare__scoreline { font-size: 0.75rem; padding: 0.2rem 0.5rem; min-width: 3.5rem; }
 }
 
 /* ---------- season selector --------------------------------------- */
@@ -3007,6 +3160,41 @@ footer a { color: var(--ink); }
   .team-summary__own-words { display: none; }
   .team-summary__actions { margin-top: 0; }
   .team-summary__own { padding: 0.25rem 0.6rem; font-size: 1rem; line-height: 1; }
+
+  /* One row, as an app's navigation bar: back, the crest, the name (two lines
+     at most rather than cut short), and the club's two actions at the right,
+     in the room the name leaves; the rating and its rank on the row below. */
+  .team-summary .team-summary__header {
+    display: grid;
+    grid-template-columns: auto auto minmax(0, 1fr) auto;
+    grid-template-areas: "back crest name actions" "rating rating rating rating";
+    align-items: center;
+    gap: 0.75rem 0.6rem;
+  }
+  .team-summary__header > .team-back { grid-area: back; }
+  .team-summary__header > .team-logo--large { grid-area: crest; width: 44px; height: 44px; }
+  .team-summary__header .team-summary__name-block { display: contents; }
+  .team-summary__header .team-summary__name {
+    grid-area: name;
+    font-size: 1.25rem;
+    line-height: 1.15;
+    white-space: normal;
+    overflow-wrap: anywhere;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+  }
+  .team-summary__header .team-summary__actions { grid-area: actions; margin: 0; gap: 0.4rem; }
+  .team-summary__header .team-summary__rating-block { grid-area: rating; }
+  .team-summary__actions > :is(.team-summary__own, .share-btn) {
+    display: inline-grid;
+    place-items: center;
+    width: 40px;
+    height: 40px;
+    min-height: 0;
+    padding: 0;
+    border-radius: 999px;
+  }
 }
 
 .team-summary__rating-block {
@@ -3369,7 +3557,8 @@ button.team-mini__row:hover { background: var(--panel-sunk); }
 /* Rating trend arrow in the standings table — same style as the team view */
 .rating-trend {
   display: inline-flex;
-  vertical-align: middle;
+  /* Level with the rating beside it: "middle" sat the arrow 3px high. */
+  vertical-align: -0.2em;
   margin-left: 0.3rem;
   font-size: 1.15rem;
   line-height: 1;
@@ -3858,35 +4047,6 @@ button.team-mini__row:hover { background: var(--panel-sunk); }
 .chart .band-pos { font-size: 9.5px; font-weight: 700; fill: var(--ink); opacity: 0.8; dominant-baseline: middle; }
 .chart .band-pos--invert { fill: var(--panel); opacity: 1; }
 
-/* Responsive adjustments for compact list */
-@media (max-width: 760px) {
-  .season-row-compact { padding: 0.5rem 0.6rem; gap: 0.75rem; }
-  .season-row-head { padding-inline: 0.6rem; gap: 0.75rem; }
-  .season-row-compact__season { width: 6.5rem; gap: 0.35rem; }
-  .season-row-compact__year { font-size: 0.875rem; }
-  .season-row-compact__main { gap: 0.5rem; }
-  .season-row-compact__pos { font-size: 0.9375rem; min-width: 2rem; }
-  .season-row-compact__rating { min-width: 6rem; gap: 0.35rem; }
-  .season-row-compact__rating-start { font-size: 0.75rem; min-width: 2.5rem; }
-  .season-row-compact__change { min-width: 5rem; }
-  .season-row-compact__change-val { font-size: 0.8125rem; min-width: 2rem; }
-  .season-row-compact__rating-end { font-size: 0.75rem; min-width: 2.5rem; }
-}
-
-@media (max-width: 480px) {
-  .season-row-compact { padding: 0.45rem 0.5rem; gap: 0.5rem; }
-  .season-row-head { padding-inline: 0.5rem; gap: 0.5rem; }
-  .season-row-compact__season { width: 6rem; }
-  .season-row-compact__year { font-size: 0.8125rem; }
-  .season-row-compact__main { gap: 0.35rem; }
-  .season-row-compact__pos { font-size: 0.875rem; min-width: 1.75rem; }
-  .season-row-compact__rating { min-width: 5.5rem; }
-  .season-row-compact__rating-start { min-width: 2.25rem; }
-  .season-row-compact__change { min-width: 4.5rem; }
-  .season-row-compact__change-val { min-width: 1.75rem; }
-  .season-row-compact__rating-end { min-width: 2.25rem; }
-}
-
 #standings tbody tr { cursor: pointer; }
 
 .club-btn {
@@ -3997,6 +4157,11 @@ button.team-mini__row:hover { background: var(--panel-sunk); }
 
 .timeline__control { position: relative; }
 
+/* A slider scrubs sideways: the browser keeps vertical pans (the page
+   scrolls) and leaves the horizontal to the slider, so a scrub never turns
+   into a pull to refresh or an edge swipe. */
+#timeline-range, #mountain-upto { touch-action: pan-y; }
+
 .timeline input[type="range"] {
   appearance: none;
   width: 100%;
@@ -4078,21 +4243,15 @@ button.team-mini__row:hover { background: var(--panel-sunk); }
 
 /* Team focus: Season Shape responsiveness */
 @media (max-width: 480px) {
-  .team-section .chart .tick { font-size: 9px; }
-  .team-section .chart .axis-title { font-size: 9px; }
   .team-section .chart .crosshair { stroke-width: 1.5; }
 
   /* Beside a 2.5rem rating the club name had ~30px left and read "Vi…". The
      rating drops to its own line so the name gets the width. */
 
-  /* #team-content and each .team-section both padded 1.25rem: 40px a side of
-     a 360px screen before any content. One layer of gutter is enough. */
-  #team-content { padding: 0.5rem 0.25rem; }
-  .team-section { padding: 1rem 0.75rem; }
-  .team-grid-row__cell { font-size: 0.5rem; letter-spacing: -0.04em; }
 }
 
-/* Prevent horizontal overflow on very narrow screens */
+/* The narrowest phones, 360px and below: tighter than 480px everywhere, never
+   looser (the 480px rules come first in each section, these last). */
 @media (max-width: 360px) {
   .grid-wrap { padding: 0.5rem 0.25rem; }
   .cell { font-size: 0.5rem; letter-spacing: -0.05em; }
@@ -4108,17 +4267,6 @@ button.team-mini__row:hover { background: var(--panel-sunk); }
   .ladder__track--list .ladder__rating { font-size: 0.75rem; }
   .ladder__track--list .ladder__team img { width: 1.125rem; height: 1.125rem; }
 
-  /* Team focus tighter */
-  .team-summary__name { font-size: 1.125rem; }
-  .team-summary__rating { font-size: 2rem; }
-  .team-stats__value { font-size: 1.25rem; }
-  .team-stats__label { font-size: 0.6875rem; }
-  .team-stats__tile { padding: 0.5rem 0.35rem; }
-
-  /* Compare clubs tighter */
-  .compare__team-name { font-size: 0.875rem; }
-  .compare__team-rating { font-size: 1.1rem; }
-  .compare__scoreline { font-size: 0.75rem; padding: 0.2rem 0.5rem; min-width: 3.5rem; }
 }
 
 /* ----- Team Focus mobile refinements ----- */
@@ -4173,17 +4321,14 @@ button.team-mini__row:hover { background: var(--panel-sunk); }
   .season-row-compact__change-val { font-size: 0.8125rem; min-width: 2rem; }
   .season-row-compact__rating-end { font-size: 0.75rem; min-width: 2.5rem; }
 
-  /* Pagination in team section */
-  .team-section .played-nav { padding-inline: 0; }
 
   /* Rating chart tick sizes */
-  .team-section .chart .tick { font-size: 9px; }
-  .team-section .chart .axis-title { font-size: 9px; }
 
 }
 
 @media (max-width: 480px) {
-  /* Team content and sections: single gutter layer */
+  /* #team-content and each .team-section both padded 1.25rem: 40px a side of
+     a 360px screen before any content. One layer of gutter is enough. */
   #team-content { padding: 0.5rem 0.25rem; }
   .team-section { padding: 1rem 0.75rem; }
   .team-summary { padding-inline: 0.75rem; }
@@ -4191,7 +4336,6 @@ button.team-mini__row:hover { background: var(--panel-sunk); }
   .team-grid-row__cell { font-size: 0.5rem; letter-spacing: -0.04em; }
   /* Start is end minus change: the phone keeps the two that carry news. */
   .season-row-compact__rating-start { display: none; }
-  .team-summary__name { font-size: 1.25rem; }
   .team-summary__rating { font-size: 2rem; }
   .team-stats__value { font-size: 1.25rem; }
   .team-stats__tile { padding: 0.5rem 0.35rem; }
@@ -4215,11 +4359,6 @@ button.team-mini__row:hover { background: var(--panel-sunk); }
 
 /* ----- Next Up / Fixtures mobile refinements ----- */
 @media (max-width: 760px) {
-  /* Fixture cards stack properly */
-  .played-card { padding: 0.75rem 1rem; }
-  .played-card__matchup { gap: 0.5rem; }
-  .played-card__side { gap: 0.4rem; }
-
   /* Tighter gaps: the odds bar keeps its row layout at every width */
   .fixture__odds-col { gap: 0.25rem; }
   .fixture__lines { gap: 0.25rem; }
@@ -4231,14 +4370,6 @@ button.team-mini__row:hover { background: var(--panel-sunk); }
 }
 
 @media (max-width: 480px) {
-  .played-card { padding: 0.5rem 0.75rem; }
-  .played-card__matchup { gap: 0.375rem; }
-  .played-card__side { gap: 0.3rem; }
-  .played-card__rating { flex-direction: column; align-items: center; gap: 0; line-height: 1.15; }
-  .played-card__score { font-size: 1.125rem; }
-  .played-card__rating-value { font-size: 0.9375rem; }
-  .played-card__delta { font-size: 0.75rem; }
-
   .fixtures .played-nav { padding: 0.6rem 0.75rem; }
   .fixtures .played-nav__btn { min-width: 40px; padding: 0.35rem 0.5rem; font-size: 0.75rem; }
   .fixtures .played-nav__label { font-size: 0.8125rem; }
@@ -4261,17 +4392,9 @@ button.team-mini__row:hover { background: var(--panel-sunk); }
 
 /* ----- Compare Clubs mobile refinements ----- */
 @media (max-width: 760px) {
-  /* Team pickers already full-width cards */
-  .compare__team { padding: 0.75rem 1rem; gap: 0.5rem; }
-  .compare__team .team-logo { width: 40px; height: 40px; }
-  .compare__card-main { flex-direction: column; align-items: center; gap: 0.35rem; }
-  .compare__team-text { align-items: center; text-align: center; }
-  .compare__swap-center { width: 44px; height: 44px; font-size: 1.1rem; }
 
   /* Scoreline chips wrap */
   .compare__scorelines-chips { gap: 0.4rem; }
-  .compare__scoreline { font-size: 0.85rem; padding: 0.25rem 0.6rem; min-width: 4rem; gap: 0.3rem; }
-  .compare__scoreline-prob { font-size: 0.7rem; }
 
   /* H2H record */
   .compare__h2h-record { font-size: 1.1rem; }
@@ -4314,7 +4437,7 @@ button.team-mini__row:hover { background: var(--panel-sunk); }
 }
 
 @media (max-width: 480px) {
-  .grid-anim-bar { flex-wrap: wrap; justify-content: center; gap: 0.5rem; }
+  .grid-anim-bar { flex-wrap: wrap; justify-content: center; }
   .grid-anim-bar__when { order: -1; width: 100%; text-align: center; margin-bottom: 0.25rem; }
   .grid-anim-speed { order: 0; }
 }
@@ -4460,6 +4583,19 @@ html { scroll-behavior: smooth; }
 /* Back to the gallery: the team view's back button (.team-back). */
 .explore-back { margin-bottom: 0.75rem; }
 .explore-back[hidden] { display: none; }
+/* On a phone the back button sits beside the tool's name, as an app's
+   navigation bar has it (and as the club page's does), not on a row of its
+   own above it; the description runs under both. */
+@media (max-width: 760px) {
+  [data-section="explore"] .panel__head > div:has(> .explore-back:not([hidden])) {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    align-items: center;
+    column-gap: var(--space-3);
+  }
+  [data-section="explore"] .panel__head > div:has(> .explore-back:not([hidden])) > p { grid-column: 1 / -1; }
+  .explore-back { margin-bottom: 0; }
+}
 
 .explore-empty { margin: 0; padding: 1.25rem; color: var(--ink-muted); }
 
@@ -4514,8 +4650,26 @@ html { scroll-behavior: smooth; }
   .explore-gallery { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 
+/* On a phone, a list as an app's: the thumbnail beside its name and what it
+   shows, as the views' Explore further cards, so the tools fit a screen or
+   two rather than one card each. */
 @media (max-width: 760px) {
-  .explore-gallery { grid-template-columns: 1fr; padding: 1rem; gap: 1.5rem; }
+  .explore-gallery { grid-template-columns: 1fr; padding: var(--space-2); gap: 0; }
+  .explore-card {
+    grid-template-columns: 7rem minmax(0, 1fr);
+    grid-template-rows: auto auto;
+    align-content: center;
+    gap: 0.15rem var(--space-3);
+    padding: var(--space-2);
+    border-radius: 12px;
+  }
+  .explore-card + .explore-card { border-top: 1px solid var(--rule); border-radius: 0; }
+  /* Scoped to the gallery's cards: the thumbnail class is shared with the
+     overview's Explore button and the Explore further cards. */
+  .explore-card > .explore-card__thumb { grid-row: 1 / span 2; align-self: center; margin: 0; border-radius: 8px; }
+  .explore-card > .explore-card__title { align-self: end; font-size: 0.9375rem; }
+  .explore-card > .explore-card__desc { align-self: start; font-size: 0.8125rem; }
+  .explore-card:hover > .explore-card__thumb { transform: none; box-shadow: none; }
 }
 
 /* Attack vs defence */
@@ -4839,6 +4993,12 @@ body[data-viz="mountain"] > footer { display: none; }
 .chart .races__line { fill: none; stroke-width: 2; stroke-linejoin: round; stroke-linecap: round; }
 /* A wide invisible stroke over each line, so a finger or cursor need not hit two pixels. */
 .chart .races__hit { fill: none; stroke: transparent; stroke-width: 14; stroke-linejoin: round; pointer-events: stroke; }
+/* A finger needs a wider target than a cursor: a line's hit band and a
+   season's dot grow to about 28px on touch. */
+@media (pointer: coarse), (max-width: 760px) {
+  .chart .races__hit { stroke-width: 28; }
+  .chart .luck-all__hit { r: 15px; }
+}
 .chart .races__end { stroke: var(--panel); stroke-width: 2; }
 .chart .races__club:hover .races__line, .chart .races__club:focus-visible .races__line { stroke-width: 4; }
 .chart .races__club:focus-visible { outline: none; }
@@ -4970,9 +5130,6 @@ body[data-viz="mountain"] > footer { display: none; }
 }
 /* Under 360px the small crests go, so the names keep their room and the table
    keeps its seven values: a name identifies a club as well as its crest. */
-@media (max-width: 359px) {
-  .standings .club-btn .team-logo { display: none; }
-}
 @media (max-width: 339px) {
   table.standings th, table.standings td { padding-inline: 0.15rem; }
   #standings .sort-btn { padding-inline: 0.15rem; }
@@ -5025,13 +5182,48 @@ table.standings .zone-divider__wrap::after { opacity: 0.32; }
 /* Quieter row lines: a rule is there to guide the eye, not to be the loudest thing on the row. */
 table.standings tbody tr:not(.zone-divider) td { border-bottom-color: color-mix(in srgb, var(--rule) 55%, transparent); }
 
-/* The phone's Prediction: no trend arrow beside the rating, and Fix only from
-   375px, so the names keep their room. */
+/* The table on a phone: three column sets rather than columns dropped one
+   width at a time, each fitting a 360px screen with no sideways scroll, the
+   crest kept, every figure 13px and every row a finger tall.
+     Table (Current): #, club, played, GD, points, form.
+     Strength: #, club, rating with its trend, attack, defence.
+     Prediction: #, club, xPts, fixture difficulty, how the season ends. */
+.table-control-btn--phone, .table-control-btn__short { display: none; }
 @media (max-width: 760px) {
-  #standings[data-view="prediction"] .rating-trend { display: none; }
+  /* The same display as its neighbours: as a flex box its label sat 3px
+     higher than Tabell's and Prognose's. */
+  .table-control-btn--phone { display: block; }
+  .table-control-btn__long { display: none; }
+  .table-control-btn__short { display: inline; }
+  #standings tbody tr:not(.zone-divider) > :is(td, th) { height: 44px; }
+  #standings[data-view="current"] :is(.col--wdl, .col--goals, .col--rating) { display: none; }
+  #standings[data-view="current"] .form:not([hidden]) { display: table-cell; }
+  #standings[data-view="current"] .form__chips { gap: 1px; }
+  #standings[data-view="current"] .form__chip { width: 0.8rem; height: 0.8rem; border-radius: 2px; font-size: 0.5rem; }
+  #standings[data-view="strength"] .col--extra:not([hidden]) { display: table-cell; }
+  /* Strength: each figure centred under its heading (the headings centre),
+     the last column clear of the screen's edge (the hidden columns after it
+     are the row's last children, so the general last-child padding misses
+     it), and the headings' spacing tightened so "Forsvar" fits. */
+  #standings[data-view="strength"] :is(td, th):is(.col--rating, .col--extra) { text-align: center; }
+  #standings[data-view="strength"] td.col--rating { white-space: nowrap; }
+  #standings[data-view="strength"] :is(td, th).col--defence { padding-right: 0.75rem; }
+  #standings[data-view="strength"] :is(.col--rating, .col--extra) .sort-btn__label { letter-spacing: 0.02em; }
+  /* The pills one width with even figures, so each column is a straight line
+     down the table, not a zigzag of "+1 %" beside "−30 %". */
+  #standings[data-view="strength"] .attack-defence-pill { width: 3.6rem; min-width: 0; box-sizing: border-box; padding: 0; font-variant-numeric: tabular-nums; }
+  #standings[data-view="strength"] td.col--rating { font-variant-numeric: tabular-nums; }
+  #standings[data-view="prediction"] :is(.col--rating, .col--xg, .col--xgd) { display: none; }
 }
-@media (max-width: 374px) {
-  table.standings .col--fd { display: none; }
+/* Room to spare from 375px: Table adds wins, draws and losses (and goals
+   for and against from 430px), Prediction its projected goal difference.
+   The club column keeps room for the longest name with its crest. */
+@media (min-width: 375px) and (max-width: 760px) {
+  #standings[data-view="current"] .col--wdl:not([hidden]) { display: table-cell; }
+  #standings[data-view="prediction"] .col--xgd:not([hidden]) { display: table-cell; }
+}
+@media (min-width: 430px) and (max-width: 760px) {
+  #standings[data-view="current"] .col--goals:not([hidden]) { display: table-cell; }
 }
 
 /* On a phone the Fix pill and the bar sit in the middle of their columns, and
@@ -5153,6 +5345,61 @@ table.standings tbody tr:not(.zone-divider) td { border-bottom-color: color-mix(
 }
 .whatif-card__foot .odds { align-self: stretch; }
 .whatif-chips { display: flex; flex-wrap: wrap; justify-content: center; gap: 0.3rem; }
+/* Home win, draw, away win: three equal pills over the odds bar, in the odds
+   bar's own colours once set. */
+.whatif-outcomes { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0.4rem; align-self: stretch; }
+.whatif-outcome {
+  min-height: 2.25rem;
+  border: 1px solid var(--rule);
+  border-radius: 999px;
+  background: var(--panel);
+  color: var(--ink-muted);
+  font: inherit;
+  font-size: 0.8125rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+.whatif-outcome:hover { color: var(--ink); border-color: var(--rule-strong); }
+.whatif-outcome[aria-pressed="true"] { color: #fff; border-color: transparent; }
+.whatif-outcome[data-outcome="home"][aria-pressed="true"] { background: var(--home); }
+.whatif-outcome[data-outcome="draw"][aria-pressed="true"] { background: var(--draw); color: #10171b; }
+.whatif-outcome[data-outcome="away"][aria-pressed="true"] { background: var(--away); }
+.whatif-outcome:focus-visible { outline: 2px solid var(--accent-ink); outline-offset: 2px; }
+/* The bar's way on, and the table's way back: a phone's. */
+.whatif__bar-go, .whatif-back { display: none; }
+@media (max-width: 760px) {
+  .whatif-outcome { min-height: 44px; font-size: 0.875rem; }
+  .whatif .whatif__bar { display: flex; align-items: center; gap: 0.75rem; }
+  .whatif__bar-text { flex: 1; min-width: 0; }
+  .whatif__bar-go {
+    display: inline-flex;
+    flex: none;
+    align-items: center;
+    min-height: 2rem;
+    padding: 0 0.7rem;
+    border-radius: 999px;
+    background: var(--accent);
+    color: var(--on-accent);
+    font-size: 0.75rem;
+    font-weight: 700;
+    white-space: nowrap;
+  }
+  .whatif-back {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+    margin-bottom: 0.5rem;
+    padding: 0 0.9rem;
+    border: 1px solid var(--rule);
+    border-radius: 999px;
+    background: var(--panel-sunk);
+    color: var(--ink);
+    font: inherit;
+    font-size: 0.8125rem;
+    font-weight: 600;
+    cursor: pointer;
+  }
+}
 .whatif-chip {
   padding: 0.15rem 0.6rem;
   font: inherit;
@@ -5174,6 +5421,7 @@ table.standings tbody tr:not(.zone-divider) td { border-bottom-color: color-mix(
   position: sticky;
   top: 4.75rem;
   max-height: calc(100vh - 5.75rem);
+  max-height: calc(100dvh - 5.75rem);
   overflow: auto;
   padding: 0.9rem 1rem 0.5rem;
   background: var(--panel);
@@ -5636,19 +5884,105 @@ body.has-scenario { overflow: hidden; }
   .scenario-all__row .scenario-match__teams { font-size: 0.8125rem; }
 }
 
+/* The grip shows only where the popup is a bottom sheet. */
+.scenario__grip { display: none; }
 @media (max-width: 760px) {
   .scenario { padding: 0; place-items: end center; }
-  .scenario__panel { max-height: 94dvh; border-radius: var(--radius) var(--radius) 0 0; padding: 1rem 1rem 1.5rem; }
+  /* A bottom sheet: the grip and head stay at the top while the rest
+     scrolls under them (sticky inside the panel's own scroll), and the foot
+     clears the home indicator. */
+  .scenario__panel {
+    max-height: 94dvh;
+    border-radius: var(--radius) var(--radius) 0 0;
+    padding: 0 1rem calc(1.5rem + env(safe-area-inset-bottom, 0px));
+  }
+  .scenario__top {
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    margin-inline: -1rem;
+    padding: 0.4rem 1rem 0.6rem;
+    background: var(--panel);
+    border-bottom: 1px solid var(--rule);
+  }
+  .scenario__grip {
+    display: block;
+    width: 2.25rem;
+    height: 4px;
+    margin: 0.2rem auto 0.55rem;
+    border-radius: 2px;
+    background: var(--rule-strong);
+  }
+  .scenario__head { align-items: center; }
   .scenario-all__grid { grid-template-columns: 1fr; }
 }
+/* A finger's size for the close and share buttons in the popup's head. */
+@media (pointer: coarse), (max-width: 760px) {
+  .scenario__close { width: 44px; height: 44px; font-size: 1.5rem; }
+  .scenario__head .share-btn { width: 44px; height: 44px; }
+}
+.scenario__panel.is-dragging, .is-sheet.is-dragging { animation-play-state: paused; transition: transform 0.05s linear, opacity 0.05s linear; }
+.scenario__panel.is-dismissed, .is-sheet.is-dismissed {
+  transform: translateY(100%);
+  opacity: 0;
+  transition: transform 0.25s var(--ease), opacity 0.25s var(--ease);
+}
 
-/* Under a panel's head: the Explore tools that take its numbers further, as
-   the overview's tool cards (renderToolLinks), centred. Cards keep one
-   width, so one or two do not stretch across the panel. */
+/* The phone's pickers (division, season, a club to compare) as bottom
+   sheets (phoneMenu): full width over a scrim, a grip on top, rows a finger
+   tall, clear of the home indicator. */
+.menu-scrim { position: fixed; inset: 0; z-index: 55; background: rgb(0 0 0 / 0.45); }
+.menu-scrim[hidden] { display: none; }
+.popover-menu.is-sheet, .compare__menu.is-sheet {
+  position: fixed;
+  inset: auto 0 0 0;
+  z-index: 60;
+  width: auto;
+  max-height: 70dvh;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  display: grid;
+  gap: 2px;
+  padding: 0 0.75rem calc(0.75rem + env(safe-area-inset-bottom, 0px));
+  border-width: 1px 0 0;
+  border-radius: 14px 14px 0 0;
+  animation: sheet-up 0.18s var(--ease);
+}
+.is-sheet::before {
+  content: "";
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  display: block;
+  height: 1.4rem;
+  margin-inline: -0.75rem;
+  background:
+    linear-gradient(var(--rule-strong), var(--rule-strong)) center 0.6rem / 2.25rem 4px no-repeat,
+    var(--panel);
+  border-radius: 14px 14px 0 0;
+}
+.is-sheet .popover-menu__btn, .is-sheet .compare__option {
+  min-height: 48px;
+  padding: 0 0.75rem;
+  font-size: 0.9375rem;
+  border-radius: var(--radius);
+}
+.is-sheet .compare__option .team-logo { width: 28px; height: 28px; }
+.is-sheet .popover-menu__btn[aria-pressed="true"], .is-sheet .compare__option[aria-selected="true"] { background: var(--panel-sunk); }
+@media (prefers-reduced-motion: reduce) {
+  .popover-menu.is-sheet, .compare__menu.is-sheet { animation: none; }
+}
+
+/* The Explore tools that take a panel's numbers further, as the overview's
+   tool cards (renderToolLinks), centred: under the panel's head on a desktop
+   or a tablet (What if in Matches' head corner), at its foot under the legend
+   on a phone (placeToolLinks), so there the view's own content comes first.
+   Cards keep one width, so one or two do not stretch across the panel. */
 .tool-links { display: grid; justify-items: center; gap: var(--space-2); padding: var(--space-3) var(--space-5); border-bottom: 1px solid var(--rule); }
 .tool-links__list { display: flex; flex-wrap: wrap; justify-content: center; gap: var(--space-1) var(--space-4); width: 100%; }
 .tool-links .overview-tool { width: 20rem; max-width: 100%; }
 .tool-links [hidden] { display: none; }
+.tool-links--foot { border-top: 1px solid var(--rule); border-bottom: 0; padding-block: var(--space-4); }
 /* Matches: one card in the head's corner, over the count of matches; the
    nav's name stands in for the heading, and the card's thumbnail lines up
    with the count's right edge. */
@@ -5661,6 +5995,40 @@ body.has-scenario { overflow: hidden; }
 @media (max-width: 760px) {
   .tool-links { padding: var(--space-3); }
   .tool-links .overview-tool { width: 100%; grid-template-columns: 5rem minmax(0, 1fr); }
+  /* At a panel's foot (and under the ladder's head): one row of chips that
+     scrolls sideways, each the tool's thumbnail and name, so three tools
+     never stack into a tall block on a 360px screen. The trailing fade says
+     there is more; Matches' corner card keeps its own shape. */
+  .tool-links:not(.tool-links--head) { justify-items: stretch; padding: var(--space-3) 0; }
+  .tool-links:not(.tool-links--head) > .label { padding-inline: var(--space-4); }
+  .tool-links:not(.tool-links--head) .tool-links__list {
+    flex-wrap: nowrap;
+    justify-content: flex-start;
+    gap: var(--space-2);
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    scrollbar-width: none;
+    padding: 2px var(--space-4);
+    scroll-padding-inline: var(--space-4);
+    mask-image: linear-gradient(90deg, transparent, #000 var(--space-3), #000 calc(100% - 2rem), transparent);
+  }
+  .tool-links:not(.tool-links--head) .tool-links__list::-webkit-scrollbar { display: none; }
+  .tool-links:not(.tool-links--head) .overview-tool {
+    flex: none;
+    width: 8.5rem;
+    grid-template-columns: minmax(0, 1fr);
+    justify-items: center;
+    gap: var(--space-2);
+    padding: var(--space-2);
+    border: 1px solid var(--rule);
+    border-radius: 12px;
+    background: var(--panel-sunk);
+    text-align: center;
+  }
+  .tool-links:not(.tool-links--head) .overview-tool .explore-card__thumb { width: 100%; border-radius: 8px; }
+  .tool-links:not(.tool-links--head) .overview-tool__text { justify-items: center; }
+  .tool-links:not(.tool-links--head) .overview-tool__title { font-size: 0.8125rem; line-height: 1.25; }
+  .tool-links:not(.tool-links--head) .overview-tool__desc { display: none; }
   .panel__aside { flex: 1 1 100%; justify-items: stretch; }
   .tool-links--head { padding: 0; }
   .tool-links--head .overview-tool { margin-inline: calc(-1 * var(--space-2)); width: calc(100% + 2 * var(--space-2)); }
@@ -5909,6 +6277,27 @@ body.has-scenario { overflow: hidden; }
 /* The climber and the faller: each under its label (the heroes' label type),
    its rating change in the table's arrow and colours, its rating before and
    after under the name. */
+/* The reader's own club: its name and place on one line, points and rating
+   under them, the next match, and a chip per open band. */
+.overview-own { --band-color: var(--accent); }
+.overview-own__main { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: baseline; gap: 0.2rem var(--space-3); }
+.overview-own__club { font-size: 1.125rem; }
+.overview-own__club .team-logo { width: 24px; height: 24px; vertical-align: -6px; }
+.overview-own__place { font-size: 1.75rem; }
+.overview-own__facts { grid-column: 1 / -1; font-size: 0.8125rem; color: var(--ink-muted); font-variant-numeric: tabular-nums; }
+.overview-own__next { margin: 0; font-size: 0.875rem; color: var(--ink); }
+.overview-own__bands { display: flex; flex-wrap: wrap; gap: var(--space-2); margin: 0; padding: 0; list-style: none; }
+.overview-own__band {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.4rem;
+  padding: 0.3rem 0.65rem;
+  border: 1px solid color-mix(in srgb, var(--band-color) 45%, var(--rule));
+  border-radius: 999px;
+  font-size: 0.8125rem;
+  font-variant-numeric: tabular-nums;
+}
+.overview-own__band b { font-weight: 800; }
 .overview-movers__label {
   grid-column: 1 / -1;
   font-size: 0.6875rem;
@@ -6080,6 +6469,9 @@ body.has-scenario { overflow: hidden; }
 .overview-tool:hover .explore-card__thumb { border-color: var(--accent); }
 .overview-tool__text { display: grid; gap: 0.15rem; min-width: 0; }
 .overview-tool__title { font-size: 0.875rem; font-weight: 700; }
+/* The short line is the phone pills' (.tool-links--pill); elsewhere the
+   description stands. */
+.overview-tool__short { display: none; }
 .overview-tool__desc {
   display: -webkit-box;
   -webkit-box-orient: vertical;
@@ -6135,6 +6527,18 @@ body.has-scenario { overflow: hidden; }
   .overview-champion__club { font-size: 1.5rem; }
   .overview-champion__club .team-logo { width: 1.75rem; height: 1.75rem; }
   .overview-champion__points { margin-left: auto; font-size: 1.375rem; }
+  /* A phone's first screen: the title race, then this round's match and the
+     movers (what happened, what is next), then the other races. The
+     division's tiles stay last. */
+  .overview__division > .overview-title, .overview__division > .overview-champion { order: 1; }
+  .overview__division > .overview__pair { order: 2; }
+  .overview__division > .overview__races { order: 3; }
+  .overview__division > .overview__links { order: 4; }
+  /* The climber and the faller side by side, not stacked. */
+  .overview-movers .overview-race__list { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-4); }
+  .overview-movers__club + .overview-movers__club { padding-top: 0; border-top: 0; padding-left: var(--space-4); border-left: 1px solid var(--rule); }
+  .overview-movers__club { grid-template-columns: minmax(0, 1fr); }
+  .overview-movers__value { justify-self: start; }
 }
 
 /* The narrowest phones (380px and under): two contenders to a row, the two-club
@@ -6205,6 +6609,7 @@ body.has-scenario { overflow: hidden; }
   gap: var(--space-3);
   width: min(36rem, 100%);
   max-height: calc(100vh - 2rem);
+  max-height: calc(100dvh - 2rem);
   overflow: auto;
   padding: var(--space-5);
   border: 1px solid var(--rule);
@@ -6285,4 +6690,102 @@ body.masthead-measure .hero-title-part[data-role="division"] { display: inline-f
   .panel__head:has(> .panel__tools > .share-btn) { position: relative; }
   .panel__head > .panel__tools > .share-btn { position: absolute; top: var(--space-4); right: var(--space-4); margin: 0; }
   .panel__head:has(> .panel__tools > .share-btn) > :first-child { padding-right: 2.75rem; }
+}
+
+/* ---------- touch targets on a phone ------------------------------------ */
+
+/* Every control a finger can reach is at least 44px on its short side
+   (experiments/mobile-audit/check.py checks it), without moving the layout:
+   - a name inside running rows (a match card, a race, a club link) grows to
+     44px tall through padding, given back by an equal negative margin;
+   - a small button (share, back, a stepper, a pill in a row) keeps its look
+     and gets an invisible hit area past its edges (::before), all round for
+     a square and above and below only for one already wide enough. */
+@media (pointer: coarse), (max-width: 760px) {
+  .overview-race__name, .overview-champion__club, .team-match__name, .playoff__club {
+    padding-block: max(0px, calc((44px - 1lh) / 2));
+    margin-block: min(0px, calc((1lh - 44px) / 2));
+  }
+  .team-mini__row, .caveats__link { min-height: 44px; }
+  .wordmark { padding-inline: 8px; margin-inline: -8px; }
+  #standings .sort-btn { min-width: 24px; }
+
+  :where(.share-btn, .team-back, .whatif-step__btn, .team-summary__own,
+    .whatif-chip, .whatif-tool, .accuracy__division, .races__race, .table-control-btn,
+    .team-mini__full, .grid-anim-btn, .team-last__item, .overview-match__club) { position: relative; }
+  :is(.share-btn, .team-back, .whatif-step__btn, .team-summary__own)::before {
+    content: "";
+    position: absolute;
+    inset: -6px;
+    border-radius: 999px;
+  }
+  .team-back::before { inset: -2px; }
+  /* A match card's crest: the club's name button lies over it (36px). */
+  :is(#played-results, #fixtures, #whatif-list, #team-content) .played-card__team .played-card__team-name::before {
+    content: "";
+    position: absolute;
+    inset: -4px;
+  }
+  .whatif-step__btn::before { inset: -4px; }
+  :is(.whatif-chip, .whatif-tool, .accuracy__division, .races__race, .table-control-btn,
+    .team-mini__full, .grid-anim-btn)::before {
+    content: "";
+    position: absolute;
+    inset: -8px 0;
+  }
+  :is(.team-last__item, .overview-match__club)::before {
+    content: "";
+    position: absolute;
+    inset: 0 -4px;
+  }
+}
+
+/* A phone's Explore tools at the top of the ladder and of Matches
+   (placeToolLinks): a pill the panel's width and a finger tall, a small
+   thumbnail and the tool's name on one line, no heading and no description,
+   so they lead on without pulling the eye from the view. */
+@media (max-width: 760px) {
+  .tool-links.tool-links--pill { justify-items: stretch; padding: var(--space-3) var(--space-4); }
+  .tool-links.tool-links--pill.tool-links--head { padding: 0; }
+  .tool-links.tool-links--pill > .label { display: none; }
+  .tool-links.tool-links--pill .tool-links__list {
+    width: 100%;
+    flex-wrap: wrap;
+    justify-content: flex-start;
+    gap: var(--space-2);
+    overflow: visible;
+    padding: 0;
+    mask-image: none;
+  }
+  .tool-links.tool-links--pill .overview-tool {
+    position: relative;
+    flex: 1 1 100%;
+    width: 100%;
+    min-height: 56px;
+    margin: 0;
+    grid-template-columns: 4.75rem minmax(0, 1fr);
+    justify-items: start;
+    gap: 0.75rem;
+    padding: 0.35rem 1.1rem 0.35rem 0.4rem;
+    border: 1px solid var(--rule);
+    border-radius: 999px;
+    background: var(--panel-sunk);
+    text-align: left;
+  }
+  .tool-links.tool-links--pill .overview-tool .explore-card__thumb { width: 4.75rem; border-radius: 999px; }
+  .tool-links.tool-links--pill .overview-tool__text { justify-items: start; gap: 0.05rem; min-width: 0; width: 100%; }
+  .tool-links.tool-links--pill .overview-tool__title { font-size: 0.875rem; font-weight: 600; white-space: nowrap; }
+  .tool-links.tool-links--pill .overview-tool__desc { display: none; }
+  /* The short line: one line where it fits, two on a narrower phone, never
+     cut short. */
+  .tool-links.tool-links--pill .overview-tool__short {
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    max-width: 100%;
+    overflow: hidden;
+    font-size: 0.75rem;
+    line-height: 1.3;
+    color: var(--ink-muted);
+  }
 }

@@ -32,6 +32,76 @@ takes the room between the mark and the pickers (no centring), the wordmark
 is its mark alone and the model badge steps out: four views fit at 761px,
 all five from 800px.
 
+**On a phone** (760px down unless said; `PHONE_SHEETS` in `app.js` is the
+same query):
+
+- *Shell.* The masthead holds the mark, the name (from 370px) and the
+  division and season pill; the settings button goes (theme and language are
+  in the More sheet, whose views carry icons, as the bar's do). From 480px
+  down a view's panel runs edge to edge, and where the hero is empty
+  (overview, club, ladder, compare, model, Explore) it starts right under the
+  masthead. While the season loads, a skeleton of the view the address opens
+  on (`html[data-boot-view]`, set by an inline script before the first paint)
+  stands under the loading line. The consent banner is one row: a short
+  wording beside the two answers.
+- *Sheets.* The division, season and compare-club pickers open as bottom
+  sheets over a scrim (`phoneMenu`); so do "what it takes" and a club's chance
+  of every place, with a grip and a head that stays put while the rest
+  scrolls. All of them, and the More sheet, close on a swipe down
+  (`attachSheetDrag`). Touch readouts park above whatever is docked at the
+  foot (`bottomObstacle`: the tab bar, What if's bar, the consent banner, the
+  home indicator).
+- *Overview.* The reader's own club (`overviewOwnClub`) leads where one is
+  set; each division then shows the title race, the match of the week and the
+  movers (side by side), and the other races.
+- *Finish grid.* Zones (default) or All places (`gridMode`, kept per
+  browser): Zones is a column per thing to win or lose (`gridZoneColumns`:
+  Eliteserien title, Europe, play-off, relegation; OBOS-ligaen promotion,
+  play-off, relegation) and a tap on a club opens its chance of every place
+  (`openFinishSheet`); All places is the grid at 32px squares, scrolling
+  sideways under a pinned club column (crest and `clubCode`: the initials
+  Norwegian football writes, S08, RBK, AaFK, from `CLUB_CODES`). The season's
+  replay paints the full grid in either. A tap on a square that opens what it
+  takes goes straight to the popup, with no readout first.
+- *Table.* Three column sets instead of columns dropped by width: Table
+  (#, club, played, GD, points, form), Strength (rating, attack, defence; a
+  phone's own mode, shown as Current on a wider screen, `effectiveTableView`)
+  and Prediction (xPts, fixture difficulty, how it ends). Each fits 360px,
+  rows 44px tall; from 375px Table adds W/D/L and Prediction the projected
+  goal difference, from 430px Table adds goals for and against.
+- *Matches and What if.* Cards show the clubs as crests, the name button
+  stretched invisibly over each (the reader asked for the crest-only cards
+  back). What if adds one-tap H / U / B pills (`whatIfOutcomeScore`: the
+  likeliest score for that result) and its bar leads to the table of
+  chances, which has a way back.
+- *Club page.* The head is one row: back, the crest (44px), the name (two
+  lines at most) and the star and share buttons at the right; the rating
+  and its rank under it.
+- *Explore.* A view's *Explore further* cards (`.tool-links`,
+  `renderToolLinks`) stand under the panel's head on a desktop or a tablet
+  (What if in Matches' head corner; the ladder's under the ladder,
+  `data-place-wide="foot"`). On a phone the table's and the finish
+  grid's move to the panel's foot under its legend (`placeToolLinks`, which
+  moves them when the window crosses 760px), one row of cards that scrolls
+  sideways, each its thumbnail over its name; the ladder's and Matches' stay
+  at the top (`data-place="top"`) as pills the panel's width, a larger
+  thumbnail beside the name and a short line under it (`explore.<id>.short`,
+  `ladder.short`), so they lead on without drawing the eye from the view. The gallery is a list, a tool page's back button sits beside its
+  name, and the luck table's "how it is measured" starts closed.
+- *Touch.* Every control is at least 44px on its short side (24px inside
+  dense tables and charts), through padding given back by a negative margin
+  or an invisible `::before` hit area; chart labels render at 10px or more;
+  sliders take `touch-action: pan-y`; pull to refresh starts only at the top,
+  with nothing open over the page, not on a slider or sideways scroller, and
+  only for a drag more down than sideways. A replay that has to fetch a
+  report per matchday fetches six at a time with a count on screen
+  (`inBatches`).
+
+`experiments/mobile-audit/check.py` checks every view at 360, 375, 390 and
+430px and on a desktop: no sideways overflow, no overlapping masthead parts
+or bottom bars, the touch targets above, no console errors
+([operations.md](operations.md), "Tests").
+
 ## `app.js`, by section
 
 Sections start with a `/* ---------- name ---` header; search for the name.

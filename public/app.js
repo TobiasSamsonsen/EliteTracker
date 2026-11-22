@@ -276,6 +276,8 @@ function showTooltip(event, html, triggerElement = null) {
 }
 
 const coarsePointer = window.matchMedia('(pointer: coarse)');
+/* The phone layout (the tab bar, bottom sheets): the same 760px as the CSS. */
+const PHONE_SHEETS = window.matchMedia('(max-width: 760px)');
 
 // Where the pointer is, so an animation frame can re-check what is under it
 // without waiting for the next pointer event. Tracked on the whole document:
@@ -287,14 +289,41 @@ document.addEventListener('pointermove', (event) => {
   lastPointer.y = event.clientY;
 }, { passive: true });
 
+/* The screen's bottom inset (a phone's home indicator), measured once from a
+   probe sized by env(), since script cannot read env() directly. */
+let safeBottomProbe = null;
+function safeBottom() {
+  if (!safeBottomProbe) {
+    safeBottomProbe = el('div');
+    safeBottomProbe.setAttribute('aria-hidden', 'true');
+    safeBottomProbe.style.cssText = 'position:fixed;left:0;bottom:0;width:0;height:env(safe-area-inset-bottom,0px);visibility:hidden;pointer-events:none';
+    document.body.appendChild(safeBottomProbe);
+  }
+  return safeBottomProbe.offsetHeight;
+}
+
+/* The top of whatever is docked at the foot of the screen (the tab bar, What
+   if's bar, the consent banner), or the screen's foot above its inset. */
+function bottomObstacle() {
+  let floor = window.innerHeight - safeBottom();
+  for (const node of document.querySelectorAll('#mobilebar, .whatif__bar, #consent')) {
+    if (node.hidden || node.closest('[hidden]')) continue;
+    const rect = node.getBoundingClientRect();
+    if (!rect.height || getComputedStyle(node).position !== 'fixed') continue;
+    if (rect.bottom >= window.innerHeight - 4 - safeBottom() && rect.top < floor) floor = rect.top;
+  }
+  return floor;
+}
+
 function moveTooltip(event) {
   const box = tooltip.getBoundingClientRect();
 
   // A finger covers the thing it is pointing at, so on touch the readout is
-  // parked above the navigation bar instead of chasing the contact point.
+  // parked above whatever is docked at the foot of the screen instead of
+  // chasing the contact point.
   if (coarsePointer.matches) {
     tooltip.style.left = `${Math.max(8, (window.innerWidth - box.width) / 2)}px`;
-    tooltip.style.top = `${window.innerHeight - box.height - 68}px`;
+    tooltip.style.top = `${Math.max(8, bottomObstacle() - box.height - 8)}px`;
     return;
   }
 
@@ -487,6 +516,10 @@ function buildGrid(report, tableData, record = null) {
     label.scope = 'row';
     label.appendChild(el('span', 'pos', String(row.position)));
     label.appendChild(sideBlock(row.team, row.team_id, true, 'grid__team-name'));
+    // The phone's full grid names the club in three letters (clubCode).
+    const code = el('span', 'grid__code', clubCode(row.team));
+    code.setAttribute('aria-hidden', 'true');
+    label.appendChild(code);
     tr.appendChild(label);
 
     const cells = [];
@@ -505,11 +538,19 @@ function buildGrid(report, tableData, record = null) {
       // Roving tabindex: one stop for the whole grid, arrows move within it.
       cell.setAttribute('tabindex', rowIndex === 0 && index === 0 ? '0' : '-1');
       cell.setAttribute('role', 'gridcell');
-      cell.addEventListener('pointerenter', (event) => { scenarioWarm(report); showTooltip(event, cell.tip(), cell); });
+      // A tap on a square that opens what it takes goes straight to the
+      // popup, whose head shows the chance; a readout first would only flash
+      // under it. Squares that open nothing still show their decimals.
+      const opens = () => !anim.gridTableData && probability >= 0.005 && probability <= 0.9995 && scenarioAvailable(report);
+      cell.addEventListener('pointerenter', (event) => {
+        scenarioWarm(report);
+        if (event.pointerType === 'touch' && opens()) return;
+        showTooltip(event, cell.tip(), cell);
+      });
       cell.addEventListener('pointermove', moveTooltip);
       cell.addEventListener('click', () => {
         // Not while the season replays (the cells then show another day), and not on a cell that is nothing or certain.
-        if (anim.gridTableData || probability < 0.005 || probability > 0.9995) return;
+        if (!opens()) return;
         openScenario(report, row.team_id, position, cell);
       });
       cell.addEventListener('pointerleave', (event) => { if (event.pointerType !== 'touch') hideTooltip(); });
@@ -797,10 +838,18 @@ function openScenario(report, teamId, position, trigger = null) {
       body.replaceChildren(el('p', 'scenario__wait', t('scenario.failed')));
     });
   };
-  panel.append(head, hero, scenarioModeSwitch(load), body);
+  // On a phone the popup is a bottom sheet: a grip over a head that stays
+  // put while the matches and the table scroll under it, and a swipe down
+  // closes it, as the More sheet does.
+  const grip = el('div', 'scenario__grip');
+  grip.setAttribute('aria-hidden', 'true');
+  const top = el('div', 'scenario__top');
+  top.append(grip, head);
+  panel.append(top, hero, scenarioModeSwitch(load), body);
   root.append(scrim, panel);
   document.body.appendChild(root);
   document.body.classList.add('has-scenario');
+  attachSheetDrag(panel, { scrim, dismiss: () => closeScenario(), handle: '.scenario__top' });
 
   const onKey = (event) => { if (event.key === 'Escape') closeScenario(); };
   document.addEventListener('keydown', onKey);
@@ -1085,8 +1134,202 @@ function applyScenarioParameter() {
   if (found && state.activeView === 'grid') openScenario(state.reports[state.league], found[1], Number(found[2]));
 }
 
+/* The finish grid on a phone, "Zones": a column per thing a club can win or
+   lose (Eliteserien: the title, Europe, the relegation play-off, relegation;
+   OBOS-ligaen: promotion, the promotion play-off, relegation), each its
+   chance as the grid paints it, wide enough to read and tap. Europe is every
+   European place at once (the Champions League and Conference League bands
+   together); promotion and relegation count the play-offs where the report
+   has them, as the table does (bandChance). A tap on a club opens its chance
+   of every place (openFinishSheet). "All places" is the full grid, scrolling
+   sideways. The choice is kept per browser. */
+const GRID_MODE_KEY = 'elitetracker-grid-mode';
+function gridMode() {
+  try { return localStorage.getItem(GRID_MODE_KEY) === 'all' ? 'all' : 'zones'; } catch { return 'zones'; }
+}
+
+function gridZoneColumns(report) {
+  const bands = report.league.bands || [];
+  const slug = report.league.slug;
+  const count = report.table.length;
+  const good = (band) => band.first < (count + 1) / 2;
+  const cols = [];
+  if (slug === 'obosligaen') {
+    const top = bands.find((b) => b.tone === 'top');
+    if (top) cols.push({ key: 'promotion', label: t('grid.zone.promotion'), band: top, p: (row) => bandChance(row, top, slug) });
+  } else {
+    const champion = bands.find((b) => b.tone === 'champion');
+    if (champion) cols.push({ key: 'title', label: t('grid.zone.title'), band: champion, p: (row) => bandChance(row, champion, slug) });
+    const europe = bands.filter((b) => b.tone === 'top' || b.tone === 'europe');
+    if (europe.length) {
+      const first = Math.min(...europe.map((b) => b.first));
+      const last = Math.max(...europe.map((b) => b.last));
+      cols.push({
+        key: 'europe', label: t('grid.zone.europe'), band: europe[europe.length - 1],
+        p: (row) => row.position_probabilities.slice(first - 1, last).reduce((a, b) => a + b, 0),
+      });
+    }
+  }
+  const playoffs = bands.filter((b) => b.tone === 'playoff');
+  const playoff = playoffs.find(good) || playoffs[0];
+  if (playoff) cols.push({ key: 'playoff', label: t('grid.zone.playoff'), band: playoff, p: (row) => bandChance(row, playoff, slug) });
+  const relegation = bands.find((b) => b.tone === 'relegation');
+  if (relegation) cols.push({ key: 'relegation', label: t('grid.zone.relegation'), band: relegation, p: (row) => bandChance(row, relegation, slug) });
+  return cols;
+}
+
+/* A club's code for the full grid's narrow first column on a phone: the
+   initials Norwegian football writes them in (S08, RBK, LSK, AaFK, ...), by
+   the name the site shows (shortName); a club not listed gets its first
+   three letters. */
+const CLUB_CODES = {
+  'Aalesund': 'AaFK', 'Alta': 'ALTA', 'Arendal': 'ARE', 'Blink': 'BLI', 'Bodø/Glimt': 'B/G',
+  'Brann': 'BRA', 'Bryne': 'BRY', 'Bærum': 'BSK', 'Egersund': 'EIK', 'Follo': 'FOL',
+  'Fredrikstad': 'FFK', 'HamKam': 'HAM', 'Haugesund': 'FKH', 'Hødd': 'HØD', 'Hønefoss': 'HBK',
+  'Jerv': 'JERV', 'KFUM': 'KFUM', 'Kongsvinger': 'KIL', 'Kristiansund': 'KBK', 'Levanger': 'LFK',
+  'Lillestrøm': 'LSK', 'Lyn': 'LYN', 'Mjøndalen': 'MIF', 'Molde': 'MOL', 'Moss': 'MOS',
+  'Odd': 'ODD', 'Ranheim': 'RAN', 'Raufoss': 'RAU', 'Rosenborg': 'RBK', 'Sandefjord': 'SAN',
+  'Sandnes Ulf': 'ULF', 'Sarpsborg 08': 'S08', 'Skeid': 'SKE', 'Sogndal': 'SOG', 'Stabæk': 'STB',
+  'Start': 'STA', 'Strømmen': 'STR', 'Strømsgodset': 'SIF', 'Tromsdalen': 'TUIL', 'Tromsø': 'TIL',
+  'Ull/Kisa': 'U/K', 'Viking': 'VIK', 'Vålerenga': 'VIF', 'Øygarden': 'ØYG', 'Åsane': 'ÅSA',
+};
+function clubCode(name) {
+  return CLUB_CODES[name] || (String(name).match(/\p{L}/gu) || []).slice(0, 3).join('').toUpperCase();
+}
+
+function renderGridZones(report) {
+  const holder = $('#grid-zones');
+  if (!holder) return;
+  const mode = gridMode();
+  holder.closest('[data-section]').dataset.gridMode = mode;
+  for (const btn of document.querySelectorAll('[data-grid-mode]')) btn.setAttribute('aria-pressed', String(btn.dataset.gridMode === mode));
+  const cols = gridZoneColumns(report);
+  const rows = [...report.table].sort((a, b) => expectedFinish(a) - expectedFinish(b) || a.position - b.position);
+  const table = el('table', 'grid-zones');
+  table.appendChild(el('caption', 'visually-hidden', t('grid.zone.caption')));
+  const head = el('thead');
+  const headRow = el('tr');
+  const corner = el('th', 'grid-zones__corner', t('table.col.club'));
+  corner.scope = 'col';
+  headRow.appendChild(corner);
+  for (const col of cols) {
+    const th = el('th', '', col.label);
+    th.scope = 'col';
+    th.style.setProperty('--band-color', bandColor(col.band, rows.length));
+    headRow.appendChild(th);
+  }
+  head.appendChild(headRow);
+  table.appendChild(head);
+  const body = el('tbody');
+  for (const row of rows) {
+    const tr = el('tr');
+    const th = el('th', 'grid-zones__club');
+    th.scope = 'row';
+    const open = el('button', 'grid-zones__open');
+    open.type = 'button';
+    const crest = teamLogo(row.team_id, row.team, true);
+    if (crest) { crest.alt = ''; crest.setAttribute('aria-hidden', 'true'); }
+    open.append(el('span', 'grid-zones__pos', String(row.position)));
+    if (crest) open.appendChild(crest);
+    open.append(el('span', 'grid-zones__name', row.team));
+    open.setAttribute('aria-label', t('grid.zone.open', { team: row.team }));
+    open.addEventListener('click', () => openFinishSheet(report, row, open));
+    th.appendChild(open);
+    tr.appendChild(th);
+    for (const col of cols) {
+      const p = col.p(row);
+      const td = paintCell(el('td'), p);
+      if (p >= 0.995) td.textContent = '100';
+      td.setAttribute('aria-label', `${col.label}: ${pct(p, 1)}`);
+      tr.appendChild(td);
+    }
+    // The whole row is the target; the club's button is its keyboard stop.
+    tr.addEventListener('click', (event) => { if (!event.target.closest('button')) open.click(); });
+    body.appendChild(tr);
+  }
+  table.appendChild(body);
+  holder.replaceChildren(table);
+}
+
+/* A club's chance of every place, as a bottom sheet on a phone (the popup's
+   shape): a bar per place in its band's colour and, on every place with a
+   chance where a season is left, the way into what it takes. */
+function openFinishSheet(report, row, trigger = null) {
+  closeScenario({ restore: false });
+  const root = el('div', 'scenario finish-sheet');
+  const scrim = el('div', 'scenario__scrim');
+  const panel = el('div', 'scenario__panel');
+  panel.setAttribute('role', 'dialog');
+  panel.setAttribute('aria-modal', 'true');
+  panel.setAttribute('aria-labelledby', 'finish-sheet-title');
+  const close = el('button', 'scenario__close', '×');
+  close.type = 'button';
+  close.setAttribute('aria-label', t('scenario.close'));
+  const heading = el('div', 'scenario__heading');
+  heading.appendChild(el('p', 'scenario__eyebrow', t('grid.zone.sheetEyebrow')));
+  const title = el('h2', 'scenario__title');
+  title.id = 'finish-sheet-title';
+  const crest = teamLogo(row.team_id, row.team, true);
+  if (crest) title.appendChild(crest);
+  title.appendChild(document.createTextNode(row.team));
+  heading.appendChild(title);
+  const head = el('header', 'scenario__head');
+  head.append(heading, close);
+  const grip = el('div', 'scenario__grip');
+  grip.setAttribute('aria-hidden', 'true');
+  const top = el('div', 'scenario__top');
+  top.append(grip, head);
+  const list = el('ol', 'finish-sheet__places');
+  const count = report.table.length;
+  const live = scenarioAvailable(report);
+  const most = Math.max(...row.position_probabilities);
+  row.position_probabilities.forEach((p, index) => {
+    const position = index + 1;
+    const item = el('li', 'finish-sheet__place');
+    const band = bandFor(report.league.bands, position);
+    if (band) item.style.setProperty('--band-color', bandColor(band, count));
+    const bar = el('span', 'finish-sheet__bar');
+    bar.style.setProperty('--p', `${most ? (p / most) * 100 : 0}%`);
+    item.append(el('span', 'finish-sheet__pos', rankText(position)), bar, el('span', 'finish-sheet__pct', pct(p, 1)));
+    if (live && p >= 0.005 && p <= 0.9995) {
+      const go = el('button', 'finish-sheet__go', t('grid.zone.whatItTakes'));
+      go.type = 'button';
+      go.setAttribute('aria-label', t('grid.zone.whatItTakesFor', { team: row.team, place: ordinal(position) }));
+      go.addEventListener('click', () => openScenario(report, row.team_id, position, trigger));
+      item.appendChild(go);
+    } else item.classList.add('is-quiet');
+    list.appendChild(item);
+  });
+  const team = el('button', 'team-mini__full finish-sheet__team', t('grid.zone.toClub', { team: row.team }));
+  team.type = 'button';
+  team.addEventListener('click', () => { closeScenario({ restore: false }); openTeamView(row.team_id, row.team); });
+  panel.append(top, list, team);
+  root.append(scrim, panel);
+  document.body.appendChild(root);
+  document.body.classList.add('has-scenario');
+  const onKey = (event) => { if (event.key === 'Escape') closeScenario(); };
+  document.addEventListener('keydown', onKey);
+  // It shares the popup's state, so opening "what it takes" from it, or
+  // closing it, goes through closeScenario like the popup.
+  Object.assign(scenarioState, { root, trigger, onKey, untrap: trapFocus(panel) });
+  scrim.addEventListener('click', () => closeScenario());
+  close.addEventListener('click', () => closeScenario());
+  attachSheetDrag(panel, { scrim, dismiss: () => closeScenario(), handle: '.scenario__top' });
+  close.focus();
+}
+
+document.addEventListener('click', (event) => {
+  const btn = event.target.closest('[data-grid-mode]');
+  if (!btn) return;
+  try { localStorage.setItem(GRID_MODE_KEY, btn.dataset.gridMode); } catch { /* private window */ }
+  const report = state.reports[state.league];
+  if (report) renderGridZones(report);
+  track('grid_mode', { mode: btn.dataset.gridMode });
+});
+
 function renderGrid(report) {
   const table = buildGrid(report, report.table);
+  renderGridZones(report);
   // Restart the load animation whenever the grid is rebuilt.
   const wrap = table.parentElement;
   wrap.classList.remove('grid-animate');
@@ -1142,7 +1385,28 @@ function fetchSummary() {
   return seasonsSummary;
 }
 
-async function prefetchAnimReports() {
+/* Run `task` over `items` with at most `limit` in flight, reporting each one
+   done (`onDone(count, total)`); results keep the items' order. A failed
+   task gives null. */
+async function inBatches(items, task, limit = 6, onDone = () => {}) {
+  const results = new Array(items.length).fill(null);
+  let next = 0;
+  let done = 0;
+  const worker = async () => {
+    while (next < items.length) {
+      const i = next++;
+      try { results[i] = await task(items[i], i); } catch { results[i] = null; }
+      onDone(++done, items.length);
+    }
+  };
+  await Promise.all(Array.from({ length: Math.min(limit, items.length) }, worker));
+  return results;
+}
+
+/* The season's matchday reports for a replay: from the one timeline file
+   where it has them, else a report per matchday, six at a time (sixty-odd at
+   once stalled a phone on a mobile connection) with a count on screen. */
+async function prefetchAnimReports(onProgress = () => {}) {
   const days = liveMatchdaysFor(state.league);
   if (days.length < 2) return null;
   const timeline = await fetchTimeline(state.season);
@@ -1150,9 +1414,9 @@ async function prefetchAnimReports() {
   const quick = new Map();
   days.forEach((d, i) => { const day = timelineReports(timeline, d.date, names); if (day) quick.set(i, day); });
   if (quick.size === days.length) return quick;
-  const fetched = await Promise.all(
-    days.map((d) => fetch(reportUrl(state.season, d.date)).then((r) => (r.ok ? r.json().then(applyShortNames) : null))),
-  );
+  const fetched = await inBatches(days,
+    (d) => fetch(reportUrl(state.season, d.date)).then((r) => (r.ok ? r.json().then(applyShortNames) : null)),
+    6, onProgress);
   const map = new Map();
   fetched.forEach((r, i) => { if (r) map.set(i, r); });
   return map;
@@ -1307,7 +1571,9 @@ async function animStart() {
   animUpdateSpeedButton(); // the speed picked last time carries over
 
   const started = `${state.season} ${state.league} ${state.activeView}`;
-  anim.reports = await prefetchAnimReports();
+  anim.reports = await prefetchAnimReports((n, total) => {
+    holder.dataset.loadingText = t('anim.loadingCount', { n: num(n), total: num(total) });
+  });
   holder.classList.remove('grid-loading');
   playButton.disabled = false;
 
@@ -1647,7 +1913,15 @@ function toggleSort(key) {
 const DEFAULT_SORT = {
   current: { key: 'position', dir: 1 },
   prediction: { key: 'expected_points', dir: -1 },
+  strength: { key: 'rating', dir: -1 },
 };
+
+/* The phone has a third view, Strength (rating, attack, defence), which a
+   wider screen shows within Current; a Strength kept from a phone opens as
+   Current there. */
+function effectiveTableView() {
+  return state.tableView === 'strength' && !PHONE_SHEETS.matches ? 'current' : state.tableView;
+}
 
 function toggleTableView(view) {
   state.sortByView[state.tableView] = state.sort;
@@ -1661,9 +1935,16 @@ function toggleTableView(view) {
   else applyTableView();
 }
 
+/* Crossing 760px changes which views the table has (Strength is a phone's):
+   the table is drawn again for the width it now has, so a Strength picked on a
+   phone shows as Current on a wider window and comes back when it narrows. */
+PHONE_SHEETS.addEventListener('change', () => {
+  if (state.reports?.[state.league]) renderStandings(state.reports[state.league]);
+});
+
 /* Visibility only: renderStandings calls this after building the rows. */
 function applyTableView() {
-  const view = state.tableView;
+  const view = effectiveTableView();
   // Lets the phone layout drop columns per view (see the CSS).
   $('#standings').dataset.view = view;
   // Update toggle button states.
@@ -1783,7 +2064,7 @@ function dividerRow(boundary) {
     const band = bandFor(bands, row.position);
 
     const position = el('td', 'pos');
-    position.dataset.tableView = 'current prediction';
+    position.dataset.tableView = 'current prediction strength';
     const mark = el('span', 'band-mark');
     if (band) {
       mark.style.background = bandColor(band, count);
@@ -1797,7 +2078,7 @@ function dividerRow(boundary) {
     // every cell presentational, which hid the scores from screen readers and
     // stopped the new aria-sort from ever being announced.
     const club = el('td', 'club');
-    club.dataset.tableView = 'current prediction';
+    club.dataset.tableView = 'current prediction strength';
     const clubButton = el('button', 'club-btn');
     clubButton.type = 'button';
     clubButton.classList.add('club-btn--crest');
@@ -1812,8 +2093,8 @@ function dividerRow(boundary) {
     tr.appendChild(club);
     // 'extra' marks the columns a phone drops -- see .col--extra in the CSS.
     for (const [key, extra] of [
-      ['played', ''], ['wins', ''], ['draws', ''],
-      ['losses', ''], ['goals', ' col--goals'],
+      ['played', ''], ['wins', ' col--wdl'], ['draws', ' col--wdl'],
+      ['losses', ' col--wdl'], ['goals', ' col--goals'],
     ]) {
       const td = el('td', `num muted${extra}`, key === 'goals' ? `${row.goals_for}-${row.goals_against}` : String(row[key]));
       td.dataset.tableView = 'current';
@@ -1833,8 +2114,8 @@ function dividerRow(boundary) {
     formTd.dataset.tableView = 'current';
     formTd.appendChild(formChipsEl(formByTeamName[row.team]));
     tr.appendChild(formTd);
-    const ratingCell = el('td', 'num sep');
-    ratingCell.dataset.tableView = 'current prediction';
+    const ratingCell = el('td', 'num sep col--rating');
+    ratingCell.dataset.tableView = 'current prediction strength';
     ratingCell.appendChild(document.createTextNode(num(row.rating)));
     const trend = trends.get(row.team);
     if (trend) {
@@ -1861,12 +2142,12 @@ function dividerRow(boundary) {
     const defencePct = row.defence_pct;
 
     const attackCell = el('td', 'num col--extra');
-    attackCell.dataset.tableView = 'current';
+    attackCell.dataset.tableView = 'current strength';
     attackCell.appendChild(makePctPill(attackPct, row.attack_k));
     tr.appendChild(attackCell);
 
-    const defenceCell = el('td', 'num col--extra');
-    defenceCell.dataset.tableView = 'current';
+    const defenceCell = el('td', 'num col--extra col--defence');
+    defenceCell.dataset.tableView = 'current strength';
     defenceCell.appendChild(makePctPill(defencePct, row.defence_k));
     tr.appendChild(defenceCell);
     const xpTd = el('td', 'num muted', num(row.expected_points));
@@ -1880,7 +2161,7 @@ function dividerRow(boundary) {
     const known = row.expected_goals_for != null;
     for (const [text, muted, cls] of [
       [known ? `${num(row.expected_goals_for)}-${num(row.expected_goals_against)}` : '—', true, 'col--xg'],
-      [known ? signed(row.expected_goal_difference) : '—', false, known ? gdTone(row.expected_goal_difference).trim() : ''],
+      [known ? signed(row.expected_goal_difference) : '—', false, `col--xgd ${known ? gdTone(row.expected_goal_difference).trim() : ''}`.trim()],
     ]) {
       const td = el('td', `num${muted ? ' muted' : ''} ${cls}`, text);
       td.dataset.tableView = 'prediction';
@@ -3275,6 +3556,7 @@ function renderHero(report) {
     leagueMenu.style.top = `${rect.bottom + 6}px`;
     leagueMenu.style.left = `${rect.left}px`;
     leagueMenu.style.width = `${rect.width}px`;
+    phoneMenu(leagueMenu, closeAllMenus);
     menuFocusCleanup = trapFocus(leagueMenu);
   });
   divSpan.addEventListener('keydown', (event) => {
@@ -3308,6 +3590,7 @@ function renderHero(report) {
     seasonMenu.style.top = `${rect.bottom + 6}px`;
     seasonMenu.style.left = `${rect.left}px`;
     seasonMenu.style.width = `${rect.width}px`;
+    phoneMenu(seasonMenu, closeAllMenus);
     menuFocusCleanup = trapFocus(seasonMenu);
   });
   seasonSpan.addEventListener('keydown', (event) => {
@@ -3889,11 +4172,61 @@ function overviewDivisionLinks(report, round) {
   return links;
 }
 
+/* The reader's own club (ownClub, set with the star on its page), first on
+   the overview where one is set: where it stands, its next match with its
+   chance of winning it, and its chance of each band still open to it, each
+   in the band's colour. The whole card opens the club. */
+function overviewOwnClub() {
+  const id = ownClub();
+  if (!id) return null;
+  const report = OVERVIEW_DIVISIONS.map((slug) => state.reports[slug])
+    .find((r) => r?.table?.some((row) => String(row.team_id) === id));
+  if (!report) return null;
+  const row = report.table.find((r) => String(r.team_id) === id);
+  const slug = report.league.slug;
+  const card = el('div', 'overview-card overview-race overview-own');
+  card.appendChild(overviewCardHead(t('overview.ownTitle'), report.league.name, () => openTeamView(row.team_id, row.team)));
+  const main = el('div', 'overview-own__main');
+  const facts = el('span', 'overview-own__facts',
+    `${t('overview.pointsShort', { n: num(row.points) })} · ${t('overview.ownRating', { n: num(Math.round(row.rating)) })}`);
+  const place = el('b', 'overview-own__place overview-race__figure', rankText(row.position));
+  place.setAttribute('aria-label', t('overview.ownPlace', { n: row.position }));
+  main.append(clubButton(row, 'overview-race__name overview-own__club'), place, facts);
+  card.appendChild(main);
+  const next = [...(report.fixtures || [])]
+    .filter((f) => String(f.home_id) === id || String(f.away_id) === id)
+    .sort((a, b) => `${a.date} ${a.time || ''}`.localeCompare(`${b.date} ${b.time || ''}`))[0];
+  if (next) {
+    const home = String(next.home_id) === id;
+    card.appendChild(el('p', 'overview-own__next', t('overview.ownNext', {
+      team: home ? next.away : next.home,
+      side: t(home ? 'team.homeShort' : 'team.awayShort'),
+      date: formatDate(next.date),
+      pct: pct(home ? next.home_win : next.away_win, 0),
+    })));
+  }
+  if (report.model.matches_remaining > 0) {
+    const chips = el('ul', 'overview-own__bands');
+    for (const band of report.league.bands || []) {
+      const p = bandChance(row, band, slug);
+      if (p < 0.005 || p > 0.995) continue;
+      const chip = el('li', 'overview-own__band');
+      chip.style.setProperty('--band-color', bandColor(band, report.table.length));
+      chip.append(el('span', '', shortBandLabel(band, report)), el('b', '', pct(p, 0)));
+      chips.appendChild(chip);
+    }
+    if (chips.children.length) card.appendChild(chips);
+  }
+  return card;
+}
+
 function renderOverview() {
   // A page built before the overview existed has no place for it.
   const body = $('#overview-body');
   if (!body) return;
   const blocks = OVERVIEW_DIVISIONS.map((slug) => state.reports[slug]).filter(Boolean).map(overviewDivision);
+  const own = overviewOwnClub();
+  if (own) blocks.unshift(own);
   blocks.push(overviewTools(), overviewExploreButton());
   body.replaceChildren(...blocks);
 }
@@ -3922,11 +4255,46 @@ function overviewTools() {
   return tools;
 }
 
-/* The Explore tools (and the ladder) a view leads on to (data-tools), under its panel's head:
-   each its thumbnail, name and what it shows, as on the overview. Rebuilt
-   only when the language changes. What if goes once the season is played,
-   and a foot with nothing left in it goes with it. */
+/* Where a view's Explore tools stand (placeToolLinks): on a desktop or a
+   tablet under the panel's head, where the markup has them (What if in
+   Matches' head corner); on a phone at the panel's foot, under its legend,
+   so the view's own content comes first, except where the markup says
+   data-place="top" (the ladder, Matches): those stay at the top on a phone,
+   as small pills (.tool-links--pill) that do not draw the eye from the view.
+   data-place-wide="foot" turns it round for a wider screen: the ladder's
+   stand under the ladder there. A marker keeps each one's place in the
+   head, and crossing 760px moves them back and forth. */
+function placeToolLinks() {
+  const phone = PHONE_SHEETS.matches;
+  for (const nav of document.querySelectorAll('.tool-links[data-tools]')) {
+    if (!nav.toolHome) {
+      nav.toolHome = document.createComment(' tool links ');
+      nav.toolHead = nav.classList.contains('tool-links--head');
+      nav.before(nav.toolHome);
+    }
+    const panel = nav.toolHome.parentElement.closest('.panel');
+    const pill = phone && nav.dataset.place === 'top';
+    nav.classList.toggle('tool-links--pill', pill);
+    const foot = phone ? !pill : nav.dataset.placeWide === 'foot';
+    if (foot) {
+      if (nav.parentElement !== panel || nav !== panel.lastElementChild) panel.appendChild(nav);
+      nav.classList.add('tool-links--foot');
+      nav.classList.remove('tool-links--head');
+    } else {
+      if (nav.previousSibling !== nav.toolHome) nav.toolHome.after(nav);
+      nav.classList.remove('tool-links--foot');
+      nav.classList.toggle('tool-links--head', nav.toolHead);
+    }
+  }
+}
+PHONE_SHEETS.addEventListener('change', placeToolLinks);
+
+/* The Explore tools (and the ladder) a view leads on to (data-tools), each
+   its thumbnail, name and what it shows, as on the overview; placed by
+   placeToolLinks. Rebuilt only when the language changes. What if goes once
+   the season is played, and a strip with nothing left in it goes with it. */
 function renderToolLinks(report) {
+  placeToolLinks();
   const open = report.model?.matches_remaining > 0;
   for (const foot of document.querySelectorAll('.tool-links[data-tools]')) {
     if (foot.dataset.lang !== currentLang) {
@@ -3941,7 +4309,9 @@ function renderToolLinks(report) {
         if (view) tool.addEventListener('click', () => switchView(id));
         else tool.dataset.openTool = id;
         const text = el('span', 'overview-tool__text');
-        text.append(el('span', 'overview-tool__title', t(`${copy}.title`)), el('span', 'overview-tool__desc', t(`${copy}.desc`)));
+        // The phone's pills show a short line in place of the description.
+        text.append(el('span', 'overview-tool__title', t(`${copy}.title`)), el('span', 'overview-tool__desc', t(`${copy}.desc`)),
+          el('span', 'overview-tool__short', t(`${copy}.short`)));
         tool.append(exploreThumb(id), text);
         list.appendChild(tool);
       }
@@ -4735,10 +5105,12 @@ async function renderLuck(report, body) {
   drawLuckSeasons(report, across, history, trend);
 }
 
-/* What the luck is measured against, step by step, above the table. */
+/* What the luck is measured against, step by step, above the table: open on
+   a wider screen, closed on a phone, where open it pushed the table below the
+   first screen. */
 function luckHow(trend, history) {
   const box = el('details', 'luck-how');
-  box.open = true;
+  box.open = !window.matchMedia('(max-width: 760px)').matches;
   box.appendChild(el('summary', 'luck-how__title', t('luck.how.title')));
   const steps = el('ol', 'luck-how__steps');
   const list = seasonSpan(history.counted.map((c) => c.season));
@@ -5267,6 +5639,17 @@ function whatIfStepper(side, name, value, onStep) {
   return box;
 }
 
+/* The likeliest score for an outcome ('home', 'draw', 'away') among a
+   fixture's scorelines, or the plainest one (1-0, 1-1, 0-1) where none of
+   the listed scorelines has that outcome. */
+function whatIfOutcomeScore(scorelines, outcome) {
+  const of = (h, a) => (h > a ? 'home' : h < a ? 'away' : 'draw');
+  const best = [...(scorelines || [])].sort((x, y) => y.probability - x.probability)
+    .find((line) => of(line.home_goals, line.away_goals) === outcome);
+  if (best) return [best.home_goals, best.away_goals];
+  return { home: [1, 0], draw: [1, 1], away: [0, 1] }[outcome];
+}
+
 /* A match as the Matches view draws it, with its score made editable: the two
    goal counts step up and down. Under it a fixture keeps its odds, across the
    card, and its likeliest scorelines (a tap on one locks it), both as the
@@ -5321,6 +5704,24 @@ function whatIfCard(item, step, set, shown, auto) {
     if (match.xg) foot.appendChild(el('span', 'played-card__xg', `xG ${num(match.xg[0], 1)}–${num(match.xg[1], 1)}`));
   } else {
     const odds = shown || match;
+    // One tap per match on a phone: home win, draw or away win, each as its
+    // likeliest score; the steppers and scorelines refine it. A tap on the
+    // outcome already set clears it.
+    const outcomes = el('div', 'whatif-outcomes');
+    outcomes.setAttribute('role', 'group');
+    outcomes.setAttribute('aria-label', t('whatif.outcome.label'));
+    const setOutcome = lock ? (lock[0] > lock[1] ? 'home' : lock[0] < lock[1] ? 'away' : 'draw') : null;
+    for (const outcome of ['home', 'draw', 'away']) {
+      const pill = el('button', 'whatif-outcome', t(`whatif.outcome.${outcome}`));
+      pill.type = 'button';
+      pill.dataset.outcome = outcome;
+      const on = setOutcome === outcome;
+      pill.setAttribute('aria-pressed', String(on));
+      pill.setAttribute('aria-label', t(`whatif.outcome.${outcome}Long`, { home: match.home, away: match.away }));
+      pill.addEventListener('click', () => set(item, on ? null : whatIfOutcomeScore(odds.scorelines, outcome)));
+      outcomes.appendChild(pill);
+    }
+    foot.appendChild(outcomes);
     foot.appendChild(oddsBar(match.home, match.away, odds));
     const chips = el('div', 'whatif-chips');
     for (const line of (odds.scorelines || []).slice(0, 4)) {
@@ -5364,6 +5765,11 @@ function renderWhatIf(report, body) {
   list.id = 'whatif-list';
   const bar = el('button', 'whatif__bar');
   bar.type = 'button';
+  // The bar's text says what the changes did; its end says where a tap goes.
+  const barText = el('span', 'whatif__bar-text');
+  const barGo = el('span', 'whatif__bar-go', t('whatif.barGo'));
+  barGo.setAttribute('aria-hidden', 'true');
+  bar.append(barText, barGo);
   const impact = el('section', 'whatif__impact');
   impact.setAttribute('aria-label', t('whatif.impact.title'));
   const left = el('div', 'whatif__matches');
@@ -5374,7 +5780,17 @@ function renderWhatIf(report, body) {
   wrap.append(left, impact);
   let howOpen = false;
   body.replaceChildren(wrap);
-  bar.addEventListener('click', () => impact.scrollIntoView({ behavior: 'smooth', block: 'start' }));
+  // A tap on the bar goes to the table of chances, remembering where the
+  // reader was in the matches; the table's "back" button returns there.
+  let backTo = null;
+  bar.addEventListener('click', () => {
+    backTo = window.scrollY;
+    impact.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  });
+  const goBack = () => {
+    if (backTo != null) window.scrollTo({ top: backTo, behavior: 'smooth' });
+    else list.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  };
   // The summary bar sits above the phone's tab bar, whatever height that has.
   const tabs = $('#mobilebar');
   wrap.style.setProperty('--whatif-bar-bottom', `${tabs && getComputedStyle(tabs).display !== 'none' ? tabs.offsetHeight : 0}px`);
@@ -5437,6 +5853,11 @@ function renderWhatIf(report, body) {
       head.appendChild(actions);
     }
     impact.appendChild(head);
+    // On a phone, where the table is below the matches: the way back up.
+    const back = el('button', 'whatif-back', t('whatif.backToMatches'));
+    back.type = 'button';
+    back.addEventListener('click', goBack);
+    impact.appendChild(back);
 
     if (locks.size) {
       const filled = [...locks.keys()].filter((id) => state.whatIfAuto.has(id)).length;
@@ -5463,7 +5884,8 @@ function renderWhatIf(report, body) {
     }
     if (failure) line = t('whatif.failed', { error: failure });
     impact.appendChild(el('p', `whatif-impact__line${failure ? ' whatif-impact__line--error' : ''}`, line));
-    bar.textContent = line;
+    barText.textContent = line;
+    bar.setAttribute('aria-label', `${line} ${t('whatif.barGo')}`);
     bar.classList.toggle('is-quiet', !locks.size);
 
     const table = el('table', 'whatif-table');
@@ -10652,7 +11074,31 @@ function closeAllMenus() {
   $('#views-more')?.setAttribute('aria-expanded', 'false');
   menuFocusCleanup?.();
   menuFocusCleanup = null;
+  hideMenuScrim();
   closeSheet();
+}
+
+/* On a phone a picker (division, season, a club to compare) opens as a
+   bottom sheet over a scrim, as the More sheet does, instead of a dropdown
+   as narrow as the pill that opened it. */
+let menuScrimEl = null;
+function phoneMenu(menu, close) {
+  if (!PHONE_SHEETS.matches) return;
+  if (!menuScrimEl) {
+    menuScrimEl = el('div', 'menu-scrim');
+    menuScrimEl.setAttribute('aria-hidden', 'true');
+    document.body.appendChild(menuScrimEl);
+  }
+  menuScrimEl.hidden = false;
+  menuScrimEl.onclick = (event) => { event.stopPropagation(); close(); };
+  for (const prop of ['top', 'left', 'right', 'width']) menu.style[prop] = '';
+  menu.classList.add('is-sheet');
+  attachSheetDrag(menu, { scrim: menuScrimEl, dismiss: close });
+  menu.querySelector('[aria-current="true"], [aria-selected="true"]')?.scrollIntoView({ block: 'center' });
+}
+function hideMenuScrim() {
+  if (menuScrimEl) menuScrimEl.hidden = true;
+  for (const menu of document.querySelectorAll('.is-sheet')) menu.classList.remove('is-sheet');
 }
 
 function positionPopover(menu, anchor) {
@@ -10953,6 +11399,7 @@ function closeCompareMenu() {
   if (compareMenuEl) {
     compareMenuEl.remove();
     compareMenuEl = null;
+    hideMenuScrim();
   }
   if (compareMenuFocusCleanup) {
     compareMenuFocusCleanup();
@@ -11046,6 +11493,7 @@ function openCompareMenu(box, side, report) {
   menu.style.setProperty('--menu-left', `${rect.left}px`);
   menu.style.setProperty('--menu-width', `${rect.width}px`);
   document.body.appendChild(menu);
+  phoneMenu(menu, closeCompareMenu);
   compareMenuEl = menu;
   compareMenuActiveIndex = selectedIndex;
   if (selectedIndex >= 0) {
@@ -11595,6 +12043,62 @@ function track(name, params) {
 /* ---------- mobile gestures ----------------------------------------- */
 
 /* Mobile gesture handling: swipe navigation, pull-to-refresh, swipe-to-dismiss sheet */
+/* A bottom sheet's swipe down to dismiss, shared by the More sheet, the
+   phone's pickers and the "what it takes" popup. The drag starts only while
+   the sheet's own scroll is at the top (or on its grip or head), so scrolling
+   a long list inside it still scrolls; past 100px it closes, short of that it
+   springs back. `scrim` dims with the pull. Bound once per panel. */
+function attachSheetDrag(panel, { scrim = null, dismiss, handle = null } = {}) {
+  if (!panel || panel.dataset.sheetDrag) return;
+  panel.dataset.sheetDrag = '1';
+  const drag = { startY: 0, currentY: 0, active: false };
+  const reset = () => {
+    panel.style.transform = '';
+    panel.style.opacity = '';
+    if (scrim) scrim.style.opacity = '';
+  };
+  panel.addEventListener('touchstart', (event) => {
+    if (!PHONE_SHEETS.matches || event.touches.length !== 1) return;
+    if (panel.getAnimations().some((a) => a.playState === 'running' && a.effect?.getComputedTiming?.().progress < 1)) return;
+    const onHandle = handle && event.target.closest(handle);
+    if (!onHandle && panel.scrollTop > 0) return;
+    drag.startY = drag.currentY = event.touches[0].clientY;
+    drag.active = true;
+    panel.classList.add('is-dragging');
+  }, { passive: true });
+  panel.addEventListener('touchmove', (event) => {
+    if (!drag.active) return;
+    drag.currentY = event.touches[0].clientY;
+    const delta = drag.currentY - drag.startY;
+    if (delta <= 0) { reset(); return; } // upward: the list scrolls as usual
+    event.preventDefault();
+    const pull = Math.min(delta * 0.6, 260);
+    panel.style.transform = `translateY(${pull}px)`;
+    panel.style.opacity = String(1 - pull / 520);
+    if (scrim) scrim.style.opacity = String(1 - pull / 300);
+  }, { passive: false });
+  const end = () => {
+    if (!drag.active) return;
+    drag.active = false;
+    panel.classList.remove('is-dragging');
+    if (drag.currentY - drag.startY > 100) {
+      panel.classList.add('is-dismissed');
+      setTimeout(() => {
+        panel.classList.remove('is-dismissed');
+        reset();
+        dismiss();
+        if (navigator.vibrate) navigator.vibrate(20);
+      }, 250);
+    } else {
+      panel.style.transition = 'transform 0.2s var(--ease), opacity 0.2s var(--ease)';
+      reset();
+      setTimeout(() => { panel.style.transition = ''; }, 200);
+    }
+  };
+  panel.addEventListener('touchend', end, { passive: true });
+  panel.addEventListener('touchcancel', end, { passive: true });
+}
+
 function initMobileGestures() {
   // Only on mobile
   if (window.innerWidth > 760) return;
@@ -11614,19 +12118,27 @@ function initMobileGestures() {
   let swipeState = { startX: 0, startY: 0, currentX: 0, swiping: false };
 
   // Swipe-to-dismiss sheet
-  let sheetSwipeState = { startY: 0, currentY: 0, dragging: false };
+  attachSheetDrag(sheetPanel, { scrim: sheet?.querySelector('.sheet__scrim'), dismiss: closeSheet, handle: '.sheet__grip' });
 
   // Touch ripple for interactive elements
   addTouchRipple();
 
   // --- Pull to Refresh ---
+  // Nothing pulls to refresh while something sits over the page (a sheet,
+  // the "what it takes" popup, a picker, the share sheet), nor from a slider
+  // or anything that scrolls sideways (a wide table, the chip strips).
+  const overlayOpen = () => !$('#more-sheet')?.hidden
+    || !!document.querySelector('.scenario, .menu-scrim:not([hidden]), .share-sheet:not([hidden]), .popover-menu:not([hidden])');
   content.addEventListener('touchstart', (e) => {
     if (window.scrollY > 0) return; // Only at top of page
     // The mountain locks the page at the top, so every downward drag that
     // turns it would otherwise pull to refresh.
     if (document.body.dataset.viz === 'mountain') return;
-    if (ptrState.pulling) return;
+    if (ptrState.pulling || e.touches.length !== 1 || overlayOpen()) return;
+    if (e.target.closest('input[type="range"], .scroller, .tool-links__list, .odds, .grid-zones-wrap')) return;
+    ptrState.startX = e.touches[0].clientX;
     ptrState.startY = e.touches[0].clientY;
+    ptrState.axis = null;
     ptrState.pulling = true;
     ptrState.triggered = false;
   }, { passive: true });
@@ -11638,8 +12150,16 @@ function initMobileGestures() {
     }
     ptrState.currentY = e.touches[0].clientY;
     const delta = ptrState.currentY - ptrState.startY;
-    if (delta <= 0) {
+    // Angle lock: the first 8px of movement decide; a drag more sideways
+    // than down (a swipe, a diagonal scroll) never pulls.
+    if (!ptrState.axis) {
+      const dx = Math.abs(e.touches[0].clientX - ptrState.startX);
+      if (Math.max(dx, Math.abs(delta)) < 8) return;
+      ptrState.axis = Math.abs(delta) > dx * 1.5 ? 'y' : 'x';
+    }
+    if (ptrState.axis !== 'y' || delta <= 0) {
       ptrState.pulling = false;
+      resetPullToRefresh();
       return;
     }
     e.preventDefault(); // Prevent native scroll bounce
@@ -11758,52 +12278,6 @@ function initMobileGestures() {
     });
   }
 
-  // --- Swipe to Dismiss Sheet ---
-  sheetPanel?.addEventListener('touchstart', (e) => {
-    if (sheet.hidden) return;
-    if (sheetPanel.getAnimations().some(a => a.playState === 'running')) return;
-    sheetSwipeState.startY = e.touches[0].clientY;
-    sheetSwipeState.dragging = true;
-    sheetPanel.classList.add('is-dragging');
-  }, { passive: true });
-
-  sheetPanel?.addEventListener('touchmove', (e) => {
-    if (!sheetSwipeState.dragging) return;
-    sheetSwipeState.currentY = e.touches[0].clientY;
-    const deltaY = sheetSwipeState.currentY - sheetSwipeState.startY;
-    if (deltaY <= 0) return; // Only dismiss on downward swipe
-    e.preventDefault();
-    const pullDistance = Math.min(deltaY * 0.4, 200);
-    sheetPanel.style.transform = `translateY(${pullDistance}px)`;
-    sheetPanel.style.opacity = String(1 - pullDistance / 300);
-    sheet.querySelector('.sheet__scrim').style.opacity = String(0.45 * (1 - pullDistance / 300));
-  }, { passive: false });
-
-  sheetPanel?.addEventListener('touchend', () => {
-    if (!sheetSwipeState.dragging) return;
-    sheetSwipeState.dragging = false;
-    sheetPanel.classList.remove('is-dragging');
-    const deltaY = sheetSwipeState.currentY - sheetSwipeState.startY;
-    if (deltaY > 100) {
-      // Dismiss
-      sheetPanel.classList.add('is-dismissed');
-      setTimeout(() => {
-        closeSheet();
-        sheetPanel.classList.remove('is-dismissed');
-        sheetPanel.style.transform = '';
-        sheetPanel.style.opacity = '';
-        sheet.querySelector('.sheet__scrim').style.opacity = '';
-        if (navigator.vibrate) navigator.vibrate(20);
-      }, 250);
-    } else {
-      // Snap back
-      sheetPanel.style.transition = 'transform 0.2s var(--ease), opacity 0.2s var(--ease)';
-      sheetPanel.style.transform = '';
-      sheetPanel.style.opacity = '';
-      sheet.querySelector('.sheet__scrim').style.opacity = '';
-      setTimeout(() => sheetPanel.style.transition = '', 200);
-    }
-  }, { passive: true });
 }
 
 /* Touch ripple effect for buttons and interactive elements */

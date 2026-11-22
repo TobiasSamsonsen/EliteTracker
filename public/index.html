@@ -101,10 +101,10 @@
   <div class="sheet__scrim" data-close-sheet></div>
   <div class="sheet__panel" role="dialog" aria-modal="true" data-i18n="aria.moreViews" data-i18n-attr="aria-label" aria-label="More views">
     <div class="sheet__grip" aria-hidden="true"></div>
-      <button type="button" class="sheet__item" data-view="explore" aria-pressed="false"><span data-i18n="mob.explore">Explore</span></button>
-      <button type="button" class="sheet__item" data-view="ladder" aria-pressed="false"><span data-i18n="mob.ladder">Ladder</span></button>
-      <button type="button" class="sheet__item" data-view="compare" aria-pressed="false"><span data-i18n="mob.compare">Compare clubs</span></button>
-      <button type="button" class="sheet__item" data-view="model" aria-pressed="false"><span data-i18n="mob.model">Model card</span></button>
+      <button type="button" class="sheet__item" data-view="explore" aria-pressed="false"><svg class="sheet__icon" viewBox="0 0 16 16" aria-hidden="true" focusable="false" fill="currentColor"><path d="M1 14.5 5.6 6l2.6 4 2.2-3 4.6 7.5z"/><circle cx="11.5" cy="3.2" r="1.6"/></svg><span data-i18n="mob.explore">Explore</span></button>
+      <button type="button" class="sheet__item" data-view="ladder" aria-pressed="false"><svg class="sheet__icon" viewBox="0 0 16 16" aria-hidden="true" focusable="false" fill="currentColor"><path d="M3 1.5v13M13 1.5v13" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><path d="M3 4.5h10M3 8h10M3 11.5h10" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" opacity=".55"/><circle cx="10" cy="4.5" r="1.7"/><circle cx="6" cy="8" r="1.7"/><circle cx="8.5" cy="11.5" r="1.7"/></svg><span data-i18n="mob.ladder">Ladder</span></button>
+      <button type="button" class="sheet__item" data-view="compare" aria-pressed="false"><svg class="sheet__icon" viewBox="0 0 16 16" aria-hidden="true" focusable="false" fill="currentColor"><path d="M2 5h10M9 2l3 3-3 3M14 11H4M7 8l-3 3 3 3" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg><span data-i18n="mob.compare">Compare clubs</span></button>
+      <button type="button" class="sheet__item" data-view="model" aria-pressed="false"><svg class="sheet__icon" viewBox="0 0 16 16" aria-hidden="true" focusable="false" fill="currentColor"><path d="M2 14.5V9.5M6 14.5V5.5M10 14.5V7.5M14 14.5V2" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg><span data-i18n="mob.model">Model card</span></button>
       <div class="sheet__divider" aria-hidden="true"></div>
       <div class="sheet__setting">
         <span class="sheet__setting-label" data-i18n="sheet.theme">Theme</span>
@@ -160,8 +160,26 @@
 </div>
 
 
+<script>
+  /* Which skeleton to show while the season loads: the view the address (or
+     a route page's et-route) opens on, decided before the first paint. */
+  (function () {
+    var q = new URLSearchParams(location.search), route = {};
+    try { route = JSON.parse((document.querySelector('meta[name="et-route"]') || {}).content || '{}'); } catch (e) {}
+    var view = q.get('view') || (q.get('team') || route.team ? 'team' : route.view) || 'overview';
+    document.documentElement.dataset.bootView = view === 'table' ? 'table' : view === 'grid' ? 'grid'
+      : view === 'matches' ? 'table' : 'cards';
+  })();
+</script>
 <main class="shell" id="app" tabindex="-1">
-  <div class="status" id="status" role="status" data-i18n="status.loading">Loading the season…</div>
+  <!-- The loading line, over a skeleton of the view on its way (the first
+       render hides it; a failure replaces it with the reason and a retry). -->
+  <div class="status" id="status" role="status"><span class="status__text" data-i18n="status.loading">Loading the season…</span><div class="skeleton-boot" aria-hidden="true">
+    <div class="skeleton-boot__head"><span class="skel skel--title"></span><span class="skel skel--line"></span></div>
+    <div class="skeleton-boot__cards"><span class="skel skel--card"></span><span class="skel skel--card skel--short"></span><span class="skel skel--card"></span></div>
+    <div class="skeleton-boot__rows"><span class="skel skel--row"></span><span class="skel skel--row"></span><span class="skel skel--row"></span><span class="skel skel--row"></span><span class="skel skel--row"></span><span class="skel skel--row"></span><span class="skel skel--row"></span><span class="skel skel--row"></span><span class="skel skel--row"></span><span class="skel skel--row"></span></div>
+    <div class="skeleton-boot__grid"><span class="skel skel--grid"></span></div>
+  </div></div>
 
   <div id="content" hidden>
 
@@ -209,6 +227,11 @@
             <p id="grid-desc" data-i18n="grid.desc">Each club’s chance of every place, sorted by likeliest finish.</p>
           </div>
           <div class="grid-controls panel__tools">
+            <!-- On a phone: the readable zones or every place (renderGridZones). -->
+            <div class="switch grid-mode" role="group" data-i18n="grid.zone.mode" data-i18n-attr="aria-label" aria-label="Show">
+              <button type="button" data-grid-mode="zones" aria-pressed="true"><span data-i18n="grid.zone.zones">Zones</span></button>
+              <button type="button" data-grid-mode="all" aria-pressed="false"><span data-i18n="grid.zone.all">All places</span></button>
+            </div>
             <div class="label" id="grid-count"></div>
             <button type="button" class="grid-anim-btn" id="grid-anim-play" aria-pressed="false" data-i18n="title.animateSeason" data-i18n-attr="title" title="Replay the season matchday by matchday"><span class="grid-anim-btn__icon" aria-hidden="true">▶</span><span class="grid-anim-btn__label" data-i18n="anim.play">Play season</span></button>
           </div>
@@ -223,7 +246,8 @@
             <button type="button" data-speed="4" aria-pressed="false">4×</button>
           </div>
         </div>
-        <div class="scroller">
+        <div class="grid-zones-wrap" id="grid-zones"></div>
+        <div class="scroller scroller--grid">
           <div class="grid-wrap">
             <table class="grid" id="grid">
               <caption class="visually-hidden" data-i18n="aria.gridCaption">Probability that each team finishes in each position</caption>
@@ -243,7 +267,9 @@
           </div>
           <div class="panel__tools">
             <div class="table-controls">
-              <button type="button" class="table-control-btn" data-table-mode="current" aria-pressed="true"><span data-i18n="table.view.current">Current</span></button>
+              <button type="button" class="table-control-btn" data-table-mode="current" aria-pressed="true"><span class="table-control-btn__long" data-i18n="table.view.current">Current</span><span class="table-control-btn__short" data-i18n="table.view.currentShort">Table</span></button>
+              <!-- A phone's: rating, attack and defence (a wider screen shows them in Current). -->
+              <button type="button" class="table-control-btn table-control-btn--phone" data-table-mode="strength" aria-pressed="false"><span data-i18n="table.view.strength">Strength</span></button>
               <button type="button" class="table-control-btn" data-table-mode="prediction" aria-pressed="false"><span data-i18n="table.view.prediction">Prediction</span></button>
             </div>
           </div>
@@ -253,22 +279,22 @@
           <table class="standings" id="standings" aria-labelledby="table-title">
             <thead>
               <tr>
-<th class="pos" scope="col" aria-sort="none" data-sort-col="position" data-table-view="current prediction">
+<th class="pos" scope="col" aria-sort="none" data-sort-col="position" data-table-view="current prediction strength">
                   <button type="button" class="sort-btn" data-sort-key="position"><span class="sort-btn__label" data-i18n="th.position">#</span><span class="visually-hidden" data-i18n="th.position.desc">, position</span><span class="sort-btn__caret" aria-hidden="true"></span></button>
                 </th>
-                <th class="club" scope="col" aria-sort="none" data-sort-col="team" data-table-view="current prediction">
+                <th class="club" scope="col" aria-sort="none" data-sort-col="team" data-table-view="current prediction strength">
                   <button type="button" class="sort-btn" data-sort-key="team"><span class="sort-btn__label" data-i18n="table.col.club">Club</span><span class="visually-hidden" data-i18n="th.team.desc">, club name</span><span class="sort-btn__caret" aria-hidden="true"></span></button>
                 </th>
                 <th class="num" scope="col" aria-sort="none" data-sort-col="played" data-table-view="current">
                   <button type="button" class="sort-btn" data-sort-key="played"><span class="sort-btn__label" data-i18n="th.played">P</span><span class="visually-hidden" data-i18n="th.played.desc">, played</span><span class="sort-btn__caret" aria-hidden="true"></span></button>
                 </th>
-                <th class="num" scope="col" aria-sort="none" data-sort-col="wins" data-table-view="current">
+                <th class="num col--wdl" scope="col" aria-sort="none" data-sort-col="wins" data-table-view="current">
                   <button type="button" class="sort-btn" data-sort-key="wins"><span class="sort-btn__label" data-i18n="th.wins">W</span><span class="visually-hidden" data-i18n="th.wins.desc">, wins</span><span class="sort-btn__caret" aria-hidden="true"></span></button>
                 </th>
-                <th class="num" scope="col" aria-sort="none" data-sort-col="draws" data-table-view="current">
+                <th class="num col--wdl" scope="col" aria-sort="none" data-sort-col="draws" data-table-view="current">
                   <button type="button" class="sort-btn" data-sort-key="draws"><span class="sort-btn__label" data-i18n="th.draws">D</span><span class="visually-hidden" data-i18n="th.draws.desc">, draws</span><span class="sort-btn__caret" aria-hidden="true"></span></button>
                 </th>
-                <th class="num" scope="col" aria-sort="none" data-sort-col="losses" data-table-view="current">
+                <th class="num col--wdl" scope="col" aria-sort="none" data-sort-col="losses" data-table-view="current">
                   <button type="button" class="sort-btn" data-sort-key="losses"><span class="sort-btn__label" data-i18n="th.losses">L</span><span class="visually-hidden" data-i18n="th.losses.desc">, losses</span><span class="sort-btn__caret" aria-hidden="true"></span></button>
                 </th>
                 <th class="num col--goals" scope="col" aria-sort="none" data-sort-col="goals_for" data-table-view="current">
@@ -283,13 +309,13 @@
                 <th class="num form col--extra" scope="col" aria-sort="none" data-sort-col="form" data-table-view="current">
                   <button type="button" class="sort-btn" data-sort-key="form"><span class="sort-btn__label" data-i18n="table.col.form">Form</span><span class="visually-hidden" data-i18n="th.form.desc">, recent results</span><span class="sort-btn__caret" aria-hidden="true"></span></button>
                 </th>
-                <th class="num sep" scope="col" aria-sort="none" data-sort-col="rating" data-table-view="current prediction">
+                <th class="num sep col--rating" scope="col" aria-sort="none" data-sort-col="rating" data-table-view="current prediction strength">
                   <button type="button" class="sort-btn" data-sort-key="rating"><span class="sort-btn__label" data-i18n="table.col.rating">Rating</span><span class="sort-btn__short" aria-hidden="true" data-i18n="table.col.ratingShort">Elo</span><span class="visually-hidden" data-i18n="th.rating.desc">, ELO rating</span><span class="sort-btn__caret" aria-hidden="true"></span></button>
                 </th>
-                <th class="num col--extra" scope="col" aria-sort="none" data-sort-col="attack_pct" data-table-view="current">
+                <th class="num col--extra" scope="col" aria-sort="none" data-sort-col="attack_pct" data-table-view="current strength">
                   <button type="button" class="sort-btn" data-sort-key="attack_pct"><span class="sort-btn__label" data-i18n="team.attack">Attack</span><span class="visually-hidden" data-i18n="th.attack.desc">, chances created vs division average, in percent</span><span class="sort-btn__caret" aria-hidden="true"></span></button>
                 </th>
-                <th class="num col--extra" scope="col" aria-sort="none" data-sort-col="defence_pct" data-table-view="current">
+                <th class="num col--extra col--defence" scope="col" aria-sort="none" data-sort-col="defence_pct" data-table-view="current strength">
                   <button type="button" class="sort-btn" data-sort-key="defence_pct"><span class="sort-btn__label" data-i18n="team.defence">Defence</span><span class="visually-hidden" data-i18n="th.defence.desc">, chances conceded vs division average; higher is better</span><span class="sort-btn__caret" aria-hidden="true"></span></button>
                 </th>
                 <th class="num" scope="col" aria-sort="none" data-sort-col="expected_points" data-table-view="prediction">
@@ -298,7 +324,7 @@
                 <th class="num col--xg" scope="col" aria-sort="none" data-sort-col="expected_goals_for" data-table-view="prediction">
                   <button type="button" class="sort-btn" data-sort-key="expected_goals_for"><span class="sort-btn__label" data-i18n="th.xgoals">xG +/-</span><span class="visually-hidden" data-i18n="th.xgoals.desc">, projected goals for and against</span><span class="sort-btn__caret" aria-hidden="true"></span></button>
                 </th>
-                <th class="num" scope="col" aria-sort="none" data-sort-col="expected_goal_difference" data-table-view="prediction">
+                <th class="num col--xgd" scope="col" aria-sort="none" data-sort-col="expected_goal_difference" data-table-view="prediction">
                   <button type="button" class="sort-btn" data-sort-key="expected_goal_difference"><span class="sort-btn__label" data-i18n="table.col.projGoalDiff">GD</span><span class="visually-hidden" data-i18n="table.col.projGoalDiff.desc">, projected final goal difference</span><span class="sort-btn__caret" aria-hidden="true"></span></button>
                 </th>
                 <th class="num col--fd" scope="col" aria-sort="none" data-sort-col="fixture_difficulty" data-table-view="prediction">
@@ -329,7 +355,7 @@
             <button type="button" class="grid-anim-btn" id="ladder-anim-play" aria-pressed="false" data-i18n="title.animateSeason" data-i18n-attr="title" title="Replay the season matchday by matchday"><span class="grid-anim-btn__icon" aria-hidden="true">▶</span><span class="grid-anim-btn__label" data-i18n="anim.play">Play season</span></button>
           </div>
         </div>
-        <nav class="tool-links" data-tools="attack" data-i18n="toollink.heading" data-i18n-attr="aria-label" aria-label="Explore further"></nav>
+        <nav class="tool-links" data-tools="attack" data-place="top" data-place-wide="foot" data-i18n="toollink.heading" data-i18n-attr="aria-label" aria-label="Explore further"></nav>
         <div class="grid-anim-bar" id="ladder-anim-controls" hidden>
           <span class="grid-anim-bar__when" id="ladder-anim-when"></span>
           <span class="grid-anim-bar__track" aria-hidden="true"><span class="grid-anim-bar__fill" id="ladder-anim-fill"></span></span>
@@ -357,7 +383,7 @@
           </div>
           <!-- What if in the head's corner, over the count of matches played and left. -->
           <div class="panel__aside">
-            <nav class="tool-links tool-links--head" data-tools="whatif" data-i18n="toollink.heading" data-i18n-attr="aria-label" aria-label="Explore further"></nav>
+            <nav class="tool-links tool-links--head" data-tools="whatif" data-place="top" data-i18n="toollink.heading" data-i18n-attr="aria-label" aria-label="Explore further"></nav>
             <div class="label" id="fixture-count"></div>
           </div>
         </div>
@@ -445,7 +471,7 @@
 </footer>
 
 <div id="consent" class="consent" role="region" aria-labelledby="consent-text" hidden>
-  <p id="consent-text"><span data-i18n="consent.text">Vi bruker informasjonskapsler (cookies) til statistikk via Google Analytics. Data om besøket ditt deles med Google. Du kan når som helst endre valget under «Informasjonskapsler» nederst på siden.</span> <a href="/personvern.html" data-i18n="consent.more">Les mer</a></p>
+  <p id="consent-text"><span class="consent__long" data-i18n="consent.text">Vi bruker informasjonskapsler (cookies) til statistikk via Google Analytics. Data om besøket ditt deles med Google. Du kan når som helst endre valget under «Informasjonskapsler» nederst på siden.</span><span class="consent__short" data-i18n="consent.textShort">Statistikk med Google Analytics? Data om besøket deles med Google.</span> <a href="/personvern.html" data-i18n="consent.more">Les mer</a></p>
   <div class="consent__actions">
     <button type="button" data-consent="no" data-i18n="consent.no">Avvis</button>
     <button type="button" data-consent="yes" data-i18n="consent.yes">Godta</button>

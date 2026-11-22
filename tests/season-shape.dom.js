@@ -56,7 +56,7 @@ async function main() {
 
   // Subresources are not loaded by default; run the app's own scripts as
   // inline classic scripts so their top-level bindings are shared with eval.
-  for (const file of ['i18n.js', 'app.js']) {
+  for (const file of ['i18n.js', 'season-sim.js', 'share.js', 'app.js']) { // index.html's order
     const script = w.document.createElement('script');
     script.textContent = fs.readFileSync(path.join(ROOT, file), 'utf8');
     w.document.head.appendChild(script);
@@ -79,7 +79,9 @@ async function main() {
   console.log(`team: ${pick.name} (${pick.id}), ${pick.seasons} seasons`);
   check('team has >8 seasons (paging exercisable)', pick.seasons > 8);
 
-  ev(`openTeamView(${pick.id}, ${JSON.stringify(pick.name)}, { push: false })`);
+  // The season section is on the club page's History tab (the team view's
+  // tabs came after this test).
+  ev(`state.teamTab = 'history'; openTeamView(${pick.id}, ${JSON.stringify(pick.name)}, { push: false })`);
   await sleep(300);
 
   check('season section rendered', ev("!!document.querySelector('#team-content .team-seasons')"));

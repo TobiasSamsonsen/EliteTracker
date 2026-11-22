@@ -21,8 +21,13 @@ python -m venv .venv && .venv/Scripts/pip install -e '.[dev]'
 
 Bare `pytest` cannot import the `tests` package. `tests/season-shape.dom.js`
 is a dev-only jsdom smoke test of the team view (`npm i jsdom`, then
-`node tests/season-shape.dom.js`; it reads the built `public/data`). CI does
-not run any of these: run them before pushing.
+`node tests/season-shape.dom.js`; it reads the built `public/data`). The
+mobile check drives the built site in Playwright's Chromium at four phone
+widths and a desktop (`.venv/Scripts/python experiments/mobile-audit/check.py`,
+`--only 360x800 --views grid,table --shots` to narrow it and keep
+screenshots); `tests/test_mobile_audit.py` runs it at 360 and 375px when
+`ELITETRACKER_MOBILE_AUDIT=1` is set. CI does not run any of these: run them
+before pushing.
 
 ## CI (`.github/workflows/`)
 
