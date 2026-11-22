@@ -11,6 +11,7 @@
 | `xg.json` | xG per match: fotmob (Eliteserien, with xG on target) and Sofascore (OBOS-ligaen) | `refresh`; `research xg-obos` |
 | `market_values.json` | Transfermarkt squad value per club-season | `research market-values`, once a year |
 | `odds_closing.json`, `odds_closing_prices.json`, `odds_closing_books.json` (the book each price came from) | football-data.co.uk closing odds, the benchmark | `research odds --refresh` |
+| `odds_norsktipping.json` | Norsk Tipping's 1X2 prices (home/draw/away) for 119 Eliteserien matches (100 of 2024, 20 of 2026; one 2024 page had none), read from FotMob's match pages; measurement only: the model view's betting fact at Norsk Tipping's prices (`research.calibration_payload`) and `experiments/improvements/norsk_tipping.py` | by hand in the browser, 22 November 2026; not refreshed |
 | `model_versions.json` | the model-accuracy view's history of versions | `experiments/improvements/version_history.py combine` |
 | `raw/` | raw source payloads and the football-data CSV | the fetchers |
 

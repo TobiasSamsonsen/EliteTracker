@@ -6680,6 +6680,13 @@ function calibrationFacts(data) {
       text: t('calib.fact.marketText', { n: num(market.model.n), t: num(market.power.paired_t, 1) }),
     });
   }
+  const signedPct = (value) => `${signed(value * 100, 1)}${percentSign()}`;
+  // A bankroll can end above where it started: pct() stops at 100 %.
+  const bankroll = (value) => `${num(value * 100, 0)}${percentSign()}`;
+  // What one unit on each bet returned, edges of 3-15 % against the bigger ones.
+  const bands = (block) => (block.bands
+    ? t('calib.fact.kellyBands', { small: signedPct(block.bands.small.flat_roi), large: signedPct(block.bands.large.flat_roi) })
+    : '');
   if (data.kelly && data.kelly.bets) {
     // The bankroll, not the return per stake: Kelly staking can earn on what
     // was staked and still lose the pot.
@@ -6688,13 +6695,24 @@ function calibrationFacts(data) {
       value: `${signed((kelly.bankroll - 1) * 100, 0)}${percentSign()}`,
       label: t('calib.fact.kelly'),
       text: t('calib.fact.kellyText', {
-        bets: num(kelly.bets), roi: `${signed(kelly.roi * 100, 1)}${percentSign()}`,
-        end: pct(kelly.bankroll, 0), drawdown: pct(kelly.max_drawdown, 0),
+        from: kelly.first_season, bets: num(kelly.bets), roi: signedPct(kelly.roi),
+        end: bankroll(kelly.bankroll), drawdown: pct(kelly.max_drawdown, 0),
       }) + (kelly.flat_roi != null
-        ? t('calib.fact.kellyFlat', { flat: `${signed(kelly.flat_roi * 100, 1)}${percentSign()}` })
-        : '') + (kelly.pinnacle_share != null
+        ? t('calib.fact.kellyFlat', { flat: signedPct(kelly.flat_roi) })
+        : '') + bands(kelly) + (kelly.pinnacle_share != null
         ? t('calib.fact.kellyBooks', { pinnacle: pct(kelly.pinnacle_share, 0) })
         : ''),
+    });
+  }
+  const nt = data.norsk_tipping;
+  if (nt && nt.bets) {
+    facts.push({
+      value: `${signed((nt.bankroll - 1) * 100, 0)}${percentSign()}`,
+      label: t('calib.fact.nt'),
+      text: t('calib.fact.ntText', {
+        margin: pct(nt.margin, 1), pinnacle: pct(nt.pinnacle_margin, 1), n: num(nt.n),
+        bets: num(nt.bets), roi: signedPct(nt.roi), end: bankroll(nt.bankroll),
+      }) + bands(nt),
     });
   }
   return facts;

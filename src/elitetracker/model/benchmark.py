@@ -43,6 +43,9 @@ ODDS_PATH = Path("data/odds_closing.json")
 PRICES_PATH = Path("data/odds_closing_prices.json")
 # Which book each of those prices came from ("PSC" Pinnacle, "AvgC" market average, "B365C" Bet365).
 BOOKS_PATH = Path("data/odds_closing_books.json")
+# Norsk Tipping's 1X2 prices (decimal, home/draw/away) for a sample of
+# Eliteserien matches, read by hand from FotMob's match pages (docs/data.md).
+NORSK_TIPPING_PATH = Path("data/odds_norsktipping.json")
 DEVIG_METHODS = ("proportional", "power", "shin")
 
 # Our registered names that neither equal nor contain the bookmaker's spelling.
@@ -225,12 +228,14 @@ def kelly(
     fraction: float = 0.25,
     cap: float = 0.025,
     min_edge: float = 0.03,
+    max_edge: float = math.inf,
 ) -> dict[str, float]:
     """Stake on the model's best edge per match at the closing prices.
 
     A quarter of the Kelly stake (the damping that keeps an over-confident
     model from ruin), at most `cap` of the bankroll on one match, and only
-    where the edge p * price - 1 is at least `min_edge`. `order` is the
+    where the edge p * price - 1 is at least `min_edge` and below `max_edge`
+    (the best outcome inside that band). `order` is the
     chronological match order; the bankroll compounds along it. ROI is
     profit over stakes, each stake counted as its fraction of the bankroll;
     `flat_roi` is the return on one unit staked on each of the same bets.
@@ -244,9 +249,10 @@ def kelly(
         probabilities, outcome = card.predictions[match_id]
         options = [(probabilities.of(key) * price - 1.0, key, price)
                    for key, price in zip((HOME_WIN, DRAW, AWAY_WIN), prices[match_id])]
-        edge, key, price = max(options)
-        if edge < min_edge:
+        options = [option for option in options if min_edge <= option[0] < max_edge]
+        if not options:
             continue
+        edge, key, price = max(options)
         stake = min(cap, fraction * edge / (price - 1.0))
         won = key == outcome
         flat_profit += price - 1.0 if won else -1.0
@@ -266,6 +272,53 @@ def kelly(
         "bankroll": bankroll,
         "max_drawdown": drawdown,
     }
+
+
+def load_norsk_tipping(path: Path = NORSK_TIPPING_PATH) -> dict[str, tuple[float, float, float]]:
+    if not path.exists():
+        return {}
+    with path.open(encoding="utf-8") as handle:
+        return {key: tuple(value) for key, value in json.load(handle).items()}
+
+
+def norsk_tipping_shape(
+    norsk_tipping: dict[str, tuple[float, float, float]],
+    prices: dict[str, tuple[float, float, float]],
+    books: dict[str, str],
+) -> dict | None:
+    """How Norsk Tipping prices against Pinnacle's close, on the matches both
+    priced: the mean margins and, per outcome, a least-squares line from
+    Pinnacle's fair chance (power de-vig) to Norsk Tipping's implied chance.
+    Its margin falls mostly on outsiders, which a flat margin would miss."""
+    both = sorted(m for m in norsk_tipping if m in prices and books.get(m) == "PSC")
+    if len(both) < 10:
+        return None
+    fair = {m: devig(prices[m], "power") for m in both}
+    fit = []
+    for side in range(3):
+        xs = [fair[m][side] for m in both]
+        ys = [1.0 / norsk_tipping[m][side] for m in both]
+        mean_x, mean_y = sum(xs) / len(xs), sum(ys) / len(ys)
+        slope = (sum((x - mean_x) * (y - mean_y) for x, y in zip(xs, ys))
+                 / sum((x - mean_x) ** 2 for x in xs))
+        fit.append((mean_y - slope * mean_x, slope))
+    return {
+        "n": len(both),
+        "margin": sum(sum(1.0 / p for p in norsk_tipping[m]) - 1.0 for m in both) / len(both),
+        "pinnacle_margin": sum(sum(1.0 / p for p in prices[m]) - 1.0 for m in both) / len(both),
+        "fit": fit,
+    }
+
+
+def reprice(
+    prices: dict[str, tuple[float, float, float]], fit: list[tuple[float, float]]
+) -> dict[str, tuple[float, float, float]]:
+    """Closing prices recut to another book's shape (`norsk_tipping_shape`'s fit)."""
+    out = {}
+    for match_id, price in prices.items():
+        fair = devig(price, "power")
+        out[match_id] = tuple(1.0 / (a + b * q) for (a, b), q in zip(fit, fair))  # type: ignore[assignment]
+    return out
 
 
 def benchmark_card(

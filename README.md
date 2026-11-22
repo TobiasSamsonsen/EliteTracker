@@ -203,7 +203,9 @@ reliability diagram of the pre-match odds of every match since 2016 (both
 divisions; one panel per outcome, zoomed to its own range; 5 % bins with
 50 or more matches, over a band through their 95 % intervals), the scores against the bookmakers' closing odds (three ways of
 removing their margin), and where quarter-Kelly betting on the model's
-edges would have left the bankroll. *Over the model versions*: every release replayed with
+edges from 2021 (the xG seasons) would have left the bankroll, at the
+closing price and at Norsk Tipping's, small edges (3-15 %) apart from
+large. *Over the model versions*: every release replayed with
 its own code on the same 4,800 matches, as how much better than base rates
 its odds were (all matches, Eliteserien, and Eliteserien's xG seasons from
 2020), each Eliteserien line with the bookmakers' closing odds on the same

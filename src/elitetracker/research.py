@@ -220,6 +220,10 @@ def market_comparison(score_from: int) -> int:
 
 
 VERSIONS_PATH = Path("data/model_versions.json")
+# The calibration view's betting: from 2021, the first season with a year of
+# xG behind the ratings, and edges split at 15 % (PROJECT_STATUS.md, 1.13).
+BETTING_FROM = 2021
+SMALL_EDGE = 0.15
 
 
 def calibration_payload(score_from: int = 2016, root=NORMALIZED_DIR) -> dict:
@@ -254,12 +258,29 @@ def calibration_payload(score_from: int = 2016, root=NORMALIZED_DIR) -> dict:
     # Matches on one date in id order: a set iterates in hash order, which
     # differs run to run and moved the bankroll's drawdown with it.
     order = sorted(common, key=lambda mid: (dates[mid], mid))
-    kelly = {key: (round(value, 4) if isinstance(value, float) else value)
-             for key, value in benchmark.kelly(model_es, prices, order).items()} if common else None
+    # Betting from the first season with a full year of xG behind the ratings
+    # (xG starts in 2020); the scores above keep the whole window.
+    bet_order = [mid for mid in order if int(dates[mid][:4]) >= BETTING_FROM]
+
+    def staking(book_prices: dict) -> dict:
+        def run(**edges) -> dict:
+            return {key: (round(value, 4) if isinstance(value, float) else value)
+                    for key, value in benchmark.kelly(model_es, book_prices, bet_order, **edges).items()}
+        # Edges of 3-15 % against the rest: the small ones earn nothing.
+        return {**run(), "bands": {"small": run(max_edge=SMALL_EDGE), "large": run(min_edge=SMALL_EDGE)}}
+
+    kelly = {**staking(prices), "first_season": BETTING_FROM} if bet_order else None
     books = benchmark.load_books()
-    if kelly and books and order:
+    if kelly and books:
         # The market average is no single tradable price: say how much of the pool it is.
-        kelly["pinnacle_share"] = round(sum(books.get(mid) == "PSC" for mid in order) / len(order), 4)
+        kelly["pinnacle_share"] = round(sum(books.get(mid) == "PSC" for mid in bet_order) / len(bet_order), 4)
+    # The same bets at Norsk Tipping's prices: the close recut to the shape
+    # its own prices take against Pinnacle's on the matches both priced.
+    shape = benchmark.norsk_tipping_shape(benchmark.load_norsk_tipping(), prices, books) if kelly else None
+    norsk_tipping = {
+        "n": shape["n"], "margin": round(shape["margin"], 4), "pinnacle_margin": round(shape["pinnacle_margin"], 4),
+        **staking(benchmark.reprice({mid: prices[mid] for mid in bet_order}, shape["fit"])),
+    } if shape else None
     return {
         "version": MODEL_VERSION,
         "first_season": score_from,
@@ -280,6 +301,7 @@ def calibration_payload(score_from: int = 2016, root=NORMALIZED_DIR) -> dict:
         ] if shipped.matches else [],
         "market": market,
         "kelly": kelly,
+        "norsk_tipping": norsk_tipping,
         # Every model version's odds on the same matches, from each release's own
         # code (experiments/improvements/version_history.py, rerun per release).
         "versions": json.loads(VERSIONS_PATH.read_text(encoding="utf-8")) if VERSIONS_PATH.exists() else None,

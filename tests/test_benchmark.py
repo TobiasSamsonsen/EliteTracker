@@ -137,3 +137,25 @@ def test_kelly_stakes_only_on_an_edge_and_caps_the_stake():
     assert abs(k["roi"] - 0.0) < 1e-12 and abs(k["max_drawdown"] - 0.025) < 1e-12
     # One unit on each bet: +1.0 at 2.0, then -1.0.
     assert abs(k["flat_roi"] - 0.0) < 1e-12
+    # Both bets' edges are 20 %: a band that stops at 15 % takes neither, one from 15 % both.
+    assert benchmark.kelly(card, prices, ["win", "skip", "loss"], max_edge=0.15)["bets"] == 0
+    assert benchmark.kelly(card, prices, ["win", "skip", "loss"], min_edge=0.15)["bets"] == 2
+
+
+def test_norsk_tipping_shape_fits_the_outsider_heavy_margin_and_reprices_with_it():
+    # Pinnacle near fair; the other book takes 2 points flat plus 3 % of each chance off the price.
+    prices, other, books = {}, {}, {}
+    for i in range(12):
+        home = 0.25 + 0.04 * i
+        fair = (home, 0.25, 0.75 - home)
+        prices[str(i)] = tuple(1.0 / (q * 1.02) for q in fair)
+        books[str(i)] = "PSC"
+        other[str(i)] = tuple(1.0 / (0.02 + 1.03 * q) for q in benchmark.devig(prices[str(i)], "power"))
+    shape = benchmark.norsk_tipping_shape(other, prices, books)
+    assert shape["n"] == 12 and shape["margin"] > shape["pinnacle_margin"]
+    (a, b) = shape["fit"][0]
+    assert abs(a - 0.02) < 1e-9 and abs(b - 1.03) < 1e-9
+    repriced = benchmark.reprice({"0": prices["0"]}, shape["fit"])
+    assert all(abs(x - y) < 1e-9 for x, y in zip(repriced["0"], other["0"]))
+    # Too few matches priced by both: no shape.
+    assert benchmark.norsk_tipping_shape({"0": other["0"]}, prices, books) is None

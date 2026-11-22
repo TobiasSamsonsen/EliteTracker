@@ -1920,6 +1920,80 @@ which the CSV does not carry. `python -m elitetracker.backtest_cli --market`
 (or `research run`) prints all of it; `--calibration` writes the Explore view's
 file, which `build_site` also writes every build.
 
+**xG era only (re-run November 2026 on elo-v17.0, `--score-from 2021`).** xG
+starts in 2020, so 2021 is the first season with a full year of xG behind the
+ratings. Eliteserien 2021-2026, n = 1,376 priced: the shipped odds are +0.00299
+log loss behind the power de-vigged close (t +0.70; first half -0.00510, second
+half +0.00998), against +0.00835 (t +2.77) from 2016. Elo alone +0.00978 behind
+the proportional close (t +2.19). Quarter-Kelly, edge >= 3 %: 994 bets, 34.9 %
+won, ROI +12.1 % stake-weighted, bankroll x4.53, max drawdown 50.5 % (2016+:
+ROI +0.8 %, x0.62, drawdown 90.5 %); Elo alone +1.7 %, x0.96. Flat stakes
++8.0 % (se 5.5 %, t +1.44; bootstrap 95 % CI -2.4 % to +19.3 %). By season
+(flat): 2021 -4.0 %, 2022 +17.5 %, 2023 +18.2 %, 2024 +5.7 %, 2025 +13.8 %,
+2026 -13.7 %. At Pinnacle's price +11.6 % (885 bets, t +1.92); at the market
+average -21.1 % (109). Away bets +10.0 % (619), home +2.8 %, draws +9.3 %
+(108). The profit sits in edges over 20 % (+22.8 %, 323 bets); 3-20 % edges
+return about 0. The average claimed edge is 17.7 % against 8 % realised, and
+bets fire on 72 % of matches: the model is still over-confident against the
+close, and the result is not yet significant.
+
+**At Norsk Tipping's margin.** Oddsen's 1X2 margin on the one pre-match
+Eliteserien price open on 22 November 2026 (Sarpsborg 08 - Lillestrøm, 2.05 /
+4.10 / 2.95) is 7.1 %, against Pinnacle's 3.25 % mean closing margin 2021+.
+The 2021+ closing prices recut to a 7.1 % margin (same fair line, margin spread
+proportionally / by the power method): edge >= 3 % gives 820 / 798 bets, flat
+ROI +5.1 % / +5.6 % (t +0.84 / +0.94), Kelly ROI +10.2 % / +8.7 %, bankroll
+x2.69 / x2.27; edge >= 10 % flat +11.9 % / +8.1 % (t +1.39 / +1.00). At 9 %:
+edge >= 3 % flat +4.4 % / +2.1 %. This assumes Oddsen's line sits on the
+close's; Oddsen's own prices were not recorded, so the test of the real thing
+is still to come.
+
+**Norsk Tipping's prices from FotMob (22 November 2026, 20 matches).** FotMob's
+match page shows Norsk Tipping's 1X2 prices under the score, still there after
+full time. Read by hand in the browser for 20 Eliteserien matches (HamKam -
+Viking, round 1, and the 19 latest up to Tromsø - Viking on 21 November), one
+page at a time 4-7 s apart; nothing scraped into `data/`. Margin 6.84 % mean
+(6.5-7.2 %), so the 7.1 % above holds. Log loss on the 20: model 0.9509, Oddsen
+power de-vigged 0.9372. Quarter-Kelly's rule (edge >= 3 %) picks 9 bets at
+Oddsen's price: 3 won, -2.00 units flat (-22 %). The model sits within about
+3 points of Oddsen on most matches; the big gaps were Lillestrøm - Aalesund
+(home 68 % against 55 %), Tromsø - Bodø/Glimt (home 18 % against 12 %) and
+Molde - Bodø/Glimt (29 % against 24 %). Twenty matches settle nothing (a flat
+bet's se is about 0.4 units); football-data's CSV had only round 1 of 2026
+priced, so the close could not be set beside them.
+
+**Norsk Tipping against Pinnacle, 2024 (99 matches).** A random 100 of 2024's
+240 (seed 2024) read the same way from FotMob, the date in each page's heading
+checked against the match; one (Odd - HamKam) showed no odds. Margin 6.91 %
+against Pinnacle's 3.59 % on the same matches. The fair lines agree closely:
+power de-vigged, NT minus Pinnacle +0.12 / -0.35 / +0.23 pp (home / draw /
+away), sd 2.3 / 1.0 / 2.0 pp, largest gap 8.6 pp. The extra margin falls on
+outsiders: NT's price over Pinnacle's is 0.907 under 15 % fair probability,
+0.95-0.96 at 15-35 %, 0.98-0.99 above 35 %. Fitted per outcome, NT implied =
+a + b x Pinnacle fair (H +0.038 + 0.971, D +0.046 + 0.888, A +0.032 + 0.976).
+Log loss on the 99: model 1.0089, Pinnacle 1.0197, NT 1.0277.
+
+At NT's real prices (these 99 plus the 20 from 2026, 119 matches): edge >= 3 %,
+63 bets, flat -16.6 % (t -0.89), Kelly +24.9 %; edge 3-15 %, 50 bets, flat
+-27.2 % (t -1.30), Kelly -14.1 %. The full 2021+ backtest (1,376 matches) with
+the close re-priced to NT's fitted shape: edge >= 3 % flat +3.8 % (t +0.66),
+Kelly +8.1 %, x2.14; **edge 3-15 % flat -5.0 % (t -0.81), Kelly +0.8 %,
+x0.99**; edge >= 15 % flat +14.5 % (t +1.34), Kelly +14.2 %, x1.94. At the
+Pinnacle close itself the 3-15 % band is flat -0.1 % (679 bets) and >= 15 %
++17.8 % (t +1.83). By season (NT-shaped, 3-15 %): -5.7 / -10.0 / +3.2 / +6.4 /
+-20.7 / -3.1 %. Small edges are worth nothing even at Pinnacle and lose at NT's
+margin; whatever profit there is sits in edges over 15 %, a cut picked after
+seeing these results, so it needs a season out of sample before it means
+anything. The 119 prices are in `data/odds_norsktipping.json`;
+`experiments/improvements/norsk_tipping.py` prints all of the above.
+
+**In the model view (November 2026).** The calibration view's betting fact
+now stakes from 2021 (`research.BETTING_FROM`) instead of 2016, adds what one
+unit returned on edges of 3-15 % and over 15 %, and a second fact gives the
+same at Norsk Tipping's fitted prices (`benchmark.norsk_tipping_shape`,
+`reprice`); the scores against the close keep 2016+. Nothing the model
+publishes changes, so no version bump.
+
 ### Scrapers (phase 2): nothing added (passive parsing came later: see "IMPROVEMENTS.md, checked item by item")
 
 Re-tested on elo-v13.0 with the local match extras (Eliteserien 2020-2026,
