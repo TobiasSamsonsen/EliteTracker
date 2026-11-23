@@ -130,7 +130,7 @@ test('the client signs in anonymously once, keeps the session, and refreshes an 
   const first = await client.signUp();
   assert.equal(first.uid, 'uid-1');
   assert.equal(client.uid, 'uid-1');
-  assert.ok(memory.get(api.SESSION_KEY));
+  assert.ok(memory.get(api.sessionKey(local)));
   await client.get('stats/uid-1');
   assert.equal(calls.filter((u) => u.includes('/v1/token')).length, 0);                  // still fresh
   clock += 3_700_000;                                                                      // the token has expired
@@ -174,4 +174,23 @@ test('the ring, the streak and the badges follow the plan', () => {
   const earned = (stats) => util.badgesFor(stats).filter((b) => b.earned).map((b) => b.id);
   assert.deepEqual(earned({ tips: 0, totals: { n: 0, vm: 0, ab: 0 }, streak: 0 }), []);
   assert.deepEqual(earned({ tips: 31, totals: { n: 31, vm: 0.4, ab: 0.2 }, streak: 5 }).sort(), ['beatField', 'beatModel', 'first', 'streak5', 'thirty']);
+});
+
+test('a session belongs to its project: the live site never sees an emulator session', () => {
+  assert.equal(api.sessionKey(live), 'predict.session');
+  assert.equal(api.sessionKey(local), 'predict.session.demo-x');
+});
+
+test('a public document still loads when the stored session is rejected', async () => {
+  const memory = new Map([[api.sessionKey(local), JSON.stringify({ uid: 'u', idToken: 'BROKEN', refreshToken: 'R', expiresAt: 9e15 })]]);
+  const storage = { getItem: (k) => (memory.has(k) ? memory.get(k) : null), setItem: (k, v) => memory.set(k, v), removeItem: (k) => memory.delete(k) };
+  const fetchImpl = async (url, init) => {
+    const authed = init && init.headers && init.headers.Authorization;
+    if (url.includes('/v1/token')) return { ok: false, json: async () => ({ error: { message: 'INVALID_REFRESH_TOKEN' } }) };
+    if (authed) return { ok: false, status: 403, json: async () => ({ error: { message: 'PERMISSION_DENIED' } }) };
+    return { ok: true, json: async () => ({ fields: { season: { integerValue: '2027' } } }) };
+  };
+  const client = api.createClient({ config: local, fetchImpl, storage });
+  assert.deepEqual(await client.get('meta/rounds'), { season: 2027 });
+  await assert.rejects(client.get('stats/u'));            // a private document is not retried without a token
 });

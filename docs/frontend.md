@@ -188,6 +188,24 @@ slots only, so the free plan's daily quota is not the limit. localStorage (draft
 fine-tune choice) is always in try/catch and the page works without it. The odds bar is the matches
 view's own `.odds` / `.odds__seg`; the card's drag is `touch-action: pan-y` so the page still scrolls.
 
+The bar is the control: the grey draw block is the handle, and because its middle is always at the
+expected score (home + draw / 2), the gap under a finger is the logit of the finger's position
+(`gapUnder` in `predict.js`), so the block follows the finger whatever the draw tendency. A native
+range input sits invisibly on top for keyboards and screen readers (its focus ring is drawn on the
+bar, its `aria-valuetext` reads the three percents). Fine-tune (draw tendency, typed numbers) is a
+disclosure. After kick-off the card leads with a verdict (beat the model or not), dims the outcomes
+that did not happen, and keeps Brier / RPS behind "The scores". The reveal scores the stored whole
+percents, never the slider position. `styles.css` turns `.odds` into a padded scroller under 480px;
+`predict.css` resets that for the game's bars.
+
+Each section has an address (`#table`, `#boards`, `#me`; the tip view is the bare page), so links can
+open it and Back works; the chosen division is remembered. The browser session is stored per
+project (`sessionKey`: the live project keeps `predict.session`, an emulator `demo-*` project gets
+its own key), and a public document (`meta/rounds`, `fixtures/`, `reveal/`, `boards/`,
+`tablegames/`) is read again without a token if a stored token is rejected, so a broken session
+never hides the game. Matches are grouped by matchday in kick-off order; the card shows the time,
+the day is its heading.
+
 Run it against the local emulators (no cloud involved):
 
 ```bash

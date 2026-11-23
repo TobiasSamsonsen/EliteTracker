@@ -250,15 +250,21 @@ function safeStorage(storage) {
 /* ---- the client ---------------------------------------------------------------------------- */
 
 const SESSION_KEY = 'predict.session';
+/* The live site keeps the plain key; any other project (the emulator's demo-*) gets its own, so a
+   local test session is never sent to the real project, or the other way round. */
+const sessionKey = (config) => (config.project === 'elitetrackerno' ? SESSION_KEY : `${SESSION_KEY}.${config.project}`);
+/* Documents anyone may read: a rejected token must not hide them. */
+const PUBLIC_DOCS = /^(meta\/rounds|fixtures\/|reveal\/|boards\/|tablegames\/)/;
 
 function createClient({ config, fetchImpl, storage, now = () => Date.now() }) {
   const doFetch = fetchImpl || ((...args) => fetch(...args));
   const store = safeStorage(storage);
   let session = null;
-  try { session = JSON.parse(store.get(SESSION_KEY)); } catch (error) { session = null; }
+  const SESSION = sessionKey(config);
+  try { session = JSON.parse(store.get(SESSION)); } catch (error) { session = null; }
   let offset = 0;                       // the server's clock minus ours, learned from commit times
 
-  const saveSession = (next) => { session = next; if (next) store.set(SESSION_KEY, JSON.stringify(next)); else store.remove(SESSION_KEY); };
+  const saveSession = (next) => { session = next; if (next) store.set(SESSION, JSON.stringify(next)); else store.remove(SESSION); };
 
   async function send(method, url, body, headers = {}) {
     let reply;
@@ -328,10 +334,16 @@ function createClient({ config, fetchImpl, storage, now = () => Date.now() }) {
 
     /* A document, decoded; null when it does not exist. */
     async get(path) {
+      const name = `projects/${config.project}/databases/(default)/documents/${path}`;
       try {
-        return decodeDocument(await authed('GET', `projects/${config.project}/databases/(default)/documents/${path}`));
+        return decodeDocument(await authed('GET', name));
       } catch (error) {
         if (error.code === 'not_found') return null;
+        // A public document read with a broken session: read it again without the token.
+        if (PUBLIC_DOCS.test(path) && (error.code === 'auth' || error.code === 'denied')) {
+          try { return decodeDocument(await send('GET', `${config.firestoreBase}/${name}`)); }
+          catch (again) { if (again.code === 'not_found') return null; throw again; }
+        }
         throw error;
       }
     },
@@ -377,6 +389,6 @@ if (typeof module !== 'undefined') {
     PREDICT_KEY, GOOGLE_CLIENT_ID, predictConfig, SERVER_TIME, encodeValue, decodeValue, decodeDocument, fieldPath, documentName,
     writeSet, writeMerge, writeDelete, entryWrites, profileCreateWrites, nicknameChangeWrites, profileUpdateWrites, tableWrites,
     reportWrites, newLeagueCode, isLeagueCode, leagueCreateWrites, leagueJoinWrites, deleteRequestWrites, randomId, PredictError,
-    mapError, mapAuthError, googleLinkRequest, safeStorage, createClient, SESSION_KEY,
+    mapError, mapAuthError, googleLinkRequest, safeStorage, createClient, SESSION_KEY, sessionKey,
   };
 }

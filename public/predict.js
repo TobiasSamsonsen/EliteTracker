@@ -44,6 +44,19 @@
   const when = (date) => new Intl.DateTimeFormat(lang() === 'no' ? 'nb-NO' : 'en-GB',
     { weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }).format(date);
 
+  const locale = () => (lang() === 'no' ? 'nb-NO' : 'en-GB');
+  const clock = (date) => new Intl.DateTimeFormat(locale(), { hour: '2-digit', minute: '2-digit' }).format(date);
+  const dayKey = (date) => new Intl.DateTimeFormat('en-CA', { year: 'numeric', month: '2-digit', day: '2-digit', timeZone: 'Europe/Oslo' }).format(date);
+  function dayTitle(date) {
+    const text = new Intl.DateTimeFormat(locale(), { weekday: 'long', day: 'numeric', month: 'long', timeZone: 'Europe/Oslo' }).format(date);
+    return text.charAt(0).toUpperCase() + text.slice(1);
+  }
+  function roundDates(first, last) {
+    const format = new Intl.DateTimeFormat(locale(), { day: 'numeric', month: 'short', timeZone: 'Europe/Oslo' });
+    try { return dayKey(first) === dayKey(last) ? format.format(first) : format.formatRange(first, last); }
+    catch (error) { return format.format(first); }
+  }
+
   function spanText(ms) {
     const { unit, n } = spanParts(ms);
     return unit === 'now' ? t('predict.time.now') : t(`predict.time.${unit}`, { n });
@@ -75,6 +88,8 @@
     S.note = { text, kind };
     const box = document.getElementById('predict-note');
     if (box) { box.textContent = text; box.dataset.kind = kind; box.hidden = !text; }
+    clearTimeout(S.toastTimer);
+    if (kind !== 'error') S.toastTimer = setTimeout(() => { S.note = null; if (box) box.hidden = true; }, 4000);
   }
 
   /* An inline "are you sure": the button turns into the question with two answers (no window.confirm). */
@@ -181,6 +196,7 @@
         setStatus(key, slot, 'saved');
       }
       saveDraft(key);
+      store.set('predict.intro', 'seen');
       if (S.tab === 'tip') paintRing();
     } catch (error) {
       slots.forEach((slot) => setStatus(key, slot, 'error', errorText(error)));
@@ -196,10 +212,11 @@
   /* ---- the slider card ------------------------------------------------------------------------- */
 
   const EVEN = { g: 0, k: DRAW_TENTHS.normal };
+  const storedPercents = (pick) => (Number.isInteger(pick.h) ? [pick.h, pick.d, pick.a] : pickPercentages(pick.g, pick.k));
 
   function savedPick(record, slot) {
     const saved = record && record.entry && record.entry.p && record.entry.p[slot];
-    return saved ? { g: saved.g, k: saved.k, t: saved.t } : null;
+    return saved ? { g: saved.g, k: saved.k, h: saved.h, d: saved.d, a: saved.a, t: saved.t } : null;
   }
 
   function bar(percents, labelled = true) {
@@ -220,6 +237,34 @@
     });
   }
 
+  /* A club's crest from the site's own logos (by fotmob id); gone quietly when there is none. */
+  function crest(id) {
+    if (!id) return null;
+    const img = h('img', { class: 'pteam__crest', src: `/logos/${id}.webp`, alt: '', width: 28, height: 28, loading: 'lazy', decoding: 'async' });
+    img.addEventListener('error', () => img.remove());
+    return img;
+  }
+
+  /* Home on the left, away on the right: the same sides as the blue and red ends of the bar. */
+  function matchHead(info, centre, centreClass = 'pmatch__time') {
+    return h('div', { class: 'pmatch' },
+      h('span', { class: 'pteam pteam--home' }, crest(info.home_id), h('span', { class: 'pteam__name' }, info.home)),
+      h('span', { class: centreClass }, centre),
+      h('span', { class: 'pteam pteam--away' }, h('span', { class: 'pteam__name' }, info.away), crest(info.away_id)));
+  }
+
+  const OUTCOME_SIDE = { home_win: 'home', draw: 'draw', away_win: 'away' };
+  const OUTCOME_INDEX = { home_win: 0, draw: 1, away_win: 2 };
+
+  /* The bar is the slider. The middle of the draw block is always at the expected score
+     (home + draw / 2), so the gap under a finger is the logit of where the finger is: the draw
+     block follows the finger, whatever the draw tendency. */
+  function gapUnder(fraction) {
+    const e = Math.min(0.97, Math.max(0.03, fraction));
+    const gap = Math.round((400 * Math.log10(e / (1 - e))) / GAP.step) * GAP.step;
+    return Math.max(GAP.min, Math.min(GAP.max, gap));
+  }
+
   function buildCard(round, record, slot, info) {
     const key = round.key;
     const kickoff = info.kickoff;
@@ -231,25 +276,29 @@
     let fine = S.fine || pos.k !== DRAW_TENTHS.normal;
 
     const card = h('li', { class: 'pcard', data: { slot, round: key, state: locked ? 'locked' : tipped ? 'tipped' : 'untouched' } });
-    const teams = h('div', { class: 'pcard__teams' }, h('span', { class: 'pcard__home' }, info.home), h('span', { class: 'pcard__vs' }, '–'), h('span', { class: 'pcard__away' }, info.away));
-    card.append(h('div', { class: 'pcard__head' }, teams, h('span', { class: 'pcard__time' }, when(kickoff))));
-
     if (locked) {
+      const reveal = record && record.reveal && record.reveal.matches && record.reveal.matches[slot];
+      const result = reveal && reveal.result;
+      card.append(result ? matchHead(info, `${result.hg}–${result.ag}`, 'pmatch__score')
+        : matchHead(info, t('predict.live'), 'pmatch__time pmatch__time--live'));
       card.append(...lockedBody(round, record, slot, info, saved));
       return card;
     }
+    card.append(matchHead(info, clock(kickoff)));
 
     const pct = () => pickPercentages(pos.g, pos.k);
     const oddsBar = bar(pct());
     oddsBar.classList.add('pcard__bar');
     oddsBar.setAttribute('aria-hidden', 'true');
+    // The real control for keyboards and screen readers; visually it is the bar above.
     const range = h('input', { type: 'range', class: 'pcard__range', min: GAP.min, max: GAP.max, step: GAP.step, value: pos.g,
       attrs: { 'aria-label': t('predict.slider.label', { home: info.home, away: info.away }) } });
-    const fineRange = h('input', { type: 'range', class: 'pcard__range pcard__range--fine', min: DRAW_TENTHS.min, max: DRAW_TENTHS.max, step: 1,
+    const control = h('div', { class: 'pslider' }, oddsBar, range);
+
+    const panelId = `pp-${key}-${slot}`;
+    const fineRange = h('input', { type: 'range', class: 'pcard__fine-range', min: DRAW_TENTHS.min, max: DRAW_TENTHS.max, step: 1,
       value: pos.k, attrs: { 'aria-label': t('predict.fine.label') } });
-    const fineValue = h('span', { class: 'pcard__fine-value' });
-    const fineRow = h('div', { class: 'pcard__fine', hidden: !fine }, h('span', {}, t('predict.fine.title')), fineRange, fineValue);
-    const fineButton = h('button', { type: 'button', class: 'pbtn pbtn--small', attrs: { 'aria-pressed': String(fine) } }, t('predict.fine'));
+    const fineValue = h('output', { class: 'pcard__fine-value' });
     const inputs = {};
     const readout = h('div', { class: 'pcard__readout' });
     for (const outcome of ['h', 'd', 'a']) {
@@ -264,13 +313,18 @@
       });
       input.addEventListener('keydown', (event) => { if (event.key === 'Enter') input.blur(); });
     }
+    const panel = h('div', { class: 'pcard__panel', id: panelId, hidden: !fine },
+      h('label', { class: 'pcard__fine' }, h('span', {}, t('predict.fine.title')), fineRange, fineValue),
+      h('p', { class: 'pcard__hint' }, t('predict.fine.hint')), readout);
+    const fineButton = h('button', { type: 'button', class: 'pcard__more', attrs: { 'aria-expanded': String(fine), 'aria-controls': panelId } }, t('predict.fine'));
     const status = h('span', { class: 'pcard__status', attrs: { 'aria-live': 'polite' } });
-    card.append(oddsBar, range, fineRow, h('div', { class: 'pcard__foot' }, fineButton, readout, status));
+    card.append(control, h('div', { class: 'pcard__foot' }, status, fineButton), panel);
 
     function paint() {
       const p = pct();
       paintBar(oddsBar, p);
       range.value = pos.g;
+      range.setAttribute('aria-valuetext', t('predict.slider.value', { h: p[0], d: p[1], a: p[2] }));
       fineRange.value = pos.k;
       fineValue.textContent = `${fixed(pos.k / 10, 1)}×`;
       ['h', 'd', 'a'].forEach((o, i) => { if (document.activeElement !== inputs[o]) inputs[o].value = String(p[i]); });
@@ -281,12 +335,20 @@
     card.paintStatus = () => {
       const st = S.status[`${key}/${slot}`] || {};
       const current = savedPick(S.data[key], slot);
+      let state = st.state || (tipped ? 'pending' : 'untouched');
       if (st.state === 'saving') status.textContent = t('predict.saving');
-      else if (st.state === 'error') status.textContent = `${t('predict.notsaved')} ${st.message || ''}`;
+      else if (st.state === 'error') {
+        status.replaceChildren(`${t('predict.notsaved')} ${st.message || ''} `,
+          h('button', { type: 'button', class: 'pcard__retry', on: { click: () => flushSave(key) } }, t('predict.retry')));
+      }
       else if (!tipped) status.textContent = t('predict.drag');
-      else if (current && !((S.drafts[key] || {})[slot])) status.textContent = t('predict.saved', { ago: agoText(current.t instanceof Date ? current.t : new Date(now())) });
+      else if (current && !((S.drafts[key] || {})[slot])) {
+        const at = current.t instanceof Date ? current.t : new Date(now());
+        status.textContent = spanParts(now() - at.getTime()).unit === 'now' ? t('predict.saved.now') : t('predict.saved', { ago: agoText(at) });
+        state = 'saved';
+      }
       else status.textContent = t('predict.pending');
-      status.dataset.state = st.state || (tipped ? 'tipped' : 'untouched');
+      status.dataset.state = state;
     };
 
     function touch() {
@@ -303,55 +365,70 @@
     fineRange.addEventListener('input', () => { pos.k = Number(fineRange.value); touch(); paint(); });
     fineRange.addEventListener('change', release);
     fineButton.addEventListener('click', () => {
-      fine = !fine; S.fine = fine; fineRow.hidden = !fine;
-      fineButton.setAttribute('aria-pressed', String(fine));
+      fine = !fine; S.fine = fine; panel.hidden = !fine;
+      fineButton.setAttribute('aria-expanded', String(fine));
       if (!fine && pos.k !== DRAW_TENTHS.normal) { pos.k = DRAW_TENTHS.normal; if (tipped) { touch(); release(); } }
       paint();
     });
 
-    // Dragging across the bar itself; the page still scrolls up and down (touch-action: pan-y in the css).
+    // Dragging on the bar itself; the page still scrolls up and down (touch-action: pan-y in the css).
     let dragging = false;
     const move = (event) => {
       const box = oddsBar.getBoundingClientRect();
-      pos.g = gapAtFraction((event.clientX - box.left) / box.width);
+      pos.g = gapUnder((event.clientX - box.left) / box.width);
       touch(); paint();
     };
-    oddsBar.addEventListener('pointerdown', (event) => { dragging = true; oddsBar.setPointerCapture(event.pointerId); move(event); });
+    oddsBar.addEventListener('pointerdown', (event) => { dragging = true; card.classList.add('is-dragging'); oddsBar.setPointerCapture(event.pointerId); move(event); });
     oddsBar.addEventListener('pointermove', (event) => { if (dragging) move(event); });
-    const stop = () => { if (dragging) { dragging = false; release(); } };
+    const stop = () => { if (dragging) { dragging = false; card.classList.remove('is-dragging'); release(); } };
     oddsBar.addEventListener('pointerup', stop);
     oddsBar.addEventListener('pointercancel', stop);
-    oddsBar.removeAttribute('aria-hidden');
-    oddsBar.setAttribute('role', 'presentation');
 
     paint();
     return card;
   }
 
-  /* After kick-off: your pick, the model's and the crowd's, the result and the scores. */
+  /* After kick-off: a verdict first, then your odds, the model's and the crowd's with the outcome
+     that happened picked out, and the numbers behind it on request. */
   function lockedBody(round, record, slot, info, saved) {
     const parts = [];
     const reveal = record && record.reveal && record.reveal.matches && record.reveal.matches[slot];
-    const mine = saved ? pickPercentages(saved.g, saved.k) : null;
+    // Scores use the stored whole percents, never the slider position (the curve could change).
+    const mine = saved ? storedPercents(saved) : null;
+    const result = reveal && reveal.result;
+    const hit = result ? outcomeOf(result.hg, result.ag) : null;
+    const modelFractions = reveal && reveal.model ? [reveal.model.h, reveal.model.d, reveal.model.a] : null;
+    const own = hit && mine && modelFractions ? scoreOwnPick(mine, modelFractions, hit) : null;
+
+    if (own) {
+      const kind = own.vsModel > 0.0005 ? 'good' : own.vsModel < -0.0005 ? 'bad' : 'even';
+      parts.push(h('div', { class: 'pverdict', data: { kind } },
+        h('strong', { class: 'pverdict__chip' }, t(`predict.verdict.${kind}`)),
+        h('span', { class: 'pverdict__line' }, t('predict.reveal.gave', { pct: mine[OUTCOME_INDEX[hit]], outcome: t(`predict.outcome.${hit}`) }))));
+    } else if (!mine) {
+      parts.push(h('p', { class: 'pcard__note' }, t('predict.notip')));
+    }
+
     const rows = [];
-    const row = (label, percents, cls) => h('div', { class: `preveal__row ${cls || ''}` }, h('span', { class: 'preveal__who' }, label), bar(percents));
+    const row = (label, percents, cls) => {
+      const strip = bar(percents);
+      if (hit) strip.dataset.hit = OUTCOME_SIDE[hit];
+      return h('div', { class: `preveal__row ${cls || ''}` }, h('span', { class: 'preveal__who' }, label), strip);
+    };
     if (mine) rows.push(row(t('predict.you'), mine, 'preveal__row--you'));
-    else parts.push(h('p', { class: 'pcard__none' }, t('predict.notip')));
-    if (reveal && reveal.model) rows.push(row(t('predict.model'), [reveal.model.h * 100, reveal.model.d * 100, reveal.model.a * 100]));
+    if (modelFractions) rows.push(row(t('predict.model'), modelFractions.map((x) => x * 100)));
     if (reveal && reveal.crowd) rows.push(row(t('predict.crowd', { n: reveal.crowd.n }), [reveal.crowd.h, reveal.crowd.d, reveal.crowd.a]));
     if (rows.length) parts.push(h('div', { class: 'preveal' }, rows));
-    if (!reveal) parts.push(h('p', { class: 'pcard__locked' }, t('predict.locked')));
-    if (reveal && reveal.result) {
-      const { hg, ag } = reveal.result;
-      parts.push(h('p', { class: 'preveal__result' }, `${info.home} ${hg}–${ag} ${info.away}`));
-      if (mine && reveal.model) {
-        const result = outcomeOf(hg, ag);
-        const own = scoreOwnPick(mine, [reveal.model.h, reveal.model.d, reveal.model.a], result);
-        const lines = [t('predict.score', { brier: fixed(own.brier, 2), rps: fixed(own.rps, 2), vs: signed(own.vsModel) })];
-        if (reveal.crowd && reveal.crowd.med) lines.push(t('predict.median', { acc: signed(reveal.crowd.med.b - own.brier) }));
-        else lines.push(t('predict.median.later'));
-        parts.push(h('p', { class: 'preveal__score' }, lines.join(' · ')));
-      }
+    if (!reveal) parts.push(h('p', { class: 'pcard__note' }, t('predict.locked')));
+
+    if (own) {
+      const median = reveal.crowd && reveal.crowd.med ? signed(reveal.crowd.med.b - own.brier) : null;
+      const item = (label, value) => [h('dt', {}, label), h('dd', {}, value)];
+      parts.push(h('details', { class: 'pdetails' }, h('summary', {}, t('predict.details')),
+        h('dl', {}, item(t('predict.details.vs'), signed(own.vsModel)),
+          item(t('predict.details.median'), median === null ? t('predict.median.later') : median),
+          item('Brier', fixed(own.brier, 2)), item('RPS', fixed(own.rps, 2))),
+        h('p', {}, t('predict.details.help'))));
     }
     return parts;
   }
@@ -368,11 +445,11 @@
       if (!entry[slot]) continue;
       tipped += 1;
       if (!info.result || !info.model) continue;
-      const own = scoreOwnPick(pickPercentages(entry[slot].g, entry[slot].k), [info.model.h, info.model.d, info.model.a], outcomeOf(info.result.hg, info.result.ag));
+      const own = scoreOwnPick(storedPercents(entry[slot]), [info.model.h, info.model.d, info.model.a], outcomeOf(info.result.hg, info.result.ag));
       if (own.vsModel > 0) beat += 1;
       if (!best || own.vsModel > best.vs) best = { slot, vs: own.vsModel };
     }
-    return tipped ? { tipped, beat, best } : null;
+    return tipped ? { tipped, beat, best, total: Object.keys(reveal).length } : null;
   }
 
   /* ---- the tip view ------------------------------------------------------------------------------- */
@@ -380,7 +457,7 @@
   function leagueSwitch(onPick) {
     return h('div', { class: 'switch', attrs: { role: 'group', 'aria-label': t('predict.division') } },
       LEAGUES.map((league) => h('button', { type: 'button', data: { league }, attrs: { 'aria-pressed': String(S.league === league) },
-        on: { click: () => { S.league = league; onPick(); } } }, LEAGUE_NAME[league])));
+        on: { click: () => { S.league = league; store.set('predict.league', league); onPick(); } } }, LEAGUE_NAME[league])));
   }
 
   function ringNode(done, total) {
@@ -414,30 +491,48 @@
     const text = status === 'future' ? t('predict.status.future', { span: spanText(round.opens.getTime() - now()) })
       : status === 'open' ? t('predict.status.open', { span: spanText(round.closes.getTime() - now()) })
       : status === 'live' ? t('predict.status.live') : t('predict.status.done');
-    return h('span', { class: 'pbadge', data: { status } }, text);
+    const soon = status === 'open' && round.closes.getTime() - now() < 86400000;
+    return h('span', { class: 'pbadge', data: { status, soon: String(soon) } }, text);
+  }
+
+  /* How it works, shown until it is dismissed or the first pick is saved. */
+  function introPanel() {
+    if (store.get('predict.intro') === 'seen') return null;
+    const ok = h('button', { type: 'button', class: 'pbtn pbtn--small' }, t('predict.intro.ok'));
+    const box = h('section', { class: 'phow', attrs: { 'aria-labelledby': 'phow-title' } },
+      h('h2', { id: 'phow-title' }, t('predict.intro.title')),
+      h('ol', { class: 'phow__steps' }, ['1', '2', '3'].map((n) => h('li', {}, t(`predict.intro.step${n}`)))), ok);
+    ok.addEventListener('click', () => { store.set('predict.intro', 'seen'); box.remove(); });
+    return box;
   }
 
   function renderTip(root) {
-    root.append(h('p', { class: 'pintro' }, t('predict.intro')));
+    const intro = introPanel();
+    if (intro) root.append(intro);
     root.append(leagueSwitch(render));
     const rounds = leagueRounds(S.league);
     if (S.indexError || !rounds.length) { root.append(emptyState(S.indexError, loadAndRender, 'predict.empty.rounds')); return; }
     const round = currentRound(S.league);
     const at = rounds.indexOf(round);
+    const status = roundStatus(round, now());
+    const go = (to) => { S.roundAt[S.league] = to; render(); };
     const nav = h('div', { class: 'pnav' },
-      h('button', { type: 'button', class: 'pbtn pbtn--icon', hidden: at <= 0, attrs: { 'aria-label': t('predict.round.prev') },
-        on: { click: () => { S.roundAt[S.league] = at - 1; render(); } } }, '‹'),
-      h('div', { class: 'pnav__mid' }, h('h2', { class: 'pnav__title' }, t('predict.round', { n: round.round })), statusBadge(round)),
-      h('button', { type: 'button', class: 'pbtn pbtn--icon', hidden: at >= rounds.length - 1, attrs: { 'aria-label': t('predict.round.next') },
-        on: { click: () => { S.roundAt[S.league] = at + 1; render(); } } }, '›'),
-      h('div', { id: 'predict-ring', class: 'pnav__ring' }));
+      h('div', { class: 'pnav__round' },
+        h('button', { type: 'button', class: 'pbtn pbtn--icon', disabled: at <= 0, attrs: { 'aria-label': t('predict.round.prev') }, on: { click: () => go(at - 1) } }, '‹'),
+        h('div', { class: 'pnav__titles' },
+          h('h2', { class: 'pnav__title' }, t('predict.round', { n: round.round })),
+          h('span', { class: 'pnav__dates' }, roundDates(round.closes, round.last || round.closes))),
+        h('button', { type: 'button', class: 'pbtn pbtn--icon', disabled: at >= rounds.length - 1, attrs: { 'aria-label': t('predict.round.next') }, on: { click: () => go(at + 1) } }, '›')),
+      h('div', { class: 'pnav__side' }, statusBadge(round),
+        status === 'open' || status === 'live' ? h('div', { id: 'predict-ring', class: 'pnav__ring' }) : null));
     root.append(nav);
-    const body = h('div', { class: 'pround' }, h('p', { class: 'pload' }, t('predict.loading')));
-    root.append(body);
-    const key = round.key;
+    // Placeholder cards with the real cards' shape, so nothing jumps when they arrive.
+    const skeleton = h('div', { class: 'pround', attrs: { 'aria-busy': 'true', 'aria-label': t('predict.loading') } },
+      [0, 1, 2].map(() => h('div', { class: 'pcard pskeleton', attrs: { 'aria-hidden': 'true' } }, h('span'), h('span'), h('span'))));
+    root.append(skeleton);
     ensureRound(round).then((record) => {
       if (S.tab !== 'tip' || currentRound(S.league) !== round) return;
-      body.replaceChildren(roundBody(round, record));
+      skeleton.replaceWith(roundBody(round, record));
       paintRing();
     });
   }
@@ -446,21 +541,40 @@
     if (record.error && !record.fixture) return emptyState(record.error, () => { ensureRound(round, true).then(render); }, null);
     if (!record.fixture) return h('p', { class: 'pempty' }, t('predict.empty.fixture'));
     const slots = record.fixture.slots;
-    const keys = Object.keys(slots).sort((a, b) => Number(a.slice(1)) - Number(b.slice(1)));
+    const keys = Object.keys(slots).sort((a, b) => slots[a].kickoff - slots[b].kickoff || Number(a.slice(1)) - Number(b.slice(1)));
     const status = roundStatus(round, now());
-    const out = h('div', {});
+    const out = h('div', { class: 'pround' });
+    // One heading per matchday, the cards under it.
+    const byDay = (make) => {
+      const days = [];
+      for (const k of keys) {
+        const day = dayKey(slots[k].kickoff);
+        if (!days.length || days[days.length - 1].day !== day) days.push({ day, date: slots[k].kickoff, keys: [] });
+        days[days.length - 1].keys.push(k);
+      }
+      return days.map((d) => h('section', { class: 'pday' }, h('h3', { class: 'pday__title' }, dayTitle(d.date)),
+        h('ol', { class: 'plist' }, d.keys.map(make))));
+    };
     const recap = recapOf(round, record);
     if (recap) {
-      const best = recap.best ? slots[recap.best.slot] : null;
-      const text = t('predict.recap', { tipped: recap.tipped, beat: recap.beat }) + (best ? ' ' + t('predict.recap.best', { match: `${best.home}–${best.away}` }) : '');
-      out.append(h('div', { class: 'precap' }, h('p', {}, text), h('button', { type: 'button', class: 'pbtn pbtn--small', on: { click: () => shareText(text) } }, t('predict.share'))));
+      const best = recap.best && recap.best.vs > 0 ? slots[recap.best.slot] : null;
+      const text = t('predict.recap', { tipped: recap.tipped, total: recap.total, round: round.round, beat: recap.beat });
+      const stat = (value, label) => h('div', { class: 'precap__stat' }, h('strong', {}, value), h('span', {}, label));
+      out.append(h('section', { class: 'precap', attrs: { 'aria-label': t('predict.recap.title') } },
+        h('div', { class: 'precap__stats' },
+          stat(`${recap.tipped}/${recap.total}`, t('predict.recap.tipped')),
+          stat(String(recap.beat), t('predict.recap.beat')),
+          best ? stat(`${best.home}–${best.away}`, t('predict.recap.bestLabel')) : null),
+        h('button', { type: 'button', class: 'pbtn pbtn--small', on: { click: () => shareText(text) } }, t('predict.share'))));
     }
     if (status === 'future') {
-      out.append(h('p', { class: 'pempty' }, t('predict.status.future', { span: spanText(round.opens.getTime() - now()) })));
-      out.append(h('ol', { class: 'plist plist--preview' }, keys.map((k) => h('li', { class: 'pcard pcard--preview' },
-        h('div', { class: 'pcard__head' }, h('div', { class: 'pcard__teams' }, `${slots[k].home} – ${slots[k].away}`), h('span', { class: 'pcard__time' }, when(slots[k].kickoff)))))));
+      out.append(h('p', { class: 'popens' }, t('predict.opens', { when: when(round.opens) })));
+      out.append(...byDay((k) => h('li', { class: 'pcard pcard--preview' }, matchHead(slots[k], clock(slots[k].kickoff)),
+        h('div', { class: 'pghost', attrs: { 'aria-hidden': 'true' } }, h('span'), h('span'), h('span')))));
     } else {
-      out.append(h('ol', { class: 'plist' }, keys.map((k) => buildCard(round, record, k, slots[k]))));
+      out.append(...byDay((k) => buildCard(round, record, k, slots[k])));
+      // A draft left from an earlier visit (closed tab, lost connection) is saved now, not forgotten.
+      if (status === 'open' && Object.keys(loadDraft(round.key)).length) scheduleSave(round.key);
     }
     out.append(h('p', { class: 'pfoot' }, h('a', { href: '/predict/rounds.ics' }, t('predict.calendar')),
       status === 'live' ? h('button', { type: 'button', class: 'pbtn pbtn--small', on: { click: () => ensureRound(round, true).then(render) } }, t('predict.refresh')) : null));
@@ -475,7 +589,12 @@
 
   function emptyState(error, retry, emptyKey) {
     const box = h('div', { class: 'pempty', attrs: { role: 'status' } });
-    box.append(h('p', {}, error && error.code && error.code !== 'empty' ? errorText(error) : t(emptyKey || 'predict.empty.generic')));
+    const code = error && error.code;
+    // Nothing there is an invitation; a failed read says so and offers a retry. Only the network,
+    // the quota and the server have their own words; anything else on a read is "could not load".
+    const text = !code || code === 'empty' ? t(emptyKey || 'predict.empty.generic')
+      : ['offline', 'quota', 'server'].includes(code) ? errorText(error) : t('predict.err.load');
+    box.append(h('p', {}, text));
     if (retry) box.append(h('button', { type: 'button', class: 'pbtn', on: { click: retry } }, t('predict.retry')));
     return box;
   }
@@ -511,7 +630,7 @@
     const status = h('p', { class: 'ptable__status', attrs: { 'aria-live': 'polite' } });
     const paint = () => {
       list.replaceChildren(...order.map((id, i) => {
-        const row = h('li', { class: 'ptable__row', data: { id } },
+        const row = h('li', { class: 'ptable__row', data: { id, zone: zoneOf(i, order.length) } },
           h('span', { class: 'ptable__pos' }, String(i + 1)), h('span', { class: 'ptable__name' }, game.names[id]));
         if (state === 'open') {
           const handle = h('button', { type: 'button', class: 'ptable__grip', attrs: { 'aria-label': t('predict.table.drag', { club: game.names[id] }) } }, '⋮⋮');
@@ -525,6 +644,10 @@
       status.textContent = state === 'closed' ? t('predict.table.closed') : state === 'soon' ? t('predict.table.soon', { span: spanText(game.opens.getTime() - now()) })
         : saved ? t('predict.table.saved') : t('predict.table.unsaved', { span: spanText(game.closes.getTime() - now()) });
     };
+    const zoneOf = (i, n) => (S.league === 'eliteserien' ? (i === 0 ? 'champion' : i >= n - 2 ? 'relegation' : '')
+      : (i < 2 ? 'promotion' : i >= n - 2 ? 'relegation' : ''));
+    const legend = h('ul', { class: 'pzones', attrs: { 'aria-label': t('predict.zones') } },
+      (S.league === 'eliteserien' ? ['champion', 'relegation'] : ['promotion', 'relegation']).map((z) => h('li', { data: { zone: z } }, t(`predict.zone.${z}`))));
     const shift = (i, by) => { const [moved] = order.splice(i, 1); order.splice(i + by, 0, moved); saved = false; paint(); };
     function grip(handle, row) {
       handle.addEventListener('pointerdown', (event) => {
@@ -553,16 +676,16 @@
       catch (error) { status.textContent = `${t('predict.notsaved')} ${errorText(error)}`; }
     } } }, t('predict.table.save'));
     paint();
-    return h('div', {}, list, status, save, rules);
+    return h('div', {}, legend, list, h('div', { class: 'ptable__bar', hidden: state !== 'open' }, status, save), state === 'open' ? null : status, rules);
   }
 
   /* ---- boards ---------------------------------------------------------------------------------------------- */
 
   async function renderBoards(root) {
-    root.append(leagueSwitch(render));
     const scopes = ['season', 'round', 'last10'];
-    root.append(h('div', { class: 'switch', attrs: { role: 'group', 'aria-label': t('predict.scope') } },
-      scopes.map((scope) => h('button', { type: 'button', attrs: { 'aria-pressed': String(S.scope === scope) }, on: { click: () => { S.scope = scope; render(); } } }, t(`predict.scope.${scope}`)))));
+    root.append(h('div', { class: 'ptoolbar' }, leagueSwitch(render),
+      h('div', { class: 'switch', attrs: { role: 'group', 'aria-label': t('predict.scope') } },
+        scopes.map((scope) => h('button', { type: 'button', attrs: { 'aria-pressed': String(S.scope === scope) }, on: { click: () => { S.scope = scope; render(); } } }, t(`predict.scope.${scope}`))))));
     const body = h('div', {}, h('p', { class: 'pload' }, t('predict.loading')));
     root.append(body);
     const season = S.index && S.index.season;
@@ -580,18 +703,28 @@
 
   function boardTable(board) {
     if (!board || !board.rows || !board.rows.length) return h('p', { class: 'pempty' }, t('predict.board.empty'));
-    const head = ['rank', 'name', 'n', 'ab', 'ar', 'b', 'r', 'streak'].map((c) => h('th', { scope: 'col', class: `pboard__${c}` }, t(`predict.col.${c}`)));
+    // Rank, name, matches and the headline score always; the rest from tablet width up.
+    const columns = [['rank', ''], ['name', ''], ['n', ''], ['ab', ''], ['ar', 'is-extra'], ['b', 'is-extra'], ['r', 'is-extra'], ['streak', 'is-extra']];
+    const head = columns.map(([c, cls]) => h('th', { scope: 'col', class: `pboard__${c} ${cls}` }, t(`predict.col.${c}`)));
+    const tone = (value) => (value > 0.00005 ? 'good' : value < -0.00005 ? 'bad' : 'even');
     const rows = board.rows.map((row) => {
-      const mine = S.ownHash && row.u === S.ownHash;
-      const name = h('td', { class: 'pboard__name' }, row.nick || t('predict.anon'));
-      if (row.kind === 'player' && row.nick && !mine) {
-        name.append(h('button', { type: 'button', class: 'plink', attrs: { 'aria-label': t('predict.report.label', { name: row.nick }) }, on: { click: (e) => report(row, e.currentTarget) } }, t('predict.report')));
+      const mine = Boolean(S.ownHash && row.u === S.ownHash);
+      const name = h('td', { class: 'pboard__name' }, h('span', { class: 'pboard__nick' }, row.nick || t('predict.anon')));
+      if (mine) name.append(h('span', { class: 'ptag ptag--you' }, t('predict.tag.you')));
+      else if (row.kind === 'model' || row.kind === 'crowd') name.append(h('span', { class: `ptag ptag--${row.kind}` }, t(`predict.tag.${row.kind}`)));
+      else if (row.kind === 'player' && row.nick) {
+        name.append(h('button', { type: 'button', class: 'preport', title: t('predict.report.label', { name: row.nick }),
+          attrs: { 'aria-label': t('predict.report.label', { name: row.nick }) }, on: { click: (e) => report(row, e.currentTarget) } }, '⚑'));
       }
-      return h('tr', { class: 'pboard__row', data: { kind: row.kind, mine: String(Boolean(mine)) } },
-        h('td', { class: 'pboard__rank' }, String(row.rank)), name, h('td', {}, String(row.n)), h('td', {}, signed(row.ab)), h('td', {}, signed(row.ar)),
-        h('td', {}, row.b === null ? '–' : fixed(row.b, 2)), h('td', {}, row.r === null ? '–' : fixed(row.r, 2)), h('td', {}, row.streak === null || row.streak === undefined ? '–' : String(row.streak)));
+      return h('tr', { class: 'pboard__row', data: { kind: row.kind, mine: String(mine) } },
+        h('td', { class: 'pboard__rank' }, String(row.rank)), name, h('td', {}, String(row.n)),
+        h('td', { class: 'pboard__ab', data: { tone: tone(row.ab) } }, signed(row.ab)),
+        h('td', { class: 'is-extra' }, signed(row.ar)),
+        h('td', { class: 'is-extra' }, row.b === null ? '–' : fixed(row.b, 2)), h('td', { class: 'is-extra' }, row.r === null ? '–' : fixed(row.r, 2)),
+        h('td', { class: 'is-extra' }, row.streak === null || row.streak === undefined ? '–' : String(row.streak)));
     });
-    return h('div', { class: 'pboard' }, h('table', {}, h('thead', {}, h('tr', {}, head)), h('tbody', {}, rows)),
+    return h('div', { class: 'pboard' }, h('p', { class: 'pboard__key' }, t('predict.board.key')),
+      h('div', { class: 'pscroll' }, h('table', {}, h('thead', {}, h('tr', {}, head)), h('tbody', {}, rows))),
       h('p', { class: 'pboard__note' }, t('predict.board.note', { players: groupThousands(board.players || 0, lang()) })));
   }
 
@@ -599,10 +732,11 @@
     if (S.scope !== 'season' || !board || !board.pct || !board.pct.length || !S.stats) return h('span');
     const mine = seasonTotals(S.stats, season, S.league);
     if (!mine.n) return h('p', { class: 'pboard__me' }, t('predict.board.notyet'));
-    const below = board.pct.filter((v) => v < mine.ab).length;
-    const top = Math.max(1, 100 - Math.round(below));
-    const listed = S.ownHash && board.rows.some((r) => r.u === S.ownHash);
-    return h('p', { class: 'pboard__me' }, t(listed ? 'predict.board.you.listed' : 'predict.board.you', { top, ab: signed(mine.ab), n: mine.n }));
+    // Share of players you beat: the percentile table has 101 cut-offs (0 to 100 %).
+    const beat = Math.max(0, Math.min(100, board.pct.filter((v) => v < mine.ab).length - 1));
+    const own = S.ownHash && board.rows.find((r) => r.u === S.ownHash);
+    return h('p', { class: 'pboard__me' }, own ? t('predict.board.you.listed', { rank: own.rank, beat })
+      : t('predict.board.you', { beat, ab: signed(mine.ab), n: mine.n }));
   }
 
   async function report(row, button) {
@@ -610,7 +744,9 @@
     try {
       await ensureAccount();
       await client.commit(reportWrites(config, client.uid, row.nick, randomId()));
-      button.textContent = t('predict.reported');
+      button.textContent = '✓';
+      button.setAttribute('aria-label', t('predict.reported'));
+      button.title = t('predict.reported');
     } catch (error) { button.disabled = false; toast(errorText(error), 'error'); }
   }
 
@@ -621,7 +757,7 @@
     const box = h('section', { class: 'pleagues' }, h('h2', {}, t('predict.leagues.title')), h('p', { class: 'pintro' }, t('predict.leagues.intro')));
     const shown = h('div', { class: 'pleagues__board' });
     const list = h('ul', { class: 'pleagues__list' }, S.myLeagues.map((entry) => h('li', {},
-      h('button', { type: 'button', class: 'plink', on: { click: () => showLeague(entry.code, shown) } }, `${entry.name} · ${entry.code}`))));
+      h('button', { type: 'button', class: 'pchip', on: { click: () => showLeague(entry.code, shown) } }, h('span', {}, entry.name), h('code', {}, entry.code)))));
     const nameInput = h('input', { type: 'text', class: 'pfield', maxLength: 30, attrs: { 'aria-label': t('predict.leagues.name'), placeholder: t('predict.leagues.name') } });
     const codeInput = h('input', { type: 'text', class: 'pfield', maxLength: 8, attrs: { 'aria-label': t('predict.leagues.code'), placeholder: t('predict.leagues.code'), autocapitalize: 'characters' } });
     const message = h('p', { class: 'pleagues__msg', attrs: { 'aria-live': 'polite' } });
@@ -655,7 +791,11 @@
         render();
       } catch (error) { message.textContent = errorText(error); }
     } } }, t('predict.leagues.join'));
-    box.append(list, h('div', { class: 'pleagues__form' }, nameInput, create), h('div', { class: 'pleagues__form' }, codeInput, join), message, shown);
+    box.append(list,
+      h('div', { class: 'pleagues__forms' },
+        h('label', { class: 'pfieldset' }, h('span', {}, t('predict.leagues.create')), h('span', { class: 'pinline' }, nameInput, create)),
+        h('label', { class: 'pfieldset' }, h('span', {}, t('predict.leagues.join')), h('span', { class: 'pinline' }, codeInput, join))),
+      message, shown);
     return box;
   }
 
@@ -683,10 +823,10 @@
 
   function profileSection() {
     const profile = S.profile || {};
-    const nick = h('input', { type: 'text', class: 'pfield', value: profile.nick || '', maxLength: 20, attrs: { 'aria-label': t('predict.me.nick') } });
+    const nick = h('input', { type: 'text', class: 'pfield', value: profile.nick || '', maxLength: 20, id: 'pnick', attrs: { autocomplete: 'off', spellcheck: 'false' } });
     const message = h('p', { class: 'pme__msg', attrs: { 'aria-live': 'polite' } });
     const change = h('button', { type: 'button', class: 'pbtn', on: { click: async () => {
-      const next = nick.value;
+      const next = nick.value.trim();
       const problems = nickProblems(next);
       if (problems.includes('format')) { message.textContent = t('predict.nick.format'); return; }
       if (problems.includes('reserved') || nickBlocked(next)) { message.textContent = t('predict.nick.reserved'); return; }
@@ -701,36 +841,45 @@
         message.textContent = t('predict.nick.saved');
       } catch (error) { message.textContent = error.code === 'denied' ? t('predict.nick.taken') : errorText(error); }
     } } }, t('predict.nick.change'));
-    const hidden = h('input', { type: 'checkbox', checked: Boolean(profile.hidden), on: { change: async (e) => {
-      try { await client.commit(profileUpdateWrites(config, client.uid, { hidden: e.target.checked })); S.profile = { ...profile, hidden: e.target.checked }; }
+    const hidden = h('input', { type: 'checkbox', class: 'pswitch', checked: Boolean(profile.hidden), attrs: { role: 'switch' }, on: { change: async (e) => {
+      try { await client.commit(profileUpdateWrites(config, client.uid, { hidden: e.target.checked })); S.profile = { ...S.profile, hidden: e.target.checked }; }
       catch (error) { e.target.checked = !e.target.checked; toast(errorText(error), 'error'); }
     } } });
-    const clubs = ['', ...new Set(((S.index && S.index.clubs) || []))];
-    const club = h('input', { type: 'text', class: 'pfield', value: profile.club || '', maxLength: 40, attrs: { 'aria-label': t('predict.me.club') },
-      on: { change: async (e) => { try { await client.commit(profileUpdateWrites(config, client.uid, { club: e.target.value.trim() })); } catch (error) { toast(errorText(error), 'error'); } } } });
-    void clubs;
-    return h('section', { class: 'pme' }, h('h2', {}, t('predict.me.title')),
-      h('label', { class: 'pme__row' }, h('span', {}, t('predict.me.nick')), nick, change), message,
-      h('label', { class: 'pme__row pme__row--check' }, hidden, h('span', {}, t('predict.me.hidden'))),
-      h('label', { class: 'pme__row' }, h('span', {}, t('predict.me.club')), club));
+    // The clubs of the rounds already loaded, as suggestions.
+    const names = new Set();
+    Object.values(S.data).forEach((record) => Object.values((record.fixture && record.fixture.slots) || {}).forEach((m) => { names.add(m.home); names.add(m.away); }));
+    const list = h('datalist', { id: 'pclubs' }, [...names].sort((a, b) => a.localeCompare(b, 'nb')).map((n) => h('option', { value: n })));
+    const club = h('input', { type: 'text', class: 'pfield', value: profile.club || '', maxLength: 40, id: 'pclub', attrs: { list: 'pclubs', autocomplete: 'off' },
+      on: { change: async (e) => { try { await client.commit(profileUpdateWrites(config, client.uid, { club: e.target.value.trim() })); toast(t('predict.me.clubSaved')); } catch (error) { toast(errorText(error), 'error'); } } } });
+    return h('section', { class: 'ppanel pme' }, h('h2', {}, t('predict.me.title')),
+      h('div', { class: 'pfieldset' }, h('label', { attrs: { for: 'pnick' } }, t('predict.me.nick')), h('div', { class: 'pinline' }, nick, change)), message,
+      h('label', { class: 'pswitch-row' }, h('span', {}, h('strong', {}, t('predict.me.hidden')), h('small', {}, t('predict.me.hiddenHelp'))), hidden),
+      h('div', { class: 'pfieldset' }, h('label', { attrs: { for: 'pclub' } }, t('predict.me.club')), club, list));
   }
 
   function statsSection() {
     const season = S.index && S.index.season;
     const totals = season ? seasonTotals(S.stats, season) : { n: 0, ab: 0, ar: 0, b: 0, r: 0, vm: 0, rounds: 0 };
     const streak = streakNow();
-    const box = h('section', { class: 'pstats' }, h('h2', {}, t('predict.stats.title')));
+    const box = h('section', { class: 'ppanel pstats' }, h('h2', {}, t('predict.stats.title')));
     if (!totals.n) { box.append(h('p', { class: 'pempty' }, t('predict.stats.none'))); return box; }
-    const cell = (label, value) => h('div', { class: 'pstats__cell' }, h('dt', {}, label), h('dd', {}, value));
-    box.append(h('dl', { class: 'pstats__grid' },
-      cell(t('predict.col.n'), String(totals.n)), cell(t('predict.col.ab'), signed(totals.ab)), cell(t('predict.col.ar'), signed(totals.ar)),
-      cell(t('predict.col.b'), fixed(totals.b / totals.n, 2)), cell(t('predict.col.r'), fixed(totals.r / totals.n, 2)),
-      cell(t('predict.stats.vm'), signed(totals.vm)), cell(t('predict.stats.streak'), `${streak.current} (${t('predict.stats.best', { n: streak.best })})`)));
+    const tone = (value) => (value > 0.00005 ? 'good' : value < -0.00005 ? 'bad' : 'even');
+    const big = (label, value, toneOf) => h('div', { class: 'pstat', data: { tone: toneOf || 'even' } }, h('dd', {}, value), h('dt', {}, label));
+    box.append(h('dl', { class: 'pstats__hero' },
+      big(t('predict.col.n'), String(totals.n)),
+      big(t('predict.stats.acc'), signed(totals.ab), tone(totals.ab)),
+      big(t('predict.stats.vm'), signed(totals.vm), tone(totals.vm)),
+      big(t('predict.stats.streak'), String(streak.current))));
+    const small = (label, value) => [h('dt', {}, label), h('dd', {}, value)];
+    box.append(h('dl', { class: 'pstats__more' },
+      small(t('predict.col.ar'), signed(totals.ar)), small(t('predict.col.b'), fixed(totals.b / totals.n, 2)),
+      small(t('predict.col.r'), fixed(totals.r / totals.n, 2)), small(t('predict.stats.bestStreak'), String(streak.best))));
     const badges = badgesFor({ tips: totals.n, totals, streak: streak.best });
-    box.append(h('ul', { class: 'pbadges' }, badges.map((b) => h('li', { class: 'pbadge pbadge--b', data: { earned: String(b.earned) } }, t(`predict.badge.${b.id}`)))));
+    box.append(h('h3', {}, t('predict.badges')), h('ul', { class: 'pbadges' }, badges.map((b) => h('li', { class: 'pbadge pbadge--b', data: { earned: String(b.earned) } },
+      h('span', { attrs: { 'aria-hidden': 'true' } }, b.earned ? '✓' : '○'), t(`predict.badge.${b.id}`)))));
     const chart = h('div', { class: 'pcal' });
     box.append(totals.n >= 30 ? h('button', { type: 'button', class: 'pbtn', on: { click: (e) => { e.currentTarget.remove(); calibration(chart); } } }, t('predict.cal.show'))
-      : h('p', { class: 'pintro' }, t('predict.cal.later', { n: 30 - totals.n })), chart);
+      : h('p', { class: 'pmuted' }, t('predict.cal.later', { n: 30 - totals.n })), chart);
     return box;
   }
 
@@ -853,8 +1002,9 @@
         S.profile = null; S.stats = null;
       } catch (error) { message.textContent = errorText(error); }
     });
-    return h('section', { class: 'pdata' }, h('h2', {}, t('predict.data.title')), signedIn ? googleBlock() : null,
-      h('p', {}, t('predict.data.text')), client.uid ? del : null, message);
+    const data = h('section', { class: 'ppanel pdata' }, h('h2', {}, t('predict.data.title')), signedIn ? googleBlock() : null, h('p', { class: 'pmuted' }, t('predict.data.text')));
+    if (!client.uid) return data;
+    return h('div', {}, data, h('section', { class: 'ppanel pdanger' }, h('h2', {}, t('predict.danger.title')), h('p', {}, t('predict.danger.text')), del, message));
   }
 
   function resetLocal() {
@@ -869,11 +1019,12 @@
   function renderTabs() {
     const holder = document.getElementById('predict-tabs');
     holder.replaceChildren(h('div', { class: 'switch', attrs: { role: 'group', 'aria-label': t('predict.tabs') } },
-      TABS.map((tab) => h('button', { type: 'button', data: { tab }, attrs: { 'aria-pressed': String(S.tab === tab) }, on: { click: () => { S.tab = tab; render(); } } }, t(`predict.tab.${tab}`)))));
+      TABS.map((tab) => h('button', { type: 'button', data: { tab }, attrs: { 'aria-pressed': String(S.tab === tab) }, on: { click: () => openTab(tab) } }, t(`predict.tab.${tab}`)))));
   }
 
   function render() {
     renderTabs();
+    document.title = S.tab === 'tip' ? `${t('predict.title')} — EliteTracker` : `${t(`predict.tab.${S.tab}`)} · ${t('predict.title')} — EliteTracker`;
     const root = document.getElementById('predict-view');
     root.replaceChildren();
     root.dataset.tab = S.tab;
@@ -890,7 +1041,20 @@
     render();
   }
 
+  /* Each section has an address (#table, #boards, #me), so a link can open it and Back works. */
+  function openTab(tab) {
+    S.tab = tab;
+    const hash = tab === 'tip' ? '' : `#${tab}`;
+    if (location.hash !== hash) history.pushState(null, '', hash || location.pathname + location.search);
+    render();
+  }
+  const tabFromHash = () => (TABS.includes(location.hash.slice(1)) ? location.hash.slice(1) : 'tip');
+  window.addEventListener('popstate', () => { S.tab = tabFromHash(); render(); });
+
   async function boot() {
+    S.tab = tabFromHash();
+    const remembered = store.get('predict.league');
+    if (LEAGUES.includes(remembered)) S.league = remembered;
     await loadIndex();
     if (client.uid) loadProfile();
     render();
@@ -906,7 +1070,6 @@
 
   function translateStatic() {
     document.querySelectorAll('[data-t]').forEach((node) => { node.textContent = t(node.dataset.t); });
-    document.title = t('predict.title');
   }
 
   document.querySelectorAll('.doc__top [data-lang]').forEach((button) => {

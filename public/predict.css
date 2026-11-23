@@ -1,142 +1,337 @@
-/* Predict (/predict/): the game's own styles, on top of styles.css (its variables, the
-   .odds bar, .switch). Mobile first: the card is one column, controls are 44 px or more,
-   and the slider thumb is 2.75rem tall like the model page's. */
+/* Predict (/predict/): the game's own styles, on top of styles.css (its tokens, the .odds bar,
+   .switch). One idea carries the page: the odds bar is the control, and its grey draw block is
+   the handle you drag. Everything around it stays quiet. Mobile first; targets are 44 px or more;
+   the bar is 2.75rem tall like the model page's slider thumb. */
 
-.predict { max-width: 46rem; padding-block: 1.25rem 4rem; }
+.predict { max-width: 44rem; padding-block: 1.25rem 4rem; }
 .predict .doc__top { display: flex; justify-content: space-between; align-items: center; gap: 1rem; }
 .predict .doc__top a { color: var(--ink-muted); text-decoration: none; font-weight: 600; }
-.predict h1 { font-size: clamp(1.9rem, 6vw, 2.5rem); margin: 0.25rem 0 0.75rem; }
-.predict h2 { font-size: 1.2rem; margin: 1.5rem 0 0.5rem; }
-.predict .doc__head { margin-top: 1.5rem; }
+.predict .doc__head { margin-top: 1.25rem; }
+.predict h1 { font-size: clamp(2rem, 7vw, 2.75rem); line-height: 1; margin: 0 0 0.4rem; letter-spacing: -0.02em; }
+.ptagline { margin: 0 0 1.1rem; color: var(--ink-muted); max-width: 34rem; }
+.predict h2 { font-size: 1.125rem; margin: 0 0 0.75rem; }
+.predict h3 { font-size: 0.9375rem; margin: 1.25rem 0 0.5rem; }
 .predict .doc__foot { margin-top: 3rem; padding-top: 1rem; border-top: 1px solid var(--rule); font-size: 0.875rem; color: var(--ink-muted); }
 .predict .doc__foot a { color: var(--ink); }
 
-.ptabs { margin: 0.75rem 0 1rem; overflow-x: auto; }
-.ptabs .switch { display: flex; width: 100%; }
-.ptabs .switch button { flex: 1; min-height: 44px; }
-.pload, .pempty { color: var(--ink-muted); padding: 1rem 0; }
-.pintro { color: var(--ink-muted); max-width: var(--measure); margin: 0.25rem 0 1rem; }
+.pmuted, .pload, .pempty { color: var(--ink-muted); }
+.pload, .pempty { padding: 1rem 0; }
+.pintro { color: var(--ink-muted); max-width: var(--measure); margin: 0 0 1rem; }
 
-#predict-note:empty { display: none; }
-#predict-note .ptoast, #predict-note > * { margin: 0 0 0.75rem; padding: 0.6rem 0.85rem; border-left: 3px solid var(--accent); background: var(--panel-sunk); border-radius: 0 var(--radius-sm) var(--radius-sm) 0; }
-#predict-note [data-kind="error"] { border-left-color: var(--outcome-bad); }
+/* ---- navigation ------------------------------------------------------------------------ */
 
-/* Buttons */
+.ptabs { margin: 0 0 1.25rem; }
+/* Switches are as wide as their buttons; only the section tabs span the column. */
+.predict .switch[aria-label] { display: inline-flex; max-width: 100%; }
+.ptabs .switch[aria-label] { display: flex; width: 100%; }
+.ptabs .switch button { flex: 1; min-height: 44px; font-weight: 700; }
+.ptoolbar { display: flex; flex-wrap: wrap; gap: 0.5rem; margin: 0 0 1rem; }
+.ptoolbar .switch button { min-height: 40px; }
+
+#predict-note:empty, #predict-note[hidden] { display: none; }
+#predict-note { position: sticky; top: 0.5rem; z-index: 20; margin: 0 0 0.75rem; padding: 0.65rem 0.9rem; border-radius: var(--radius-sm);
+  background: var(--panel); border: 1px solid var(--rule-strong); box-shadow: var(--shadow); font-weight: 600; }
+#predict-note[data-kind="error"] { border-color: var(--outcome-bad); color: var(--outcome-bad-ink); }
+
+/* The round bar stays in view while the cards scroll: where you are and how far you have come. */
+.pnav {
+  position: sticky; top: 0; z-index: 10; display: flex; align-items: center; gap: 0.5rem;
+  margin: 0.25rem 0 1rem; padding: 0.5rem 0;
+  background: color-mix(in srgb, var(--paper) 88%, transparent);
+  backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+  border-bottom: 1px solid var(--rule);
+}
+.pnav { justify-content: space-between; flex-wrap: wrap; }
+.pnav__round { display: flex; align-items: center; gap: 0.25rem; }
+.pnav__titles { display: grid; justify-items: center; min-width: 5.5rem; line-height: 1.15; }
+.pnav__title { margin: 0; font-size: 1.2rem; }
+.pnav__dates { font-size: 0.75rem; color: var(--ink-muted); font-weight: 600; }
+.pnav__side { display: flex; align-items: center; gap: 0.6rem; }
+.pring { display: inline-flex; align-items: center; gap: 0.4rem; }
+.pring svg { width: 2rem; height: 2rem; }
+.pring__track { fill: none; stroke: var(--rule); stroke-width: 4; }
+.pring__arc { fill: none; stroke: var(--accent); stroke-width: 4; stroke-linecap: round; transition: stroke-dasharray 200ms var(--ease); }
+.pring[data-complete="true"] .pring__arc { stroke: var(--edge-ecl); }
+.pring__text { font-weight: 800; font-variant-numeric: tabular-nums; }
+.pbadge { display: inline-block; padding: 0.15rem 0.6rem; border-radius: 999px; font-size: 0.75rem; font-weight: 700;
+  background: var(--panel-sunk); border: 1px solid var(--rule); color: var(--ink-muted); }
+.pbadge[data-status="open"] { color: var(--accent-ink); border-color: var(--accent); }
+.pbadge[data-soon="true"] { color: var(--edge-el); border-color: var(--edge-el); }
+.pbadge[data-status="live"] { color: var(--outcome-bad-ink); border-color: var(--outcome-bad); }
+
+/* ---- how it works (until dismissed) ----------------------------------------------------- */
+
+.phow { margin: 0 0 1.25rem; padding: 1rem 1.1rem; border-left: 4px solid var(--draw); background: var(--panel); border-radius: 0 var(--radius) var(--radius) 0; }
+.phow h2 { margin-bottom: 0.5rem; }
+.phow__steps { margin: 0 0 0.85rem; padding-left: 1.25rem; display: grid; gap: 0.35rem; max-width: var(--measure); }
+.phow__steps li::marker { font-weight: 800; color: var(--ink-muted); }
+
+/* ---- buttons ---------------------------------------------------------------------------- */
+
 .pbtn {
   min-height: 44px; padding: 0 1rem; display: inline-flex; align-items: center; justify-content: center; gap: 0.4rem;
   background: var(--panel); color: var(--ink); border: 1px solid var(--rule-strong); border-radius: 999px;
-  font: inherit; font-weight: 600; cursor: pointer;
+  font: inherit; font-weight: 700; cursor: pointer; white-space: nowrap;
 }
 .pbtn:hover { border-color: var(--accent); }
-.pbtn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
-.pbtn[aria-pressed="true"] { background: var(--accent); color: var(--on-accent); border-color: var(--accent); }
-.pbtn--primary { background: var(--accent); color: var(--on-accent); border-color: var(--accent); }
-.pbtn--small { min-height: 36px; padding: 0 0.8rem; font-size: 0.875rem; }
-.pbtn--icon { min-width: 44px; padding: 0; font-size: 1.4rem; line-height: 1; }
-.pbtn[hidden], [hidden] { display: none !important; }
+.pbtn:focus-visible, .pcard__more:focus-visible, .preport:focus-visible, .pchip:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.pbtn:disabled { opacity: 0.4; cursor: default; }
+.pbtn[aria-pressed="true"], .pbtn--primary { background: var(--accent); color: var(--on-accent); border-color: var(--accent); }
+.pbtn--small { min-height: 36px; padding: 0 0.85rem; font-size: 0.875rem; }
+.pbtn--icon { min-width: 44px; padding: 0; font-size: 1.35rem; line-height: 1; }
+.pbtn--danger { border-color: var(--outcome-bad); color: var(--outcome-bad-ink); }
+.pbtn--danger:hover { background: var(--outcome-bad); color: #fff; }
+.predict [hidden] { display: none !important; }
 
-/* Round navigation */
-.pnav { display: flex; align-items: center; gap: 0.5rem; margin: 0.5rem 0 1rem; flex-wrap: wrap; }
-.pnav__mid { flex: 1; min-width: 8rem; display: flex; align-items: baseline; gap: 0.6rem; flex-wrap: wrap; }
-.pnav__title { margin: 0; font-size: 1.25rem; }
-.pnav__ring { margin-left: auto; }
-.pring { display: inline-flex; align-items: center; gap: 0.5rem; }
-.pring svg { width: 2.25rem; height: 2.25rem; }
-.pring__text { font-weight: 700; font-variant-numeric: tabular-nums; }
-.pbadge { display: inline-block; padding: 0.1rem 0.6rem; border-radius: 999px; font-size: 0.75rem; font-weight: 700; background: var(--panel-sunk); border: 1px solid var(--rule); color: var(--ink-muted); }
-.pbadge[data-status="open"], .pbadge[data-status="live"] { color: var(--accent-ink); border-color: var(--accent); }
-.pbadge--b[data-earned="true"] { color: var(--ink); border-color: var(--edge-ecl); }
-.pbadge--b[data-earned="false"] { opacity: 0.55; }
-.pbadges { display: flex; flex-wrap: wrap; gap: 0.4rem; list-style: none; padding: 0; margin: 0.75rem 0; }
-.pdivision { display: flex; gap: 0.5rem; margin: 0 0 0.75rem; }
+/* ---- the match card ----------------------------------------------------------------------- */
 
-/* The slider card: the matches view's odds bar with the player's own odds on it */
 .plist { list-style: none; padding: 0; margin: 0; display: grid; gap: 0.75rem; }
-.pcard {
-  display: grid; gap: 0.6rem; padding: 0.85rem 0.9rem 0.9rem; background: var(--panel);
-  border: 1px solid var(--rule); border-radius: var(--radius); box-shadow: var(--shadow);
+.pcard { padding: 0.9rem 0.95rem 0.8rem; background: var(--panel); border: 1px solid var(--rule); border-radius: var(--radius); }
+.pcard[data-state="tipped"] { border-color: var(--rule-strong); }
+
+/* Home left, away right: the same sides as the bar's blue and red ends. */
+.pmatch { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 0.6rem; margin-bottom: 0.75rem; }
+.pteam { display: flex; align-items: center; gap: 0.5rem; min-width: 0; font-weight: 800; line-height: 1.15; }
+.pteam--away { justify-content: flex-end; text-align: right; }
+.pteam__name { overflow-wrap: break-word; hyphens: auto; min-width: 0; }
+.pteam__crest { width: 28px; height: 28px; object-fit: contain; flex: none; }
+.pmatch__time { color: var(--ink-muted); font-size: 0.8125rem; font-weight: 600; text-align: center; white-space: nowrap; }
+.pmatch__time--live { color: var(--outcome-bad-ink); font-weight: 800; }
+.pmatch__score { font-size: 1.5rem; font-weight: 900; letter-spacing: 0.02em; font-variant-numeric: tabular-nums; text-align: center; }
+
+/* On a phone the time (or score) gets its own line, so the club names keep theirs. */
+@media (max-width: 480px) {
+  .pmatch { grid-template-columns: 1fr 1fr; grid-template-areas: "centre centre" "home away"; row-gap: 0.4rem; }
+  .pmatch .pteam--home { grid-area: home; }
+  .pmatch .pteam--away { grid-area: away; }
+  .pmatch .pmatch__time, .pmatch .pmatch__score { grid-area: centre; }
 }
-.pcard[data-state="untouched"] { background: var(--panel-sunk); }
-.pcard[data-state="untouched"] .odds { opacity: 0.55; }
-.pcard[data-state="locked"] { opacity: 0.97; }
-.pcard__head { display: flex; justify-content: space-between; align-items: baseline; gap: 0.75rem; flex-wrap: wrap; }
-.pcard__teams { display: flex; gap: 0.4rem; align-items: baseline; font-weight: 700; min-width: 0; }
-.pcard__home, .pcard__away { overflow-wrap: anywhere; }
-.pcard__vs { color: var(--ink-muted); }
-.pcard__time { color: var(--ink-muted); font-size: 0.8125rem; }
-.pcard .odds { height: 2.5rem; touch-action: pan-y; cursor: ew-resize; user-select: none; }
-.pcard .odds__seg { font-size: 0.875rem; transition: flex 60ms linear; }
-.pcard__range { width: 100%; height: 2.75rem; margin: 0; accent-color: var(--accent); touch-action: pan-y; background: transparent; }
-.pcard__range::-webkit-slider-thumb { height: 2.75rem; }
-.pcard__fine { display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 0.6rem; font-size: 0.875rem; color: var(--ink-muted); }
-.pcard__fine-value { font-variant-numeric: tabular-nums; min-width: 3rem; text-align: right; }
-.pcard__foot { display: flex; flex-wrap: wrap; align-items: center; gap: 0.6rem 0.9rem; }
-.pcard__readout { display: flex; gap: 0.4rem; }
-.pcard__num-wrap { display: grid; justify-items: center; gap: 0.1rem; font-size: 0.75rem; font-weight: 700; color: var(--ink-muted); }
+
+/* styles.css turns every .odds into a scroller with 8px padding on a phone (for the matches
+   view's glow); the game's bars are not scrollers, and the handle's tab must not be clipped. */
+.predict .odds { padding: 0; margin: 0; overflow: visible; }
+
+/* The slider: the bar itself, with the draw block as its handle. */
+.pslider { position: relative; padding-bottom: 0.6rem; }
+.pcard .pcard__bar { height: 2.75rem; touch-action: pan-y; cursor: ew-resize; user-select: none; -webkit-user-select: none; overflow: visible; }
+.pcard .pcard__bar .odds__seg { font-size: 0.9375rem; transition: flex 80ms linear; }
+.pcard__bar .odds__seg[data-outcome="draw"] { position: relative; overflow: visible; z-index: 1;
+  box-shadow: 0 0 0 2px var(--panel), 0 0 0 3px color-mix(in srgb, var(--draw) 70%, var(--ink)), 0 3px 10px rgb(0 0 0 / 0.3); }
+/* The grab tab under the draw block: two ridges, the universal "drag me". */
+.pcard__bar .odds__seg[data-outcome="draw"]::after {
+  content: ""; position: absolute; left: 50%; bottom: -0.65rem; width: 1.6rem; height: 0.6rem; transform: translateX(-50%);
+  border-radius: 0 0 6px 6px; background:
+    linear-gradient(90deg, transparent 35%, rgb(255 255 255 / 0.85) 35% 45%, transparent 45% 55%, rgb(255 255 255 / 0.85) 55% 65%, transparent 65%),
+    var(--draw);
+}
+.pcard.is-dragging .pcard__bar .odds__seg[data-outcome="draw"] { box-shadow: 0 0 0 2px var(--panel), 0 0 0 5px var(--accent), 0 4px 14px rgb(0 0 0 / 0.3); }
+.pcard .pcard__bar .odds__seg { transition: flex 80ms linear; }
+.pcard.is-dragging .pcard__bar .odds__seg { transition: none; }
+.pcard[data-state="untouched"] .pcard__bar .odds__seg:not([data-outcome="draw"]) { filter: saturate(0.35); opacity: 0.6; }
+/* A hint on a card nobody has touched: the handle nudges, once. */
+.pcard[data-state="untouched"]:first-child .pcard__bar .odds__seg[data-outcome="draw"] { animation: pnudge 1.6s var(--ease) 0.6s 2; }
+@keyframes pnudge { 0%, 100% { transform: translateX(0); } 30% { transform: translateX(-8px); } 60% { transform: translateX(8px); } }
+/* The real input, for keyboards and screen readers, sits invisibly on top; focus shows on the bar. */
+.pcard__range { position: absolute; inset: 0 0 0.6rem; width: 100%; height: 2.75rem; margin: 0; opacity: 0; pointer-events: none; }
+.pslider:focus-within .pcard__bar { outline: 2px solid var(--accent); outline-offset: 3px; border-radius: 8px; }
+
+.pcard__foot { display: flex; align-items: center; justify-content: space-between; gap: 0.75rem; min-height: 2rem; margin-top: 0.25rem; }
+.pcard__status { font-size: 0.8125rem; color: var(--ink-muted); display: inline-flex; align-items: center; gap: 0.35rem; }
+.pcard__status::before { content: ""; width: 0.55rem; height: 0.55rem; border-radius: 50%; background: var(--rule-strong); flex: none; }
+.pcard__status[data-state="saved"]::before { background: var(--edge-ecl); }
+.pcard__status[data-state="saving"]::before, .pcard__status[data-state="pending"]::before { background: var(--edge-el); }
+.pcard__status[data-state="error"] { color: var(--outcome-bad-ink); }
+.pcard__status[data-state="error"]::before { background: var(--outcome-bad); }
+.pcard__retry { margin-left: 0.25rem; min-height: 32px; padding: 0 0.6rem; border-radius: 999px; border: 1px solid var(--outcome-bad);
+  background: none; color: var(--outcome-bad-ink); font: inherit; font-size: 0.8125rem; font-weight: 700; cursor: pointer; }
+.pcard__more { min-height: 36px; padding: 0 0.25rem; background: none; border: 0; color: var(--accent-ink); font: inherit; font-size: 0.875rem; font-weight: 700; cursor: pointer; }
+.pcard__more::after { content: " ▾"; }
+.pcard__more[aria-expanded="true"]::after { content: " ▴"; }
+.pcard__panel { margin-top: 0.5rem; padding-top: 0.75rem; border-top: 1px dashed var(--rule); display: grid; gap: 0.6rem; }
+.pcard__fine { display: grid; grid-template-columns: auto 1fr 3rem; align-items: center; gap: 0.75rem; font-size: 0.875rem; font-weight: 600; }
+.pcard__fine-range { width: 100%; min-height: 44px; accent-color: var(--draw); }
+.pcard__fine-value { font-variant-numeric: tabular-nums; text-align: right; color: var(--ink-muted); }
+.pcard__hint { margin: 0; font-size: 0.8125rem; color: var(--ink-muted); }
+.pcard__readout { display: grid; grid-template-columns: repeat(3, minmax(0, 5rem)); gap: 0.5rem; }
+.pcard__num-wrap { display: grid; gap: 0.2rem; font-size: 0.75rem; font-weight: 800; color: var(--ink-muted); }
 .pcard__num-wrap--h { color: var(--home); }
 .pcard__num-wrap--a { color: var(--away); }
-.pcard__num { width: 3.4rem; min-height: 40px; text-align: center; font: inherit; color: var(--ink); background: var(--panel); border: 1px solid var(--rule-strong); border-radius: var(--radius-sm); font-variant-numeric: tabular-nums; }
+.pcard__num { width: 100%; min-height: 44px; text-align: center; font: inherit; font-weight: 700; color: var(--ink); background: var(--panel-sunk);
+  border: 1px solid var(--rule-strong); border-radius: var(--radius-sm); font-variant-numeric: tabular-nums; }
 .pcard__num:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
-.pcard__status { margin-left: auto; font-size: 0.8125rem; color: var(--ink-muted); }
-.pcard__status[data-state="error"] { color: var(--outcome-bad-ink); }
-.pcard__locked, .pcard__none { color: var(--ink-muted); font-size: 0.875rem; }
-.pcard--preview { opacity: 0.85; }
+.pcard__note { margin: 0.25rem 0; color: var(--ink-muted); font-size: 0.875rem; }
+.pcard--preview { opacity: 0.8; }
 
-/* The reveal */
-.preveal { display: grid; gap: 0.35rem; }
-.preveal__who { display: grid; grid-template-columns: 4.5rem 1fr; gap: 0.5rem; align-items: center; font-size: 0.8125rem; color: var(--ink-muted); }
-.preveal__result { font-weight: 800; font-size: 1.1rem; }
-.preveal__score { font-size: 0.875rem; font-variant-numeric: tabular-nums; }
-.precap { margin: 1rem 0; padding: 0.85rem 1rem; background: var(--panel); border: 1px solid var(--rule); border-radius: var(--radius); }
+/* ---- matchdays, loading, a round that has not opened ---------------------------------------- */
 
-/* The table game */
-.ptable { list-style: none; padding: 0; margin: 0 0 1rem; display: grid; gap: 0.35rem; counter-reset: place; }
-.ptable__row { display: flex; align-items: center; gap: 0.5rem; padding: 0.35rem 0.5rem; background: var(--panel); border: 1px solid var(--rule); border-radius: var(--radius-sm); }
-.ptable__row[draggable="true"] { cursor: grab; }
-.ptable__pos { width: 1.6rem; text-align: right; font-variant-numeric: tabular-nums; color: var(--ink-muted); font-weight: 700; }
-.ptable__name { flex: 1; font-weight: 600; }
-.ptable__grip { color: var(--ink-faint); cursor: grab; }
+.pday + .pday { margin-top: 1.25rem; }
+.pday__title { margin: 0 0 0.5rem; font-size: 0.875rem; font-weight: 800; color: var(--ink-muted); }
+.popens { margin: 0 0 1rem; padding: 0.7rem 0.9rem; border-radius: var(--radius-sm); background: var(--panel-sunk); color: var(--ink-muted); font-size: 0.875rem; }
+.pghost { display: flex; gap: 2px; height: 1.5rem; opacity: 0.5; }
+.pghost span { border-radius: 3px; border: 1px dashed var(--rule-strong); }
+.pghost span:nth-child(1), .pghost span:nth-child(3) { flex: 37; }
+.pghost span:nth-child(2) { flex: 26; }
+.pskeleton { display: grid; gap: 0.75rem; margin-bottom: 0.75rem; }
+.pskeleton span { display: block; height: 0.9rem; border-radius: 6px; background: var(--panel-sunk); }
+.pskeleton span:nth-child(1) { width: 65%; }
+.pskeleton span:nth-child(2) { height: 2.75rem; }
+.pskeleton span:nth-child(3) { width: 35%; }
+.pskeleton span { background: linear-gradient(90deg, var(--panel-sunk) 0%, var(--rule) 50%, var(--panel-sunk) 100%); background-size: 200% 100%; animation: pshimmer 1.4s linear infinite; }
+@keyframes pshimmer { from { background-position: 100% 0; } to { background-position: -100% 0; } }
+
+/* ---- the reveal ----------------------------------------------------------------------------- */
+
+.pverdict { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0.35rem 0.6rem; margin: 0 0 0.75rem; }
+/* A verdict, not an alarm: a tinted chip with the outcome colour in its text. */
+.pverdict__chip { --tone: var(--draw); --tone-ink: var(--ink-muted); padding: 0.2rem 0.65rem; border-radius: 999px; font-size: 0.875rem;
+  color: var(--tone-ink); background: color-mix(in srgb, var(--tone) 16%, transparent); border: 1px solid color-mix(in srgb, var(--tone) 55%, transparent); }
+.pverdict[data-kind="good"] .pverdict__chip { --tone: var(--outcome-good); --tone-ink: var(--outcome-good-ink); }
+.pverdict[data-kind="bad"] .pverdict__chip { --tone: var(--outcome-bad); --tone-ink: var(--outcome-bad-ink); }
+.pverdict__line { font-size: 0.9375rem; }
+.preveal { display: grid; gap: 0.4rem; }
+.preveal__row { display: grid; grid-template-columns: 5.5rem 1fr; gap: 0.6rem; align-items: center; }
+.preveal__who { font-size: 0.8125rem; color: var(--ink-muted); font-weight: 600; overflow-wrap: anywhere; }
+.preveal__row--you .preveal__who { color: var(--ink); font-weight: 800; }
+.preveal .odds { height: 1.6rem; }
+.preveal .odds__seg { font-size: 0.75rem; }
+/* What happened stays bright; the rest steps back. */
+.odds[data-hit] .odds__seg { opacity: 0.32; }
+.odds[data-hit="home"] .odds__seg[data-outcome="home"],
+.odds[data-hit="draw"] .odds__seg[data-outcome="draw"],
+.odds[data-hit="away"] .odds__seg[data-outcome="away"] { opacity: 1; }
+.pdetails { margin-top: 0.75rem; font-size: 0.875rem; }
+.pdetails summary { cursor: pointer; color: var(--accent-ink); font-weight: 700; min-height: 32px; display: inline-flex; align-items: center; }
+.pdetails dl { display: grid; grid-template-columns: auto auto; justify-content: start; gap: 0.25rem 1.25rem; margin: 0.5rem 0; font-variant-numeric: tabular-nums; }
+.pdetails dt { color: var(--ink-muted); }
+.pdetails dd { margin: 0; font-weight: 700; }
+.pdetails p { margin: 0; color: var(--ink-muted); max-width: var(--measure); }
+
+/* ---- the round recap ------------------------------------------------------------------------ */
+
+.precap { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 0.75rem;
+  margin: 0 0 1rem; padding: 0.9rem 1rem; background: var(--panel-sunk); border: 1px solid var(--rule); border-radius: var(--radius); }
+.precap__stats { display: flex; flex-wrap: wrap; gap: 0.5rem 1.5rem; }
+.precap__stat { display: grid; }
+.precap__stat strong { font-size: 1.35rem; line-height: 1.1; font-variant-numeric: tabular-nums; }
+.precap__stat span { font-size: 0.8125rem; color: var(--ink-muted); }
+
+.pfoot { display: flex; flex-wrap: wrap; align-items: center; gap: 0.75rem; margin-top: 1.25rem; font-size: 0.875rem; color: var(--ink-muted); }
+.pfoot a { color: var(--ink); }
+
+/* ---- the table game ------------------------------------------------------------------------- */
+
+.pzones { display: flex; flex-wrap: wrap; gap: 0.4rem 1rem; list-style: none; padding: 0; margin: 0 0 0.6rem; font-size: 0.8125rem; color: var(--ink-muted); }
+.pzones li { display: inline-flex; align-items: center; gap: 0.35rem; }
+.pzones li::before { content: ""; width: 0.75rem; height: 0.75rem; border-radius: 3px; background: var(--zone, var(--rule)); }
+[data-zone="champion"] { --zone: var(--band-champion); }
+[data-zone="promotion"] { --zone: var(--accent); }
+[data-zone="relegation"] { --zone: var(--outcome-bad); }
+.ptable { list-style: none; padding: 0; margin: 0 0 0.75rem; display: grid; gap: 0.35rem; }
+.ptable__row { display: flex; align-items: center; gap: 0.4rem; padding: 0.3rem 0.4rem 0.3rem 0.6rem; background: var(--panel);
+  border: 1px solid var(--rule); border-left: 4px solid var(--zone, var(--rule)); border-radius: var(--radius-sm); }
+.ptable__row.is-dragging { box-shadow: 0 0 0 2px var(--accent), var(--shadow); }
+.ptable__pos { width: 1.6rem; text-align: right; font-variant-numeric: tabular-nums; color: var(--ink-muted); font-weight: 800; }
+.ptable__name { flex: 1; font-weight: 700; }
+.ptable__grip { min-width: 44px; min-height: 44px; background: none; border: 0; color: var(--ink-faint); cursor: grab; touch-action: none; font-size: 1rem; }
+.ptable__row .pbtn--icon { min-width: 40px; min-height: 40px; font-size: 1rem; }
 .ptable__status, .ptable__rules { color: var(--ink-muted); font-size: 0.875rem; margin: 0.5rem 0; }
+.ptable__bar { position: sticky; bottom: 0.75rem; z-index: 5; display: flex; align-items: center; justify-content: space-between; gap: 0.75rem;
+  padding: 0.6rem 0.6rem 0.6rem 1rem; background: var(--panel); border: 1px solid var(--rule-strong); border-radius: 999px; box-shadow: var(--shadow); }
+.ptable__bar .ptable__status { margin: 0; }
 
-/* Boards */
-.pboard { width: 100%; border-collapse: collapse; font-size: 0.875rem; font-variant-numeric: tabular-nums; }
-.pboard th, .pboard td { padding: 0.45rem 0.4rem; text-align: right; border-bottom: 1px solid var(--rule); }
+/* ---- boards ----------------------------------------------------------------------------------- */
+
+.pboard__key { margin: 0 0 0.75rem; font-size: 0.875rem; color: var(--ink-muted); max-width: var(--measure); }
+.pscroll { overflow-x: auto; }
+.pboard table { width: 100%; border-collapse: collapse; font-size: 0.9375rem; font-variant-numeric: tabular-nums; }
+.pboard th, .pboard td { padding: 0.55rem 0.45rem; text-align: right; border-bottom: 1px solid var(--rule); vertical-align: middle; }
 .pboard th { color: var(--ink-muted); font-weight: 700; font-size: 0.75rem; }
 .pboard .pboard__rank, .pboard .pboard__name { text-align: left; }
-.pboard__name { overflow-wrap: anywhere; }
-.pboard__row[data-kind="model"], .pboard__row[data-kind="crowd"] { background: var(--panel-sunk); font-weight: 700; }
-.pboard__row[data-me="true"], .pboard__me { outline: 2px solid var(--accent); outline-offset: -2px; }
-.pboard__note { color: var(--ink-muted); font-size: 0.8125rem; margin: 0.5rem 0; }
-.pscroll { overflow-x: auto; }
+.pboard__rank { width: 2rem; color: var(--ink-muted); font-weight: 800; }
+.pboard__name { min-width: 8rem; }
+.pboard__nick { font-weight: 700; overflow-wrap: anywhere; }
+.pboard__ab { font-weight: 800; }
+.pboard__ab[data-tone="good"], .pstat[data-tone="good"] dd { color: var(--outcome-good-ink); }
+.pboard__ab[data-tone="bad"], .pstat[data-tone="bad"] dd { color: var(--outcome-bad-ink); }
+.pboard__row[data-kind="model"], .pboard__row[data-kind="crowd"] { background: var(--panel-sunk); }
+.pboard__row[data-mine="true"] { background: color-mix(in srgb, var(--accent) 12%, transparent); }
+.pboard__row[data-mine="true"] td:first-child { box-shadow: inset 4px 0 0 var(--accent); }
+.ptag { display: inline-block; margin-left: 0.4rem; padding: 0.05rem 0.45rem; border-radius: 999px; font-size: 0.6875rem; font-weight: 800;
+  background: var(--panel-sunk); border: 1px solid var(--rule); color: var(--ink-muted); vertical-align: 0.1em; }
+.ptag--you { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
+.preport { margin-left: 0.35rem; min-width: 32px; min-height: 32px; background: none; border: 0; border-radius: 6px; color: var(--ink-faint);
+  cursor: pointer; opacity: 0.45; font-size: 0.875rem; }
+.pboard__row:hover .preport, .preport:focus-visible { opacity: 1; }
+.preport:disabled { opacity: 0.8; color: var(--edge-ecl); }
+.pboard .is-extra { display: none; }
+.pboard__note, .pboard__me { color: var(--ink-muted); font-size: 0.8125rem; margin: 0.6rem 0; }
+.pboard__me { color: var(--ink); font-weight: 600; }
+@media (min-width: 640px) { .pboard .is-extra { display: table-cell; } }
 
-/* Me, stats, mini-leagues, data */
-.pme, .pleagues, .pdata, .pstats { margin: 1rem 0 1.5rem; }
-.pme__row, .pfield { display: grid; gap: 0.25rem; margin: 0.6rem 0; }
-.pme__row--check { display: flex; align-items: center; gap: 0.6rem; }
-.pme input[type="text"], .pleagues input[type="text"], .pfield input {
-  min-height: 44px; padding: 0 0.7rem; font: inherit; color: var(--ink); background: var(--panel); border: 1px solid var(--rule-strong); border-radius: var(--radius-sm);
-}
-.pme__msg, .pleagues__msg { min-height: 1.25rem; color: var(--ink-muted); font-size: 0.875rem; }
-.pstats__grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(8rem, 1fr)); gap: 0.6rem; }
-.pstats__cell { padding: 0.7rem 0.8rem; background: var(--panel); border: 1px solid var(--rule); border-radius: var(--radius-sm); font-variant-numeric: tabular-nums; }
-.pleagues__list { list-style: none; padding: 0; margin: 0.5rem 0; display: grid; gap: 0.4rem; }
-.pleagues__form { display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; margin: 0.5rem 0; }
-.pgoogle, .pcal { margin: 0.75rem 0; }
-.pconfirm { padding: 0.8rem 1rem; border: 1px solid var(--outcome-bad); border-radius: var(--radius-sm); background: var(--panel); margin: 0.75rem 0; }
-.pconfirm__q { font-weight: 700; margin: 0 0 0.5rem; }
-.plink, .pfoot a { color: var(--ink); }
-.pfoot { margin-top: 1.5rem; font-size: 0.875rem; color: var(--ink-muted); }
+/* ---- panels: you, your numbers, mini-leagues, data ---------------------------------------- */
+
+.ppanel { margin: 0 0 1rem; padding: 1.1rem 1.1rem 1.2rem; background: var(--panel); border: 1px solid var(--rule); border-radius: var(--radius); }
+.pfieldset { display: grid; gap: 0.35rem; margin: 0 0 0.9rem; font-weight: 700; font-size: 0.875rem; }
+.pinline { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+.pinline .pfield { flex: 1 1 10rem; min-width: 0; }
+.pfield { min-height: 44px; padding: 0 0.75rem; font: inherit; font-weight: 500; color: var(--ink); background: var(--panel-sunk);
+  border: 1px solid var(--rule-strong); border-radius: var(--radius-sm); }
+.pfield:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+.pme__msg, .pleagues__msg { min-height: 1.25rem; margin: -0.4rem 0 0.75rem; color: var(--ink-muted); font-size: 0.875rem; }
+.pswitch-row { display: flex; align-items: center; justify-content: space-between; gap: 1rem; margin: 0 0 1rem; cursor: pointer; }
+.pswitch-row > span { display: grid; gap: 0.15rem; font-size: 0.9375rem; }
+.pswitch-row small { color: var(--ink-muted); font-size: 0.8125rem; }
+.pswitch { appearance: none; -webkit-appearance: none; flex: none; position: relative; width: 3rem; height: 1.75rem; margin: 0; border-radius: 999px;
+  background: var(--rule-strong); cursor: pointer; transition: background 150ms var(--ease); }
+.pswitch::before { content: ""; position: absolute; top: 3px; left: 3px; width: calc(1.75rem - 6px); height: calc(1.75rem - 6px); border-radius: 50%;
+  background: #fff; transition: transform 150ms var(--ease); }
+.pswitch:checked { background: var(--accent); }
+.pswitch:checked::before { transform: translateX(1.25rem); }
+.pswitch:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+.pstats__hero { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.75rem; margin: 0 0 1rem; }
+.pstat { display: grid; gap: 0.1rem; padding: 0.75rem 0.85rem; background: var(--panel-sunk); border-radius: var(--radius-sm); }
+.pstat dd { margin: 0; font-size: 1.75rem; font-weight: 900; line-height: 1.05; font-variant-numeric: tabular-nums; }
+.pstat dt { font-size: 0.8125rem; color: var(--ink-muted); font-weight: 600; }
+.pstats__more { display: grid; grid-template-columns: auto auto; justify-content: start; gap: 0.25rem 1.5rem; margin: 0 0 0.5rem; font-size: 0.875rem; font-variant-numeric: tabular-nums; }
+.pstats__more dt { color: var(--ink-muted); }
+.pstats__more dd { margin: 0; font-weight: 700; }
+.pbadges { display: flex; flex-wrap: wrap; gap: 0.4rem; list-style: none; padding: 0; margin: 0 0 1rem; }
+.pbadge--b { display: inline-flex; gap: 0.35rem; align-items: center; padding: 0.3rem 0.7rem; font-size: 0.8125rem; }
+.pbadge--b[data-earned="true"] { color: var(--ink); border-color: var(--edge-ecl); background: color-mix(in srgb, var(--edge-ecl) 12%, transparent); }
+.pbadge--b[data-earned="false"] { opacity: 0.6; }
+@media (min-width: 560px) { .pstats__hero { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
+
+.pleagues { margin-top: 2rem; padding-top: 1.25rem; border-top: 1px solid var(--rule); }
+.pleagues__list { display: flex; flex-wrap: wrap; gap: 0.5rem; list-style: none; padding: 0; margin: 0 0 1rem; }
+.pchip { display: inline-flex; align-items: center; gap: 0.5rem; min-height: 40px; padding: 0 0.85rem; border-radius: 999px; font: inherit; font-weight: 700;
+  color: var(--ink); background: var(--panel); border: 1px solid var(--rule-strong); cursor: pointer; }
+.pchip code { font-size: 0.75rem; color: var(--ink-muted); letter-spacing: 0.06em; }
+.pleagues__forms { display: grid; gap: 0.25rem; }
+@media (min-width: 640px) { .pleagues__forms { grid-template-columns: 1fr 1fr; gap: 1rem; } }
+.pleagues__board { margin-top: 1rem; }
+
+.pgoogle { margin: 0 0 0.75rem; }
+.pgoogle p { margin: 0 0 0.6rem; max-width: var(--measure); }
+.pdanger { border-color: color-mix(in srgb, var(--outcome-bad) 55%, var(--rule)); }
+.pdanger p { margin: 0 0 0.75rem; color: var(--ink-muted); }
+.pconfirm { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 0.5rem; }
+.pconfirm__q { font-weight: 700; flex-basis: 100%; }
+
+.pcal { margin: 0.75rem 0; }
+.pcal__fig { margin: 0; max-width: 18rem; }
+.pcal__fig svg { width: 100%; height: auto; }
+.pcal__diag { stroke: var(--rule-strong); stroke-dasharray: 4 4; }
+.pcal__frame { fill: none; stroke: var(--rule); }
+.pcal__dot { fill: var(--accent); }
+.pcal__fig figcaption { font-size: 0.8125rem; color: var(--ink-muted); }
 
 @media (min-width: 640px) {
   .plist { gap: 1rem; }
-  .pcard { padding: 1rem 1.1rem 1.1rem; }
+  .pcard { padding: 1.1rem 1.2rem 1rem; }
 }
 @media (prefers-reduced-motion: reduce) {
-  .pcard .odds__seg { transition: none; }
+  .pcard .pcard__bar .odds__seg, .pring__arc, .pswitch, .pswitch::before { transition: none; }
+  .pcard[data-state="untouched"]:first-child .pcard__bar .odds__seg[data-outcome="draw"] { animation: none; }
+  .pskeleton span { animation: none; }
 }
-
-/* The "5/8" ring */
-.pring__track { fill: none; stroke: var(--rule); stroke-width: 4; }
-.pring__arc { fill: none; stroke: var(--accent); stroke-width: 4; stroke-linecap: round; transform: rotate(-90deg); transform-origin: 18px 18px; transition: stroke-dasharray 200ms var(--ease); }
-.pring[data-complete="true"] .pring__arc { stroke: var(--edge-ecl); }
-@media (prefers-reduced-motion: reduce) { .pring__arc { transition: none; } }
