@@ -3891,3 +3891,202 @@ version-history chart (`data/model_versions.json`) is unchanged: elo-v16.1 and e
 leave the backtest's odds alone (v17.0 changes only what is published for later fixtures and
 the play-off columns), so by the chart's own rule they are not scored, and its rerun
 waits for the release commit as above.
+
+
+## 🧪 Shocks, rebounds and a Markov chain over results (November 2026) - nothing to ship, one small lead parked
+
+The owner's theory: after a match a club far above or below what the model expected
+there is a chance it bounces back harder (or fades), a Markov chain over such "states"
+could say how, and the same shape holds across seasons (Brann, Viking, Lillestrøm: a
+bad year, a promotion, a good year after). Tested as a signal first, then as a model
+change. Everything is scored against the shipped elo-v18.0 blend's own pre-match odds
+(5,255 scored matches 2016+, 3,815 walk-forward from 2019, 384 club-seasons). A positive
+next-match residual after a state means the model under-reacts to that state, negative
+means it over-reacts. Scripts: `experiments/improvements/markov_*.py` (common pieces in
+`markov_common.py`; local files only, no `src` edits, no version bump). Prior art, kept as
+the baseline: EWMA form and the autocorrelation damper (elo-v3), residual xG form
+(+0.0086 / +0.015, t +4.0 / +7.0), attack/defence trend and Elo trend (walk-forward
+-0.00005, t -0.1), all in "Momentum, re-tested on the xG-era model".
+
+**Signals** (each signed so that positive is better than expected): points residual and its
+standardised form, goal difference, goals for, goals against, xG, xGA, xGD, xG points
+against the model's expected points, "luck" (result points above xG points), finishing
+(goals above xG), keeping (xGA above goals conceded), and, per club-season, mean points
+residual, mean xGD residual, table-place percentile and its change from the season before,
+division moves (relegated, promoted, promoted as a top-two side, a bounce back), and the
+share of the last four seasons in Eliteserien.
+
+| step | what | result |
+|---|---|---|
+| 1. state -> next match | 12 signals x 4 targets (points, goal difference, xGD, xG points) x lags 1-3 x five quantile states (<5 %, 5-30, 30-70, 70-95, >95 %) plus a piecewise slope with tails past 1.5 sd, cluster t by club-season | no coherent pattern: signs flip between lags and targets. The largest single cells are the worst-5 % states at lag 1 (after a bottom-5 % xG-points match the next match's points residual -0.194, t -2.6; gone at lags 2 and 3) among more than a thousand cells (bins and tail slopes) |
+| 2. fitted tilt sweep | prediction-time tilt on the blend (home minus away of a club's state features, fitted on the seasons before, 2019+ scored); 363 feature sets (linear, tails, state flags, two shocks in a row, rebound after a shock, 2/3/5-match means and tails, EWMA 0.2-0.7) x 11 signals x ridge 1 and 100 = 726 configs | best log loss -0.00072 out of sample (best t -2.36); 23 % of configs below zero, mean +0.00029; worst +0.0029 (t +4.6, finishing). **Permutation null**: the same sweep on 40 shuffles of the state features among clubs in a season gives a best-of-726 of t -2.18 on average (min -2.65), and 30 % of shuffles beat the real best. Indistinguishable from selection |
+| 3. Markov chain test | 11 signals x 3 or 5 states x lags 1-3, transition table against independence, 1,000 shuffles within each club-season and side | 66 tests: p < 0.05 in 4 (3.3 by chance), p < 0.01 in 1 (xGD, 5 states, lag 1, p 0.010: bottom state repeats less than chance, 0.183 against 0.200). A first version (shuffle within club-season only) gave p 0.002 for the points z at lag 2; that was home/away alternation (two matches apart are mostly the same side) and is gone with a side-matched null |
+| 4a. shock-sized Elo step | step x (1 + a) where \|scored - expected\| > c; a -0.75..+2.0, c 0.25-0.9, 42 cells | best -0.00012 (t -0.36), 33 % of cells below zero; walk-forward picks +0.00102 (t +2.14), worse than shipped; a < 0 is worse (+0.0011, t +1.9) |
+| 4b. shock-sized goals-model step | the same on the goals model's surprise in goals (all, up only, down only), a -0.6..+2.0, c 0.5-1.8 goals, 72 cells, identity checked | best -0.00016 (t -0.37), 7 % of cells below zero; walk-forward picks +0.00043 (t +0.90), xG matches +0.00069 |
+| 5. across seasons | next season's mean points residual on this season's, 292 consecutive pairs, cluster by club | all -0.016 per sd (t -1.25), same division -0.007 (t -0.62), changed division -0.046 (t -1.29), xGD residual -0.029 (t -1.12), place change -0.020 (t -1.24), "a bad year" tail -0.027 (t -2.13), "a big year" -0.014 (t -0.94), relegated flag +0.019 (t +1.55), ES share of last four seasons +0.007 (t +0.48) |
+| 6. season-level tilt | 12 club-season features (and five sets of them) x ridge 1, 30, 300 = 57 configs, walk-forward 2019+ | best log loss -0.00058 (t -1.49, both halves -0.00058 / -0.00057; relegated x last season's residual), best t -2.37 (the same feature, ridge 300); "a bad year" (residual below -0.15 a match) -0.00036 (t -1.34, halves -0.00015 / -0.00058); most others within +-0.0001; 39 % below zero. **Permutation null** (40 shuffles of whole club-season feature vectors among clubs of the same season, the same 57 configs): best t averages -1.02 (min -1.78), 0 of 40 reach -2.37; best log loss averages -0.00022, 1 of 40 reaches -0.00058. The fitted sign is a rebound: a club with a bad year (or relegated after one) does better than the blend (beta -0.64 on "bad year", -0.77 on relegated x last residual, all seasons). Survives its null, small: see step 9 |
+| 7. within a season | first-half residual against second-half, 384 club-seasons | points +0.030 (t +0.64), xGD -0.147 (t -1.72): no persistence, if anything a little reversal |
+| 9. the rebound as a model change | after the offseason pull, a club's last season (points residual a match against the blend, known when the season starts) lifts its Elo rating (10-150 points per 1.0 of residual) and its goals-model attack and defence (0.03-0.45 log goals), for a bad year (threshold 0, 0.1, 0.2, 0.3 a match), both directions (a good year fades), linear, relegated only, promoted only, Eliteserien only, OBOS-ligaen only; Elo alone, goals model alone, both; 231 cells, identity at 0 checked | 84 % of the 231 cells are below zero on 2016+ (92 % in the compact 8-spec family the null uses, against 35 % on average in the shuffles, max 77 % in 14; the cells are heavily correlated, the same feature at seven sizes, and the bad-year forms lift ratings on net, so this is a description, not extra evidence). Best in sample, log loss -0.00054 (t -1.4; Elo alone -0.00035 t -1.58, goals model alone -0.00054, both -0.00053 t -1.10; both models, a bad year past 0.1 a match, Elo 100 and goals model 0.3: Brier -0.00046, RPS -0.00018, halves t -0.48 / -1.23). **Walk-forward** (each season's value picked from earlier seasons; the pick settles on "a bad year past 0.1, 100 points, 0.3" from 2024): all families -0.00025 (t -0.51); both models, all clubs -0.00035 (t -0.83), Brier -0.00030 (t -1.02), RPS -0.00014 (t -0.97), halves t -0.53 / -0.67; xG matches only -0.00013 (t -0.30). **Null** (14 shuffles of the residual table among clubs of a season, a compact 8-spec family): best log loss -0.00020 on average (min -0.00044), t -1.3 on average (min -2.23); 0 of 14 reach the real -0.00054 / t -2.40 (p about 0.07 at best from 14 shuffles) |
+| 10. the existing relegation knobs, re-tuned | the rebound's likeliest home: elo-v15.0's `relegated_regression` (Elo and goals model, 0.2-1.0) and Elo's `relegated_value_pull` (0-150), 320 cells, identity at the shipped 0.5 / 75 / 0.5 checked | 42 % of cells below zero. Best in sample (Elo 0.2 / 150, goals model 0.2): log loss -0.00034 (t -0.99), Brier -0.00029, RPS -0.00014, halves t -0.79 / -0.59; the optimum sat on the grid's edge (0.2 and 150), so the grid was widened (below). Walk-forward, one model at a time: log loss -0.00022 (t -1.01), Brier t -0.96, RPS -0.00009 (t -1.27), halves t -0.99 / -0.35 (the pick is the goals model's 0.2 in 2020-2022, Elo's 0.2 / 150 after); whole grid -0.00019 (t -0.55), halves -0.99 / +0.42. **On the xG matches 2019+ it is nothing**: -0.00004 (t -0.18) one model at a time, +0.00016 (t +0.49) whole grid; the gain is in the matches without xG. **Widened** (Elo and goals model \`relegated_regression\` 0-0.5, \`relegated_value_pull\` 75-300, 180 cells): 95 % of cells below zero, a plateau at about -0.00038 (t -1.0 to -1.2) for regression 0-0.1 and pull 150-200 (goals model 0.3-0.5); **walk-forward over it loses**: +0.00026 (t +0.49), Brier +0.00017, RPS +0.00005, halves t +0.35 / +0.35 (Eliteserien +0.00009, OBOS-ligaen +0.00043, xG matches +0.00033), the pick wandering between (0.0, 200, 0.5), (0.0, 300, 0.5), (0.2, 300, 0.5) and (0.0, 75, 0.0). For elo-v15.0's own numbers see "Clubs changing division placed by their own squad value" (-0.00047, t -2.43, 2016+). The rebound term on top of the best re-tuned setting still adds, walk-forward -0.00027 (t -0.98), Brier t -1.12, RPS t -1.13, halves t -0.87 / -0.48, xG matches -0.00009 (t -0.33): the term is not the knob in disguise |
+| 11. replace, not add (`markov_j_replace.py`) | the rebound term in place of the overlapping offseason machinery: each removal scored alone, then with the term (4 forms x 5 sizes), walk-forward over the term, all against the shipped blend, 2019+ | **No relegation special-casing** (elo-v15.0's two knobs): alone +0.00046 (t +2.32, 2016+); with the term -0.00004 (t -0.07): parity. **Weaker offseason regression** (0.94 / 0.85): alone +0.00043 (t +2.16); with the term +0.00002 (t +0.04): parity. **No squad-value pull**: alone +0.00283 (t +3.70); with the term +0.00173 (t +2.08): worse, the term cannot stand in. **No regression at all**: alone +0.00171 (t +2.60); with the term +0.00173 (t +1.91): worse. **All three removed**: alone +0.00227 (t +3.71); with the term +0.00150 (t +2.16): worse. For reference, the term added on top of everything shipped: -0.00046 (t -1.15), Brier t -1.32, RPS t -1.29 |
+| 8. shock by division | season odds (RPS and log loss of the place, as `season_check.py`), shock sd 0.10-0.40 per division, 2016-2025 | Eliteserien wants 0.25 (RPS -0.00030, t -1.8), OBOS-ligaen 0.20-0.25 (-0.00019, t -0.6): the opposite of "a wider shock for the division with more persistent spread". Per-division walk-forward -0.00008 (t -0.45); one shared walk-forward pick -0.00030 (t -1.90), log loss -0.0033 (t -1.19), Eliteserien's per-division pick is 0.25 from 2020; the shared pick is 0.20 until 2023 and 0.25 in 2024 and 2025 |
+
+**The bounce-back clubs.** 24 clubs came down into OBOS-ligaen (2016-2025) and 24 came up.
+Against the blend's odds, which already carry the squad-value placement of elo-v15.0:
+
+| cohort | points residual per match |
+|---|---|
+| relegated, first OBOS season (n 24) | +0.060 (t +1.21) |
+| promoted, first Eliteserien season (n 24) | +0.040 (t +0.75) |
+| 13 clubs down, up and back (2016-2025): their OBOS year | +0.180 (t +4.42): selection, they were promoted because they did well |
+| the same 13 back in Eliteserien | +0.029 (se 0.057, t +0.51); promoted as a top-two side (11): +0.047 |
+| relegated and kept down: their first OBOS season, the year they failed to go up (8) | -0.123 (t -2.24): the other side of the same selection |
+| the same 8, their second OBOS season | -0.048 (se 0.122, t -0.39) |
+
+The three named clubs each did beat the model the season they came back, Viking 2019
++0.24, Lillestrøm 2021 +0.24, Brann 2023 +0.30 per match (Brann 2023: 61 points against 51.9
+expected, second), but the other ten returners average -0.04 (range -0.41 to +0.15):
+the remembered cases are the hits. Lillestrøm also came back again in 2026 (+0.12 over 26
+matches, xGD -0.34 a match: the process was not there). The persistent part of a
+club-season's mean residual (the spread beyond match sampling) is small: sd 0.05 points a
+match for Eliteserien clubs staying up, 0.10 for OBOS-ligaen clubs staying, 0.14 for
+promoted and 0.10 for relegated clubs, but those last two come from 24 club-seasons each
+and their spread differs from Eliteserien's by about one standard error.
+
+**Verdict.** Match to match there is no state-dependent rebound or fade that the model has not
+already absorbed: the ratings take a result's information within one match (K 30 with the xG
+margin) and the next match carries no systematic remainder, for any of the signals, at any
+lag, for big shocks or all, over or under (steps 1-4 against a permutation null; the strength
+shock in the match step, 4a/4b, is worse than shipped walk-forward). Within a season nothing
+persists beyond a constant per run (step 7), and a division- or cohort-specific strength shock
+has no support (step 8), so the simulation's shock stays 0.20 for every club.
+
+**One lead, between seasons, and it points the way the owner's theory does.** After a bad
+season (a points residual below about -0.1 a match against the blend, relegated clubs
+especially) a club does a little better than its offseason rating says the next season;
+after a good one nothing reliable. It is one signal measured twice (steps 6 and 9 use the same
+residuals on the same matches), and it beat its permutation null both times (0 of 40 shuffles reach
+the real t in step 6, 0 of 14 in step 9, so p is about 0.07 by the second alone). It is small: walk-forward -0.00035
+log loss (t -0.83), Brier t -1.02, RPS t -0.97, both halves negative, against the owner's
+relaxed bar for a cheap one-knob change (out of sample negative on log loss and RPS, same sign
+in both halves, t about -1 or better, value shrunk) it is just short on t, and it adds a
+term (last season's residual, carried through the replay) so the |t| >= 2 bar applies:
+**not shipped, no `MODEL_VERSION` change**. It would be a MAJOR bump (it moves ratings and
+match odds). Replacing instead of adding (step 11) shows it is largely the same information as machinery the model has: the term recovers exactly what removing the relegation special-casing, or weakening the general offseason regression, costs (back to parity with shipped, -0.00004 and +0.00002), and it cannot stand in for the squad-value pull or for regression altogether. So the gain it shows when added (-0.0005) is mostly the existing offseason pulls being a little too uniform across clubs, not a new source, and as a swap it is a tie that costs a carried residual per club. The existing relegation knobs do not
+explain it on their own (step 10: the term still adds on top of the re-tuned setting). They have a small
+in-sample gain of their own (-0.00038 on a plateau, `relegated_regression` 0-0.3 and Elo's
+`relegated_value_pull` 150-200), but walk-forward it is unstable and loses on the wider grid
+(+0.00026, t +0.49) and is nothing on the xG matches, so the knobs stay at elo-v15.0's.
+Next step, if wanted: re-run steps 9 and 10 once 2026 is final (one more season for the
+walk-forward); the rebound term is the only thing here with a consistent sign.
+
+**Caveats.** The sweeps are many, so every claim is against the permutation null above, not
+a single t. Power: a real effect of 0.0007 log loss on the 3,815 scored matches shows at t
+of about 2; smaller is not excluded. Season-level samples are 24 clubs a cohort, 13 for the
+full cycle. Signals depend on xG only where it exists (Eliteserien 2020+, OBOS-ligaen 2023+;
+2,595 matches).
+
+
+## 🧪 A club's own "home level": big clubs rebound (November 2026) - a signal, not shippable
+
+The owner's idea: most clubs belong somewhere; big clubs (Rosenborg) turn a bad spell around, clubs
+that cannot sustain a peak have nothing to bring them back. Prior art, the baseline: the offseason
+pull toward each club's own EWMA level instead of the division mean was -0.0002 (t -1.8) in the
+elo-v12 era and nothing on elo-v14.0 (Elo +0.00005, goals model +0.00016 walk-forward;
+"The offseason pull toward each club's own level, re-tested on elo-v14.0 - rejected again",
+`own_level.py`). That version was symmetric, reset a club's level when it changed division (so it
+could not see a division comeback) and had no big-club asymmetry. Tested here:
+`markov_k_anchor.py` (signal), `markov_l_anchor_model.py` (model change). Anchor = EWMA (memory 0.5,
+0.7, 0.85) of the club's earlier end-of-season ratings on the one cross-division Elo ladder, seeded from
+the 2014 ladder, no reset on a change of division, the last season excluded; gap = last end rating
+minus anchor (negative = below where it belongs); level = anchor minus the division's mean anchor
+(how big a club it is).
+
+| step | what | result |
+|---|---|---|
+| 1. tilt on the blend's odds, walk-forward 2019+ | 3 memories x 7 feature sets (gap; gap below / above; level; gap and level; the four-way split; below-gap x level) x ridge 1, 30 = 42 configs | 17 % of configs below zero: **only the one the idea predicts** (below-anchor x level): -0.00040 log loss (t -1.14), Brier -0.00026, RPS -0.00012, halves -0.00024 / -0.00055, xG matches -0.00045 (t -0.96); the same cell at memory 0.7 and 0.85: -0.00039, -0.00035. Gap alone, above-anchor, level alone, the symmetric forms: 0 (+0.00006 to +0.00054). Fitted beta -0.138 on below-gap x level: a club below its anchor does better than the blend, more the bigger the club. **Permutation null** (40 shuffles of whole club-season vectors among clubs of a season and division, the same 42 configs): best log loss averages +0.00001 (min -0.00051), best t +0.09 (min -1.17); 1 of 40 is at least as good as the real best (p about 0.03) |
+| 2. model change, on top of shipped (A) | after the pull, Elo + g x (-gap/100) x (level/100) for gap < 0, the goals model's attack and defence the same, anchors from the variant's own Elo replay; g 10-70 points / 0.02-0.15 log goals, memory 0.5 / 0.7, identity at 0 checked | 80 % of cells below zero; in sample -0.00049 (t -1.17, halves t -0.32 / -1.20); walk-forward -0.00028 (t -0.58), Brier t -0.57, RPS t -0.59, xG matches -0.00025 (t -0.53), all of it in OBOS-ligaen (-0.00056, t -0.63; Eliteserien 0.00000) |
+| 3. in place of the relegation special-casing (B) | elo-v15.0's two knobs removed (cost alone +0.00046, t +2.32), the anchor term in their place | -0.00008 (t -0.13): parity, as the step-9 term was (-0.00004) |
+| 4. against and with the step-9 rebound term | the same walk-forward form | step 9 alone -0.00061 (t -1.28), the anchor alone -0.00028 (t -0.58), **together -0.00049 (t -0.81)**: not additive, the anchor adds nothing the last-season residual does not carry |
+
+Named clubs (memory 0.7, gap in rating points, then that season's points residual a match against the
+blend). Rosenborg fits, after a negative gap: 2020 (-24) +0.12, 2021 (-35) -0.10, 2022 (-52) +0.15,
+2024 (-90) +0.28, 2026 (-56) +0.31; after a positive gap: 2023 (+11) -0.17, 2025 (+31) -0.20. Misses,
+big clubs that did not rebound: Molde 2025 (-27) -0.27 and 2026 (-107) -0.02, Odd 2025 in OBOS-ligaen
+(-135) -0.26; Stromsgodset 2019 (-88) -0.20 and 2020 (-70) -0.30 (a once-big club with no way back, as the
+idea says), then 2026 in OBOS-ligaen (-107) +0.17. Brann 2023 (+77) +0.30 and Lillestrom 2025 in
+OBOS-ligaen (-100) +0.58 are rebounds from the cohort table; Brann 2026 (+73) -0.22.
+
+**Verdict.** The theory's shape is supported where it was tested head on: a below-anchor gap alone
+does nothing, the same gap times how big the club is does, and it survives its null (p about 0.03) and the
+xG matches. It is the same information as the step 9 rebound ("a bad year, then better than the blend")
+seen through bigness: they overlap (not additive), the anchor is the weaker of the two as a model change
+(-0.00028 against -0.00061 walk-forward), and like it, it can stand in for the relegation special-casing
+at parity but not beat it. Not shipped; no `MODEL_VERSION` change. Not done: a per-club rebound
+history as the "belongs" measure (12 seasons a club is too short to separate a club's own tendency from
+noise; the level stands in for it), and anchors from squad value history (the value pull already
+takes that, and removing it costs +0.0028). A MAJOR bump if ever shipped; re-run steps 1-4 of this section
+and steps 9-11 of the one above once 2026 is final.
+
+### The anchor from a deeper history (standings back to 1963) - no better than the 2014 seed
+
+The owner's point: Rosenborg has been the biggest club for forty years, and an anchor seeded from the 2014
+ladder cannot know it. Source: Wikipedia's rendered season pages (one API request a page, the repo's
+manual backfill rules; `fetch_wikipedia_standings.py`, `parse_wikipedia_standings.py`,
+`data/history_standings.json`; top tier 1963-2015, second tier 1991-2015, 78 pages; the identity gate
+reproduces the repo's 2014 and 2015 tables, 77 of 78 rows, the one a Lillestrom point deduction;
+Rosenborg's 23 titles to 2015 and Viking's 7 reproduce). There are no matches before 2015, only
+tables, so the anchor is built from one ladder for every season: score = 1 - rank / (N1 + N2 + 16),
+rank = place in the top tier, N1 + place in the second tier, or a floor rank for a club in neither (the
+floor is informative); 2016+ from the matches. EWMA memory 0.8 / 0.9 / 0.95 over every season to the
+one before the last; gap and level as above; the same 7 feature sets x ridge 1, 30 (42 configs), the same
+walk-forward 2019+ and 40-shuffle null (`markov_m_history.py`).
+
+| | best config | null |
+|---|---|---|
+| anchor from the 2014 Elo ladder (above) | below-gap x level: -0.00040 (t -1.14), halves -0.00024 / -0.00055, xG -0.00045 | 1 of 40 as good (p about 0.03) |
+| anchor from standings back to 1963 | below-gap x level, memory 0.95: -0.00055 (t -1.01), Brier -0.00043, RPS -0.00020, halves -0.00060 / -0.00050, xG -0.00041 (t -0.59); memory 0.9 -0.00033 with halves -0.00096 / +0.00031; memory 0.8, gap alone (both signs) -0.00049 (t -0.74); 29 % of configs below zero | best of 42 averages -0.00007 on 40 shuffles (min -0.00076); 7 % of shuffles at least as good on log loss, 10 % on t: **weaker than the comparator** |
+
+Without a club (its matches out of the fit and the score; memory 0.95, below-gap x level): Rosenborg out
+-0.00046 (t -0.82), Start -0.00046, Lillestrom -0.00032, Molde -0.00066 (t -1.05), Brann -0.00045, Sogndal
+-0.00066, Rosenborg and Start -0.00037: no single club carries it, Rosenborg least of all. Rosenborg's
+score stays 0.92-0.98 until 2022 and its level is +2.0 to +2.7 (x10) throughout; its gap is negative from
+2020 (-0.2, -0.4, -0.6, -0.1, -1.3, -0.2, -0.8), the years it was below its own history.
+
+**Verdict.** A deeper history makes the feature better informed (the level now sees forty years) but
+not the test stronger: the scored seasons are still 2019 onward and the number of rebound events is the
+same. The best log loss moves from -0.00040 to -0.00055 but the null gets worse (p 0.03 -> 0.07-0.10), the
+benefit depends on the longest memory, and the fitted effect is small (beta -0.038 against -0.138). By the
+agreed order, a model change is only built if the deeper history beats the 2014-seeded anchor and its null;
+it does not, so none was built. Nothing shipped, no `MODEL_VERSION` change. What the longer source is good
+for: it is on disk (`data/history_standings.json`), so the next idea about long-run strength (a club's
+all-time level as a prior for a newly promoted club, say) can start from it without another fetch.
+
+### Clubs that change division, from their long-run level (`markov_n_promoted.py`)
+
+The one new idea from the history file: a prior for a club's first season after a move from its all-time
+level (ladder score back to 1963, EWMA memory 0.9, 0.95, minus the division's mean, through last season).
+Club-season points residual a match against the blend, first season after the move, 2016-2025:
+
+| group | n | mean residual | per sd of level | note |
+|---|---|---|---|---|
+| promoted OBOS-ligaen -> Eliteserien | 24 | +0.040 | -0.006 (cluster t -0.12) | nothing: the high-level ones (Brann +0.56, Viking +0.24, Lillestrom +0.24, Valerenga +0.08) and the low-level ones (Kristiansund +0.26, Ranheim +0.37, Fredrikstad +0.33; Mjondalen -0.15, KFUM -0.01, Bryne -0.09) scatter alike |
+| relegated Eliteserien -> OBOS-ligaen | 24 | +0.060 | **+0.091** (corr +0.38) | the bigger the club, the better it does in OBOS-ligaen than the blend says; **permutation p 0.062** (20,000 shuffles of the level among the 24; the cluster t of 4.3 over 16 clubs is too generous); leave one club out +0.069 to +0.106; memory 0.8 / 0.95 +0.088 / +0.095 |
+| up from outside the two divisions | 24 | +0.019 | +0.061 (t +1.70) | |
+| clubs that did not move | 248 | | -0.008 (corr -0.04) | the level says nothing for them |
+
+Walk-forward tilt, 16 configs (level x mover flag; promoted, relegated, both, all movers; memory 0.9 / 0.95;
+ridge 1, 30), 2019+: relegated x level -0.00051 log loss (t -1.03), Brier -0.00029, RPS -0.00016, halves
+-0.00069 / -0.00032 (memory 0.9), -0.00050 at 0.95; both groups together -0.00027 (t -0.53); promoted alone
++0.00031 at worst; 75 % of configs below zero. Null (40 shuffles of the level among club-seasons of the same
+kind over all seasons): best of 16 averages -0.00023 (min -0.00081); 10 % of shuffles as good on log loss,
+5 % on t.
+
+**Verdict.** Promoted clubs: nothing, so no prior from all-time level (the squad value placement and the plain
+mean already do what the data allow). Relegated clubs: the same direction as every other lead in this
+section (big clubs hold up better than the blend after a bad spell), at p about 0.06 on 24 club-seasons, and the
+shipped relegation placement (half the distance, squad value, elo-v15.0) does not use club history. It is
+the third angle on one signal, not independent of steps 6, 9 and 11 above. Not shipped. The test to run
+when a season is added (2026 relegations, 2027): the relegated club's level on one frozen definition
+(memory 0.9), residual in its first OBOS-ligaen season; 2026's relegated clubs (Odds Ballklubb and the
+others from 2025) are the first out-of-sample cases, and with 3 a year the result takes years.

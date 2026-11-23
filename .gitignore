@@ -34,3 +34,6 @@ experiments/mobile-audit/*-report.md
 .opencode/
 
 .claude/settings.local.json
+
+# raw Wikipedia season pages (experiments/improvements/fetch_wikipedia_standings.py reproduces them)
+data/raw/wikipedia_standings/
