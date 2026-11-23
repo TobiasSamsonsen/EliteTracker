@@ -170,9 +170,48 @@ const TABLE_BONUS = {
 const draftKey = (uid, roundKey) => `predict.draft.${uid || 'new'}.${roundKey}`;
 const roundKeyOf = (season, league, round) => `${season}_${league}_${round}`;
 
+/* ---- where you stand: the season panel's numbers ------------------------------------------------ */
+
+/* The share of players you beat (0..100), from a board's 101 percentile cut-offs. */
+function beatShare(pct, value) {
+  if (!pct || !pct.length) return null;
+  return Math.max(0, Math.min(100, pct.filter((v) => v < value).length - 1));
+}
+
+/* A normal curve for the field, from the percentile table: the median as its middle, half the
+   16th-84th spread as its standard deviation (a robust fit that ignores a few wild scores). */
+function normalFit(pct) {
+  if (!pct || pct.length < 101) return null;
+  const mean = pct[50];
+  const sd = Math.max((pct[84] - pct[16]) / 2, 0.02);
+  return { mean, sd };
+}
+
+const normalDensity = (x, mean, sd) => Math.exp(-0.5 * ((x - mean) / sd) ** 2);
+
+/* A tier by the share of players you beat, and how far the next one is. */
+const TIERS = [{ id: 'gold', at: 90 }, { id: 'silver', at: 75 }, { id: 'bronze', at: 50 }, { id: 'rookie', at: 0 }];
+function tierOf(beat) {
+  const index = TIERS.findIndex((tier) => beat >= tier.at);
+  const tier = TIERS[index];
+  const next = index > 0 ? TIERS[index - 1] : null;
+  return { id: tier.id, next: next ? next.id : null, toNext: next ? next.at - beat : 0 };
+}
+
+/* Your accuracy in each of your last rounds in one division, oldest first. */
+function roundForm(stats, season, league, count = 8) {
+  const prefix = `${season}_${league}_`;
+  return Object.entries((stats && stats.rounds) || {})
+    .filter(([key]) => key.startsWith(prefix))
+    .map(([key, row]) => ({ round: Number(key.slice(prefix.length)), ab: row.ab || 0, n: row.n || 0 }))
+    .sort((a, b) => a.round - b.round)
+    .slice(-count);
+}
+
 if (typeof module !== 'undefined') {
   module.exports = {
     groupThousands, fixed, percentText, signed, spanParts, ROUND_OVER_AFTER, roundStatus, currentRoundIndex, isLocked, ringState,
     computeStreak, calibrationBins, seasonTotals, badgesFor, nearestPosition, gapAtFraction, TABLE_BONUS, draftKey, roundKeyOf,
+    beatShare, normalFit, normalDensity, TIERS, tierOf, roundForm,
   };
 }

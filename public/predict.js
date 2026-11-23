@@ -870,6 +870,170 @@
     } catch (error) { target.replaceChildren(emptyState(error, () => showLeague(code, target))); }
   }
 
+  /* ---- your season, beside the matches ---------------------------------------------------------- */
+
+  const SIDE_TABS = ['tip', 'table', 'boards'];
+  const SVG_NS = 'http://www.w3.org/2000/svg';
+  const svg = (tag, attrs = {}) => { const node = document.createElementNS(SVG_NS, tag); for (const [k, v] of Object.entries(attrs)) node.setAttribute(k, v); return node; };
+
+  async function renderSide() {
+    const side = document.getElementById('predict-side');
+    const layout = document.querySelector('.playout');
+    if (!side) return;
+    const show = SIDE_TABS.includes(S.tab);
+    side.hidden = !show;
+    if (layout) layout.dataset.side = String(show);
+    if (!show) return;
+    const league = S.league;
+    const season = S.index && S.index.season;
+    if (!side.firstChild) side.append(h('div', { class: 'pside__card pskeleton', attrs: { 'aria-hidden': 'true' } }, h('span'), h('span'), h('span')));
+    try {
+      if (client.uid && S.stats === undefined) S.stats = await client.get(`stats/${client.uid}`);
+      if (client.uid && !S.ownHash) S.ownHash = await uidHash(client.uid);
+      S.sideBoards = S.sideBoards || {};
+      const key = `${season}_${league}`;
+      if (season && !(key in S.sideBoards)) S.sideBoards[key] = await client.get(`boards/season_${key}`);
+    } catch (error) { /* the panel shows what it has */ }
+    if (S.league !== league || !SIDE_TABS.includes(S.tab)) return;
+    side.replaceChildren(sidePanel(season, league));
+  }
+
+  function sidePanel(season, league) {
+    const board = (S.sideBoards || {})[`${season}_${league}`] || null;
+    const mine = season && S.stats ? seasonTotals(S.stats, season, league) : { n: 0 };
+    const nick = (S.profile && S.profile.nick) || t('predict.you');
+    const head = h('div', { class: 'pside__head' },
+      h('span', { class: 'pside__avatar', attrs: { 'aria-hidden': 'true' } }, nick.charAt(0).toUpperCase()),
+      h('span', { class: 'pside__who' }, h('strong', {}, nick), h('small', {}, `${t('predict.side.label')} · ${LEAGUE_NAME[league]}`)));
+    const card = h('section', { class: 'pside__card', attrs: { 'aria-label': t('predict.side.label') } }, head);
+
+    if (!mine.n) {
+      card.append(h('p', { class: 'pside__empty' }, t('predict.side.empty')), bellChart(board, null));
+      return card;
+    }
+
+    const beat = board ? beatShare(board.pct, mine.ab) : null;
+    // Rank among people: the board's own ranks also count the model and the crowd rows.
+    const own = board && S.ownHash ? board.rows.find((r) => r.u === S.ownHash) : null;
+    const tone = mine.ab > 0.00005 ? 'good' : mine.ab < -0.00005 ? 'bad' : 'even';
+    const big = h('strong', { class: 'pside__score', data: { tone } }, signed(mine.ab));
+    countUp(big, mine.ab, `${season}_${league}`);
+    card.append(h('div', { class: 'pside__hero' }, big, h('span', { class: 'pside__label' }, t('predict.side.acc'))));
+
+    if (beat !== null) {
+      const tier = tierOf(beat);
+      card.append(h('div', { class: 'pside__tier', data: { tier: tier.id } },
+        h('span', { class: 'pside__medal', attrs: { 'aria-hidden': 'true' } }),
+        h('span', {}, h('strong', {}, t(`predict.tier.${tier.id}`)), h('small', {},
+          own ? t('predict.side.rank', { rank: board.rows.filter((r) => r.kind === 'player' && r.rank <= own.rank).length, total: groupThousands(board.players || 0, lang()) }) : t('predict.side.beat', { beat })))));
+      // Progress through the tiers: 50, 75 and 90 % are the steps.
+      const track = h('div', { class: 'pside__track', attrs: { role: 'img', 'aria-label': t('predict.side.beat', { beat }) } },
+        h('span', { class: 'pside__fill', style: `width: 0%` }),
+        ...[50, 75, 90].map((at) => h('span', { class: 'pside__step', style: `left: ${at}%` })));
+      requestAnimationFrame(() => requestAnimationFrame(() => { track.firstChild.style.width = `${beat}%`; }));
+      card.append(track, h('p', { class: 'pside__next' }, tier.next
+        ? t('predict.side.next', { n: tier.toNext, tier: t(`predict.tier.${tier.next}`) }) : t('predict.side.top')));
+    }
+
+    card.append(h('h3', { class: 'pside__h' }, t('predict.side.dist')), bellChart(board, mine.ab, beat));
+
+    const form = roundForm(S.stats, season, league, 8);
+    if (form.length) {
+      const top = Math.max(0.05, ...form.map((f) => Math.abs(f.ab)));
+      card.append(h('h3', { class: 'pside__h' }, t('predict.side.form')),
+        h('div', { class: 'pside__form', attrs: { role: 'img', 'aria-label': t('predict.side.formAria', { n: form.length }) } },
+          form.map((f) => h('span', { class: 'pside__bar', data: { tone: f.ab > 0 ? 'good' : f.ab < 0 ? 'bad' : 'even' },
+            title: `${t('predict.round', { n: f.round })}: ${signed(f.ab)}` },
+            h('i', { style: `height: ${Math.max(4, (Math.abs(f.ab) / top) * 48)}%` }), h('small', {}, String(f.round))))));
+    }
+
+    const streak = streakNow();
+    const cell = (value, label, toneOf) => h('div', { class: 'pside__cell', data: { tone: toneOf || 'even' } }, h('strong', {}, value), h('small', {}, label));
+    card.append(h('div', { class: 'pside__grid' },
+      cell(String(mine.n), t('predict.col.n')),
+      cell(signed(mine.vm), t('predict.stats.vm'), mine.vm > 0 ? 'good' : mine.vm < 0 ? 'bad' : 'even'),
+      cell(String(streak.current), t('predict.stats.streak')),
+      cell(fixed(mine.b / mine.n, 2), t('predict.col.b'))));
+    const badges = badgesFor({ tips: mine.n, totals: mine, streak: streak.best }).filter((b) => b.earned);
+    if (badges.length) card.append(h('ul', { class: 'pbadges pside__badges' }, badges.map((b) => h('li', { class: 'pbadge pbadge--b', data: { earned: 'true' } },
+      h('span', { attrs: { 'aria-hidden': 'true' } }, '✓'), t(`predict.badge.${b.id}`)))));
+    card.append(h('button', { type: 'button', class: 'plink pside__more', on: { click: () => openTab('me') } }, t('predict.side.more')));
+    return card;
+  }
+
+  /* The field as a bell curve: the part of it you beat is filled, your marker slides in. */
+  function bellChart(board, value, beat) {
+    const fit = board ? normalFit(board.pct) : null;
+    const W = 280;
+    const H = 110;
+    const base = H - 18;
+    if (!fit || (board.players || 0) < 3) {
+      return h('p', { class: 'pside__note' }, t('predict.side.distLater'));
+    }
+    const model = (board.rows || []).find((r) => r.kind === 'model');
+    const points = [fit.mean - 3 * fit.sd, fit.mean + 3 * fit.sd, value, model && model.ab].filter((x) => x !== null && x !== undefined && Number.isFinite(x));
+    const lo = Math.min(...points) - fit.sd * 0.3;
+    const hi = Math.max(...points) + fit.sd * 0.3;
+    const x = (v) => ((v - lo) / (hi - lo)) * W;
+    const y = (v) => base - normalDensity(v, fit.mean, fit.sd) * (base - 14);
+    let path = `M0 ${base}`;
+    for (let i = 0; i <= 80; i++) { const v = lo + ((hi - lo) * i) / 80; path += ` L${x(v).toFixed(1)} ${y(v).toFixed(1)}`; }
+    path += ` L${W} ${base} Z`;
+    const chart = svg('svg', { viewBox: `0 0 ${W} ${H}`, class: 'pbell', role: 'img',
+      'aria-label': value === null ? t('predict.side.dist') : t('predict.side.distAria', { beat, league: LEAGUE_NAME[S.league] }) });
+    const clipId = `pbell-${Math.random().toString(36).slice(2, 8)}`;
+    const defs = svg('defs');
+    const clip = svg('clipPath', { id: clipId });
+    const clipRect = svg('rect', { x: 0, y: 0, width: 0, height: H, class: 'pbell__clip' });
+    clip.append(clipRect);
+    defs.append(clip);
+    chart.append(defs, svg('path', { d: path, class: 'pbell__curve' }));
+    if (value !== null) chart.append(svg('path', { d: path, class: 'pbell__beat', 'clip-path': `url(#${clipId})` }));
+    chart.append(svg('line', { x1: 0, x2: W, y1: base, y2: base, class: 'pbell__axis' }));
+    const tick = (v, label, cls, up) => {
+      const g = svg('g', { class: `pbell__mark ${cls}` });
+      g.append(svg('line', { x1: x(v), x2: x(v), y1: up ? 10 : y(v), y2: base, class: 'pbell__line' }));
+      const text = svg('text', { x: Math.min(W - 4, Math.max(4, x(v))), y: up ? 9 : base + 13, 'text-anchor': x(v) < 30 ? 'start' : x(v) > W - 30 ? 'end' : 'middle' });
+      text.textContent = label;
+      g.append(text);
+      return g;
+    };
+    chart.append(tick(fit.mean, t('predict.side.median'), 'pbell__mark--median', false));
+    if (model) {
+      // Labels must not collide: the model's goes up top when it is near the median's, and is left
+      // off (the dashed line stays) when it would also sit on yours.
+      const nearMedian = Math.abs(x(model.ab) - x(fit.mean)) < 48;
+      const nearYou = value !== null && Math.abs(x(model.ab) - x(value)) < 40;
+      const mark = tick(model.ab, nearMedian && nearYou ? '' : t('predict.model'), 'pbell__mark--model', nearMedian);
+      chart.append(mark);
+    }
+    if (value !== null) {
+      const you = tick(value, t('predict.you'), 'pbell__mark--you', true);
+      chart.append(you);
+      // The reveal: the filled part grows to your score, your marker slides in from the middle.
+      const target = x(value);
+      you.style.transform = `translateX(${(x(fit.mean) - target).toFixed(1)}px)`;
+      requestAnimationFrame(() => requestAnimationFrame(() => { clipRect.style.width = `${target.toFixed(1)}px`; you.style.transform = 'translateX(0)'; }));
+    }
+    return h('figure', { class: 'pside__chart' }, chart,
+      h('figcaption', {}, value === null ? t('predict.side.distEmpty') : t('predict.side.beat', { beat })));
+  }
+
+  /* The headline number counts up once per visit, not on every redraw. */
+  function countUp(node, target, key) {
+    S.counted = S.counted || new Set();
+    if (S.counted.has(key) || matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    S.counted.add(key);
+    const start = performance.now();
+    const step = (time) => {
+      const k = Math.min(1, (time - start) / 900);
+      node.textContent = signed(target * (1 - (1 - k) ** 3));
+      if (k < 1) requestAnimationFrame(step);
+    };
+    node.textContent = signed(0);
+    requestAnimationFrame(step);
+  }
+
   /* ---- how to play: a guide with a bar to try and a result to pick -------------------------------- */
 
   function renderHow(root) {
@@ -1176,6 +1340,7 @@
     else if (S.tab === 'boards') renderBoards(root);
     else if (S.tab === 'how') renderHow(root);
     else renderMe(root);
+    renderSide();
     if (S.note) toast(S.note.text, S.note.kind);
   }
 

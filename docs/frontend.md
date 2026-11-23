@@ -217,6 +217,15 @@ centred column (48rem) with the site's own corner radii (`--radius`, `--radius-s
 6px ends): a centred header, switches and round bar. A bar segment keeps its number while the
 number fits, measured against the bar's real width (`labelFits`), not a fixed 12 % cut-off.
 
+On a wide screen the matches are the left column and "your season" the right one (`renderSide`,
+on the tip, table and boards views; Meg has the full numbers): your season accuracy counting up, a
+tier by the share of players you beat (Gull 90 %, Sølv 75 %, Bronse 50 %, otherwise Utfordrer) with a
+progress bar to the next, a bell curve fitted to the board's percentile table (median as the middle,
+half the 16th-84th spread as the sd: `normalFit`) with the part you beat filled and your marker
+sliding in, your accuracy per recent round, four key numbers and your badges. The rank counts people
+only (board ranks include the model and crowd rows). On a phone the panel is a short strip above the
+matches. The maths is in `predict-util.js` (`beatShare`, `normalFit`, `tierOf`, `roundForm`).
+
 Run it against the local emulators (no cloud involved):
 
 ```bash

@@ -194,3 +194,23 @@ test('a public document still loads when the stored session is rejected', async 
   assert.deepEqual(await client.get('meta/rounds'), { season: 2027 });
   await assert.rejects(client.get('stats/u'));            // a private document is not retried without a token
 });
+
+test('the season panel: the share you beat, the bell, the tiers and your form', () => {
+  const pct = Array.from({ length: 101 }, (_, i) => -0.5 + i / 100);       // an even spread, -0.5 .. 0.5
+  assert.equal(util.beatShare(pct, 0), 49);
+  assert.equal(util.beatShare(pct, 1), 100);
+  assert.equal(util.beatShare(pct, -1), 0);
+  assert.equal(util.beatShare([], 0.1), null);
+  const fit = util.normalFit(pct);
+  assert.ok(Math.abs(fit.mean - 0) < 1e-9 && Math.abs(fit.sd - 0.34) < 1e-9);
+  assert.equal(util.normalFit(Array(101).fill(0.1)).sd, 0.02);                 // everyone equal: a floor, not zero
+  assert.equal(util.normalDensity(fit.mean, fit.mean, fit.sd), 1);
+  assert.deepEqual(util.tierOf(95), { id: 'gold', next: null, toNext: 0 });
+  assert.deepEqual(util.tierOf(80), { id: 'silver', next: 'gold', toNext: 10 });
+  assert.deepEqual(util.tierOf(50), { id: 'bronze', next: 'silver', toNext: 25 });
+  assert.deepEqual(util.tierOf(12), { id: 'rookie', next: 'bronze', toNext: 38 });
+  const stats = { rounds: { '2027_eliteserien_3': { ab: 0.1, n: 8 }, '2027_eliteserien_1': { ab: -0.2, n: 8 },
+    '2027_obosligaen_2': { ab: 0.5, n: 8 }, '2026_eliteserien_30': { ab: 0.9, n: 8 } } };
+  assert.deepEqual(util.roundForm(stats, 2027, 'eliteserien').map((r) => [r.round, r.ab]), [[1, -0.2], [3, 0.1]]);
+  assert.equal(util.roundForm(stats, 2027, 'eliteserien', 1).length, 1);
+});

@@ -7,7 +7,7 @@
    :where keeps this at class weight, so the rules below still win. */
 .predict :where(section) { margin-block: 0; }
 
-.predict { max-width: 48rem; padding-block: 1.25rem 4rem; }
+.predict { max-width: 70rem; padding-block: 1.25rem 4rem; }
 .predict .doc__top { display: flex; justify-content: space-between; align-items: center; gap: 1rem; }
 .predict .doc__top a { color: var(--ink-muted); text-decoration: none; font-weight: 600; }
 .predict .doc__head { margin-top: 1.25rem; }
@@ -468,3 +468,94 @@
 
 /* The language switch stays at the right end of the top bar. */
 .predict .doc__top .switch[aria-label] { margin-inline: 0; }
+
+/* ---- two columns: the matches left, your season right ------------------------------------------- */
+
+.playout { display: flex; flex-direction: column; gap: 1rem; max-width: 48rem; margin-inline: auto; }
+.playout[data-side="true"] .pside { order: -1; }
+@media (min-width: 960px) {
+  .playout[data-side="true"] { display: grid; grid-template-columns: minmax(0, 46rem) 20rem; justify-content: center; align-items: start;
+    gap: 2rem; max-width: none; }
+  .playout[data-side="true"] .pside { order: 0; position: sticky; top: 1rem; }
+}
+
+.pside__card { display: grid; gap: 0.75rem; padding: 1.1rem 1.15rem 1.15rem; background: var(--panel); border: 1px solid var(--rule); border-radius: var(--radius); }
+.pside__head { display: flex; align-items: center; gap: 0.65rem; }
+.pside__avatar { display: grid; place-items: center; width: 2.4rem; height: 2.4rem; flex: none; border-radius: 50%;
+  background: var(--accent); color: var(--on-accent); font-weight: 900; font-size: 1.1rem; }
+.pside__who { display: grid; min-width: 0; line-height: 1.2; }
+.pside__who strong { overflow-wrap: anywhere; }
+.pside__who small, .pside__label, .pside__next, .pside__note, .pside__chart figcaption { color: var(--ink-muted); font-size: 0.8125rem; }
+.pside__empty { margin: 0; color: var(--ink-muted); font-size: 0.875rem; }
+.pside__hero { display: grid; justify-items: center; text-align: center; padding: 0.4rem 0 0.1rem; }
+.pside__score { font-size: 2.9rem; font-weight: 900; line-height: 1; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; }
+.pside__score[data-tone="good"] { color: var(--outcome-good-ink); }
+.pside__score[data-tone="bad"] { color: var(--outcome-bad-ink); }
+
+/* The tier: a medal, and a glow when it is worth one. */
+.pside__tier { display: flex; align-items: center; justify-content: center; gap: 0.6rem; text-align: left; }
+.pside__tier > span:last-child { display: grid; line-height: 1.2; }
+.pside__tier small { color: var(--ink-muted); font-size: 0.8125rem; }
+.pside__medal { --medal: var(--rule-strong); width: 1.9rem; height: 1.9rem; border-radius: 50%; flex: none;
+  background: radial-gradient(circle at 35% 30%, color-mix(in srgb, var(--medal) 30%, white), var(--medal) 60%, color-mix(in srgb, var(--medal) 70%, black)); }
+.pside__tier[data-tier="gold"] { --medal: var(--band-champion); }
+.pside__tier[data-tier="silver"] { --medal: #b9c2d0; }
+.pside__tier[data-tier="bronze"] { --medal: #c9701c; }
+.pside__tier[data-tier] .pside__medal { --medal: inherit; }
+.pside__tier[data-tier="gold"] .pside__medal { --medal: var(--band-champion); box-shadow: 0 0 14px color-mix(in srgb, var(--band-champion) 70%, transparent); }
+.pside__tier[data-tier="silver"] .pside__medal { --medal: #b9c2d0; box-shadow: 0 0 10px color-mix(in srgb, #b9c2d0 55%, transparent); }
+.pside__tier[data-tier="bronze"] .pside__medal { --medal: #c9701c; }
+.pside__tier[data-tier="rookie"] .pside__medal { --medal: var(--rule-strong); }
+
+/* Progress through the tiers (steps at 50, 75 and 90 %). */
+.pside__track { position: relative; height: 0.5rem; border-radius: 999px; background: var(--panel-sunk); overflow: hidden; }
+.pside__fill { position: absolute; inset: 0 auto 0 0; border-radius: 999px; background: linear-gradient(90deg, var(--accent), var(--outcome-good)); transition: width 900ms var(--ease); }
+.pside__step { position: absolute; top: 0; bottom: 0; width: 2px; background: var(--panel); }
+.pside__next { margin: -0.35rem 0 0; text-align: center; }
+.pside__h { margin: 0.4rem 0 -0.35rem; font-size: 0.8125rem; color: var(--ink-muted); text-align: center; }
+
+/* The bell curve. */
+.pside__chart { margin: 0; }
+.pbell { width: 100%; height: auto; display: block; overflow: visible; }
+.pbell__curve { fill: color-mix(in srgb, var(--ink) 8%, transparent); stroke: var(--rule-strong); stroke-width: 1.5; }
+.pbell__beat { fill: color-mix(in srgb, var(--accent) 45%, transparent); stroke: var(--accent); stroke-width: 1.5; }
+.pbell__clip { transition: width 1100ms var(--ease); }
+.pbell__axis { stroke: var(--rule); }
+.pbell__mark text { font-size: 10px; fill: var(--ink-muted); font-weight: 700; }
+.pbell__line { stroke: var(--rule-strong); stroke-width: 1; stroke-dasharray: 3 3; }
+.pbell__mark--you .pbell__line { stroke: var(--accent); stroke-width: 2.5; stroke-dasharray: none; }
+.pbell__mark--you text { fill: var(--accent-ink); font-size: 11px; font-weight: 900; }
+.pbell__mark--you { transition: transform 1100ms var(--ease); }
+.pside__chart figcaption { text-align: center; margin-top: 0.2rem; }
+
+/* Form: one bar per round, up for a good round, down for a bad one. */
+.pside__form { display: flex; justify-content: center; align-items: stretch; gap: 0.35rem; height: 3.2rem; }
+.pside__bar { position: relative; flex: 1; max-width: 1.6rem; display: flex; flex-direction: column; align-items: center; }
+.pside__bar i { position: absolute; left: 0; right: 0; border-radius: 3px; background: var(--rule-strong); }
+.pside__bar[data-tone="good"] i { bottom: 50%; height: auto; background: var(--outcome-good); }
+.pside__bar[data-tone="bad"] i { top: 50%; background: var(--outcome-bad); }
+.pside__bar[data-tone="even"] i { top: calc(50% - 1px); height: 2px !important; }
+.pside__bar small { position: absolute; bottom: -1.1rem; font-size: 0.6875rem; color: var(--ink-faint); }
+.pside__form { margin-bottom: 0.9rem; background: linear-gradient(var(--rule), var(--rule)) center / 100% 1px no-repeat; }
+
+.pside__grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; }
+.pside__cell { display: grid; padding: 0.55rem 0.65rem; border-radius: var(--radius-sm); background: var(--panel-sunk); text-align: center; }
+.pside__cell strong { font-size: 1.15rem; font-variant-numeric: tabular-nums; }
+.pside__cell small { color: var(--ink-muted); font-size: 0.75rem; }
+.pside__cell[data-tone="good"] strong { color: var(--outcome-good-ink); }
+.pside__cell[data-tone="bad"] strong { color: var(--outcome-bad-ink); }
+.pside__badges { justify-content: center; margin: 0; }
+.pside__more { justify-self: center; min-height: 36px; }
+
+/* On a phone the panel is a short strip above the matches: who you are, your score, your tier. */
+@media (max-width: 959px) {
+  .pside__h, .pside__chart, .pside__form, .pside__grid, .pside__badges, .pside__note, .pside__next { display: none; }
+  .pside__card { grid-template-columns: 1fr auto; align-items: center; gap: 0.5rem 1rem; }
+  .pside__head, .pside__track, .pside__more, .pside__empty { grid-column: 1 / -1; }
+  .pside__hero { justify-items: end; padding: 0; grid-column: 2; grid-row: 2; }
+  .pside__score { font-size: 2rem; }
+  .pside__tier { justify-content: flex-start; grid-column: 1; grid-row: 2; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .pside__fill, .pbell__clip, .pbell__mark--you { transition: none; }
+}
