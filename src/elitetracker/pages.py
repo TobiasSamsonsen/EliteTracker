@@ -178,7 +178,7 @@ def build_pages(site_dir: Path, data_dir: Path) -> list[str]:
         put(f"/utforsk/{slug}/", title=f"{name} — {first['league']['name']} {season} — EliteTracker",
             description=description, route={"view": "explore", "viz": item}, heading=name)
 
-    urls = [f"{SITE}/"] + [f"{SITE}{path}" for path in written] + [f"{SITE}/model.html"]
+    urls = [f"{SITE}/"] + [f"{SITE}{path}" for path in written] + [f"{SITE}/model.html", f"{SITE}/predict/"]
     sitemap = (
         '<?xml version="1.0" encoding="UTF-8"?>\n'
         '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n'

@@ -6,12 +6,11 @@ crowd sharpens the odds. This page is the lookup for what is built. The reasonin
 and the product decisions are in [predict-plan.md](predict-plan.md); the privacy
 copy is drafted in [predict-privacy-draft.md](predict-privacy-draft.md).
 
-**Status (2026-11-23): built, tested, not live.** The whole game exists (rules, job,
-scoring, boards, the page) and nothing is deployed, linked or scheduled; the crowd does not
-touch any published number. `firebase.json` keeps the game's files out of every Hosting
-deploy (`hosting.ignore`), so a push to `main` does not publish the page: without that, anyone
-reaching `/predict/` would create a real Firebase Auth account on their first pick, which
-`personvern.html` does not yet allow. What waits on the owner is listed under "Going live".
+**Status (2026-11-23): ready to launch from the `predict` branch.** Rules and indexes are
+deployed, the Google consent screen is in production with the privacy URL, and on the branch the
+page is deployable (no `hosting.ignore`), indexable, linked from the site footer and the sitemap,
+with the hourly job scheduled. Nothing is on `main` yet, so nothing is public: merging and pushing
+is the launch. The crowd does not touch any published number.
 
 ## Where things are
 
@@ -102,17 +101,29 @@ The rules tests (`tests/test_firestore_rules.py`) and the end-to-end loop
 Both use plain `urllib`: the emulator takes `Bearer owner` (admin) and unsigned
 JWTs (a player), so no Firebase SDK is needed.
 
-## Going live (waiting on the owner)
+## Going live
 
-None of these is done, and none is implied by the code existing.
+Done (2026-11-23):
 
-1. **Privacy, then publish.** Rewrite `public/personvern.html` from `predict-privacy-draft.md` (both languages; the **[CHECK]** items need a second pair of eyes: the Google-script wording and the age limit). Only then remove the `predict*` entries from `hosting.ignore` in `firebase.json` (the page, `predict.js`, `predict.css`, `predict-api.js`, `predict-core.js`, `predict-util.js`); until then the live site's "nothing stored server-side" stays true because the page is not deployed.
-2. **Deploy the rules and indexes:** `firebase deploy --only firestore:rules,firestore:indexes`. This is the step that opens the database to the browser (it is locked today). Run the emulator tests first. Hosting deploys do not carry it (`deploy.yml` is hosting-only).
-3. **Cron.** Uncomment `schedule:` in `.github/workflows/predict.yml`. A manual run is a dry run unless "live" is ticked.
-4. **IAM, only if wanted:** an Auth admin role on `predict-sync` for the 24-month sweep of Auth accounts; a rules-admin role on a deploy account if rules should ship from CI.
-5. **Google consent screen:** the privacy-policy URL, then publish the app (until then only listed test users can link Google).
-6. **Link the page:** nav entry, sitemap, and drop `noindex` (the page has it until now); check NFF's calendar for the opener.
-7. **Quota check:** the Firestore Usage tab should show the free quota against `europe-north1` once data flows; confirm before launch.
+- Rules and indexes deployed (`firebase deploy --only firestore:rules,firestore:indexes`); the job's
+  collection-group query works against the real project.
+- Privacy text in `public/personvern.html` (both languages), on the branch.
+- The page unblocked on the branch: `hosting.ignore` no longer lists it, `noindex` is gone, a footer
+  link on the front page and a sitemap entry (`pages.py`) point to it.
+- `predict.yml` scheduled hourly (on the branch; it runs once the file is on `main`).
+- Google consent screen: home page, privacy-policy URL and `elitetracker.no` set; the app is
+  "In production" for external users (basic scopes only, so no user cap applies). Brand
+  verification (showing the app name and a logo on Google's screen) is optional and needs the
+  domain verified in Google Search Console.
+
+Left, all the owner's:
+
+1. Review the two **[CHECK]** items in the privacy text (HTML comments in `personvern.html`: the
+   Google-script wording and the age limit).
+2. **Launch:** merge `predict` into `main` and push. That deploys the page and the privacy text, and
+   starts the hourly job.
+3. After the first runs: the Firestore Usage tab should show the free quota against `europe-north1`.
+4. Optional IAM: an Auth admin role on `predict-sync` for the 24-month sweep of Auth accounts.
 
 ## Not in this build
 

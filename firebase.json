@@ -1,16 +1,7 @@
 {
   "hosting": {
     "public": "public",
-    "ignore": [
-      "firebase.json",
-      "**/.*",
-      "predict/**",
-      "predict.js",
-      "predict.css",
-      "predict-api.js",
-      "predict-core.js",
-      "predict-util.js"
-    ],
+    "ignore": ["firebase.json", "**/.*"],
     "headers": [
       {
         "source": "/",

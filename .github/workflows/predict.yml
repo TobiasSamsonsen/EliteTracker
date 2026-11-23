@@ -1,10 +1,8 @@
 # The Predict job (docs/predict.md): syncs fixtures to Firestore, snapshots the model's odds
 # at kick-off, scores settled rounds, builds the leaderboards, erases deletion requests.
 #
-# MANUAL ONLY until the game launches: there is deliberately no `schedule:` trigger, so
-# nothing reads or writes Firestore and no commit happens by itself. To go live, the owner
-# deploys firestore.rules + firestore.indexes.json (docs/predict.md, "Going live") and then
-# adds the cron line below. Until then a manual run is a dry run unless `live` is ticked.
+# Hourly once this file is on main (the rules and indexes are deployed). A manual run is a
+# dry run unless `live` is ticked; a scheduled run is always live.
 #
 # Auth is keyless: google-github-actions/auth exchanges this run's GitHub OIDC token for a
 # short-lived access token of predict-sync@elitetrackerno.iam.gserviceaccount.com (only
@@ -20,8 +18,8 @@ on:
         description: "Write to Firestore and commit (unticked: a dry run that only prints)"
         type: boolean
         default: false
-  # schedule:
-  #   - cron: "7 * * * *"      # hourly, at launch
+  schedule:
+    - cron: "7 * * * *"        # hourly, a few minutes past to stay clear of refresh.yml
 
 permissions:
   contents: write
