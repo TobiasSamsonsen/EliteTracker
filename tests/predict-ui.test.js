@@ -214,3 +214,44 @@ test('the season panel: the share you beat, the bell, the tiers and your form', 
   assert.deepEqual(util.roundForm(stats, 2027, 'eliteserien').map((r) => [r.round, r.ab]), [[1, -0.2], [3, 0.1]]);
   assert.equal(util.roundForm(stats, 2027, 'eliteserien', 1).length, 1);
 });
+
+test('the style analysis waits for five settled matches', () => {
+  const row = { home: 'A', away: 'B', hid: 'a', aid: 'b', pick: [40, 30, 30], model: [0.4, 0.3, 0.3], hg: 1, ag: 0, ko: 1e12, t: 1e12 - 86400000 };
+  const out = util.analysePlay([row, row, row]);
+  assert.equal(out.ready, false);
+  assert.equal(out.missing, 2);
+});
+
+test('the style analysis spots an overvalued favourite, a club and too few draws', () => {
+  // You give the model's favourite 20 points more than the model; the favourites win only half; you never give draws much.
+  const rows = [];
+  for (let i = 0; i < 10; i++) {
+    const brannHome = i % 2 === 0;
+    rows.push({ key: `2027_eliteserien_${i}`, home: brannHome ? 'Brann' : `Club${i}`, away: brannHome ? `Club${i}` : 'Brann',
+      hid: brannHome ? 'brann' : `c${i}`, aid: brannHome ? `c${i}` : 'brann',
+      pick: brannHome ? [70, 15, 15] : [15, 15, 70], model: brannHome ? [0.5, 0.27, 0.23] : [0.23, 0.27, 0.5],
+      hg: i < 5 ? (brannHome ? 2 : 0) : 1, ag: i < 5 ? (brannHome ? 0 : 2) : 1, ko: 1e12, t: 1e12 - 4 * 86400000 });
+  }
+  const out = util.analysePlay(rows);
+  assert.equal(out.ready, true);
+  assert.equal(out.traits.favourite, 20);
+  assert.equal(out.traits.draw, -12);
+  const ids = out.insights.map((x) => x.id);
+  assert.ok(ids.includes('fav.over'), ids.join());
+  assert.ok(ids.includes('draw.under'), ids.join());
+  const club = out.insights.find((x) => x.id === 'team.over');
+  assert.equal(club.params.team, 'Brann');
+  assert.equal(club.params.d, 20);
+  assert.ok(ids.includes('timing.early'));
+  assert.equal(out.h2h.wins + out.h2h.losses + out.h2h.ties, 10);
+  assert.ok(out.insights[0].strength >= out.insights[out.insights.length - 1].strength);    // strongest first
+  assert.ok(out.insights.every((x) => Array.isArray(x.rows)));
+});
+
+test('a well-calibrated player gets praise, not a tip', () => {
+  const rows = Array.from({ length: 8 }, (_, i) => ({ home: `H${i}`, away: `A${i}`, hid: `h${i}`, aid: `a${i}`,
+    pick: [50, 26, 24], model: [0.5, 0.26, 0.24], hg: i < 4 ? 1 : 0, ag: i < 4 ? 0 : (i < 6 ? 0 : 1), ko: null, t: null }));
+  const out = util.analysePlay(rows);
+  assert.ok(out.insights.some((x) => x.id === 'fav.good' && x.tone === 'praise'));
+  assert.ok(!out.insights.some((x) => x.id === 'fav.over' || x.id === 'fav.under'));
+});

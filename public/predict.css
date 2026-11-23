@@ -559,3 +559,68 @@
 @media (prefers-reduced-motion: reduce) {
   .pside__fill, .pbell__clip, .pbell__mark--you { transition: none; }
 }
+
+/* ---- your playing style ------------------------------------------------------------------------- */
+
+.panalyse { display: grid; gap: 1rem; }
+.panalyse > h2 { margin-bottom: 0; }
+.panalyse__intro { margin: -0.6rem 0 0; text-align: center; }
+.panalyse__body { display: grid; gap: 1.1rem; justify-items: stretch; }
+.panalyse__body > .switch { margin-inline: auto; }
+.panalyse__body > .pbtn { justify-self: center; }
+.panalyse__n { margin: -0.5rem 0 0; text-align: center; color: var(--ink-muted); font-size: 0.8125rem; }
+.panalyse h3 { margin: 0 0 0.5rem; font-size: 0.875rem; color: var(--ink-muted); text-align: center; }
+
+/* You against the model: a score and a split bar. */
+.ph2h { display: grid; justify-items: center; gap: 0.35rem; padding: 0.9rem 1rem; border-radius: var(--radius-sm); background: var(--panel-sunk); }
+.ph2h__score { display: flex; align-items: baseline; gap: 0.5rem; margin: 0; font-size: 2.2rem; font-weight: 900; font-variant-numeric: tabular-nums; }
+.ph2h__score [data-tone="good"] { color: var(--outcome-good-ink); }
+.ph2h__score [data-tone="bad"] { color: var(--outcome-bad-ink); }
+.ph2h__bar { display: flex; gap: 2px; width: 100%; max-width: 22rem; height: 0.7rem; }
+.ph2h__bar span { flex-grow: 0; flex-shrink: 0; border-radius: 3px; min-width: 0; }
+.ph2h__w { background: var(--outcome-good); }
+.ph2h__t { background: var(--draw); }
+.ph2h__l { background: var(--outcome-bad); }
+.ph2h__legend, .ph2h__follow { margin: 0; font-size: 0.8125rem; color: var(--ink-muted); text-align: center; max-width: 30rem; }
+.ph2h__follow { color: var(--ink); font-weight: 600; }
+
+/* Style tracks: the model is the centre line, your dot sits left (less) or right (more). */
+.ptraits { display: grid; gap: 0.65rem; }
+.ptrait { display: grid; gap: 0.3rem; }
+.ptrait__head { display: flex; justify-content: space-between; font-size: 0.875rem; }
+.ptrait__head span { color: var(--ink-muted); font-weight: 700; }
+.ptrait__head span[data-tone="off"] { color: var(--accent-ink); }
+/* Neutral on purpose: less or more than the model is a style, not a score. */
+.ptrait__track { position: relative; height: 0.6rem; border-radius: 999px; background: var(--panel-sunk); border: 1px solid var(--rule); }
+.ptrait__mid { position: absolute; left: 50%; top: -3px; bottom: -3px; width: 2px; background: var(--ink-muted); transform: translateX(-50%); }
+.ptrait__dot { position: absolute; top: 50%; width: 1.05rem; height: 1.05rem; border-radius: 50%; background: var(--accent);
+  border: 2px solid var(--panel); transform: translate(-50%, -50%); box-shadow: var(--shadow); transition: left 600ms var(--ease); }
+.ptraits__legend { display: flex; justify-content: space-between; margin: 0; font-size: 0.75rem; color: var(--ink-faint); }
+
+/* Tips: tip, praise or plain information, each opens to its matches. */
+.pinsights { display: grid; gap: 0.5rem; }
+.pinsight { border: 1px solid var(--rule); border-radius: var(--radius-sm); background: var(--panel); }
+.pinsight summary { display: flex; align-items: center; gap: 0.6rem; min-height: 48px; padding: 0.5rem 0.85rem; cursor: pointer; font-weight: 800; list-style: none; }
+.pinsight summary::-webkit-details-marker { display: none; }
+.pinsight summary::after { content: "▾"; margin-left: auto; color: var(--ink-faint); }
+.pinsight[open] summary::after { content: "▴"; }
+.pinsight__icon { display: grid; place-items: center; width: 1.6rem; height: 1.6rem; flex: none; border-radius: 50%; font-size: 0.875rem; font-weight: 900; color: #fff; background: var(--draw); }
+.pinsight[data-tone="tip"] .pinsight__icon { background: var(--edge-el); }
+.pinsight[data-tone="tip"] .pinsight__icon::before { content: "!"; }
+.pinsight[data-tone="praise"] .pinsight__icon { background: var(--edge-ecl); }
+.pinsight[data-tone="praise"] .pinsight__icon::before { content: "✓"; }
+.pinsight[data-tone="info"] .pinsight__icon::before { content: "i"; }
+.pinsight > p { margin: 0 0.85rem 0.6rem 3.05rem; color: var(--ink-muted); font-size: 0.875rem; }
+.pinsight__rows { list-style: none; margin: 0 0.85rem 0.8rem 3.05rem; padding: 0; display: grid; gap: 0.35rem; font-size: 0.8125rem; }
+.pinsight__rows li { display: grid; padding: 0.4rem 0.6rem; border-radius: 6px; background: var(--panel-sunk); font-variant-numeric: tabular-nums; }
+.pinsight__rows span { color: var(--ink-muted); }
+
+/* The top tip, in the side panel. */
+.pside__tip { display: grid; gap: 0.15rem; padding: 0.6rem 0.75rem; text-align: left; font: inherit; color: var(--ink); cursor: pointer;
+  border-radius: var(--radius-sm); border: 1px solid var(--rule); border-left: 4px solid var(--edge-el); background: var(--panel-sunk); }
+.pside__tip[data-tone="praise"] { border-left-color: var(--edge-ecl); }
+.pside__tip[data-tone="info"] { border-left-color: var(--draw); }
+.pside__tip small { color: var(--ink-muted); font-size: 0.75rem; }
+.pside__tip span { font-weight: 800; font-size: 0.875rem; }
+@media (max-width: 959px) { .pside__tip { grid-column: 1 / -1; } }
+@media (prefers-reduced-motion: reduce) { .ptrait__dot { transition: none; } }

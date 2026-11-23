@@ -226,6 +226,16 @@ sliding in, your accuracy per recent round, four key numbers and your badges. Th
 only (board ranks include the model and crowd rows). On a phone the panel is a short strip above the
 matches. The maths is in `predict-util.js` (`beatShare`, `normalFit`, `tierOf`, `roundForm`).
 
+Meg has "your playing style" (`analysisSection`): your settled picks (own entries, plus the round's
+`reveal` and `fixtures` documents; a finished round is cached in the browser, so it costs reads
+once) compared with the model's locked odds and the results (`analysePlay` in `predict-util.js`,
+from five matches): you against the model match by match and what following it would have
+scored; four style tracks against the model (favourites, draws, home side, boldness); and tips,
+strongest first, each opening to the matches behind it: favourites over/under-valued (checked
+against how often they won), draws, home bias, a club you over/under-value (three matches or
+more), bold or careful and whether it pays, going against the model, tipping long before the team
+news. A division filter re-runs it; the top tip also shows in the season panel.
+
 Run it against the local emulators (no cloud involved):
 
 ```bash

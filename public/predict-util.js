@@ -208,10 +208,127 @@ function roundForm(stats, season, league, count = 8) {
     .slice(-count);
 }
 
+/* ---- your playing style: what your settled picks say about you --------------------------------- */
+
+/* rows: { key, home, away, hid, aid, pick: [h, d, a] whole percents, model: [h, d, a] fractions,
+   hg, ag, ko (ms), t (ms of your last change, or null) }. Everything is compared with the model's
+   locked odds (what it said at kick-off) and with what happened. Percentage points are whole. */
+const ANALYSE_MIN = 5;
+const TEAM_MIN = 3;
+
+function analysePlay(rows) {
+  const n = rows.length;
+  if (n < ANALYSE_MIN) return { n, ready: false, missing: ANALYSE_MIN - n };
+  const pp = (x) => Math.round(x * 100);
+  const mean = (list) => (list.length ? list.reduce((a, b) => a + b, 0) / list.length : 0);
+  const outcomeIx = (r) => (r.hg > r.ag ? 0 : r.hg < r.ag ? 2 : 1);
+  const argmax = (v) => (v[0] >= v[1] && v[0] >= v[2] ? 0 : v[2] >= v[1] ? 2 : 1);
+  const brier = (v, o) => v.reduce((sum, x, i) => sum + (x - (i === o ? 1 : 0)) ** 2, 0);
+
+  const facts = rows.map((r, index) => {
+    const you = r.pick.map((x) => x / 100);
+    const model = r.model;
+    const o = outcomeIx(r);
+    const fav = model[0] >= model[2] ? 0 : 2;                  // the model's favourite side
+    return { index, r, you, model, o, fav, yourBrier: brier(you, o), modelBrier: brier(model, o) };
+  });
+
+  // Traits, in percentage points against the model (positive: more than the model).
+  const traits = {
+    favourite: pp(mean(facts.map((f) => f.you[f.fav] - f.model[f.fav]))),
+    draw: pp(mean(facts.map((f) => f.you[1] - f.model[1]))),
+    home: pp(mean(facts.map((f) => f.you[0] - f.model[0]))),
+    bold: pp(mean(facts.map((f) => Math.max(...f.you) - Math.max(...f.model)))),
+  };
+
+  // You against the model, match by match.
+  let wins = 0; let losses = 0; let ties = 0;
+  for (const f of facts) {
+    if (f.yourBrier < f.modelBrier - 1e-9) wins += 1;
+    else if (f.yourBrier > f.modelBrier + 1e-9) losses += 1;
+    else ties += 1;
+  }
+  const followGain = facts.reduce((sum, f) => sum + (f.yourBrier - f.modelBrier), 0);   // > 0: the model would have scored better
+
+  // When you and the model had different favourites.
+  const differ = facts.filter((f) => argmax(f.you) !== argmax(f.model));
+  const disagree = { n: differ.length, right: differ.filter((f) => argmax(f.you) === f.o).length,
+    modelRight: differ.filter((f) => argmax(f.model) === f.o).length, rows: differ.map((f) => f.index) };
+
+  // Favourites: what you gave them, what the model gave them, how often they won.
+  const favWon = facts.filter((f) => f.o === f.fav).length;
+  const favourites = { n, won: favWon, rate: pp(favWon / n), yours: pp(mean(facts.map((f) => f.you[f.fav]))),
+    model: pp(mean(facts.map((f) => f.model[f.fav]))) };
+  const draws = { n, drawn: facts.filter((f) => f.o === 1).length, yours: pp(mean(facts.map((f) => f.you[1]))),
+    model: pp(mean(facts.map((f) => f.model[1]))) };
+  draws.rate = pp(draws.drawn / n);
+
+  // Clubs: your win chance for a club against the model's, over its matches.
+  const clubs = new Map();
+  for (const f of facts) {
+    for (const [side, id, name] of [[0, f.r.hid, f.r.home], [2, f.r.aid, f.r.away]]) {
+      const key = id || name;
+      const club = clubs.get(key) || { id: key, name, n: 0, diff: 0, won: 0, rows: [] };
+      club.n += 1;
+      club.diff += f.you[side] - f.model[side];
+      if (f.o === side) club.won += 1;
+      club.rows.push(f.index);
+      clubs.set(key, club);
+    }
+  }
+  const teams = [...clubs.values()].filter((c) => c.n >= TEAM_MIN).map((c) => ({ ...c, diff: pp(c.diff / c.n) }))
+    .sort((a, b) => Math.abs(b.diff) - Math.abs(a.diff));
+
+  // Timing: how long before kick-off your picks were last changed.
+  const leads = rows.filter((r) => r.t && r.ko).map((r) => (r.ko - r.t) / 86400000);
+  const days = leads.length ? Math.round(mean(leads) * 10) / 10 : null;
+
+  const insights = [];
+  const add = (id, tone, strength, params, rowsOf) => insights.push({ id, tone, strength, params, rows: rowsOf || [] });
+  const by = (pick) => facts.slice().sort((a, b) => pick(b) - pick(a)).slice(0, 5).map((f) => f.index);
+
+  if (traits.favourite >= 6 && favourites.yours > favourites.rate + 3) {
+    add('fav.over', 'tip', traits.favourite, { d: traits.favourite, won: favWon, n, rate: favourites.rate, yours: favourites.yours },
+      by((f) => f.you[f.fav] - f.model[f.fav]));
+  } else if (traits.favourite <= -6 && favourites.rate > favourites.yours + 3) {
+    add('fav.under', 'tip', -traits.favourite, { d: -traits.favourite, won: favWon, n, rate: favourites.rate, yours: favourites.yours },
+      by((f) => f.model[f.fav] - f.you[f.fav]));
+  } else if (Math.abs(favourites.yours - favourites.rate) <= 5) {
+    add('fav.good', 'praise', 4, { rate: favourites.rate, yours: favourites.yours });
+  }
+  if (traits.draw <= -5) {
+    add('draw.under', draws.rate > draws.yours ? 'tip' : 'info', -traits.draw, { yours: draws.yours, model: draws.model, drawn: draws.drawn, n, rate: draws.rate },
+      facts.filter((f) => f.o === 1).map((f) => f.index).slice(0, 5));
+  } else if (traits.draw >= 5) {
+    add('draw.over', draws.rate < draws.yours ? 'tip' : 'info', traits.draw, { yours: draws.yours, model: draws.model, drawn: draws.drawn, n, rate: draws.rate },
+      by((f) => f.you[1] - f.model[1]));
+  }
+  if (traits.home >= 6) add('home.over', 'tip', traits.home, { d: traits.home }, by((f) => f.you[0] - f.model[0]));
+  else if (traits.home <= -6) add('home.under', 'tip', -traits.home, { d: -traits.home }, by((f) => f.model[0] - f.you[0]));
+  for (const club of teams.slice(0, 2)) {
+    if (Math.abs(club.diff) < 8) continue;
+    add(club.diff > 0 ? 'team.over' : 'team.under', 'tip', Math.abs(club.diff),
+      { team: club.name, d: Math.abs(club.diff), n: club.n, won: club.won }, club.rows);
+  }
+  const ahead = wins - losses;
+  if (traits.bold >= 7) add(followGain < 0 ? 'bold.paid' : 'bold.cost', followGain < 0 ? 'praise' : 'tip', traits.bold, { d: traits.bold, wins, n });
+  else if (traits.bold <= -7) add(followGain < 0 ? 'careful.paid' : 'careful.cost', followGain < 0 ? 'praise' : 'tip', -traits.bold, { d: -traits.bold, wins, n });
+  if (disagree.n >= 3) {
+    add('disagree', disagree.right > disagree.modelRight ? 'praise' : disagree.right < disagree.modelRight ? 'tip' : 'info',
+      3 + Math.abs(disagree.right - disagree.modelRight), { n: disagree.n, right: disagree.right, model: disagree.modelRight }, disagree.rows.slice(0, 5));
+  }
+  if (ahead > 0 && wins >= 3) add('h2h.ahead', 'praise', 3 + ahead, { wins, losses, n });
+  if (days !== null && days >= 2) add('timing.early', 'info', 2, { days });
+  insights.sort((a, b) => b.strength - a.strength);
+
+  return { n, ready: true, traits, h2h: { wins, losses, ties, followGain: Math.round(followGain * 100) / 100 },
+    disagree, favourites, draws, teams, days, insights };
+}
+
 if (typeof module !== 'undefined') {
   module.exports = {
     groupThousands, fixed, percentText, signed, spanParts, ROUND_OVER_AFTER, roundStatus, currentRoundIndex, isLocked, ringState,
     computeStreak, calibrationBins, seasonTotals, badgesFor, nearestPosition, gapAtFraction, TABLE_BONUS, draftKey, roundKeyOf,
-    beatShare, normalFit, normalDensity, TIERS, tierOf, roundForm,
+    beatShare, normalFit, normalDensity, TIERS, tierOf, roundForm, analysePlay, ANALYSE_MIN,
   };
 }

@@ -870,6 +870,113 @@
     } catch (error) { target.replaceChildren(emptyState(error, () => showLeague(code, target))); }
   }
 
+  /* ---- your playing style: an analysis of your settled picks, with tips -------------------------- */
+
+  /* Your settled picks with the model's locked odds, the result and the clubs. A finished round is
+     cached in the browser, so the analysis costs reads only once per round. */
+  async function loadHistory() {
+    const cacheKey = `predict.hist.${client.uid}`;
+    const cache = json(store.get(cacheKey), {});
+    const entries = await client.list(`entries/${client.uid}/rounds`, 100);
+    const rows = [];
+    for (const { id, data } of entries) {
+      let slice = cache[id];
+      if (!slice) {
+        const [reveal, fixture] = await Promise.all([client.get(`reveal/${id}`), client.get(`fixtures/${id}`)]);
+        slice = {};
+        for (const [slot, m] of Object.entries((reveal && reveal.matches) || {})) {
+          const f = fixture && fixture.slots && fixture.slots[slot];
+          if (!m.result || !m.model || !f) continue;
+          slice[slot] = { home: f.home, away: f.away, hid: f.home_id, aid: f.away_id, ko: f.kickoff.getTime(),
+            model: [m.model.h, m.model.d, m.model.a], hg: m.result.hg, ag: m.result.ag };
+        }
+        if (fixture && Object.keys(fixture.slots).every((k) => slice[k])) cache[id] = slice;
+      }
+      for (const [slot, m] of Object.entries(slice)) {
+        const pick = data.p && data.p[slot];
+        if (pick) rows.push({ key: id, slot, ...m, pick: storedPercents(pick), t: pick.t instanceof Date ? pick.t.getTime() : null });
+      }
+    }
+    store.set(cacheKey, JSON.stringify(cache));
+    return rows;
+  }
+
+  function analysisSection() {
+    const box = h('section', { class: 'ppanel panalyse' }, h('h2', {}, t('predict.style.title')),
+      h('p', { class: 'pmuted panalyse__intro' }, t('predict.style.intro')));
+    const body = h('div', { class: 'panalyse__body' });
+    box.append(body);
+    const go = async () => {
+      body.replaceChildren(h('p', { class: 'pload' }, t('predict.style.loading')));
+      try { S.history = await loadHistory(); paintAnalysis(body); }
+      catch (error) { body.replaceChildren(emptyState(error, go)); }
+    };
+    if (S.history) paintAnalysis(body);
+    else if (store.get(`predict.hist.${client.uid}`)) go();          // analysed before: the cache makes it cheap
+    else body.append(h('button', { type: 'button', class: 'pbtn pbtn--primary', on: { click: go } }, t('predict.style.run')));
+    return box;
+  }
+
+  function paintAnalysis(body) {
+    const scope = S.styleScope || 'all';
+    const rows = (S.history || []).filter((r) => scope === 'all' || r.key.includes(`_${scope}_`));
+    const chips = h('div', { class: 'switch', attrs: { role: 'group', 'aria-label': t('predict.division') } },
+      ['all', ...LEAGUES].map((id) => h('button', { type: 'button', attrs: { 'aria-pressed': String(scope === id) },
+        on: { click: () => { S.styleScope = id; paintAnalysis(body); } } }, id === 'all' ? t('predict.style.all') : LEAGUE_NAME[id])));
+    const out = analysePlay(rows);
+    if (!out.ready) {
+      body.replaceChildren(chips, h('p', { class: 'pempty' }, t('predict.style.wait', { n: out.missing })));
+      return;
+    }
+    if (scope === 'all' && out.insights[0]) {
+      store.set(`predict.tip.${client.uid}`, JSON.stringify({ id: out.insights[0].id, params: out.insights[0].params, tone: out.insights[0].tone }));
+    }
+
+    // You against the model: wins, draws, losses, and what following it would have done.
+    const { wins, losses, ties, followGain } = out.h2h;
+    const share = (x) => `${(x / out.n) * 100}%`;
+    const h2h = h('div', { class: 'ph2h' },
+      h('h3', {}, t('predict.style.h2h')),
+      h('p', { class: 'ph2h__score' }, h('strong', { data: { tone: 'good' } }, String(wins)), h('span', {}, '–'),
+        h('strong', { data: { tone: 'bad' } }, String(losses))),
+      h('div', { class: 'ph2h__bar', attrs: { role: 'img', 'aria-label': t('predict.style.h2hAria', { w: wins, t: ties, l: losses }) } },
+        h('span', { class: 'ph2h__w', style: `flex-basis: ${share(wins)}` }), h('span', { class: 'ph2h__t', style: `flex-basis: ${share(ties)}` }),
+        h('span', { class: 'ph2h__l', style: `flex-basis: ${share(losses)}` })),
+      h('p', { class: 'ph2h__legend' }, t('predict.style.h2hText', { w: wins, t: ties, l: losses })),
+      h('p', { class: 'ph2h__follow' }, followGain > 0 ? t('predict.style.follow.worse', { d: fixed(followGain, 2) })
+        : t('predict.style.follow.better', { d: fixed(-followGain, 2) })));
+
+    // Your style against the model, trait by trait: the model is the centre line.
+    const track = (id) => {
+      const v = out.traits[id];
+      const at = 50 + Math.max(-20, Math.min(20, v)) * 2.5;
+      return h('div', { class: 'ptrait' },
+        h('div', { class: 'ptrait__head' }, h('strong', {}, t(`predict.style.trait.${id}`)),
+          h('span', { data: { tone: Math.abs(v) < 4 ? 'even' : 'off' } }, Math.abs(v) < 4 ? t('predict.style.like') : t(v > 0 ? 'predict.style.more' : 'predict.style.less', { v: Math.abs(v) }))),
+        h('div', { class: 'ptrait__track', attrs: { role: 'img', 'aria-label': `${t(`predict.style.trait.${id}`)}: ${v > 0 ? '+' : ''}${v}` } },
+          h('span', { class: 'ptrait__mid' }), h('span', { class: 'ptrait__dot', style: `left: ${at}%` })));
+    };
+    const traits = h('div', { class: 'ptraits' }, h('h3', {}, t('predict.style.traits')),
+      ['favourite', 'draw', 'home', 'bold'].map(track),
+      h('p', { class: 'ptraits__legend' }, h('span', {}, t('predict.style.lessEnd')), h('span', {}, t('predict.model')), h('span', {}, t('predict.style.moreEnd'))));
+
+    // The tips, strongest first; each opens to the matches behind it.
+    const fmt = (v) => v.map((x) => Math.round(x)).join(' / ');
+    const evidence = (indices) => (indices.length ? h('ul', { class: 'pinsight__rows' }, indices.map((i) => {
+      const r = rows[i];
+      return h('li', {}, h('strong', {}, `${r.home}–${r.away} ${r.hg}–${r.ag}`),
+        h('span', {}, `${t('predict.you')} ${fmt(r.pick)} · ${t('predict.model')} ${fmt(r.model.map((x) => x * 100))}`));
+    })) : null);
+    const insights = out.insights.length
+      ? out.insights.slice(0, 6).map((x, i) => h('details', { class: 'pinsight', data: { tone: x.tone }, open: i === 0 },
+        h('summary', {}, h('span', { class: 'pinsight__icon', attrs: { 'aria-hidden': 'true' } }), t(`predict.insight.${x.id}.title`, x.params)),
+        h('p', {}, t(`predict.insight.${x.id}.text`, x.params)), evidence(x.rows)))
+      : [h('p', { class: 'pmuted' }, t('predict.style.none'))];
+
+    body.replaceChildren(chips, h('p', { class: 'panalyse__n' }, t('predict.style.based', { n: out.n })), h2h, traits,
+      h('div', { class: 'pinsights' }, h('h3', {}, t('predict.style.tips')), insights));
+  }
+
   /* ---- your season, beside the matches ---------------------------------------------------------- */
 
   const SIDE_TABS = ['tip', 'table', 'boards'];
@@ -957,6 +1064,11 @@
     const badges = badgesFor({ tips: mine.n, totals: mine, streak: streak.best }).filter((b) => b.earned);
     if (badges.length) card.append(h('ul', { class: 'pbadges pside__badges' }, badges.map((b) => h('li', { class: 'pbadge pbadge--b', data: { earned: 'true' } },
       h('span', { attrs: { 'aria-hidden': 'true' } }, '✓'), t(`predict.badge.${b.id}`)))));
+    const tip = json(store.get(`predict.tip.${client.uid}`), null);
+    if (tip && tip.id) {
+      card.append(h('button', { type: 'button', class: 'pside__tip', data: { tone: tip.tone || 'tip' }, on: { click: () => openTab('me') } },
+        h('small', {}, t('predict.side.tip')), h('span', {}, t(`predict.insight.${tip.id}.title`, tip.params || {}))));
+    }
     card.append(h('button', { type: 'button', class: 'plink pside__more', on: { click: () => openTab('me') } }, t('predict.side.more')));
     return card;
   }
@@ -1016,7 +1128,7 @@
       requestAnimationFrame(() => requestAnimationFrame(() => { clipRect.style.width = `${target.toFixed(1)}px`; you.style.transform = 'translateX(0)'; }));
     }
     return h('figure', { class: 'pside__chart' }, chart,
-      h('figcaption', {}, value === null ? t('predict.side.distEmpty') : t('predict.side.beat', { beat })));
+      h('figcaption', {}, value === null ? t('predict.side.distEmpty') : beat < 5 ? t('predict.side.beatLow') : t('predict.side.beat', { beat })));
   }
 
   /* The headline number counts up once per visit, not on every redraw. */
@@ -1125,7 +1237,7 @@
       if (S.stats === undefined) S.stats = await client.get(`stats/${client.uid}`);
     } catch (error) { body.replaceChildren(emptyState(error, render)); return; }
     if (S.tab !== 'me') return;
-    body.replaceChildren(profileSection(), statsSection(), dataSection(true));
+    body.replaceChildren(profileSection(), statsSection(), analysisSection(), dataSection(true));
   }
 
   function profileSection() {
