@@ -4114,3 +4114,15 @@ in the walk-forwards above, so it is not clean; 2027 will be):
 
 Same sign and about the same size in 2026 for B, which proves nothing yet (3 clubs for A, 455 matches
 for B, both partly seen); the point of the file is that 2027 can be checked without a new sweep.
+
+## 🎮 Predict, the prediction game (2026-11-23): built, not shipped, no model change
+
+`docs/predict.md` has what exists; `docs/predict-plan.md` the reasoning. `MODEL_VERSION` is
+unchanged (elo-v18.0): the crowd does not touch any published number, and there is no crowd term in
+`pricing.py`. What is built is the data collection and its shadow computation (`model/crowd.py`,
+stage 1: the precision-weighted mean of each player's deviation from the locked model odds, shrunk
+toward zero; `TAU`, `R0`, `Q` are untuned placeholders, and the signal is 0 below 30 players).
+**Nothing has been tested against results yet**: there are no players. The plan's stage 1 test
+(walk-forward, model vs model + crowd on RPS, Brier and log loss with `backtest.paired`, both
+halves, both divisions) is due after about ten rounds of a live season and is logged here
+whatever it shows; adopting it would be a MAJOR bump and has to clear the small-upgrade bar.

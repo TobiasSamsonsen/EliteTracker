@@ -6,7 +6,11 @@ Scripts load with `<script defer>`.
 | File | What |
 |---|---|
 | `index.html` + `app.js` + `i18n.js` + `styles.css` | the site |
-| `model.html` + `model.js` | the model page (`/model.html`), self-contained |
+| `model.html` + `model.js` | the model page (`/model.html`) |
+| `elo-curve.js` | the model's price curve (`expectedScore`, `eloOdds`: `model/probabilities.py` in JavaScript), shared by the model page and the Predict game's slider; loaded before `model.js`, required by the node tests |
+| `predict/index.html`, `predict.js`, `predict.css` | the prediction game (`/predict/`), unlinked and `noindex` until the owner opens it ([predict.md](predict.md)) |
+| `predict-core.js` | the game's pure logic: frozen price curve, whole-percent rounding, scoring, table error, nickname rules; the twin of `src/elitetracker/predict/`, pinned by `tests/fixtures/predict_vectors.json` |
+| `predict-api.js`, `predict-util.js` | the game's network layer (Identity Toolkit and Firestore over `fetch`, no SDK; request builders are pure) and its small helpers (formatting, rounds, ring, streak, badges) |
 | `season-sim.js` | the what-if page's season simulation (a Web Worker) and its re-rating of the clubs (`rerateSeason`, a port of the Elo and attack/defence updates); also the finish grid's "how it happens" analysis (`simulateSeason` with `record`, `scenarioAnalysis`); loaded as a plain script and required by the node tests |
 | `thumbs.js` | the sliding pill of every segmented control, on both pages |
 | `share.js` | sharing, loaded before `app.js` (it uses `app.js`'s helpers only when called): `shareButton` (the share icon: three circles, an angle), the browser's share sheet (`navigator.share`) or our own (`openShareSheet`: the picture with Share or Download, the link with Copy or Share), and a canvas picture for each view shared as one, in the format and theme the reader picks in the sheet (`renderShare`: wide 1200 x 630 for link previews, square 1080 x 1080, portrait 1080 x 1350, story 1080 x 1920; the site's dark or light palette, defaulting to the theme on show; both remembered per browser). Each picture lays itself out for its shape (larger type on a tall one; the designs were picked format by format in a review, November 2026): the title race (`shareTitleRace`, the overview: two contenders as figures over the split bar, along the foot when wide and up the right side when tall, each club level with its share; three or more as a row each with its own bar, `shareRaceRows`), each other race (`shareRace`, the overview's race cards: the same rows, the bars in the band's colour, a line saying so when a simulated play-off is counted), the finish grid (`shareFinishGrid`, Sluttabell: the grid on wide and square, its cells at most half again as wide as tall; on portrait and story the predicted table, `shareFinishTable`, with the table's band marks and a small chart of each club's chance of every place), a club (`shareClub`, the club page: the rating after its trend arrow and its rank among every club (`rankText`); likeliest place, expected points, points now; attack and defence as the club page's bars from the division average; the chance of each race), a match (`shareMatch`, Sammenlign: the sides tagged home in blue and away in red, the odds bar under them named in the same colours, and the score grid from 0-0 to 4-4 with its axes named after the clubs) and a club's chance of a place (`shareFinish`, the finish-path popup: the likeliest season it happens in, the club's run-in and the rivals' results it rests on, from the popup's own analysis, the spare height of a tall picture shared between the parts; or, where those do not fit, the chance of every place with where the club stands). Crests come from `logos/share/` (256 px, FotMob's large crest, loaded only when a picture is drawn), else the 192 px PNG; the pages keep the 96 px WebP. "Hva om" shares its link only (the locked results are in `?lock=`). A view without a picture opens the browser's sheet straight away; one with a picture opens ours first, to choose. Names here must not clash with `app.js`'s: both are classic scripts, and a function of the same name silently replaces the other |
@@ -169,8 +173,30 @@ per-date and per-season reports where those are missing.
 ## Tests
 
 `tests/frontend.test.js` (`node --test`) evaluates functions copied out of
-`app.js` and `model.js`, and requires `season-sim.js` whole (`pick`, which slices a `function name(` declaration
+`app.js` and `model.js`, and requires `season-sim.js` and `elo-curve.js` whole (`pick`, which slices a `function name(` declaration
 out of the source; arrow-function constants cannot be picked). The model's
 arithmetic is checked against `tests/fixtures/match_odds.json`, which the
 Python model writes ([model.md](model.md), "The browser's copies").
 `tests/season-shape.dom.js` boots the real page in jsdom (dev only).
+
+## The Predict page
+
+`public/predict.js` renders the game from plain DOM calls; strings are the `predict.*` block of
+`i18n.js` (nb + en, held to parity by `tests/frontend.test.js`). It reads about ten small Firestore
+documents per page load (never a public collection) and writes a pick as a `commit` of the changed
+slots only, so the free plan's daily quota is not the limit. localStorage (drafts, the session, the
+fine-tune choice) is always in try/catch and the page works without it. The odds bar is the matches
+view's own `.odds` / `.odds__seg`; the card's drag is `touch-action: pan-y` so the page still scrolls.
+
+Run it against the local emulators (no cloud involved):
+
+```bash
+firebase emulators:start --only auth,firestore --project demo-elitetracker     # Auth :9099, Firestore :8085
+FIRESTORE_EMULATOR_HOST=127.0.0.1:8085 .venv/Scripts/python -m elitetracker.predict_sync     --project demo-predict-ui --report public/data/report.json --data-dir /tmp/predict --ics /tmp/rounds.ics --no-purge
+python -m http.server 8123 --directory public
+# then open http://localhost:8123/predict/?emulator=1&project=demo-predict-ui
+```
+
+`?emulator=1` is honoured on `localhost` / `127.0.0.1` only. Tests: `node --test tests/predict.test.js
+tests/predict-ui.test.js`. Not testable without the real Google: the Google account link (its request
+builder and error mapping are unit-tested; the sign-in itself needs the live OAuth client).

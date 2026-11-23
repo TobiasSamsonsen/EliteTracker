@@ -16,8 +16,12 @@ python -m venv .venv && .venv/Scripts/pip install -e '.[dev]'
 ## Tests
 
 ```bash
-.venv/Scripts/python -m pytest -q && node --test tests/frontend.test.js
+.venv/Scripts/python -m pytest -q && node --test tests/frontend.test.js tests/predict.test.js tests/predict-ui.test.js
 ```
+
+The Predict tests that need the Firestore emulator skip by default; to run them
+start the emulators and set `FIRESTORE_EMULATOR_HOST=127.0.0.1:8085` (see
+[predict.md](predict.md), "Running it locally"). Java 21 is needed for the emulator.
 
 Bare `pytest` cannot import the `tests` package. `tests/season-shape.dom.js`
 is a dev-only jsdom smoke test of the team view (`npm i jsdom`, then
@@ -45,6 +49,10 @@ before pushing.
   history, Release storage settings; set 2026-11-21). Unlimited, it kept every
   deploy: a matchday adds a few MB, but a model release changes every report
   (~330 MB), and the copies reached 9.7 of the project's 10 GB.
+- **`predict.yml`**, by hand until the game launches (no `schedule:` yet): the
+  Predict job, with a keyless Workload Identity login as `predict-sync`. A manual
+  run is a dry run unless "live" is ticked. `deploy.yml` ignores pushes that touch
+  only `data/predict/**`. See [predict.md](predict.md).
 - **`past-seasons.yml`**, by hand: rebuilds every past season, one job each,
   replaces the `past-seasons` asset and starts a deploy.
 

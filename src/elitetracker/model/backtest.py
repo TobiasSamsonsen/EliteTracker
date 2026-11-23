@@ -25,6 +25,7 @@ from elitetracker.model.career import SeasonSlice, replay
 from elitetracker.model.elo import EloConfig, era_config
 from elitetracker.model.pricing import elo_odds, match_odds
 from elitetracker.model.probabilities import AWAY_WIN, DRAW, HOME_WIN, MatchProbabilities, outcome_of
+from elitetracker.model.scores import brier as brier_score, rps as rps_score
 from elitetracker.normalize.matches import Match
 
 # Guards log(0) when a model is certain and wrong.
@@ -34,10 +35,7 @@ _FLOOR = 1e-12
 def ranked_probability_score(probabilities: MatchProbabilities, outcome: str) -> float:
     """RPS over the ordered outcomes home win < draw < away win: the mean squared
     gap between the predicted and realised cumulative distributions."""
-    home = 1.0 if outcome == HOME_WIN else 0.0
-    home_or_draw = 1.0 if outcome in (HOME_WIN, DRAW) else 0.0
-    return ((probabilities.home_win - home) ** 2
-            + (probabilities.home_win + probabilities.draw - home_or_draw) ** 2) / 2.0
+    return rps_score(probabilities.home_win, probabilities.draw, probabilities.away_win, outcome)
 
 
 @dataclass
@@ -83,7 +81,7 @@ class Scorecard:
         self.matches += 1
         loss = -math.log(max(predicted[outcome], _FLOOR))
         self.log_loss_total += loss
-        brier = sum((value - (1.0 if key == outcome else 0.0)) ** 2 for key, value in predicted.items())
+        brier = brier_score(probabilities.home_win, probabilities.draw, probabilities.away_win, outcome)
         rps = ranked_probability_score(probabilities, outcome)
         if match_id:
             self.losses[match_id] = loss

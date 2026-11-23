@@ -1,7 +1,16 @@
 {
   "hosting": {
     "public": "public",
-    "ignore": ["firebase.json", "**/.*"],
+    "ignore": [
+      "firebase.json",
+      "**/.*",
+      "predict/**",
+      "predict.js",
+      "predict.css",
+      "predict-api.js",
+      "predict-core.js",
+      "predict-util.js"
+    ],
     "headers": [
       {
         "source": "/",
@@ -31,5 +40,15 @@
         ]
       }
     ]
+  },
+  "firestore": {
+    "rules": "firestore.rules",
+    "indexes": "firestore.indexes.json"
+  },
+  "emulators": {
+    "auth": { "host": "127.0.0.1", "port": 9099 },
+    "firestore": { "host": "127.0.0.1", "port": 8085 },
+    "ui": { "enabled": false },
+    "singleProjectMode": false
   }
 }

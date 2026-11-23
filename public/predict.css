@@ -1,0 +1,142 @@
+/* Predict (/predict/): the game's own styles, on top of styles.css (its variables, the
+   .odds bar, .switch). Mobile first: the card is one column, controls are 44 px or more,
+   and the slider thumb is 2.75rem tall like the model page's. */
+
+.predict { max-width: 46rem; padding-block: 1.25rem 4rem; }
+.predict .doc__top { display: flex; justify-content: space-between; align-items: center; gap: 1rem; }
+.predict .doc__top a { color: var(--ink-muted); text-decoration: none; font-weight: 600; }
+.predict h1 { font-size: clamp(1.9rem, 6vw, 2.5rem); margin: 0.25rem 0 0.75rem; }
+.predict h2 { font-size: 1.2rem; margin: 1.5rem 0 0.5rem; }
+.predict .doc__head { margin-top: 1.5rem; }
+.predict .doc__foot { margin-top: 3rem; padding-top: 1rem; border-top: 1px solid var(--rule); font-size: 0.875rem; color: var(--ink-muted); }
+.predict .doc__foot a { color: var(--ink); }
+
+.ptabs { margin: 0.75rem 0 1rem; overflow-x: auto; }
+.ptabs .switch { display: flex; width: 100%; }
+.ptabs .switch button { flex: 1; min-height: 44px; }
+.pload, .pempty { color: var(--ink-muted); padding: 1rem 0; }
+.pintro { color: var(--ink-muted); max-width: var(--measure); margin: 0.25rem 0 1rem; }
+
+#predict-note:empty { display: none; }
+#predict-note .ptoast, #predict-note > * { margin: 0 0 0.75rem; padding: 0.6rem 0.85rem; border-left: 3px solid var(--accent); background: var(--panel-sunk); border-radius: 0 var(--radius-sm) var(--radius-sm) 0; }
+#predict-note [data-kind="error"] { border-left-color: var(--outcome-bad); }
+
+/* Buttons */
+.pbtn {
+  min-height: 44px; padding: 0 1rem; display: inline-flex; align-items: center; justify-content: center; gap: 0.4rem;
+  background: var(--panel); color: var(--ink); border: 1px solid var(--rule-strong); border-radius: 999px;
+  font: inherit; font-weight: 600; cursor: pointer;
+}
+.pbtn:hover { border-color: var(--accent); }
+.pbtn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.pbtn[aria-pressed="true"] { background: var(--accent); color: var(--on-accent); border-color: var(--accent); }
+.pbtn--primary { background: var(--accent); color: var(--on-accent); border-color: var(--accent); }
+.pbtn--small { min-height: 36px; padding: 0 0.8rem; font-size: 0.875rem; }
+.pbtn--icon { min-width: 44px; padding: 0; font-size: 1.4rem; line-height: 1; }
+.pbtn[hidden], [hidden] { display: none !important; }
+
+/* Round navigation */
+.pnav { display: flex; align-items: center; gap: 0.5rem; margin: 0.5rem 0 1rem; flex-wrap: wrap; }
+.pnav__mid { flex: 1; min-width: 8rem; display: flex; align-items: baseline; gap: 0.6rem; flex-wrap: wrap; }
+.pnav__title { margin: 0; font-size: 1.25rem; }
+.pnav__ring { margin-left: auto; }
+.pring { display: inline-flex; align-items: center; gap: 0.5rem; }
+.pring svg { width: 2.25rem; height: 2.25rem; }
+.pring__text { font-weight: 700; font-variant-numeric: tabular-nums; }
+.pbadge { display: inline-block; padding: 0.1rem 0.6rem; border-radius: 999px; font-size: 0.75rem; font-weight: 700; background: var(--panel-sunk); border: 1px solid var(--rule); color: var(--ink-muted); }
+.pbadge[data-status="open"], .pbadge[data-status="live"] { color: var(--accent-ink); border-color: var(--accent); }
+.pbadge--b[data-earned="true"] { color: var(--ink); border-color: var(--edge-ecl); }
+.pbadge--b[data-earned="false"] { opacity: 0.55; }
+.pbadges { display: flex; flex-wrap: wrap; gap: 0.4rem; list-style: none; padding: 0; margin: 0.75rem 0; }
+.pdivision { display: flex; gap: 0.5rem; margin: 0 0 0.75rem; }
+
+/* The slider card: the matches view's odds bar with the player's own odds on it */
+.plist { list-style: none; padding: 0; margin: 0; display: grid; gap: 0.75rem; }
+.pcard {
+  display: grid; gap: 0.6rem; padding: 0.85rem 0.9rem 0.9rem; background: var(--panel);
+  border: 1px solid var(--rule); border-radius: var(--radius); box-shadow: var(--shadow);
+}
+.pcard[data-state="untouched"] { background: var(--panel-sunk); }
+.pcard[data-state="untouched"] .odds { opacity: 0.55; }
+.pcard[data-state="locked"] { opacity: 0.97; }
+.pcard__head { display: flex; justify-content: space-between; align-items: baseline; gap: 0.75rem; flex-wrap: wrap; }
+.pcard__teams { display: flex; gap: 0.4rem; align-items: baseline; font-weight: 700; min-width: 0; }
+.pcard__home, .pcard__away { overflow-wrap: anywhere; }
+.pcard__vs { color: var(--ink-muted); }
+.pcard__time { color: var(--ink-muted); font-size: 0.8125rem; }
+.pcard .odds { height: 2.5rem; touch-action: pan-y; cursor: ew-resize; user-select: none; }
+.pcard .odds__seg { font-size: 0.875rem; transition: flex 60ms linear; }
+.pcard__range { width: 100%; height: 2.75rem; margin: 0; accent-color: var(--accent); touch-action: pan-y; background: transparent; }
+.pcard__range::-webkit-slider-thumb { height: 2.75rem; }
+.pcard__fine { display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 0.6rem; font-size: 0.875rem; color: var(--ink-muted); }
+.pcard__fine-value { font-variant-numeric: tabular-nums; min-width: 3rem; text-align: right; }
+.pcard__foot { display: flex; flex-wrap: wrap; align-items: center; gap: 0.6rem 0.9rem; }
+.pcard__readout { display: flex; gap: 0.4rem; }
+.pcard__num-wrap { display: grid; justify-items: center; gap: 0.1rem; font-size: 0.75rem; font-weight: 700; color: var(--ink-muted); }
+.pcard__num-wrap--h { color: var(--home); }
+.pcard__num-wrap--a { color: var(--away); }
+.pcard__num { width: 3.4rem; min-height: 40px; text-align: center; font: inherit; color: var(--ink); background: var(--panel); border: 1px solid var(--rule-strong); border-radius: var(--radius-sm); font-variant-numeric: tabular-nums; }
+.pcard__num:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+.pcard__status { margin-left: auto; font-size: 0.8125rem; color: var(--ink-muted); }
+.pcard__status[data-state="error"] { color: var(--outcome-bad-ink); }
+.pcard__locked, .pcard__none { color: var(--ink-muted); font-size: 0.875rem; }
+.pcard--preview { opacity: 0.85; }
+
+/* The reveal */
+.preveal { display: grid; gap: 0.35rem; }
+.preveal__who { display: grid; grid-template-columns: 4.5rem 1fr; gap: 0.5rem; align-items: center; font-size: 0.8125rem; color: var(--ink-muted); }
+.preveal__result { font-weight: 800; font-size: 1.1rem; }
+.preveal__score { font-size: 0.875rem; font-variant-numeric: tabular-nums; }
+.precap { margin: 1rem 0; padding: 0.85rem 1rem; background: var(--panel); border: 1px solid var(--rule); border-radius: var(--radius); }
+
+/* The table game */
+.ptable { list-style: none; padding: 0; margin: 0 0 1rem; display: grid; gap: 0.35rem; counter-reset: place; }
+.ptable__row { display: flex; align-items: center; gap: 0.5rem; padding: 0.35rem 0.5rem; background: var(--panel); border: 1px solid var(--rule); border-radius: var(--radius-sm); }
+.ptable__row[draggable="true"] { cursor: grab; }
+.ptable__pos { width: 1.6rem; text-align: right; font-variant-numeric: tabular-nums; color: var(--ink-muted); font-weight: 700; }
+.ptable__name { flex: 1; font-weight: 600; }
+.ptable__grip { color: var(--ink-faint); cursor: grab; }
+.ptable__status, .ptable__rules { color: var(--ink-muted); font-size: 0.875rem; margin: 0.5rem 0; }
+
+/* Boards */
+.pboard { width: 100%; border-collapse: collapse; font-size: 0.875rem; font-variant-numeric: tabular-nums; }
+.pboard th, .pboard td { padding: 0.45rem 0.4rem; text-align: right; border-bottom: 1px solid var(--rule); }
+.pboard th { color: var(--ink-muted); font-weight: 700; font-size: 0.75rem; }
+.pboard .pboard__rank, .pboard .pboard__name { text-align: left; }
+.pboard__name { overflow-wrap: anywhere; }
+.pboard__row[data-kind="model"], .pboard__row[data-kind="crowd"] { background: var(--panel-sunk); font-weight: 700; }
+.pboard__row[data-me="true"], .pboard__me { outline: 2px solid var(--accent); outline-offset: -2px; }
+.pboard__note { color: var(--ink-muted); font-size: 0.8125rem; margin: 0.5rem 0; }
+.pscroll { overflow-x: auto; }
+
+/* Me, stats, mini-leagues, data */
+.pme, .pleagues, .pdata, .pstats { margin: 1rem 0 1.5rem; }
+.pme__row, .pfield { display: grid; gap: 0.25rem; margin: 0.6rem 0; }
+.pme__row--check { display: flex; align-items: center; gap: 0.6rem; }
+.pme input[type="text"], .pleagues input[type="text"], .pfield input {
+  min-height: 44px; padding: 0 0.7rem; font: inherit; color: var(--ink); background: var(--panel); border: 1px solid var(--rule-strong); border-radius: var(--radius-sm);
+}
+.pme__msg, .pleagues__msg { min-height: 1.25rem; color: var(--ink-muted); font-size: 0.875rem; }
+.pstats__grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(8rem, 1fr)); gap: 0.6rem; }
+.pstats__cell { padding: 0.7rem 0.8rem; background: var(--panel); border: 1px solid var(--rule); border-radius: var(--radius-sm); font-variant-numeric: tabular-nums; }
+.pleagues__list { list-style: none; padding: 0; margin: 0.5rem 0; display: grid; gap: 0.4rem; }
+.pleagues__form { display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; margin: 0.5rem 0; }
+.pgoogle, .pcal { margin: 0.75rem 0; }
+.pconfirm { padding: 0.8rem 1rem; border: 1px solid var(--outcome-bad); border-radius: var(--radius-sm); background: var(--panel); margin: 0.75rem 0; }
+.pconfirm__q { font-weight: 700; margin: 0 0 0.5rem; }
+.plink, .pfoot a { color: var(--ink); }
+.pfoot { margin-top: 1.5rem; font-size: 0.875rem; color: var(--ink-muted); }
+
+@media (min-width: 640px) {
+  .plist { gap: 1rem; }
+  .pcard { padding: 1rem 1.1rem 1.1rem; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .pcard .odds__seg { transition: none; }
+}
+
+/* The "5/8" ring */
+.pring__track { fill: none; stroke: var(--rule); stroke-width: 4; }
+.pring__arc { fill: none; stroke: var(--accent); stroke-width: 4; stroke-linecap: round; transform: rotate(-90deg); transform-origin: 18px 18px; transition: stroke-dasharray 200ms var(--ease); }
+.pring[data-complete="true"] .pring__arc { stroke: var(--edge-ecl); }
+@media (prefers-reduced-motion: reduce) { .pring__arc { transition: none; } }

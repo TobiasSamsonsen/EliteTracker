@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="nb" data-lang="no">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Predict — EliteTracker</title>
+<link rel="icon" href="/icons/favicon.svg" type="image/svg+xml">
+<!-- Not linked from the site, not in the sitemap and not indexed until the owner ships the
+     privacy text and opens the game (docs/predict.md, "Going live"). -->
+<meta name="robots" content="noindex">
+<meta name="color-scheme" content="light dark">
+<script>
+  /* Theme and language as on the rest of the site, so the choices carry over. */
+  (function () {
+    try {
+      var choice = localStorage.getItem('elitetracker-theme');
+      document.documentElement.dataset.resolvedTheme = choice === 'light' || choice === 'dark' ? choice
+        : matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+      var language = localStorage.getItem('lang') === 'en' ? 'en' : 'no';
+      document.documentElement.dataset.lang = language;
+      document.documentElement.lang = language === 'en' ? 'en' : 'nb';
+    } catch (error) {
+      document.documentElement.dataset.resolvedTheme = 'light';
+    }
+  })();
+</script>
+<link rel="stylesheet" href="/styles.css">
+<link rel="stylesheet" href="/predict.css">
+</head>
+<body>
+<div class="shell doc predict">
+  <nav class="doc__top">
+    <a href="/" data-t="predict.back">← EliteTracker</a>
+    <div class="switch" role="group" aria-label="Språk / Language">
+      <button type="button" data-lang="no" aria-pressed="true">NO</button>
+      <button type="button" data-lang="en" aria-pressed="false">EN</button>
+    </div>
+  </nav>
+
+  <header class="doc__head">
+    <h1 data-t="predict.title">Predict</h1>
+  </header>
+
+  <div id="predict-note" role="status" aria-live="polite"></div>
+  <div id="predict-tabs" class="ptabs"></div>
+  <main id="predict-view" aria-live="polite"><p class="pload" data-t="predict.loading">Laster …</p></main>
+  <noscript><p>Predict trenger JavaScript. / Predict needs JavaScript.</p></noscript>
+
+  <footer class="doc__foot">
+    <span data-t="predict.foot.age">Spillet er for deg som er 13 år eller eldre.</span> ·
+    <a href="/personvern.html" data-t="predict.foot.privacy">Personvern</a>
+  </footer>
+</div>
+<script src="/elo-curve.js"></script>
+<script src="/predict-core.js"></script>
+<script src="/predict-util.js"></script>
+<script src="/predict-api.js"></script>
+<script src="/i18n.js"></script>
+<script src="/predict.js"></script>
+</body>
+</html>

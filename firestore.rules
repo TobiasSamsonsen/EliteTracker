@@ -1,0 +1,212 @@
+// Firestore rules for Predict (docs/predict-plan.md, section 4). NOT deployed by
+// any workflow: `firebase deploy --only firestore:rules` is run by the owner
+// when the game opens. tests/test_firestore_rules.py runs them in the emulator.
+//
+// Who writes what:
+//   browser (signed-in, anonymous or Google): entries, tables, users, nicknames,
+//     reports, leagues, deleteRequests -- only its own documents.
+//   the hourly job (admin token, bypasses these rules): fixtures, seasons,
+//     stats, boards, and every deletion.
+// Nobody reads anybody else's picks. Entries and tables cannot be deleted from
+// the browser: a bad pick must not vanish before the job has scored it, so a
+// player asks for deletion (deleteRequests) and the job erases it after scoring.
+
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function signedIn() { return request.auth != null; }
+    function isOwner(uid) { return signedIn() && request.auth.uid == uid; }
+
+    // ---- entries: one document per player per league round ---------------
+    // p = { s1: {g, k, h, d, a, t}, ..., s8: {...} } keyed like the round's
+    // fixture document. g: the slider's rating gap, k: draw tendency in tenths,
+    // h/d/a: whole-percent odds, t: the server time of the last change.
+    function pct(v) { return v is int && v >= 2 && v <= 96; }
+
+    function slotValid(s) {
+      return s is map
+        && s.keys().hasOnly(['g', 'k', 'h', 'd', 'a', 't'])
+        && s.keys().hasAll(['g', 'k', 'h', 'd', 'a', 't'])
+        && s.g is int && s.g >= -400 && s.g <= 400
+        && s.k is int && s.k >= 5 && s.k <= 18
+        && pct(s.h) && pct(s.d) && pct(s.a)
+        && s.h + s.d + s.a == 100
+        && s.t == request.time;
+    }
+
+    function slotOpen(fx, s) {
+      return (s in fx.slots)
+        && fx.slots[s].kickoff > request.time
+        && request.time >= fx.opens;
+    }
+
+    // One slot of a write: either it is untouched, or it is still open and the
+    // new value is valid (or the pick is withdrawn).
+    function slotOk(fx, old, nw, s) {
+      let oldHas = old != null && (s in old.p);
+      let newHas = (s in nw.p);
+      return (!oldHas && !newHas)
+        || (oldHas && newHas && old.p[s] == nw.p[s])
+        || (slotOpen(fx, s) && (!newHas || slotValid(nw.p[s])));
+    }
+
+    function entryValid(round, old, nw) {
+      let fx = get(/databases/$(database)/documents/fixtures/$(round)).data;
+      return nw.keys().hasOnly(['p', 'curve', 'r'])
+        && nw.curve == 1
+        && nw.r == round
+        && nw.p is map
+        && nw.p.keys().hasOnly(['s1', 's2', 's3', 's4', 's5', 's6', 's7', 's8'])
+        && slotOk(fx, old, nw, 's1') && slotOk(fx, old, nw, 's2')
+        && slotOk(fx, old, nw, 's3') && slotOk(fx, old, nw, 's4')
+        && slotOk(fx, old, nw, 's5') && slotOk(fx, old, nw, 's6')
+        && slotOk(fx, old, nw, 's7') && slotOk(fx, old, nw, 's8');
+    }
+
+    match /entries/{uid}/rounds/{round} {
+      allow read: if isOwner(uid);
+      allow create: if isOwner(uid) && entryValid(round, null, request.resource.data);
+      allow update: if isOwner(uid) && entryValid(round, resource.data, request.resource.data);
+    }
+
+    // ---- the pre-season table game ----------------------------------------
+    // tablegames/{season}_{league}: {opens, closes, clubs: [team ids]}, job-written.
+    function tableValid(se, key, nw) {
+      return nw.keys().hasOnly(['order', 't', 'r'])
+        && nw.r == key
+        && nw.order is list
+        && nw.order.size() == se.clubs.size()
+        && nw.order.toSet() == se.clubs.toSet()
+        && nw.t == request.time
+        && request.time >= se.opens
+        && request.time < se.closes;
+    }
+
+    match /tables/{uid}/picks/{key} {
+      allow read: if isOwner(uid);
+      allow create, update: if isOwner(uid)
+        && tableValid(get(/databases/$(database)/documents/tablegames/$(key)).data,
+                      key, request.resource.data);
+    }
+
+    // ---- job-written, publicly readable ----------------------------------
+    match /fixtures/{key} { allow get: if true; }
+    match /tablegames/{key} { allow get: if true; }
+    // The browser's cheap path: one index document, and one reveal document per
+    // round (the model's odds as published at kick-off, the crowd's aggregate
+    // and the result), written by the job after kick-off.
+    match /meta/rounds { allow get: if true; }
+    match /reveal/{key} { allow get: if true; }
+    // Boards: get only, so a private mini-league board (named by its secret
+    // code) cannot be listed.
+    match /boards/{id} { allow get: if true; }
+    match /stats/{uid} { allow read: if isOwner(uid); }
+
+    // ---- profile and nickname ---------------------------------------------
+    function nickValid(n) {
+      return n is string
+        && n.matches('^[A-Za-z\\x{C6}\\x{D8}\\x{C5}\\x{E6}\\x{F8}\\x{E5}0-9_-][A-Za-z\\x{C6}\\x{D8}\\x{C5}\\x{E6}\\x{F8}\\x{E5}0-9_ -]{1,18}[A-Za-z\\x{C6}\\x{D8}\\x{C5}\\x{E6}\\x{F8}\\x{E5}0-9_-]$');
+    }
+    function reserved(lower) {
+      return lower in ['modellen', 'folket', 'model', 'crowd', 'predict', 'admin', 'elitetracker', 'moderator'];
+    }
+    // lower() in the rules language is ASCII-only, so the three Norwegian
+    // capitals are lowered by hand; the browser's toLowerCase() agrees.
+    function lowerNb(n) {
+      return n.lower().replace('Æ', 'æ').replace('Ø', 'ø').replace('Å', 'å');
+    }
+    function profileFields(nw) {
+      return nw.keys().hasOnly(['nick', 'nickLower', 'nickCustom', 'nickAt', 'club', 'locale',
+                                 'hidden', 'notify', 'created'])
+        && nw.keys().hasAll(['nick', 'nickLower', 'nickCustom', 'nickAt', 'locale', 'hidden', 'created'])
+        && nickValid(nw.nick)
+        && nw.nickLower == lowerNb(nw.nick)
+        && !reserved(nw.nickLower)
+        && nw.nickCustom is bool
+        && nw.locale in ['nb', 'en']
+        && nw.hidden is bool
+        && (!('club' in nw) || (nw.club is string && nw.club.size() <= 40))
+        && (!('notify' in nw) || nw.notify is bool);
+    }
+    // Nickname claims are keyed in ASCII (the emulator and existsAfter() do not
+    // take non-ASCII path segments): ae, oe, aa become ~e, ~o, ~a, and '~' is
+    // not a legal nickname character, so keys cannot collide.
+    function nickKey(lower) {
+      return lower.replace('æ', '~e').replace('ø', '~o').replace('å', '~a');
+    }
+    function nickClaimed(uid, lower) {
+      return existsAfter(/databases/$(database)/documents/nicknames/$(nickKey(lower)))
+        && getAfter(/databases/$(database)/documents/nicknames/$(nickKey(lower))).data.uid == uid;
+    }
+
+    match /users/{uid} {
+      allow read: if isOwner(uid);
+      allow create: if isOwner(uid) && profileFields(request.resource.data)
+        && request.resource.data.created == request.time
+        && request.resource.data.nickAt == request.time
+        && nickClaimed(uid, request.resource.data.nickLower);
+      // A nickname change needs a fresh claim, and (once a chosen name is
+      // held) 30 days since the last change. Other fields change freely.
+      allow update: if isOwner(uid) && profileFields(request.resource.data)
+        && request.resource.data.created == resource.data.created
+        && (request.resource.data.nickLower == resource.data.nickLower
+              ? request.resource.data.nickAt == resource.data.nickAt
+              : (nickClaimed(uid, request.resource.data.nickLower)
+                  && request.resource.data.nickAt == request.time
+                  && (!resource.data.nickCustom
+                      || resource.data.nickAt + duration.value(30, 'd') <= request.time)));
+    }
+
+    // A claim is only valid together with the profile that uses it, so a player
+    // cannot squat names: at most one per (30-day limited) nickname change.
+    match /nicknames/{key} {
+      allow get: if signedIn();
+      allow create: if signedIn()
+        && request.resource.data.keys().hasOnly(['uid'])
+        && request.resource.data.uid == request.auth.uid
+        && key.matches('^[a-z0-9_~-][a-z0-9_ ~-]{1,38}[a-z0-9_~-]$')
+        && existsAfter(/databases/$(database)/documents/users/$(request.auth.uid))
+        && nickKey(getAfter(/databases/$(database)/documents/users/$(request.auth.uid)).data.nickLower) == key;
+      allow delete: if signedIn() && resource.data.uid == request.auth.uid;
+    }
+
+    // ---- abuse reports, mini-leagues, deletion requests -------------------
+    match /reports/{id} {
+      allow create: if signedIn()
+        && request.resource.data.keys().hasOnly(['nickLower', 'by', 'at'])
+        && request.resource.data.by == request.auth.uid
+        && request.resource.data.at == request.time
+        && request.resource.data.nickLower is string
+        && request.resource.data.nickLower.size() <= 20;
+    }
+
+    // A mini-league is named by a secret code: readable by get (not list).
+    match /leagues/{code} {
+      allow get: if signedIn();
+      allow create: if signedIn()
+        && code.matches('^[A-Z2-9]{8}$')
+        && request.resource.data.keys().hasOnly(['name', 'owner', 'created'])
+        && request.resource.data.owner == request.auth.uid
+        && request.resource.data.name is string
+        && request.resource.data.name.size() >= 2 && request.resource.data.name.size() <= 30
+        && request.resource.data.created == request.time;
+      match /members/{uid} {
+        allow read: if isOwner(uid);
+        allow create: if isOwner(uid)
+          && exists(/databases/$(database)/documents/leagues/$(code))
+          && request.resource.data.keys().hasOnly(['joined'])
+          && request.resource.data.joined == request.time;
+        allow delete: if isOwner(uid);
+      }
+    }
+
+    match /deleteRequests/{uid} {
+      allow create: if isOwner(uid)
+        && request.resource.data.keys().hasOnly(['at'])
+        && request.resource.data.at == request.time;
+    }
+
+    match /{document=**} { allow read, write: if false; }
+  }
+}

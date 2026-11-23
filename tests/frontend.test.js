@@ -689,12 +689,13 @@ const pagePick = (name) => {
   const start = pageSrc.indexOf(`function ${name}(`);
   return pageSrc.slice(start, pageSrc.indexOf('\n}', start) + 2);
 };
-const pageMath = new Function(`
+const curve = require('../public/elo-curve.js');
+const pageMath = new Function('expectedScore', 'eloOdds', `
   ${pageSrc.match(/^const (XG_MARGIN|XG_SMOOTHING|GOAL_CAP) = .*;$/gm).join('\n')}
-  ${['expectedScore', 'eloOdds', 'xgScore', 'ratingChange', 'poisson', 'lowScore', 'scoreGrid', 'outcomeOf',
+  ${['xgScore', 'ratingChange', 'poisson', 'lowScore', 'scoreGrid', 'outcomeOf',
     'gridOdds', 'blendOdds', 'scorelines', 'pressure', 'tiltForStakes'].map(pagePick).join('\n')}
   return { eloOdds, xgScore, ratingChange, scoreGrid, gridOdds, blendOdds, scorelines, pressure, tiltForStakes };
-`)();
+`)(curve.expectedScore, curve.eloOdds);
 const MODERN = { k_factor: 30, home_advantage: 60, xg_alpha: 0.3, draw_base: 0.26, draw_scale: 375 };
 const near = (actual, expected) => {
   for (const [i, value] of [expected].flat().entries()) {

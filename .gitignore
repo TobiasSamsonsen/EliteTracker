@@ -37,3 +37,6 @@ experiments/mobile-audit/*-report.md
 
 # raw Wikipedia season pages (experiments/improvements/fetch_wikipedia_standings.py reproduces them)
 data/raw/wikipedia_standings/
+
+# Emulator logs (firebase emulators:start)
+*-debug.log
