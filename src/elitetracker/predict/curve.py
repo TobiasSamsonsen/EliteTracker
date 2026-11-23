@@ -16,7 +16,8 @@ import math
 CURVE_VERSION = 1
 DRAW_BASE = 0.26
 DRAW_SCALE = 375.0
-GAP_MIN, GAP_MAX, GAP_STEP = -400, 400, 5
+# +-700 lets a strong favourite reach the clip (96 / 2 / 2); at +-400 a pick stopped at 87 / 8 / 5.
+GAP_MIN, GAP_MAX, GAP_STEP = -700, 700, 5
 K_MIN, K_MAX, K_DEFAULT = 5, 18, 10      # draw tendency in tenths: 0.5 to 1.8, 1.0 is the model's shape
 PCT_MIN, PCT_MAX = 2, 96                  # whole-percent clip of every outcome
 

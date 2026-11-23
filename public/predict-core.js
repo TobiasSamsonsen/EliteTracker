@@ -12,7 +12,7 @@ const predictCurve = (typeof module !== 'undefined' && typeof require !== 'undef
 /* ---- the frozen curve (predict/curve.py): never changes under a refit ------ */
 
 const FROZEN_CURVE = { version: 1, draw_base: 0.26, draw_scale: 375 };
-const GAP = { min: -400, max: 400, step: 5 };
+const GAP = { min: -700, max: 700, step: 5 };   // +-700 reaches the clip (96 / 2 / 2) for a strong favourite
 const DRAW_TENTHS = { min: 5, max: 18, normal: 10 };   // 0.5x to 1.8x the model's draw mass
 const PCT = { min: 2, max: 96 };
 

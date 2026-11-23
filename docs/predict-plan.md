@@ -123,7 +123,7 @@ second, optional one for draws.**
   swells near the middle and thins at the ends, because that is how the curve
   moves. You can drag anywhere across the bar itself (as the model figure's
   chart takes a drag) or use the range input (keyboard and screen readers get
-  it free). Range -400..+400 in steps of 5, the thumb 2.75 rem tall on a phone
+  it free). Range -700..+700 in steps of 5 (widened from +-400 so a strong favourite can reach 96 / 2 / 2), the thumb 2.75 rem tall on a phone
   (the model page's rule), `touch-action: pan-y` on the bar so scrolling still
   works.
 - **Slider 2, "draw tendency" (the "Fine-tune" button).** Each card shows one
@@ -271,7 +271,7 @@ anyone else's pick (no herding, no leak). A write may change only slots whose
 kick-off is still ahead and whose round has opened (7 days before), with `t`
 equal to the request's server time; the rule file is generated, one explicit
 check per slot, because rules have no loops. Values: integer percentages within the
-clip, summing to 100; `g` in -400..400; `k` in range. A postponement is just a
+clip, summing to 100; `g` in -700..700; `k` in range. A postponement is just a
 kick-off changing in the fixture document. Tested in the Firestore emulator in
 CI.
 

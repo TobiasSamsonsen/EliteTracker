@@ -50,6 +50,8 @@ def test_the_slider_moves_the_bar_the_way_the_model_figure_does():
     assert h0 == a0
     assert curve.pick_percentages(200)[0] > h0 > curve.pick_percentages(-200)[0]
     assert d0 > curve.pick_percentages(400)[1] and d0 > curve.pick_percentages(-400)[1]   # the draw swells near the middle
+    assert curve.pick_percentages(curve.GAP_MAX) == (96, 2, 2)                             # a strong favourite reaches the clip
+    assert curve.pick_percentages(curve.GAP_MIN) == (2, 2, 96)
     assert curve.pick_percentages(0, 18)[1] > d0 > curve.pick_percentages(0, 5)[1]        # the draw tendency scales it
 
 

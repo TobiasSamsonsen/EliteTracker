@@ -132,7 +132,7 @@ def test_values_are_checked(admin):
     admin.set(f"fixtures/{ROUND}", fixture_doc())
     me = player("u1")
     for bad in (pick(h=50, d=30, a=30),            # sums to 110
-                pick(g=401),                        # gap out of range
+                pick(g=701),                        # gap out of range
                 pick(h=1, d=50, a=49),              # below the clip
                 pick(k=19), pick(k=4),              # draw tendency out of range
                 {**pick(), "extra": 1},             # unknown field

@@ -263,7 +263,7 @@
      (home + draw / 2), so the gap under a finger is the logit of where the finger is: the draw
      block follows the finger, whatever the draw tendency. */
   function gapUnder(fraction) {
-    const e = Math.min(0.97, Math.max(0.03, fraction));
+    const e = Math.min(0.995, Math.max(0.005, fraction));   // the far ends of the bar reach the clip
     const gap = Math.round((400 * Math.log10(e / (1 - e))) / GAP.step) * GAP.step;
     return Math.max(GAP.min, Math.min(GAP.max, gap));
   }

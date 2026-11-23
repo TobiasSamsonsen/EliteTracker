@@ -22,7 +22,7 @@ test('the frozen curve and the percent rounding give Python\'s whole percents at
       positions += 1;
     }
   }
-  assert.equal(positions, 161 * 14);
+  assert.equal(positions, 281 * 14);
 });
 
 test('the rounding keeps every outcome in the clip and the total at 100', () => {

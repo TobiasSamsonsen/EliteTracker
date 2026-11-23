@@ -51,7 +51,7 @@ Project `elitetrackerno`, `(default)` database, `europe-north1`, Spark plan (fre
 Rules in one breath: only the owner reads or writes an entry; a write may change
 only slots whose kick-off is ahead and whose round has opened, with `t` equal to
 the request's server time; values are whole percents in 2..96 summing to 100, `g`
-in -400..400, draw tenths 5..18. Entries and tables cannot be deleted from the
+in -700..700 (enough to reach the clip), draw tenths 5..18. Entries and tables cannot be deleted from the
 browser (a bad pick must not vanish before it is scored); deletion is a request.
 The browser writes with a REST `commit` of the changed slots only: an update mask
 on `p.sN.g|k|h|d|a`, `r`, `curve`, and a `REQUEST_TIME` transform on `p.sN.t`.

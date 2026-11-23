@@ -28,7 +28,7 @@ service cloud.firestore {
       return s is map
         && s.keys().hasOnly(['g', 'k', 'h', 'd', 'a', 't'])
         && s.keys().hasAll(['g', 'k', 'h', 'd', 'a', 't'])
-        && s.g is int && s.g >= -400 && s.g <= 400
+        && s.g is int && s.g >= -700 && s.g <= 700
         && s.k is int && s.k >= 5 && s.k <= 18
         && pct(s.h) && pct(s.d) && pct(s.a)
         && s.h + s.d + s.a == 100
