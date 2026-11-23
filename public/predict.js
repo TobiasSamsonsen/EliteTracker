@@ -219,21 +219,37 @@
     return saved ? { g: saved.g, k: saved.k, h: saved.h, d: saved.d, a: saved.a, t: saved.t } : null;
   }
 
+  /* A segment keeps its number as long as the number fits: measured against the bar's real
+     width, so a 5 % segment on a wide card still shows "5". Before the bar is on the page (no
+     width yet) the fallback is the matches view's rule of thumb. */
+  function labelFits(percent, width, segment) {
+    const text = String(Math.round(percent));
+    if (!width) return percent >= 6;
+    const digit = parseFloat(getComputedStyle(segment).fontSize) * 0.62 || 9;
+    return (percent / 100) * width >= text.length * digit + 8;
+  }
+
   function bar(percents, labelled = true) {
     const node = h('div', { class: 'odds' });
     ['home', 'draw', 'away'].forEach((outcome, i) => {
       const segment = h('div', { class: 'odds__seg', data: { outcome } });
       segment.style.flex = String(Math.max(percents[i], 0.1));
-      segment.textContent = labelled && percents[i] >= 12 ? String(Math.round(percents[i])) : '';
       node.append(segment);
     });
+    node.dataset.labelled = String(labelled);
+    paintBar(node, percents);
+    // Once laid out, the real width decides which numbers fit.
+    requestAnimationFrame(() => { if (node.isConnected) paintBar(node, node._percents || percents); });
     return node;
   }
 
   function paintBar(node, percents) {
+    node._percents = percents;
+    const labelled = node.dataset.labelled !== 'false' || node._grown;
+    const width = node.clientWidth;
     [...node.children].forEach((segment, i) => {
       segment.style.flex = String(Math.max(percents[i], 0.1));
-      segment.textContent = percents[i] >= 12 ? String(Math.round(percents[i])) : '';
+      segment.textContent = labelled && labelFits(percents[i], width, segment) ? String(Math.round(percents[i])) : '';
     });
   }
 
@@ -453,7 +469,7 @@
           if (!seen.some((e) => e.isIntersecting)) return;
           observer.disconnect();
           S.revealSeen.add(seenKey);
-          strips.forEach(([strip, percents], i) => setTimeout(() => paintBar(strip, percents), 120 + i * 160));
+          strips.forEach(([strip, percents], i) => setTimeout(() => { strip._grown = true; paintBar(strip, percents); }, 120 + i * 160));
         }, { threshold: 0.4 });
         requestAnimationFrame(() => observer.observe(box));
       }

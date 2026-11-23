@@ -398,7 +398,8 @@
 
 /* ---- centred and round ---------------------------------------------------------------------------- */
 
-.predict { --p-radius: 22px; --p-radius-sm: 14px; margin-inline: auto; }
+/* The site's own corner radii (styles.css): 14px on surfaces, 8px on small parts. */
+.predict { --p-radius: var(--radius); --p-radius-sm: var(--radius-sm); margin-inline: auto; }
 
 /* The header and every switch sit on the centre line. */
 .predict .doc__head { text-align: center; }
@@ -416,7 +417,7 @@
 .pday__title { text-align: center; }
 .precap { justify-content: center; text-align: center; border-radius: var(--p-radius); }
 .precap__stats { justify-content: center; }
-.popens { text-align: center; border-radius: 999px; }
+.popens { text-align: center; border-radius: var(--radius-sm); }
 .pfoot { justify-content: center; }
 .pboard__key, .pboard__note, .pboard__me, .pintro, .pmuted.pcal-note { text-align: center; margin-inline: auto; }
 .pempty { text-align: center; }
@@ -430,15 +431,10 @@
 .pstat { border-radius: var(--p-radius-sm); text-align: center; }
 .pstats__hero { text-align: center; }
 
-/* Pill-ended bars; the draw handle a soft rounded block. */
-.predict .odds__seg:first-child { border-radius: 999px 6px 6px 999px; }
-.predict .odds__seg:last-child { border-radius: 6px 999px 999px 6px; }
-.predict .pcard__bar .odds__seg[data-outcome="draw"] { border-radius: 12px; }
-.pcard__bar .odds__seg[data-outcome="draw"]::after { border-radius: 0 0 999px 999px; }
-.pghost span:first-child { border-radius: 999px 6px 6px 999px; }
-.pghost span:last-child { border-radius: 6px 999px 999px 6px; }
-.pskeleton span { border-radius: 999px; }
-.pskeleton span:nth-child(2) { border-radius: 999px; }
+/* Bars keep the matches view's corners (6px ends, 3px between segments). */
+.pghost span:first-child { border-radius: 6px 3px 3px 6px; }
+.pghost span:last-child { border-radius: 3px 6px 6px 3px; }
+.pskeleton span:nth-child(2) { border-radius: 6px; }
 
 /* The verdict and the reading sit centred under the match. */
 .pverdict { justify-content: center; text-align: center; }

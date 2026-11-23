@@ -213,8 +213,9 @@ moves (`pickReading`), a phone ticks when the pick swings sides, a save pulses i
 breathes, a completed round pops its ring once, a reveal grows its bars into place the first time it
 is seen (IntersectionObserver), and a 30-second clock keeps the countdown current and locks a match
 that kicks off while the page is open. All motion stops under `prefers-reduced-motion`. The page is one
-centred column (48rem) with rounded surfaces: a centred header, switches and round bar, 22px card
-radius, pill-ended odds bars.
+centred column (48rem) with the site's own corner radii (`--radius`, `--radius-sm`, the odds bar's
+6px ends): a centred header, switches and round bar. A bar segment keeps its number while the
+number fits, measured against the bar's real width (`labelFits`), not a fixed 12 % cut-off.
 
 Run it against the local emulators (no cloud involved):
 
