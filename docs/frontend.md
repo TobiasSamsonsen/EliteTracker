@@ -212,8 +212,9 @@ even guess), then questions. The page answers the player: each card reads the pi
 moves (`pickReading`), a phone ticks when the pick swings sides, a save pulses its dot, a live round
 breathes, a completed round pops its ring once, a reveal grows its bars into place the first time it
 is seen (IntersectionObserver), and a 30-second clock keeps the countdown current and locks a match
-that kicks off while the page is open. All motion stops under `prefers-reduced-motion`. On wide
-screens the page is up to 76rem: matchdays become columns, Me shows two columns, boards every column.
+that kicks off while the page is open. All motion stops under `prefers-reduced-motion`. The page is one
+centred column (48rem) with rounded surfaces: a centred header, switches and round bar, 22px card
+radius, pill-ended odds bars.
 
 Run it against the local emulators (no cloud involved):
 
