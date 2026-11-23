@@ -206,6 +206,15 @@ its own key), and a public document (`meta/rounds`, `fixtures/`, `reveal/`, `boa
 never hides the game. Matches are grouped by matchday in kick-off order; the card shows the time,
 the day is its heading.
 
+The guide is a page of its own at `#how` (a header link and the first-visit box point to it):
+six steps with a working demo bar and a scoring demo (pick a result, see the Brier score against an
+even guess), then questions. The page answers the player: each card reads the pick in words as it
+moves (`pickReading`), a phone ticks when the pick swings sides, a save pulses its dot, a live round
+breathes, a completed round pops its ring once, a reveal grows its bars into place the first time it
+is seen (IntersectionObserver), and a 30-second clock keeps the countdown current and locks a match
+that kicks off while the page is open. All motion stops under `prefers-reduced-motion`. On wide
+screens the page is up to 76rem: matchdays become columns, Me shows two columns, boards every column.
+
 Run it against the local emulators (no cloud involved):
 
 ```bash

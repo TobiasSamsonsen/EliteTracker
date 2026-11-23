@@ -253,6 +253,9 @@
       h('span', { class: 'pteam pteam--away' }, h('span', { class: 'pteam__name' }, info.away), crest(info.away_id)));
   }
 
+  /* Pointer capture keeps a drag going outside the bar; if a browser refuses it, the drag still works. */
+  const capture = (node, event) => { try { node.setPointerCapture(event.pointerId); } catch (error) { /* no capture */ } };
+
   const OUTCOME_SIDE = { home_win: 'home', draw: 'draw', away_win: 'away' };
   const OUTCOME_INDEX = { home_win: 0, draw: 1, away_win: 2 };
 
@@ -264,6 +267,18 @@
     const gap = Math.round((400 * Math.log10(e / (1 - e))) / GAP.step) * GAP.step;
     return Math.max(GAP.min, Math.min(GAP.max, gap));
   }
+
+  /* Your pick in plain words: who you make favourite, and how strongly. */
+  function pickReading(p, info) {
+    const [home, draw, away] = p;
+    if (draw >= home && draw >= away) return t('predict.read.draw', { p: draw });
+    const lead = Math.abs(home - away);
+    if (lead < 6) return t('predict.read.even');
+    const team = home > away ? info.home : info.away;
+    const pct = Math.max(home, away);
+    return t(`predict.read.${pct >= 60 ? 'strong' : lead >= 15 ? 'fav' : 'slight'}`, { team, p: pct });
+  }
+  const favouriteOf = (p) => (p[1] >= p[0] && p[1] >= p[2] ? 1 : p[0] >= p[2] ? 0 : 2);
 
   function buildCard(round, record, slot, info) {
     const key = round.key;
@@ -318,7 +333,9 @@
       h('p', { class: 'pcard__hint' }, t('predict.fine.hint')), readout);
     const fineButton = h('button', { type: 'button', class: 'pcard__more', attrs: { 'aria-expanded': String(fine), 'aria-controls': panelId } }, t('predict.fine'));
     const status = h('span', { class: 'pcard__status', attrs: { 'aria-live': 'polite' } });
-    card.append(control, h('div', { class: 'pcard__foot' }, status, fineButton), panel);
+    const reading = h('p', { class: 'pcard__read' });
+    card.append(control, reading, h('div', { class: 'pcard__foot' }, status, fineButton), panel);
+    let favourite = favouriteOf(pct());
 
     function paint() {
       const p = pct();
@@ -329,6 +346,10 @@
       fineValue.textContent = `${fixed(pos.k / 10, 1)}×`;
       ['h', 'd', 'a'].forEach((o, i) => { if (document.activeElement !== inputs[o]) inputs[o].value = String(p[i]); });
       card.dataset.state = tipped ? 'tipped' : 'untouched';
+      reading.textContent = tipped ? pickReading(p, info) : '';
+      // A tiny tap on a phone when the pick swings to the other side.
+      const now_ = favouriteOf(p);
+      if (now_ !== favourite) { favourite = now_; if (tipped && navigator.vibrate) navigator.vibrate(8); }
       card.paintStatus();
     }
 
@@ -378,7 +399,7 @@
       pos.g = gapUnder((event.clientX - box.left) / box.width);
       touch(); paint();
     };
-    oddsBar.addEventListener('pointerdown', (event) => { dragging = true; card.classList.add('is-dragging'); oddsBar.setPointerCapture(event.pointerId); move(event); });
+    oddsBar.addEventListener('pointerdown', (event) => { dragging = true; card.classList.add('is-dragging'); capture(oddsBar, event); move(event); });
     oddsBar.addEventListener('pointermove', (event) => { if (dragging) move(event); });
     const stop = () => { if (dragging) { dragging = false; card.classList.remove('is-dragging'); release(); } };
     oddsBar.addEventListener('pointerup', stop);
@@ -410,15 +431,33 @@
     }
 
     const rows = [];
+    S.revealSeen = S.revealSeen || new Set();
+    const seenKey = `${round.key}/${slot}`;
+    const grow = Boolean(hit) && !S.revealSeen.has(seenKey) && !matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const strips = [];
     const row = (label, percents, cls) => {
-      const strip = bar(percents);
+      const strip = bar(grow ? [33.4, 33.3, 33.3] : percents, !grow);
       if (hit) strip.dataset.hit = OUTCOME_SIDE[hit];
+      strips.push([strip, percents]);
       return h('div', { class: `preveal__row ${cls || ''}` }, h('span', { class: 'preveal__who' }, label), strip);
     };
     if (mine) rows.push(row(t('predict.you'), mine, 'preveal__row--you'));
     if (modelFractions) rows.push(row(t('predict.model'), modelFractions.map((x) => x * 100)));
     if (reveal && reveal.crowd) rows.push(row(t('predict.crowd', { n: reveal.crowd.n }), [reveal.crowd.h, reveal.crowd.d, reveal.crowd.a]));
-    if (rows.length) parts.push(h('div', { class: 'preveal' }, rows));
+    if (rows.length) {
+      const box = h('div', { class: 'preveal' }, rows);
+      parts.push(box);
+      if (grow) {
+        // One reveal moment: the bars open up, one after another, when the card comes into view.
+        const observer = new IntersectionObserver((seen) => {
+          if (!seen.some((e) => e.isIntersecting)) return;
+          observer.disconnect();
+          S.revealSeen.add(seenKey);
+          strips.forEach(([strip, percents], i) => setTimeout(() => paintBar(strip, percents), 120 + i * 160));
+        }, { threshold: 0.4 });
+        requestAnimationFrame(() => observer.observe(box));
+      }
+    }
     if (!reveal) parts.push(h('p', { class: 'pcard__note' }, t('predict.locked')));
 
     if (own) {
@@ -483,7 +522,14 @@
     const round = currentRound(S.league);
     if (!holder || !round) return;
     const record = S.data[round.key] || {};
-    holder.replaceChildren(ringNode(tippedCount(round), Object.keys((record.fixture && record.fixture.slots) || {}).length));
+    const done = tippedCount(round);
+    const total = Object.keys((record.fixture && record.fixture.slots) || {}).length;
+    const ring = ringNode(done, total);
+    S.ringWas = S.ringWas || {};
+    const complete = total > 0 && done >= total;
+    if (complete && S.ringWas[round.key] === false) { ring.classList.add('is-pop'); toast(t('predict.complete', { n: round.round })); }
+    S.ringWas[round.key] = complete;
+    holder.replaceChildren(ring);
   }
 
   function statusBadge(round) {
@@ -501,7 +547,8 @@
     const ok = h('button', { type: 'button', class: 'pbtn pbtn--small' }, t('predict.intro.ok'));
     const box = h('section', { class: 'phow', attrs: { 'aria-labelledby': 'phow-title' } },
       h('h2', { id: 'phow-title' }, t('predict.intro.title')),
-      h('ol', { class: 'phow__steps' }, ['1', '2', '3'].map((n) => h('li', {}, t(`predict.intro.step${n}`)))), ok);
+      h('ol', { class: 'phow__steps' }, ['1', '2', '3'].map((n) => h('li', {}, t(`predict.intro.step${n}`)))),
+      h('div', { class: 'phow__actions' }, ok, h('a', { href: '#how', class: 'plink' }, t('predict.intro.more'))));
     ok.addEventListener('click', () => { store.set('predict.intro', 'seen'); box.remove(); });
     return box;
   }
@@ -523,7 +570,7 @@
           h('h2', { class: 'pnav__title' }, t('predict.round', { n: round.round })),
           h('span', { class: 'pnav__dates' }, roundDates(round.closes, round.last || round.closes))),
         h('button', { type: 'button', class: 'pbtn pbtn--icon', disabled: at >= rounds.length - 1, attrs: { 'aria-label': t('predict.round.next') }, on: { click: () => go(at + 1) } }, '›')),
-      h('div', { class: 'pnav__side' }, statusBadge(round),
+      h('div', { class: 'pnav__side' }, Object.assign(statusBadge(round), { id: 'predict-badge' }),
         status === 'open' || status === 'live' ? h('div', { id: 'predict-ring', class: 'pnav__ring' }) : null));
     root.append(nav);
     // Placeholder cards with the real cards' shape, so nothing jumps when they arrive.
@@ -569,10 +616,10 @@
     }
     if (status === 'future') {
       out.append(h('p', { class: 'popens' }, t('predict.opens', { when: when(round.opens) })));
-      out.append(...byDay((k) => h('li', { class: 'pcard pcard--preview' }, matchHead(slots[k], clock(slots[k].kickoff)),
-        h('div', { class: 'pghost', attrs: { 'aria-hidden': 'true' } }, h('span'), h('span'), h('span')))));
+      out.append(h('div', { class: 'pdays' }, ...byDay((k) => h('li', { class: 'pcard pcard--preview' }, matchHead(slots[k], clock(slots[k].kickoff)),
+        h('div', { class: 'pghost', attrs: { 'aria-hidden': 'true' } }, h('span'), h('span'), h('span'))))));
     } else {
-      out.append(...byDay((k) => buildCard(round, record, k, slots[k])));
+      out.append(h('div', { class: 'pdays' }, ...byDay((k) => buildCard(round, record, k, slots[k]))));
       // A draft left from an earlier visit (closed tab, lost connection) is saved now, not forgotten.
       if (status === 'open' && Object.keys(loadDraft(round.key)).length) scheduleSave(round.key);
     }
@@ -652,7 +699,7 @@
     function grip(handle, row) {
       handle.addEventListener('pointerdown', (event) => {
         event.preventDefault();
-        handle.setPointerCapture(event.pointerId);
+        capture(handle, event);
         row.classList.add('is-dragging');
         const move = (e) => {
           const under = document.elementFromPoint(e.clientX, e.clientY);
@@ -805,6 +852,86 @@
       const board = await client.get(`boards/league_${code}`);
       target.replaceChildren(boardTable(board));
     } catch (error) { target.replaceChildren(emptyState(error, () => showLeague(code, target))); }
+  }
+
+  /* ---- how to play: a guide with a bar to try and a result to pick -------------------------------- */
+
+  function renderHow(root) {
+    const info = { home: t('predict.how.home'), away: t('predict.how.away') };
+    const even = pickPercentages(0, DRAW_TENTHS.normal);
+    let pos = { g: 60, k: DRAW_TENTHS.normal };
+    let picked = null;
+
+    const demoBar = bar(pickPercentages(pos.g, pos.k));
+    demoBar.classList.add('pcard__bar');
+    demoBar.setAttribute('aria-hidden', 'true');
+    const demoRange = h('input', { type: 'range', class: 'pcard__range', min: GAP.min, max: GAP.max, step: GAP.step, value: pos.g,
+      attrs: { 'aria-label': t('predict.slider.label', info) } });
+    const reading = h('p', { class: 'pcard__read' });
+    const fine = h('input', { type: 'range', class: 'pcard__fine-range', min: DRAW_TENTHS.min, max: DRAW_TENTHS.max, step: 1, value: pos.k,
+      attrs: { 'aria-label': t('predict.fine.label') } });
+    const fineValue = h('output', { class: 'pcard__fine-value' });
+    const score = h('div', { class: 'pguide__score', attrs: { 'aria-live': 'polite' } }, h('p', { class: 'pmuted' }, t('predict.how.pick')));
+    const results = ['home_win', 'draw', 'away_win'].map((o) => h('button', { type: 'button', class: 'pbtn pbtn--small', data: { outcome: o },
+      attrs: { 'aria-pressed': 'false' }, on: { click: () => { picked = o; results.forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.outcome === o))); paint(); } } },
+      t(`predict.how.r.${o}`)));
+
+    function paint() {
+      const p = pickPercentages(pos.g, pos.k);
+      paintBar(demoBar, p);
+      demoRange.value = pos.g;
+      demoRange.setAttribute('aria-valuetext', t('predict.slider.value', { h: p[0], d: p[1], a: p[2] }));
+      fine.value = pos.k;
+      fineValue.textContent = `${fixed(pos.k / 10, 1)}×`;
+      reading.textContent = pickReading(p, info);
+      if (!picked) return;
+      const you = scoreOwnPick(p, even.map((x) => x / 100), picked);
+      const evenBrier = you.brier + you.vsModel;
+      const kind = you.vsModel > 0.0005 ? 'good' : you.vsModel < -0.0005 ? 'bad' : 'even';
+      const mini = bar(p);
+      mini.dataset.hit = OUTCOME_SIDE[picked];
+      mini.classList.add('pguide__mini');
+      score.replaceChildren(mini,
+        h('p', { class: 'pguide__big' }, t('predict.how.score.you', { b: fixed(you.brier, 2) })),
+        h('p', {}, t('predict.how.score.even', { m: fixed(evenBrier, 2) })),
+        h('div', { class: 'pverdict', data: { kind } }, h('strong', { class: 'pverdict__chip' }, t(`predict.how.score.${kind === 'even' ? 'even2' : kind}`))));
+    }
+    const move = (event) => {
+      const box = demoBar.getBoundingClientRect();
+      pos.g = gapUnder((event.clientX - box.left) / box.width);
+      paint();
+    };
+    let dragging = false;
+    demoBar.addEventListener('pointerdown', (event) => { dragging = true; capture(demoBar, event); move(event); });
+    demoBar.addEventListener('pointermove', (event) => { if (dragging) move(event); });
+    demoBar.addEventListener('pointerup', () => { dragging = false; });
+    demoBar.addEventListener('pointercancel', () => { dragging = false; });
+    demoRange.addEventListener('input', () => { pos.g = Number(demoRange.value); paint(); });
+    fine.addEventListener('input', () => { pos.k = Number(fine.value); paint(); });
+
+    const demo = h('div', { class: 'pcard pguide__demo', data: { state: 'tipped' } },
+      matchHead(info, t('predict.how.try')), h('div', { class: 'pslider' }, demoBar, demoRange), reading);
+    const step = (n, title, ...kids) => h('section', { class: 'pguide__step' },
+      h('h2', {}, h('span', { class: 'pguide__n', attrs: { 'aria-hidden': 'true' } }, String(n)), title), ...kids);
+    const faq = ['1', '2', '3', '4'].map((n) => h('details', { class: 'pdetails pguide__q' },
+      h('summary', {}, t(`predict.how.q${n}`)), h('p', {}, t(`predict.how.a${n}`))));
+
+    root.append(h('article', { class: 'pguide' },
+      h('h2', { class: 'pguide__title' }, t('predict.how.title')),
+      h('p', { class: 'pguide__lead' }, t('predict.how.lead')),
+      step(1, t('predict.how.s1.title'), h('p', {}, t('predict.how.s1.text')), demo),
+      step(2, t('predict.how.s2.title'), h('p', {}, t('predict.how.s2.text')),
+        h('label', { class: 'pcard__fine pguide__fine' }, h('span', {}, t('predict.fine.title')), fine, fineValue)),
+      step(3, t('predict.how.s3.title'), h('p', {}, t('predict.how.s3.text'))),
+      step(4, t('predict.how.s4.title'), h('p', {}, t('predict.how.s4.text')),
+        h('div', { class: 'pguide__results', attrs: { role: 'group', 'aria-label': t('predict.how.pick') } }, results), score),
+      step(5, t('predict.how.s5.title'), h('p', {}, t('predict.how.s5.text'))),
+      step(6, t('predict.how.s6.title'), h('p', {}, t('predict.how.s6.text'))),
+      h('section', { class: 'pguide__faq' }, h('h2', {}, t('predict.how.faq')), faq,
+        h('p', { class: 'pmuted' }, h('a', { href: '/personvern.html' }, t('predict.foot.privacy')))),
+      h('button', { type: 'button', class: 'pbtn pbtn--primary pguide__cta', on: { click: () => { store.set('predict.intro', 'seen'); openTab('tip'); window.scrollTo(0, 0); } } },
+        t('predict.how.cta'))));
+    paint();
   }
 
   /* ---- you: profile, stats, Google, deletion --------------------------------------------------------------------- */
@@ -1004,7 +1131,7 @@
     });
     const data = h('section', { class: 'ppanel pdata' }, h('h2', {}, t('predict.data.title')), signedIn ? googleBlock() : null, h('p', { class: 'pmuted' }, t('predict.data.text')));
     if (!client.uid) return data;
-    return h('div', {}, data, h('section', { class: 'ppanel pdanger' }, h('h2', {}, t('predict.danger.title')), h('p', {}, t('predict.danger.text')), del, message));
+    return h('div', { class: 'pme-data' }, data, h('section', { class: 'ppanel pdanger' }, h('h2', {}, t('predict.danger.title')), h('p', {}, t('predict.danger.text')), del, message));
   }
 
   function resetLocal() {
@@ -1031,6 +1158,7 @@
     if (S.tab === 'tip') renderTip(root);
     else if (S.tab === 'table') renderTable(root);
     else if (S.tab === 'boards') renderBoards(root);
+    else if (S.tab === 'how') renderHow(root);
     else renderMe(root);
     if (S.note) toast(S.note.text, S.note.kind);
   }
@@ -1048,8 +1176,27 @@
     if (location.hash !== hash) history.pushState(null, '', hash || location.pathname + location.search);
     render();
   }
-  const tabFromHash = () => (TABS.includes(location.hash.slice(1)) ? location.hash.slice(1) : 'tip');
+  const ROUTES = [...TABS, 'how'];
+  const tabFromHash = () => (ROUTES.includes(location.hash.slice(1)) ? location.hash.slice(1) : 'tip');
   window.addEventListener('popstate', () => { S.tab = tabFromHash(); render(); });
+  window.addEventListener('hashchange', () => {
+    const next = tabFromHash();
+    if (next !== S.tab) { S.tab = next; render(); window.scrollTo(0, 0); }
+  });
+
+  /* The clock: the countdown keeps moving, and a match that kicks off while the page is open locks. */
+  S.lastTick = now();
+  setInterval(() => {
+    if (document.hidden || S.tab !== 'tip') { S.lastTick = now(); return; }
+    const round = currentRound(S.league);
+    const badge = document.getElementById('predict-badge');
+    if (!round || !badge) return;
+    const record = S.data[round.key] || {};
+    const kicked = Object.values((record.fixture && record.fixture.slots) || {}).some((m) => m.kickoff.getTime() > S.lastTick && m.kickoff.getTime() <= now());
+    S.lastTick = now();
+    if (kicked || badge.dataset.status !== roundStatus(round, now())) { ensureRound(round, true).then(render); return; }
+    badge.replaceWith(Object.assign(statusBadge(round), { id: 'predict-badge' }));
+  }, 30000);
 
   async function boot() {
     S.tab = tabFromHash();

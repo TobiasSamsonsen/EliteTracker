@@ -3,7 +3,11 @@
    the handle you drag. Everything around it stays quiet. Mobile first; targets are 44 px or more;
    the bar is 2.75rem tall like the model page's slider thumb. */
 
-.predict { max-width: 44rem; padding-block: 1.25rem 4rem; }
+/* styles.css gives every <section> a top and bottom margin; the game sets its own spacing.
+   :where keeps this at class weight, so the rules below still win. */
+.predict :where(section) { margin-block: 0; }
+
+.predict { max-width: 76rem; padding-block: 1.25rem 4rem; }
 .predict .doc__top { display: flex; justify-content: space-between; align-items: center; gap: 1rem; }
 .predict .doc__top a { color: var(--ink-muted); text-decoration: none; font-weight: 600; }
 .predict .doc__head { margin-top: 1.25rem; }
@@ -334,4 +338,78 @@
   .pcard .pcard__bar .odds__seg, .pring__arc, .pswitch, .pswitch::before { transition: none; }
   .pcard[data-state="untouched"]:first-child .pcard__bar .odds__seg[data-outcome="draw"] { animation: none; }
   .pskeleton span { animation: none; }
+}
+
+/* ---- moments: what answers you ---------------------------------------------------------------- */
+
+/* Your pick in words, under the bar. */
+.pcard__read { min-height: 1.3em; margin: 0.15rem 0 0; font-size: 0.875rem; font-weight: 700; color: var(--ink); }
+.pcard[data-state="untouched"] .pcard__read { min-height: 0; }
+/* A save lands: the dot pulses once. */
+.pcard__status[data-state="saved"]::before { animation: psaved 700ms var(--ease); }
+@keyframes psaved { 0% { transform: scale(0.4); box-shadow: 0 0 0 0 color-mix(in srgb, var(--edge-ecl) 60%, transparent); }
+  55% { transform: scale(1.5); } 100% { transform: scale(1); box-shadow: 0 0 0 7px transparent; } }
+/* A live match breathes. */
+.pbadge[data-status="live"]::before { content: ""; display: inline-block; width: 0.45rem; height: 0.45rem; margin-right: 0.35rem; border-radius: 50%;
+  background: var(--outcome-bad); vertical-align: 0.05em; animation: plive 1.6s ease-in-out infinite; }
+@keyframes plive { 0%, 100% { opacity: 1; } 50% { opacity: 0.25; } }
+/* A complete round: the ring pops. */
+.pring.is-pop { animation: ppop 650ms var(--ease); }
+@keyframes ppop { 0% { transform: scale(1); } 40% { transform: scale(1.25); } 100% { transform: scale(1); } }
+/* The reveal opens up (the bars start even and slide to the real odds). */
+.preveal .odds__seg { transition: flex 700ms var(--ease); }
+.pcard { transition: border-color 150ms var(--ease), box-shadow 150ms var(--ease); }
+@media (hover: hover) { .pcard[data-state="tipped"]:hover, .pcard[data-state="untouched"]:hover { border-color: var(--rule-strong); box-shadow: var(--shadow); } }
+
+/* ---- how to play ------------------------------------------------------------------------------- */
+
+.phowlink { display: inline-flex; align-items: center; gap: 0.4rem; min-height: 36px; margin: -0.5rem 0 1rem; color: var(--accent-ink); font-weight: 700; text-decoration: none; }
+.phowlink::before { content: "?"; display: inline-grid; place-items: center; width: 1.35rem; height: 1.35rem; border-radius: 50%;
+  border: 1.5px solid currentColor; font-size: 0.8125rem; font-weight: 900; }
+.phowlink:hover { text-decoration: underline; }
+.phow__actions { display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem 1rem; }
+.plink { color: var(--accent-ink); font-weight: 700; background: none; border: 0; padding: 0; font: inherit; cursor: pointer; }
+.pguide { display: grid; gap: 2rem; }
+.pguide__title { font-size: 1.5rem; margin: 0; }
+.pguide__lead { margin: -1rem 0 0; color: var(--ink-muted); max-width: var(--measure); }
+.pguide__step { display: grid; gap: 0.6rem; }
+.pguide__step > h2 { display: flex; align-items: center; gap: 0.6rem; margin: 0; }
+.pguide__step > p { margin: 0; max-width: var(--measure); }
+.pguide__n { display: inline-grid; place-items: center; width: 1.8rem; height: 1.8rem; border-radius: 50%; flex: none;
+  background: var(--draw); color: #10171b; font-size: 0.875rem; font-weight: 900; }
+.pguide__demo { box-shadow: 0 0 0 1px var(--accent), var(--shadow); }
+.pguide__fine { max-width: 28rem; }
+.pguide__results { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+.pguide__score { min-height: 4.5rem; padding: 0.85rem 1rem; border-radius: var(--radius-sm); background: var(--panel-sunk); }
+.pguide__score p { margin: 0 0 0.35rem; }
+.pguide__score .pguide__mini { height: 1.5rem; margin-bottom: 0.6rem; }
+.pguide__big { font-size: 1.25rem; font-weight: 900; font-variant-numeric: tabular-nums; }
+.pguide__score .pverdict { margin: 0.25rem 0 0; }
+.pguide__faq { display: grid; gap: 0.25rem; }
+.pguide__faq h2 { margin: 0 0 0.25rem; }
+.pguide__q summary { color: var(--ink); }
+.pguide__q p { margin: 0.25rem 0 0.75rem; color: var(--ink-muted); max-width: var(--measure); }
+.pguide__cta { justify-self: start; }
+
+@media (prefers-reduced-motion: reduce) {
+  .pcard__status[data-state="saved"]::before, .pbadge[data-status="live"]::before, .pring.is-pop { animation: none; }
+  .preveal .odds__seg, .pcard { transition: none; }
+}
+
+/* ---- wide screens: use the width ------------------------------------------------------------------ */
+
+/* Section tabs and switches keep a hand-sized width; reading text keeps its measure. */
+.ptabs .switch[aria-label] { max-width: 40rem; }
+.phow, .pguide, .ptable, .ptable__bar, .pzones, .ptable__rules, .ptable__status { max-width: 46rem; }
+.pguide { margin-inline: 0; }
+
+@media (min-width: 900px) {
+  /* Each matchday is a column, like a calendar: Saturday's matches beside Sunday's. */
+  .pdays { display: grid; grid-template-columns: repeat(auto-fill, minmax(24rem, 1fr)); gap: 1.25rem; align-items: start; }
+  .pdays .pday + .pday { margin-top: 0; }
+  /* You: profile and numbers side by side; your data and the danger zone below, side by side. */
+  #predict-view[data-tab="me"] > div { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 0 1rem; align-items: start; }
+  #predict-view[data-tab="me"] > div > .pme-data { grid-column: 1 / -1; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 0 1rem; align-items: start; }
+  /* Boards: the table has room for every column; the mini-leagues sit under it. */
+  .pboard__key { max-width: 60rem; }
 }
