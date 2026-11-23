@@ -4090,3 +4090,27 @@ the third angle on one signal, not independent of steps 6, 9 and 11 above. Not s
 when a season is added (2026 relegations, 2027): the relegated club's level on one frozen definition
 (memory 0.9), residual in its first OBOS-ligaen season; 2026's relegated clubs (Odds Ballklubb and the
 others from 2025) are the first out-of-sample cases, and with 3 a year the result takes years.
+
+### Frozen checks, defined 23 November 2026 (`frozen_checks.py`), first numbers
+
+What the section's recommendation came to: no model change, and three checks whose definitions are fixed now
+so a later season can be run against them without retuning (the file's docstring is the pre-registration;
+`markov_history_common.py` holds the shared ladder and level code). A: relegated clubs' first OBOS-ligaen
+season, long-run level (memory 0.9) against the club-season residual, hypothesis slope above zero. B: the
+step-9 term at one setting (100 Elo points, 0.3 log goals per 1.0 of residual past 0.1), scored against the
+shipped blend, hypothesis log loss, Brier and RPS all below zero. C (by hand, once Eliteserien 2026 is final):
+`season_check.py` at `--sd 0.20` and `0.25` and `season_sd_oos.py`, the shock stays 0.20 unless 0.25 is better
+on both measures. Rerun: `.venv/Scripts/python -X utf8 experiments/improvements/frozen_checks.py CACHE FIRST`
+(CACHE = the `rows.npz` cache `markov_common.build` writes; any path works), append the numbers here.
+
+First run, on 2026 (OBOS-ligaen finished, Eliteserien 215 of 240 played on 22 November; 2026 was already
+in the walk-forwards above, so it is not clean; 2027 will be):
+
+| check | 2026 | before (2016-2025) |
+|---|---|---|
+| A. relegated, level vs residual | 3 clubs: Stromsgodset (level +3.17) +0.17, Haugesund (+1.01) +0.46, Bryne (+0.02) -0.16; mean +0.158; the order of the level matches the order of the residual for two of three, n too small for a slope | slope +0.091 per sd (n 24); pooled with 2026 +0.077 (n 27) |
+| B. step-9 term, frozen | 455 matches: log loss -0.00084 (t -0.62), Brier -0.00083 (t -0.86), RPS -0.00035 (t -0.76), halves t -0.72 / +0.29 | in sample -0.00053 (t -1.10), Brier t -1.34, RPS t -1.11 |
+| C. strength shock | waits for the last three Eliteserien rounds | 0.25 against 0.20: RPS -0.00030 (t -1.90) walk-forward |
+
+Same sign and about the same size in 2026 for B, which proves nothing yet (3 clubs for A, 455 matches
+for B, both partly seen); the point of the file is that 2027 can be checked without a new sweep.
