@@ -35,7 +35,7 @@
 }
 /* A view without the side panel keeps a readable column; the boards take the width they need. */
 .playout:not([data-side="true"]) #predict-view { width: 100%; max-width: 52rem; margin-inline: auto; }
-.playout:not([data-side="true"]) #predict-view[data-tab="boards"] { max-width: 64rem; }
+.playout:not([data-side="true"]) #predict-view:is([data-tab="boards"], [data-tab="leagues"]) { max-width: 64rem; }
 
 .pfine { margin: 0; padding: var(--space-3) var(--space-5); border-top: 1px solid var(--rule); font-size: 0.8125rem; color: var(--ink-muted); }
 .pfine a { color: var(--ink-muted); }
@@ -49,7 +49,8 @@
 .pintro { color: var(--ink-muted); max-width: var(--measure); margin: 0 auto 1rem; text-align: center; }
 .ptoolbar { display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: 0.5rem; margin: 0 0 1rem; }
 /* The leaderboard's controls start at the table's left edge: what appears at the end (the round
-   picker) moves nothing before it. On a phone each switch takes a row and the pickers share one. */
+   picker) moves nothing before it. On a phone each switch takes a row and the pickers share one, which
+   is always there (the season's picker is), so the round's picker appearing beside it moves nothing. */
 .ptoolbar--boards { justify-content: flex-start; }
 .ptoolbar__picks { display: flex; gap: 0.5rem; }
 @media (max-width: 640px) {
@@ -87,17 +88,24 @@
 .pnav__pick { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; font: inherit; }
 .pnav__side { justify-self: end; display: flex; align-items: center; gap: 0.6rem; }
 .pnav__ring { display: flex; }
-/* A phone: the division and your progress on top, the round and its deadline under them. */
+/* The deadline as a line under the dates: a phone's bar shows it there instead of the badge. */
+.pnav__status { display: none; font-size: 0.75rem; font-weight: 700; color: var(--ink-muted); white-space: nowrap; }
+.pnav__status[data-status="open"] { color: var(--accent-ink); }
+.pnav__status[data-soon="true"] { color: var(--edge-el); }
+.pnav__status[data-status="live"] { color: var(--outcome-bad-ink); }
+/* A phone: the division across the top; under it the round (its dates and deadline under its name) and
+   your progress. Two rows, one bordered thing less than the badge made. */
 @media (max-width: 640px) {
-  .pnav { grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: "league ring" "round badge"; gap: 0.4rem 0.75rem; }
+  .pnav { grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: "league league" "round ring"; gap: 0.6rem 0.75rem; }
   .pnav__league { grid-area: league; justify-self: stretch; }
   .pnav__league .switch { display: flex; width: 100%; }
   .pnav__league .switch button { flex: 1; }
   .pnav__side { display: contents; }
-  .pnav__side .pbadge { grid-area: badge; justify-self: end; }
+  .pnav__side .pbadge { display: none; }
   .pnav__side .pnav__ring { grid-area: ring; justify-self: end; }
   .pnav__round { grid-area: round; justify-self: start; }
   .pnav__titles { min-width: 0; }
+  .pnav__status { display: block; }
 }
 .predict .switch button { white-space: nowrap; }
 
@@ -115,17 +123,26 @@
 .pbadge[data-status="live"] { color: var(--outcome-bad-ink); border-color: var(--outcome-bad); }
 .pbadge[data-status="partial"] { color: var(--accent-ink); border-color: var(--rule-strong); }
 
-/* ---- how it works (until dismissed): three steps side by side ---------------------------------- */
+/* ---- the tutorial: the first visit, one step at a time --------------------------------------------- */
 
-.phow { display: grid; gap: 0.6rem; margin: 0 0 var(--space-4); padding: var(--space-4); border-radius: var(--radius);
-  background: color-mix(in srgb, var(--accent) 8%, var(--panel-sunk)); border: 1px solid color-mix(in srgb, var(--accent) 35%, var(--rule)); }
-#predict-view .phow__title { margin: 0; font-size: 0.9375rem; }
-.phow__steps { display: grid; grid-template-columns: repeat(auto-fit, minmax(13rem, 1fr)); gap: 0.4rem 1.25rem; margin: 0; padding: 0; list-style: none;
-  counter-reset: step; font-size: 0.875rem; color: var(--ink-muted); }
-.phow__steps li { counter-increment: step; display: grid; grid-template-columns: 1.4rem 1fr; gap: 0.4rem; }
-.phow__steps li::before { content: counter(step); display: grid; place-items: center; width: 1.4rem; height: 1.4rem; border-radius: 50%;
-  background: var(--draw); color: #10171b; font-size: 0.75rem; font-weight: 900; }
-.phow__actions { display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: 0.5rem; }
+.ptut { display: grid; gap: 1rem; max-width: 42rem; margin: 0 auto; padding: 1.25rem 1.3rem 1.3rem; background: var(--panel-sunk);
+  border: 1px solid var(--rule); border-radius: var(--radius); }
+.ptut__body { display: grid; gap: 0.8rem; }
+.ptut__dots { display: flex; gap: 0.3rem; margin: 0; padding: 0; list-style: none; }
+.ptut__dots li { flex: 1; height: 0.3rem; border-radius: 999px; background: var(--rule-strong); transition: background 200ms var(--ease); }
+.ptut__dots li[data-state="done"] { background: color-mix(in srgb, var(--accent) 55%, var(--rule-strong)); }
+.ptut__dots li[data-state="now"] { background: var(--accent); }
+.ptut__count { margin: 0; font-size: 0.75rem; font-weight: 800; letter-spacing: 0.04em; text-transform: uppercase; color: var(--ink-faint); }
+#predict-view .ptut__title { margin: 0; font-size: 1.4rem; }
+.ptut__title:focus { outline: none; }
+.ptut__text { margin: 0; max-width: var(--measure); }
+.ptut__hint { margin: 0; min-height: 1.4em; font-size: 0.875rem; font-weight: 700; color: var(--ink-muted); }
+.ptut__hint[data-ok="true"] { color: var(--outcome-good-ink); }
+.ptut__nav { display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: 0.5rem; }
+.ptut__leave { margin-right: auto; }
+.ptut__google { display: grid; justify-items: start; gap: 0.6rem; }
+.ptut__google .pme__msg { margin: 0; }
+.pguide__again { justify-self: center; margin-top: -0.5rem; }
 
 /* ---- buttons ---------------------------------------------------------------------------- */
 
@@ -195,7 +212,7 @@
 .pcard__bar .odds__seg[data-outcome="draw"] { position: relative; overflow: visible; z-index: 1;
   box-shadow: 0 0 0 2px var(--panel-sunk), 0 0 0 3px color-mix(in srgb, var(--draw) 70%, var(--ink)), 0 3px 10px rgb(0 0 0 / 0.3);
   /* Each end of the block is a handle of its own: a short ridge just inside it. */
-  --pgrip-l: rgb(16 23 27 / 0.4); --pgrip-r: rgb(16 23 27 / 0.4);
+  --pgrip-l: transparent; --pgrip-r: transparent;
   background-image: linear-gradient(var(--pgrip-l), var(--pgrip-l)), linear-gradient(var(--pgrip-r), var(--pgrip-r));
   background-size: 3px 46%; background-position: left 5px center, right 5px center; background-repeat: no-repeat; }
 .pcard__bar:is([data-hover="left"], [data-hover="right"], [data-drag="left"], [data-drag="right"]) { cursor: col-resize; }
@@ -239,7 +256,7 @@
 /* The fine-tune switch: a pill with a dot that lights with it. */
 .pfine-toggle__dot { width: 0.5rem; height: 0.5rem; border-radius: 50%; border: 1.5px solid var(--ink-muted); flex: none; }
 .pfine-toggle[aria-pressed="true"] .pfine-toggle__dot { border-color: var(--on-accent); background: var(--on-accent); }
-/* With fine-tune on, the block's ends are free: their ridges take the accent. */
+/* The ridges are the ends' handles, which exist only with fine-tune on: then they take the accent. */
 .pcard__bar[data-free="true"] .odds__seg[data-outcome="draw"] { --pgrip-l: var(--accent); --pgrip-r: var(--accent); }
 .pcard__hint { margin: 0; font-size: 0.8125rem; color: var(--ink-muted); }
 .pcard__readout { display: grid; grid-template-columns: repeat(3, minmax(0, 5rem)); gap: 0.5rem; }
@@ -305,15 +322,42 @@
 
 /* ---- the round recap ------------------------------------------------------------------------ */
 
-.precap { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 0.75rem 1.5rem;
-  margin: 0 0 var(--space-4); padding: 0.85rem 1rem; background: var(--panel-sunk); border: 1px solid var(--rule); border-radius: var(--radius); }
-.precap__stats { display: flex; flex-wrap: wrap; gap: 0.5rem 1.75rem; }
-.precap__stat { display: grid; }
-.precap__stat strong { font-size: 1.35rem; line-height: 1.1; font-variant-numeric: tabular-nums; }
-.precap__stat span { font-size: 0.8125rem; color: var(--ink-muted); }
-.precap__stat[data-tone="bad"] strong { color: var(--outcome-bad-ink); }
-.precap__stat .precap__match { display: inline-flex; align-items: center; gap: 0.4rem; font-size: 1rem; min-height: 1.5rem; line-height: 1.35rem; }
-.predict .precap__share { margin-left: auto; }
+.precap { display: grid; gap: 0.9rem; margin: 0 0 var(--space-4); padding: 1rem 1.1rem; background: var(--panel-sunk); border: 1px solid var(--rule); border-radius: var(--radius); }
+.precap__head { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; }
+#predict-view .precap__head h3 { margin: 0; font-size: 0.8125rem; font-weight: 800; letter-spacing: 0.06em; text-transform: uppercase; color: var(--ink-muted); }
+/* The round's two headline figures. */
+.precap__hero { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.75rem; }
+.precap__fig { display: grid; gap: 0.1rem; padding: 0.6rem 0.85rem; border-radius: var(--radius-sm); background: var(--panel); }
+.precap__fig strong { font-size: clamp(1.75rem, 6vw, 2.4rem); line-height: 1.05; font-weight: 900; letter-spacing: -0.01em; font-variant-numeric: tabular-nums; }
+.precap__fig span { font-size: 0.8125rem; font-weight: 600; color: var(--ink-muted); }
+.precap__fig[data-tone="good"] strong { color: var(--outcome-good-ink); }
+.precap__fig[data-tone="bad"] strong { color: var(--outcome-bad-ink); }
+/* The counts: smaller, in a row. */
+.precap__counts { display: flex; flex-wrap: wrap; gap: 0.4rem 1.75rem; }
+.precap__count { display: grid; }
+.precap__count strong { font-size: 1.1rem; line-height: 1.2; font-variant-numeric: tabular-nums; }
+.precap__count span { font-size: 0.75rem; color: var(--ink-muted); }
+.precap__count[data-tone="good"] strong { color: var(--outcome-good-ink); }
+.precap__count[data-tone="bad"] strong { color: var(--outcome-bad-ink); }
+/* The best and the worst call. */
+/* Each call a scoreline on one grid: label | home | – | away | points. The two sides share the room
+   equally, so the dash stands in the same place on both lines; a long name is cut, never the other. */
+.precap__calls { display: grid; gap: 0.7rem; border-top: 1px solid var(--rule); padding-top: 0.75rem; }
+.precap__call { display: grid; grid-template-columns: 6.5rem minmax(0, 1fr) auto minmax(0, 1fr) 3.25rem;
+  grid-template-areas: "label home dash away vs"; align-items: center; gap: 0.45rem; font-size: 0.9375rem; }
+.precap__calllabel { grid-area: label; font-size: 0.75rem; font-weight: 700; color: var(--ink-muted); }
+.precap__side { display: flex; align-items: center; gap: 0.4rem; min-width: 0; font-weight: 800; }
+.precap__side--home { grid-area: home; justify-content: flex-end; }
+.precap__side--away { grid-area: away; }
+.precap__name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.precap__dash { grid-area: dash; color: var(--ink-muted); font-weight: 700; }
+.precap__callvs { grid-area: vs; justify-self: end; font-weight: 800; font-variant-numeric: tabular-nums; }
+.precap__call[data-kind="good"] .precap__callvs { color: var(--outcome-good-ink); }
+.precap__call[data-kind="bad"] .precap__callvs { color: var(--outcome-bad-ink); }
+/* A phone: the label and the points on a line over the match, so the names have the whole width. */
+@media (max-width: 560px) {
+  .precap__call { grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); grid-template-areas: "label label vs" "home dash away"; row-gap: 0.2rem; }
+}
 
 .pfoot { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 0.75rem; margin-top: var(--space-5); font-size: 0.875rem; color: var(--ink-muted); }
 
@@ -379,7 +423,6 @@
 .pboard.is-stale { opacity: 0.55; pointer-events: none; transition: opacity 150ms var(--ease) 120ms; }
 .pboard--skeleton { display: grid; gap: 0.6rem; padding: 3.5rem 0 1rem; }
 .pboard--skeleton span { height: 1.6rem; }
-.pboard__key { margin: 0 0 0.75rem; font-size: 0.875rem; color: var(--ink-muted); max-width: var(--measure); }
 .pscroll { overflow-x: auto; border: 1px solid var(--rule); border-radius: var(--radius); background: var(--panel-sunk); }
 .pboard table { width: 100%; min-width: 34rem; border-collapse: separate; border-spacing: 0; font-size: 0.9375rem; font-variant-numeric: tabular-nums; }
 .pboard th, .pboard td { padding: 0 0.6rem; text-align: right; border-bottom: 1px solid var(--rule); vertical-align: middle; white-space: nowrap; }
@@ -418,7 +461,7 @@
 .pboard :is(.pboard__rank, .pboard__name) .pboard__arrow { right: auto; left: 100%; padding: 0 0 0 0.2rem; }
 .pboard__sort:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 4px; }
 .pboard th[aria-sort="ascending"], .pboard th[aria-sort="descending"] { color: var(--ink); }
-.pboard__jump { display: flex; margin: 0 auto 0.6rem; }
+.pboard__jump { display: inline-flex; }
 .pboard__row:focus { outline: 2px solid var(--accent); outline-offset: -2px; }
 .pfield.pfield--pick { width: auto; padding: 0 0.6rem 0 0.85rem; border-radius: 999px; cursor: pointer; font-size: 0.8125rem; font-weight: 600; }  /* the switches' type */
 .pboard__note, .pboard__me { color: var(--ink-muted); font-size: 0.8125rem; margin: 0.6rem auto; text-align: center; }
@@ -447,6 +490,10 @@
   border: 1px solid var(--rule-strong); border-radius: var(--radius-sm); }
 .pfield:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
 .pme__msg, .pleagues__msg { min-height: 1.25rem; margin: -0.4rem 0 0.75rem; color: var(--ink-muted); font-size: 0.875rem; }
+/* The nickname's card ends at its field until there is something to say (the line stays, for the reader). */
+.pme .pme__msg { margin: 0.5rem 0 0; }
+.pme .pme__msg:empty { min-height: 0; margin: 0; }
+.pme .pfieldset { margin-bottom: 0; }
 .pswitch-row { display: flex; align-items: center; justify-content: space-between; gap: 1rem; margin: 0 0 1rem; cursor: pointer; }
 .pswitch-row > span { display: grid; gap: 0.15rem; font-size: 0.9375rem; }
 .pswitch-row small { color: var(--ink-muted); font-size: 0.8125rem; }
@@ -471,19 +518,53 @@
 .pbadge--b[data-earned="false"] { opacity: 0.6; }
 @media (min-width: 560px) { .pstats__hero { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
 
-.pleagues { margin-top: 2rem; padding-top: 1.25rem; border-top: 1px solid var(--rule); }
-.pleagues h2, .pleagues > .pintro { text-align: center; }
-.pleagues__list { display: flex; flex-wrap: wrap; justify-content: center; gap: 0.5rem; list-style: none; padding: 0; margin: 0 0 1rem; }
-.pchip { display: inline-flex; align-items: center; gap: 0.5rem; min-height: 2.5rem; padding: 0 0.85rem; border-radius: 999px; font: inherit; font-weight: 700;
-  color: var(--ink); background: var(--panel-sunk); border: 1px solid var(--rule-strong); cursor: pointer; }
-.pchip code { font-size: 0.75rem; color: var(--ink-muted); letter-spacing: 0.06em; }
-.pleagues__item { display: inline-flex; align-items: center; gap: 0.4rem; }
-.pleagues__forms { display: grid; gap: 0.25rem; max-width: 44rem; margin-inline: auto; }
-@media (min-width: 640px) { .pleagues__forms { grid-template-columns: 1fr 1fr; gap: 1rem; } }
+/* ---- leagues: chips on top (the leaderboard has a switch), a header per league, then its board ---- */
+.ptoolbar--leagues { justify-content: space-between; flex-wrap: nowrap; align-items: center; }
+.pleagues__tabs { display: flex; gap: 0.4rem; min-width: 0; overflow-x: auto; scrollbar-width: none; padding: 2px; }
+.pleagues__tabs::-webkit-scrollbar { display: none; }
+.pchip { display: inline-flex; align-items: center; gap: 0.5rem; flex: none; min-height: 2.25rem; padding: 0 0.95rem; border-radius: 999px; font: inherit; font-size: 0.875rem; font-weight: 700;
+  color: var(--ink-muted); background: transparent; border: 1px solid var(--rule-strong); cursor: pointer; white-space: nowrap; }
+.pchip:hover { color: var(--ink); background: var(--panel-sunk); }
+.pchip[aria-pressed="true"] { color: var(--ink); background: color-mix(in srgb, var(--accent) 16%, var(--panel)); border-color: var(--accent); }
+.pleagues__add { flex: none; }
+.pleagues__add::before { content: "+"; font-size: 1.1em; font-weight: 800; margin-right: 0.15rem; }
+.pleagues__add[aria-expanded]::after { content: none; }
+.pleagues__forms { display: grid; gap: 0.75rem; margin: 0 0 1rem; }
+.pleagues__forms[hidden] { display: none; }
+@media (min-width: 640px) { .pleagues__forms { grid-template-columns: 1fr 1fr; } }
+.pleagues__card { display: grid; gap: 0.35rem; align-content: start; padding: 0.9rem 1rem 1rem; border: 1px solid var(--rule); border-radius: var(--radius-sm); background: var(--panel-sunk); }
+#predict-view .pleagues__card h3 { margin: 0; font-size: 0.9375rem; }
+.pleagues__card .pmuted { margin: 0 0 0.35rem; font-size: 0.8125rem; }
+.pleagues__card .pinline { display: flex; gap: 0.5rem; }
+.pleagues__card .pfield { flex: 1; min-width: 0; }
+.pleagues__code { text-transform: uppercase; letter-spacing: 0.12em; font-family: var(--font-mono, ui-monospace, monospace); }
+.pleagues__code::placeholder { letter-spacing: 0.12em; opacity: 0.5; }
 .pleagues__msg { text-align: center; }
-.pleagues__board { margin-top: 1rem; }
-.pleagues__invite { display: flex; align-items: center; justify-content: center; gap: 0.6rem; margin: 0 0 0.75rem; }
-.pleagues__invite code { font-size: 1.125rem; font-weight: 800; letter-spacing: 0.12em; }
+.pleagues__msg:empty { display: none; }
+.pleagues--none { max-width: 44rem; margin-inline: auto; padding-top: 0.5rem; }
+.pleagues--none h2, .pleagues--none > .pintro { text-align: center; }
+.pleague__head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 0.75rem 1rem;
+  padding: 0.9rem 1rem; margin: 0 0 1rem; border: 1px solid var(--rule); border-left: 3px solid var(--accent); border-radius: var(--radius-sm);
+  background: linear-gradient(90deg, color-mix(in srgb, var(--accent) 9%, transparent), transparent 70%); }
+.pleague__title { min-width: 0; }
+#predict-view .pleague__title h2 { margin: 0; font-size: 1.375rem; overflow-wrap: anywhere; }
+.pleague__standing { margin: 0.15rem 0 0; color: var(--ink-muted); font-size: 0.875rem; }
+.pleague__standing:empty { display: none; }
+.pleague__actions { display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; }
+.pleague__code { display: inline-flex; flex-direction: column; align-items: flex-start; line-height: 1.1; padding: 0.3rem 0.7rem; border: 1px dashed var(--rule-strong); border-radius: var(--radius-sm); }
+.pleague__codelabel { font-size: 0.625rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink-faint); }
+.pleague__code code { font-size: 0.9375rem; font-weight: 800; letter-spacing: 0.14em; color: var(--ink); }
+.pleague__wait { margin: 1.5rem 0; }
+/* A phone: the chips scroll sideways under a fade, the button keeps its place at the row's end. */
+@media (max-width: 640px) {
+  .pleagues__tabs { flex: 1; -webkit-mask-image: linear-gradient(90deg, #000 85%, transparent); mask-image: linear-gradient(90deg, #000 85%, transparent); }
+  .pleague__head { padding: 0.8rem; }
+}
+@media (max-width: 480px) {
+  .pleagues__add { width: 2.5rem; padding: 0; justify-content: center; }
+  .pleagues__add::before { margin: 0; font-size: 1.35rem; }
+  .pleagues__addtext { display: none; }
+}
 
 .pgoogle { margin: 0 0 0.75rem; }
 .pgoogle p { margin: 0 0 0.6rem; max-width: var(--measure); }
@@ -492,11 +573,9 @@
 .pconfirm { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 0.5rem; }
 .pconfirm__q { font-weight: 700; flex-basis: 100%; }
 @media (min-width: 760px) {
-  /* Me: the profile and your numbers side by side, the analysis under them, data and deletion last. */
-  #predict-view[data-tab="me"] > div { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0 1rem; align-items: start; }
-  #predict-view[data-tab="me"] > div > :is(.panalyse, .pme-data, .pdata, .pload, .pempty) { grid-column: 1 / -1; }
+  /* Me is one column (your name, your numbers, the analysis, the settings, your data); the data's two
+     cards stand side by side. */
   .pme-data { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0 1rem; align-items: start; }
-  #predict-view[data-tab="me"] .pstats__hero { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 
 .pcal { margin: 0.75rem 0; }
@@ -535,7 +614,9 @@
 .pguide__demo { background: var(--panel); box-shadow: 0 0 0 1px var(--accent); }
 .pguide__demofoot { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 0.5rem 0.75rem; min-height: 2.5rem; }
 .pguide__demo .pcard__read { margin: 0; text-align: center; font-size: 0.875rem; }
+/* The three results share the row evenly (they wrapped two and one on a phone). */
 .pguide__results { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+.pguide__results > * { flex: 1 1 0; padding-inline: 0.5rem; }
 .pguide__score { min-height: 4.5rem; padding: 0.85rem 1rem; border-radius: var(--radius-sm); background: var(--panel); }
 .pguide__score p { margin: 0 0 0.35rem; }
 .pguide__score .pguide__mini { height: 1.5rem; margin-bottom: 0.6rem; }
@@ -564,7 +645,6 @@
 .pside__empty { margin: 0; color: var(--ink-muted); font-size: 0.875rem; }
 .pside__hero { display: grid; justify-items: center; text-align: center; padding: 0.4rem 0 0.1rem; }
 .pside__score { font-size: 2.9rem; font-weight: 900; line-height: 1; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; }
-.pside__acc { margin-top: 0.15rem; font-size: 0.875rem; font-weight: 700; color: var(--ink-muted); font-variant-numeric: tabular-nums; }
 .pside__score[data-tone="good"] { color: var(--outcome-good-ink); }
 .pside__score[data-tone="bad"] { color: var(--outcome-bad-ink); }
 
@@ -572,12 +652,17 @@
 .pside__tier { display: flex; align-items: center; justify-content: center; gap: 0.6rem; text-align: left; }
 .pside__tier > span:last-child { display: grid; line-height: 1.2; }
 .pside__tier small { color: var(--ink-muted); font-size: 0.8125rem; }
-.pside__medal { --medal: var(--rule-strong); width: 1.9rem; height: 1.9rem; border-radius: 50%; flex: none;
-  background: radial-gradient(circle at 35% 30%, color-mix(in srgb, var(--medal) 30%, white), var(--medal) 60%, color-mix(in srgb, var(--medal) 70%, black)); }
-.pside__tier[data-tier="gold"] .pside__medal { --medal: var(--band-champion); box-shadow: 0 0 14px color-mix(in srgb, var(--band-champion) 70%, transparent); }
-.pside__tier[data-tier="silver"] .pside__medal { --medal: #b9c2d0; box-shadow: 0 0 10px color-mix(in srgb, #b9c2d0 55%, transparent); }
-.pside__tier[data-tier="bronze"] .pside__medal { --medal: #c9701c; }
-.pside__tier[data-tier="rookie"] .pside__medal { --medal: var(--rule-strong); }
+/* A tier's mark: a flat diamond in the tier's own colour, never a metal (gold, silver and bronze are the
+   podium's places). The colour is --level on anything that carries the tier; Elite glows. */
+[data-tier="elite"] { --level: #8b5cf6; }
+[data-tier="expert"] { --level: #0ea5e9; }
+[data-tier="analyst"] { --level: #14b8a6; }
+[data-tier="contender"] { --level: var(--rule-strong); }
+.plevel { display: inline-block; flex: none; width: 1.35rem; height: 1.35rem; margin: 0.28rem; border-radius: 4px; transform: rotate(45deg);
+  background: linear-gradient(135deg, color-mix(in srgb, var(--level, var(--rule-strong)) 70%, white), var(--level, var(--rule-strong)) 60%);
+  box-shadow: inset 0 0 0 2px color-mix(in srgb, white 30%, transparent); }
+.plevel[data-tier="elite"] { box-shadow: inset 0 0 0 2px color-mix(in srgb, white 30%, transparent), 0 0 14px color-mix(in srgb, var(--level) 65%, transparent); }
+.plevel--big { width: 1.95rem; height: 1.95rem; margin: 0.4rem; }
 
 /* Progress through the tiers (steps at 50, 75 and 90 %). */
 .pside__track { position: relative; height: 0.5rem; border-radius: 999px; background: var(--panel); overflow: hidden; }
@@ -587,10 +672,12 @@
 #predict-side .pside__h { margin: 0.5rem 0 0.15rem; font-size: 0.6875rem; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: var(--ink-faint); text-align: center; }
 
 /* The bell curve. */
-.pside__chart { margin: 0; }
+.pside__chart { margin: 0 auto; width: 100%; max-width: 20rem; }
 .pbell { width: 100%; height: auto; display: block; overflow: visible; }
-.pbell__curve { fill: color-mix(in srgb, var(--ink) 8%, transparent); stroke: var(--rule-strong); stroke-width: 1.5; }
-.pbell__beat { fill: color-mix(in srgb, var(--accent) 45%, transparent); stroke: var(--accent); stroke-width: 1.5; }
+.pbell__curve { fill: none; stroke: var(--rule-strong); stroke-width: 1.5; }
+/* The tiers' colours under the curve: faint for the field ahead of you, strong for the part you beat. */
+.pbell__band { fill: var(--level); opacity: 0.32; }
+.pbell__bands--beat .pbell__band { opacity: 0.8; }
 .pbell__clip { transition: width 1100ms var(--ease); }
 .pbell__axis { stroke: var(--rule); }
 .pbell__mark text { font-size: 10px; fill: var(--ink-muted); font-weight: 700; }
@@ -600,9 +687,13 @@
 .pbell__mark--you { transition: transform 1100ms var(--ease); }
 .pside__chart figcaption { text-align: center; margin-top: 0.2rem; }
 
-/* Form: one bar per round, up for a good round, down for a bad one; the round under each. */
-.pside__form { display: flex; justify-content: center; align-items: stretch; gap: 0.35rem; height: 3.2rem;
+/* Form: one bar per round, the round under each. With a bad round among them the bars split at a middle
+   line (up good, down bad); with none they all stand on the floor. */
+.pside__formbox { display: grid; gap: 0.35rem; }
+.pside__form { display: flex; justify-content: center; align-items: stretch; gap: 0.35rem; height: 2.75rem;
   margin-bottom: 1rem; background: linear-gradient(var(--rule), var(--rule)) center / 100% 1px no-repeat; }
+.pside__form[data-split="false"] { background-position: bottom; }
+.pside__form[data-split="false"] .pside__bar[data-tone="good"] i { bottom: 0; }
 .pside__bar { position: relative; flex: 1; max-width: 1.6rem; display: flex; flex-direction: column; align-items: center; }
 .pside__bar i { position: absolute; left: 0; right: 0; border-radius: 3px; background: var(--rule-strong); }
 .pside__bar[data-tone="good"] i { bottom: 50%; height: auto; background: var(--outcome-good); }
@@ -610,10 +701,10 @@
 .pside__bar[data-tone="even"] i { top: calc(50% - 1px); height: 2px !important; }
 .pside__bar small { position: absolute; bottom: -1.1rem; font-size: 0.6875rem; color: var(--ink-faint); }
 
-.pside__grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; }
-.pside__cell { display: grid; padding: 0.55rem 0.65rem; border-radius: var(--radius-sm); background: var(--panel); text-align: center; }
-.pside__cell strong { font-size: 1.15rem; font-variant-numeric: tabular-nums; }
-.pside__cell small { color: var(--ink-muted); font-size: 0.75rem; }
+.pside__grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0.4rem; }
+.pside__cell { display: grid; gap: 0.1rem; padding: 0.5rem 0.3rem; border-radius: var(--radius-sm); background: var(--panel); text-align: center; }
+.pside__cell strong { font-size: 1rem; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.pside__cell small { color: var(--ink-muted); font-size: 0.6875rem; line-height: 1.2; }
 .pside__cell[data-tone="good"] strong { color: var(--outcome-good-ink); }
 .pside__cell[data-tone="bad"] strong { color: var(--outcome-bad-ink); }
 .pside__badges { justify-content: center; margin: 0; }
@@ -638,16 +729,18 @@
 /* Narrower than two columns: the panel is one short strip above the matches (your tier and rank,
    your score), the rest a tap away; who you are and all your numbers are in Meg. */
 @media (max-width: 999px) {
-  .pside__card { grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 0.25rem 1rem; padding: 0.6rem 0.9rem 0.2rem; }
+  /* The same inset on every side; the score sits level with the tier, as far in from the right as the
+     tier's mark is from the left. */
+  .pside__card { grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 0.75rem 1rem; padding: 0.9rem 1.15rem; }
   .pside__head, .pside__track, .pside__next, .pside__more { display: none; }
+  .pside__tier > span { min-width: 0; }
+  .pside__tier small { white-space: normal; }
   .pside:has(> .pside__card--empty) { display: none; }
   .pside__empty, .pside__tip { grid-column: 1 / -1; }
-  .pside__hero { justify-items: end; padding: 0; grid-column: 2; grid-row: 1; }
+  .pside__hero { justify-items: end; align-self: center; padding: 0; grid-column: 2; grid-row: 1; }
   .pside__hero .pside__label { font-size: 0.75rem; }
   .pside__score { font-size: 1.75rem; }
   .pside__tier { justify-content: flex-start; grid-column: 1; grid-row: 1; }
-  .pside__details > summary { margin-bottom: 0.6rem; }
-  .pside__tip { margin-bottom: 0.6rem; }
 }
 
 /* ---- your playing style ------------------------------------------------------------------------- */
@@ -712,13 +805,21 @@
 
 @media (max-width: 760px) {
   .predict > .panel__head { padding: var(--space-4); }
+  /* The guide's link stands beside the title, not on a row of its own: the matches start higher. */
+  .predict > .panel__head > :first-child { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; column-gap: 0.75rem; }
+  .predict > .panel__head > :first-child > p { grid-column: 1 / -1; }
+  .predict .phowlink { grid-row: 1; grid-column: 2; margin-top: 0; }
   #predict-tabs { width: 100%; margin-left: 0; }
   .ptabs.switch { width: 100%; }
-  .ptabs.switch button { flex: 1; padding-inline: 0.4rem; }
+  /* Each tab is its label plus an equal share of the room left, so the space between labels is even;
+     equal widths left the two long ones ("Tabelltipp", "Ledertavle") nearly touching. */
+  .ptabs.switch button { flex: 1 1 auto; padding-inline: 0.4rem; }
   .playout { padding: var(--space-4) var(--space-3); gap: var(--space-4); }
   .pcard { padding: 0.7rem 0.8rem 0.45rem; }
   .pfine { padding: var(--space-3) var(--space-4); }
 }
+/* Five sections on a narrow phone: tighter, so the last one is not clipped. */
+@media (max-width: 380px) { .ptabs.switch button { padding-inline: 0.15rem; font-size: 0.8125rem; } }
 /* Phones: every control is a 44px target (experiments/mobile-audit/check.py checks it). */
 @media (pointer: coarse) {
   .predict .switch button, .predict .pbtn, .predict .pfield, .predict .pboard__sort, .predict .pdetails summary, .pside__details > summary { min-height: 44px; }
@@ -738,4 +839,153 @@
   .pside__fill, .pbell__clip, .pbell__mark--you, .ptrait__dot, .ptable.is-sorting .ptable__row, .ptable__row.is-landing { transition: none; }
   .plist > .pcard[data-state="untouched"]:first-child .pcard__bar .odds__seg[data-outcome="draw"], .pskeleton span,
   .pcard__status[data-state="saved"]::before, .pbadge[data-status="live"]::before, .pring.is-pop { animation: none; }
+}
+
+/* ---- the leaderboard: where you stand, a jump to your row, and the columns on a phone ------------ */
+
+.pboard__close { margin: 0 0 0.6rem; font-size: 0.9375rem; font-weight: 700; font-variant-numeric: tabular-nums; }
+.pboard__tools { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 0.6rem; }
+.pboard__tools:empty { display: none; }
+.pboard__cols { display: none; }
+@media (max-width: 640px) {
+  .pboard__cols { display: inline-flex; }
+  .pboard:not(.pboard--wide) .pboard__n { display: none; }
+  .pboard:not(.pboard--wide) table { min-width: 0; }
+  .pboard th, .pboard td { padding: 0 0.4rem; }
+  .pboard:not(.pboard--wide) .pboard__name { min-width: 0; }
+  /* What the rank, points and accuracy columns, the report flag and the gutters leave: 84px on a
+     360px phone (the old fixed 5.5rem ran the table 3px wide there), more on a wider one. */
+  .pboard:not(.pboard--wide) .pboard__nick { display: inline-block; max-width: max(5rem, calc(100vw - 17.25rem)); overflow: hidden; text-overflow: ellipsis; vertical-align: middle; }
+}
+
+/* ---- your season: the accuracy chart ---------------------------------------------------------------- */
+
+.pstats__head { display: flex; align-items: center; justify-content: space-between; gap: 0.75rem; flex-wrap: wrap; margin-bottom: 0.75rem; }
+#predict-view .pstats__head h2 { margin: 0; }
+.pseason { display: grid; gap: 0.6rem; margin: 1.1rem 0; }
+.pseason__head { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; }
+#predict-view .pseason h3 { margin: 0; font-size: 0.8125rem; color: var(--ink-muted); }
+.pseason__fig { margin: 0; display: grid; gap: 0.4rem; max-width: 32rem; }
+.pseason__svg { width: 100%; height: auto; display: block; touch-action: pan-y; cursor: crosshair; }
+.pseason__svg:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 4px; }
+.pseason__grid { stroke: var(--rule); }
+.pseason__tick { font-size: 9px; fill: var(--ink-muted); font-variant-numeric: tabular-nums; }
+.pseason__line { fill: none; stroke-width: 2.2; stroke-linejoin: round; stroke-linecap: round; }
+.pseason__line--you { stroke: var(--accent); }
+.pseason__line--model { stroke: var(--ink-muted); stroke-dasharray: 4 3; stroke-width: 1.6; }
+.pseason__rule { stroke: var(--rule-strong); }
+.pseason__dot--you { fill: var(--accent); }
+.pseason__dot--model { fill: var(--ink-muted); }
+.pseason__legend { display: flex; gap: 1rem; margin: 0; font-size: 0.75rem; font-weight: 700; }
+.pseason__key::before { content: ""; display: inline-block; width: 1.1rem; margin-right: 0.4rem; vertical-align: middle; border-top: 2px solid var(--accent); }
+.pseason__key--model::before { border-top-style: dashed; border-color: var(--ink-muted); }
+.pseason__fig figcaption { font-size: 0.8125rem; color: var(--ink-muted); font-variant-numeric: tabular-nums; min-height: 1.2em; }
+.pseason__facts { margin: 0; padding: 0; list-style: none; display: grid; gap: 0.2rem; font-size: 0.875rem; color: var(--ink-muted); }
+
+/* ---- the leaderboard: where you stand, the podium, then a calm table ------------------------------------ */
+
+/* In the table the first three places get a flat chip in the rank column (they are back in it when it is sorted). */
+.pmedal { --medal: var(--rule-strong); display: inline-grid; place-items: center; width: 1.4rem; height: 1.4rem; border-radius: 6px; font-size: 0.75rem; font-weight: 900; line-height: 1; color: #1a1406; background: var(--medal); }
+.pmedal[data-place="1"] { --medal: var(--band-champion); }
+.pmedal[data-place="2"] { --medal: #b9c2d0; }
+.pmedal[data-place="3"] { --medal: #c9701c; }
+
+/* Your card: tinted in your tier's colour from the medal's corner; the medal glows for gold and silver. */
+.pstanding { --tier: var(--accent); display: grid; gap: 0.85rem; margin: 0 0 1.25rem; padding: 1rem 1.15rem; border-radius: var(--radius); border: 1px solid var(--rule);
+  background: linear-gradient(120deg, color-mix(in srgb, var(--tier) 16%, var(--panel-sunk)), var(--panel-sunk) 55%); }
+.pstanding[data-tier] { --tier: var(--level, var(--accent)); }
+.pstanding__top { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 0.75rem 1.5rem; }
+.pstanding__who { display: flex; align-items: center; gap: 0.85rem; min-width: 0; }
+.pstanding__name { display: grid; gap: 0.15rem; min-width: 0; line-height: 1.15; }
+.pstanding__name strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 1.6rem; font-weight: 900; }
+.pstanding__name small { color: var(--ink-muted); font-size: 0.8125rem; font-weight: 700; }
+.pstanding__stats { display: flex; gap: 1.75rem; margin: 0; }
+.pstanding__stat { display: flex; flex-direction: column-reverse; text-align: right; }
+.pstanding__stat dt { color: var(--ink-muted); font-size: 0.6875rem; font-weight: 800; letter-spacing: 0.04em; text-transform: uppercase; }
+.pstanding__stat dd { margin: 0; font-size: 1.6rem; font-weight: 900; line-height: 1.15; font-variant-numeric: tabular-nums; }
+.pstanding__climb { display: grid; gap: 0.35rem; }
+.pstanding .pside__track { display: block; }  /* the side panel hides its own track on a phone; this one stays */
+/* The line under the bar is the summary of the tier guide: the points to the next tier, then "About the tiers". */
+.ptiersbox > summary { display: flex; flex-wrap: wrap; align-items: center; gap: 0.25rem 0.75rem; min-height: 2rem; cursor: pointer; list-style: none;
+  color: var(--ink-muted); font-size: 0.8125rem; font-weight: 600; font-variant-numeric: tabular-nums; }
+.ptiersbox > summary::-webkit-details-marker { display: none; }
+.ptiersbox__open { color: var(--ink); font-weight: 700; }
+.ptiersbox__open::after { content: "▾"; margin-left: 0.3rem; font-size: 0.75em; color: var(--ink-muted); }
+.ptiersbox[open] .ptiersbox__open::after { content: "▴"; }
+.ptiersbox > summary:hover .ptiersbox__open { color: var(--accent-ink); }
+.ptiersbox > summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 4px; }
+@media (pointer: coarse) { .ptiersbox > summary { min-height: 44px; } }
+.ptiersbox[open] > .ptiers { margin-top: 0.5rem; }
+
+/* The tier guide: a line on what a tier is, then the four, best first, yours tinted. */
+.ptiers { display: grid; gap: 0.6rem; text-align: left; }
+.ptiers__intro { margin: 0; color: var(--ink-muted); font-size: 0.8125rem; max-width: var(--measure); }
+.ptiers__list { list-style: none; display: grid; gap: 0.25rem; margin: 0; padding: 0; }
+.ptiers__item { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 0.4rem 0.6rem; padding: 0.3rem 0.6rem 0.3rem 0.35rem; border-radius: 8px; }
+.ptiers__item[data-current="true"] { background: color-mix(in srgb, var(--level) 16%, transparent); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--level) 45%, transparent); }
+.ptiers__text { display: grid; min-width: 0; line-height: 1.25; }
+.ptiers__text strong { display: flex; align-items: center; font-size: 0.875rem; font-weight: 800; color: var(--ink); }
+.ptiers__text small { color: var(--ink-muted); font-size: 0.75rem; }
+.ptiers__at { color: var(--ink-muted); font-size: 0.75rem; font-weight: 700; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.pguide__q .ptiers { margin: 0.25rem 0 0.75rem; }
+.pstanding__lines { display: flex; flex-wrap: wrap; gap: 0.25rem 1.25rem; margin: 0; padding-top: 0.75rem; border-top: 1px solid var(--rule); color: var(--ink-muted); font-size: 0.875rem; font-variant-numeric: tabular-nums; }
+.pstanding__arrow { margin-right: 0.35rem; font-size: 0.625rem; vertical-align: 0.12em; }
+.pstanding__chase { color: var(--ink); font-weight: 700; }
+.pstanding__chase .pstanding__arrow { color: var(--outcome-good-ink); }
+.pstanding__model[data-beat="true"] { color: var(--outcome-good-ink); font-weight: 800; }
+.pstanding__lead { color: var(--ink); font-weight: 800; }
+
+/* The podium: the winner in the middle on the tallest step, second left, third right; each step in its metal. */
+.ppodium { list-style: none; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); align-items: end; gap: 0.6rem; max-width: 36rem; margin: 0 auto 1.25rem; padding: 0;
+  border-bottom: 1px solid var(--rule); }
+.ppodium__step { --metal: var(--band-champion); display: flex; flex-direction: column; align-items: center; gap: 0.15rem; min-width: 0; text-align: center; }
+.ppodium__step[data-place="2"] { --metal: #b9c2d0; }
+.ppodium__step[data-place="3"] { --metal: #c9701c; }
+.ppodium__step[data-pos="1"] { order: 2; }
+.ppodium__step[data-pos="2"] { order: 1; }
+.ppodium__step[data-pos="3"] { order: 3; }
+.ppodium__medal { display: grid; place-items: center; width: 2.3rem; height: 2.3rem; margin-bottom: 0.25rem; border-radius: 50%; font-size: 0.9375rem; font-weight: 900; line-height: 1; color: #1a1406;
+  background: radial-gradient(circle at 35% 30%, color-mix(in srgb, var(--metal) 30%, white), var(--metal) 60%, color-mix(in srgb, var(--metal) 70%, black)); }
+.ppodium__step[data-pos="1"] .ppodium__medal { width: 2.9rem; height: 2.9rem; font-size: 1.125rem; box-shadow: 0 0 18px color-mix(in srgb, var(--metal) 60%, transparent); }
+.ppodium__name { display: flex; align-items: center; justify-content: center; max-width: 100%; font-weight: 800; }
+.ppodium__nick { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ppodium__name .ptag { flex: none; margin-left: 0.35rem; }
+.ppodium__pts { font-size: 1.25rem; font-weight: 900; line-height: 1.15; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.ppodium__step[data-pos="1"] .ppodium__pts { font-size: 1.5rem; }
+.ppodium__pts small { font-size: 0.75rem; font-weight: 700; color: var(--ink-muted); }
+.ppodium__acc { color: var(--ink-muted); font-size: 0.8125rem; font-weight: 600; font-variant-numeric: tabular-nums; }
+.ppodium__plinth { align-self: stretch; height: 1.75rem; margin-top: 0.5rem; border-radius: 8px 8px 0 0; border-top: 3px solid var(--metal);
+  background: linear-gradient(to bottom, color-mix(in srgb, var(--metal) 30%, transparent), color-mix(in srgb, var(--metal) 5%, transparent)); }
+.ppodium__step[data-pos="1"] .ppodium__plinth { height: 3.5rem; }
+.ppodium__step[data-pos="2"] .ppodium__plinth { height: 2.5rem; }
+.ppodium__step[data-mine="true"] .ppodium__plinth { box-shadow: inset 0 0 0 2px var(--accent); }
+
+/* The rows: points first and bold, accuracy next, matches quiet; the model's row is the line to beat.
+   Lighter rules between the rows than round the table, and your points in the accent. */
+.pboard td { border-bottom-color: color-mix(in srgb, var(--rule) 55%, transparent); }
+.pboard__row[data-kind="player"][data-mine="false"]:hover { background: color-mix(in srgb, var(--ink) 3%, transparent); }
+.pboard__pts { font-size: 1rem; font-weight: 900; }
+.pboard__acc { font-weight: 600; }
+.pboard td.pboard__n { color: var(--ink-muted); }
+.pboard__row[data-mine="true"] .pboard__pts { color: var(--accent-ink); }
+.pboard__row[data-kind="model"] { background: color-mix(in srgb, var(--accent) 8%, transparent); }
+.pboard__row[data-kind="model"] td { border-top: 1px dashed color-mix(in srgb, var(--accent) 65%, transparent); border-bottom: 1px dashed color-mix(in srgb, var(--accent) 65%, transparent); }
+
+/* Under the table: the toggle, one line on the ranking, and how points work a tap away. */
+.pboard__how { max-width: var(--measure); color: var(--ink-muted); font-size: 0.8125rem; text-align: center; }
+.pboard__how summary { display: inline-flex; align-items: center; min-height: 2rem; cursor: pointer; font-weight: 700; color: var(--ink); }
+.pboard__how summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 4px; }
+.pboard__how p { margin: 0.2rem 0 0; }
+.pboard__how summary::-webkit-details-marker { display: none; }
+.pboard__how summary::after { content: "▾"; margin-left: 0.35rem; font-size: 0.75rem; transition: transform 150ms var(--ease); }
+.pboard__how[open] summary::after { transform: rotate(180deg); }
+@media (pointer: coarse) { .pboard__how summary { min-height: 44px; } }
+@media (max-width: 640px) {
+  .pstanding__top { align-items: flex-start; }
+  .pstanding__stats { width: 100%; justify-content: space-between; gap: 1rem; }
+  .pstanding__stat { text-align: left; }
+  .ppodium { gap: 0.4rem; }
+  .ppodium__pts { font-size: 1.05rem; }
+  .ppodium__step[data-pos="1"] .ppodium__pts { font-size: 1.2rem; }
+  .ppodium__pts small { display: none; }
 }

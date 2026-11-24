@@ -10,7 +10,7 @@ Scripts load with `<script defer>`.
 | `elo-curve.js` | the model's price curve (`expectedScore`, `eloOdds`: `model/probabilities.py` in JavaScript), shared by the model page and the Predict game's slider; loaded before `model.js`, required by the node tests |
 | `predict.js`, `predict.css` | the prediction game, the Predict view of `index.html` (`?view=predict`; `/predict/` is its route page, written by `pages.py`). `app.js` fetches them, with `elo-curve.js` and the three files below, the first time the view opens (`loadPredict`) ([predict.md](predict.md)) |
 | `predict-core.js` | the game's pure logic: frozen price curve, whole-percent rounding, scoring, table error, nickname rules; the twin of `src/elitetracker/predict/`, pinned by `tests/fixtures/predict_vectors.json` |
-| `predict-api.js`, `predict-util.js` | the game's network layer (Identity Toolkit and Firestore over `fetch`, no SDK; request builders are pure) and its small helpers (formatting, rounds, ring, streak, badges) |
+| `predict-api.js`, `predict-util.js` | the game's network layer (Identity Toolkit and Firestore over `fetch`, no SDK; request builders are pure) and its small helpers (formatting, rounds, ring, badges) |
 | `season-sim.js` | the what-if page's season simulation (a Web Worker) and its re-rating of the clubs (`rerateSeason`, a port of the Elo and attack/defence updates); also the finish grid's "how it happens" analysis (`simulateSeason` with `record`, `scenarioAnalysis`); loaded as a plain script and required by the node tests |
 | `thumbs.js` | the sliding pill of every segmented control, on both pages |
 | `share.js` | sharing, loaded before `app.js` (it uses `app.js`'s helpers only when called): `shareButton` (the share icon: three circles, an angle; `url` shares another address than the page's), the browser's share sheet (`navigator.share`) or our own (`openShareSheet`: the picture with Share or Download, the link with Copy or Share), and a canvas picture for each view shared as one, in the format and theme the reader picks in the sheet (`renderShare`: wide 1200 x 630 for link previews, square 1080 x 1080, portrait 1080 x 1350, story 1080 x 1920; the site's dark or light palette, defaulting to the theme on show; both remembered per browser). Each picture lays itself out for its shape (larger type on a tall one; the designs were picked format by format in a review, November 2026): the title race (`shareTitleRace`, the overview: two contenders as figures over the split bar, along the foot when wide and up the right side when tall, each club level with its share; three or more as a row each with its own bar, `shareRaceRows`), each other race (`shareRace`, the overview's race cards: the same rows, the bars in the band's colour, a line saying so when a simulated play-off is counted), the finish grid (`shareFinishGrid`, Sluttabell: the grid on wide and square, its cells at most half again as wide as tall; on portrait and story the predicted table, `shareFinishTable`, with the table's band marks and a small chart of each club's chance of every place), a club (`shareClub`, the club page: the rating after its trend arrow and its rank among every club (`rankText`); likeliest place, expected points, points now; attack and defence as the club page's bars from the division average; the chance of each race), a match (`shareMatch`, Sammenlign: the sides tagged home in blue and away in red, the odds bar under them named in the same colours, and the score grid from 0-0 to 4-4 with its axes named after the clubs) and a club's chance of a place (`shareFinish`, the finish-path popup: the likeliest season it happens in, the club's run-in and the rivals' results it rests on, from the popup's own analysis, the spare height of a tall picture shared between the parts; or, where those do not fit, the chance of every place with where the club stands). Crests come from `logos/share/` (256 px, FotMob's large crest, loaded only when a picture is drawn), else the 192 px PNG; the pages keep the 96 px WebP. "Hva om" shares its link only (the locked results are in `?lock=`). A view without a picture opens the browser's sheet straight away; one with a picture opens ours first, to choose. Names here must not clash with `app.js`'s: both are classic scripts, and a function of the same name silently replaces the other |
@@ -204,12 +204,13 @@ view's own `.odds` / `.odds__seg`; the card's drag is `touch-action: pan-y` so t
 
 The bar is the control: the grey draw block is the handle, and because its middle is always at the
 expected score (home + draw / 2), the gap under a finger is the logit of the finger's position
-(`gapUnder` in `predict.js`), so the block follows the finger whatever the draw tendency. Each end of
-the block is a handle too (a ridge just inside it): it moves that end alone and holds the other, which
-sets the draw tendency (`positionForEdges` in `predict-util.js`, a search over every gap and tendency;
-`dragBar` in `predict.js` decides by where the finger lands, and a grab keeps its distance from what
-it took, so nothing jumps). **Fine-tune** is a toggle pill on each card (the last choice is the
-default for a new card, `predict.fine` in the browser): on, the pick is three whole percents of its
+(`gapUnder` in `predict.js`), so the block follows the finger whatever the draw tendency. **The size of the draw block is only
+set with fine-tune on:** on the curve the whole block moves with the finger and its width is the model's
+(the ends are no handles, no ridges are drawn, and the width input is disabled); with fine-tune on each
+end of the block is a handle (a ridge just inside it) that moves that end alone and holds the other
+(`dragBar` in `predict.js` decides by where the finger lands, and a grab keeps its distance from what it
+took, so nothing jumps; `positionForEdges` in `predict-util.js` still turns an end into a curve position
+for a pick saved earlier). **Fine-tune** is a toggle pill on each card (every untouched card starts on the curve, with it off, unless Meg's "Always use fine-tune" is on: a switch kept in this browser as `predict.fine.always`, which opens every card with it on and hides the pill): on, the pick is three whole percents of its
 own, off the curve, every part moving a percent at a time with no limit but 1..98 (`freeEdges`; the
 middle slides the block at its width), the numbers can be typed (`freeTyped`), and the save stores
 those percents with the nearest curve position beside them (`freePosition`: the rules want a `g` and a
@@ -223,7 +224,7 @@ that did not happen, and keeps the Brier score behind "The scores". The reveal s
 percents, never the slider position. `styles.css` turns `.odds` into a padded scroller under 480px;
 `predict.css` resets that for the game's bars.
 
-Each section has an address (`#table`, `#boards`, `#me`; the tip view is the bare `/predict/`), so links can
+Each section has an address (`#table`, `#boards`, `#leagues`, `#me`; the tip view is the bare `/predict/`), so links can
 open it and Back works (another view's render drops these hashes); the chosen division is remembered. The browser session is stored per
 project (`sessionKey`: the live project keeps `predict.session`, an emulator `demo-*` project gets
 its own key), and a public document (`meta/rounds`, `fixtures/`, `reveal/`, `boards/`,
@@ -245,7 +246,17 @@ place is read out. The order saves itself a moment after each move, like a match
 the browser holds it until the save is in, and an order left from an earlier visit is saved on the
 next); the line beside the zone legend (each zone with its bonus) says saved, saving or failed.
 
-The guide is a section of its own at `#how` (the panel head's link and the first-visit box point to it):
+The first visit is a tutorial, not a box: until `predict.intro` is `seen` (set when it is finished, when the guide's
+button is pressed or when a first pick is saved; a player with an account is never asked) the tip, table and guide
+views show eight steps one at a time (`TUTORIAL`, `renderTutorial` in `predict.js`) on the guide's own working demo
+(`guideDemo`: a bar to drag, Fine-tune, a result to pick; nothing is saved). Steps 2 to 4 wait for the player to do
+it (`need`: the demo's `moved`, `fine` and `picked` flags) before Next opens; only that button and its hint change
+while the bar is dragged, so a drag is never rebuilt under the finger. Boards and Me stay open. Afterwards the guide
+has a button to start the tutorial again (`S.replay`, with a way back). The last step, shown only to a player with no
+account yet, asks them to sign in with Google (the Me tab's flow, `googleFlow` and `switchToGoogle`; the script loads on
+the button press) and offers "Play anonymously" as the quieter way on; signing in leaves the tutorial at once.
+
+The guide is a section of its own at `#how` (the panel head's link points to it):
 six steps with a working demo bar and a scoring demo (pick a result, see the Brier score against an
 even guess), then questions. The page answers the player: each card reads the pick in words as it
 moves (`pickReading`), a phone ticks when the pick swings sides, a save pulses its dot, a live round
@@ -280,13 +291,16 @@ same document), one not read yet leaves the board on show dimmed until it arrive
 game's documents are kept for the visit (`S.tables`, your pick updated when you save).
 
 From 1000px the matches are the left column and "your season" the right one (`renderSide`,
-on the tip and table views; the boards take the whole width, and Meg has the full numbers): your season points counting up, with your accuracy and matches under them, a
-tier by the share of players you beat (Gull 90 %, Sølv 75 %, Bronse 50 %, otherwise Utfordrer) with a
-progress bar to the next, a bell curve fitted to the board's percentile table (median as the middle,
-half the 16th-84th spread as the sd: `normalFit`) with the part you beat filled and your marker
-sliding in (both on points), your points per recent round and four key numbers (the badges are in Meg). The rank
+on the tip and table views; the boards take the whole width, and Meg has the full numbers). It is kept
+visual and short: your season points counting up; your tier in one line, by the share of players you beat
+(Elite 90 %, Ekspert 75 %, Analytiker 50 %, otherwise Utfordrer), with your rank; a bell curve fitted to the
+board's percentile table (median as the middle, half the 16th-84th spread as the sd: `normalFit`), cut into
+the tiers' colours at the board's own 50th, 75th and 90th percentiles, strong for the part you beat and faint
+ahead, your marker sliding in, and how far the next tier is as its one caption; three tiles (accuracy, matches,
+against the model); your points per recent round (on the floor, or split at a middle line once a round went
+below zero). The tier list with its explanation is the leaderboard's (its standing card); the badges are in Meg. The rank
 counts people only (board ranks include the model and crowd rows). Narrower than that the panel is one
-short strip above the matches (tier and rank, score), the rest behind a disclosure, and the strip is left out until you have a settled match. The maths is in `predict-util.js` (`beatShare`, `normalFit`, `tierOf`, `roundForm`).
+short strip above the matches (tier and rank, score, the same inset on every side), the rest behind a disclosure, and the strip is left out until you have a settled match. A division you have not played this season keeps your season on screen: the strip shows the division you have played, its label naming it ("Poeng i Eliteserien"). The maths is in `predict-util.js` (`beatShare`, `normalFit`, `tierOf`, `roundForm`).
 
 Two numbers, kept apart ([predict-plan.md](predict-plan.md), section 5, "Revised 2026-11-24"):
 **points** (Poeng), 10 x (1 - Brier) a tipped match (a mark out of 10), summed, which rank the leaderboard; and
@@ -296,8 +310,8 @@ the stats documents and old boards need nothing new (`rowPts`, `rowAcc` fill the
 built before the job wrote `pts` and `acc`). Points show one decimal with the language's grouping
 (`ptsText`), accuracy two (`pctText`), Brier and "against the model" three. Everything is Brier:
 the job still computes RPS and Accuracy against the median (`stats/`, the boards' `ab`, `ar`, `r`),
-but the page reads only `ab`, for the "beat the field" badge. A match's details show its points,
-its Brier and its Brier against the model; Meg shows points, accuracy, matches and against the
+but the page reads only `ab`, for the "beat the field" badge. A match's details (Poengene) show its points,
+its accuracy, its Brier and its Brier against the model, with no explanation under them; Meg shows points, accuracy, matches and against the
 model; the round recap and its picture show the round's points. A long leaderboard is shortened (`boardWindow` in
 `predict-util.js`): the top 10, the five rows above and below yours, and the model and the average
 wherever they stand, with one row for each run left out ("23 spillere til") that opens the whole
@@ -334,8 +348,66 @@ python -m http.server 8123 --directory public
 tests/predict-ui.test.js`. Not testable without the real Google: the Google account link (its request
 builder and error mapping are unit-tested; the sign-in itself needs the live OAuth client).
 
-### The Overview's Predict card
+### The Predict view: the November 2026 usability pass
 
+- **Round recap.** A card (`.precap`): the round's points and accuracy % as two big figures, then the counts
+  (tipped x/y, beat the model x/y, points against the model), then the best and the worst call with their
+  points against the model. The numbers are worked out in `recapOf` from the reveal and your entry (the same
+  scoring as the job, scored matches only), so the card does not wait for `stats/{uid}`. The share picture
+  (`sharePredictRound`) leads with the same two figures, big, and puts the counts, the round at a glance
+  (one bar a match in kick-off order, up in blue when you beat the model and down in red when not, as tall as
+  the difference in points) and the best and worst call with their crests on one panel; wide pictures set the
+  figures beside the panel, tall ones put the panel under them, and every size scales to the room the format
+  leaves (a story gives its spare height to the bars). The match reveal itself is unchanged.
+- **Rank is said once.** The board's rank column counts people only (`humanRanks` in `predict-util.js`; the
+  Folket and Modellen rows show a dash and take no place), the side panel says "Number 4 of 30 · beats 93 %"
+  under your tier, and the bell chart carries no caption of its own. "Against the model" is in points
+  everywhere (10 x the summed Brier difference).
+- **Leaderboard.** Clean, with the reward in three places: your card, the podium and your row. Points first, accuracy
+  next, matches quiet. There is no streak anywhere in the game (a freeze every fifth round was arbitrary, and was
+  removed in November 2026). One card says where you stand (`standingCard`, its numbers from `standingOf` in
+  `predict-util.js`): your tier's diamond and a tint of its colour, your name as its title, under it your tier (the share
+  of players you beat, `tierOf`), the top share and the player count; your place, points and accuracy as three figures;
+  the side panel's tier bar (steps at 50, 75 and 90 %), under it the percentage points to the next tier, a line that
+  opens the tier guide ("Om nivåene", `tierGuide`: what a tier is and is not, the four with what each takes, yours
+  tinted; the same guide is in the side panel's details and is the guide's last question); then one line: ▲ the points to the player ahead, ▼ your lead
+  on the player behind (`rivalsOf`), and how far you are ahead of the model (or behind it). It replaces the note under
+  the table when it shows. With three players or more the top three stand on a podium (`podiumOf`: the winner in the
+  middle on the tallest step, each step in its metal, your step outlined; in place order for a screen reader) and the
+  table in board order goes on from fourth place (the short list: the podium and seven more make the top 10); sorted by
+  another column the table lists everyone again, places 1 to 3 with a flat chip. The model's row is a dashed line to
+  beat: whoever is above it beats the model. A "Go to my row" button opens the full list first when your row is not in
+  the short one (none when you are on the podium). Under the table: the show-all toggle, one line on the ranking, and
+  "How points work" folded away. On a phone the table keeps rank, name, points and accuracy; "More columns" brings
+  back the matches (sideways scroll). Places come from the board's own `place` (`make_board`), which counts players
+  who hide their name, as the player count and the share beaten do: a hidden player above you is a skipped number,
+  and the note under the table says so (`humanRanks` counts the listed players only on a board built before it).
+  Tiers and places are kept apart: the podium's round medals are gold, silver and bronze, the tiers are Elite,
+  Ekspert, Analytiker and Utfordrer, each a flat diamond in its own colour (`.plevel`: violet, sky, teal, grey).
+- **Round list.** Each round in the picker carries, once something of yours is scored in it, how many of its
+  matches you tipped and what it earned; it is filled in when `stats/{uid}` has arrived.
+- **Fine-tune.** Every untouched card starts on the curve (the remembered default is gone, so one tap no longer
+  opens eight cards' worth of number boxes); the explanation shows on the card where the pill was just
+  switched on. A saved off-curve pick still opens with fine-tune on.
+- **Table game, not open.** Says when it opens (early December, when the clubs and fixtures are known) and
+  shows the current table with the bonus places marked (`meta/standings`, now with the club names).
+- **Phone.** The first-visit box is one sentence (the three steps are for wider screens); an empty side
+  panel is not drawn at all on a phone and shows no bell chart on a wide one; the stats strip loses its
+  accuracy line so nothing overlaps.
+- **Meg's order.** Your nickname (`profileSection`), then your numbers (`statsSection`), your playing style,
+  the settings (`settingsSection`: hide from the boards, always fine-tune, the club you follow) and your data;
+  one column at every width.
+- **Club names.** Every document is read through `shortClubNames` (`predict-util.js`) with app.js's
+  `SHORT_NAMES`, so a card, the recap, the table game and the pictures say HamKam and Odd, as the table does.
+- **The round bar on a phone.** The division switch across the top; under it the round, with its dates
+  and its deadline as a line under its name (`statusLine`, in place of the badge), and the progress ring.
+  The recap's best and worst tips are scorelines on one grid (home | – | away), the dash in the same place
+  on both lines; on a phone the label and the points stand over the match.
+- **Your season (Meg).** A season picker (when you have played more than one), the accuracy through the
+  season (`seasonChart`: your running accuracy and the model's over the same matches, one point a round,
+  tap, drag or arrow keys to read a round), the best round, and in how many rounds you were ahead of the
+  model. Its share icon draws the same as a picture (`sharePredictSeason`). Built from `stats/{uid}`
+  only, so it costs no extra reads; badges are shown for the current season only.
 - **The Overview's Predict card.** For a browser that holds a Predict session and has played (else the invite
   below). Short words throughout: room is short on a phone. Left: where the open round stands (`data-state` on
   `.overview-predict`): **empty** ("Runde 28: ikke tippet", the invite's accent border and glow from the top
@@ -380,3 +452,4 @@ builder and error mapping are unit-tested; the sign-in itself needs the live OAu
   top right; it comes in once (no loop, none at all with reduced motion). On a phone it is one column (the
   match loses its box and its question; the question in narrower type from 380px down, so it keeps to one
   line). The × rests it for two weeks (`predict.invite.rest` in local storage).
+

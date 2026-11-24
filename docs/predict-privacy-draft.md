@@ -32,7 +32,7 @@ Predict is a free prediction game. You give probabilities for matches and for th
 
 **What we store.** Your predictions and when you last changed them, your scores (per match, per round and per season), your nickname, the club you follow, your language and whether you want to be on public lists. Without signing in you get an anonymous account (a random ID) in your browser.
 
-**Signing in with Google (optional).** You can link the account to your Google account to keep your predictions and streak across devices. The site then loads a script from Google, only when you press the button, and Google handles the sign-in. We keep your email address in the sign-in service, not in the game, and it is never shown to anyone. Only your nickname is visible. **[CHECK: wording on Google's script and consent]**
+**Signing in with Google (optional).** You can link the account to your Google account to keep your predictions across devices. The site then loads a script from Google, only when you press the button, and Google handles the sign-in. We keep your email address in the sign-in service, not in the game, and it is never shown to anyone. Only your nickname is visible. **[CHECK: wording on Google's script and consent]**
 
 **Why.** (1) Running the game and the leaderboards: legitimate interest / contract with you (GDPR art. 6(1)(b) and (f)). (2) Anonymous statistics: everyone's predictions are combined, without names, and may be used to improve the site's odds. We publish only combined figures for a match with at least five predictions. Legitimate interest (art. 6(1)(f)); you may object. (3) Abuse and cheating: legitimate interest.
 

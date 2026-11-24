@@ -386,7 +386,7 @@ function createClient({ config, fetchImpl, storage, now = () => Date.now() }) {
       return reply;
     },
 
-    /* Link a Google ID token to the anonymous account (the uid, picks and streak stay). */
+    /* Link a Google ID token to the anonymous account (the uid and picks stay). */
     async linkGoogle(googleIdToken, origin) {
       const { url, body } = googleLinkRequest(config, await token(), googleIdToken, origin);
       const reply = await send('POST', url, body);

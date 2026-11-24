@@ -12,7 +12,7 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-from elitetracker.predict import curve, nicknames, scoring, streaks, tables
+from elitetracker.predict import curve, nicknames, scoring, tables
 
 PATH = Path(__file__).resolve().parent.parent / "tests" / "fixtures" / "predict_vectors.json"
 
@@ -52,10 +52,6 @@ def make() -> dict:
                     "bonus": tables.bonus(o, truth, p), "error": tables.error(o, truth, p)}
                    for o in (truth, shuffled, reversed_, list("ACBDEFGHIJKLMNOP")) for p in (plan_es, plan_obos)]
 
-    streak_cases = [{"in": s, "out": streaks.streak(s)} for s in (
-        [True] * 5 + [False, True, False, False], [True, False, True, True], [False, False], [True] * 12,
-        [True] * 5 + [False, False, True])]
-
     names = ["Tipper_1", "Øyvind_9", "ÆØÅ æøå", "ab", "Modellen", "FOLKET", " lead", "trail ", "x" * 21, "bad!name",
              "Sh1t_head", "Greit-Navn", "Ola Nordmann", "a_b", "Åse",
              "Thore", "Håkon_Thore", "Scunthorpe", "Hore", "Hore_99", "h0re", "h_o_r_e", "Pikk10", "Pikkolo", "Nazir",
@@ -65,7 +61,7 @@ def make() -> dict:
     gaps = [{"home": h, "draw": d, "gap": r(curve.equivalent_gap(h, d))} for h, d in
             ((0.5, 0.25), (0.3, 0.3), (0.8, 0.1), (0.1, 0.1), (0.455, 0.27))]
     return {"curve_version": curve.CURVE_VERSION, "grid": grid, "percentages": percent_cases, "scoring": scoring_cases,
-            "tables": table_cases, "streaks": streak_cases, "nicknames": nick_cases, "equivalent_gap": gaps}
+            "tables": table_cases, "nicknames": nick_cases, "equivalent_gap": gaps}
 
 
 def main() -> None:

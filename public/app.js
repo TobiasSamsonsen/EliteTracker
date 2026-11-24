@@ -4397,7 +4397,7 @@ function fillPredictInvite(card, nowMs = Date.now()) {
   const teaser = el('div', 'overview-predict__teaser');
   teaser.append(el('span', 'overview-predict__round', t('overview.predict.closest', { round: next.round })));
   const pair = el('div', 'overview-predict__pair');
-  for (const [id, name, side] of [[pick.home_id, pick.home, 'home'], [pick.away_id, pick.away, 'away']]) {
+  for (const [id, name, side] of [[pick.home_id, shortName(pick.home), 'home'], [pick.away_id, shortName(pick.away), 'away']]) {
     const club = el('span', `overview-predict__club overview-predict__club--${side}`);
     const crest = teamLogo(id, name, true);
     if (crest) club.append(crest);
@@ -4405,7 +4405,7 @@ function fillPredictInvite(card, nowMs = Date.now()) {
     pair.append(club);
     if (side === 'home') pair.append(el('span', 'overview-predict__vs', '–'));
   }
-  teaser.append(pair, oddsBar(pick.home, pick.away, pick), el('span', 'overview-predict__ask', t('overview.predict.ask')));
+  teaser.append(pair, oddsBar(shortName(pick.home), shortName(pick.away), pick), el('span', 'overview-predict__ask', t('overview.predict.ask')));
 
   const meta = el('div', 'overview-predict__meta overview-predict__go');
   const opens = next.opens > nowMs;
@@ -10920,7 +10920,7 @@ function showSkeleton(view) {
    time the view opens, so the rest of the site never pays for it. It reads
    none of the season report, so a link to /predict/ draws the game at once
    instead of waiting for the report (bootPredict). */
-const PREDICT_HASHES = new Set(['table', 'boards', 'me', 'how']);
+const PREDICT_HASHES = new Set(['table', 'boards', 'leagues', 'me', 'how']);
 const PREDICT_FILES = ['/elo-curve.js', '/predict-core.js', '/predict-util.js', '/predict-api.js', '/predict.js'];
 let predictLoad = null;
 
@@ -11027,7 +11027,7 @@ function render() {
   hideTooltip();
   if (state.activeView !== 'predict') {
     window.PredictGame?.hide();
-    // The game's own addresses (#boards, #me, ...) are not another view's.
+    // The game's own addresses (#boards, #leagues, #me, ...) are not another view's.
     if (PREDICT_HASHES.has(window.location.hash.slice(1))) {
       window.history.replaceState(window.history.state, '', window.location.pathname + window.location.search);
     }

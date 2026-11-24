@@ -43,8 +43,8 @@ VIEWPORTS = [
     ("1280x800", 1280, 800, False),
 ]
 EXPLORE = ["mountain", "attack", "luck", "races", "whatif", "runin", "playoff"]
-# The Predict view, its four tabs and the guide, with Firestore answered from a small fixture (see predict_fixture).
-PREDICT = ["predict", "predict:table", "predict:boards", "predict:me", "predict:how"]
+# The Predict view, its five tabs and the guide, with Firestore answered from a small fixture (see predict_fixture).
+PREDICT = ["predict", "predict:table", "predict:boards", "predict:leagues", "predict:me", "predict:how"]
 VIEWS = (["overview", "grid", "table", "matches", "ladder", "compare", "explore"]
          + [f"explore:{item}" for item in EXPLORE] + ["model", "team"] + PREDICT)
 
@@ -193,9 +193,9 @@ def predict_fixture(now: datetime | None = None) -> dict[str, dict]:
         docs.setdefault("meta/rounds", {"season": season, "rounds": []})["rounds"].append(
             {"key": key, "league": slug, "round": 5, "opens": now - timedelta(days=2), "closes": kicks[0],
              "last": kicks[-1], "n": 4, "ks": kicks, "settled": 0})
-        rows = [{"u": "model", "nick": "Modellen", "kind": "model", "n": 40, "ab": -0.4, "ar": -0.3, "b": 0.58, "r": 0.2, "vm": 0.0, "streak": None, "rank": 2},
-                {"u": "ab12cd34ef", "nick": "Tipper_1", "kind": "player", "n": 40, "ab": 1.2, "ar": 0.8, "b": 0.55, "r": 0.19, "vm": 0.6, "streak": 7, "rank": 1},
-                {"u": "ff00ff00ff", "nick": "Ola Nordmann", "kind": "player", "n": 36, "ab": -1.1, "ar": -0.7, "b": 0.63, "r": 0.24, "vm": -0.5, "streak": 2, "rank": 3}]
+        rows = [{"u": "model", "nick": "Modellen", "kind": "model", "n": 40, "ab": -0.4, "ar": -0.3, "b": 0.58, "r": 0.2, "vm": 0.0, "rank": 2},
+                {"u": "ab12cd34ef", "nick": "Tipper_1", "kind": "player", "n": 40, "ab": 1.2, "ar": 0.8, "b": 0.55, "r": 0.19, "vm": 0.6, "rank": 1},
+                {"u": "ff00ff00ff", "nick": "Ola Nordmann", "kind": "player", "n": 36, "ab": -1.1, "ar": -0.7, "b": 0.63, "r": 0.24, "vm": -0.5, "rank": 3}]
         for scope in ("season", "round", "last10"):
             docs[f"boards/{scope}_{season}_{slug}"] = {"scope": scope, "updated": now.isoformat(), "players": 3, "rows": rows,
                                                       "pct": [round(-1.1 + 2.3 * p / 100, 4) for p in range(101)]}

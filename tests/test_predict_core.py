@@ -1,4 +1,4 @@
-"""Predict's pure logic: the curve, scoring, the table game, streaks, boards, nicknames."""
+"""Predict's pure logic: the curve, scoring, the table game, boards, nicknames."""
 
 from __future__ import annotations
 
@@ -11,7 +11,7 @@ import pytest
 from elitetracker.model import crowd
 from elitetracker.model.probabilities import MatchProbabilities
 from elitetracker.model.scores import brier, rps
-from elitetracker.predict import boards, curve, nicknames, scoring, streaks, tables
+from elitetracker.predict import boards, curve, nicknames, scoring, tables
 
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / "tools"))
@@ -158,22 +158,7 @@ def test_table_accuracy_is_the_median_error_minus_yours():
     assert out["players"]["x"]["error"] == -12 and out["model"]["error"] == -12
 
 
-# ---- streaks, boards, nicknames, the crowd --------------------------------------------
-
-def test_streaks_bank_a_freeze_every_fifth_and_spend_it_on_a_miss():
-    assert streaks.streak([True] * 5 + [False, True]) == {"current": 6, "best": 6, "freezes": 0}
-    assert streaks.streak([True] * 5 + [False, False]) == {"current": 0, "best": 5, "freezes": 0}
-    assert streaks.streak([True, False, True]) == {"current": 1, "best": 1, "freezes": 0}
-    assert streaks.streak([]) == {"current": 0, "best": 0, "freezes": 0}
-
-
-def test_a_late_joiner_is_not_charged_for_rounds_before_they_started():
-    rounds = [{"key": f"r{i}", "matches": 2} for i in range(1, 6)]
-    mine = {"r3": {"n": 2}, "r4": {"n": 2}, "r5": {"n": 1}}
-    assert boards.player_streak(rounds, mine)["current"] == 0          # round 5 was only half tipped
-    mine["r5"] = {"n": 2}
-    assert boards.player_streak(rounds, mine) == {"current": 3, "best": 3, "freezes": 0}
-
+# ---- boards, nicknames, the crowd --------------------------------------------
 
 def test_a_board_ranks_by_points_and_keeps_hidden_players_in_the_percentiles():
     players = [{"uid": "a", "nick": "Aa_1", "hidden": False, "totals": {"n": 3, "b": 1.0, "r": 0.3, "ab": 0.5, "ar": 0.2, "vm": 0.1}},
@@ -185,6 +170,8 @@ def test_a_board_ranks_by_points_and_keeps_hidden_players_in_the_percentiles():
     # hidden b and idle c are not listed; three matches at a Brier of 1/3 beat one near-perfect match
     assert [r["nick"] for r in board["rows"]] == ["Aa_1", "Modellen", "Dd_1"]
     assert [r["pts"] for r in board["rows"]] == [20.0, 18.0, 9.0]
+    # places count the hidden player (b, 15 points, is second), so Dd_1 is third; the model takes none
+    assert [r.get("place") for r in board["rows"]] == [1, None, 3]
     assert board["rows"][0]["acc"] == pytest.approx(100 * (1 - 1 / 3 / 2), abs=1e-4) and board["rows"][2]["acc"] == 95.0
     assert board["players"] == 3 and board["pct"][100] == 20.0 and board["pct"][0] == 9.0
     assert boards.uid_hash("abc") == boards.uid_hash("abc") and len(boards.uid_hash("abc")) == 10
@@ -226,7 +213,7 @@ def test_the_crowd_signal_is_zero_below_thirty_players_and_follows_a_real_deviat
     assert 0 < crowd.signal(0.5, 0.25, stale) < shift                                # an older pick weighs less
 
 
-def test_the_overall_board_adds_both_divisions_and_keeps_the_better_streak():
+def test_the_overall_board_adds_both_divisions():
     t = lambda n, b: {"n": n, "b": b, "r": 0.0, "ab": 0.0, "ar": 0.0, "vm": 0.0}
     es_rounds = [{"key": "2026_eliteserien_1", "round": 1, "matches": 2, "settled": 2}]
     obos_rounds = [{"key": "2026_obosligaen_1", "round": 1, "matches": 2, "settled": 2}]
@@ -238,5 +225,5 @@ def test_the_overall_board_adds_both_divisions_and_keeps_the_better_streak():
                                        crowd_rounds={}, updated="now")
     rows = {r["nick"]: r for r in board["rows"]}
     assert rows["Aa_1"]["n"] == 3 and rows["Aa_1"]["pts"] == pytest.approx(30 - 9.0)
-    assert rows["Aa_1"]["streak"] == 1 and rows["Bb_1"]["streak"] == 1
+    assert "streak" not in rows["Aa_1"]
     assert rows["Modellen"]["n"] == 4 and board["players"] == 2 and board["league"] == "all"

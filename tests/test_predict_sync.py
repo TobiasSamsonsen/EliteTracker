@@ -392,6 +392,7 @@ def test_every_round_scored_gets_its_own_board_and_the_standings_are_published(t
     assert store.docs[f"boards/round_{SEASON}_eliteserien_1"]["round"] == 1
     standings = store.docs["meta/standings"]
     assert standings["leagues"]["eliteserien"]["order"][0] == "A-id" and standings["leagues"]["eliteserien"]["played"] == 1
+    assert standings["leagues"]["eliteserien"]["names"]["A-id"] == "A"
     writes = len(store.writes_to("meta/standings"))
     go(store, T0 + timedelta(hours=6), season(played={101: (2, 0)}), tmp_path)           # nothing played since: not rewritten
     assert len(store.writes_to("meta/standings")) == writes

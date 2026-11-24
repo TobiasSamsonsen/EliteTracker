@@ -1,5 +1,5 @@
 /* Small pure helpers of the Predict page: number formatting (a decimal point in both
-   languages, grouping per language), relative time, round status, the streak and
+   languages, grouping per language), relative time, round status, and
    calibration arithmetic, and the slider's typed-number search. No DOM; the node
    tests (tests/predict-ui.test.js) require this file.
 
@@ -65,12 +65,6 @@ function roundStatus(round, nowMs) {
   return 'done';
 }
 
-/* A round counts for the streak once the job has scored all of it (`settled` in the index); an
-   older index without that count falls back to the clock. */
-function roundScored(round, nowMs) {
-  return Number.isInteger(round.settled) ? round.n > 0 && round.settled >= round.n : roundStatus(round, nowMs) === 'done';
-}
-
 /* The round a division opens on: the one with something to tip or watch soonest (a match on now, else the
    earliest kick-off still ahead), the lower round on a tie; the last round when the season is over. A round
    with one match put off for weeks is not it while the next round is days away. Without the kick-offs
@@ -119,30 +113,31 @@ function moveDrafts(storage, uid) {
 /* localStorage keys a reset clears: all of Predict's, except the one to keep (the session). */
 const keysToReset = (keys, keep) => keys.filter((k) => k.startsWith('predict.') && k !== keep);
 
-/* ---- progress, streaks, calibration ------------------------------------------------------ */
+/* ---- club names ----------------------------------------------------------------------- */
+
+/* A Firestore document with its clubs by the site's short names (map: registered name -> short): every
+   `home` and `away` string and every value of a `names` map, at any depth. Dates and other values pass
+   through; the document is copied, not changed. */
+function shortClubNames(doc, map) {
+  const walk = (value, key) => {
+    if (typeof value === 'string') return (key === 'home' || key === 'away') && map[value] ? map[value] : value;
+    if (Array.isArray(value)) return value.map((item) => walk(item, null));
+    if (!value || typeof value !== 'object' || value instanceof Date) return value;
+    const out = {};
+    for (const [k, v] of Object.entries(value)) {
+      out[k] = key === 'names' && typeof v === 'string' ? map[v] || v : walk(v, k);
+    }
+    return out;
+  };
+  return walk(doc, null);
+}
+
+/* ---- progress, calibration ------------------------------------------------------ */
 
 function ringState(done, total) {
   return { done, total, fraction: total ? done / total : 0, complete: total > 0 && done >= total };
 }
 
-/* predict/streaks.py: the run of completed rounds, a freeze banked every fifth. */
-function computeStreak(flags) {
-  let current = 0;
-  let best = 0;
-  let freezes = 0;
-  for (const done of flags) {
-    if (done) {
-      current += 1;
-      if (current % 5 === 0) freezes = 1;
-      best = Math.max(best, current);
-    } else if (freezes) {
-      freezes = 0;
-    } else {
-      current = 0;
-    }
-  }
-  return { current, best, freezes };
-}
 
 /* Ten bins of what you said against what happened: points are { p: fraction, hit: 0 or 1 }. */
 function calibrationBins(points, bins = 10) {
@@ -179,11 +174,10 @@ function seasonTotals(stats, season, league) {
 }
 
 /* Badges earned, from your numbers: [{ id, earned }]. */
-function badgesFor({ tips, totals, streak }) {
+function badgesFor({ tips, totals }) {
   return [
     { id: 'first', earned: tips >= 1 },
     { id: 'thirty', earned: tips >= 30 },
-    { id: 'streak5', earned: streak >= 5 },
     { id: 'beatModel', earned: totals.n >= 10 && totals.vm > 0 },
     { id: 'beatField', earned: totals.n >= 10 && totals.ab > 0 },
   ];
@@ -389,8 +383,9 @@ function normalFit(pct) {
 
 const normalDensity = (x, mean, sd) => Math.exp(-0.5 * ((x - mean) / sd) ** 2);
 
-/* A tier by the share of players you beat, and how far the next one is. */
-const TIERS = [{ id: 'gold', at: 90 }, { id: 'silver', at: 75 }, { id: 'bronze', at: 50 }, { id: 'rookie', at: 0 }];
+/* A tier by the share of players you beat, and how far the next one is. Named apart from the podium's
+   gold, silver and bronze, which are places on one board. */
+const TIERS = [{ id: 'elite', at: 90 }, { id: 'expert', at: 75 }, { id: 'analyst', at: 50 }, { id: 'contender', at: 0 }];
 function tierOf(beat) {
   const index = TIERS.findIndex((tier) => beat >= tier.at);
   const tier = TIERS[index];
@@ -412,13 +407,14 @@ function roundForm(stats, season, league, count = 8) {
 /* ---- who you are on a board, and your season in rounds ------------------------------------------ */
 
 /* Rank among people only: the model and the crowd stand on a board for comparison and take no place.
-   A tie shares the better place. Returns Map(row -> place) for the player rows. */
+   A board's own `place` counts hidden players too, and wins; a board built before it counts the listed
+   players, a tie sharing the better place. Returns Map(row -> place) for the player rows. */
 function humanRanks(rows) {
   const players = (rows || []).filter((r) => r.kind === 'player');
   const place = new Map();
   players.forEach((row, i) => {
     const before = players[i - 1];
-    place.set(row, before && before.rank === row.rank ? place.get(before) : i + 1);
+    place.set(row, Number.isInteger(row.place) ? row.place : before && before.rank === row.rank ? place.get(before) : i + 1);
   });
   return place;
 }
@@ -432,7 +428,7 @@ function rivalsOf(rows, isMine, points) {
   const mine = points(players[at]);
   const ahead = at > 0 ? players[at - 1] : null;
   const behind = at < players.length - 1 ? players[at + 1] : null;
-  return { place: at + 1, ahead, behind, toAhead: ahead ? points(ahead) - mine : null, toBehind: behind ? mine - points(behind) : null };
+  return { place: Number.isInteger(players[at].place) ? players[at].place : at + 1, ahead, behind, toAhead: ahead ? points(ahead) - mine : null, toBehind: behind ? mine - points(behind) : null };
 }
 
 /* What the leaderboard's standing card says: your place, the share of players you beat (and the tier and
@@ -613,9 +609,9 @@ function analysePlay(rows) {
 
 if (typeof module !== 'undefined') {
   module.exports = {
-    groupThousands, fixed, percentText, signedScore, spanParts, ROUND_OVER_AFTER, roundStatus, roundScored, currentRoundIndex, isLocked,
+    groupThousands, fixed, percentText, shortClubNames, signedScore, spanParts, ROUND_OVER_AFTER, roundStatus, currentRoundIndex, isLocked,
     splitDraft, draftKeysToMove, moveDrafts, keysToReset, calibrationPoints, ringState,
-    computeStreak, calibrationBins, seasonTotals, badgesFor, nearestPosition, positionForEdges, positionForTyped, FREE_MIN, FREE_MAX, freeEdges, freeTyped, freePosition, isFreePick, gapAtFraction, dropIndex, moveItem, TABLE_BONUS, draftKey, roundKeyOf,
+    calibrationBins, seasonTotals, badgesFor, nearestPosition, positionForEdges, positionForTyped, FREE_MIN, FREE_MAX, freeEdges, freeTyped, freePosition, isFreePick, gapAtFraction, dropIndex, moveItem, TABLE_BONUS, draftKey, roundKeyOf,
     beatShare, boardWindow, humanRanks, rivalsOf, standingOf, statsSeasons, seasonSeries, seasonHighlights, normalFit, normalDensity, TIERS, tierOf, roundForm, analysePlay, ANALYSE_MIN,
   };
 }

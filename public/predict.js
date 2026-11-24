@@ -10,6 +10,10 @@
 
   const config = predictConfig();
   const client = createClient({ config });
+  // Clubs by the names the rest of the site uses (app.js's SHORT_NAMES: HamKam, not Hamarkameratene),
+  // applied to every document as it arrives, so the cards, the recap, the table game and the pictures agree.
+  const rawGet = client.get.bind(client);
+  client.get = async (path) => shortClubNames(await rawGet(path), typeof SHORT_NAMES !== 'undefined' ? SHORT_NAMES : {});
   const store = safeStorage();
   const LEAGUES = ['eliteserien', 'obosligaen'];
   const LEAGUE_NAME = { eliteserien: 'Eliteserien', obosligaen: 'OBOS-ligaen' };
@@ -17,7 +21,8 @@
 
   const S = {
     tab: 'tip', league: 'eliteserien', scope: 'season', index: null, indexError: null,
-    roundAt: {}, data: {}, loading: {}, drafts: {}, status: {}, timers: {}, fine: false,
+    alwaysFine: store.get('predict.fine.always') === 'on',
+    roundAt: {}, data: {}, loading: {}, drafts: {}, status: {}, timers: {},
     profile: undefined, stats: undefined, boards: {}, tables: {}, myLeagues: [], note: null, ownHash: null, calibration: null,
   };
 
@@ -236,6 +241,7 @@
       }
       saveDraft(key);
       store.set('predict.intro', 'seen');
+      try { sessionStorage.removeItem('predict.card'); } catch (error) { /* the Overview's card asks again */ }
       if (S.tab === 'tip') paintRing();
     } catch (error) {
       slots.forEach((slot) => setStatus(key, slot, 'error', errorText(error)));
@@ -348,6 +354,7 @@
     let offset = 0;
     const drawBox = () => oddsBar.querySelector('[data-outcome="draw"]').getBoundingClientRect();
     const edgeAt = (x, pointerType) => {
+      if (!state().p) return 'move';          // the size of the draw block is only set with fine-tune on
       const box = drawBox();
       const zone = Math.min(pointerType === 'mouse' ? 9 : 16, box.width / 3);
       if (Math.abs(x - box.left) <= zone) return 'left';
@@ -436,6 +443,7 @@
           drawRange.setAttribute('aria-label', t('predict.fine.label'));
           drawRange.setAttribute('aria-valuetext', `${fixed(pos.k / 10, 1)}× · ${valueText}`);
         }
+        drawRange.disabled = !pos.p;            // on the curve the draw block's size is the model's; fine-tune frees it
         range.setAttribute('aria-valuetext', valueText);
         oddsBar.dataset.free = String(Boolean(pos.p));
         return all;
@@ -486,7 +494,8 @@
     let tipped = Boolean(draft || saved);
     const startPos = draft ? { g: draft.g, k: draft.k, ...(draft.p ? { p: draft.p.slice() } : {}) }
       : saved ? (savedFree ? { g: saved.g, k: saved.k, p: [saved.h, saved.d, saved.a] } : { g: saved.g, k: saved.k })
-        : S.fine ? { ...EVEN, p: pickPercentages(EVEN.g, EVEN.k) } : { ...EVEN };
+        : { ...EVEN };
+    if (S.alwaysFine && !startPos.p) startPos.p = percentsOf(startPos);          // the setting: every card opens with fine-tune on
 
     const card = h('li', { class: 'pcard', data: { slot, round: key, state: locked ? 'locked' : tipped ? 'tipped' : 'untouched' } });
     if (locked) {
@@ -530,21 +539,23 @@
       });
       input.addEventListener('keydown', (event) => { if (event.key === 'Enter') input.blur(); });
     }
-    const panel = h('div', { class: 'pcard__panel', id: panelId, hidden: !fine },
-      h('p', { class: 'pcard__hint' }, t('predict.fine.hint')), readout);
+    // The explanation shows on the card where Fine-tune was just switched on, not on all eight: the
+    // other cards open with just the three numbers.
+    const hint = h('p', { class: 'pcard__hint', hidden: true }, t('predict.fine.hint'));
+    const panel = h('div', { class: 'pcard__panel', id: panelId, hidden: !fine }, hint, readout);
     // Fine-tune on: the ends move freely, a percent at a time, and the numbers can be typed. Off: back
     // to the curve's nearest position (a saved pick is saved again, since its numbers move).
     const fineButton = fineSwitch(fine, panelId, () => {
       fine = !fine;
-      S.fine = fine;
-      store.set('predict.fine', fine ? 'on' : 'off');
       const before = String(pct());
       slider.setFree(fine);
       fineButton.setAttribute('aria-pressed', String(fine));
       panel.hidden = !fine;
+      hint.hidden = !fine;
       if (tipped && String(pct()) !== before) { touch(); release(); } else if (tipped) touch();
       paint();
     });
+    fineButton.hidden = S.alwaysFine;
     // One line under the bar: your pick in words (with the three numbers when a segment is too narrow
     // to show its own), and the save state as a dot and a word.
     const reading = h('span', { class: 'pcard__read' });
@@ -685,12 +696,11 @@
     else if (!reveal.crowd) parts.push(h('p', { class: 'pcard__note' }, t('predict.wait.crowd')));
 
     if (own) {
-
       const item = (label, value) => [h('dt', {}, label), h('dd', {}, value)];
       parts.push(h('details', { class: 'pdetails' }, h('summary', {}, t('predict.details')),
         h('dl', {}, item(t('predict.details.pts'), ptsText(matchPoints(own.brier), true)),
-          item('Brier', avgText(own.brier)), item(t('predict.details.vs'), accText(own.vsModel))),
-        h('p', {}, t('predict.details.help'))));
+          item(t('predict.stats.acc'), pctText(accuracyPercent(1, own.brier))),
+          item('Brier', avgText(own.brier)), item(t('predict.details.vs'), ptsText(10 * own.vsModel, true)))));
     }
     return parts;
   }
@@ -702,17 +712,29 @@
     if (!reveal || !entry) return null;
     let tipped = 0;
     let beat = 0;
+    let scored = 0;
+    const list = [];
+    let brierSum = 0;
+    let vmSum = 0;
     let best = null;
+    let worst = null;
     for (const [slot, info] of Object.entries(reveal)) {
       if (!entry[slot]) continue;
       tipped += 1;
       if (!info.result || !info.model) continue;
       const own = scoreOwnPick(storedPercents(entry[slot]), [info.model.h, info.model.d, info.model.a], outcomeOf(info.result.hg, info.result.ag));
+      scored += 1;
+      list.push({ vs: 10 * own.vsModel, kick: record.fixture && record.fixture.slots && record.fixture.slots[slot] ? record.fixture.slots[slot].kickoff.getTime() : 0, slot });
+      brierSum += own.brier;
+      vmSum += own.vsModel;
       if (own.vsModel > 0) beat += 1;
       if (!best || own.vsModel > best.vs) best = { slot, vs: own.vsModel };
+      if (!worst || own.vsModel < worst.vs) worst = { slot, vs: own.vsModel };
     }
+    // What the round was worth, worked out here from the same scoring as the job's (scored matches only).
     const total = record.fixture && record.fixture.slots ? Object.keys(record.fixture.slots).length : Object.keys(reveal).length;
-    return tipped ? { tipped, beat, best, total } : null;
+    return tipped ? { tipped, scored, beat, best, worst, total, list: list.sort((x, y) => x.kick - y.kick || x.slot.localeCompare(y.slot)),
+      points: scored ? totalPoints(scored, brierSum) : null, acc: scored ? accuracyPercent(scored, brierSum) : null, vm: 10 * vmSum } : null;
   }
 
   /* ---- the tip view ------------------------------------------------------------------------------- */
@@ -757,30 +779,43 @@
     holder.replaceChildren(ring);
   }
 
-  function statusBadge(round) {
+  /* A line in the list of rounds: the round, where it stands, and (once something of yours is scored in it)
+     how many of its matches you tipped and what that earned. */
+  function roundOptionText(round) {
+    const base = `${t('predict.round', { n: round.round })} · ${t(`predict.pstatus.${roundStatus(round, now())}`)}`;
+    const mine = S.stats && S.stats.rounds && S.stats.rounds[round.key];
+    return mine && mine.n > 0 ? `${base} · ${mine.n}/${round.n} · ${ptsText(totalPoints(mine.n, mine.b), true)} ${t('predict.recap.pts')}` : base;
+  }
+
+  /* Your stats arrive after the list is drawn: the lines are filled in when they have. */
+  function refreshRoundPick() {
+    const pick = document.querySelector('.pnav__pick');
+    if (!pick) return;
+    const rounds = leagueRounds(S.league);
+    [...pick.options].forEach((option, i) => { if (rounds[i]) option.textContent = roundOptionText(rounds[i]); });
+  }
+
+  function roundState(round) {
     const status = roundStatus(round, now());
     const text = status === 'future' ? t('predict.status.future', { span: spanText(round.opens.getTime() - now()) })
       : status === 'open' ? t('predict.status.open', { span: spanText(round.closes.getTime() - now()) })
       : status === 'live' ? t('predict.status.live') : status === 'partial' ? t('predict.status.partial') : t('predict.status.done');
     const soon = status === 'open' && round.closes.getTime() - now() < 86400000;
+    return { status, text, soon };
+  }
+
+  function statusBadge(round) {
+    const { status, text, soon } = roundState(round);
     return h('span', { class: 'pbadge', data: { status, soon: String(soon) } }, text);
   }
 
-  /* How it works, in three short steps, until it is dismissed or the first pick is saved. */
-  function introPanel() {
-    if (store.get('predict.intro') === 'seen') return null;
-    const ok = h('button', { type: 'button', class: 'pbtn pbtn--small' }, t('predict.intro.ok'));
-    const box = h('section', { class: 'phow', attrs: { 'aria-labelledby': 'phow-title' } },
-      h('h3', { id: 'phow-title', class: 'phow__title' }, t('predict.intro.title')),
-      h('ol', { class: 'phow__steps' }, ['1', '2', '3'].map((n) => h('li', {}, t(`predict.intro.step${n}`)))),
-      h('div', { class: 'phow__actions' }, h('a', { href: '#how', class: 'pbtn pbtn--small' }, t('predict.intro.more')), ok));
-    ok.addEventListener('click', () => { store.set('predict.intro', 'seen'); box.remove(); });
-    return box;
+  /* The same, as a plain line under the round's dates: a phone's bar shows this instead of the badge. */
+  function statusLine(round) {
+    const { status, text, soon } = roundState(round);
+    return h('span', { class: 'pnav__status', data: { status, soon: String(soon) } }, text);
   }
 
   function renderTip(root) {
-    const intro = introPanel();
-    if (intro) root.append(intro);
     const rounds = leagueRounds(S.league);
     if (S.indexError || !rounds.length) { root.append(leagueSwitch(render), emptyState(S.indexError, loadAndRender, 'predict.empty.rounds')); return; }
     const round = currentRound(S.league);
@@ -796,8 +831,9 @@
         h('div', { class: 'pnav__titles' },
           h('h3', { class: 'pnav__title' }, t('predict.round', { n: round.round }), h('span', { class: 'pnav__caret', attrs: { 'aria-hidden': 'true' } })),
           h('span', { class: 'pnav__dates' }, roundDates(round.closes, round.last || round.closes)),
+          statusLine(round),
           h('select', { class: 'pnav__pick', attrs: { 'aria-label': t('predict.round.pick') }, on: { change: (e) => go(Number(e.target.value)) } },
-            rounds.map((r, i) => h('option', { value: String(i), selected: i === at }, `${t('predict.round', { n: r.round })} · ${t(`predict.pstatus.${roundStatus(r, now())}`)}`)))),
+            rounds.map((r, i) => h('option', { value: String(i), selected: i === at }, roundOptionText(r))))),
         h('button', { type: 'button', class: 'pbtn pbtn--icon', disabled: at >= rounds.length - 1, attrs: { 'aria-label': t('predict.round.next') }, on: { click: () => go(at + 1) } }, '›')),
       h('div', { class: 'pnav__side' }, Object.assign(statusBadge(round), { id: 'predict-badge' }),
         status === 'open' || status === 'live' || status === 'partial' ? h('div', { id: 'predict-ring', class: 'pnav__ring' }) : null));
@@ -833,20 +869,33 @@
     };
     const recap = recapOf(round, record);
     if (recap) {
-      const best = recap.best && recap.best.vs > 0 ? slots[recap.best.slot] : null;
-      const mineRound = S.stats && S.stats.rounds && S.stats.rounds[round.key];
-      const points = mineRound ? totalPoints(mineRound.n, mineRound.b) : null;
-      const stat = (value, label, tone) => h('div', { class: 'precap__stat', data: { tone: tone || 'even' } }, h('strong', {}, value), h('span', {}, label));
+      const best = recap.best && recap.best.vs > 0 ? { info: slots[recap.best.slot], vs: recap.best.vs } : null;
+      const worst = recap.worst && recap.worst.vs < 0 ? { info: slots[recap.worst.slot], vs: recap.worst.vs } : null;
+      const tone = (value) => (value > 0.05 ? 'good' : value < -0.05 ? 'bad' : 'even');
+      // The two figures that say how the round went, big; the counts and the calls under them.
+      const figure = (value, label, toneOf) => h('div', { class: 'precap__fig', data: { tone: toneOf || 'even' } }, h('strong', {}, value), h('span', {}, label));
+      const count = (value, label, toneOf) => h('div', { class: 'precap__count', data: { tone: toneOf || 'even' } }, h('strong', {}, value), h('span', {}, label));
+      // A scoreline: home name and crest | – | crest and away name. The dash stands in a column of its own,
+      // so it is in the same place on both lines whatever the names.
+      const call = (pick, label, kind) => h('div', { class: 'precap__call', data: { kind } },
+        h('span', { class: 'precap__calllabel' }, label),
+        h('span', { class: 'precap__side precap__side--home' }, h('span', { class: 'precap__name' }, pick.info.home), crest(pick.info.home_id, 20)),
+        h('span', { class: 'precap__dash', attrs: { 'aria-hidden': 'true' } }, '–'),
+        h('span', { class: 'precap__side precap__side--away' }, crest(pick.info.away_id, 20), h('span', { class: 'precap__name' }, pick.info.away)),
+        h('span', { class: 'precap__callvs' }, ptsText(10 * pick.vs, true)));
       out.append(h('section', { class: 'precap', attrs: { 'aria-label': t('predict.recap.title') } },
-        h('div', { class: 'precap__stats' },
-          stat(`${recap.tipped}/${recap.total}`, t('predict.recap.tipped')),
-          stat(String(recap.beat), t('predict.recap.beat')),
-          points !== null ? stat(ptsText(points, true), t('predict.recap.pts'), points < 0 ? 'bad' : 'even') : null,
-          best ? h('div', { class: 'precap__stat precap__stat--match' },
-            h('strong', { class: 'precap__match' }, crest(best.home_id, 20), `${best.home}–${best.away}`, crest(best.away_id, 20)),
-            h('span', {}, t('predict.recap.bestLabel'))) : null),
-        shareButton({ title: () => `${t('predict.title')} · ${t('predict.round', { n: round.round })}`, className: 'precap__share',
-          image: () => sharePredictRound(round, recap, points, best) })));
+        h('div', { class: 'precap__head' }, h('h3', {}, t('predict.recap.title')),
+          shareButton({ title: () => `${t('predict.title')} · ${t('predict.round', { n: round.round })}`, className: 'precap__share',
+            image: () => sharePredictRound(round, recap, best, worst) })),
+        recap.scored ? h('div', { class: 'precap__hero' },
+          figure(ptsText(recap.points, true), t('predict.recap.pts'), tone(recap.points)),
+          figure(pctText(recap.acc), t('predict.recap.acc'))) : null,
+        h('div', { class: 'precap__counts' },
+          count(`${recap.tipped}/${recap.total}`, t('predict.recap.tipped')),
+          recap.scored ? count(`${recap.beat}/${recap.scored}`, t('predict.recap.beat'), recap.beat * 2 > recap.scored ? 'good' : 'even') : null,
+          recap.scored ? count(ptsText(recap.vm, true), t('predict.details.vs'), tone(recap.vm)) : null),
+        best || worst ? h('div', { class: 'precap__calls' }, best ? call(best, t('predict.recap.bestLabel'), 'good') : null,
+          worst ? call(worst, t('predict.recap.worstLabel'), 'bad') : null) : null));
     }
     if (status === 'future') {
       out.append(h('p', { class: 'popens' }, t('predict.opens', { when: when(round.opens) })));
@@ -857,61 +906,132 @@
       // A draft left from an earlier visit (closed tab, lost connection) is saved now, not forgotten.
       if (['open', 'live', 'partial'].includes(status) && Object.keys(loadDraft(round.key)).length) scheduleSave(round.key);
     }
-    out.append(h('p', { class: 'pfoot' }, h('a', { href: '/predict/rounds.ics', class: 'pbtn pbtn--small' }, t('predict.calendar')),
-      status === 'live' || status === 'partial' ? h('button', { type: 'button', class: 'pbtn pbtn--small', on: { click: () => ensureRound(round, true).then(render) } }, t('predict.refresh')) : null));
+    if (status === 'live' || status === 'partial') {
+      out.append(h('p', { class: 'pfoot' }, h('button', { type: 'button', class: 'pbtn pbtn--small', on: { click: () => ensureRound(round, true).then(render) } }, t('predict.refresh'))));
+    }
     return out;
   }
 
-  /* The recap as a picture, drawn the way every picture of the site is (share.js: its frame, its
-     type, its palette, in the format and theme picked in the share sheet): the round's three numbers
-     as figures and the best call with its crests. Resolves to a PNG blob. */
-  async function sharePredictRound(round, recap, points, best) {
+  /* The recap as a picture, drawn the way every picture of the site is (share.js: its frame, its type,
+     its palette, in the format and theme picked in the share sheet). Two figures lead, big: what the
+     round earned and its accuracy. Under them, on one panel: the counts, the round at a glance (one bar
+     a match, up when you beat the model, down when you did not, as tall as the difference) and the best
+     and the worst call with their crests. A wide picture sets the figures beside the panel, a tall one
+     puts the panel under them; every size scales to the room the format leaves. Resolves to a PNG blob. */
+  async function sharePredictRound(round, recap, best, worst) {
     const { ctx, canvas } = await shareCanvas();
     const room = shareFrame(ctx, `${t('predict.title')} · ${LEAGUE_NAME[round.league]} · ${t('predict.round', { n: round.round })}`);
-    const u = shareU();
     const tall = shareTall();
-    const stats = [[`${recap.tipped}/${recap.total}`, t('predict.recap.tipped'), SC.ink], [String(recap.beat), t('predict.recap.beat'), SC.ink]];
-    if (points !== null) stats.push([ptsText(points, true), t('predict.recap.pts'), points < 0 ? SC.badInk : SC.accentInk]);
-    const title = t('predict.recap.title');
-    const titleSize = (tall ? 62 : 52) * u;
-    const titleH = titleSize + (tall ? 64 : 34) * u;
-    // The figures: side by side, each on a panel of its own; on a tall picture one under the other.
-    // The whole block (title, figures, best call) sits in the middle of the room the frame leaves.
-    const gap = 20 * u;
-    const bestH = best ? (tall ? 150 : 96) * u : 0;
-    const rows = tall ? stats.length : 1;
-    const h1 = Math.min(tall ? 260 * u : 230, (room.h - titleH - bestH - gap * rows) / rows);
-    const total = titleH + rows * (h1 + gap) + bestH;
-    let y = room.y + Math.max(0, (room.h - total) / 2) + titleSize;
-    paintText(ctx, title, room.x, y, { size: titleSize, weight: 800, wide: true, maxWidth: room.w, fit: true });
-    y += titleH - titleSize;
+    const scored = Boolean(recap.scored);
+    const tone = (value) => (value < 0 ? SC.badInk : SC.accentInk);
+    const picks = [best && { ...best, label: t('predict.recap.bestLabel'), color: SC.accentInk }, worst && { ...worst, label: t('predict.recap.worstLabel'), color: SC.badInk }].filter(Boolean);
+    const counts = [[`${recap.tipped}/${recap.total}`, t('predict.recap.tipped'), SC.ink]];
+    if (scored) counts.push([`${recap.beat}/${recap.scored}`, t('predict.recap.beat'), recap.beat * 2 > recap.scored ? SC.accentInk : SC.ink], [ptsText(recap.vm, true), t('predict.details.vs'), tone(recap.vm)]);
+    const glance = recap.list || [];
+
+    // Sizes at scale 1: a tall picture's are larger. `k` scales them all to the room.
+    const m = tall
+      ? { pad: 36, countV: 64, countL: 24, gap: 36, cap: 22, bars: 190, row: 104, name: 34, tag: 17, heroV: 170, heroL: 34, accV: 88, label: 22 }
+      : { pad: 24, countV: 40, countL: 17, gap: 20, cap: 15, bars: 104, row: 60, name: 24, tag: 13, heroV: 150, heroL: 26, accV: 64, label: 16 };
+    let barsExtra = 0;                      // a tall picture with room to spare gives it to the bars
+    const panelH = (k) => k * (m.pad * 2 + m.countV + m.countL + 8 + (glance.length ? m.gap + m.cap + 12 + m.bars + barsExtra : 0) + (picks.length ? m.gap + picks.length * m.row : 0));
+    const heroH = (k) => k * (m.heroV + m.heroL + 14);
+    const labelH = (k) => k * (m.label + 26);
+    let k;
+    let heroX; let heroW; let panelX; let panelW; let top;
     if (tall) {
-      for (const [value, label, color] of stats) {
-        shareRect(ctx, room.x, y, room.w, h1, 18, SC.panel);
-        paintText(ctx, value, room.x + 44 * u, y + h1 / 2 + 34 * u, { size: 96 * u, weight: 800, wide: true, color });
-        paintText(ctx, label, room.x + room.w - 44 * u, y + h1 / 2 + 11 * u, { size: 30 * u, weight: 600, color: SC.muted, align: 'right' });
-        y += h1 + gap;
-      }
+      const need = labelH(1) + heroH(1) + 40 + panelH(1);
+      k = Math.min(1.3, room.h / need);
+      if (glance.length && room.h > need * k) barsExtra = Math.min(300, (room.h - need * k) * 0.55 / k);
+      heroX = room.x; heroW = room.w; panelX = room.x; panelW = room.w;
+      top = room.y + Math.max(0, (room.h - (labelH(k) + heroH(k) + 40 * k + panelH(k))) / 2);
     } else {
-      const w = (room.w - gap * (stats.length - 1)) / stats.length;
-      stats.forEach(([value, label, color], i) => {
-        const x = room.x + i * (w + gap);
-        shareRect(ctx, x, y, w, h1, 16, SC.panel);
-        paintText(ctx, value, x + w / 2, y + h1 / 2 + 22, { size: 84, weight: 800, wide: true, color, align: 'center', maxWidth: w - 32, fit: true });
-        paintText(ctx, label, x + w / 2, y + h1 / 2 + 70, { size: 24, weight: 600, color: SC.muted, align: 'center', maxWidth: w - 32 });
-      });
-      y += h1 + gap;
+      k = Math.min(1.15, room.h / Math.max(panelH(1), labelH(1) + heroH(1) + m.accV + 60));
+      heroW = room.w * 0.42; heroX = room.x; panelW = room.w - heroW - 48; panelX = room.x + heroW + 48;
+      top = room.y + Math.max(0, (room.h - panelH(k)) / 2);
     }
-    if (best) {
-      const size = (tall ? 40 : 30) * u;
-      const crestSize = size * 1.4;
-      const mid = y + bestH / 2;
-      paintText(ctx, t('predict.recap.bestLabel'), room.x, mid - size * 0.9, { size: 16 * u, weight: 600, color: SC.muted, label: true });
-      let x = room.x;
-      await shareDrawCrest(ctx, best.home_id, best.home, x, mid - crestSize / 2 + size * 0.35, crestSize);
-      x += crestSize + size * 0.35;
-      x += paintText(ctx, `${best.home} – ${best.away}`, x, mid + size * 0.7, { size, weight: 800, maxWidth: room.w - 2 * crestSize - size }) + size * 0.35;
-      await shareDrawCrest(ctx, best.away_id, best.away, x, mid - crestSize / 2 + size * 0.35, crestSize);
+
+    // The figures.
+    const caption = (text, x, y, size, align = 'left') => paintText(ctx, text, x, y, { size, weight: 700, color: SC.muted, label: true, align });
+    let y = top;
+    caption(t('predict.recap.title'), heroX, y + m.label * k, m.label * k);
+    y += labelH(k) - 4 * k;
+    const bigPoints = scored ? ptsText(recap.points, true) : `${recap.tipped}/${recap.total}`;
+    const bigLabel = scored ? t('predict.recap.pts') : t('predict.recap.tipped');
+    const heroColor = scored ? tone(recap.points) : SC.ink;
+    if (tall) {
+      const pointsW = scored ? heroW * 0.56 : heroW;
+      paintText(ctx, bigPoints, heroX, y + m.heroV * k * 0.82, { size: m.heroV * k, weight: 800, wide: true, color: heroColor, maxWidth: pointsW, fit: true });
+      paintText(ctx, bigLabel, heroX, y + (m.heroV * 0.82 + m.heroL + 10) * k, { size: m.heroL * k, weight: 600, color: SC.muted });
+      if (scored) {
+        const accX = heroX + heroW;
+        paintText(ctx, pctText(recap.acc), accX, y + m.heroV * k * 0.82, { size: m.accV * k, weight: 800, wide: true, align: 'right', maxWidth: heroW * 0.4, fit: true });
+        paintText(ctx, t('predict.recap.acc'), accX, y + (m.heroV * 0.82 + m.heroL + 10) * k, { size: m.heroL * k, weight: 600, color: SC.muted, align: 'right' });
+      }
+      y += heroH(k) + 40 * k;
+    } else {
+      paintText(ctx, bigPoints, heroX, y + m.heroV * k * 0.8, { size: m.heroV * k, weight: 800, wide: true, color: heroColor, maxWidth: heroW, fit: true });
+      let ay = y + m.heroV * k * 0.8 + m.heroL * k + 12 * k;
+      paintText(ctx, bigLabel, heroX, ay, { size: m.heroL * k, weight: 600, color: SC.muted });
+      if (scored) {
+        ay += m.accV * k + 26 * k;
+        paintText(ctx, pctText(recap.acc), heroX, ay, { size: m.accV * k, weight: 800, wide: true, maxWidth: heroW, fit: true });
+        paintText(ctx, t('predict.recap.acc'), heroX, ay + m.heroL * k + 8 * k, { size: m.heroL * k, weight: 600, color: SC.muted });
+      }
+      y = top;
+    }
+
+    // The panel.
+    const ph = panelH(k);
+    const pad = m.pad * k;
+    const inner = panelW - pad * 2;
+    shareRect(ctx, panelX, y, panelW, ph, 20 * k, SC.panel);
+    let py = y + pad;
+    const colW = inner / counts.length;
+    counts.forEach(([value, label, color], i) => {
+      paintText(ctx, value, panelX + pad + i * colW, py + m.countV * k * 0.82, { size: m.countV * k, weight: 800, wide: true, color, maxWidth: colW - 12 * k, fit: true });
+      paintText(ctx, label, panelX + pad + i * colW, py + (m.countV + m.countL) * k + 4 * k, { size: m.countL * k, weight: 600, color: SC.muted, maxWidth: colW - 12 * k, fit: true });
+    });
+    py += (m.countV + m.countL + 8) * k;
+
+    if (glance.length) {
+      py += m.gap * k;
+      caption(t('predict.recap.perMatch'), panelX + pad, py + m.cap * k * 0.8, m.cap * k);
+      py += (m.cap + 12) * k;
+      const area = (m.bars + barsExtra) * k;
+      const mid = py + area / 2;
+      const scale = Math.max(3, ...glance.map((g) => Math.abs(g.vs)));
+      const count = glance.length;
+      const bw = Math.min(58 * k, inner / (count * 1.4 - 0.4));
+      const step = bw * 1.4;
+      const x0 = panelX + pad + (inner - (count * step - bw * 0.4)) / 2;
+      ctx.fillStyle = SC.rule;
+      ctx.fillRect(panelX + pad, mid - 1 * k, inner, 2 * k);
+      glance.forEach((g, i) => {
+        const height = Math.max(5 * k, (Math.abs(g.vs) / scale) * (area / 2 - 3 * k));
+        shareRect(ctx, x0 + i * step, g.vs >= 0 ? mid - height : mid + 1 * k, bw, height, Math.min(6 * k, bw / 3), g.vs >= 0 ? SC.accent : SC.bad);
+      });
+      py += area;
+    }
+
+    if (picks.length) {
+      py += m.gap * k;
+      for (const pick of picks) {
+        // The label above, the match under it with its crests, the points against the model at the end.
+        const rowTop = py;
+        const size = m.name * k;
+        const crest = size * 1.25;
+        paintText(ctx, pick.label, panelX + pad, rowTop + m.tag * k * 0.9, { size: m.tag * k, weight: 700, color: SC.muted, label: true });
+        const lineMid = rowTop + (m.tag + 10) * k + crest / 2;
+        const valueW = paintText(ctx, ptsText(10 * pick.vs, true), panelX + pad + inner, lineMid + size * 0.35, { size, weight: 800, color: pick.color, align: 'right' });
+        let x = panelX + pad;
+        await shareDrawCrest(ctx, pick.info.home_id, pick.info.home, x, lineMid - crest / 2, crest);
+        x += crest + size * 0.3;
+        const free = inner - valueW - crest * 2 - size * 1.2;
+        x += paintText(ctx, `${pick.info.home} – ${pick.info.away}`, x, lineMid + size * 0.35, { size, weight: 700, maxWidth: Math.max(60, free) }) + size * 0.3;
+        await shareDrawCrest(ctx, pick.info.away_id, pick.info.away, x, lineMid - crest / 2, crest);
+        py += m.row * k;
+      }
     }
     return shareBlob(canvas);
   }
@@ -946,6 +1066,7 @@
       const game = await client.get(`tablegames/${key}`);
       const mine = client.uid ? await client.get(`tables/${client.uid}/picks/${key}`) : null;
       const extras = {};
+      if (!game) { try { extras.standings = await client.get('meta/standings'); } catch (error) { extras.standings = null; } }
       if (game && now() >= game.closes.getTime()) {
         // Once it has closed: the final result if the season is over, otherwise the table as it stands.
         // (each read on its own: if one fails the panel it feeds is left out, not the whole tab)
@@ -974,6 +1095,31 @@
       h('p', { class: 'pboard__note' }, t('predict.table.result.note', { players: groupThousands(board.players || 0, lang()) }))));
   }
 
+  /* Club names the page already knows (from the rounds it has read), for a table that carries only ids. */
+  function knownClubNames() {
+    const names = new Map();
+    Object.values(S.data).forEach((record) => Object.values((record.fixture && record.fixture.slots) || {}).forEach((m) => { names.set(m.home_id, m.home); names.set(m.away_id, m.away); }));
+    return names;
+  }
+
+  /* The table game is not open (the season is under way, or the next one is not set yet): when it opens,
+     and the table as it stands with the places that count for the bonuses marked, so the game is no mystery. */
+  function tableClosedBody(standings, rules, zoneOf) {
+    const parts = [h('p', { class: 'pempty' }, t('predict.table.none.text'))];
+    const league = standings && standings.leagues && standings.leagues[S.league];
+    if (league && league.order && league.order.length) {
+      const names = league.names || {};
+      const known = knownClubNames();
+      parts.push(h('section', { class: 'ptable__checkpoint' }, h('h3', {}, t('predict.table.preview.title')),
+        h('p', { class: 'pmuted' }, t('predict.table.preview.played', { n: league.played })),
+        h('ol', { class: 'ptable ptable--now' }, league.order.map((id, i) => h('li', { class: 'ptable__row', data: { id, zone: zoneOf(i, league.order.length) } },
+          h('span', { class: 'ptable__pos' }, String(i + 1)), h('span', { class: 'ptable__name' }, crest(id, 22), h('span', {}, names[id] || known.get(id) || ''))))),
+        ));
+    }
+    parts.push(rules);
+    return h('div', {}, ...parts);
+  }
+
   /* Mid-season: your order against the table as it stands, place by place. */
   function tableCheckpoint(order, game, standings) {
     const league = standings && standings.leagues && standings.leagues[S.league];
@@ -994,11 +1140,11 @@
   function tableBody(key, game, mine, extras = {}, season) {
     const bonus = TABLE_BONUS[S.league];
     const rules = h('p', { class: 'ptable__rules' }, t(S.league === 'eliteserien' ? 'predict.table.rules.es' : 'predict.table.rules.obos', { champion: bonus.champion, promotion: bonus.promotion, relegation: bonus.relegation }));
-    if (!game) return h('div', {}, h('p', { class: 'pempty' }, t('predict.table.none')), rules);
-    const nowMs = now();
-    const state = nowMs < game.opens.getTime() ? 'soon' : nowMs >= game.closes.getTime() ? 'closed' : 'open';
     const zoneOf = (i, n) => (S.league === 'eliteserien' ? (i === 0 ? 'champion' : i >= n - 2 ? 'relegation' : '')
       : (i < 2 ? 'promotion' : i >= n - 2 ? 'relegation' : ''));
+    if (!game) return tableClosedBody(extras.standings, rules, zoneOf);
+    const nowMs = now();
+    const state = nowMs < game.opens.getTime() ? 'soon' : nowMs >= game.closes.getTime() ? 'closed' : 'open';
     const validOrder = (list) => Array.isArray(list) && list.length === game.clubs.length && game.clubs.every((id) => list.includes(id));
     const draftId = `predict.tabledraft.${client.uid || 'new'}.${key}`;
     const alphabetical = () => game.clubs.slice().sort((a, b) => game.names[a].localeCompare(game.names[b], 'nb'));
@@ -1264,11 +1410,12 @@
           attrs: { 'aria-pressed': String(scope === one) }, on: { click: () => { S.scope = one; render(); } } }, t(`predict.scope.${one}`)))),
       h('div', { class: 'ptoolbar__picks' }, seasonPick, roundPick)));
     const body = h('div', { class: 'pboards' });
-    root.append(body, leaguesSection());
+    root.append(body);
     if (!season) { body.replaceChildren(emptyState(S.indexError, loadAndRender, 'predict.empty.rounds')); return; }
     const id = all ? `season_${season}_all` : scope === 'round' && pickedRound ? `round_${season}_${S.league}_${pickedRound}` : `${scope}_${season}_${S.league}`;
     const show = (board) => {
-      body.replaceChildren(boardTable(board), percentileNote(board, season));
+      const table = boardTable(board);
+      body.replaceChildren(table, table.dataset.hero ? h('span') : percentileNote(board, season));
       S.boardShown = body.firstChild;
     };
     // A board read in the last few minutes is drawn at once; otherwise the one on show stays, dimmed,
@@ -1289,7 +1436,7 @@
   }
 
   /* Columns that sort, and which way is better the first time they are pressed. */
-  const BOARD_COLUMNS = [['rank', 'asc'], ['name', 'asc'], ['n', 'desc'], ['pts', 'desc'], ['acc', 'desc'], ['streak', 'desc']];
+  const BOARD_COLUMNS = [['rank', 'asc'], ['name', 'asc'], ['n', 'desc'], ['pts', 'desc'], ['acc', 'desc']];
 
   function sortedRows(rows, sort) {
     if (!sort || sort.col === 'rank') return sort && sort.dir === 'desc' ? rows.slice().reverse() : rows;
@@ -1323,7 +1470,77 @@
     return holder;
   }
 
-  function boardTable(board) {
+  /* Where you stand: your medal and place, your points and accuracy; the climb to the next tier (the
+     side panel's steps at 50, 75 and 90 %); then who you chase, who chases you, and the model. */
+  function standingCard(board, st) {
+    const { me, pts, tier, top, modelGap, beat } = st;
+    const name = (row) => row.nick || t('predict.anon');
+    const stat = (label, value) => h('div', { class: 'pstanding__stat' }, h('dt', {}, label), h('dd', {}, value));
+    const arrow = (dir) => h('span', { class: 'pstanding__arrow', attrs: { 'aria-hidden': 'true' } }, dir === 'up' ? '▲' : '▼');
+    const lines = [
+      st.ahead ? h('span', { class: 'pstanding__chase' }, arrow('up'), t('predict.board.gap.ahead', { pts: ptsText(st.toAhead), name: name(st.ahead) }))
+        : h('span', { class: 'pstanding__lead' }, t('predict.board.hero.lead')),
+      st.behind ? h('span', {}, arrow('down'), t('predict.board.hero.behind', { pts: ptsText(st.toBehind), name: name(st.behind) })) : null,
+      modelGap === null ? null : h('span', { class: 'pstanding__model', data: { beat: String(modelGap > 0) } },
+        modelGap > 0 ? t('predict.board.hero.model.beat', { pts: ptsText(modelGap) }) : t('predict.board.hero.model.behind', { pts: ptsText(-modelGap) })),
+    ].filter(Boolean);
+    let climb = null;
+    if (beat !== null) {
+      const next = tierOf(beat);
+      const fill = h('span', { class: 'pside__fill', style: 'width: 0%' });
+      // The line under the bar opens the tiers: what each one takes, and which is yours.
+      climb = h('div', { class: 'pstanding__climb' },
+        h('div', { class: 'pside__track', attrs: { role: 'img', 'aria-label': t('predict.side.beat', { beat }) } },
+          fill, ...[50, 75, 90].map((at) => h('span', { class: 'pside__step', style: `left: ${at}%` }))),
+        h('details', { class: 'ptiersbox' },
+          h('summary', {}, h('span', {}, next.next ? t('predict.side.next', { n: next.toNext, tier: t(`predict.tier.${next.next}`) }) : t('predict.side.top')),
+            h('span', { class: 'ptiersbox__open' }, t('predict.tiers.title'))),
+          tierGuide(tier)));
+      requestAnimationFrame(() => requestAnimationFrame(() => { fill.style.width = `${beat}%`; }));
+    }
+    // Your name is the card's title; the place stands with the numbers.
+    const nick = (S.profile && S.profile.nick) || me.nick || t('predict.anon');
+    return h('section', { class: 'pstanding', data: { tier: tier || 'none' }, attrs: { 'aria-label': t('predict.board.gap.place', { place: st.place }) } },
+      h('div', { class: 'pstanding__top' },
+        h('div', { class: 'pstanding__who' },
+          tier ? h('span', { class: 'plevel plevel--big', data: { tier }, attrs: { 'aria-hidden': 'true' } }) : null,
+          h('div', { class: 'pstanding__name' },
+            h('strong', {}, nick),
+            h('small', {}, [tier ? t(`predict.tier.${tier}`) : null, top !== null ? t('predict.board.hero.top', { pct: top }) : null,
+              Number.isFinite(board.players) && board.players > 0 ? t('predict.board.hero.of', { n: groupThousands(board.players, lang()) }) : null].filter(Boolean).join(' · ')))),
+        h('dl', { class: 'pstanding__stats' }, stat(t('predict.col.place'), `#${st.place}`), stat(t('predict.col.pts'), ptsText(pts)), stat(t('predict.col.acc'), pctText(rowAcc(me))))),
+      climb,
+      h('p', { class: 'pstanding__lines' }, lines));
+  }
+
+  /* The four tiers, best first: each one's mark, name, what it takes and a line on it; yours marked. Shared
+     by the standing card, the side panel and the guide. */
+  function tierGuide(current) {
+    return h('div', { class: 'ptiers' }, h('p', { class: 'ptiers__intro' }, t('predict.tiers.intro')),
+      h('ol', { class: 'ptiers__list' }, TIERS.map((tier) => h('li', { class: 'ptiers__item', data: { tier: tier.id, current: String(tier.id === current) } },
+        h('span', { class: 'plevel', data: { tier: tier.id }, attrs: { 'aria-hidden': 'true' } }),
+        h('span', { class: 'ptiers__text' },
+          h('strong', {}, t(`predict.tier.${tier.id}`), tier.id === current ? h('span', { class: 'ptag ptag--you' }, t('predict.tag.you')) : null),
+          h('small', {}, t(`predict.tiers.${tier.id}`))),
+        h('span', { class: 'ptiers__at' }, tier.at ? t('predict.tiers.at', { pct: tier.at }) : t('predict.tiers.start'))))));
+  }
+
+  /* The top three on steps, the winner in the middle; in place order for a screen reader. */
+  function podiumOf(top, place, isMine) {
+    return h('ol', { class: 'ppodium', attrs: { 'aria-label': t('predict.board.podium') } }, top.map((row, i) => {
+      const at = place.get(row);
+      const mine = isMine(row);
+      return h('li', { class: 'ppodium__step', data: { pos: String(i + 1), place: String(at), mine: String(mine) } },
+        h('span', { class: 'ppodium__medal', attrs: { 'aria-hidden': 'true' } }, String(at)),
+        h('span', { class: 'ppodium__name' }, h('span', { class: 'ppodium__nick' }, row.nick || t('predict.anon')),
+          mine ? h('span', { class: 'ptag ptag--you' }, t('predict.tag.you')) : null),
+        h('span', { class: 'ppodium__pts' }, ptsText(rowPts(row)), h('small', {}, ` ${t('predict.col.pts').toLowerCase()}`)),
+        h('span', { class: 'ppodium__acc' }, pctText(rowAcc(row))),
+        h('span', { class: 'ppodium__plinth', attrs: { 'aria-hidden': 'true' } }));
+    }));
+  }
+
+  function boardTable(board, { league = false } = {}) {
     if (!board || !board.rows || !board.rows.length) return h('p', { class: 'pempty' }, t('predict.board.empty'));
     const tone = (value) => (value > 0.00005 ? 'good' : value < -0.00005 ? 'bad' : 'even');
     const tbody = h('tbody', {});
@@ -1332,6 +1549,11 @@
     let all = false;                       // a long board shows the top, you and your neighbours until asked for all
     const isMine = (row) => Boolean(S.ownHash && row.u === S.ownHash);
     const mineRow = () => board.rows.find(isMine);
+    const place = humanRanks(board.rows);          // the model and the crowd stand on the board but take no place
+    const rankCell = (row) => {
+      const at = place.get(row);
+      return h('td', { class: 'pboard__rank' }, at && at <= 3 ? h('span', { class: 'pmedal', data: { place: String(at) } }, String(at)) : at ? String(at) : '–');
+    };
     const rowNode = (row) => {
       const mine = isMine(row);
       const name = h('td', { class: 'pboard__name' }, h('span', { class: 'pboard__nick' }, row.nick || t('predict.anon')));
@@ -1339,24 +1561,27 @@
       else if (row.kind === 'model' || row.kind === 'crowd') name.append(h('span', { class: `ptag ptag--${row.kind}` }, t(`predict.tag.${row.kind}`)));
       else if (row.kind === 'player' && row.nick) name.append(reportControl(row));
       return h('tr', { class: 'pboard__row', tabIndex: -1, data: { kind: row.kind, mine: String(mine) } },
-        h('td', { class: 'pboard__rank' }, String(row.rank)), name, h('td', {}, String(row.n)),
+        rankCell(row), name, h('td', { class: 'pboard__n' }, String(row.n)),
         h('td', { class: 'pboard__pts' }, ptsText(rowPts(row))),
-        h('td', { class: 'pboard__acc' }, pctText(rowAcc(row))),
-        h('td', {}, row.streak === null || row.streak === undefined ? '–' : String(row.streak)));
+        h('td', { class: 'pboard__acc' }, pctText(rowAcc(row))));
     };
     const gapNode = (n) => h('tr', { class: 'pboard__gap' }, h('td', { colSpan: BOARD_COLUMNS.length },
       h('button', { type: 'button', class: 'pboard__more', on: { click: () => { all = true; paintRows(); } } },
         h('span', { class: 'pboard__dots', attrs: { 'aria-hidden': 'true' } }, '⋯'), t('predict.board.more', { n: groupThousands(n, lang()) }))));
     const toggle = h('button', { type: 'button', class: 'pbtn pbtn--small pboard__toggle', on: { click: () => { all = !all; paintRows(); } } });
+    // Three players or more: the top three stand on the podium, and the table (in board order) goes on
+    // from fourth place; sorted by another column it lists everyone again.
+    const podiumRows = board.rows.filter((row) => row.kind === 'player').slice(0, 3);
+    const onPodium = podiumRows.length === 3 ? new Set(podiumRows) : null;
     const paintRows = () => {
-      const rows = sortedRows(board.rows, sort);
-      const items = all ? rows.map((row) => ({ row }))
-        : boardWindow(rows, rows.findIndex(isMine), { top: 10, around: 5, always: (row) => row.kind === 'model' || row.kind === 'crowd' });
+      const sorted = sortedRows(board.rows, sort);
+      const rows = onPodium && !sort ? sorted.filter((row) => !onPodium.has(row)) : sorted;
+      const shape = { top: onPodium && !sort ? 7 : 10, around: 5, always: (row) => row.kind === 'model' || row.kind === 'crowd' };
+      const items = all ? rows.map((row) => ({ row })) : boardWindow(rows, rows.findIndex(isMine), shape);
       tbody.replaceChildren(...items.map((item) => (item.row ? rowNode(item.row) : gapNode(item.gap))));
-      const shortened = boardWindow(rows, rows.findIndex(isMine), { top: 10, around: 5, always: (row) => row.kind === 'model' || row.kind === 'crowd' }).some((item) => item.gap);
+      const shortened = boardWindow(rows, rows.findIndex(isMine), shape).some((item) => item.gap);
       toggle.hidden = !shortened;
       toggle.textContent = all ? t(mineRow() ? 'predict.board.fewer' : 'predict.board.top') : t('predict.board.all', { n: groupThousands(rows.length, lang()) });
-      if (jump) jump.hidden = !all;
     };
     const paintHead = () => headRow.replaceChildren(...BOARD_COLUMNS.map(([c, first]) => {
       const active = (sort || { col: 'rank' }).col === c;
@@ -1368,17 +1593,31 @@
           paintHead(); paintRows();
         } } }, t(`predict.col.${c}`), h('span', { class: 'pboard__arrow', attrs: { 'aria-hidden': 'true' } }, !sort ? '' : dir === 'asc' ? '▲' : dir === 'desc' ? '▼' : '')));
     }));
-    // In the full list your row can be far down: a button takes you there.
-    const jump = mineRow() ? h('button', { type: 'button', class: 'pbtn pbtn--small pboard__jump', on: { click: () => {
-      const row = tbody.querySelector('[data-mine="true"]');
+    // Where you stand and how far the next places are, and a button that takes you to your row (it shows
+    // the whole list first when your row is not in the short one).
+    const rivals = rivalsOf(board.rows, isMine, rowPts);
+    const standing = standingOf(board.rows, board.pct, board.players, isMine, rowPts);
+    const close = standing && !league ? standingCard(board, standing) : null;        // a league's header says your place
+    const jump = rivals && board.rows.length > 12 && !(onPodium && podiumRows.some(isMine)) ? h('button', { type: 'button', class: 'pbtn pbtn--small pboard__jump', on: { click: () => {
+      let row = tbody.querySelector('[data-mine="true"]');
+      if (!row) { all = true; paintRows(); row = tbody.querySelector('[data-mine="true"]'); }
       if (row) { row.scrollIntoView({ block: 'center', behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' }); row.focus({ preventScroll: true }); }
     } } }, t('predict.board.jump')) : null;
+    // On a phone the table keeps rank, name, points and accuracy; this brings the rest back (scrolling sideways).
+    const wrap = h('div', { class: 'pboard' });
+    const cols = h('button', { type: 'button', class: 'pbtn pbtn--small pboard__cols', on: { click: () => {
+      const wide = wrap.classList.toggle('pboard--wide');
+      cols.textContent = t(wide ? 'predict.board.cols.fewer' : 'predict.board.cols.more');
+    } } }, t('predict.board.cols.more'));
     paintHead();
     paintRows();
-    return h('div', { class: 'pboard' }, h('p', { class: 'pboard__key' }, t('predict.board.key')), jump,
+    if (close) wrap.dataset.hero = 'true';
+    wrap.append(...[close, onPodium ? podiumOf(podiumRows, place, isMine) : null].filter(Boolean), h('div', { class: 'pboard__tools' }, jump, cols),
       h('div', { class: 'pscroll' }, h('table', {}, h('thead', {}, headRow), tbody)),
       h('div', { class: 'pboard__foot' }, toggle,
-        h('p', { class: 'pboard__note' }, t('predict.board.note', { players: groupThousands(board.players || 0, lang()) }))));
+        h('p', { class: 'pboard__note' }, t(league ? 'predict.leagues.note' : 'predict.board.note', { players: groupThousands(board.players || 0, lang()) })),
+        h('details', { class: 'pboard__how' }, h('summary', {}, t('predict.board.how')), h('p', {}, t('predict.board.key')))));
+    return wrap;
   }
 
   function percentileNote(board, season) {
@@ -1386,33 +1625,28 @@
     const mine = seasonTotals(S.stats, season, S.boardAll ? undefined : S.league);
     if (!mine.n) return h('p', { class: 'pboard__me' }, t('predict.board.nonescored'));
     const beat = beatShare(board.pct, totalPoints(mine.n, mine.b), board.players);
-    const own = S.ownHash && board.rows.find((r) => r.u === S.ownHash);
-    return h('p', { class: 'pboard__me' }, own ? t('predict.board.you.listed', { rank: own.rank, beat })
-      : t('predict.board.you', { beat, pts: ptsText(totalPoints(mine.n, mine.b)), n: mine.n }));
+    // Your place is on the line above the table; this says only the share you beat, and the points behind it.
+    return h('p', { class: 'pboard__me' }, t('predict.board.you', { beat, pts: ptsText(totalPoints(mine.n, mine.b)), n: mine.n }));
   }
+
+  /* ---- leagues: private boards among friends, a page of their own -------------------------------- */
 
   /* The codes of the leagues a player is in: on the profile (so they follow a Google sign-in to another
      device) and, with the names, in this browser. */
   const profileLeagues = () => ((S.profile && Array.isArray(S.profile.leagues)) ? S.profile.leagues : []);
+  const inviteLink = (code) => `${location.origin}/predict/?join=${code}#leagues`;
 
-  function leaguesSection() {
+  /* The leaderboard's order on another plan: your leagues in a row of chips on top (the boards have a
+     switch), the one picked under a header of its own (its name, your place, the code to share), then its
+     board. Making or joining one sits behind a button once you are in a league; with none it is the page. */
+  function renderLeagues(root) {
     S.myLeagues = json(store.get('predict.leagues'), []);
-    const box = h('section', { class: 'pleagues' }, h('h2', {}, t('predict.leagues.title')), h('p', { class: 'pintro' }, t('predict.leagues.intro')));
-    const shown = h('div', { class: 'pleagues__board' });
-    const list = h('ul', { class: 'pleagues__list' });
-    const nameInput = h('input', { type: 'text', class: 'pfield', maxLength: 30, attrs: { 'aria-label': t('predict.leagues.name'), placeholder: t('predict.leagues.name') } });
-    const codeInput = h('input', { type: 'text', class: 'pfield', maxLength: 8, value: S.pendingJoin || '', attrs: { 'aria-label': t('predict.leagues.code'), placeholder: t('predict.leagues.code'), autocapitalize: 'characters' } });
-    const message = h('p', { class: 'pleagues__msg', attrs: { 'aria-live': 'polite' } });
-    message.textContent = S.leagueNote || (S.pendingJoin ? t('predict.leagues.invited') : '');
     const saveLocal = () => store.set('predict.leagues', JSON.stringify(S.myLeagues));
-    const inviteLink = (code) => `${location.origin}/predict/?join=${code}#boards`;
-
-    function paintList() {
-      list.replaceChildren(...S.myLeagues.map((entry) => h('li', { class: 'pleagues__item' },
-        h('button', { type: 'button', class: 'pchip', on: { click: () => showLeague(entry.code, shown) } }, h('span', {}, entry.name), h('code', {}, entry.code)),
-        shareButton({ title: entry.name, url: inviteLink(entry.code), label: t('predict.leagues.copyFor', { name: entry.name }) }),
-        confirmable(t('predict.leagues.leave'), t('predict.leagues.leave.q', { name: entry.name }), () => leave(entry), 'pbtn pbtn--small'))));
-    }
+    if (!S.myLeagues.some((e) => e.code === S.leagueShown)) S.leagueShown = S.myLeagues.length ? S.myLeagues[0].code : null;
+    const has = S.myLeagues.length > 0;
+    const open = !has || Boolean(S.pendingJoin) || Boolean(S.leaguesFormOpen);
+    const message = h('p', { class: 'pleagues__msg', attrs: { 'aria-live': 'polite' } }, S.leagueNote || (S.pendingJoin ? t('predict.leagues.invited') : ''));
+    const say = (text) => { message.textContent = text; };
 
     /* Join and the profile's list of codes go in one commit: the job purges memberships from that list. */
     const joinWrites = (code) => [...leagueJoinWrites(config, client.uid, code),
@@ -1421,6 +1655,8 @@
       if (!S.myLeagues.some((e) => e.code === code)) S.myLeagues.push({ code, name });
       saveLocal();
       S.profile = { ...S.profile, leagues: [...new Set([...profileLeagues(), code])] };
+      S.leagueShown = code;
+      S.leaguesFormOpen = false;
     };
     async function leave(entry) {
       try {
@@ -1429,70 +1665,110 @@
         S.myLeagues = S.myLeagues.filter((e) => e.code !== entry.code);
         saveLocal();
         S.profile = { ...S.profile, leagues: rest };
-        shown.replaceChildren();
-        paintList();
-        message.textContent = t('predict.leagues.left', { name: entry.name });
-      } catch (error) { message.textContent = errorText(error); }
+        S.leagueShown = null;
+        S.leagueNote = t('predict.leagues.left', { name: entry.name });
+        render();
+      } catch (error) { say(errorText(error)); }
     }
 
-    const create = h('button', { type: 'button', class: 'pbtn', on: { click: async () => {
+    const nameInput = h('input', { type: 'text', class: 'pfield', maxLength: 30, attrs: { 'aria-label': t('predict.leagues.name'), placeholder: t('predict.leagues.name') } });
+    const codeInput = h('input', { type: 'text', class: 'pfield pleagues__code', maxLength: 8, value: S.pendingJoin || '', attrs: { 'aria-label': t('predict.leagues.code'), placeholder: 'ABCD2345', autocapitalize: 'characters', spellcheck: 'false' } });
+    const create = h('button', { type: 'button', class: 'pbtn pbtn--primary', on: { click: async () => {
       const name = nameInput.value.trim();
-      if (name.length < 2) { message.textContent = t('predict.leagues.shortname'); return; }
+      if (name.length < 2) { say(t('predict.leagues.shortname')); return; }
       try {
         await ensureAccount();
         const code = newLeagueCode();
         await client.commit(leagueCreateWrites(config, client.uid, code, name));
         await client.commit(joinWrites(code));
         remember(code, name);
-        S.leagueNote = t('predict.leagues.created', { code });       // kept across the redraw, with a link to copy
-        S.leagueCode = code;
+        S.leagueNote = t('predict.leagues.created', { code });       // kept across the redraw; the header has the link to share
         render();
-      } catch (error) { message.textContent = errorText(error); }
+      } catch (error) { say(errorText(error)); }
     } } }, t('predict.leagues.create'));
-    const join = h('button', { type: 'button', class: 'pbtn', on: { click: async () => {
+    const join = h('button', { type: 'button', class: 'pbtn pbtn--primary', on: { click: async () => {
       const code = codeInput.value.trim().toUpperCase();
-      if (!isLeagueCode(code)) { message.textContent = t('predict.leagues.badcode'); return; }
+      if (!isLeagueCode(code)) { say(t('predict.leagues.badcode')); return; }
       try {
         await ensureAccount();
         const found = await client.get(`leagues/${code}`);
-        if (!found) { message.textContent = t('predict.leagues.nolatest'); return; }
+        if (!found) { say(t('predict.leagues.nolatest')); return; }
         await client.commit(joinWrites(code));
         remember(code, found.name);
         S.pendingJoin = null;
         S.leagueNote = t('predict.leagues.joined', { name: found.name });
-        S.leagueCode = null;
         render();
-      } catch (error) { message.textContent = errorText(error); }
+      } catch (error) { say(errorText(error)); }
     } } }, t('predict.leagues.join'));
-    box.append(list,
-      h('div', { class: 'pleagues__forms' },
-        h('label', { class: 'pfieldset' }, h('span', {}, t('predict.leagues.create')), h('span', { class: 'pinline' }, nameInput, create)),
-        h('label', { class: 'pfieldset' }, h('span', {}, t('predict.leagues.join')), h('span', { class: 'pinline' }, codeInput, join))),
-      message,
-      ...(S.leagueCode ? [h('div', { class: 'pleagues__invite' }, h('code', {}, S.leagueCode),
-        shareButton({ title: (S.myLeagues.find((e) => e.code === S.leagueCode) || {}).name || t('predict.leagues.title'), url: inviteLink(S.leagueCode), label: t('predict.leagues.copy') }))] : []),
-      shown);
-    paintList();
+    const card = (title, hint, field, button) => h('div', { class: 'pleagues__card' }, h('h3', {}, title), h('p', { class: 'pmuted' }, hint),
+      h('span', { class: 'pinline' }, field, button));
+    const forms = h('div', { class: 'pleagues__forms', hidden: !open },
+      card(t('predict.leagues.create'), t('predict.leagues.create.hint'), nameInput, create),
+      card(t('predict.leagues.join'), t('predict.leagues.join.hint'), codeInput, join));
+
+    if (!has) {
+      root.append(h('section', { class: 'pleagues pleagues--none' },
+        h('h2', {}, t('predict.leagues.title')), h('p', { class: 'pintro' }, t('predict.leagues.intro')), forms, message));
+    } else {
+      const entry = S.myLeagues.find((e) => e.code === S.leagueShown);
+      const add = h('button', { type: 'button', class: 'pbtn pbtn--small pleagues__add', title: t('predict.leagues.add'), attrs: { 'aria-expanded': String(open), 'aria-label': t('predict.leagues.add') }, on: { click: () => {
+        S.leaguesFormOpen = forms.hidden;
+        forms.hidden = !forms.hidden;
+        add.setAttribute('aria-expanded', String(!forms.hidden));
+        if (!forms.hidden) nameInput.focus();
+      } } }, h('span', { class: 'pleagues__addtext' }, t('predict.leagues.add')));
+      const chips = h('div', { class: 'pleagues__tabs', attrs: { role: 'group', 'aria-label': t('predict.leagues.yours') } },
+        S.myLeagues.map((one) => h('button', { type: 'button', class: 'pchip', attrs: { 'aria-pressed': String(one.code === entry.code) },
+          on: { click: () => { if (one.code === S.leagueShown) return; Object.assign(S, { leagueShown: one.code, leagueNote: null, leaguesFormOpen: false }); render(); } } }, one.name)));
+      const standing = h('p', { class: 'pleague__standing' });
+      const head = h('header', { class: 'pleague__head' },
+        h('div', { class: 'pleague__title' }, h('h2', {}, entry.name), standing),
+        h('div', { class: 'pleague__actions' },
+          h('span', { class: 'pleague__code' }, h('span', { class: 'pleague__codelabel' }, t('predict.leagues.code')), h('code', {}, entry.code)),
+          shareButton({ title: entry.name, url: inviteLink(entry.code), label: t('predict.leagues.copyFor', { name: entry.name }) }),
+          confirmable(t('predict.leagues.leave'), t('predict.leagues.leave.q', { name: entry.name }), () => leave(entry), 'pbtn pbtn--small pbtn--danger')));
+      const shown = h('div', { class: 'pleagues__board' });
+      root.append(h('div', { class: 'ptoolbar ptoolbar--leagues' }, chips, add), forms, message,
+        h('section', { class: 'pleague' }, head, shown));
+      showLeague(entry.code, shown, standing);
+    }
 
     // Leagues joined on another device: the profile has their codes, the names are one read each.
     const missing = profileLeagues().filter((code) => !S.myLeagues.some((e) => e.code === code));
-    if (missing.length && client.uid) {
+    if (missing.length && client.uid && !S.leaguesFetched) {
+      S.leaguesFetched = true;
       Promise.all(missing.map(async (code) => { try { const found = await client.get(`leagues/${code}`); return found ? { code, name: found.name } : null; } catch (error) { return null; } }))
         .then((found) => {
-          found.filter(Boolean).forEach((entry) => { if (!S.myLeagues.some((e) => e.code === entry.code)) S.myLeagues.push(entry); });
+          found.filter(Boolean).forEach((one) => { if (!S.myLeagues.some((e) => e.code === one.code)) S.myLeagues.push(one); });
           saveLocal();
-          if (found.some(Boolean)) paintList();
+          if (found.some(Boolean) && S.tab === 'leagues') render();
         });
     }
-    return box;
   }
 
-  async function showLeague(code, target) {
-    target.replaceChildren(h('p', { class: 'pload' }, t('predict.loading')));
+  /* One league's board, and your place in it on the header's line. A league just made has no board until
+     the job's next run (within the hour). */
+  async function showLeague(code, target, standing) {
+    const id = `league_${code}`;
+    const paint = (board) => {
+      if (!board) { target.replaceChildren(h('p', { class: 'pempty pleague__wait' }, t('predict.leagues.pending'))); return; }
+      target.replaceChildren(boardTable(board, { league: true }));
+      const players = board.players || 0;
+      const isMine = (row) => Boolean(S.ownHash && row.u === S.ownHash);
+      const near = rivalsOf(board.rows, isMine, rowPts);
+      standing.textContent = [t(players === 1 ? 'predict.leagues.players.one' : 'predict.leagues.players', { n: groupThousands(players, lang()) }),
+        near ? t('predict.leagues.place', { place: near.place }) : null,
+        near && near.ahead ? t('predict.leagues.chase', { pts: ptsText(near.toAhead), name: near.ahead.nick || t('predict.anon') }) : null].filter(Boolean).join(' · ');
+    };
+    const hit = cachedBoard(id);
+    if (hit && (!client.uid || S.ownHash)) { paint(hit.board); return; }
+    target.replaceChildren(h('div', { class: 'pboard pskeleton pboard--skeleton', attrs: { 'aria-busy': 'true', 'aria-label': t('predict.loading') } },
+      Array.from({ length: 6 }, () => h('span'))));
     try {
-      const board = await client.get(`boards/league_${code}`);
-      target.replaceChildren(boardTable(board));
-    } catch (error) { target.replaceChildren(emptyState(error, () => showLeague(code, target))); }
+      if (client.uid && !S.ownHash) S.ownHash = await uidHash(client.uid);
+      const board = await loadBoard(id);
+      if (target.isConnected) paint(board);
+    } catch (error) { if (target.isConnected) target.replaceChildren(emptyState(error, () => showLeague(code, target, standing))); }
   }
 
   /* ---- your playing style: an analysis of your settled picks, with tips -------------------------- */
@@ -1631,20 +1907,25 @@
     const side = document.getElementById('predict-side');
     const layout = document.querySelector('.playout');
     if (!side) return;
-    const show = SIDE_TABS.includes(S.tab);
+    const show = SIDE_TABS.includes(S.tab) && !tutorialOn();
     side.hidden = !show;
     if (layout) layout.dataset.side = String(show);
     if (!show) return;
-    const league = S.league;
+    const wanted = S.league;
     const season = S.index && S.index.season;
     if (!side.firstChild) side.append(h('div', { class: 'pside__card pskeleton', attrs: { 'aria-hidden': 'true' } }, h('span'), h('span'), h('span')));
+    let league = wanted;
     try {
       if (client.uid && S.stats === undefined) S.stats = await client.get(`stats/${client.uid}`);
       if (client.uid && !S.ownHash) S.ownHash = await uidHash(client.uid);
+      // Nothing of yours in this division yet: your season stays on screen, from the division you play.
+      const played = (one) => Boolean(season && S.stats && seasonTotals(S.stats, season, one).n);
+      if (!played(wanted)) league = LEAGUES.find(played) || wanted;
       if (season) await loadBoard(`season_${season}_${league}`);
     } catch (error) { /* the panel shows what it has */ }
-    if (S.league !== league || !SIDE_TABS.includes(S.tab)) return;
-    side.replaceChildren(sidePanel(season, league));
+    if (S.league !== wanted || !SIDE_TABS.includes(S.tab)) return;
+    side.replaceChildren(sidePanel(season, league, league !== wanted));
+    if (S.tab === 'tip') refreshRoundPick();
   }
 
   /* How many settled matches the stats hold, all seasons: the tip from the analysis is stamped with it. */
@@ -1667,7 +1948,7 @@
     renderSide();
   }
 
-  function sidePanel(season, league) {
+  function sidePanel(season, league, elsewhere = false) {
     const board = ((S.boards || {})[`season_${season}_${league}`] || {}).board || null;
     const mine = season && S.stats ? seasonTotals(S.stats, season, league) : { n: 0 };
     const nick = (S.profile && S.profile.nick) || t('predict.you');
@@ -1679,7 +1960,7 @@
     if (!mine.n) {
       card.classList.add('pside__card--empty');               // nothing of yours yet: on a narrow screen the matches come first
       const quiet = h('details', { class: 'pside__details', open: matchMedia('(min-width: 1000px)').matches }, h('summary', {}, t('predict.side.moreSummary')));
-      quiet.append(h('p', { class: 'pside__empty' }, t('predict.side.empty')), bellChart(board, null));
+      quiet.append(h('p', { class: 'pside__empty' }, t('predict.side.empty')));
       card.append(quiet);
       return card;
     }
@@ -1690,45 +1971,41 @@
     const own = board && S.ownHash ? board.rows.find((r) => r.u === S.ownHash) : null;
     const big = h('strong', { class: 'pside__score', data: { tone: points < 0 ? 'bad' : 'even' } }, ptsText(points));
     countUp(big, points, `${season}_${league}`);
-    card.append(h('div', { class: 'pside__hero' }, big, h('span', { class: 'pside__label' }, t('predict.side.pts')),
-      h('span', { class: 'pside__acc' }, t('predict.side.accLine', { acc: pctText(accuracyPercent(mine.n, mine.b)), n: mine.n }))));
+    card.append(h('div', { class: 'pside__hero' }, big, h('span', { class: 'pside__label' },
+      elsewhere ? t('predict.side.ptsIn', { league: LEAGUE_NAME[league] }) : t('predict.side.pts'))));
 
+    // Your tier in one line; what the tiers are is the bell's coloured bands (and the leaderboard's guide).
     if (beat !== null) {
       const tier = tierOf(beat);
       card.append(h('div', { class: 'pside__tier', data: { tier: tier.id } },
-        h('span', { class: 'pside__medal', attrs: { 'aria-hidden': 'true' } }),
+        h('span', { class: 'plevel', data: { tier: tier.id }, attrs: { 'aria-hidden': 'true' } }),
         h('span', {}, h('strong', {}, t(`predict.tier.${tier.id}`)), h('small', {},
-          own ? t('predict.side.rank', { rank: board.rows.filter((r) => r.kind === 'player' && r.rank <= own.rank).length, total: groupThousands(board.players || 0, lang()) }) : t('predict.side.beat', { beat })))));
-      // Progress through the tiers: 50, 75 and 90 % are the steps.
-      const track = h('div', { class: 'pside__track', attrs: { role: 'img', 'aria-label': t('predict.side.beat', { beat }) } },
-        h('span', { class: 'pside__fill', style: `width: 0%` }),
-        ...[50, 75, 90].map((at) => h('span', { class: 'pside__step', style: `left: ${at}%` })));
-      requestAnimationFrame(() => requestAnimationFrame(() => { track.firstChild.style.width = `${beat}%`; }));
-      card.append(track, h('p', { class: 'pside__next' }, tier.next
-        ? t('predict.side.next', { n: tier.toNext, tier: t(`predict.tier.${tier.next}`) }) : t('predict.side.top')));
+          own ? t('predict.side.rankBeat', { rank: humanRanks(board.rows).get(own) || own.rank, total: groupThousands(board.players || 0, lang()), beat })
+            : t('predict.side.beat', { beat })))));
     }
 
-    // The spread, the form, the numbers and the badges: open beside the matches on a wide screen, a tap away on a phone.
+    // The spread, the form and three numbers: open beside the matches on a wide screen, a tap away on a phone.
     const more = h('details', { class: 'pside__details', open: matchMedia('(min-width: 1000px)').matches }, h('summary', {}, t('predict.side.moreSummary')));
-    more.append(h('h3', { class: 'pside__h' }, t('predict.side.dist')), bellChart(board, points, beat));
+    const tier = beat !== null ? tierOf(beat) : null;
+    more.append(bellChart(board, points, beat, tier && (tier.next ? t('predict.side.next', { n: tier.toNext, tier: t(`predict.tier.${tier.next}`) }) : t('predict.side.top'))));
 
+    const cell = (value, label, toneOf) => h('div', { class: 'pside__cell', data: { tone: toneOf || 'even' } }, h('strong', {}, value), h('small', {}, label));
+    more.append(h('div', { class: 'pside__grid' },
+      cell(percentText(accuracyPercent(mine.n, mine.b), lang(), 1), t('predict.side.acc')),
+      cell(String(mine.n), t('predict.col.n')),
+      cell(ptsText(10 * mine.vm, true), t('predict.side.vm'), mine.vm > 0 ? 'good' : mine.vm < 0 ? 'bad' : 'even')));
+
+    // Form: a bar a round. All good rounds stand on the floor; a bad one hangs below a middle line.
     const form = roundForm(S.stats, season, league, 8);
     if (form.length) {
       const top = Math.max(0.1, ...form.map((f) => Math.abs(f.pts)));
-      more.append(h('h3', { class: 'pside__h' }, t('predict.side.form')),
-        h('div', { class: 'pside__form', attrs: { role: 'img', 'aria-label': t('predict.side.formAria', { n: form.length }) } },
+      const split = form.some((f) => f.pts < 0);
+      more.append(h('div', { class: 'pside__formbox' }, h('h3', { class: 'pside__h' }, t('predict.side.form')),
+        h('div', { class: 'pside__form', data: { split: String(split) }, attrs: { role: 'img', 'aria-label': t('predict.side.formAria', { n: form.length }) } },
           form.map((f) => h('span', { class: 'pside__bar', data: { tone: f.pts > 0 ? 'good' : f.pts < 0 ? 'bad' : 'even' },
             title: `${t('predict.round', { n: f.round })}: ${ptsText(f.pts, true)}` },
-            h('i', { style: `height: ${Math.max(4, (Math.abs(f.pts) / top) * 48)}%` }), h('small', {}, String(f.round))))));
+            h('i', { style: `height: ${Math.max(6, (Math.abs(f.pts) / top) * (split ? 50 : 100))}%` }), h('small', {}, String(f.round)))))));
     }
-
-    const streak = streakNow(league);
-    const cell = (value, label, toneOf) => h('div', { class: 'pside__cell', data: { tone: toneOf || 'even' } }, h('strong', {}, value), h('small', {}, label));
-    more.append(h('div', { class: 'pside__grid' },
-      cell(String(mine.n), t('predict.col.n')),
-      cell(accText(mine.vm), t('predict.stats.vm'), mine.vm > 0 ? 'good' : mine.vm < 0 ? 'bad' : 'even'),
-      cell(String(streak.current), t('predict.stats.streak')),
-      cell(avgText(mine.b / mine.n), t('predict.col.b'))));
     card.append(more);
     const tip = json(store.get(`predict.tip.${client.uid}`), null);
     if (tip && tip.id && tip.stamp !== statsTotalN()) refreshTip();          // new rounds have settled since it was worked out
@@ -1740,8 +2017,10 @@
     return card;
   }
 
-  /* The field as a bell curve: the part of it you beat is filled, your marker slides in. */
-  function bellChart(board, value, beat) {
+  /* The field as a bell curve, in the tiers' colours (the board's own 50th, 75th and 90th percentiles cut
+     it): the part you beat is filled strong, the rest faint, and your marker slides in. `caption`: a short
+     line under it (how far the next tier is). */
+  function bellChart(board, value, beat, caption = null) {
     const fit = board ? normalFit(board.pct) : null;
     const W = 280;
     const H = 110;
@@ -1767,9 +2046,29 @@
     const clipRect = svg('rect', { x: 0, y: 0, width: 0, height: H, class: 'pbell__clip' });
     clip.append(clipRect);
     defs.append(clip);
-    chart.append(defs, svg('path', { d: path, class: 'pbell__curve' }));
-    if (value !== null) chart.append(svg('path', { d: path, class: 'pbell__beat', 'clip-path': `url(#${clipId})` }));
-    chart.append(svg('line', { x1: 0, x2: W, y1: base, y2: base, class: 'pbell__axis' }));
+    // The tier bands, worst first: each is the curve clipped to its stretch of points.
+    const cut = (at) => (at === 0 ? 0 : Math.min(W, Math.max(0, x(board.pct[at]))));
+    const bands = TIERS.slice().reverse().map((tier, i, all) => {
+      const id = `${clipId}-${tier.id}`;
+      const from = cut(tier.at);
+      const to = i + 1 < all.length ? cut(all[i + 1].at) : W;
+      const band = svg('clipPath', { id });
+      band.append(svg('rect', { x: from, y: 0, width: Math.max(0, to - from), height: H }));
+      defs.append(band);
+      return { tier: tier.id, id };
+    });
+    const layer = (cls) => {
+      const g = svg('g', { class: cls });
+      bands.forEach((b) => g.append(svg('path', { d: path, class: 'pbell__band', 'data-tier': b.tier, 'clip-path': `url(#${b.id})` })));
+      return g;
+    };
+    chart.append(defs, layer('pbell__bands'));
+    if (value !== null) {
+      const strong = layer('pbell__bands pbell__bands--beat');
+      strong.setAttribute('clip-path', `url(#${clipId})`);
+      chart.append(strong);
+    }
+    chart.append(svg('path', { d: path, class: 'pbell__curve' }), svg('line', { x1: 0, x2: W, y1: base, y2: base, class: 'pbell__axis' }));
     const tick = (v, label, cls, up) => {
       const g = svg('g', { class: `pbell__mark ${cls}` });
       g.append(svg('line', { x1: x(v), x2: x(v), y1: up ? 10 : y(v), y2: base, class: 'pbell__line' }));
@@ -1795,8 +2094,8 @@
       you.style.transform = `translateX(${(x(fit.mean) - target).toFixed(1)}px)`;
       requestAnimationFrame(() => requestAnimationFrame(() => { clipRect.style.width = `${target.toFixed(1)}px`; you.style.transform = 'translateX(0)'; }));
     }
-    return h('figure', { class: 'pside__chart' }, chart,
-      h('figcaption', {}, value === null ? t('predict.side.distEmpty') : beat < 5 ? t('predict.side.beatLow') : t('predict.side.beat', { beat })));
+    // Your place and the share you beat are said once, under your tier; the chart only shows the spread.
+    return h('figure', { class: 'pside__chart' }, chart, value === null ? h('figcaption', {}, t('predict.side.distEmpty')) : caption ? h('figcaption', {}, caption) : null);
   }
 
   /* The headline number counts up once per visit, not on every redraw. */
@@ -1816,16 +2115,22 @@
 
   /* ---- how to play: a guide with a bar to try and a result to pick -------------------------------- */
 
-  function renderHow(root) {
+  /* The working bar and the scoring demo under it, for the guide and the tutorial; nothing here is saved.
+     `flags` records what the player has tried (moved the bar, fine-tuned it, picked a result) and `onFlag`
+     hears each the first time. */
+  function guideDemo(onFlag = () => {}) {
     const info = { home: t('predict.how.home'), away: t('predict.how.away') };
     const even = pickPercentages(0, DRAW_TENTHS.normal);
+    const flags = { moved: false, fine: false, picked: false };
+    const raise = (name) => { if (!flags[name]) { flags[name] = true; onFlag(name); } };
     let picked = null;
     const demoSlider = pickSlider(info, { g: 60, k: DRAW_TENTHS.normal }, { onInput: () => paint(),
       onStart: () => demo.classList.add('is-dragging'), onEnd: () => demo.classList.remove('is-dragging') });
+    const first = demoSlider.percents();
     const reading = h('p', { class: 'pcard__read' });
     const score = h('div', { class: 'pguide__score', attrs: { 'aria-live': 'polite' } }, h('p', { class: 'pmuted' }, t('predict.how.pick')));
     const results = ['home_win', 'draw', 'away_win'].map((o) => h('button', { type: 'button', class: 'pbtn pbtn--small', data: { outcome: o },
-      attrs: { 'aria-pressed': 'false' }, on: { click: () => { picked = o; results.forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.outcome === o))); paint(); } } },
+      attrs: { 'aria-pressed': 'false' }, on: { click: () => { picked = o; raise('picked'); results.forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.outcome === o))); paint(); } } },
       t(`predict.how.r.${o}`)));
 
     function paint() {
@@ -1833,6 +2138,7 @@
       demoSlider.paint();
       reading.textContent = pickReading(p, info);
       reset.hidden = Boolean(demoSlider.pos.p) || demoSlider.pos.k === DRAW_TENTHS.normal;
+      if (p.some((x, i) => Math.abs(x - first[i]) >= 5)) raise('moved');
       if (!picked) return;
       const you = scoreOwnPick(p, even.map((x) => x / 100), picked);
       const evenBrier = you.brier + you.vsModel;
@@ -1851,24 +2157,34 @@
       const on = !demoSlider.pos.p;
       demoSlider.setFree(on);
       demoFine.setAttribute('aria-pressed', String(on));
+      if (on) raise('fine');
       paint();
     });
     const demo = h('div', { class: 'pcard pguide__demo', data: { state: 'tipped' } },
       matchHead(info, t('predict.how.try')), demoSlider.control,
       h('div', { class: 'pguide__demofoot' }, reading, h('span', { class: 'pcard__acts' }, reset, demoFine)));
+    const pickRow = h('div', { class: 'pguide__results', attrs: { role: 'group', 'aria-label': t('predict.how.pick') } }, results);
+    paint();
+    return { demo, pickRow, score, flags };
+  }
+
+  function renderHow(root) {
+    const { demo, pickRow, score } = guideDemo();
     const step = (n, title, ...kids) => h('section', { class: 'pguide__step' },
       h('h2', {}, h('span', { class: 'pguide__n', attrs: { 'aria-hidden': 'true' } }, String(n)), title), ...kids);
     const faq = ['1', '2', '3', '4'].map((n) => h('details', { class: 'pdetails pguide__q' },
       h('summary', {}, t(`predict.how.q${n}`)), h('p', {}, t(`predict.how.a${n}`))));
+    faq.push(h('details', { class: 'pdetails pguide__q' }, h('summary', {}, t('predict.how.qTiers')), tierGuide(null)));
 
     root.append(h('article', { class: 'pguide' },
       h('h2', { class: 'pguide__title' }, t('predict.how.title')),
       h('p', { class: 'pguide__lead' }, t('predict.how.lead')),
+      h('button', { type: 'button', class: 'pbtn pbtn--small pguide__again', on: { click: () => { S.replay = true; S.tut = null; render(); window.scrollTo(0, 0); } } },
+        t('predict.tut.again')),
       step(1, t('predict.how.s1.title'), h('p', {}, t('predict.how.s1.text')), demo),
       step(2, t('predict.how.s2.title'), h('p', {}, t('predict.how.s2.text'))),
       step(3, t('predict.how.s3.title'), h('p', {}, t('predict.how.s3.text'))),
-      step(4, t('predict.how.s4.title'), h('p', {}, t('predict.how.s4.text')),
-        h('div', { class: 'pguide__results', attrs: { role: 'group', 'aria-label': t('predict.how.pick') } }, results), score,
+      step(4, t('predict.how.s4.title'), h('p', {}, t('predict.how.s4.text')), pickRow, score,
         h('p', {}, t('predict.how.s4.bold'))),
       step(5, t('predict.how.s5.title'), h('p', {}, t('predict.how.s5.text'))),
       step(6, t('predict.how.s6.title'), h('p', {}, t('predict.how.s6.text'))),
@@ -1876,7 +2192,79 @@
         h('p', { class: 'pmuted' }, h('a', { href: '/personvern.html' }, t('predict.foot.privacy')))),
       h('button', { type: 'button', class: 'pbtn pbtn--primary pguide__cta', on: { click: () => { store.set('predict.intro', 'seen'); openTab('tip'); window.scrollTo(0, 0); } } },
         t('predict.how.cta'))));
-    paint();
+  }
+
+  /* ---- the tutorial: the first visit, one step at a time, each with something to do ------------------- */
+
+  /* Shown in place of the tip, table and guide views until it has been finished once (a player with an
+     account has played before, so is never asked). `need` is what a step waits for: a guideDemo flag. The last step offers Google sign-in (or playing anonymously) to
+     a player with no account yet. */
+  const TUTORIAL = [
+    { id: 'welcome' },
+    { id: 'drag', demo: true, need: 'moved' },
+    { id: 'fine', demo: true, need: 'fine' },
+    { id: 'score', demo: true, results: true, need: 'picked' },
+    { id: 'lock' },
+    { id: 'points' },
+    { id: 'table' },
+    { id: 'account', account: true },
+  ];
+  const tutorialDue = () => store.get('predict.intro') !== 'seen' && !client.uid;
+  function tutorialOn() {
+    if (S.replay && S.tab !== 'how') S.replay = false;
+    return Boolean(S.replay) || (tutorialDue() && ['tip', 'table', 'how'].includes(S.tab));
+  }
+
+  function renderTutorial(root) {
+    const T = S.tut || (S.tut = { step: 0, passed: new Set() });
+    const steps = TUTORIAL.filter((s) => !s.account || !client.uid);
+    const demo = guideDemo((flag) => { T.passed.add(flag); if (gate) gate(); });
+    const google = googleFlow(t('predict.google.signin'), switchToGoogle);
+    const body = h('div', { class: 'ptut__body' });
+    const hint = h('p', { class: 'ptut__hint', attrs: { 'aria-live': 'polite' } });
+    const back = h('button', { type: 'button', class: 'pbtn', on: { click: () => { T.step -= 1; show(true); } } }, t('predict.tut.back'));
+    const next = h('button', { type: 'button', class: 'pbtn pbtn--primary', on: { click: () => {
+      if (T.step < steps.length - 1) { T.step += 1; show(true); return; }
+      store.set('predict.intro', 'seen');
+      S.replay = false; S.tut = null;
+      openTab('tip');
+      window.scrollTo(0, 0);
+    } } });
+    const leave = S.replay ? h('button', { type: 'button', class: 'pbtn pbtn--small ptut__leave', on: { click: () => { S.replay = false; S.tut = null; render(); } } }, t('predict.tut.close')) : null;
+
+    // What the step waits for: the Next button and the line above it. Only these change while the bar is dragged.
+    function gate() {
+      const s = steps[T.step];
+      const waiting = Boolean(s.need) && !T.passed.has(s.need);
+      next.disabled = waiting;
+      hint.dataset.ok = String(!waiting && Boolean(s.need));
+      hint.textContent = !s.need ? '' : waiting ? t(`predict.tut.need.${s.need}`) : t('predict.tut.ok');
+    }
+    function show(moved) {
+      const s = steps[T.step];
+      const title = h('h2', { class: 'ptut__title', attrs: { tabindex: '-1' } }, t(`predict.tut.${s.id}.title`));
+      body.replaceChildren(...[
+        h('ol', { class: 'ptut__dots', attrs: { 'aria-hidden': 'true' } },
+          steps.map((_, i) => h('li', { data: { state: i < T.step ? 'done' : i === T.step ? 'now' : 'todo' } }))),
+        h('p', { class: 'ptut__count' }, t('predict.tut.step', { n: T.step + 1, m: steps.length })),
+        title,
+        h('p', { class: 'ptut__text' }, t(`predict.tut.${s.id}.text`)),
+        s.demo ? demo.demo : null,
+        s.results ? demo.pickRow : null,
+        s.results ? demo.score : null,
+        s.results ? h('p', { class: 'ptut__text' }, t('predict.how.s4.bold')) : null,
+        s.account ? h('div', { class: 'pgoogle ptut__google' }, google.start, google.holder, google.message) : null].filter(Boolean));
+      back.hidden = T.step === 0;
+      const last = T.step === steps.length - 1;
+      next.textContent = t(s.account ? 'predict.tut.anon' : last ? 'predict.tut.finish' : 'predict.tut.next');
+      next.classList.toggle('pbtn--primary', !s.account);
+      google.start.classList.toggle('pbtn--primary', Boolean(s.account));
+      gate();
+      if (moved) title.focus({ preventScroll: true });
+    }
+    root.append(h('article', { class: 'ptut', attrs: { 'aria-label': t('predict.tut.label') } }, body, hint,
+      h('div', { class: 'ptut__nav' }, leave, back, next)));
+    show(false);
   }
 
   /* ---- you: profile, stats, Google, deletion --------------------------------------------------------------------- */
@@ -1890,7 +2278,8 @@
       if (S.stats === undefined) S.stats = await client.get(`stats/${client.uid}`);
     } catch (error) { body.replaceChildren(emptyState(error, render)); return; }
     if (S.tab !== 'me') return;
-    body.replaceChildren(profileSection(), statsSection(), analysisSection(), dataSection(true));
+    // Who you are, then your numbers; the settings and your data at the bottom.
+    body.replaceChildren(profileSection(), statsSection(), analysisSection(), settingsSection(), dataSection(true));
   }
 
   function profileSection() {
@@ -1916,9 +2305,19 @@
         message.textContent = t('predict.nick.saved');
       } catch (error) { message.textContent = error.code === 'denied' ? t('predict.nick.taken') : errorText(error); }
     } } }, t('predict.nick.change'));
+    return h('section', { class: 'ppanel pme' }, h('h2', {}, t('predict.me.title')),
+      h('div', { class: 'pfieldset' }, h('label', { attrs: { for: 'pnick' } }, t('predict.me.nick')), h('div', { class: 'pinline' }, nick, change)), message);
+  }
+
+  function settingsSection() {
+    const profile = S.profile || {};
     const hidden = h('input', { type: 'checkbox', class: 'pswitch', checked: Boolean(profile.hidden), attrs: { role: 'switch' }, on: { change: async (e) => {
       try { await client.commit(profileUpdateWrites(config, client.uid, { hidden: e.target.checked })); S.profile = { ...S.profile, hidden: e.target.checked }; }
       catch (error) { e.target.checked = !e.target.checked; toast(errorText(error), 'error'); }
+    } } });
+    const always = h('input', { type: 'checkbox', class: 'pswitch', checked: S.alwaysFine, attrs: { role: 'switch' }, on: { change: (e) => {
+      S.alwaysFine = e.target.checked;
+      store.set('predict.fine.always', S.alwaysFine ? 'on' : 'off');
     } } });
     // The clubs of the rounds already loaded, as suggestions.
     const ids = new Map();
@@ -1935,17 +2334,24 @@
         catch (error) { toast(errorText(error), 'error'); }
       } } });
     paintCrest(profile.club || '');
-    return h('section', { class: 'ppanel pme' }, h('h2', {}, t('predict.me.title')),
-      h('div', { class: 'pfieldset' }, h('label', { attrs: { for: 'pnick' } }, t('predict.me.nick')), h('div', { class: 'pinline' }, nick, change)), message,
+    return h('section', { class: 'ppanel psettings' }, h('h2', {}, t('predict.me.settings')),
       h('label', { class: 'pswitch-row' }, h('span', {}, h('strong', {}, t('predict.me.hidden')), h('small', {}, t('predict.me.hiddenHelp'))), hidden),
+      h('label', { class: 'pswitch-row' }, h('span', {}, h('strong', {}, t('predict.me.fineAlways')), h('small', {}, t('predict.me.fineAlwaysHelp'))), always),
       h('div', { class: 'pfieldset' }, h('label', { attrs: { for: 'pclub' } }, t('predict.me.club')), h('div', { class: 'pinline pclub' }, clubCrest, club), list));
   }
 
   function statsSection() {
-    const season = S.index && S.index.season;
+    const current = S.index && S.index.season;
+    const withData = statsSeasons(S.stats);
+    const seasons = [...new Set([current, ...withData].filter(Boolean))].sort((a, b) => b - a);
+    // The season in view: the one picked, else this one, else the newest you have played.
+    const season = S.meSeason && seasons.includes(S.meSeason) ? S.meSeason : current && withData.includes(current) ? current : withData[0] || current;
     const totals = season ? seasonTotals(S.stats, season) : { n: 0, ab: 0, ar: 0, b: 0, r: 0, vm: 0, rounds: 0 };
-    const streak = streakNow();
-    const box = h('section', { class: 'ppanel pstats' }, h('h2', {}, t('predict.stats.title')));
+    const isCurrent = season === current;
+    const seasonPick = seasons.length > 1 ? h('select', { class: 'pfield pfield--pick', attrs: { 'aria-label': t('predict.season.pick') },
+      on: { change: (e) => { S.meSeason = Number(e.target.value); render(); } } },
+      seasons.map((x) => h('option', { value: String(x), selected: x === season }, String(x)))) : null;
+    const box = h('section', { class: 'ppanel pstats' }, h('div', { class: 'pstats__head' }, h('h2', {}, t('predict.stats.title')), seasonPick));
     if (!totals.n) { box.append(h('p', { class: 'pempty' }, t('predict.stats.none'))); return box; }
     const tone = (value) => (value > 0.00005 ? 'good' : value < -0.00005 ? 'bad' : 'even');
     const big = (label, value, toneOf) => h('div', { class: 'pstat', data: { tone: toneOf || 'even' } }, h('dd', {}, value), h('dt', {}, label));
@@ -1953,40 +2359,150 @@
       big(t('predict.stats.pts'), ptsText(totalPoints(totals.n, totals.b))),
       big(t('predict.stats.acc'), pctText(accuracyPercent(totals.n, totals.b))),
       big(t('predict.col.n'), String(totals.n)),
-      big(t('predict.stats.vm'), accText(totals.vm), tone(totals.vm))));
+      big(t('predict.stats.vm'), ptsText(10 * totals.vm, true), tone(totals.vm))));
+    const series = seasonSeries(S.stats, season);
+    const high = seasonHighlights(series);
+    if (series.length >= 2) {
+      box.append(h('section', { class: 'pseason' }, h('div', { class: 'pseason__head' }, h('h3', {}, t('predict.season.chart')),
+        shareButton({ title: () => `${t('predict.title')} · ${t('predict.season.shareTitle', { season })}`, className: 'pseason__share',
+          image: () => sharePredictSeason(season, totals, series) })),
+        seasonChart(series),
+        h('ul', { class: 'pseason__facts' },
+          h('li', {}, t('predict.season.rounds', { n: high.rounds })),
+          h('li', {}, t('predict.season.best', { round: high.best.round, pts: ptsText(high.best.pts, true) })),
+          h('li', {}, t('predict.season.beat', { n: high.beat, rounds: high.rounds })))));
+    }
     const small = (label, value) => [h('dt', {}, label), h('dd', {}, value)];
     box.append(h('dl', { class: 'pstats__more' },
-      small(t('predict.col.b'), avgText(totals.b / totals.n)), small(t('predict.stats.streak'), String(streak.current)),
-      small(t('predict.stats.bestStreak'), String(streak.best))));
-    const badges = badgesFor({ tips: totals.n, totals, streak: streak.best });
-    box.append(h('h3', {}, t('predict.badges')), h('ul', { class: 'pbadges' }, badges.map((b) => h('li', { class: 'pbadge pbadge--b', data: { earned: String(b.earned) } },
-      h('span', { attrs: { 'aria-hidden': 'true' } }, b.earned ? '✓' : '○'), t(`predict.badge.${b.id}`)))));
+      small(t('predict.col.b'), avgText(totals.b / totals.n))));
+    if (isCurrent) {
+      const badges = badgesFor({ tips: totals.n, totals });
+      box.append(h('h3', {}, t('predict.badges')), h('ul', { class: 'pbadges' }, badges.map((b) => h('li', { class: 'pbadge pbadge--b', data: { earned: String(b.earned) } },
+        h('span', { attrs: { 'aria-hidden': 'true' } }, b.earned ? '✓' : '○'), t(`predict.badge.${b.id}`)))));
+    }
     const chart = h('div', { class: 'pcal' });
     box.append(totals.n >= 30 ? h('button', { type: 'button', class: 'pbtn', on: { click: (e) => { e.currentTarget.remove(); calibration(chart); } } }, t('predict.cal.show'))
       : h('p', { class: 'pmuted' }, t('predict.cal.later', { n: 30 - totals.n })), chart);
     return box;
   }
 
-  /* The streak in one division: its rounds the job has scored, completed when you tipped every match.
-     (A round the job has not scored yet is not counted as missed: the clock alone says it is over,
-     but the scores arrive with the next hourly run.) */
-  function streakFor(league) {
-    const rows = (S.stats && S.stats.rounds) || {};
-    let started = false;
-    const flags = [];
-    for (const round of leagueRounds(league).filter((r) => roundScored(r, now()))) {
-      const mine = rows[round.key];
-      if (mine) started = true;
-      if (started) flags.push(Boolean(mine) && mine.n >= round.n);
+  /* Accuracy through the season: your running accuracy against the model's over the same matches, one point
+     a round. Tap or drag across it (or use the arrow keys) to read any round. */
+  function seasonChart(series) {
+    const W = 320;
+    const H = 176;
+    const left = 40;
+    const right = 8;
+    const top = 10;
+    const bottom = 24;
+    const values = series.flatMap((r) => [r.acc, r.model]);
+    let lo = Math.floor(Math.min(...values) - 0.5);
+    let hi = Math.ceil(Math.max(...values) + 0.5);
+    if (hi - lo < 3) { hi += 1; lo -= 1; }
+    const first = series[0].round;
+    const last = series[series.length - 1].round;
+    const x = (round) => left + (last === first ? 0.5 : (round - first) / (last - first)) * (W - left - right);
+    const y = (value) => top + ((hi - value) / (hi - lo)) * (H - top - bottom);
+    const svgNode = svg('svg', { viewBox: `0 0 ${W} ${H}`, class: 'pseason__svg', role: 'img', tabindex: '0',
+      'aria-label': t('predict.season.chartAria', { you: pctText(series[series.length - 1].acc), round: last, model: pctText(series[series.length - 1].model) }) });
+    const text = (px, py, value, attrs = {}) => { const node = svg('text', { x: px, y: py, class: 'pseason__tick', ...attrs }); node.textContent = value; return node; };
+    for (const value of [lo, (lo + hi) / 2, hi]) {
+      svgNode.append(svg('line', { x1: left, x2: W - right, y1: y(value), y2: y(value), class: 'pseason__grid' }),
+        text(left - 5, y(value) + 3, `${Math.round(value * 10) / 10}%`, { 'text-anchor': 'end' }));
     }
-    return computeStreak(flags);
+    const ticks = last - first >= 2 ? [first, Math.round((first + last) / 2), last] : [first, last];
+    [...new Set(ticks)].forEach((round, i, all) => svgNode.append(text(x(round), H - 7, String(round), { 'text-anchor': i === 0 ? 'start' : i === all.length - 1 ? 'end' : 'middle' })));
+    const line = (key) => series.map((r, i) => `${i ? 'L' : 'M'}${x(r.round).toFixed(1)} ${y(r[key]).toFixed(1)}`).join(' ');
+    svgNode.append(svg('path', { d: line('model'), class: 'pseason__line pseason__line--model' }), svg('path', { d: line('acc'), class: 'pseason__line pseason__line--you' }));
+    const rule = svg('line', { y1: top, y2: H - bottom, class: 'pseason__rule' });
+    const dotYou = svg('circle', { r: 3.5, class: 'pseason__dot pseason__dot--you' });
+    const dotModel = svg('circle', { r: 3, class: 'pseason__dot pseason__dot--model' });
+    svgNode.append(rule, dotModel, dotYou);
+    const caption = h('figcaption', { attrs: { 'aria-live': 'polite' } });
+    const legend = h('p', { class: 'pseason__legend' }, h('span', { class: 'pseason__key pseason__key--you' }, t('predict.you')), h('span', { class: 'pseason__key pseason__key--model' }, t('predict.model')));
+    let at = series.length - 1;
+    const show = (i) => {
+      at = Math.max(0, Math.min(series.length - 1, i));
+      const r = series[at];
+      rule.setAttribute('x1', x(r.round)); rule.setAttribute('x2', x(r.round));
+      dotYou.setAttribute('cx', x(r.round)); dotYou.setAttribute('cy', y(r.acc));
+      dotModel.setAttribute('cx', x(r.round)); dotModel.setAttribute('cy', y(r.model));
+      caption.textContent = t('predict.season.chartTip', { round: r.round, you: pctText(r.acc), model: pctText(r.model) });
+    };
+    const nearest = (event) => {
+      const box = svgNode.getBoundingClientRect();
+      const px = ((event.clientX - box.left) / box.width) * W;
+      let best = 0;
+      series.forEach((r, i) => { if (Math.abs(x(r.round) - px) < Math.abs(x(series[best].round) - px)) best = i; });
+      show(best);
+    };
+    svgNode.addEventListener('pointerdown', nearest);
+    svgNode.addEventListener('pointermove', (event) => { if (event.pointerType === 'mouse' || event.buttons) nearest(event); });
+    svgNode.addEventListener('keydown', (event) => {
+      const step = { ArrowLeft: -1, ArrowRight: 1, Home: -series.length, End: series.length }[event.key];
+      if (step === undefined) return;
+      event.preventDefault();
+      show(at + step);
+    });
+    show(at);
+    return h('figure', { class: 'pseason__fig' }, legend, svgNode, caption);
   }
 
-  /* One division's streak, or (no division) the better of the two for the "Me" tab. */
-  function streakNow(league) {
-    if (!(S.index && S.index.season)) return { current: 0, best: 0, freezes: 0 };
-    if (league) return streakFor(league);
-    return LEAGUES.map(streakFor).reduce((best, one) => (one.best > best.best || one.current > best.current ? one : best));
+  /* The season as a picture, in the share sheet's frame: the three figures, and the accuracy line of
+     you and the model through the rounds. Resolves to a PNG blob. */
+  async function sharePredictSeason(season, totals, series) {
+    const { ctx, canvas } = await shareCanvas();
+    const room = shareFrame(ctx, `${t('predict.title')} · ${t('predict.season.shareTitle', { season })}`);
+    const u = shareU();
+    const tall = shareTall();
+    const stats = [[ptsText(totalPoints(totals.n, totals.b)), t('predict.stats.pts'), SC.ink],
+      [pctText(accuracyPercent(totals.n, totals.b)), t('predict.stats.acc'), SC.ink],
+      [ptsText(10 * totals.vm, true), t('predict.stats.vm'), totals.vm < 0 ? SC.badInk : SC.accentInk]];
+    const gap = 20 * u;
+    const w = (room.w - gap * 2) / 3;
+    const figureH = (tall ? 150 : 118) * u;
+    stats.forEach(([value, label, color], i) => {
+      const px = room.x + i * (w + gap);
+      shareRect(ctx, px, room.y, w, figureH, 16, SC.panel);
+      paintText(ctx, value, px + w / 2, room.y + figureH * 0.56, { size: 44 * u, weight: 800, wide: true, color, align: 'center', maxWidth: w - 24, fit: true });
+      paintText(ctx, label, px + w / 2, room.y + figureH * 0.86, { size: 17 * u, weight: 600, color: SC.muted, align: 'center', maxWidth: w - 24, fit: true });
+    });
+    // The chart fills what is left of the room.
+    const area = { x: room.x + 52 * u, y: room.y + figureH + gap * 2.2, w: room.w - 52 * u, h: room.h - figureH - gap * 2.2 - 30 * u };
+    area.h = Math.min(area.h, area.w * (tall ? 1 : 0.55));          // not stretched to fill a tall picture
+    const values = series.flatMap((r) => [r.acc, r.model]);
+    let lo = Math.floor(Math.min(...values) - 0.5);
+    let hi = Math.ceil(Math.max(...values) + 0.5);
+    if (hi - lo < 3) { hi += 1; lo -= 1; }
+    const first = series[0].round;
+    const last = series[series.length - 1].round;
+    const px = (round) => area.x + (last === first ? 0.5 : (round - first) / (last - first)) * area.w;
+    const py = (value) => area.y + ((hi - value) / (hi - lo)) * area.h;
+    ctx.lineWidth = 1;
+    for (const value of [lo, (lo + hi) / 2, hi]) {
+      ctx.strokeStyle = SC.faint;
+      ctx.globalAlpha = 0.35;
+      ctx.beginPath(); ctx.moveTo(area.x, py(value)); ctx.lineTo(area.x + area.w, py(value)); ctx.stroke();
+      ctx.globalAlpha = 1;
+      paintText(ctx, `${Math.round(value * 10) / 10}%`, area.x - 10 * u, py(value) + 5 * u, { size: 15 * u, weight: 600, color: SC.muted, align: 'right' });
+    }
+    paintText(ctx, String(first), area.x, area.y + area.h + 24 * u, { size: 15 * u, weight: 600, color: SC.muted });
+    paintText(ctx, String(last), area.x + area.w, area.y + area.h + 24 * u, { size: 15 * u, weight: 600, color: SC.muted, align: 'right' });
+    const stroke = (key, color, width, dash) => {
+      ctx.strokeStyle = color; ctx.lineWidth = width; ctx.setLineDash(dash); ctx.lineJoin = 'round'; ctx.lineCap = 'round';
+      ctx.beginPath();
+      series.forEach((r, i) => { if (i) ctx.lineTo(px(r.round), py(r[key])); else ctx.moveTo(px(r.round), py(r[key])); });
+      ctx.stroke(); ctx.setLineDash([]);
+    };
+    stroke('model', SC.muted, 3 * u, [8 * u, 7 * u]);
+    stroke('acc', SC.accent, 5 * u, []);
+    const end = series[series.length - 1];
+    ctx.fillStyle = SC.accent;
+    ctx.beginPath(); ctx.arc(px(end.round), py(end.acc), 7 * u, 0, Math.PI * 2); ctx.fill();
+    const keyY = area.y - 20 * u;
+    const modelWidth = paintText(ctx, t('predict.model'), area.x + area.w, keyY, { size: 16 * u, weight: 700, color: SC.muted, align: 'right' });
+    paintText(ctx, t('predict.you'), area.x + area.w - modelWidth - 30 * u, keyY, { size: 16 * u, weight: 700, color: SC.accentInk, align: 'right' });
+    return shareBlob(canvas);
   }
 
   /* Calibration, once, on request: the same settled picks the playing-style analysis reads, so the
@@ -2136,14 +2652,14 @@
   function resetLocal({ keepSession = false } = {}) {
     for (const key of keysToReset(store.keys(), keepSession ? sessionKey(config) : null)) store.remove(key);
     Object.values(S.timers).forEach((timer) => clearTimeout(timer));
-    Object.assign(S, { data: {}, drafts: {}, status: {}, timers: {}, loading: {}, roundAt: {}, ownHash: null, stats: undefined,
+    Object.assign(S, { meSeason: undefined, alwaysFine: false, data: {}, drafts: {}, status: {}, timers: {}, loading: {}, roundAt: {}, ownHash: null, stats: undefined,
       profile: undefined, history: undefined, historyAt: 0, historyLoad: null, boards: {}, boardShown: null, tables: {}, myLeagues: [],
-      counted: new Set(), revealSeen: new Set(), ringWas: {}, leagueNote: null, calibration: null });
+      tut: null, replay: false, counted: new Set(), revealSeen: new Set(), ringWas: {}, leagueNote: null, leagueShown: null, leaguesFormOpen: false, leaguesFetched: false, calibration: null });
   }
 
   /* ---- the shell: a view of the site (app.js mounts it; PredictGame below) ------------------------------- */
 
-  const TABS = ['tip', 'table', 'boards', 'me'];
+  const TABS = ['tip', 'table', 'boards', 'leagues', 'me'];
   let active = false;                 // the view is on show; the clock and the address are the game's only then
 
   function renderTabs() {
@@ -2160,10 +2676,13 @@
     document.title = pageTitle();
     const root = document.getElementById('predict-view');
     root.replaceChildren();
-    root.dataset.tab = S.tab;
-    if (S.tab === 'tip') renderTip(root);
+    const tutorial = tutorialOn();
+    root.dataset.tab = tutorial ? 'how' : S.tab;
+    if (tutorial) renderTutorial(root);
+    else if (S.tab === 'tip') renderTip(root);
     else if (S.tab === 'table') renderTable(root);
     else if (S.tab === 'boards') renderBoards(root);
+    else if (S.tab === 'leagues') renderLeagues(root);
     else if (S.tab === 'how') renderHow(root);
     else renderMe(root);
     renderSide();
@@ -2176,9 +2695,9 @@
     render();
   }
 
-  /* Each section has an address (#table, #boards, #me), so a link can open it and Back works. */
+  /* Each section has an address (#table, #boards, #leagues, #me), so a link can open it and Back works. */
   function openTab(tab) {
-    if (tab !== S.tab) { S.leagueNote = null; S.leagueCode = null; }
+    if (tab !== S.tab) { S.leagueNote = null; S.leaguesFormOpen = false; }
     S.tab = tab;
     const hash = tab === 'tip' ? '' : `#${tab}`;
     if (location.hash !== hash) history.pushState(null, '', hash || location.pathname + location.search);
@@ -2204,9 +2723,10 @@
     S.lastTick = now();
     if (kicked || badge.dataset.status !== roundStatus(round, now())) { ensureRound(round, true).then(render); return; }
     badge.replaceWith(Object.assign(statusBadge(round), { id: 'predict-badge' }));
+    document.querySelector('.pnav__status')?.replaceWith(statusLine(round));
   }, 30000);
 
-  /* An invite link (/predict/?join=CODE) opens the boards with the code filled in; joining is still a tap. */
+  /* An invite link (/predict/?join=CODE) opens the mini-leagues with the code filled in; joining is still a tap. */
   function readInvite() {
     try {
       const params = new URLSearchParams(location.search);
@@ -2215,7 +2735,7 @@
       S.pendingJoin = code;
       params.delete('join');
       const rest = params.toString();
-      history.replaceState(history.state, '', `${location.pathname}${rest ? `?${rest}` : ''}#boards`);
+      history.replaceState(history.state, '', `${location.pathname}${rest ? `?${rest}` : ''}#leagues`);
     } catch (error) { /* no address bar to read */ }
   }
 
@@ -2224,7 +2744,6 @@
     S.tab = tabFromHash();
     const remembered = store.get('predict.league');
     if (LEAGUES.includes(remembered)) S.league = remembered;
-    S.fine = store.get('predict.fine') === 'on';           // fine-tune: the last choice is the default for a new card
     await loadIndex();
     if (client.uid) loadProfile();
     render();

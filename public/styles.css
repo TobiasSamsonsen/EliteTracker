@@ -6479,6 +6479,8 @@ body.has-scenario { overflow: hidden; }
   border: 0; border-radius: 999px; background: none; color: var(--ink-faint); font: inherit; font-size: 1.125rem; line-height: 1; cursor: pointer; }
 .overview-predict__rest:hover { color: var(--ink); background: color-mix(in srgb, var(--ink) 8%, transparent); }
 .overview-predict__rest:focus-visible { outline: 2px solid var(--ink); outline-offset: 1px; }
+/* A 44px target on touch; the larger negative margins keep the × where it was and the row as tall. */
+@media (pointer: coarse) { .overview-predict__rest { width: 44px; height: 44px; margin: -0.9rem -1rem -0.9rem 0; } }
 .overview-predict__headline { margin: 0; font-family: var(--display); font-variation-settings: "wdth" 125; font-weight: 800;
   font-size: clamp(1.375rem, 2.6vw, 1.75rem); line-height: 1.05; letter-spacing: -0.02em; text-wrap: balance; }
 .overview-predict__pitch { margin: 0; max-width: 60ch; font-size: 0.875rem; line-height: 1.45; color: var(--ink-muted); }

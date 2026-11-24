@@ -116,7 +116,7 @@ def rounds_index(docs: Mapping[str, dict], season: int, settled: Mapping[str, in
 
     ``ks`` is every distinct kick-off of the round (a match played early or put off shows as a
     gap, so the page can tell a round in progress from one being played now); ``settled`` is how
-    many of its matches the job has scored (the streak counts a round once all are)."""
+    many of its matches the job has scored."""
     rounds = []
     for key, d in sorted(docs.items(), key=lambda kv: (kv[1]["round"], kv[1]["league"])):
         kicks = sorted({v["kickoff"] for v in d["slots"].values()})
@@ -130,11 +130,13 @@ def rounds_index(docs: Mapping[str, dict], season: int, settled: Mapping[str, in
 
 def standings_doc(matches_by_slug: Mapping[str, Sequence[Match]], season: int) -> dict:
     """meta/standings: the current table of each division as club ids, best first, so the table game can
-    show "your table against the table now" from one small read (no report, no odds)."""
+    show "your table against the table now" from one small read (no report, no odds), and, while the
+    next season's table game is not open yet, the table as it stands with the clubs' names."""
     leagues = {}
     for slug, matches in matches_by_slug.items():
         if matches:
-            leagues[slug] = {"order": [row.team_id for row in table_from_matches(list(matches))],
+            rows = table_from_matches(list(matches))
+            leagues[slug] = {"order": [row.team_id for row in rows], "names": {row.team_id: row.team for row in rows},
                              "played": sum(1 for m in matches if m.played)}
     return {"season": season, "leagues": leagues}
 
@@ -366,8 +368,8 @@ def run(store: Any, *, now: datetime, matches_by_slug: Mapping[str, Sequence[Mat
     for info_list in rounds_info.values():
         info_list.sort(key=lambda r: r["round"])
 
-    # 4a. the round index: kick-offs, and how much of each round is scored (the page's streak counts a round
-    # once all of it is). Rewritten when a fixture changes or another match settles.
+    # 4a. the round index: kick-offs, and how much of each round is scored.
+    # Rewritten when a fixture changes or another match settles.
     if publish:
         settled_now = {k: scored[k] for k in docs if scored.get(k)}
         if summary["fixtures"] or meta.get("indexed") != INDEX_VERSION or settled_now != dict(meta.get("indexed_settled") or {}):

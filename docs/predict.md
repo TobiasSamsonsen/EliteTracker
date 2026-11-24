@@ -19,7 +19,7 @@ is the launch. The crowd does not touch any published number.
 | Frozen price curve, whole-percent rounding | `predict/curve.py` (twin: `public/predict-core.js`, `public/elo-curve.js`) |
 | Scoring: Brier, RPS, Accuracy against the median (the model is a voter) | `predict/scoring.py`, `model/scores.py` (shared with `model/backtest.py`) |
 | Table game: footrule and bonuses | `predict/tables.py` |
-| Streaks (a freeze every fifth round), boards, nicknames, calendar feed | `predict/streaks.py`, `boards.py`, `nicknames.py`, `ics.py` |
+| Boards, nicknames, calendar feed | `predict/boards.py`, `nicknames.py`, `ics.py` |
 | The crowd's signal, stage 1 (shadow only; not in `pricing.py`) | `model/crowd.py` |
 | Firestore over REST (urllib, no SDK) | `sources/firestore.py` |
 | The hourly job | `predict/sync.py`, run by `python -m elitetracker.predict_sync` |
@@ -34,8 +34,8 @@ Project `elitetrackerno`, `(default)` database, `europe-north1`, Spark plan (fre
 
 | Path | Written by | Readable by | What |
 |---|---|---|---|
-| `meta/rounds` | job | anyone (get) | the season's round index: key, league, round, opens, closes, last, matches (`n`), every distinct kick-off (`ks`: a gap in it is a round in progress, not live) and how many matches are scored (`settled`: the streak counts a round once `settled == n`) |
-| `meta/standings` | job | anyone (get) | each division's current table as club ids, best first, and matches played: the table game's "your table against the table now" |
+| `meta/rounds` | job | anyone (get) | the season's round index: key, league, round, opens, closes, last, matches (`n`), every distinct kick-off (`ks`: a gap in it is a round in progress, not live) and how many matches are scored (`settled`) |
+| `meta/standings` | job | anyone (get) | each division's current table as club ids, best first, the clubs' names and matches played: the table game's "your table against the table now", and the table shown (with the bonus places marked) while the next season's game is not open yet |
 | `fixtures/{season}_{league}_{round}` | job | anyone (get) | slots `s1..s8` (by match id, so a postponement keeps its slot), kick-offs, `opens` = 7 days before the first |
 | `tablegames/{season}_{league}` | job | anyone (get) | the pre-season table game: opens with the fixtures, closes at the first kick-off, the clubs |
 | `entries/{uid}/rounds/{key}` | the player | the player | `p.sN = {g, k, h, d, a, t}` (gap, draw tenths, whole percents, **server** time of the last change), `r` = round key, `curve` = 1 |
@@ -43,7 +43,7 @@ Project `elitetrackerno`, `(default)` database, `europe-north1`, Spark plan (fre
 | `users/{uid}`, `nicknames/{key}` | the player | the player (a claim: get) | profile (`leagues`: the codes of the mini-leagues the player is in, at most 20, so they follow a sign-in and a purge knows which memberships to remove); the nickname claim is keyed in ASCII (`~e ~o ~a` for æ ø å) and valid only with the profile that uses it; a change of case only is a plain update of `nick` (no new claim, no new `nickAt`) |
 | `reveal/{key}` | job | anyone (get) | after kick-off: the model's odds as published, the crowd's aggregate (n >= 5, plus the field's median score once settled), the result |
 | `stats/{uid}` | job | the player | per-round totals (`n, b, r, ab, ar, vm, m`), last pick time; points and accuracy are worked out from `n` and `b` |
-| `boards/{id}` | job | anyone (get, not list) | `season_`, `round_`, `last10_{season}_{league}`, `season_{season}_all` (both divisions together; a player's streak is the better division's), `round_{season}_{league}_{n}` (every round scored, kept as that round's board), `tables_{season}_{league}` and `league_{code}` (a mini-league, named by its secret code) |
+| `boards/{id}` | job | anyone (get, not list) | `season_`, `round_`, `last10_{season}_{league}`, `season_{season}_all` (both divisions together), `round_{season}_{league}_{n}` (every round scored, kept as that round's board), `tables_{season}_{league}` and `league_{code}` (a mini-league, named by its secret code) |
 | `leagues/{code}` + `members/{uid}` | the player | get / own | mini-leagues, codes `[A-Z2-9]{8}` |
 | `reports/{nickKey}_{uid}` | the player (create) | job | a name report: one per reporter and name (the rules check the id, a repeat is an update and is refused); three different reporters hide a name |
 | `deleteRequests/{uid}` | the player (create) | job | asks the job to erase the account |

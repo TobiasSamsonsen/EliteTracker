@@ -168,13 +168,12 @@ test('relative time is coarse and never negative', () => {
   assert.deepEqual(util.spanParts(-5000), { unit: 'now', n: 0 });
 });
 
-test('the ring, the streak and the badges follow the plan', () => {
+test('the ring and the badges follow the plan', () => {
   assert.deepEqual(util.ringState(5, 8), { done: 5, total: 8, fraction: 0.625, complete: false });
   assert.equal(util.ringState(8, 8).complete, true);
-  assert.deepEqual(util.computeStreak([true, true, true, true, true, false, true]), { current: 6, best: 6, freezes: 0 });
   const earned = (stats) => util.badgesFor(stats).filter((b) => b.earned).map((b) => b.id);
-  assert.deepEqual(earned({ tips: 0, totals: { n: 0, vm: 0, ab: 0 }, streak: 0 }), []);
-  assert.deepEqual(earned({ tips: 31, totals: { n: 31, vm: 0.4, ab: 0.2 }, streak: 5 }).sort(), ['beatField', 'beatModel', 'first', 'streak5', 'thirty']);
+  assert.deepEqual(earned({ tips: 0, totals: { n: 0, vm: 0, ab: 0 } }), []);
+  assert.deepEqual(earned({ tips: 31, totals: { n: 31, vm: 0.4, ab: 0.2 } }).sort(), ['beatField', 'beatModel', 'first', 'thirty']);
 });
 
 test('a session belongs to its project: the live site never sees an emulator session', () => {
@@ -206,10 +205,10 @@ test('the season panel: the share you beat, the bell, the tiers and your form', 
   assert.ok(Math.abs(fit.mean - 0) < 1e-9 && Math.abs(fit.sd - 0.34) < 1e-9);
   assert.equal(util.normalFit(Array(101).fill(0.1)).sd, 0.02);                 // everyone equal: a floor, not zero
   assert.equal(util.normalDensity(fit.mean, fit.mean, fit.sd), 1);
-  assert.deepEqual(util.tierOf(95), { id: 'gold', next: null, toNext: 0 });
-  assert.deepEqual(util.tierOf(80), { id: 'silver', next: 'gold', toNext: 10 });
-  assert.deepEqual(util.tierOf(50), { id: 'bronze', next: 'silver', toNext: 25 });
-  assert.deepEqual(util.tierOf(12), { id: 'rookie', next: 'bronze', toNext: 38 });
+  assert.deepEqual(util.tierOf(95), { id: 'elite', next: null, toNext: 0 });
+  assert.deepEqual(util.tierOf(80), { id: 'expert', next: 'elite', toNext: 10 });
+  assert.deepEqual(util.tierOf(50), { id: 'analyst', next: 'expert', toNext: 25 });
+  assert.deepEqual(util.tierOf(12), { id: 'contender', next: 'analyst', toNext: 38 });
   const stats = { rounds: { '2027_eliteserien_3': { ab: 0.1, n: 8 }, '2027_eliteserien_1': { ab: -0.2, n: 8 },
     '2027_obosligaen_2': { ab: 0.5, n: 8 }, '2026_eliteserien_30': { ab: 0.9, n: 8 } } };
   assert.deepEqual(util.roundForm(stats, 2027, 'eliteserien').map((r) => [r.round, r.ab]), [[1, -0.2], [3, 0.1]]);
@@ -316,7 +315,7 @@ test('a reset keeps the session it was asked to keep, and only Predict\'s own ke
   assert.equal(util.draftKey(null, 'k'), 'predict.draft.new.k');
 });
 
-test('a round with a gap between its matches is in progress, not live; a round counts for the streak once scored', () => {
+test('a round with a gap between its matches is in progress, not live', () => {
   const hour = 3_600_000;
   const day = 24 * hour;
   const T = 100 * day;
@@ -329,10 +328,6 @@ test('a round with a gap between its matches is in progress, not live; a round c
   assert.equal(util.roundStatus(round, T + 2 * day + 4 * hour), 'done');
   assert.equal(util.roundStatus({ ...round, kicks: undefined }, T - 10 * day), 'live');   // an older index: as before
   assert.equal(util.currentRoundIndex([{ ...round, last: new Date(T - 21 * day), kicks: [new Date(T - 21 * day)] }, round], T - 10 * day), 1);
-  assert.equal(util.roundScored({ ...round, settled: 2 }, T + 9 * day), false);
-  assert.equal(util.roundScored({ ...round, settled: 3 }, T - 1), true);
-  assert.equal(util.roundScored(round, T + 9 * day), true);                       // no count in the index: the clock decides
-  assert.equal(util.roundScored(round, T - 10 * day), false);
 });
 
 test('calibration reads the settled picks: three statements a match, each with what happened', () => {
@@ -486,6 +481,10 @@ test('rank among people leaves the model and the crowd out, and ties share a pla
   const place = util.humanRanks(rows);
   assert.equal(place.get(rows[0]), undefined);
   assert.deepEqual(rows.filter((r) => r.kind === 'player').map((r) => place.get(r)), [1, 2, 2, 4]);
+  // A board's own place counts hidden players: a hidden second leaves a skipped number, here and in rivalsOf.
+  const stored = [{ kind: 'player', rank: 1, place: 1, u: 'a', pts: 9 }, { kind: 'model', rank: 2, pts: 8 }, { kind: 'player', rank: 3, place: 3, u: 'b', pts: 6 }];
+  assert.deepEqual(stored.filter((r) => r.kind === 'player').map((r) => util.humanRanks(stored).get(r)), [1, 3]);
+  assert.equal(util.rivalsOf(stored, (r) => r.u === 'b', (r) => r.pts).place, 3);
 });
 
 test('your neighbours on a board: who is ahead, who is behind, and by how many points', () => {
@@ -518,9 +517,9 @@ test('the standing card: place, tier, the gap to the model and how close the nex
   assert.equal(first.reach, 100, 'nobody ahead: the bar is full');
   assert.equal(first.ahead, null);
   assert.equal(util.standingOf(rows, pct, 4, mine('z'), pts), null, 'not on the board: no card');
-  // Tier and top share follow the share of players beaten (gold from 90 %).
+  // Tier and top share follow the share of players beaten (Elite from 90 %).
   const high = util.standingOf([{ kind: 'player', u: 'x', pts: 95 }], pct, 101, mine('x'), pts);
-  assert.equal(high.tier, 'gold');
+  assert.equal(high.tier, 'elite');
   assert.equal(high.top, 5);
   assert.equal(util.standingOf([{ kind: 'player', u: 'x', pts: 95 }], [], 101, mine('x'), pts).tier, null, 'no percentile table: no tier');
   assert.equal(util.standingOf(rows, pct, 4, mine('b'), pts).me.u, 'b');
@@ -554,3 +553,18 @@ test('a season in rounds: running accuracy for you and for the model, divisions 
 });
 
 function near(a, b) { assert.ok(Math.abs(a - b) < 1e-9, `${a} != ${b}`); }
+
+test('clubs by the site\'s short names: fixtures, the table game and the standings, nothing else touched', () => {
+  const map = { Hamarkameratene: 'HamKam', 'Odds Ballklubb': 'Odd' };
+  const kick = new Date('2026-11-28T15:00:00Z');
+  const fixture = { round: 5, slots: { s1: { home: 'Hamarkameratene', away: 'Molde', home_id: 'h1', kickoff: kick } } };
+  const out = util.shortClubNames(fixture, map);
+  assert.equal(out.slots.s1.home, 'HamKam');
+  assert.equal(out.slots.s1.away, 'Molde');
+  assert.equal(out.slots.s1.kickoff, kick);                      // dates pass through as they are
+  assert.equal(fixture.slots.s1.home, 'Hamarkameratene');        // a copy: the document is not changed
+  const standings = { obosligaen: { order: ['x'], names: { x: 'Odds Ballklubb', y: 'Lyn' } } };
+  assert.deepEqual(util.shortClubNames(standings, map).obosligaen.names, { x: 'Odd', y: 'Lyn' });
+  assert.equal(util.shortClubNames({ nick: 'Hamarkameratene' }, map).nick, 'Hamarkameratene');  // only club fields
+  assert.equal(util.shortClubNames(null, map), null);
+});

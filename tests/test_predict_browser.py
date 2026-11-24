@@ -73,7 +73,10 @@ def test_the_page_against_the_emulators(site, tmp_path):
             browser = pw.chromium.launch()
         except Exception as error:  # noqa: BLE001 - no browser installed here
             pytest.skip(f"no Chromium for Playwright: {str(error)[:80]}")
-        page = browser.new_context(viewport={"width": 1100, "height": 900}).new_page()
+        context = browser.new_context(viewport={"width": 1100, "height": 900})
+        # A returning visitor: the first visit's guide (the tutorial) would stand in front of the round.
+        context.add_init_script("try { localStorage.setItem('predict.intro', 'seen'); } catch (e) {}")
+        page = context.new_page()
         errors: list[str] = []
         page.on("console", lambda m: m.type == "error" and errors.append(m.text[:160]))
         page.on("pageerror", lambda x: errors.append("pageerror: " + str(x)[:200]))
@@ -119,7 +122,7 @@ def test_the_page_against_the_emulators(site, tmp_path):
         assert after["nick"] == nick.swapcase() and after["nickAt"] == before["nickAt"]
 
         # a mini-league: the code stays on screen, the profile lists it, the next job run builds its board
-        page.click('button[data-tab="boards"]')
+        page.click('button[data-tab="leagues"]')
         page.wait_for_selector(".pleagues", timeout=15000)
         page.fill(".pleagues .pfield >> nth=0", "Kontoret")
         page.click(".pleagues .pbtn >> nth=0")
