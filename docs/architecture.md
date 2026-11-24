@@ -26,6 +26,21 @@ Nothing below `pipeline.py` touches the network, and nothing in `model/` or
 `simulation/` touches the disk except `model/benchmark.py`, which reads the
 closing odds.
 
+The prediction game (Predict, [predict.md](predict.md)) sits beside this flow and
+feeds nothing into it yet:
+
+```
+browser /predict/ ──REST──▶ Firestore (rules: owner-only, locked at kick-off)
+                                 ▲   │
+ predict.yml (manual) ── predict/sync.py ── sources/firestore.py
+        reads data/normalized + the live report.json; writes fixtures, scores,
+        boards, data/predict/{locked_odds,crowd}.json
+```
+
+`sources/firestore.py` is the second network module beside the fetchers, so the
+rule above still holds for everything under `pipeline.py`. `model/crowd.py` is a
+shadow computation: `pricing.py` has no crowd term.
+
 ## Modules and what they own
 
 | Module | Owns |

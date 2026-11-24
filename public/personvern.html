@@ -29,7 +29,7 @@
 
   <section lang="nb">
     <h1>Personvern</h1>
-    <p>Sist oppdatert 17. oktober 2026. <a href="#en" lang="en">English below.</a></p>
+    <p>Sist oppdatert 24. november 2026. <a href="#en" lang="en">English below.</a></p>
 
     <h2>Hvem er ansvarlig</h2>
     <p>Tobias Samsonsen driver EliteTracker og er behandlingsansvarlig. Kontakt: <a class="contact">slå på JavaScript for å se adressen</a>.</p>
@@ -47,22 +47,32 @@
     <h2>Trekke samtykket</h2>
     <p>Trykk «Informasjonskapsler» nederst på forsiden og velg «Avvis». Da slettes informasjonskapslene og Google Analytics stoppes.</p>
 
+    <h2>Predict: spillet</h2>
+    <p>Predict er en gratis prediksjonskonkurranse. Du tipper sannsynligheter for kamper og for sluttabellen, og vi regner ut hvor treffsikker du er og lager ledertavler.</p>
+    <p><strong>Det vi lagrer.</strong> Tipsene dine og når du sist endret dem, poengene dine (per kamp, per runde og for sesongen), kallenavnet ditt, klubben du følger, språkvalg og om du vil stå på offentlige ledertavler. Uten innlogging får du en anonym konto (en tilfeldig ID) i nettleseren din.</p>
+    <p><strong>Logge inn med Google (valgfritt).</strong> Du kan knytte kontoen til Google-kontoen din for å beholde tipsene og rekka på flere enheter. Da laster siden et skript fra Google først når du trykker på knappen, og Google behandler innloggingen. Vi lagrer e-postadressen din i innloggingstjenesten, ikke i spillet, og den vises aldri til andre. Bare kallenavnet er synlig. Velger du å stå utenfor de offentlige ledertavlene, vises kallenavnet og poengene dine likevel for de andre medlemmene i miniligaene du er med i.</p>
+    <!-- Checked 2026-11-24 against the code: Google's sign-in script (accounts.google.com/gsi/client) is added to the page only in the click handler of the "Link / Sign in with Google" button (predict.js, loadGoogle) and is in no HTML file, so "only when you press the button" is true, and the player's own press is the request for that service. Not legal advice: the owner may still change the wording. -->
+    <p><strong>Hvorfor.</strong> (1) Å drive spillet og ledertavlene: avtale med deg og berettiget interesse (art. 6 nr. 1 b og f). (2) Anonym statistikk: tipsene fra alle spillere slås sammen, uten navn, og kan brukes til å forbedre oddsene på siden. Vi publiserer bare sammenslåtte tall for en kamp med minst fem tips. Berettiget interesse (art. 6 nr. 1 f); du kan protestere. (3) Misbruk og juks: berettiget interesse.</p>
+    <p><strong>Hvor lenge.</strong> Tipsene og rundepoengene dine beholdes så lenge kontoen er i bruk. Er kontoen ubrukt i 24 måneder, slettes spilldataene: profilen, tipsene, tabelltipsene og rundepoengene. Sesongpoengene dine (sum og plassering per sesong) beholdes med kallenavnet på tidligere sesongers ledertavler som spillets historie (berettiget interesse). Selve innloggingsposten hos Google (Firebase Authentication: en tilfeldig ID, og e-postadressen hvis du koblet til Google) fjernes ikke av seg selv ved den sletting; den fjernes når du sletter kontoen fra spillet, eller når du ber oss om det. Du kan når som helst slette kontoen og alt dette fra spillet; spilldataene er borte innen få dager. Trykker du Slett uten å ha logget inn nylig, kan Google be om ny innlogging før innloggingsposten kan fjernes; spilldataene slettes uansett. De sammenslåtte tallene uten identitet beholdes.</p>
+    <p><strong>Aldersgrense.</strong> Spillet er for deg som er 13 år eller eldre.</p>
+    <!-- Checked 2026-11-24: 13 is Norway's age for a child to consent to an information society service (personopplysningsloven § 5, GDPR art. 8), and the game stores nothing that depends on a higher age. Not legal advice: the owner may still change it. -->
+
     <h2>Lagret bare i nettleseren din</h2>
-    <p>Valg av tema, språk, tabellvisning og svaret ditt om informasjonskapsler lagres i nettleseren din. Det sendes ikke til noen og trenger ikke samtykke, fordi siden trenger det for å huske valgene dine.</p>
+    <p>Valg av tema, språk, tabellvisning og svaret ditt om informasjonskapsler lagres i nettleseren din. Det sendes ikke til noen og trenger ikke samtykke, fordi siden trenger det for å huske valgene dine. Bruker du Predict, lagres også innloggingen til den anonyme kontoen din og tips du ikke har sluppet ennå her, av samme grunn.</p>
 
     <h2>Drift</h2>
     <p>Siden ligger på Firebase Hosting fra Google. Som alle nettjenere logger den forespørsler, med IP-adresse, for å levere siden og stoppe misbruk. Grunnlaget er berettiget interesse (art. 6 nr. 1 f). Google lagrer loggene i en begrenset periode.</p>
 
     <h2>Hvem får data</h2>
-    <p>Google Ireland Limited behandler dataene på våre vegne. Data kan overføres til Google LLC i USA, som er sertifisert under EU–US Data Privacy Framework.</p>
+    <p>Google Ireland Limited behandler dataene på våre vegne, også spilledataene i Predict (Firebase: lagring og innlogging, lagret i Finland). Ingenting selges eller deles for reklame, og vi lager ingen profil av deg som enkeltperson. Data kan overføres til Google LLC i USA, som er sertifisert under EU–US Data Privacy Framework.</p>
 
     <h2>Dine rettigheter</h2>
-    <p>Du kan be om innsyn, retting, sletting eller begrensning, protestere mot behandlingen og trekke samtykket når som helst. Analysedataene er knyttet til en tilfeldig ID og ikke til navnet ditt, så vi kan som regel ikke finne igjen dine data uten at du oppgir ID-en fra <code>_ga</code>-informasjonskapselen. Du kan klage til <a href="https://www.datatilsynet.no/">Datatilsynet</a>.</p>
+    <p>Du kan be om innsyn, retting, sletting eller begrensning, protestere mot behandlingen og trekke samtykket når som helst. Analysedataene er knyttet til en tilfeldig ID og ikke til navnet ditt, så vi kan som regel ikke finne igjen dine data uten at du oppgir ID-en fra <code>_ga</code>-informasjonskapselen. Spilledataene i Predict finner og sletter du selv under «Meg» i spillet, eller du ber oss om det. Du kan klage til <a href="https://www.datatilsynet.no/">Datatilsynet</a>.</p>
   </section>
 
   <section lang="en" id="en">
     <h1>Privacy</h1>
-    <p>Last updated 17 October 2026.</p>
+    <p>Last updated 24 November 2026.</p>
 
     <h2>Who is responsible</h2>
     <p>Tobias Samsonsen runs EliteTracker and is the data controller. Contact: <a class="contact">turn on JavaScript to see the address</a>.</p>
@@ -80,17 +90,27 @@
     <h2>Withdrawing consent</h2>
     <p>Tap “Cookies” at the bottom of the front page and choose “Reject”. The cookies are deleted and Google Analytics stops.</p>
 
+    <h2>Predict: the game</h2>
+    <p>Predict is a free prediction game. You give probabilities for matches and for the final table; we work out how accurate you are and build leaderboards.</p>
+    <p><strong>What we store.</strong> Your predictions and when you last changed them, your scores (per match, per round and per season), your nickname, the club you follow, your language and whether you want to be on public leaderboards. Without signing in you get an anonymous account (a random ID) in your browser.</p>
+    <p><strong>Signing in with Google (optional).</strong> You can link the account to your Google account to keep your predictions across devices. The site then loads a script from Google, only when you press the button, and Google handles the sign-in. We keep your email address in the sign-in service, not in the game, and it is never shown to anyone. Only your nickname is visible. If you keep off the public leaderboards, your nickname and scores are still shown to the other members of mini-leagues you are in.</p>
+    <!-- Checked 2026-11-24 against the code: Google's sign-in script (accounts.google.com/gsi/client) is added to the page only in the click handler of the "Link / Sign in with Google" button (predict.js, loadGoogle) and is in no HTML file, so "only when you press the button" is true, and the player's own press is the request for that service. Not legal advice: the owner may still change the wording. -->
+    <p><strong>Why.</strong> (1) Running the game and the leaderboards: contract with you and legitimate interest (GDPR art. 6(1)(b) and (f)). (2) Anonymous statistics: everyone's predictions are combined, without names, and may be used to improve the site's odds. We publish only combined figures for a match with at least five predictions. Legitimate interest (art. 6(1)(f)); you may object. (3) Abuse and cheating: legitimate interest.</p>
+    <p><strong>How long.</strong> Your predictions and round scores are kept while the account is in use. An account unused for 24 months has its game data deleted: the profile, predictions, table picks and round scores. Your season scores (total and rank per season) stay under your nickname on past seasons' leaderboards as the game's history (legitimate interest). The sign-in record at Google (Firebase Authentication: a random ID, and your email address if you linked Google) is not removed automatically by that deletion; it is removed when you delete the account from the game, or when you ask us to. You can delete the account and all of this from the game at any time; the game data is gone within a few days. If you press Delete without having signed in recently, Google may ask you to sign in again before the sign-in record can be removed; the game data is deleted regardless. The combined figures without any identity stay.</p>
+    <p><strong>Age.</strong> The game is for people aged 13 or over.</p>
+    <!-- Checked 2026-11-24: 13 is Norway's age for a child to consent to an information society service (personopplysningsloven § 5, GDPR art. 8), and the game stores nothing that depends on a higher age. Not legal advice: the owner may still change it. -->
+
     <h2>Stored only in your browser</h2>
-    <p>Your theme, language, table view and cookie answer are stored in your browser. They are sent nowhere and need no consent, because the site needs them to remember your choices.</p>
+    <p>Your theme, language, table view and cookie answer are stored in your browser. They are sent nowhere and need no consent, because the site needs them to remember your choices. If you use Predict, the sign-in of your anonymous account and predictions you have not saved yet are kept here too, for the same reason.</p>
 
     <h2>Hosting</h2>
     <p>The site runs on Firebase Hosting from Google. Like any web server it logs requests, with IP address, to deliver the site and stop abuse. The basis is legitimate interest (art. 6(1)(f)). Google keeps the logs for a limited period.</p>
 
     <h2>Who receives data</h2>
-    <p>Google Ireland Limited processes the data on our behalf. Data may be transferred to Google LLC in the United States, which is certified under the EU–US Data Privacy Framework.</p>
+    <p>Google Ireland Limited processes the data on our behalf, including the game data in Predict (Firebase: storage and sign-in, stored in Finland). Nothing is sold or shared for advertising, and we do not profile you as an individual. Data may be transferred to Google LLC in the United States, which is certified under the EU–US Data Privacy Framework.</p>
 
     <h2>Your rights</h2>
-    <p>You can ask for access, correction, deletion or restriction, object to the processing, and withdraw consent at any time. Analytics data is tied to a random ID, not your name, so we usually cannot find your data unless you give us the ID from the <code>_ga</code> cookie. You can complain to <a href="https://www.datatilsynet.no/en/">Datatilsynet</a>, the Norwegian data protection authority.</p>
+    <p>You can ask for access, correction, deletion or restriction, object to the processing, and withdraw consent at any time. Analytics data is tied to a random ID, not your name, so we usually cannot find your data unless you give us the ID from the <code>_ga</code> cookie. You can find and delete your Predict data yourself under “Me” in the game, or ask us to. You can complain to <a href="https://www.datatilsynet.no/en/">Datatilsynet</a>, the Norwegian data protection authority.</p>
   </section>
 </main>
 <script>

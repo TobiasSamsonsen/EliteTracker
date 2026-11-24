@@ -10,6 +10,7 @@ module or command that owns each fact, and links instead of copies.
 | What is in `data/`, where does it come from, what may be scraped, what needs doing once a year? | [data.md](data.md) |
 | How do I run, build, deploy or republish? What does CI do? | [operations.md](operations.md) |
 | How is `public/` organised? How are the browser's ports of the model tested? | [frontend.md](frontend.md) |
+| What is built of the prediction game (Predict): data, rules, the hourly job, how to run and ship it? | [predict.md](predict.md) (reasoning and decisions: [predict-plan.md](predict-plan.md)) |
 | Which tracker, labels and domain docs do the agent skills use? | [agents/](agents/) |
 | What UI and view ideas are queued for later (and where do they come from)? | [ui-ideas.md](ui-ideas.md) |
 

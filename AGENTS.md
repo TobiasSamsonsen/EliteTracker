@@ -21,6 +21,7 @@ Core model: Elo + xG attack/defence Poisson grid (version in `MODEL_VERSION`, `m
 - `normalize/` & `validation/`: Raw-to-canonical `Match` schemas and validation guards
 - `model/`: Rating calculations (`elo.py`, `attack_defence.py`, `career.py`, `probabilities.py`; `pricing.py` prices one match for every caller)
 - `simulation/`: Monte Carlo season outcomes (`season.py`, `history.py`)
+- `predict/` & `sources/firestore.py` & `predict_sync.py`: the prediction game's scoring, boards, hourly job and Firestore REST client (`docs/predict.md`; rules in `firestore.rules`)
 - `pipeline.py`: Central data builder connecting models to JSON report payloads
 - `api/server.py` & `build_site.py`: Live HTTP server and static JSON site generator
 - `public/`: Dependency-free vanilla JS/HTML frontend (`app.js`, `i18n.js`, `share.js`)
@@ -48,7 +49,7 @@ Core model: Elo + xG attack/defence Poisson grid (version in `MODEL_VERSION`, `m
 
 Run the test suite after any modification to ensure zero regressions:
 ```bash
-python -m pytest -q && node --test tests/frontend.test.js
+python -m pytest -q && node --test tests/frontend.test.js tests/predict.test.js tests/predict-ui.test.js
 ```
 
 ---

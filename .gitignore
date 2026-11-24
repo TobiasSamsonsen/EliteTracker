@@ -9,6 +9,7 @@ public/data/
 public/klubb/
 public/utforsk/
 public/obos-ligaen/
+public/predict/index.html
 public/sitemap.xml
 past-seasons.tar.gz
 .firebase/
@@ -34,3 +35,9 @@ experiments/mobile-audit/*-report.md
 .opencode/
 
 .claude/settings.local.json
+
+# raw Wikipedia season pages (experiments/improvements/fetch_wikipedia_standings.py reproduces them)
+data/raw/wikipedia_standings/
+
+# Emulator logs (firebase emulators:start)
+*-debug.log

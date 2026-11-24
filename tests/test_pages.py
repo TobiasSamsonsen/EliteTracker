@@ -97,6 +97,7 @@ def test_build_pages_writes_a_page_per_club_tool_and_division(tmp_path):
     assert '"team": "HamKam"' in (site / "klubb" / "hamkam" / "index.html").read_text(encoding="utf-8").replace("&quot;", '"')
     sitemap = (site / "sitemap.xml").read_text(encoding="utf-8")
     assert "<loc>https://elitetracker.no/klubb/hamkam/</loc>" in sitemap and "<loc>https://elitetracker.no/</loc>" in sitemap
+    assert "<loc>https://elitetracker.no/predict/</loc>" in sitemap
 
 
 def test_build_pages_does_nothing_without_a_template_or_a_report(tmp_path):

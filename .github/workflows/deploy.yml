@@ -14,6 +14,11 @@ name: Deploy to Firebase Hosting
 on:
   push:
     branches: [main]
+    # The Predict job's anonymous aggregates (docs/predict.md) are archives for the
+    # shadow analysis, not site content: a commit that only touches them is no reason
+    # to rebuild and redeploy.
+    paths-ignore:
+      - 'data/predict/**'
   pull_request:
   workflow_dispatch:
 

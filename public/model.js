@@ -20,18 +20,8 @@ const DEFAULTS = {
 
 /* ---------- the model's arithmetic ---------------------------------- */
 
-function expectedScore(gap) {
-  return 1 / (1 + 10 ** (-gap / 400));
-}
-
-/* model/probabilities.py: home win, draw, away win at an effective gap
-   (home advantage included). */
-function eloOdds(gap, model) {
-  const expected = expectedScore(gap);
-  const draw = Math.min(model.draw_base * Math.exp(-((gap / model.draw_scale) ** 2)),
-    2 * Math.min(expected, 1 - expected));
-  return [expected - draw / 2, draw, 1 - expected - draw / 2];
-}
+/* expectedScore and eloOdds (model/probabilities.py) live in elo-curve.js,
+   which model.html loads first: the Predict game prices its slider with them. */
 
 /* model/elo.py xg_implied_score: P(home win) + P(draw) / 2 at the two xG
    rates, to 12 goals a side and normalised. */

@@ -80,16 +80,17 @@ function renderShare(draw, { format = 'wide', theme = 'dark' } = {}) {
    `image` (optional) draws the view as a picture and resolves to a PNG blob;
    `title` names what is shared. Without a picture the browser's share sheet
    opens straight away (the link), and our own sheet where it has none; with
-   one, our sheet opens first, with the picture, to choose between the two. */
-function shareButton({ title, image = null, className = '' } = {}) {
+   one, our sheet opens first, with the picture, to choose between the two.
+   `url` shares another address than the page's own (a mini-league's invite). */
+function shareButton({ title, image = null, className = '', url = null, label = null } = {}) {
   const button = el('button', `share-btn ${className}`.trim());
   button.type = 'button';
   button.innerHTML = SHARE_ICON;
-  button.title = t('share.button');
-  button.setAttribute('aria-label', t('share.button'));
+  button.title = label || t('share.button');
+  button.setAttribute('aria-label', label || t('share.button'));
   button.addEventListener('click', (event) => {
     event.stopPropagation();
-    const what = { url: window.location.href, title: (typeof title === 'function' ? title() : title) || document.title };
+    const what = { url: url || window.location.href, title: (typeof title === 'function' ? title() : title) || document.title };
     if (!image && navigator.share) {
       navigator.share({ title: what.title, url: what.url }).catch(() => {});
       return;

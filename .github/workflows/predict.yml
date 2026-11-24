@@ -1,0 +1,103 @@
+# The Predict job (docs/predict.md): syncs fixtures to Firestore, snapshots the model's odds
+# at kick-off, scores settled rounds, builds the leaderboards, erases deletion requests.
+#
+# Runs once this file is on main (the rules and indexes are deployed), on two triggers:
+#   - after every Deploy that a push to main made (new results come in through refresh.yml, which pushes,
+#     which deploys), so scores follow the results by minutes, not by whenever the next schedule fires;
+#   - on a schedule, as the net under that. GitHub's schedule is best effort: refresh.yml's "hourly" cron ran
+#     about 4 times a day in November 2026 (median gap 6.5 hours, longest 12; one 41-hour gap was probably a GitHub account suspension), and Predict's is no better.
+#     The job is built for that (docs/predict.md, "When the job runs").
+# A manual run is a dry run unless `live` is ticked; every other run is live.
+#
+# Auth is keyless: google-github-actions/auth exchanges this run's GitHub OIDC token for a
+# short-lived access token of predict-sync@elitetrackerno.iam.gserviceaccount.com (only
+# roles/datastore.user), through the Workload Identity pool `github`, which admits this
+# repository only. There is no key file and no secret.
+
+name: Predict sync
+
+on:
+  workflow_dispatch:
+    inputs:
+      live:
+        description: "Write to Firestore and commit (unticked: a dry run that only prints)"
+        type: boolean
+        default: false
+  workflow_run:
+    workflows: ["Deploy to Firebase Hosting"]
+    types: [completed]
+  schedule:
+    - cron: "41 * * * *"       # off the top of the hour, where GitHub drops the most scheduled runs
+
+permissions:
+  contents: write
+  id-token: write   # the OIDC token for Workload Identity
+
+concurrency:
+  group: predict
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    # a deploy of a pull request preview, or one that failed, is no news
+    if: ${{ github.event_name != 'workflow_run' || (github.event.workflow_run.event == 'push' && github.event.workflow_run.conclusion == 'success') }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          # As in refresh.yml: the push below uses the PAT so that deploy.yml fires.
+          persist-credentials: false
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install
+        run: |
+          python -m pip install --upgrade pip
+          pip install .
+
+      - id: auth
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: projects/914037628709/locations/global/workloadIdentityPools/github/providers/github-oidc
+          service_account: predict-sync@elitetrackerno.iam.gserviceaccount.com
+          token_format: access_token
+
+      - name: Run the job
+        env:
+          FIRESTORE_ACCESS_TOKEN: ${{ steps.auth.outputs.access_token }}
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ] && [ "${{ inputs.live }}" != "true" ]; then
+            python -m elitetracker.predict_sync --dry-run
+          else
+            python -m elitetracker.predict_sync
+          fi
+
+      - name: Commit the anonymous aggregates
+        if: ${{ github.event_name != 'workflow_dispatch' || inputs.live }}
+        env:
+          PAT: ${{ secrets.REFRESH_PAT }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          # status, not diff: none of these files is tracked on the first run, and `git diff` ignores untracked files
+          if [ -z "$(git status --porcelain -- data/predict)" ]; then
+            echo "Nothing to commit."
+            exit 0
+          fi
+          git add data/predict
+          git commit -m "Predict sync: $(date -u +%Y-%m-%dT%H:%MZ)"
+          # refresh.yml pushes to main too: a push that loses the race is rebased and tried again, because
+          # the run's locked odds and shadow crowd exist only in this commit
+          for attempt in 1 2 3 4 5; do
+            git pull --rebase --autostash origin main
+            if git push https://${PAT}@github.com/${{ github.repository }}.git HEAD:main; then
+              exit 0
+            fi
+            echo "push lost a race (attempt $attempt), retrying"
+            sleep $((attempt * 5))
+          done
+          echo "::error::could not push the Predict aggregates"
+          exit 1

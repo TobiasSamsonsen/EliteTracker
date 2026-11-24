@@ -25,8 +25,10 @@ import argparse
 import functools
 import http.server
 import json
+import re
 import sys
 import threading
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -41,8 +43,16 @@ VIEWPORTS = [
     ("1280x800", 1280, 800, False),
 ]
 EXPLORE = ["mountain", "attack", "luck", "races", "whatif", "runin", "playoff"]
+# The Predict view, its five tabs and the guide, with Firestore answered from a small fixture (see predict_fixture).
+# "predict:tutorial" is the first visit (the guide stands in front of the round); the others are a returning visitor's.
+PREDICT = ["predict:tutorial", "predict", "predict:table", "predict:boards", "predict:leagues", "predict:me", "predict:how"]
 VIEWS = (["overview", "grid", "table", "matches", "ladder", "compare", "explore"]
-         + [f"explore:{item}" for item in EXPLORE] + ["model", "team"])
+         + [f"explore:{item}" for item in EXPLORE] + ["model", "team"] + PREDICT)
+
+READY_PREDICT_JS = """() => {
+  const view = document.getElementById('predict-view');
+  return !!view && view.children.length > 0 && !view.querySelector('.pload, .pskeleton');
+}"""
 
 READY_JS = """() => {
   const content = document.getElementById('content');
@@ -104,9 +114,9 @@ CHECK_JS = r"""(phone) => {
   }
   // 3. Touch targets, on a phone only.
   if (phone) {
-    const dense = 'table, svg, .grid, .ladder__track, .mountain, .scenario__table, .whatif-impact, .team-grid, .calibration, .luck, .runin';
+    const dense = 'table, svg, .grid, .ladder__track, .mountain, .scenario__table, .whatif-impact, .team-grid, .calibration, .luck, .runin, .ptable, .pcal';
     const seen = new Set();
-    for (const el of document.querySelectorAll('main button, main a[href], main [role="tab"], main input, main select, header button, header a[href], #mobilebar button')) {
+    for (const el of document.querySelectorAll('main button, main a[href], main [role="tab"], main input, main select, header button, header a[href], #mobilebar button, aside button, .doc__top button, .doc__top a[href], .ptabs button')) {
       if (!shown(el) || el.disabled || el.closest('[hidden], [inert], .visually-hidden')) continue;
       if (el.closest('footer')) continue;
       const r = el.getBoundingClientRect();
@@ -164,7 +174,63 @@ def serve() -> tuple[str, http.server.ThreadingHTTPServer]:
     return f"http://127.0.0.1:{server.server_address[1]}", server
 
 
+def predict_fixture(now: datetime | None = None) -> dict[str, dict]:
+    """Firestore documents (path -> fields) for a round that is open now in both divisions and an open
+    table game, so /predict/ shows real cards without touching the real project."""
+    now = now or datetime.now(timezone.utc)
+    season = now.year
+    docs: dict[str, dict] = {}
+    # Real club ids with a crest in public/logos (the cards and the table game show crests; a missing one is a 404).
+    ids = sorted(p.stem for p in (PUBLIC / "logos").glob("*.webp"))[:16]
+    clubs = {cid: f"Klubb {chr(65 + i)}" for i, cid in enumerate(ids)}
+    order = list(clubs)
+    for slug in ("eliteserien", "obosligaen"):
+        key = f"{season}_{slug}_5"
+        kicks = [now + timedelta(days=1, hours=3 * i) for i in range(4)]
+        slots = {f"s{i + 1}": {"id": str(i), "home": clubs[order[2 * i]], "away": clubs[order[2 * i + 1]],
+                              "home_id": order[2 * i], "away_id": order[2 * i + 1], "kickoff": kicks[i]} for i in range(4)}
+        docs[f"fixtures/{key}"] = {"season": season, "league": slug, "round": 5, "opens": now - timedelta(days=2),
+                                   "closes": kicks[0], "slots": slots}
+        docs.setdefault("meta/rounds", {"season": season, "rounds": []})["rounds"].append(
+            {"key": key, "league": slug, "round": 5, "opens": now - timedelta(days=2), "closes": kicks[0],
+             "last": kicks[-1], "n": 4, "ks": kicks, "settled": 0})
+        rows = [{"u": "model", "nick": "Modellen", "kind": "model", "n": 40, "ab": -0.4, "ar": -0.3, "b": 0.58, "r": 0.2, "vm": 0.0, "rank": 2},
+                {"u": "ab12cd34ef", "nick": "Tipper_1", "kind": "player", "n": 40, "ab": 1.2, "ar": 0.8, "b": 0.55, "r": 0.19, "vm": 0.6, "rank": 1},
+                {"u": "ff00ff00ff", "nick": "Ola Nordmann", "kind": "player", "n": 36, "ab": -1.1, "ar": -0.7, "b": 0.63, "r": 0.24, "vm": -0.5, "rank": 3}]
+        for scope in ("season", "round", "last10"):
+            docs[f"boards/{scope}_{season}_{slug}"] = {"scope": scope, "updated": now.isoformat(), "players": 3, "rows": rows,
+                                                      "pct": [round(-1.1 + 2.3 * p / 100, 4) for p in range(101)]}
+        docs[f"tablegames/{season}_{slug}"] = {"season": season, "league": slug, "opens": now - timedelta(days=1),
+                                               "closes": now + timedelta(days=3), "clubs": sorted(clubs), "names": clubs}
+    return docs
+
+
+def route_firestore(context, docs: dict[str, dict]) -> None:
+    """Answer the page's Firestore reads from ``docs``, anything else with 404 (no network, no real project)."""
+    from elitetracker.sources.firestore import encode
+
+    def handler(route) -> None:
+        url = route.request.url
+        path = url.split("/documents/", 1)[1].split("?", 1)[0] if "/documents/" in url else ""
+        doc = docs.get(path)
+        if route.request.method == "GET" and doc is not None:
+            body = {"name": "projects/x/databases/(default)/documents/" + path,
+                    "fields": {k: encode(v) for k, v in doc.items()}}
+            route.fulfill(status=200, content_type="application/json", body=json.dumps(body))
+        else:
+            route.fulfill(status=404, content_type="application/json",
+                          body=json.dumps({"error": {"code": 404, "status": "NOT_FOUND"}}))
+    context.route(re.compile(r"https://firestore\.googleapis\.com/.*"), handler)
+    context.route(re.compile(r"https://(identitytoolkit|securetoken)\.googleapis\.com/.*"),
+                  lambda route: route.fulfill(status=400, content_type="application/json",
+                                              body=json.dumps({"error": {"message": "OPERATION_NOT_ALLOWED"}})))
+
+
 def url_for(base: str, view: str, team: str | None) -> str:
+    if view.startswith("predict"):
+        tab = view.split(":", 1)[1] if ":" in view else ""
+        tab = "" if tab == "tutorial" else tab
+        return f"{base}/?view=predict" + (f"#{tab}" if tab else "")
     if view == "team":
         return f"{base}/?team={team}"
     if view.startswith("explore:"):
@@ -188,6 +254,7 @@ def run(only: set[str] | None, views: list[str], shots: Path | None, consent: bo
                 if not consent:
                     # Answer the consent banner up front (declined), as a returning visitor.
                     ctx.add_init_script("try { localStorage.setItem('elitetracker-analytics', 'no:' + Date.now()); } catch (e) {}")
+                route_firestore(ctx, predict_fixture())
                 page = ctx.new_page()
                 errors: list[str] = []
                 page.on("console", lambda m, e=errors: m.type == "error" and e.append(m.text[:200]))
@@ -199,9 +266,14 @@ def run(only: set[str] | None, views: list[str], shots: Path | None, consent: bo
                         page.goto(f"{base}/?view=table", wait_until="load")
                         page.wait_for_function(READY_JS, timeout=20000)
                         team = page.evaluate("() => state.reports[state.league]?.table?.[0]?.team")
+                    if view.startswith("predict"):
+                        # the tutorial would otherwise stand in front of the cards, the nav, the table game and the guide
+                        page.goto(f"{base}/robots.txt", wait_until="load")
+                        page.evaluate("(seen) => { try { seen ? localStorage.setItem('predict.intro', 'seen') : localStorage.removeItem('predict.intro'); } catch (e) {} }",
+                                      view != "predict:tutorial")
                     page.goto(url_for(base, view, team), wait_until="load")
                     try:
-                        page.wait_for_function(READY_JS, timeout=20000)
+                        page.wait_for_function(READY_PREDICT_JS if view.startswith("predict") else READY_JS, timeout=20000)
                     except Exception as exc:  # noqa: BLE001
                         findings.append({"viewport": name, "view": view, "check": "load", "detail": str(exc)[:200]})
                         continue

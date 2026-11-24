@@ -1,0 +1,81 @@
+# Predict's tests that need the Firebase emulators: the security rules (tests/test_firestore_rules.py)
+# and the whole loop of players, rules, the hourly job and the boards (tests/test_predict_emulator.py),
+# and the page in a real browser against them (tests/test_predict_browser.py).
+# Locally they skip unless FIRESTORE_EMULATOR_HOST is set (docs/predict.md, "Running it locally");
+# here `firebase emulators:exec` starts the emulators and sets it. The rest of the suite runs too,
+# plus the node tests, so a change to Predict is checked end to end before it merges.
+#
+# The case for the tooling this adds (AGENTS.md: a dependency needs one). firebase-tools is the only
+# way to run the Firestore and Auth emulators, and the rules are the game's security: a rules change
+# that no test has run against the emulator is a change nobody has tested. It is installed in this
+# workflow only (npm, pinned below), never in the app or the site: ~1 minute and ~100 MB of CI time on
+# a path-filtered run, and it needs Java (setup-java, Temurin 21, for the emulator jar). No new runtime
+# dependency; upkeep is bumping the pinned version when the emulator changes.
+
+name: Predict tests
+
+on:
+  pull_request:
+    paths:
+      - 'firestore.rules'
+      - 'firestore.indexes.json'
+      - 'public/predict*'
+      - 'public/i18n.js'
+      - 'src/elitetracker/predict/**'
+      - 'src/elitetracker/predict_sync.py'
+      - 'src/elitetracker/sources/firestore.py'
+      - 'tests/**predict*'
+      - 'tests/test_firestore_*'
+      - '.github/workflows/predict-tests.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'firestore.rules'
+      - 'src/elitetracker/predict/**'
+      - '.github/workflows/predict-tests.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: predict-tests-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  emulator:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+
+      - name: Install
+        run: |
+          python -m pip install --upgrade pip
+          pip install ".[dev]"
+          npm install --global firebase-tools@15.27.0
+          python -m playwright install --with-deps chromium   # for tests/test_predict_browser.py (playwright is already a dev extra)
+
+      - name: Rules and the end-to-end loop, against the emulators
+        run: |
+          firebase emulators:exec --only auth,firestore --project demo-elitetracker \
+            "python -m pytest -q tests/test_firestore_rules.py tests/test_predict_emulator.py tests/test_predict_browser.py"
+
+      - name: The rest of the Python suite
+        run: python -m pytest -q
+
+      - name: The browser-side tests
+        run: node --test tests/frontend.test.js tests/predict.test.js tests/predict-ui.test.js

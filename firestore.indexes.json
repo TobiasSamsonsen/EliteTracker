@@ -1,0 +1,36 @@
+{
+  "indexes": [],
+  "fieldOverrides": [
+    {
+      "collectionGroup": "rounds",
+      "fieldPath": "r",
+      "indexes": [
+        { "order": "ASCENDING", "queryScope": "COLLECTION_GROUP" }
+      ]
+    },
+    {
+      "collectionGroup": "picks",
+      "fieldPath": "r",
+      "indexes": [
+        { "order": "ASCENDING", "queryScope": "COLLECTION_GROUP" }
+      ]
+    },
+    {
+      "collectionGroup": "members",
+      "fieldPath": "joined",
+      "indexes": [
+        { "order": "ASCENDING", "queryScope": "COLLECTION_GROUP" }
+      ]
+    },
+    {
+      "collectionGroup": "rounds",
+      "fieldPath": "p",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "stats",
+      "fieldPath": "rounds",
+      "indexes": []
+    }
+  ]
+}

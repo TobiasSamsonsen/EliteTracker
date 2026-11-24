@@ -73,6 +73,7 @@
         <button type="button" data-view="matches" aria-pressed="false"><span data-i18n="tab.matches">Matches</span></button>
         <button type="button" data-view="grid" aria-pressed="false"><span data-i18n="tab.grid">Grid</span></button>
         <button type="button" data-view="explore" aria-pressed="false"><span data-i18n="tab.explore">Explore</span></button>
+        <button type="button" data-view="predict" aria-pressed="false"><span data-i18n="tab.predict">Predict</span></button>
         <button type="button" class="views-more" id="views-more" aria-pressed="false" aria-expanded="false" aria-controls="views-more-menu"><span data-i18n="mob.more">More</span><svg viewBox="0 0 12 12" width="10" height="10" aria-hidden="true" focusable="false"><path d="M2.5 4.5 6 8l3.5-3.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
       </div>
     </div>
@@ -105,6 +106,7 @@
       <button type="button" class="sheet__item" data-view="ladder" aria-pressed="false"><svg class="sheet__icon" viewBox="0 0 16 16" aria-hidden="true" focusable="false" fill="currentColor"><path d="M3 1.5v13M13 1.5v13" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><path d="M3 4.5h10M3 8h10M3 11.5h10" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" opacity=".55"/><circle cx="10" cy="4.5" r="1.7"/><circle cx="6" cy="8" r="1.7"/><circle cx="8.5" cy="11.5" r="1.7"/></svg><span data-i18n="mob.ladder">Ladder</span></button>
       <button type="button" class="sheet__item" data-view="compare" aria-pressed="false"><svg class="sheet__icon" viewBox="0 0 16 16" aria-hidden="true" focusable="false" fill="currentColor"><path d="M2 5h10M9 2l3 3-3 3M14 11H4M7 8l-3 3 3 3" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg><span data-i18n="mob.compare">Compare clubs</span></button>
       <button type="button" class="sheet__item" data-view="model" aria-pressed="false"><svg class="sheet__icon" viewBox="0 0 16 16" aria-hidden="true" focusable="false" fill="currentColor"><path d="M2 14.5V9.5M6 14.5V5.5M10 14.5V7.5M14 14.5V2" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg><span data-i18n="mob.model">Model card</span></button>
+      <button type="button" class="sheet__item" data-view="predict" aria-pressed="false"><svg class="sheet__icon" viewBox="0 0 16 16" aria-hidden="true" focusable="false" fill="currentColor"><rect x="1.5" y="9" width="3.2" height="5.5" rx=".7"/><rect x="6.4" y="5" width="3.2" height="9.5" rx=".7"/><rect x="11.3" y="1.5" width="3.2" height="13" rx=".7"/></svg><span data-i18n="mob.predict">Predict</span></button>
       <div class="sheet__divider" aria-hidden="true"></div>
       <div class="sheet__setting">
         <span class="sheet__setting-label" data-i18n="sheet.theme">Theme</span>
@@ -130,6 +132,7 @@
   <button type="button" class="popover-menu__btn" data-view="matches" aria-pressed="false" hidden><span data-i18n="tab.matches">Matches</span></button>
   <button type="button" class="popover-menu__btn" data-view="grid" aria-pressed="false" hidden><span data-i18n="tab.grid">Grid</span></button>
   <button type="button" class="popover-menu__btn" data-view="explore" aria-pressed="false" hidden><span data-i18n="tab.explore">Explore</span></button>
+  <button type="button" class="popover-menu__btn" data-view="predict" aria-pressed="false" hidden><span data-i18n="tab.predict">Predict</span></button>
   <button type="button" class="popover-menu__btn" data-view="ladder" aria-pressed="false"><span data-i18n="tab.ladder">Ladder</span></button>
   <button type="button" class="popover-menu__btn" data-view="compare" aria-pressed="false"><span data-i18n="tab.compare">Compare</span></button>
   <button type="button" class="popover-menu__btn" data-view="model" aria-pressed="false"><span data-i18n="tab.model">Model Card</span></button>
@@ -452,6 +455,27 @@
       </div>
     </section>
 
+    <!-- The prediction game (predict.js, loaded the first time the view opens). It reads none of the
+         season report, so it can show before the report has landed (bootPredict in app.js). -->
+    <section data-section="predict">
+      <div class="panel predict">
+        <div class="panel__head">
+          <div>
+            <h2 data-i18n="predict.title">Predict</h2>
+            <p data-i18n="predict.tagline">Gi dine egne sjanser for kampene i Eliteserien og OBOS-ligaen, og se om du slår modellen.</p>
+            <a class="phowlink pbtn pbtn--small" href="#how" data-i18n="predict.how.link">Slik spiller du</a>
+          </div>
+          <div class="panel__tools" id="predict-tabs"></div>
+        </div>
+        <div id="predict-note" role="status" aria-live="polite" hidden></div>
+        <div class="playout">
+          <div id="predict-view" aria-live="polite"><p class="pload" data-i18n="predict.loading">Laster …</p></div>
+          <aside id="predict-side" class="pside" hidden></aside>
+        </div>
+        <p class="pfine"><span data-i18n="predict.foot.age">Spillet er for deg som er 13 år eller eldre.</span> · <a href="/personvern.html" data-i18n="predict.foot.privacy">Personvern</a></p>
+      </div>
+    </section>
+
     <section data-section="team">
       <div class="panel">
         <div id="team-content"></div>
@@ -465,6 +489,7 @@
   <div id="footer-data" class="footer__data"></div>
   <div id="footer-text">EliteTracker — Eliteserien og OBOS-ligaen, sesongene 2015–2026. Utviklet av Tobias Samsonsen.</div>
   <div class="footer__links">
+    <a href="/predict/" data-view-link="predict" data-i18n="footer.predict">Predict: tipp kampene</a> ·
     <a href="/personvern.html" data-i18n="consent.privacy">Personvern</a> ·
     <button type="button" id="consent-open" class="footer__consent" data-i18n="consent.settings">Informasjonskapsler</button>
   </div>
