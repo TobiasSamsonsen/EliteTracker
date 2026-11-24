@@ -4250,7 +4250,7 @@ function hasPredictSession() {
 }
 
 async function loadOverviewPredict() {
-  await Promise.all(PREDICT_CARD_FILES.map(predictScript));
+  await predictScriptsInOrder(PREDICT_CARD_FILES);
   const client = createClient({ config: predictConfig() });
   if (!client.uid) return null;
   const kept = predictCardKept();
@@ -4264,7 +4264,9 @@ async function loadOverviewPredict() {
   rounds.forEach((r) => { r.kicks = r.ks; });
   // The round the game itself opens on (a round with one match put off for weeks is not it).
   const current = rounds.length ? rounds[currentRoundIndex(rounds, nowMs)] : null;
-  const upcoming = current && ['open', 'future'].includes(roundStatus(current, nowMs)) ? current : null;
+  // A round with some matches played and others still ahead ('partial') still has matches to tip.
+  const currentStatus = current ? roundStatus(current, nowMs) : null;
+  const upcoming = current && ['open', 'future', 'partial'].includes(currentStatus) ? current : null;
   const data = { next: null, last: null, season: null, place: null };
   // This season in the game's division, from the stats already read: totals, best round, rounds ahead of the model.
   const series = seasonSeries(stats, index.season, league);
@@ -4282,7 +4284,8 @@ async function loadOverviewPredict() {
   ]);
   if (upcoming) {
     const done = Object.keys((entry && entry.p) || {}).length;
-    data.next = { round: upcoming.round, open, done, total: upcoming.n, when: (open ? upcoming.closes : upcoming.opens).getTime() };
+    const nextKick = currentStatus === 'partial' ? Math.min(...(upcoming.kicks || []).map((k) => k.getTime()).filter((k) => k > nowMs)) : null;
+    data.next = { round: upcoming.round, open, done, total: upcoming.n, when: Number.isFinite(nextKick) ? nextKick : (open ? upcoming.closes : upcoming.opens).getTime() };
   }
   if (board && data.season) {
     // Your place among people (the model and the crowd take none); past the board's rows, or with a
@@ -4486,7 +4489,7 @@ function overviewPredict() {
       };
       if (place) stat(placeText, placeLabel(place.players));
       stat(signed(season.pts), t('predict.recap.pts'), season.pts < -0.05 ? 'bad' : 'good');
-      stat(`${fixed(season.acc, 1)} %`, t('predict.recap.acc'));
+      stat(percentText(season.acc, currentLang, 1), t('predict.recap.acc'));
       stat(num(season.rounds), t('overview.predict.roundsPlayed'));
       stat(signed(season.best.pts), t('overview.predict.bestRound', { round: season.best.round }));
       stat(t('overview.predict.beatValue', { n: season.beat, total: season.rounds }), t('overview.predict.beatModel'));
@@ -4518,7 +4521,7 @@ function overviewPredict() {
       // "poeng"; a phone, whose strip has no "Runde 27" over it, says "poeng i runde 27".
       const ptsLabel = el('span', '', t('predict.recap.pts'));
       ptsLabel.append(el('span', 'overview-predict__phone', ` ${t('overview.predict.inRound', { round: last.round })}`));
-      figures.append(figure(signed(last.pts), ptsLabel, 'pts'), figure(`${fixed(last.acc, 1)} %`, t('predict.recap.acc'), 'acc'));
+      figures.append(figure(signed(last.pts), ptsLabel, 'pts'), figure(percentText(last.acc, currentLang, 1), t('predict.recap.acc'), 'acc'));
       figures.firstChild.dataset.tone = last.pts < -0.05 ? 'bad' : 'good';
       result.appendChild(figures);
       side.appendChild(result);
@@ -10945,10 +10948,25 @@ function predictScript(src) {
   return predictScripts.get(src);
 }
 
+/* The files one after the other (each is a classic script with top-level declarations, so none may run before
+   the one it needs, nor twice). A failed file is dropped from the map by predictScript, so a retry fetches just
+   that one and goes on from there. The preload hints keep the fetching side by side. */
+function predictScriptsInOrder(files) {
+  for (const src of files) {
+    if (predictScripts.has(src) || document.querySelector(`link[rel="preload"][href="${src}"]`)) continue;
+    const hint = document.createElement('link');
+    hint.rel = 'preload';
+    hint.as = 'script';
+    hint.href = src;
+    document.head.appendChild(hint);
+  }
+  return files.reduce((chain, src) => chain.then(() => predictScript(src)), Promise.resolve());
+}
+
 function loadPredict() {
   if (window.PredictGame) return Promise.resolve();
   if (!predictLoad) {
-    const css = new Promise((resolve) => {
+    const css = document.querySelector('link[rel="stylesheet"][href="/predict.css"]') ? Promise.resolve() : new Promise((resolve) => {
       const link = document.createElement('link');
       link.rel = 'stylesheet';
       link.href = '/predict.css';
@@ -10956,12 +10974,10 @@ function loadPredict() {
       link.onerror = resolve; // the game still works unstyled
       document.head.appendChild(link);
     });
-    // Fetched side by side, run in order (async = false): each needs the one before.
-    const scripts = PREDICT_FILES.map(predictScript);
-    predictLoad = Promise.all([css, ...scripts]).catch((error) => {
+    // One after the other: each needs the one before. A failure leaves the files that did load alone, so
+    // the retry runs only the rest (running a loaded file again is a redeclaration error).
+    predictLoad = Promise.all([css, predictScriptsInOrder(PREDICT_FILES)]).catch((error) => {
       predictLoad = null;
-      for (const src of PREDICT_FILES) document.querySelector(`script[src="${src}"]`)?.remove();
-      predictScripts.clear();
       throw error;
     });
   }

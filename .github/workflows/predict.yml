@@ -1,8 +1,13 @@
 # The Predict job (docs/predict.md): syncs fixtures to Firestore, snapshots the model's odds
 # at kick-off, scores settled rounds, builds the leaderboards, erases deletion requests.
 #
-# Hourly once this file is on main (the rules and indexes are deployed). A manual run is a
-# dry run unless `live` is ticked; a scheduled run is always live.
+# Runs once this file is on main (the rules and indexes are deployed), on two triggers:
+#   - after every Deploy that a push to main made (new results come in through refresh.yml, which pushes,
+#     which deploys), so scores follow the results by minutes, not by whenever the next schedule fires;
+#   - on a schedule, as the net under that. GitHub's schedule is best effort: refresh.yml's "hourly" cron ran
+#     about 4 times a day in November 2026 (median gap 6.5 hours, longest 12; one 41-hour gap was probably a GitHub account suspension), and Predict's is no better.
+#     The job is built for that (docs/predict.md, "When the job runs").
+# A manual run is a dry run unless `live` is ticked; every other run is live.
 #
 # Auth is keyless: google-github-actions/auth exchanges this run's GitHub OIDC token for a
 # short-lived access token of predict-sync@elitetrackerno.iam.gserviceaccount.com (only
@@ -18,8 +23,11 @@ on:
         description: "Write to Firestore and commit (unticked: a dry run that only prints)"
         type: boolean
         default: false
+  workflow_run:
+    workflows: ["Deploy to Firebase Hosting"]
+    types: [completed]
   schedule:
-    - cron: "7 * * * *"        # hourly, a few minutes past to stay clear of refresh.yml
+    - cron: "41 * * * *"       # off the top of the hour, where GitHub drops the most scheduled runs
 
 permissions:
   contents: write
@@ -31,6 +39,8 @@ concurrency:
 
 jobs:
   sync:
+    # a deploy of a pull request preview, or one that failed, is no news
+    if: ${{ github.event_name != 'workflow_run' || (github.event.workflow_run.event == 'push' && github.event.workflow_run.conclusion == 'success') }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -65,18 +75,29 @@ jobs:
             python -m elitetracker.predict_sync
           fi
 
-      - name: Commit the anonymous aggregates and the calendar feed
+      - name: Commit the anonymous aggregates
         if: ${{ github.event_name != 'workflow_dispatch' || inputs.live }}
         env:
           PAT: ${{ secrets.REFRESH_PAT }}
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          if git diff --quiet -- data/predict public/predict/rounds.ics; then
+          # status, not diff: none of these files is tracked on the first run, and `git diff` ignores untracked files
+          if [ -z "$(git status --porcelain -- data/predict)" ]; then
             echo "Nothing to commit."
             exit 0
           fi
-          git add data/predict public/predict/rounds.ics
+          git add data/predict
           git commit -m "Predict sync: $(date -u +%Y-%m-%dT%H:%MZ)"
-          git pull --rebase --autostash origin main
-          git push https://${PAT}@github.com/${{ github.repository }}.git HEAD:main
+          # refresh.yml pushes to main too: a push that loses the race is rebased and tried again, because
+          # the run's locked odds and shadow crowd exist only in this commit
+          for attempt in 1 2 3 4 5; do
+            git pull --rebase --autostash origin main
+            if git push https://${PAT}@github.com/${{ github.repository }}.git HEAD:main; then
+              exit 0
+            fi
+            echo "push lost a race (attempt $attempt), retrying"
+            sleep $((attempt * 5))
+          done
+          echo "::error::could not push the Predict aggregates"
+          exit 1

@@ -44,7 +44,8 @@ VIEWPORTS = [
 ]
 EXPLORE = ["mountain", "attack", "luck", "races", "whatif", "runin", "playoff"]
 # The Predict view, its five tabs and the guide, with Firestore answered from a small fixture (see predict_fixture).
-PREDICT = ["predict", "predict:table", "predict:boards", "predict:leagues", "predict:me", "predict:how"]
+# "predict:tutorial" is the first visit (the guide stands in front of the round); the others are a returning visitor's.
+PREDICT = ["predict:tutorial", "predict", "predict:table", "predict:boards", "predict:leagues", "predict:me", "predict:how"]
 VIEWS = (["overview", "grid", "table", "matches", "ladder", "compare", "explore"]
          + [f"explore:{item}" for item in EXPLORE] + ["model", "team"] + PREDICT)
 
@@ -228,6 +229,7 @@ def route_firestore(context, docs: dict[str, dict]) -> None:
 def url_for(base: str, view: str, team: str | None) -> str:
     if view.startswith("predict"):
         tab = view.split(":", 1)[1] if ":" in view else ""
+        tab = "" if tab == "tutorial" else tab
         return f"{base}/?view=predict" + (f"#{tab}" if tab else "")
     if view == "team":
         return f"{base}/?team={team}"
@@ -264,6 +266,11 @@ def run(only: set[str] | None, views: list[str], shots: Path | None, consent: bo
                         page.goto(f"{base}/?view=table", wait_until="load")
                         page.wait_for_function(READY_JS, timeout=20000)
                         team = page.evaluate("() => state.reports[state.league]?.table?.[0]?.team")
+                    if view.startswith("predict"):
+                        # the tutorial would otherwise stand in front of the cards, the nav, the table game and the guide
+                        page.goto(f"{base}/robots.txt", wait_until="load")
+                        page.evaluate("(seen) => { try { seen ? localStorage.setItem('predict.intro', 'seen') : localStorage.removeItem('predict.intro'); } catch (e) {} }",
+                                      view != "predict:tutorial")
                     page.goto(url_for(base, view, team), wait_until="load")
                     try:
                         page.wait_for_function(READY_PREDICT_JS if view.startswith("predict") else READY_JS, timeout=20000)

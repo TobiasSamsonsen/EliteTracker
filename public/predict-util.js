@@ -97,6 +97,25 @@ function splitDraft(draft, slots, nowMs) {
   return { open, locked };
 }
 
+/* Run `task` after whatever is in flight under `key`, so two saves of one round never overlap or land out
+   of order: the second one reads the draft when its turn comes, so the newer pick is the one that stays. */
+function inSequence(flights, key, task) {
+  const run = (flights[key] || Promise.resolve()).catch(() => {}).then(task);
+  flights[key] = run;
+  const clear = () => { if (flights[key] === run) delete flights[key]; };
+  run.then(clear, clear);
+  return run;
+}
+
+/* The game's first season: no board exists for an earlier one. The picker offers the current season and
+   the three before it, no further back than the launch. */
+const LAUNCH_SEASON = 2026;
+function boardSeasons(current, launch = LAUNCH_SEASON) {
+  if (!current) return [];
+  const seasons = [0, 1, 2, 3].map((back) => current - back).filter((season) => season >= launch);
+  return seasons.length ? seasons : [current];
+}
+
 /* Drafts saved while signed out belong to no account yet: the keys to move to `uid` once it exists. */
 const draftKeysToMove = (keys) => keys.filter((k) => k.startsWith('predict.draft.new.'));
 
@@ -610,7 +629,7 @@ function analysePlay(rows) {
 if (typeof module !== 'undefined') {
   module.exports = {
     groupThousands, fixed, percentText, shortClubNames, signedScore, spanParts, ROUND_OVER_AFTER, roundStatus, currentRoundIndex, isLocked,
-    splitDraft, draftKeysToMove, moveDrafts, keysToReset, calibrationPoints, ringState,
+    splitDraft, inSequence, LAUNCH_SEASON, boardSeasons, draftKeysToMove, moveDrafts, keysToReset, calibrationPoints, ringState,
     calibrationBins, seasonTotals, badgesFor, nearestPosition, positionForEdges, positionForTyped, FREE_MIN, FREE_MAX, freeEdges, freeTyped, freePosition, isFreePick, gapAtFraction, dropIndex, moveItem, TABLE_BONUS, draftKey, roundKeyOf,
     beatShare, boardWindow, humanRanks, rivalsOf, standingOf, statsSeasons, seasonSeries, seasonHighlights, normalFit, normalDensity, TIERS, tierOf, roundForm, analysePlay, ANALYSE_MIN,
   };

@@ -140,6 +140,7 @@
 .ptut__hint[data-ok="true"] { color: var(--outcome-good-ink); }
 .ptut__nav { display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: 0.5rem; }
 .ptut__leave { margin-right: auto; }
+.ptut__skip { justify-self: center; background: none; border: 0; box-shadow: none; padding: 0.25rem 0.5rem; color: var(--ink-muted); font-size: 0.8125rem; text-decoration: underline; cursor: pointer; }
 .ptut__google { display: grid; justify-items: start; gap: 0.6rem; }
 .ptut__google .pme__msg { margin: 0; }
 .pguide__again { justify-self: center; margin-top: -0.5rem; }

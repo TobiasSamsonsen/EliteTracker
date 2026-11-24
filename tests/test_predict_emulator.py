@@ -45,7 +45,7 @@ def matches(first_kickoff: datetime, played: bool):
 
 def run(store, now, first_kickoff, played, tmp_path, report):
     return sync.run(store, now=now, matches_by_slug=matches(first_kickoff, played), season=SEASON, report=report,
-                    data_dir=tmp_path / "predict", ics_path=tmp_path / "rounds.ics")
+                    data_dir=tmp_path / "predict")
 
 
 def save_pick(who: Firestore, uid: str, h: int, d: int, a: int):

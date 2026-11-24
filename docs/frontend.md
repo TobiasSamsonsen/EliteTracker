@@ -338,7 +338,7 @@ Run it against the local emulators (no cloud involved):
 
 ```bash
 firebase emulators:start --only auth,firestore --project demo-elitetracker     # Auth :9099, Firestore :8085
-FIRESTORE_EMULATOR_HOST=127.0.0.1:8085 .venv/Scripts/python -m elitetracker.predict_sync     --project demo-predict-ui --report public/data/report.json --data-dir /tmp/predict --ics /tmp/rounds.ics --no-purge
+FIRESTORE_EMULATOR_HOST=127.0.0.1:8085 .venv/Scripts/python -m elitetracker.predict_sync     --project demo-predict-ui --report public/data/report.json --data-dir /tmp/predict --no-purge
 python -m http.server 8123 --directory public
 # then open http://localhost:8123/?view=predict&emulator=1&project=demo-predict-ui
 # (/predict/ itself is a route page: it exists once build_site, or pages.build_pages, has run)

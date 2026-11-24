@@ -229,6 +229,16 @@ function mapAuthError(message) {
   return new PredictError('invalid', text, 400);
 }
 
+/* Why a token refresh failed. Only a refresh token the server no longer accepts ends the session; a rate
+   limit, a busy server or a bad reply leaves it alone, so a hiccup never signs a player out. */
+function refreshFailure(status, message) {
+  const text = String(message || '');
+  if (/INVALID_REFRESH_TOKEN|USER_DISABLED|USER_NOT_FOUND|TOKEN_EXPIRED|MISSING_REFRESH_TOKEN|INVALID_GRANT_TYPE/.test(text)) return { error: new PredictError('auth', text, status || 400), fatal: true };
+  if (status === 429 || /TOO_MANY_ATTEMPTS|QUOTA/.test(text)) return { error: new PredictError('quota', text, 429), fatal: false };
+  if (status >= 500) return { error: new PredictError('server', text, status), fatal: false };
+  return { error: new PredictError('invalid', text, status || 400), fatal: false };
+}
+
 /* The request that links a Google ID token to the signed-in (anonymous) player;
    without `idToken` it would sign in as the Google account instead. */
 function googleLinkRequest(config, currentIdToken, googleIdToken, origin) {
@@ -273,7 +283,7 @@ const sessionKey = (config) => (config.project === 'elitetrackerno' ? SESSION_KE
 /* Documents anyone may read: a rejected token must not hide them. */
 const PUBLIC_DOCS = /^(meta\/rounds|meta\/standings|fixtures\/|reveal\/|boards\/|tablegames\/)/;
 
-function createClient({ config, fetchImpl, storage, now = () => Date.now() }) {
+function createClient({ config, fetchImpl, storage, now = () => Date.now(), onSessionChange, listen }) {
   const doFetch = fetchImpl || ((...args) => fetch(...args));
   const store = safeStorage(storage);
   let session = null;
@@ -282,6 +292,18 @@ function createClient({ config, fetchImpl, storage, now = () => Date.now() }) {
   let offset = 0;                       // the server's clock minus ours, learned from commit times
 
   const saveSession = (next) => { session = next; if (next) store.set(SESSION, JSON.stringify(next)); else store.remove(SESSION); };
+
+  /* Another tab may have signed in, linked Google or refreshed since this one read the session: the copy in
+     storage is the newer one, and this tab must never write its own stale copy over it. */
+  const readStored = () => { try { return JSON.parse(store.get(SESSION)); } catch (error) { return null; } };
+  function syncSession() {
+    const before = session;
+    session = readStored();
+    if (onSessionChange && (before && before.uid) !== (session && session.uid)) onSessionChange(session);
+    return session;
+  }
+  const watch = listen || (typeof window !== 'undefined' && window.addEventListener ? (handler) => window.addEventListener('storage', handler) : null);
+  if (watch) watch((event) => { if (!event || event.key === null || event.key === SESSION) syncSession(); });
 
   async function send(method, url, body, headers = {}) {
     let reply;
@@ -305,14 +327,29 @@ function createClient({ config, fetchImpl, storage, now = () => Date.now() }) {
     return session;
   }
 
-  async function refresh() {
+  let refreshing = null;                // one refresh at a time: concurrent calls share it
+  function refresh() {
+    if (!refreshing) refreshing = refreshNow().finally(() => { refreshing = null; });
+    return refreshing;
+  }
+
+  async function refreshNow() {
+    const stored = readStored();
+    if (stored && (!session || stored.idToken !== session.idToken)) {          // another tab got there first
+      syncSession();
+      if (session && session.expiresAt - now() >= 60000) return session;
+    }
     if (!session || !session.refreshToken) throw new PredictError('auth', 'no session');
     const reply = await doFetch(`${config.tokenBase}/v1/token?key=${config.apiKey}`, {
       method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
       body: `grant_type=refresh_token&refresh_token=${encodeURIComponent(session.refreshToken)}`,
     }).catch((error) => { throw new PredictError('offline', String(error && error.message)); });
     const parsed = await reply.json().catch(() => null);
-    if (!reply.ok) { saveSession(null); throw mapAuthError(parsed && parsed.error && parsed.error.message); }
+    if (!reply.ok) {
+      const { error, fatal } = refreshFailure(reply.status, parsed && parsed.error && parsed.error.message);
+      if (fatal) saveSession(null);
+      throw error;
+    }
     return adopt(parsed);
   }
 
@@ -407,6 +444,7 @@ function createClient({ config, fetchImpl, storage, now = () => Date.now() }) {
     },
 
     signOut() { saveSession(null); },
+    syncSession,
   };
 }
 
@@ -415,6 +453,6 @@ if (typeof module !== 'undefined') {
     PREDICT_KEY, GOOGLE_CLIENT_ID, predictConfig, SERVER_TIME, encodeValue, decodeValue, decodeDocument, fieldPath, documentName,
     writeSet, writeMerge, writeDelete, entryWrites, entryWithdrawWrites, profileCreateWrites, nicknameChangeWrites, profileUpdateWrites, tableWrites,
     reportWrites, reportId, newLeagueCode, isLeagueCode, leagueCreateWrites, leagueJoinWrites, deleteRequestWrites, randomId, PredictError,
-    mapError, mapAuthError, googleLinkRequest, safeStorage, createClient, SESSION_KEY, sessionKey,
+    mapError, mapAuthError, refreshFailure, googleLinkRequest, safeStorage, createClient, SESSION_KEY, sessionKey,
   };
 }

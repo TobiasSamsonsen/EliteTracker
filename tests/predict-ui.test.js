@@ -568,3 +568,104 @@ test('clubs by the site\'s short names: fixtures, the table game and the standin
   assert.equal(util.shortClubNames({ nick: 'Hamarkameratene' }, map).nick, 'Hamarkameratene');  // only club fields
   assert.equal(util.shortClubNames(null, map), null);
 });
+
+/* ---- sessions: a hiccup never signs a player out, and tabs never overwrite each other ---------------- */
+
+const memoryStorage = (seed = {}) => {
+  const memory = new Map(Object.entries(seed));
+  return { memory, storage: { getItem: (k) => (memory.has(k) ? memory.get(k) : null), setItem: (k, v) => memory.set(k, v), removeItem: (k) => memory.delete(k) } };
+};
+const sessionJson = (extra = {}) => JSON.stringify({ uid: 'u1', idToken: 'T1', refreshToken: 'R1', expiresAt: 0, ...extra });
+
+test('a failed token refresh ends the session only when the server no longer accepts the token', () => {
+  assert.equal(api.refreshFailure(400, 'INVALID_REFRESH_TOKEN').fatal, true);
+  assert.equal(api.refreshFailure(400, 'USER_DISABLED').fatal, true);
+  assert.equal(api.refreshFailure(400, 'USER_NOT_FOUND').fatal, true);
+  assert.equal(api.refreshFailure(400, 'TOKEN_EXPIRED').fatal, true);
+  for (const [status, message, code] of [[503, '', 'server'], [429, 'TOO_MANY_ATTEMPTS_TRY_LATER', 'quota'], [500, 'Internal error', 'server']]) {
+    const failure = api.refreshFailure(status, message);
+    assert.equal(failure.fatal, false);
+    assert.equal(failure.error.code, code);
+  }
+});
+
+test('a refresh that fails on a busy server keeps the session; a refused token clears it', async () => {
+  for (const [reply, kept] of [[{ status: 503, error: { message: 'Service Unavailable' } }, true], [{ status: 400, error: { message: 'INVALID_REFRESH_TOKEN' } }, false]]) {
+    const { memory, storage } = memoryStorage({ [api.sessionKey(local)]: sessionJson() });
+    const fetchImpl = async () => ({ ok: false, status: reply.status, json: async () => ({ error: reply.error }) });
+    const client = api.createClient({ config: local, fetchImpl, storage, now: () => 10_000_000, listen: () => {} });
+    await assert.rejects(client.get('stats/u1'));
+    assert.equal(Boolean(memory.get(api.sessionKey(local))), kept);
+    assert.equal(client.uid, kept ? 'u1' : null);
+  }
+});
+
+test('a network failure during a refresh keeps the session too', async () => {
+  const { memory, storage } = memoryStorage({ [api.sessionKey(local)]: sessionJson() });
+  const client = api.createClient({ config: local, fetchImpl: async () => { throw new Error('offline'); }, storage, now: () => 10_000_000, listen: () => {} });
+  await assert.rejects(client.get('stats/u1'), (error) => error.code === 'offline');
+  assert.ok(memory.get(api.sessionKey(local)));
+});
+
+test('concurrent calls with an expired token share one refresh', async () => {
+  const { storage } = memoryStorage({ [api.sessionKey(local)]: sessionJson() });
+  let refreshes = 0;
+  const fetchImpl = async (url) => {
+    if (url.includes('/v1/token')) { refreshes += 1; await new Promise((r) => setTimeout(r, 5)); return { ok: true, json: async () => ({ id_token: 'T2', refresh_token: 'R2', user_id: 'u1', expires_in: '3600' }) }; }
+    return { ok: true, json: async () => ({ fields: {} }) };
+  };
+  const client = api.createClient({ config: local, fetchImpl, storage, now: () => 10_000_000, listen: () => {} });
+  await Promise.all([client.get('stats/u1'), client.get('users/u1'), client.get('entries/u1/rounds/x')]);
+  assert.equal(refreshes, 1);
+});
+
+test('a tab never writes a stale session over the newer one another tab saved', async () => {
+  const key = api.sessionKey(local);
+  const { memory, storage } = memoryStorage({ [key]: sessionJson() });
+  const changes = [];
+  let handler = null;
+  const calls = [];
+  const fetchImpl = async (url) => { calls.push(url); return { ok: true, json: async () => ({ id_token: 'T9', refresh_token: 'R9', user_id: 'u1', expires_in: '3600' }) }; };
+  const client = api.createClient({ config: local, fetchImpl, storage, now: () => 10_000_000, onSessionChange: (s) => changes.push(s && s.uid), listen: (fn) => { handler = fn; } });
+  // another tab signs in as a Google account and saves its session
+  memory.set(key, JSON.stringify({ uid: 'google-1', idToken: 'TG', refreshToken: 'RG', expiresAt: 99_000_000 }));
+  handler({ key });
+  assert.equal(client.uid, 'google-1');
+  assert.deepEqual(changes, ['google-1']);
+  // this tab then needs a token: it uses the newer session, not its own stale one, and does not refresh
+  await client.get('stats/google-1');
+  assert.equal(calls.filter((u) => u.includes('/v1/token')).length, 0);
+  assert.equal(JSON.parse(memory.get(key)).uid, 'google-1');
+  // another tab signing out is followed too
+  memory.delete(key);
+  handler({ key });
+  assert.equal(client.uid, null);
+  handler({ key: 'something.else' });
+  assert.equal(client.uid, null);
+});
+
+test('saves of one round run in turn, and the later one sees the newer draft', async () => {
+  const flights = {};
+  const log = [];
+  const draft = { v: 1 };
+  const slow = (label, ms) => () => new Promise((resolve) => { log.push(`start ${label}:${draft.v}`); setTimeout(() => { log.push(`end ${label}`); resolve(); }, ms); });
+  const first = util.inSequence(flights, 'r1', slow('a', 20));
+  draft.v = 2;                                                          // moved again while the first commit is on its way
+  const second = util.inSequence(flights, 'r1', slow('b', 1));
+  const other = util.inSequence(flights, 'r2', slow('c', 1));          // another round is not held up
+  await Promise.all([first, second, other]);
+  assert.deepEqual(log.filter((l) => l.startsWith('start a') || l.startsWith('start b') || l.startsWith('end a')), ['start a:2', 'end a', 'start b:2']);
+  assert.ok(log.indexOf('end a') < log.indexOf('start b:2'));
+  assert.deepEqual(flights, {});
+  // a failed save does not block the next one
+  await assert.rejects(util.inSequence(flights, 'r3', async () => { throw new Error('x'); }));
+  assert.equal(await util.inSequence(flights, 'r3', async () => 'ok'), 'ok');
+});
+
+test('the season picker offers the launch season and later, never one with no boards', () => {
+  assert.deepEqual(util.boardSeasons(2026), [2026]);
+  assert.deepEqual(util.boardSeasons(2027), [2027, 2026]);
+  assert.deepEqual(util.boardSeasons(2030), [2030, 2029, 2028, 2027]);
+  assert.deepEqual(util.boardSeasons(2025), [2025]);       // before the launch there is still the current one
+  assert.deepEqual(util.boardSeasons(null), []);
+});

@@ -9,7 +9,6 @@ import pytest
 
 from elitetracker.normalize.matches import Match
 from elitetracker.predict import boards, sync
-from elitetracker.predict.ics import calendar
 from elitetracker.predict.scoring import score_match
 from elitetracker.sources.firestore import Write
 from tests.predict_fakes import FakeStore
@@ -50,7 +49,7 @@ def put_entry(store, uid, key, slots, when):
 
 def go(store, now, matches, tmp_path, **kwargs):
     return sync.run(store, now=now, matches_by_slug=matches, season=SEASON, report=kwargs.pop("report", REPORT),
-                    data_dir=tmp_path / "predict", ics_path=tmp_path / "rounds.ics", **kwargs)
+                    data_dir=tmp_path / "predict", **kwargs)
 
 
 def test_fixtures_get_stable_slots_and_a_seven_day_window(tmp_path):
@@ -82,7 +81,7 @@ def test_the_model_odds_are_kept_fresh_until_kickoff_and_the_last_run_before_it_
     locked = tmp_path / "predict" / "locked_odds.json"
     summary = go(store, T0 - timedelta(hours=30), season(), tmp_path)
     snaps = json.loads(locked.read_text())
-    assert summary["snapshots"] == 2 and snaps["101"]["h"] == 0.5 and snaps["101"]["v"] == "elo-v99.0"   # 48 h ahead is in the window
+    assert summary["snapshots"] == 2 and snaps["101"]["h"] == 0.5 and snaps["101"]["v"] == "elo-v99.0"   # inside the window
     assert go(store, T0 - timedelta(hours=29), season(), tmp_path)["snapshots"] == 0            # unchanged odds: no rewrite
     newer = {**REPORT, "eliteserien": {**REPORT["eliteserien"], "fixtures": [
         {"match_id": "101", "home_win": 0.6, "draw": 0.2, "away_win": 0.2},
@@ -94,8 +93,8 @@ def test_the_model_odds_are_kept_fresh_until_kickoff_and_the_last_run_before_it_
         {"match_id": "101", "home_win": 0.9, "draw": 0.05, "away_win": 0.05}]}}
     go(store, T0 + timedelta(minutes=1), season(), tmp_path, report=changed)
     assert json.loads(locked.read_text())["101"]["h"] == 0.6
-    # a match more than 48 h away has no snapshot yet
-    assert "103" not in snaps
+    # a match further off than the window (four days) has no snapshot yet
+    assert go(FakeStore(), T0 - timedelta(days=6), season(), tmp_path / "far")["snapshots"] == 0
 
 
 def test_the_locked_odds_are_saved_even_if_the_commit_fails(tmp_path):
@@ -171,6 +170,22 @@ def test_a_league_joined_between_matches_gets_its_board_at_once_and_only_once(tm
     assert len(store.writes_to("boards/league_ABCD2345")) == writes + 1
 
 
+def test_a_league_board_is_kept_per_season_and_the_season_before_does_not_overwrite_the_current_one(tmp_path):
+    store = FakeStore()
+    store.docs["leagues/ABCD2345"] = {"name": "Kontoret", "owner": "u0", "created": T0 - timedelta(days=5)}
+    store.docs["leagues/ABCD2345/members/u0"] = {"joined": T0 - timedelta(days=5)}
+    go(store, T0 - timedelta(hours=2), season(), tmp_path)
+    assert store.docs[f"boards/league_{SEASON}_ABCD2345"]["season"] == SEASON and store.docs["boards/league_ABCD2345"]["season"] == SEASON
+    for i in range(6):
+        put_entry(store, f"u{i}", KEY, {"s1": (0, 50, 25, 25)}, T0 - timedelta(days=1))
+        store.docs[f"users/u{i}"] = {"nick": f"Navn_u{i}", "hidden": False, "created": T0 - timedelta(days=9)}
+    store.docs["boards/league_ABCD2345"]["season"] = SEASON + 1                  # the next season's board has taken the page's id
+    sync.run(store, now=T0 + timedelta(hours=5), matches_by_slug=season(played={101: (1, 0)}), season=SEASON, report=REPORT,
+             data_dir=tmp_path / "predict", purge=False, publish=False)     # the season before, scored late
+    assert store.docs["boards/league_ABCD2345"]["season"] == SEASON + 1
+    assert store.docs[f"boards/league_{SEASON}_ABCD2345"]["rows"]
+
+
 def test_a_missing_members_index_warns_instead_of_stopping_the_job(tmp_path):
     from elitetracker.sources.firestore import FirestoreError
 
@@ -203,10 +218,9 @@ def test_a_season_that_has_just_ended_is_finished_without_touching_the_current_o
     table_writes = len(store.writes_to("tablegames/"))
     store.docs["deleteRequests/u9"] = {"at": T0}
     summary = sync.run(store, now=T0 - timedelta(days=19), matches_by_slug=season(), season=SEASON, report=REPORT,
-                       data_dir=tmp_path / "predict", ics_path=tmp_path / "again.ics", publish=False)
+                       data_dir=tmp_path / "predict", publish=False)
     assert summary["purged"] == [] and "deleteRequests/u9" in store.docs      # deletions belong to the current pass
     assert len(store.writes_to("meta/rounds")) == index_writes and len(store.writes_to("tablegames/")) == table_writes
-    assert not (tmp_path / "again.ics").exists()
 
 
 def test_a_settled_round_is_scored_boards_are_built_and_a_rerun_is_idempotent(tmp_path):
@@ -282,6 +296,35 @@ def test_a_deletion_request_erases_the_player_and_strips_the_boards(tmp_path):
         assert all(r["u"] != mark for r in board_doc["rows"])
 
 
+def test_a_deletion_in_a_scoring_run_does_not_write_the_old_boards_back(tmp_path):
+    store = FakeStore()
+    go(store, T0 - timedelta(hours=2), season(), tmp_path)
+    for i in range(6):
+        put_entry(store, f"u{i}", KEY, {"s1": (0, 50, 25, 25), "s2": (0, 50, 25, 25)}, T0 - timedelta(days=1))
+        store.docs[f"users/u{i}"] = {"nick": f"Tipper_{i}", "hidden": False, "created": T0 - timedelta(days=30)}
+        store.docs[f"nicknames/tipper_{i}"] = {"uid": f"u{i}"}
+    go(store, T0 + timedelta(hours=5), season(played={101: (1, 0)}), tmp_path)
+    board = f"boards/season_{SEASON}_eliteserien"
+    before = next(r for r in store.docs[board]["rows"] if r["u"] == boards.uid_hash("u0"))
+    store.docs["deleteRequests/u2"] = {"at": T0}
+    go(store, T0 + timedelta(hours=8), season(played={101: (1, 0), 102: (0, 2)}), tmp_path)      # a second match settles in the same run
+    rows = store.docs[board]["rows"]
+    after = next(r for r in rows if r["u"] == boards.uid_hash("u0"))
+    assert after["n"] == before["n"] + 1, "the board of the second match, not the stale one from the first"
+    assert all(r["u"] != boards.uid_hash("u2") for r in rows)
+    assert [r["rank"] for r in rows] == list(range(1, len(rows) + 1))
+
+
+def test_one_run_names_each_document_once_in_a_commit(tmp_path):
+    """The real service is stricter than the emulator about a document written twice in one commit
+    (meta/sync was: once per fixture on the first run)."""
+    store = FakeStore()
+    go(store, T0 - timedelta(days=10), season(), tmp_path)
+    paths = [w.path for w in store.commits[-1]]
+    assert paths.count("meta/sync") == 1
+    assert store.docs["meta/sync"]["fixtures"]["standings"] and len(store.docs["meta/sync"]["fixtures"]) >= 3
+
+
 def test_an_account_unused_for_24_months_goes_but_its_past_board_row_stays(tmp_path):
     store = FakeStore()
     old = T0 - timedelta(days=800)
@@ -296,9 +339,10 @@ def test_an_account_unused_for_24_months_goes_but_its_past_board_row_stays(tmp_p
     assert "users/old" not in store.docs and "stats/old" not in store.docs and "users/new" in store.docs
     assert "entries/old/rounds/2025_eliteserien_1" not in store.docs and "nicknames/gamle_ola" not in store.docs
     assert store.docs["boards/season_2025_eliteserien"]["rows"][0]["nick"] == "Gamle_Ola"
-    # the sweep runs once a day
+    # the sweep runs once a week: it lists every profile and stats document
     store.docs["users/old2"] = {"nick": "Gamle_Per", "hidden": False, "created": old}
     assert go(store, T0 - timedelta(days=3, hours=-1), season(), tmp_path)["purged"] == []
+    assert go(store, T0 - timedelta(days=3, hours=-1) + sync.timedelta(days=sync.SWEEP_EVERY_DAYS), season(), tmp_path)["purged"] == ["old2"]
 
 
 def test_reported_or_blocked_names_are_hidden_from_the_boards(tmp_path):
@@ -338,15 +382,6 @@ def test_the_table_game_opens_with_the_fixtures_and_closes_at_the_first_kickoff(
     go(store, T0 - timedelta(days=5), season(), tmp_path)
     assert store.docs[f"tablegames/{SEASON}_eliteserien"]["opens"] == T0 - timedelta(days=20)   # the opening day is kept
     go(store, T0 + timedelta(hours=1), season(), tmp_path)    # a ball has been kicked: no new table game doc
-
-
-def test_the_calendar_feed_lists_coming_rounds_only():
-    docs = [{"season": 2027, "league": "eliteserien", "round": 1, "closes": T0},
-            {"season": 2027, "league": "obosligaen", "round": 1, "closes": T0 - timedelta(days=1)}]
-    text = calendar(docs, T0 - timedelta(hours=1))
-    assert text.count("BEGIN:VEVENT") == 1 and "DTSTART:20270404T120000Z" in text and "TRIGGER:-PT1H" in text
-    assert text.startswith("BEGIN:VCALENDAR\r\n") and text.endswith("END:VCALENDAR\r\n")
-    assert all(len(line.encode()) <= 75 for line in text.split("\r\n"))
 
 
 def test_dry_run_commits_and_writes_nothing(tmp_path):

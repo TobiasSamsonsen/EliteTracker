@@ -203,15 +203,16 @@ service cloud.firestore {
       match /members/{uid} {
         allow read: if isOwner(uid);
         allow create: if isOwner(uid)
-          && exists(/databases/$(database)/documents/leagues/$(code))
+          && existsAfter(/databases/$(database)/documents/leagues/$(code))   // after the commit: a league and its first member go in one
           && request.resource.data.keys().hasOnly(['joined'])
           && request.resource.data.joined == request.time;
         allow delete: if isOwner(uid);
       }
     }
 
+    // A repeat is an update (a request made while offline, or one whose Auth deletion then failed, is made again).
     match /deleteRequests/{uid} {
-      allow create: if isOwner(uid)
+      allow create, update: if isOwner(uid)
         && request.resource.data.keys().hasOnly(['at'])
         && request.resource.data.at == request.time;
     }

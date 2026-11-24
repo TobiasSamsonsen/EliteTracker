@@ -16,7 +16,7 @@ on:
     branches: [main]
     # The Predict job's anonymous aggregates (docs/predict.md) are archives for the
     # shadow analysis, not site content: a commit that only touches them is no reason
-    # to rebuild and redeploy. (public/predict/rounds.ics lives under public/ and does deploy.)
+    # to rebuild and redeploy.
     paths-ignore:
       - 'data/predict/**'
   pull_request:

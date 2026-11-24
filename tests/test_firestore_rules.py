@@ -337,7 +337,13 @@ def test_reports_leagues_and_deletion_requests(admin):
     assert denied(lambda: list(other.list("leagues")))
     other.commit([Write.set("leagues/ABCD2345/members/u2", {"joined": SERVER_TIME})])
     assert denied(lambda: me.commit([Write.set("leagues/ABCD2345/members/u3", {"joined": SERVER_TIME})]))
+    # a league and its first member go in one commit; a member of a league that does not exist does not
+    me.commit([Write.set("leagues/WXYZ2345", {"name": "Lag", "owner": "u1", "created": SERVER_TIME}),
+               Write.set("leagues/WXYZ2345/members/u1", {"joined": SERVER_TIME})])
+    assert denied(lambda: me.commit([Write.set("leagues/QRST2345/members/u1", {"joined": SERVER_TIME})]))
     me.commit([Write.set("deleteRequests/u1", {"at": SERVER_TIME})])
+    me.commit([Write.set("deleteRequests/u1", {"at": SERVER_TIME})])                        # asked again (the Auth deletion failed): an update
+    assert denied(lambda: me.commit([Write.set("deleteRequests/u1", {"at": SERVER_TIME, "x": 1})]))
     assert denied(lambda: me.commit([Write.set("deleteRequests/u2", {"at": SERVER_TIME})]))
 
 

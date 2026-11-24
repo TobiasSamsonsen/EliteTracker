@@ -64,7 +64,7 @@ def test_the_page_against_the_emulators(site, tmp_path):
                                _match(103, "Eps", "Zeta", first + timedelta(days=1))],
                "obosligaen": [_match(201, "G", "H", first + timedelta(hours=1))]}
     data = tmp_path / "predict"
-    sync.run(store, now=now, matches_by_slug=matches, season=season, report=EMPTY_REPORT, data_dir=data, ics_path=data / "r.ics")
+    sync.run(store, now=now, matches_by_slug=matches, season=season, report=EMPTY_REPORT, data_dir=data)
     key = f"{season}_eliteserien_1"
     entries = lambda: dict(store.query_group("rounds", "r", key))  # noqa: E731
 
@@ -131,7 +131,7 @@ def test_the_page_against_the_emulators(site, tmp_path):
         assert code in (store.get(f"users/{uid}").get("leagues") or [])
         assert store.get(f"leagues/{code}")["name"] == "Kontoret"
         summary = sync.run(store, now=now + timedelta(minutes=5), matches_by_slug=matches, season=season,
-                           report=EMPTY_REPORT, data_dir=data, ics_path=data / "r.ics")
+                           report=EMPTY_REPORT, data_dir=data)
         assert f"league_{code}" in summary["boards"]
 
         # the table game is drag only: a club dragged four places in one move lands there, and the order

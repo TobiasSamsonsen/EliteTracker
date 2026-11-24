@@ -34,7 +34,7 @@ browser /predict/ ──REST──▶ Firestore (rules: owner-only, locked at ki
                                  ▲   │
  predict.yml (manual) ── predict/sync.py ── sources/firestore.py
         reads data/normalized + the live report.json; writes fixtures, scores,
-        boards, data/predict/{locked_odds,crowd}.json, public/predict/rounds.ics
+        boards, data/predict/{locked_odds,crowd}.json
 ```
 
 `sources/firestore.py` is the second network module beside the fetchers, so the

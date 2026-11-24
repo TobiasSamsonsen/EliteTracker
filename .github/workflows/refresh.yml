@@ -1,6 +1,7 @@
 # Scheduled refresh of the current-season match data, off the developer's machine.
 #
-# Runs every 30 minutes; the refresh guard in elitetracker.refresh skips leagues
+# Tries every hour (at minute 23: GitHub drops the most scheduled runs at the top of the hour; at :00 this
+# ran about 4 times a day in November 2026); the refresh guard in elitetracker.refresh skips leagues
 # whose normalized file already has no unplayed matches with a past kickoff, so
 # fotmob is only hit when there are results to pick up. Days with no new results
 # produce no diff, so no commit and no deploy happen.
@@ -14,7 +15,7 @@ name: Scheduled data refresh
 
 on:
   schedule:
-    - cron: "0 * * * *"
+    - cron: "23 * * * *"
   workflow_dispatch:
 
 permissions:

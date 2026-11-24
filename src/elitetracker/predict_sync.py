@@ -54,7 +54,6 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--project", default=PROJECT)
     parser.add_argument("--report", default=REPORT_URL, help="the published report.json (path or URL)")
     parser.add_argument("--data-dir", type=Path, default=Path("data/predict"))
-    parser.add_argument("--ics", type=Path, default=Path("public/predict/rounds.ics"))
     parser.add_argument("--now", help="override the clock (ISO 8601, for testing)")
     parser.add_argument("--dry-run", action="store_true", help="compute everything, commit and write nothing")
     parser.add_argument("--no-purge", action="store_true", help="skip deletion requests and the 24-month sweep")
@@ -78,10 +77,10 @@ def main(argv: list[str] | None = None) -> int:
                    if (NORMALIZED_DIR / f"{slug}_{season - 1}_matches.json").exists()}
         if earlier:
             results[season - 1] = run(store, now=now, matches_by_slug=earlier, season=season - 1, report=report,
-                                      data_dir=args.data_dir, ics_path=None, purge=False, dry_run=args.dry_run, publish=False)
+                                      data_dir=args.data_dir, purge=False, dry_run=args.dry_run, publish=False)
     matches = {slug: load_matches(NORMALIZED_DIR / f"{slug}_{season}_matches.json") for slug in LEAGUES}
     results[season] = run(store, now=now, matches_by_slug=matches, season=season, report=report,
-                          data_dir=args.data_dir, ics_path=args.ics, purge=not args.no_purge, dry_run=args.dry_run)
+                          data_dir=args.data_dir, purge=not args.no_purge, dry_run=args.dry_run)
     if warning:
         for done in results.values():
             done["warnings"].append(warning)

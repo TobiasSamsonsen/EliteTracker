@@ -35,7 +35,7 @@ before pushing.
 
 ## CI (`.github/workflows/`)
 
-- **`refresh.yml`**, hourly: `elitetracker.refresh`, then a commit of
+- **`refresh.yml`**, by the outside scheduler below every 15 minutes, and by its own (unreliable) hourly cron as the net: `elitetracker.refresh`, then a commit of
   `data/normalized` and `data/xg.json` if anything changed. The refresh guard
   skips a league with no unplayed match past its kickoff, so quiet hours cost
   nothing.
@@ -49,12 +49,75 @@ before pushing.
   history, Release storage settings; set 2026-11-21). Unlimited, it kept every
   deploy: a matchday adds a few MB, but a model release changes every report
   (~330 MB), and the copies reached 9.7 of the project's 10 GB.
-- **`predict.yml`**, by hand until the game launches (no `schedule:` yet): the
-  Predict job, with a keyless Workload Identity login as `predict-sync`. A manual
-  run is a dry run unless "live" is ticked. `deploy.yml` ignores pushes that touch
-  only `data/predict/**`. See [predict.md](predict.md).
+- **`predict.yml`**: the Predict job, with a keyless Workload Identity login as `predict-sync`.
+  It runs after every successful deploy of a push to `main` (new results arrive that way), on a schedule
+  as the net, and by hand: a manual run is a dry run unless "live" is ticked. `deploy.yml` ignores pushes
+  that touch only `data/predict/**`. See [predict.md](predict.md), "When the job runs".
+
+GitHub's `schedule` is best effort: `refresh.yml`'s "hourly" cron ran about 4 times a day in November
+2026 (median gap 6.5 hours). To have the refresh run on time, an outside scheduler starts it: see the next section.
+
 - **`past-seasons.yml`**, by hand: rebuilds every past season, one job each,
   replaces the `past-seasons` asset and starts a deploy.
+
+## Starting the refresh on time (cron-job.org)
+
+Why: [predict.md](predict.md), "When the job runs". A workflow started through the API
+(`workflow_dispatch`) is not delayed or dropped the way a scheduled one is. `refresh.yml` takes about 20 seconds
+and its guard skips quiet hours, so asking every 15 minutes costs next to nothing. A refresh that finds new
+results pushes to `main`, the push deploys, and the deploy starts the Predict job, so one ping serves the
+site and the game. The workflows' own `schedule:` stays as the net.
+
+Do this **after `predict` is merged**: the API starts the workflow file that is on `main`.
+
+**1. A token that can start workflows and nothing else.** GitHub, Settings, Developer settings, Personal access
+tokens, Fine-grained tokens, Generate new token:
+
+- Token name `cron-job.org dispatch`; Resource owner your account; Expiration the longest offered (up to a year).
+- Repository access: Only select repositories, `EliteTracker`.
+- Permissions, Repository permissions: **Actions: Read and write** (Metadata: Read-only is added by itself).
+  Nothing else. It is not `REFRESH_PAT` (that one can push code); do not reuse it.
+- Generate, and copy it once (it starts with `github_pat_`).
+
+**2. Try it from a terminal** (Git Bash; the token never goes in a file):
+
+```bash
+read -rs TOKEN                      # paste the token, Enter
+curl -i -X POST https://api.github.com/repos/TobiasSamsonsen/EliteTracker/actions/workflows/refresh.yml/dispatches   -H "Authorization: Bearer $TOKEN" -H "Accept: application/vnd.github+json"   -H "X-GitHub-Api-Version: 2022-11-28" -d '{"ref":"main"}'
+```
+
+`HTTP/2 204` means a run was queued: it shows under Actions, "Scheduled data refresh", event `workflow_dispatch`.
+`401` is a wrong or expired token, `403` a missing Actions permission, `404` the wrong repository or a token
+that cannot see it, `422` a workflow without `workflow_dispatch` or a `ref` that is not a branch.
+
+**3. The job at [cron-job.org](https://cron-job.org)** (a free account; Create cronjob):
+
+| Field | Value |
+|---|---|
+| Title | `EliteTracker refresh` |
+| URL | `https://api.github.com/repos/TobiasSamsonsen/EliteTracker/actions/workflows/refresh.yml/dispatches` |
+| Execution schedule | every 15 minutes |
+| Advanced, Request method | `POST` |
+| Advanced, Request body | `{"ref":"main"}` |
+| Advanced, Headers | `Authorization: Bearer <the token>`, `Accept: application/vnd.github+json`, `X-GitHub-Api-Version: 2022-11-28`, `Content-Type: application/json`, `User-Agent: cron-job.org` (GitHub refuses a request without one) |
+| Expected response | the default (any 2xx is a success; GitHub answers `204`) |
+| Notifications | on failure, and again when it recovers |
+
+Save, then "Test run": the history shows `204` and a refresh run appears in Actions. The token sits in the job's headers
+at cron-job.org, so use a password of its own there and turn on two-factor sign-in.
+
+**4. Optional: a second job for the Predict job itself** (a net for the rare deploy that does not happen, say a
+round that kicks off with no new results since): the same, with the URL ending `.../workflows/predict.yml/dispatches` and the body
+`{"ref":"main","inputs":{"live":"true"}}`, every 2 hours. (Without `live` the run is a dry run that writes nothing.)
+
+**Upkeep.**
+
+- The token expires: put the date in a calendar. When it does, the job starts failing, the notification arrives, and the
+  workflows fall back to their own, slower, schedules. Make a new token and edit the header at cron-job.org.
+- A suspended or locked GitHub account (the student pack renewal did it once, probably) kills the token the same way;
+  nothing else needs doing when the account is back, only the token if it was revoked.
+- To stop it: disable the job at cron-job.org and revoke the token under Developer settings.
+- GitHub queues one run of a workflow per `concurrency` group, so a ping while a refresh is running waits; they never pile up.
 
 ## The incremental build
 

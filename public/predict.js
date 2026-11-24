@@ -9,7 +9,8 @@
   'use strict';
 
   const config = predictConfig();
-  const client = createClient({ config });
+  // Another tab signed in, linked Google or signed out: this one starts over as that player (drafts stay in storage).
+  const client = createClient({ config, onSessionChange: () => { resetLocal({ keepSession: true }); if (active) boot(); } });
   // Clubs by the names the rest of the site uses (app.js's SHORT_NAMES: HamKam, not Hamarkameratene),
   // applied to every document as it arrives, so the cards, the recap, the table game and the pictures agree.
   const rawGet = client.get.bind(client);
@@ -22,7 +23,7 @@
   const S = {
     tab: 'tip', league: 'eliteserien', scope: 'season', index: null, indexError: null,
     alwaysFine: store.get('predict.fine.always') === 'on',
-    roundAt: {}, data: {}, loading: {}, drafts: {}, status: {}, timers: {},
+    roundAt: {}, data: {}, loading: {}, drafts: {}, status: {}, timers: {}, flights: {},
     profile: undefined, stats: undefined, boards: {}, tables: {}, myLeagues: [], note: null, ownHash: null, calibration: null,
   };
 
@@ -43,6 +44,8 @@
   const pctText = (value) => (value === null || value === undefined || !Number.isFinite(value) ? '–' : percentText(value, lang(), 2));
   // A board row's points and accuracy; boards built before points existed have only n and the average Brier.
   const rowPts = (row) => (Number.isFinite(row.pts) ? row.pts : totalPoints(row.n || 0, (row.b || 0) * (row.n || 0)));
+  // The model's and the crowd's rows are named here, in the reader's language (the job stores one name).
+  const rowName = (row) => (row.kind === 'model' ? t('predict.name.model') : row.kind === 'crowd' ? t('predict.name.crowd') : row.nick || t('predict.anon'));
   const rowAcc = (row) => (Number.isFinite(row.acc) ? row.acc : row.b === null || row.b === undefined ? null : accuracyPercent(1, row.b));
   const now = () => client.serverNow();
   const json = (text, fallback) => { try { const value = JSON.parse(text); return value === null || value === undefined ? fallback : value; } catch (error) { return fallback; } };
@@ -208,8 +211,20 @@
     S.timers[key] = setTimeout(() => flushSave(key), SAVE_DELAY);
   }
 
-  async function flushSave(key) {
+  /* Saves of one round go one after the other: a second tap while the first commit is on its way waits for it
+     and then sends whatever the draft holds by then, so an older pick never lands over a newer one. */
+  function flushSave(key) {
     clearTimeout(S.timers[key]);
+    return inSequence(S.flights, key, () => saveRound(key));
+  }
+
+  /* Every draft still waiting (a lost connection, a tab that was in the background) goes now. */
+  function flushAll() {
+    Object.keys(S.drafts).forEach((key) => { if (Object.keys(S.drafts[key] || {}).length) flushSave(key); });
+  }
+  window.addEventListener('online', flushAll);
+
+  async function saveRound(key) {
     const draft = S.drafts[key] || {};
     // One commit carries every drafted slot and the rules refuse all of it if one has kicked off, so a
     // slot that locked while it sat in the draft (offline, a tab left open) is dropped, not retried for ever.
@@ -522,7 +537,9 @@
     const panelId = `pp-${key}-${slot}`;
     // Back to the model's draw: only on the curve, once an end has been dragged.
     const resetFine = h('button', { type: 'button', class: 'pbtn pbtn--small pcard__reset', on: { click: () => {
-      slider.pos = { g: slider.pos.g, k: DRAW_TENTHS.normal }; touch(); release();
+      slider.pos = { g: slider.pos.g, k: DRAW_TENTHS.normal };
+      fine = false; fineButton.setAttribute('aria-pressed', 'false'); panel.hidden = true; hint.hidden = true;
+      touch(); release();
     } } }, t('predict.fine.reset'));
     const inputs = {};
     const readout = h('div', { class: 'pcard__readout' });
@@ -546,6 +563,14 @@
     // Fine-tune on: the ends move freely, a percent at a time, and the numbers can be typed. Off: back
     // to the curve's nearest position (a saved pick is saved again, since its numbers move).
     const fineButton = fineSwitch(fine, panelId, () => {
+      // Closing and opening the drawer on a free pick only hides and shows it: the pick is not snapped back to
+      // the curve (that would quietly save different numbers). "Model's draw" is the way back to the curve.
+      if (fine && (panel.hidden || (tipped && slider.pos.p))) {
+        panel.hidden = !panel.hidden;
+        hint.hidden = panel.hidden;
+        fineButton.setAttribute('aria-pressed', String(!panel.hidden));
+        return;
+      }
       fine = !fine;
       const before = String(pct());
       slider.setFree(fine);
@@ -568,7 +593,7 @@
     function paint() {
       const p = pct();
       const allShown = slider.paint();
-      resetFine.hidden = Boolean(slider.pos.p) || slider.pos.k === DRAW_TENTHS.normal;
+      resetFine.hidden = !tipped || (!slider.pos.p && slider.pos.k === DRAW_TENTHS.normal);
       ['h', 'd', 'a'].forEach((o, i) => { if (document.activeElement !== inputs[o]) inputs[o].value = String(p[i]); });
       card.dataset.state = tipped ? 'tipped' : 'untouched';
       const numbers = `${t('predict.h')} ${p[0]} · ${t('predict.d')} ${p[1]} · ${t('predict.a')} ${p[2]}`;
@@ -1084,7 +1109,7 @@
   function tableResults(key, board) {
     const own = S.stats && S.stats.tables && S.stats.tables[key];
     const rows = (board.rows || []).map((row) => h('tr', { class: 'pboard__row', data: { kind: row.kind, mine: String(Boolean(S.ownHash && row.u === S.ownHash)) } },
-      h('td', { class: 'pboard__rank' }, String(row.rank)), h('td', { class: 'pboard__name' }, h('span', { class: 'pboard__nick' }, row.nick || t('predict.anon'))),
+      h('td', { class: 'pboard__rank' }, String(row.rank)), h('td', { class: 'pboard__name' }, h('span', { class: 'pboard__nick' }, rowName(row))),
       h('td', {}, String(row.error)), h('td', { class: 'pboard__ab', data: { tone: row.accuracy > 0.00005 ? 'good' : row.accuracy < -0.00005 ? 'bad' : 'even' } }, accText(row.accuracy))));
     return h('section', { class: 'ptable__results' }, h('h3', {}, t('predict.table.result.title')),
       own ? h('p', { class: 'pboard__me' }, t('predict.table.result.you', { error: own.error, acc: accText(own.accuracy) })) : h('p', { class: 'pmuted' }, t('predict.table.result.none')),
@@ -1382,7 +1407,7 @@
     const current = S.index && S.index.season;
     const scopes = ['season', 'round', 'last10'];
     const season = S.boardSeason && current && S.boardSeason <= current ? S.boardSeason : current;
-    const seasons = current ? [0, 1, 2, 3].map((back) => current - back) : [];
+    const seasons = boardSeasons(current);
     const seasonPick = h('select', { class: 'pfield pfield--pick', attrs: { 'aria-label': t('predict.board.season') }, on: { change: (e) => { S.boardSeason = Number(e.target.value); S.boardRound = {}; render(); } } },
       seasons.map((s) => h('option', { value: String(s), selected: s === season }, String(s))));
     // Rounds already scored this season, newest first: any of them has a board of its own.
@@ -1474,7 +1499,7 @@
      side panel's steps at 50, 75 and 90 %); then who you chase, who chases you, and the model. */
   function standingCard(board, st) {
     const { me, pts, tier, top, modelGap, beat } = st;
-    const name = (row) => row.nick || t('predict.anon');
+    const name = (row) => rowName(row);
     const stat = (label, value) => h('div', { class: 'pstanding__stat' }, h('dt', {}, label), h('dd', {}, value));
     const arrow = (dir) => h('span', { class: 'pstanding__arrow', attrs: { 'aria-hidden': 'true' } }, dir === 'up' ? '▲' : '▼');
     const lines = [
@@ -1532,7 +1557,7 @@
       const mine = isMine(row);
       return h('li', { class: 'ppodium__step', data: { pos: String(i + 1), place: String(at), mine: String(mine) } },
         h('span', { class: 'ppodium__medal', attrs: { 'aria-hidden': 'true' } }, String(at)),
-        h('span', { class: 'ppodium__name' }, h('span', { class: 'ppodium__nick' }, row.nick || t('predict.anon')),
+        h('span', { class: 'ppodium__name' }, h('span', { class: 'ppodium__nick' }, rowName(row)),
           mine ? h('span', { class: 'ptag ptag--you' }, t('predict.tag.you')) : null),
         h('span', { class: 'ppodium__pts' }, ptsText(rowPts(row)), h('small', {}, ` ${t('predict.col.pts').toLowerCase()}`)),
         h('span', { class: 'ppodium__acc' }, pctText(rowAcc(row))),
@@ -1556,7 +1581,7 @@
     };
     const rowNode = (row) => {
       const mine = isMine(row);
-      const name = h('td', { class: 'pboard__name' }, h('span', { class: 'pboard__nick' }, row.nick || t('predict.anon')));
+      const name = h('td', { class: 'pboard__name' }, h('span', { class: 'pboard__nick' }, rowName(row)));
       if (mine) name.append(h('span', { class: 'ptag ptag--you' }, t('predict.tag.you')));
       else if (row.kind === 'model' || row.kind === 'crowd') name.append(h('span', { class: `ptag ptag--${row.kind}` }, t(`predict.tag.${row.kind}`)));
       else if (row.kind === 'player' && row.nick) name.append(reportControl(row));
@@ -1613,7 +1638,7 @@
     paintRows();
     if (close) wrap.dataset.hero = 'true';
     wrap.append(...[close, onPodium ? podiumOf(podiumRows, place, isMine) : null].filter(Boolean), h('div', { class: 'pboard__tools' }, jump, cols),
-      h('div', { class: 'pscroll' }, h('table', {}, h('thead', {}, headRow), tbody)),
+      h('div', { class: 'pscroll', hidden: Boolean(onPodium) && board.rows.filter((row) => !onPodium.has(row)).length === 0 }, h('table', {}, h('thead', {}, headRow), tbody)),
       h('div', { class: 'pboard__foot' }, toggle,
         h('p', { class: 'pboard__note' }, t(league ? 'predict.leagues.note' : 'predict.board.note', { players: groupThousands(board.players || 0, lang()) })),
         h('details', { class: 'pboard__how' }, h('summary', {}, t('predict.board.how')), h('p', {}, t('predict.board.key')))));
@@ -1633,6 +1658,7 @@
 
   /* The codes of the leagues a player is in: on the profile (so they follow a Google sign-in to another
      device) and, with the names, in this browser. */
+  const MAX_LEAGUES = 20;                       // the rules' limit on a profile's list of codes
   const profileLeagues = () => ((S.profile && Array.isArray(S.profile.leagues)) ? S.profile.leagues : []);
   const inviteLink = (code) => `${location.origin}/predict/?join=${code}#leagues`;
 
@@ -1676,11 +1702,12 @@
     const create = h('button', { type: 'button', class: 'pbtn pbtn--primary', on: { click: async () => {
       const name = nameInput.value.trim();
       if (name.length < 2) { say(t('predict.leagues.shortname')); return; }
+      if (profileLeagues().length >= MAX_LEAGUES) { say(t('predict.leagues.full')); return; }
       try {
         await ensureAccount();
         const code = newLeagueCode();
-        await client.commit(leagueCreateWrites(config, client.uid, code, name));
-        await client.commit(joinWrites(code));
+        // One commit: the rules check that the league exists after it, so a failed join leaves no empty league.
+        await client.commit([...leagueCreateWrites(config, client.uid, code, name), ...joinWrites(code)]);
         remember(code, name);
         S.leagueNote = t('predict.leagues.created', { code });       // kept across the redraw; the header has the link to share
         render();
@@ -1689,6 +1716,8 @@
     const join = h('button', { type: 'button', class: 'pbtn pbtn--primary', on: { click: async () => {
       const code = codeInput.value.trim().toUpperCase();
       if (!isLeagueCode(code)) { say(t('predict.leagues.badcode')); return; }
+      if (profileLeagues().includes(code)) { say(t('predict.leagues.already')); return; }
+      if (profileLeagues().length >= MAX_LEAGUES) { say(t('predict.leagues.full')); return; }
       try {
         await ensureAccount();
         const found = await client.get(`leagues/${code}`);
@@ -1747,7 +1776,7 @@
   }
 
   /* One league's board, and your place in it on the header's line. A league just made has no board until
-     the job's next run (within the hour). */
+     the job's next run (hours, not minutes: see docs/predict.md, "When the job runs"). */
   async function showLeague(code, target, standing) {
     const id = `league_${code}`;
     const paint = (board) => {
@@ -1987,7 +2016,7 @@
     // The spread, the form and three numbers: open beside the matches on a wide screen, a tap away on a phone.
     const more = h('details', { class: 'pside__details', open: matchMedia('(min-width: 1000px)').matches }, h('summary', {}, t('predict.side.moreSummary')));
     const tier = beat !== null ? tierOf(beat) : null;
-    more.append(bellChart(board, points, beat, tier && (tier.next ? t('predict.side.next', { n: tier.toNext, tier: t(`predict.tier.${tier.next}`) }) : t('predict.side.top'))));
+    more.append(bellChart(board, points, beat, league, tier && (tier.next ? t('predict.side.next', { n: tier.toNext, tier: t(`predict.tier.${tier.next}`) }) : t('predict.side.top'))));
 
     const cell = (value, label, toneOf) => h('div', { class: 'pside__cell', data: { tone: toneOf || 'even' } }, h('strong', {}, value), h('small', {}, label));
     more.append(h('div', { class: 'pside__grid' },
@@ -2020,7 +2049,7 @@
   /* The field as a bell curve, in the tiers' colours (the board's own 50th, 75th and 90th percentiles cut
      it): the part you beat is filled strong, the rest faint, and your marker slides in. `caption`: a short
      line under it (how far the next tier is). */
-  function bellChart(board, value, beat, caption = null) {
+  function bellChart(board, value, beat, league, caption = null) {
     const fit = board ? normalFit(board.pct) : null;
     const W = 280;
     const H = 110;
@@ -2039,7 +2068,7 @@
     for (let i = 0; i <= 80; i++) { const v = lo + ((hi - lo) * i) / 80; path += ` L${x(v).toFixed(1)} ${y(v).toFixed(1)}`; }
     path += ` L${W} ${base} Z`;
     const chart = svg('svg', { viewBox: `0 0 ${W} ${H}`, class: 'pbell', role: 'img',
-      'aria-label': value === null ? t('predict.side.dist') : t('predict.side.distAria', { beat, league: LEAGUE_NAME[S.league] }) });
+      'aria-label': value === null ? t('predict.side.dist') : t('predict.side.distAria', { beat, league: LEAGUE_NAME[league] }) });
     const clipId = `pbell-${Math.random().toString(36).slice(2, 8)}`;
     const defs = svg('defs');
     const clip = svg('clipPath', { id: clipId });
@@ -2231,6 +2260,13 @@
       window.scrollTo(0, 0);
     } } });
     const leave = S.replay ? h('button', { type: 'button', class: 'pbtn pbtn--small ptut__leave', on: { click: () => { S.replay = false; S.tut = null; render(); } } }, t('predict.tut.close')) : null;
+    // A first visit can be skipped: the game opens, and the introduction stays in the guide (Slik spiller du).
+    const skip = S.replay ? null : h('button', { type: 'button', class: 'pbtn pbtn--small ptut__skip', on: { click: () => {
+      store.set('predict.intro', 'seen');
+      S.tut = null;
+      openTab('tip');
+      window.scrollTo(0, 0);
+    } } }, t('predict.tut.skip'));
 
     // What the step waits for: the Next button and the line above it. Only these change while the bar is dragged.
     function gate() {
@@ -2263,7 +2299,7 @@
       if (moved) title.focus({ preventScroll: true });
     }
     root.append(h('article', { class: 'ptut', attrs: { 'aria-label': t('predict.tut.label') } }, body, hint,
-      h('div', { class: 'ptut__nav' }, leave, back, next)));
+      h('div', { class: 'ptut__nav' }, leave, back, next), skip));
     show(false);
   }
 
@@ -2275,6 +2311,7 @@
     if (!client.uid) { body.replaceChildren(h('p', { class: 'pempty' }, t('predict.me.none')), dataSection(false)); return; }
     try {
       if (S.profile === undefined || S.profile === null) await loadProfile();
+      if (!S.profile) await ensureAccount();          // signed in (Google, say) but never tipped: the profile is made now
       if (S.stats === undefined) S.stats = await client.get(`stats/${client.uid}`);
     } catch (error) { body.replaceChildren(emptyState(error, render)); return; }
     if (S.tab !== 'me') return;
@@ -2287,6 +2324,7 @@
     const nick = h('input', { type: 'text', class: 'pfield', value: profile.nick || '', maxLength: 20, id: 'pnick', attrs: { autocomplete: 'off', spellcheck: 'false' } });
     const message = h('p', { class: 'pme__msg', attrs: { 'aria-live': 'polite' } });
     const change = h('button', { type: 'button', class: 'pbtn', on: { click: async () => {
+      try { await ensureAccount(); } catch (error) { message.textContent = errorText(error); return; }
       const profile = S.profile || {};
       const next = nick.value.trim();
       const problems = nickProblems(next);
@@ -2312,7 +2350,7 @@
   function settingsSection() {
     const profile = S.profile || {};
     const hidden = h('input', { type: 'checkbox', class: 'pswitch', checked: Boolean(profile.hidden), attrs: { role: 'switch' }, on: { change: async (e) => {
-      try { await client.commit(profileUpdateWrites(config, client.uid, { hidden: e.target.checked })); S.profile = { ...S.profile, hidden: e.target.checked }; }
+      try { await ensureAccount(); await client.commit(profileUpdateWrites(config, client.uid, { hidden: e.target.checked })); S.profile = { ...S.profile, hidden: e.target.checked }; }
       catch (error) { e.target.checked = !e.target.checked; toast(errorText(error), 'error'); }
     } } });
     const always = h('input', { type: 'checkbox', class: 'pswitch', checked: S.alwaysFine, attrs: { role: 'switch' }, on: { change: (e) => {
@@ -2330,7 +2368,7 @@
       on: { change: async (e) => {
         const value = e.target.value.trim();
         paintCrest(value);
-        try { await client.commit(profileUpdateWrites(config, client.uid, { club: value })); S.profile = { ...S.profile, club: value }; toast(t('predict.me.clubSaved')); }
+        try { await ensureAccount(); await client.commit(profileUpdateWrites(config, client.uid, { club: value })); S.profile = { ...S.profile, club: value }; toast(t('predict.me.clubSaved')); }
         catch (error) { toast(errorText(error), 'error'); }
       } } });
     paintCrest(profile.club || '');
@@ -2585,6 +2623,7 @@
     try {
       await client.signInGoogle(credential, location.origin);
       resetLocal({ keepSession: true });
+      await ensureAccount();                  // a Google account that has never played has no profile yet: it gets one now
       await boot();
     } catch (error) { message.textContent = errorText(error); }
   }
@@ -2627,7 +2666,7 @@
           try { await client.deleteAccount(); }
           catch (error) {
             // A Google-linked account needs a fresh sign-in before Auth will delete it. The request
-            // is in: the job erases the data within the hour, so this device is signed out and says so.
+            // is in: the job erases the data within a few days, so this device is signed out and says so.
             if (error.code !== 'reauth') throw error;
             client.signOut();
             resetLocal();
@@ -2652,9 +2691,10 @@
   function resetLocal({ keepSession = false } = {}) {
     for (const key of keysToReset(store.keys(), keepSession ? sessionKey(config) : null)) store.remove(key);
     Object.values(S.timers).forEach((timer) => clearTimeout(timer));
-    Object.assign(S, { meSeason: undefined, alwaysFine: false, data: {}, drafts: {}, status: {}, timers: {}, loading: {}, roundAt: {}, ownHash: null, stats: undefined,
+    Object.assign(S, { meSeason: undefined, alwaysFine: false, data: {}, drafts: {}, status: {}, timers: {}, flights: {}, loading: {}, roundAt: {}, ownHash: null, stats: undefined,
       profile: undefined, history: undefined, historyAt: 0, historyLoad: null, boards: {}, boardShown: null, tables: {}, myLeagues: [],
-      tut: null, replay: false, counted: new Set(), revealSeen: new Set(), ringWas: {}, leagueNote: null, leagueShown: null, leaguesFormOpen: false, leaguesFetched: false, calibration: null });
+      tut: null, replay: false, counted: new Set(), revealSeen: new Set(), ringWas: {}, leagueNote: null, leagueShown: null, leaguesFormOpen: false, leaguesFetched: false, calibration: null, tipTried: undefined, tipRefreshing: false });
+    try { sessionStorage.removeItem('predict.card'); } catch (error) { /* the Overview's card asks again */ }
   }
 
   /* ---- the shell: a view of the site (app.js mounts it; PredictGame below) ------------------------------- */
@@ -2766,6 +2806,7 @@
   window.addEventListener('resize', () => { if (active) measureMasthead(); });
 
   document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible') flushAll();
     if (active && document.visibilityState === 'visible' && S.tab === 'tip') { const round = currentRound(S.league); if (round && ['live', 'partial'].includes(roundStatus(round, now()))) ensureRound(round, true).then(render); }
   });
 
