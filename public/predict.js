@@ -1646,8 +1646,10 @@
   }
 
   function percentileNote(board, season) {
-    if ((S.scope !== 'season' && !S.boardAll) || !board || !board.pct || !board.pct.length || !S.stats) return h('span');
-    const mine = seasonTotals(S.stats, season, S.boardAll ? undefined : S.league);
+    if (!board || !board.pct || !board.pct.length || !S.stats) return h('span');
+    // the season board adds up the season, the round and last-10 boards their own rounds: the share beaten is on that board's points
+    const mine = (S.scope === 'season' || S.boardAll) ? seasonTotals(S.stats, season, S.boardAll ? undefined : S.league)
+      : keysTotals(S.stats, scopeKeys(S.index, { season: board.season || season, league: board.league || S.league, scope: S.scope, round: board.round }));
     if (!mine.n) return h('p', { class: 'pboard__me' }, t('predict.board.nonescored'));
     const beat = beatShare(board.pct, totalPoints(mine.n, mine.b), board.players);
     // Your place is on the line above the table; this says only the share you beat, and the points behind it.

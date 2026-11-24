@@ -192,6 +192,27 @@ function seasonTotals(stats, season, league) {
   return total;
 }
 
+/* The rounds a board of this scope adds up, as stats keys: a round board is one round; the last-10 board is the last ten
+   rounds of the division with a scored match (the job's own rule, boards.py LAST_ROUNDS), oldest first. */
+const LAST_ROUNDS = 10;
+function scopeKeys(index, { season, league, scope, round }) {
+  if (scope === 'round') return round ? [`${season}_${league}_${round}`] : [];
+  const scored = ((index && index.rounds) || []).filter((r) => r.league === league && r.settled > 0).sort((a, b) => a.round - b.round);
+  return scored.slice(-LAST_ROUNDS).map((r) => r.key);
+}
+
+/* Your totals over some rounds (stats keys), shaped like seasonTotals. */
+function keysTotals(stats, keys) {
+  const total = { n: 0, b: 0, r: 0, ab: 0, ar: 0, vm: 0, rounds: 0 };
+  for (const key of keys) {
+    const row = stats && stats.rounds && stats.rounds[key];
+    if (!row) continue;
+    for (const field of ['n', 'b', 'r', 'ab', 'ar', 'vm']) total[field] += row[field] || 0;
+    total.rounds += 1;
+  }
+  return total;
+}
+
 /* Badges earned, from your numbers: [{ id, earned }]. */
 function badgesFor({ tips, totals }) {
   return [
@@ -630,7 +651,7 @@ if (typeof module !== 'undefined') {
   module.exports = {
     groupThousands, fixed, percentText, shortClubNames, signedScore, spanParts, ROUND_OVER_AFTER, roundStatus, currentRoundIndex, isLocked,
     splitDraft, inSequence, LAUNCH_SEASON, boardSeasons, draftKeysToMove, moveDrafts, keysToReset, calibrationPoints, ringState,
-    calibrationBins, seasonTotals, badgesFor, nearestPosition, positionForEdges, positionForTyped, FREE_MIN, FREE_MAX, freeEdges, freeTyped, freePosition, isFreePick, gapAtFraction, dropIndex, moveItem, TABLE_BONUS, draftKey, roundKeyOf,
+    calibrationBins, seasonTotals, scopeKeys, keysTotals, LAST_ROUNDS, badgesFor, nearestPosition, positionForEdges, positionForTyped, FREE_MIN, FREE_MAX, freeEdges, freeTyped, freePosition, isFreePick, gapAtFraction, dropIndex, moveItem, TABLE_BONUS, draftKey, roundKeyOf,
     beatShare, boardWindow, humanRanks, rivalsOf, standingOf, statsSeasons, seasonSeries, seasonHighlights, normalFit, normalDensity, TIERS, tierOf, roundForm, analysePlay, ANALYSE_MIN,
   };
 }

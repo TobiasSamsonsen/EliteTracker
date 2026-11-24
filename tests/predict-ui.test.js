@@ -669,3 +669,18 @@ test('the season picker offers the launch season and later, never one with no bo
   assert.deepEqual(util.boardSeasons(2025), [2025]);       // before the launch there is still the current one
   assert.deepEqual(util.boardSeasons(null), []);
 });
+
+test('a round board adds up that round, the last-10 board the last ten scored rounds of the division', () => {
+  const index = { rounds: [] };
+  for (let n = 1; n <= 14; n += 1) index.rounds.push({ key: `2026_eliteserien_${n}`, league: 'eliteserien', round: n, settled: n <= 12 ? 8 : 0 });
+  index.rounds.push({ key: '2026_obosligaen_3', league: 'obosligaen', round: 3, settled: 8 });
+  assert.deepEqual(util.scopeKeys(index, { season: 2026, league: 'eliteserien', scope: 'round', round: 5 }), ['2026_eliteserien_5']);
+  assert.deepEqual(util.scopeKeys(index, { season: 2026, league: 'eliteserien', scope: 'round' }), []);
+  const last = util.scopeKeys(index, { season: 2026, league: 'eliteserien', scope: 'last10' });
+  assert.equal(last.length, 10);
+  assert.equal(last[0], '2026_eliteserien_3');
+  assert.equal(last[9], '2026_eliteserien_12');
+  const stats = { rounds: { '2026_eliteserien_12': { n: 2, b: 0.5 }, '2026_eliteserien_11': { n: 1, b: 0.25 }, '2026_eliteserien_1': { n: 9, b: 9 } } };
+  assert.deepEqual(util.keysTotals(stats, last), { n: 3, b: 0.75, r: 0, ab: 0, ar: 0, vm: 0, rounds: 2 });
+  assert.equal(util.keysTotals(null, last).n, 0);
+});
