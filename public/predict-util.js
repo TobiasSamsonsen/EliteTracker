@@ -409,6 +409,91 @@ function roundForm(stats, season, league, count = 8) {
     .slice(-count);
 }
 
+/* ---- who you are on a board, and your season in rounds ------------------------------------------ */
+
+/* Rank among people only: the model and the crowd stand on a board for comparison and take no place.
+   A tie shares the better place. Returns Map(row -> place) for the player rows. */
+function humanRanks(rows) {
+  const players = (rows || []).filter((r) => r.kind === 'player');
+  const place = new Map();
+  players.forEach((row, i) => {
+    const before = players[i - 1];
+    place.set(row, before && before.rank === row.rank ? place.get(before) : i + 1);
+  });
+  return place;
+}
+
+/* The players next to you: who is just ahead and just behind, and the points between you. `rows` are in
+   board order (best first); `points` reads a row's points. */
+function rivalsOf(rows, isMine, points) {
+  const players = (rows || []).filter((r) => r.kind === 'player');
+  const at = players.findIndex(isMine);
+  if (at < 0) return null;
+  const mine = points(players[at]);
+  const ahead = at > 0 ? players[at - 1] : null;
+  const behind = at < players.length - 1 ? players[at + 1] : null;
+  return { place: at + 1, ahead, behind, toAhead: ahead ? points(ahead) - mine : null, toBehind: behind ? mine - points(behind) : null };
+}
+
+/* What the leaderboard's standing card says: your place, the share of players you beat (and the tier and
+   the "top n %" it gives), how far you are ahead of or behind the model, and how close the player
+   ahead is (`reach`: your points as a share of theirs, 100 when nobody is ahead). Null when you are
+   not on the board. `rows` are in board order; `pct` and `players` are the board's. */
+function standingOf(rows, pct, players, isMine, points) {
+  const rivals = rivalsOf(rows, isMine, points);
+  if (!rivals) return null;
+  const mine = (rows || []).find((r) => r.kind === 'player' && isMine(r));
+  const pts = points(mine);
+  const beat = beatShare(pct, pts, players);
+  const model = (rows || []).find((r) => r.kind === 'model');
+  return {
+    ...rivals, me: mine, pts, beat, tier: beat === null ? null : tierOf(beat).id, top: beat === null ? null : Math.max(1, 100 - beat),
+    modelGap: model ? pts - points(model) : null,
+    reach: rivals.ahead ? Math.max(0, Math.min(100, (pts / Math.max(1, points(rivals.ahead))) * 100)) : 100,
+  };
+}
+
+/* The seasons your stats hold, newest first. */
+function statsSeasons(stats) {
+  const seen = new Set();
+  for (const key of Object.keys((stats && stats.rounds) || {})) {
+    const season = Number(key.split('_')[0]);
+    if (Number.isInteger(season)) seen.add(season);
+  }
+  return [...seen].sort((a, b) => b - a);
+}
+
+/* One season round by round, both divisions (or one) merged on the round number: what the round
+   was worth, and the running accuracy of you and of the model over the same matches (accuracy
+   as predict-core's accuracyPercent: 100 x (1 - average Brier / 2)). */
+function seasonSeries(stats, season, league) {
+  const byRound = new Map();
+  for (const [key, row] of Object.entries((stats && stats.rounds) || {})) {
+    const parts = key.split('_');
+    if (Number(parts[0]) !== season || (league && parts[1] !== league)) continue;
+    const round = Number(parts[2]);
+    if (!Number.isInteger(round) || !(row.n > 0)) continue;
+    const sum = byRound.get(round) || { n: 0, b: 0, vm: 0 };
+    sum.n += row.n; sum.b += row.b || 0; sum.vm += row.vm || 0;
+    byRound.set(round, sum);
+  }
+  let n = 0;
+  let b = 0;
+  let vm = 0;
+  return [...byRound.entries()].sort((x, y) => x[0] - y[0]).map(([round, r]) => {
+    n += r.n; b += r.b; vm += r.vm;
+    return { round, n: r.n, pts: 10 * (r.n - r.b), vm: 10 * r.vm,
+      acc: 100 * (1 - b / n / 2), model: 100 * (1 - (b + vm) / n / 2) };
+  });
+}
+
+/* What a season comes to: the best round, and in how many rounds you beat the model. */
+function seasonHighlights(series) {
+  if (!series.length) return null;
+  const best = series.reduce((top, r) => (r.pts > top.pts ? r : top), series[0]);
+  return { rounds: series.length, best, beat: series.filter((r) => r.vm > 0).length };
+}
+
 /* ---- your playing style: what your settled picks say about you --------------------------------- */
 
 /* rows: { key, home, away, hid, aid, pick: [h, d, a] whole percents, model: [h, d, a] fractions,
@@ -531,6 +616,6 @@ if (typeof module !== 'undefined') {
     groupThousands, fixed, percentText, signedScore, spanParts, ROUND_OVER_AFTER, roundStatus, roundScored, currentRoundIndex, isLocked,
     splitDraft, draftKeysToMove, moveDrafts, keysToReset, calibrationPoints, ringState,
     computeStreak, calibrationBins, seasonTotals, badgesFor, nearestPosition, positionForEdges, positionForTyped, FREE_MIN, FREE_MAX, freeEdges, freeTyped, freePosition, isFreePick, gapAtFraction, dropIndex, moveItem, TABLE_BONUS, draftKey, roundKeyOf,
-    beatShare, boardWindow, normalFit, normalDensity, TIERS, tierOf, roundForm, analysePlay, ANALYSE_MIN,
+    beatShare, boardWindow, humanRanks, rivalsOf, standingOf, statsSeasons, seasonSeries, seasonHighlights, normalFit, normalDensity, TIERS, tierOf, roundForm, analysePlay, ANALYSE_MIN,
   };
 }

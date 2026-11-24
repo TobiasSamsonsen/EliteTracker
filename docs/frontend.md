@@ -333,3 +333,50 @@ python -m http.server 8123 --directory public
 `?emulator=1` is honoured on `localhost` / `127.0.0.1` only. Tests: `node --test tests/predict.test.js
 tests/predict-ui.test.js`. Not testable without the real Google: the Google account link (its request
 builder and error mapping are unit-tested; the sign-in itself needs the live OAuth client).
+
+### The Overview's Predict card
+
+- **The Overview's Predict card.** For a browser that holds a Predict session and has played (else the invite
+  below). Short words throughout: room is short on a phone. Left: where the open round stands (`data-state` on
+  `.overview-predict`): **empty** ("Runde 28: ikke tippet", the invite's accent border and glow from the top
+  right, a "Tipp nå →" pill), **partial** ("Runde 28: 3 av 8 tippet", the glow fainter, a "Fullfør →" pill),
+  each with the time left ("3 dager igjen", bold under a day); **done** ("Tipsene dine er inne": a check in a
+  filled circle of the good colour, the card tinted from the left, "Runde 28: alle 8 tippet, 2 dager og 5
+  timer igjen"); or **soon** ("Runde 29 åpner om 2 dager og 4 timer"). Spans are written out
+  (`predictSpanLong`: "2 dager og 4 timer" under three days, else one unit, never "2 d"). The pill
+  (`predictPill`) is the site's primary pill with an arrow icon, its words given 0.12em more room on top and
+  the icon lifted 0.06em, so both sit on its middle in Archivo; on hover the arrow moves. Right: your place on
+  the season board ("Tabellen": "12." "av 340 spillere", among people only, `humanRanks`; past the board's
+  200 rows or with a hidden name, "Topp 35 %" from its percentile table, `beatShare`), a hairline, then the
+  last scored round as points and accuracy % (from your stats document). With no round ahead (**calm**) the
+  card is your season instead, across its width: "Sesongen din i Eliteserien 2026" over six figures with
+  hairlines between (place, points, accuracy, rounds played, best round, rounds ahead of the model;
+  `seasonSeries` and `seasonHighlights` from your stats), three a row under 900px. The done card's check is
+  lifted 0.2rem: centred on its two lines it hung below the second one's baseline and read as low.
+  **On a phone** (640px down) every card keeps to its essentials: no "Tipsene dine" caption; the pill stands
+  beside the round's title and its time left; under a hairline, the season card's strip in small, two
+  columns with a hairline between: your place ("12." over "av 340 spillere") and the last round's points
+  ("+31.4" over "poeng i runde 27", the round in the label as the strip has no headings). The round's
+  accuracy is left to the game (three columns wrapped their labels and ran "Topp 35 %" into the points at
+  320px). The check is smaller; from 480px down the season keeps its first three figures in one row
+  ("av 340" without "spillere"), each column as wide as its figure with the spare room shared evenly (equal
+  thirds left the place a wide empty column and pressed the points against their hairline); from 380px down the invite's question is set narrower to keep to one line.
+  At 390px the cards are 95 to 163px tall (the invite 252px).
+  The whole card opens the game. `app.js` loads the game's first four scripts through the shared
+  `predictScript` (once each, so opening the game later does not run them twice), reads `meta/rounds`,
+  `stats/{uid}`, your entry for the next round and (with a scored round this season)
+  `boards/season_{season}_{league}`, and keeps the answer for ten minutes in the tab's session storage under
+  the player's id (saving a pick clears it). A browser without a session fetches nothing.
+- **The Overview's Predict invite.** For a browser that has not played: no session, or a session whose
+  answer shows nothing scored in any season (`played`, from `stats/{uid}`) and nothing tipped in the open
+  round. Built from the season report alone (`fillPredictInvite`; nothing is fetched): "Klarer du å slå
+  modellen?" in display type, one line on the game ("Sett dine egne odds og bli målt mot modellen og alle
+  andre."), a "Prøv nå →" pill with the round's matches and first day ("8 kamper
+  fra lørdag 28. november"), or "Ta en titt →" and "Åpner lørdag 21. november" while the round is not open;
+  on the right, the round's hardest match to call (`predictInviteRound`: the smallest top chance among the
+  next full round's matches, a lone postponed match giving way) under "Runde 28: vanskeligst å tippe", with
+  the model's odds bar and "Modellens odds. Hva tror du?". The division is the game's (`predict.league`),
+  else Eliteserien, else OBOS-ligaen; between seasons there is no card. An accent border and a glow from the
+  top right; it comes in once (no loop, none at all with reduced motion). On a phone it is one column (the
+  match loses its box and its question; the question in narrower type from 380px down, so it keeps to one
+  line). The × rests it for two weeks (`predict.invite.rest` in local storage).

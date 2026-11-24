@@ -4049,9 +4049,12 @@ function overviewMatch(report) {
   } else {
     const hero = resultHero(report, result);
     const diff = match.home_goals - match.away_goals;
+    // The dash in a span of its own: the figure type's tight tracking pressed it against the goals.
+    const score = el('b', 'overview-match__score', String(match.home_goals));
+    score.append(el('span', 'overview-match__dash', '–'), String(match.away_goals));
     board.append(
       matchSide(home, hero.items[0].sub, `is-home${diff < 0 ? ' is-lost' : ''}`),
-      el('b', 'overview-match__score', `${match.home_goals}–${match.away_goals}`),
+      score,
       matchSide(away, hero.items[2].sub, `is-away${diff > 0 ? ' is-lost' : ''}`));
     body.append(board);
     if (hero.note) notes.push({ band: result.shift?.move >= 0.02 ? result.shift.band : null, text: hero.note });
@@ -4222,6 +4225,310 @@ function overviewOwnClub() {
   return card;
 }
 
+/* Predict on the Overview, for people who already play: the round last scored and the next one, with
+   how much of it is tipped. Nothing is fetched (not even the game's scripts) unless this browser holds a
+   Predict session, and the answer is kept for ten minutes: three small reads, no more. */
+const PREDICT_CARD_FILES = ['/elo-curve.js', '/predict-core.js', '/predict-util.js', '/predict-api.js'];
+const PREDICT_CARD_KEY = 'predict.card';
+/* The answer, kept for ten minutes in this tab's session storage (a reload or a second visit to the Overview costs no
+   reads), under the player's id so another player in the same tab never sees it. */
+function predictCardKept() {
+  try {
+    const kept = JSON.parse(sessionStorage.getItem(PREDICT_CARD_KEY) || 'null');
+    return kept && Date.now() - kept.at < 600000 ? kept : null;
+  } catch { return null; }
+}
+function predictCardKeep(uid, data) {
+  try { sessionStorage.setItem(PREDICT_CARD_KEY, JSON.stringify({ at: Date.now(), uid, data })); } catch { /* storage blocked: it is asked again */ }
+}
+
+function hasPredictSession() {
+  try {
+    for (let i = 0; i < localStorage.length; i += 1) if (localStorage.key(i).startsWith('predict.session')) return true;
+  } catch { /* storage blocked: no card */ }
+  return false;
+}
+
+async function loadOverviewPredict() {
+  await Promise.all(PREDICT_CARD_FILES.map(predictScript));
+  const client = createClient({ config: predictConfig() });
+  if (!client.uid) return null;
+  const kept = predictCardKept();
+  if (kept && kept.uid === client.uid) return kept.data;
+  let league = 'eliteserien';
+  try { if (['eliteserien', 'obosligaen'].includes(localStorage.getItem('predict.league'))) league = localStorage.getItem('predict.league'); } catch { /* the default */ }
+  const [index, stats] = await Promise.all([client.get('meta/rounds'), client.get(`stats/${client.uid}`)]);
+  if (!index) return null;
+  const nowMs = client.serverNow();
+  const rounds = (index.rounds || []).filter((r) => r.league === league).sort((a, b) => a.round - b.round);
+  rounds.forEach((r) => { r.kicks = r.ks; });
+  // The round the game itself opens on (a round with one match put off for weeks is not it).
+  const current = rounds.length ? rounds[currentRoundIndex(rounds, nowMs)] : null;
+  const upcoming = current && ['open', 'future'].includes(roundStatus(current, nowMs)) ? current : null;
+  const data = { next: null, last: null, season: null, place: null };
+  // This season in the game's division, from the stats already read: totals, best round, rounds ahead of the model.
+  const series = seasonSeries(stats, index.season, league);
+  const high = seasonHighlights(series);
+  if (high) {
+    data.season = { season: index.season, league, name: state.reports?.[league]?.league?.name, pts: series.reduce((sum, r) => sum + r.pts, 0), acc: series[series.length - 1].acc,
+      rounds: high.rounds, best: { round: high.best.round, pts: high.best.pts }, beat: high.beat };
+  }
+  const open = Boolean(upcoming) && upcoming.opens.getTime() <= nowMs;
+  // The open round's entry and, for a player with a season, the season board (your place): side by side.
+  const [entry, board, own] = await Promise.all([
+    open ? client.get(`entries/${client.uid}/rounds/${upcoming.key}`).catch(() => null) : null,
+    data.season ? client.get(`boards/season_${index.season}_${league}`).catch(() => null) : null,
+    data.season ? uidHash(client.uid) : null,
+  ]);
+  if (upcoming) {
+    const done = Object.keys((entry && entry.p) || {}).length;
+    data.next = { round: upcoming.round, open, done, total: upcoming.n, when: (open ? upcoming.closes : upcoming.opens).getTime() };
+  }
+  if (board && data.season) {
+    // Your place among people (the model and the crowd take none); past the board's rows, or with a
+    // hidden name, the share of players ahead of you from its percentile table.
+    const row = (board.rows || []).find((r) => r.kind === 'player' && r.u === own);
+    const players = Number(board.players) || 0;
+    if (row) data.place = { place: humanRanks(board.rows).get(row), players };
+    else {
+      const beat = beatShare(board.pct, data.season.pts, board.players);
+      if (beat !== null) data.place = { top: Math.max(1, 100 - beat), players };
+    }
+  }
+  let latest = null;
+  for (const [key, row] of Object.entries((stats && stats.rounds) || {})) {
+    const [season, slug, round] = key.split('_');
+    if (slug !== league || !(row.n > 0) || Number(season) !== index.season) continue;
+    if (!latest || Number(round) > latest.round) latest = { round: Number(round), pts: 10 * (row.n - row.b), acc: 100 * (1 - row.b / row.n / 2) };
+  }
+  data.last = latest;
+  // Scored in any round, any season: a player, not a newcomer with a session from one visit.
+  data.played = Object.keys((stats && stats.rounds) || {}).length > 0;
+  const answer = data.next || data.last || data.season ? data : null;
+  predictCardKeep(client.uid, answer);
+  return answer;
+}
+
+/* The invite: Predict on the Overview for a browser that has not played (no session, or a session that
+   has tipped nothing yet). Built from the season report alone, so it fetches nothing: the next round of
+   the division the game opens on, and that round's hardest match to call with the model's odds, as a
+   question. Its × rests it for two weeks in this browser. */
+const PREDICT_INVITE_REST_KEY = 'predict.invite.rest';
+const PREDICT_INVITE_REST_MS = 14 * 86400000;
+
+/* The round a newcomer would tip next, from a division's unplayed fixtures: the earliest round with a
+   kick-off still ahead (a lone match or two put off from an earlier round gives way to a full round
+   after it), how many of its matches are ahead, when the first is and the round opens (a week before),
+   and the closest call among them (the smallest top chance). Kick-offs are Norwegian time, read as
+   CET: an hour out in summer, which no line here shows. */
+function predictInviteRound(fixtures, nowMs) {
+  const kick = (f) => Date.parse(`${f.date}T${f.time || '12:00'}:00+01:00`);
+  const ahead = (fixtures || []).filter((f) => Number.isFinite(f.round) && kick(f) > nowMs);
+  if (!ahead.length) return null;
+  const rounds = new Map();
+  for (const f of ahead) rounds.set(f.round, [...(rounds.get(f.round) || []), f]);
+  const first = (list) => Math.min(...list.map(kick));
+  const ordered = [...rounds.values()].sort((a, b) => first(a) - first(b));
+  const matches = ordered.find((list) => list.length >= 3) || ordered[0];
+  const top = (f) => Math.max(f.home_win, f.draw, f.away_win);
+  const pick = [...matches].sort((a, b) => top(a) - top(b) || kick(a) - kick(b))[0];
+  const start = first(matches);
+  const date = matches.map((f) => f.date).sort()[0];
+  return { round: matches[0].round, n: matches.length, date, start, opens: start - 7 * 86400000, pick };
+}
+
+/* A span in full words, never "2 d": "2 dager og 4 timer" under three days, else one unit. */
+function predictSpanLong(ms) {
+  const { unit, n } = spanParts(ms);
+  if (unit === 'now') return t('overview.predict.span.now');
+  const words = (u, k) => t(`overview.predict.span.${u}${k === 1 ? '1' : ''}`, { n: k });
+  const hours = Math.floor(Math.abs(ms) / 3600000) - n * 24;
+  return unit === 'day' && n < 3 && hours > 0 ? t('overview.predict.span.and', { a: words('day', n), b: words('hour', hours) }) : words(unit, n);
+}
+
+/* A date written out: "lørdag 28. november". */
+function predictLongDate(iso) {
+  return new Date(`${iso}T12:00:00Z`).toLocaleDateString(localeDate(), { weekday: 'long', day: 'numeric', month: 'long' });
+}
+
+/* The card's pill: its words and an arrow drawn as an icon (a text arrow sits off the line in Archivo). */
+function predictPill(text) {
+  const pill = el('span', 'overview-predict__cta');
+  const icon = svgEl('svg', { viewBox: '0 0 16 16', 'aria-hidden': 'true', fill: 'none', stroke: 'currentColor', 'stroke-width': 2, 'stroke-linecap': 'round', 'stroke-linejoin': 'round' });
+  icon.append(svgEl('path', { d: 'M3 8h10M9 4l4 4-4 4' }));
+  pill.append(el('span', '', text), icon);
+  return pill;
+}
+
+function predictInviteResting() {
+  try { return Date.now() - Number(localStorage.getItem(PREDICT_INVITE_REST_KEY) || 0) < PREDICT_INVITE_REST_MS; } catch { return false; }
+}
+
+/* Fills `card` with the invite and says whether there was a round to invite to (none between seasons). */
+function fillPredictInvite(card, nowMs = Date.now()) {
+  let stored = null;
+  try { stored = localStorage.getItem('predict.league'); } catch { /* the default */ }
+  const slugs = [...new Set([stored, ...OVERVIEW_DIVISIONS].filter((slug) => OVERVIEW_DIVISIONS.includes(slug)))];
+  let next = null;
+  for (const slug of slugs) {
+    next = state.reports[slug] ? predictInviteRound(state.reports[slug].fixtures, nowMs) : null;
+    if (next) break;
+  }
+  if (!next) return false;
+  card.classList.add('overview-predict--invite');
+  card.dataset.state = 'invite';
+  const head = overviewCardHead(t('overview.predict.title'), null, () => switchView('predict'));
+  head.querySelector('.overview-card__label').append(el('span', 'overview-predict__new', t('overview.predict.new')));
+  const rest = el('button', 'overview-predict__rest', '×');
+  rest.type = 'button';
+  rest.setAttribute('aria-label', t('overview.predict.rest'));
+  rest.title = t('overview.predict.rest');
+  rest.addEventListener('click', () => {
+    try { localStorage.setItem(PREDICT_INVITE_REST_KEY, String(Date.now())); } catch { /* storage blocked: gone until the next visit */ }
+    card.remove();
+  });
+  head.append(rest);
+
+  const body = el('div', 'overview-predict__body');
+  body.append(el('p', 'overview-predict__headline', t('overview.predict.inviteTitle')),
+    el('p', 'overview-predict__pitch', t('overview.predict.invitePitch')));
+
+  const { pick } = next;
+  const teaser = el('div', 'overview-predict__teaser');
+  teaser.append(el('span', 'overview-predict__round', t('overview.predict.closest', { round: next.round })));
+  const pair = el('div', 'overview-predict__pair');
+  for (const [id, name, side] of [[pick.home_id, pick.home, 'home'], [pick.away_id, pick.away, 'away']]) {
+    const club = el('span', `overview-predict__club overview-predict__club--${side}`);
+    const crest = teamLogo(id, name, true);
+    if (crest) club.append(crest);
+    club.append(el('span', '', name));
+    pair.append(club);
+    if (side === 'home') pair.append(el('span', 'overview-predict__vs', '–'));
+  }
+  teaser.append(pair, oddsBar(pick.home, pick.away, pick), el('span', 'overview-predict__ask', t('overview.predict.ask')));
+
+  const meta = el('div', 'overview-predict__meta overview-predict__go');
+  const opens = next.opens > nowMs;
+  const when = opens
+    ? t('overview.predict.inviteOpens', { date: predictLongDate(new Date(next.opens).toISOString().slice(0, 10)) })
+    : t('overview.predict.inviteRound', { n: next.n, date: predictLongDate(next.date) });
+  meta.append(predictPill(t(opens ? 'overview.predict.look' : 'overview.predict.play')), el('span', 'overview-predict__sub', when));
+
+  card.append(head, body, teaser, meta);
+  return true;
+}
+
+function overviewPredict() {
+  const card = el('div', 'overview-card overview-race overview-predict');
+  if (!hasPredictSession()) return !predictInviteResting() && fillPredictInvite(card) ? card : null;
+  card.hidden = true;
+  loadOverviewPredict().then((data) => {
+    // A session that has tipped nothing yet (one visit to the game) still gets the invite.
+    if (!data || (!data.played && !data.last && (!data.next || data.next.done === 0))) {
+      if (!predictInviteResting() && fillPredictInvite(card)) card.hidden = false;
+      return;
+    }
+    // The card is one slim row. Left: where the open round stands (nothing tipped, some, all) with a small
+    // button while there is something to tip. Right: what the last scored round came to.
+    card.appendChild(overviewCardHead(t('overview.predict.title'), t('overview.predict.caption'), () => switchView('predict')));
+    const next = data.next;
+    const state = !next ? 'calm' : !next.open ? 'soon' : next.done === 0 ? 'empty' : next.done < next.total ? 'partial' : 'done';
+    card.dataset.state = state;
+    if (next) {
+      const left = predictSpanLong(next.when - Date.now());
+      const body = el('div', 'overview-predict__body');
+      if (state === 'done') {
+        // Every match tipped: a confirmation, a check in the good colour and what can still be done.
+        body.classList.add('overview-predict__body--done');
+        const check = el('span', 'overview-predict__check');
+        const icon = svgEl('svg', { viewBox: '0 0 16 16', 'aria-hidden': 'true', fill: 'none', stroke: 'currentColor', 'stroke-width': 2.4, 'stroke-linecap': 'round', 'stroke-linejoin': 'round' });
+        icon.append(svgEl('path', { d: 'M3.5 8.5l3 3 6-7' }));
+        check.append(icon);
+        body.append(check, el('p', 'overview-predict__title', t('overview.predict.inTitle')),
+          el('span', 'overview-predict__sub', t('overview.predict.inText', { round: next.round, total: next.total, span: left })));
+      } else if (next.open) {
+        const title = state === 'empty' ? t('overview.predict.emptyTitle', { round: next.round })
+          : t('overview.predict.partialTitle', { round: next.round, done: next.done, total: next.total });
+        body.appendChild(el('p', 'overview-predict__title', title));
+        const meta = el('div', 'overview-predict__meta');
+        const sub = el('span', 'overview-predict__sub', t('overview.predict.closesIn', { span: left }));
+        if (next.when - Date.now() < 86400000) sub.dataset.urgent = 'true';
+        // The pill first, then when the round closes: the invite's order.
+        meta.append(predictPill(t(state === 'empty' ? 'overview.predict.tip' : 'overview.predict.finish')), sub);
+        body.appendChild(meta);
+      } else {
+        body.appendChild(el('p', 'overview-predict__title', t('overview.predict.opens', { round: next.round, span: left })));
+      }
+      card.appendChild(body);
+    }
+    const signed = (value) => `${value > 0.05 ? '+' : value < -0.05 ? '-' : ''}${fixed(Math.abs(value), 1)}`;
+    // "av 340 spillere"; a phone keeps "av 340".
+    const placeLabel = (n) => {
+      const label = el('span', '', t('overview.predict.placeOf', { n: num(n) }));
+      label.append(el('span', 'overview-predict__long', ` ${t('overview.predict.players')}`));
+      return label;
+    };
+    const place = data.place;
+    const placeText = place && (place.place ? rankText(place.place) : t('overview.predict.top', { p: place.top }));
+    const season = data.season;
+    if (state === 'calm' && season) {
+      // No round ahead: the season so far across the card's width, your place first.
+      card.classList.add('overview-predict--season');
+      const name = season.name || (season.league === 'obosligaen' ? 'OBOS-ligaen' : 'Eliteserien');
+      const body = el('div', 'overview-predict__body');
+      body.appendChild(el('p', 'overview-predict__title', t('overview.predict.seasonTitle', { league: name, season: season.season })));
+      const strip = el('ul', 'overview-predict__season');
+      const stat = (value, label, tone) => {
+        const item = el('li', 'overview-predict__stat');
+        if (tone) item.dataset.tone = tone;
+        item.append(el('strong', '', value), typeof label === 'string' ? el('span', '', label) : label);
+        strip.appendChild(item);
+      };
+      if (place) stat(placeText, placeLabel(place.players));
+      stat(signed(season.pts), t('predict.recap.pts'), season.pts < -0.05 ? 'bad' : 'good');
+      stat(`${fixed(season.acc, 1)} %`, t('predict.recap.acc'));
+      stat(num(season.rounds), t('overview.predict.roundsPlayed'));
+      stat(signed(season.best.pts), t('overview.predict.bestRound', { round: season.best.round }));
+      stat(t('overview.predict.beatValue', { n: season.beat, total: season.rounds }), t('overview.predict.beatModel'));
+      body.appendChild(strip);
+      card.appendChild(body);
+      card.hidden = false;
+      return;
+    }
+    // Right: your place on the season board, then what the last scored round came to.
+    const figure = (value, label, kind) => {
+      const box = el('div', 'overview-predict__fig');
+      if (kind) box.dataset.kind = kind;
+      box.append(el('strong', '', value), typeof label === 'string' ? el('span', '', label) : label);
+      return box;
+    };
+    const side = el('div', 'overview-predict__side');
+    if (place) {
+      const group = el('div', 'overview-predict__last overview-predict__place');
+      const figures = el('div', 'overview-predict__figs');
+      figures.append(figure(placeText, placeLabel(place.players), 'place'));
+      group.append(el('span', 'overview-predict__round', t('overview.predict.board')), figures);
+      side.appendChild(group);
+    }
+    const last = data.last;
+    if (last && Number.isFinite(last.acc)) {
+      const result = el('div', 'overview-predict__last');
+      result.appendChild(el('span', 'overview-predict__round', t('overview.predict.lastRound', { round: last.round })));
+      const figures = el('div', 'overview-predict__figs');
+      // "poeng"; a phone, whose strip has no "Runde 27" over it, says "poeng i runde 27".
+      const ptsLabel = el('span', '', t('predict.recap.pts'));
+      ptsLabel.append(el('span', 'overview-predict__phone', ` ${t('overview.predict.inRound', { round: last.round })}`));
+      figures.append(figure(signed(last.pts), ptsLabel, 'pts'), figure(`${fixed(last.acc, 1)} %`, t('predict.recap.acc'), 'acc'));
+      figures.firstChild.dataset.tone = last.pts < -0.05 ? 'bad' : 'good';
+      result.appendChild(figures);
+      side.appendChild(result);
+    }
+    if (side.children.length) card.appendChild(side);
+    card.hidden = false;
+  }).catch(() => { /* the card is a convenience: no card */ });
+  return card;
+}
+
 function renderOverview() {
   // A page built before the overview existed has no place for it.
   const body = $('#overview-body');
@@ -4229,6 +4536,8 @@ function renderOverview() {
   const blocks = OVERVIEW_DIVISIONS.map((slug) => state.reports[slug]).filter(Boolean).map(overviewDivision);
   const own = overviewOwnClub();
   if (own) blocks.unshift(own);
+  const predict = overviewPredict();
+  if (predict) blocks.splice(own ? 1 : 0, 0, predict);
   blocks.push(overviewTools(), overviewExploreButton());
   body.replaceChildren(...blocks);
 }
@@ -10615,6 +10924,27 @@ const PREDICT_HASHES = new Set(['table', 'boards', 'me', 'how']);
 const PREDICT_FILES = ['/elo-curve.js', '/predict-core.js', '/predict-util.js', '/predict-api.js', '/predict.js'];
 let predictLoad = null;
 
+/* One script, once: the game and the Overview's Predict card share the first four, and a classic
+   script run twice is a redeclaration error. Scripts added in order run in order. */
+const predictScripts = new Map();
+function predictScript(src) {
+  if (!predictScripts.has(src)) {
+    predictScripts.set(src, new Promise((resolve, reject) => {
+      const script = document.createElement('script');
+      script.src = src;
+      script.async = false;
+      script.onload = resolve;
+      script.onerror = () => {
+        predictScripts.delete(src);
+        script.remove();
+        reject(new Error(`${src} did not load`));
+      };
+      document.body.appendChild(script);
+    }));
+  }
+  return predictScripts.get(src);
+}
+
 function loadPredict() {
   if (window.PredictGame) return Promise.resolve();
   if (!predictLoad) {
@@ -10627,17 +10957,11 @@ function loadPredict() {
       document.head.appendChild(link);
     });
     // Fetched side by side, run in order (async = false): each needs the one before.
-    const scripts = PREDICT_FILES.map((src) => new Promise((resolve, reject) => {
-      const script = document.createElement('script');
-      script.src = src;
-      script.async = false;
-      script.onload = resolve;
-      script.onerror = () => reject(new Error(`${src} did not load`));
-      document.body.appendChild(script);
-    }));
+    const scripts = PREDICT_FILES.map(predictScript);
     predictLoad = Promise.all([css, ...scripts]).catch((error) => {
       predictLoad = null;
       for (const src of PREDICT_FILES) document.querySelector(`script[src="${src}"]`)?.remove();
+      predictScripts.clear();
       throw error;
     });
   }

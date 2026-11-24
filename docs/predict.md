@@ -59,7 +59,7 @@ on `p.sN.g|k|h|d|a`, `r`, `curve`, and a `REQUEST_TIME` transform on `p.sN.t`.
 
 Quotas that shaped this (Spark: 50,000 reads, 20,000 writes, 20,000 deletes a
 day, 1 GiB): one document per player per round (a save is one write, plus one read: the rules `get()` the fixture to check the kick-off); the page
-reads about ten small documents; the job reads a round's entries only when a
+reads about ten small documents (the site's Overview adds up to four, `meta/rounds`, your stats, your entry for the next round and, once you have a scored round this season, the season board for your place, for a browser that holds a session, at most once every ten minutes per tab); the job reads a round's entries only when a
 match has newly kicked off or settled, and scores a round by **setting** its
 totals, never incrementing, so a failed run is just repeated.
 

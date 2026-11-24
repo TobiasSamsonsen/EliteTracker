@@ -1534,3 +1534,28 @@ test('a bracket match\'s winners add each pairing\'s chance of each side going t
   const share = Object.fromEntries(winners.map((w) => [w.id, w.chance]));
   assert.ok(Math.abs(share.a - 0.4) < 1e-12 && Math.abs(share.b - 0.3) < 1e-12 && Math.abs(share.c - 0.3) < 1e-12);
 });
+
+/* The Overview's Predict invite: the round a newcomer would tip next, from the report alone. */
+eval(pick('predictInviteRound'));
+
+test('the Predict invite names the next full round and its closest call', () => {
+  const f = (round, date, time, h, d, a, id) => ({ round, date, time, home_win: h, draw: d, away_win: a, match_id: id });
+  const fixtures = [
+    f(20, '2026-11-20', '18:00', 0.5, 0.25, 0.25, 'past'),
+    f(20, '2026-12-10', '19:00', 0.4, 0.3, 0.3, 'postponed'),
+    f(28, '2026-11-29', '17:00', 0.6, 0.2, 0.2, 'a'),
+    f(28, '2026-11-29', '17:00', 0.38, 0.27, 0.35, 'b'),
+    f(28, '2026-11-30', '19:00', 0.7, 0.2, 0.1, 'c'),
+    f(29, '2026-12-06', '17:00', 0.36, 0.3, 0.34, 'd'),
+  ];
+  const now = Date.parse('2026-11-24T12:00:00+01:00');
+  const next = predictInviteRound(fixtures, now);
+  assert.equal(next.round, 28, 'a lone postponed match gives way to the full round');
+  assert.equal(next.n, 3);
+  assert.equal(next.date, '2026-11-29');
+  assert.equal(next.pick.match_id, 'b', 'the smallest top chance');
+  assert.equal(next.start, Date.parse('2026-11-29T17:00:00+01:00'));
+  assert.ok(next.opens < now, 'open a week before its first match');
+  assert.equal(predictInviteRound(fixtures, Date.parse('2026-12-11T12:00:00+01:00')), null, 'nothing ahead: no invite');
+  assert.equal(predictInviteRound([], now), null);
+});

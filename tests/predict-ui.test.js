@@ -479,3 +479,78 @@ test('the table game: a dragged club lands by its middle, as many places away as
   assert.deepEqual(util.moveItem(['a', 'b', 'c', 'd', 'e'], 4, 0), ['e', 'a', 'b', 'c', 'd']);
   assert.deepEqual(util.moveItem(['a', 'b', 'c'], 1, 9), ['a', 'c', 'b'], 'clamped to the end');
 });
+
+test('rank among people leaves the model and the crowd out, and ties share a place', () => {
+  const rows = [{ kind: 'crowd', rank: 1 }, { kind: 'model', rank: 2 }, { kind: 'player', rank: 3, u: 'a' },
+    { kind: 'player', rank: 4, u: 'b' }, { kind: 'player', rank: 4, u: 'c' }, { kind: 'player', rank: 6, u: 'd' }];
+  const place = util.humanRanks(rows);
+  assert.equal(place.get(rows[0]), undefined);
+  assert.deepEqual(rows.filter((r) => r.kind === 'player').map((r) => place.get(r)), [1, 2, 2, 4]);
+});
+
+test('your neighbours on a board: who is ahead, who is behind, and by how many points', () => {
+  const rows = [{ kind: 'model', pts: 90 }, { kind: 'player', u: 'a', pts: 50 }, { kind: 'player', u: 'b', pts: 44 }, { kind: 'player', u: 'c', pts: 40 }];
+  const rivals = util.rivalsOf(rows, (r) => r.u === 'b', (r) => r.pts);
+  assert.equal(rivals.place, 2);
+  assert.equal(rivals.ahead.u, 'a');
+  assert.equal(rivals.behind.u, 'c');
+  assert.equal(rivals.toAhead, 6);
+  assert.equal(rivals.toBehind, 4);
+  assert.equal(util.rivalsOf(rows, (r) => r.u === 'z', (r) => r.pts), null);
+  const first = util.rivalsOf(rows, (r) => r.u === 'a', (r) => r.pts);
+  assert.equal(first.ahead, null);
+  assert.equal(first.toAhead, null);
+});
+
+test('the standing card: place, tier, the gap to the model and how close the next place is', () => {
+  const rows = [{ kind: 'player', u: 'a', pts: 100 }, { kind: 'model', pts: 80 }, { kind: 'player', u: 'b', pts: 90 }, { kind: 'player', u: 'c', pts: 60 }, { kind: 'player', u: 'd', pts: 10 }];
+  const pct = Array.from({ length: 101 }, (_, p) => p);                   // 101 players scoring 0..100
+  const mine = (id) => (row) => row.u === id;
+  const pts = (row) => row.pts;
+  const b = util.standingOf(rows, pct, 4, mine('b'), pts);
+  assert.equal(b.place, 2);
+  assert.equal(b.modelGap, 10, 'ahead of the model by ten points');
+  assert.equal(b.toAhead, 10);
+  assert.equal(Math.round(b.reach), 90, 'ninety percent of the way to the player ahead');
+  const c = util.standingOf(rows, pct, 4, mine('c'), pts);
+  assert.equal(c.modelGap, -20, 'behind the model');
+  const first = util.standingOf(rows, pct, 4, mine('a'), pts);
+  assert.equal(first.reach, 100, 'nobody ahead: the bar is full');
+  assert.equal(first.ahead, null);
+  assert.equal(util.standingOf(rows, pct, 4, mine('z'), pts), null, 'not on the board: no card');
+  // Tier and top share follow the share of players beaten (gold from 90 %).
+  const high = util.standingOf([{ kind: 'player', u: 'x', pts: 95 }], pct, 101, mine('x'), pts);
+  assert.equal(high.tier, 'gold');
+  assert.equal(high.top, 5);
+  assert.equal(util.standingOf([{ kind: 'player', u: 'x', pts: 95 }], [], 101, mine('x'), pts).tier, null, 'no percentile table: no tier');
+  assert.equal(util.standingOf(rows, pct, 4, mine('b'), pts).me.u, 'b');
+  assert.equal(util.standingOf([{ kind: 'player', u: 'x', pts: 5 }], pct, 101, mine('x'), pts).modelGap, null, 'no model row: no comparison');
+});
+
+test('a season in rounds: running accuracy for you and for the model, divisions merged on the round', () => {
+  const stats = { rounds: {
+    '2025_eliteserien_30': { n: 8, b: 4, vm: 0.4 },
+    '2026_eliteserien_1': { n: 8, b: 4, vm: 0.4 },
+    '2026_obosligaen_1': { n: 4, b: 2, vm: -0.1 },
+    '2026_eliteserien_2': { n: 8, b: 3.2, vm: -0.2 },
+    '2026_eliteserien_3': { n: 0, b: 0, vm: 0 },
+  } };
+  assert.deepEqual(util.statsSeasons(stats), [2026, 2025]);
+  const series = util.seasonSeries(stats, 2026);
+  assert.deepEqual(series.map((r) => r.round), [1, 2], 'a round with nothing scored is left out');
+  assert.equal(series[0].n, 12);
+  near(series[0].pts, 10 * (12 - 6));
+  near(series[0].vm, 3);
+  near(series[0].acc, 100 * (1 - 6 / 12 / 2));
+  near(series[0].model, 100 * (1 - (6 + 0.3) / 12 / 2));
+  near(series[1].acc, 100 * (1 - 9.2 / 20 / 2));
+  assert.deepEqual(util.seasonSeries(stats, 2026, 'obosligaen').map((r) => r.round), [1]);
+  assert.deepEqual(util.seasonSeries(null, 2026), []);
+  const high = util.seasonHighlights(series);
+  assert.equal(high.rounds, 2);
+  assert.equal(high.best.round, 1);
+  assert.equal(high.beat, 1);
+  assert.equal(util.seasonHighlights([]), null);
+});
+
+function near(a, b) { assert.ok(Math.abs(a - b) < 1e-9, `${a} != ${b}`); }
