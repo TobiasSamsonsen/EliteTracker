@@ -8,8 +8,8 @@ copy is drafted in [predict-privacy-draft.md](predict-privacy-draft.md).
 
 **Status (2026-11-23): ready to launch from the `predict` branch.** Rules and indexes are
 deployed, the Google consent screen is in production with the privacy URL, and on the branch the
-page is deployable (no `hosting.ignore`), indexable, linked from the site footer and the sitemap,
-with the hourly job scheduled. Nothing is on `main` yet, so nothing is public: merging and pushing
+game is a tab of the site (the Predict view; `/predict/` its route page, 2026-11-24), indexable,
+linked from the masthead, the footer and the sitemap, with the hourly job scheduled. Nothing is on `main` yet, so nothing is public: merging and pushing
 is the launch. The crowd does not touch any published number.
 
 ## Where things are
@@ -24,7 +24,7 @@ is the launch. The crowd does not touch any published number.
 | Firestore over REST (urllib, no SDK) | `sources/firestore.py` |
 | The hourly job | `predict/sync.py`, run by `python -m elitetracker.predict_sync` |
 | Security rules and indexes | `firestore.rules`, `firestore.indexes.json` (`firebase.json`) |
-| The game's pages | `public/predict/`, `predict.js`, `predict-api.js`, `predict-core.js`, `predict.css` ([frontend.md](frontend.md)) |
+| The game's view | the Predict view of `public/index.html` (`/predict/` is its route page, `pages.py`), `predict.js`, `predict-api.js`, `predict-core.js`, `predict-util.js`, `predict.css`, loaded by `app.js` when the view opens ([frontend.md](frontend.md), "The Predict view") |
 | Shared test vectors (Python is the source) | `tests/fixtures/predict_vectors.json`, made by `tools/predict_vectors.py` |
 
 ## Data in Firestore
@@ -42,8 +42,8 @@ Project `elitetrackerno`, `(default)` database, `europe-north1`, Spark plan (fre
 | `tables/{uid}/picks/{key}` | the player | the player | `order` (club ids), `r`, `t` |
 | `users/{uid}`, `nicknames/{key}` | the player | the player (a claim: get) | profile (`leagues`: the codes of the mini-leagues the player is in, at most 20, so they follow a sign-in and a purge knows which memberships to remove); the nickname claim is keyed in ASCII (`~e ~o ~a` for æ ø å) and valid only with the profile that uses it; a change of case only is a plain update of `nick` (no new claim, no new `nickAt`) |
 | `reveal/{key}` | job | anyone (get) | after kick-off: the model's odds as published, the crowd's aggregate (n >= 5, plus the field's median score once settled), the result |
-| `stats/{uid}` | job | the player | per-round totals (`n, b, r, ab, ar, vm, m`), last pick time |
-| `boards/{id}` | job | anyone (get, not list) | `season_`, `round_`, `last10_{season}_{league}`, `round_{season}_{league}_{n}` (every round scored, kept as that round's board), `tables_{season}_{league}` and `league_{code}` (a mini-league, named by its secret code) |
+| `stats/{uid}` | job | the player | per-round totals (`n, b, r, ab, ar, vm, m`), last pick time; points and accuracy are worked out from `n` and `b` |
+| `boards/{id}` | job | anyone (get, not list) | `season_`, `round_`, `last10_{season}_{league}`, `season_{season}_all` (both divisions together; a player's streak is the better division's), `round_{season}_{league}_{n}` (every round scored, kept as that round's board), `tables_{season}_{league}` and `league_{code}` (a mini-league, named by its secret code) |
 | `leagues/{code}` + `members/{uid}` | the player | get / own | mini-leagues, codes `[A-Z2-9]{8}` |
 | `reports/{nickKey}_{uid}` | the player (create) | job | a name report: one per reporter and name (the rules check the id, a repeat is an update and is refused); three different reporters hide a name |
 | `deleteRequests/{uid}` | the player (create) | job | asks the job to erase the account |
@@ -51,7 +51,7 @@ Project `elitetrackerno`, `(default)` database, `europe-north1`, Spark plan (fre
 
 Rules in one breath: only the owner reads or writes an entry; a write may change
 only slots whose kick-off is ahead and whose round has opened, with `t` equal to
-the request's server time; values are whole percents in 2..96 summing to 100, `g`
+the request's server time; values are whole percents in 1..98 summing to 100 (the curve's own picks stay in 2..96; only a fine-tuned pick goes to 1), `g`
 in -700..700 (enough to reach the clip), draw tenths 5..18. Entries and tables cannot be deleted from the
 browser (a bad pick must not vanish before it is scored); deletion is a request.
 The browser writes with a REST `commit` of the changed slots only: an update mask
@@ -71,7 +71,7 @@ totals, never incrementing, so a failed run is just repeated.
 3. Deletion requests: erase entries, table picks, profile, claim, stats, mini-league memberships; strip the player's rows from every board.
 4. Per round with news: read its entries (collection-group query on `r`), publish the crowd aggregate for matches that kicked off (`data/predict/crowd.json`, git; `{"hidden": true}` below five players), compute the shadow delta (`model/crowd.py`), score settled matches, write `stats`, the `reveal` document.
 5. When a division's season is complete: score the table game (footrule less bonuses, against the model's expected table as locked while the game was open: `data/predict/locked_tables.json`), write `stats/{uid}.tables.{key}` and `boards/tables_{key}`.
-6. Rebuild this season's boards, the board of every round scored in the run (`round_{season}_{league}_{n}`) and the mini-league boards. A league made or joined since the last run gets its board at once, from one collection-group query on `members.joined` (the index is in `firestore.indexes.json`; without it the job warns and skips this). An earlier season's boards are never rebuilt: they are the kept final scores. `meta/rounds` is rewritten when a fixture changes or another match is scored, and `meta/standings` when a match has been played.
+6. Rebuild this season's boards (and the season board of both divisions together), the board of every round scored in the run (`round_{season}_{league}_{n}`) and the mini-league boards. A league made or joined since the last run gets its board at once, from one collection-group query on `members.joined` (the index is in `firestore.indexes.json`; without it the job warns and skips this). An earlier season's boards are never rebuilt: they are the kept final scores. `meta/rounds` is rewritten when a fixture changes or another match is scored, and `meta/standings` when a match has been played.
    When the next season's fixtures are already in, `predict_sync` first runs the season before (`publish=False`: it scores and builds, and leaves the round index, the table game's opening, deletions and the calendar to the current season), if the job has played it.
 7. Once a day: delete accounts unused for 24 months (the board rows stay).
 8. `public/predict/rounds.ics`, the "round closes" calendar feed.
@@ -118,8 +118,8 @@ Done (2026-11-23):
 - Rules and indexes deployed (`firebase deploy --only firestore:rules,firestore:indexes`); the job's
   collection-group query works against the real project.
 - Privacy text in `public/personvern.html` (both languages), on the branch.
-- The page unblocked on the branch: `hosting.ignore` no longer lists it, `noindex` is gone, a footer
-  link on the front page and a sitemap entry (`pages.py`) point to it.
+- The game unblocked on the branch: a view of the site with a masthead tab, a footer link and a
+  route page with a sitemap entry (`pages.py`); `noindex` is gone.
 - `predict.yml` scheduled hourly (on the branch; it runs once the file is on `main`).
 - Google consent screen: home page, privacy-policy URL and `elitetracker.no` set; the app is
   "In production" for external users (basic scopes only, so no user cap applies). Brand
@@ -128,7 +128,7 @@ Done (2026-11-23):
 
 Left, all the owner's:
 
-0. **Deploy the rules and indexes again** (`firebase deploy --only firestore:rules,firestore:indexes`) before merging: the 24 November audit changed the report ids, added `users.leagues` and `meta/standings` to the rules, and added the `members.joined` index.
+0. **Deploy the rules and indexes again** (`firebase deploy --only firestore:rules,firestore:indexes`) before merging: the 24 November audit changed the report ids, added `users.leagues` and `meta/standings` to the rules, and added the `members.joined` index; the UI pass of 24 November lowered the percent floor to 1 (fine-tune), which the deployed rules refuse until then.
 1. Glance at the two items that were **[CHECK]** comments in `personvern.html` (the Google-script wording, the age limit): both were checked on 24 November against the code and Norwegian law (13) and the comments replaced by notes saying so; change the wording if you disagree.
 2. **Launch:** merge `predict` into `main` and push. That deploys the page and the privacy text, and
    starts the hourly job.

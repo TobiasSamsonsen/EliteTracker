@@ -77,10 +77,14 @@ def test_the_page_against_the_emulators(site, tmp_path):
         errors: list[str] = []
         page.on("console", lambda m: m.type == "error" and errors.append(m.text[:160]))
         page.on("pageerror", lambda x: errors.append("pageerror: " + str(x)[:200]))
-        page.goto(f"{site}/predict/?emulator=1&project={PROJECT}")
+        # The game is a view of the site; /predict/ is a route page build_site writes, so the plain
+        # public/ served here opens it by its query. The fixture site has no season report: the game
+        # does not need one.
+        page.goto(f"{site}/?view=predict&emulator=1&project={PROJECT}")
         page.wait_for_selector(".pcard", timeout=20000)
         assert page.locator(".pcard").count() == 3
-        assert page.locator(".pcard__nums").first.inner_text().startswith("H "), "the H/D/A readout is on every card"
+        assert page.locator(".pcard__range").first.get_attribute("aria-valuetext"), "the slider reads its three percents"
+        assert page.locator(".pcard__read").first.inner_text(), "every card says in words where it stands"
 
         # the keyboard accepts the even pick; the page saves it
         page.locator(".pcard__range").first.focus()
@@ -127,6 +131,24 @@ def test_the_page_against_the_emulators(site, tmp_path):
                            report=EMPTY_REPORT, data_dir=data, ics_path=data / "r.ics")
         assert f"league_{code}" in summary["boards"]
 
+        # the table game is drag only: a club dragged four places in one move lands there, and the order
+        # saves itself (no arrows, no save button)
+        page.click('button[data-tab="table"]')
+        page.wait_for_selector('.ptable[data-state="open"] .ptable__row', timeout=15000)
+        rows = page.locator('.ptable[data-state="open"] .ptable__row')
+        assert rows.count() >= 5 and page.locator(".ptable .pbtn").count() == 0
+        moved = rows.nth(0).get_attribute("data-id")
+        a, b = rows.nth(0).bounding_box(), rows.nth(4).bounding_box()
+        x, y0 = a["x"] + 120, a["y"] + a["height"] / 2
+        page.mouse.move(x, y0)
+        page.mouse.down()
+        for step in range(1, 11):
+            page.mouse.move(x, y0 + (b["y"] - a["y"] + 6) * step / 10)
+        page.mouse.up()
+        page.wait_for_selector('.ptable-game .ptable__status[data-state="saved"]', timeout=15000)
+        assert page.locator(".ptable .ptable__row").nth(4).get_attribute("data-id") == moved
+        assert store.get(f"tables/{uid}/picks/{season}_eliteserien")["order"][4] == moved
+
         # a signed-in anonymous player is offered the Google link; the round picker lists the rounds
         page.click('button[data-tab="me"]')
         page.wait_for_selector(".pdanger", timeout=15000)
@@ -134,6 +156,7 @@ def test_the_page_against_the_emulators(site, tmp_path):
         page.click('button[data-tab="tip"]')
         page.wait_for_selector(".pnav__pick", timeout=15000)
         assert page.locator(".pnav__pick option").count() >= 1
-        # 404s are the missing crests and boards of a fixture season; anything else is a bug
-        assert not [e for e in errors if "Failed to load resource" not in e], errors
+        # 404s are the missing crests and boards of a fixture season, and the season report the fixture
+        # site does not have ([Boot]); anything else is a bug
+        assert not [e for e in errors if "Failed to load resource" not in e and "[Boot]" not in e], errors
         browser.close()

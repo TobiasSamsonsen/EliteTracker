@@ -733,6 +733,8 @@ function routePath() {
     if (routeClubs.has(slug)) return `/klubb/${slug}/`;
   } else if (state.activeView === 'explore' && EXPLORE_SLUGS[state.exploreItem]) {
     return `/utforsk/${EXPLORE_SLUGS[state.exploreItem]}/`;
+  } else if (state.activeView === 'predict') {
+    return '/predict/';
   }
   return state.league === 'eliteserien' ? '/' : '/obos-ligaen/';
 }
@@ -10603,6 +10605,88 @@ function showSkeleton(view) {
   }
 }
 
+/* ---------- Predict: the prediction game, a view of its own ----------
+
+   Its code (predict*.js, predict.css; docs/predict.md) is fetched the first
+   time the view opens, so the rest of the site never pays for it. It reads
+   none of the season report, so a link to /predict/ draws the game at once
+   instead of waiting for the report (bootPredict). */
+const PREDICT_HASHES = new Set(['table', 'boards', 'me', 'how']);
+const PREDICT_FILES = ['/elo-curve.js', '/predict-core.js', '/predict-util.js', '/predict-api.js', '/predict.js'];
+let predictLoad = null;
+
+function loadPredict() {
+  if (window.PredictGame) return Promise.resolve();
+  if (!predictLoad) {
+    const css = new Promise((resolve) => {
+      const link = document.createElement('link');
+      link.rel = 'stylesheet';
+      link.href = '/predict.css';
+      link.onload = resolve;
+      link.onerror = resolve; // the game still works unstyled
+      document.head.appendChild(link);
+    });
+    // Fetched side by side, run in order (async = false): each needs the one before.
+    const scripts = PREDICT_FILES.map((src) => new Promise((resolve, reject) => {
+      const script = document.createElement('script');
+      script.src = src;
+      script.async = false;
+      script.onload = resolve;
+      script.onerror = () => reject(new Error(`${src} did not load`));
+      document.body.appendChild(script);
+    }));
+    predictLoad = Promise.all([css, ...scripts]).catch((error) => {
+      predictLoad = null;
+      for (const src of PREDICT_FILES) document.querySelector(`script[src="${src}"]`)?.remove();
+      throw error;
+    });
+  }
+  return predictLoad;
+}
+
+function renderPredict() {
+  if (window.PredictGame) {
+    window.PredictGame.show();
+    return;
+  }
+  loadPredict().then(() => {
+    if (state.activeView === 'predict') window.PredictGame.show();
+  }).catch((error) => {
+    console.warn('[Predict] could not load', error);
+    track('load_error', { file: 'predict', message: error.message });
+    const retry = el('button', 'pbtn', t('predict.retry'));
+    retry.type = 'button';
+    retry.addEventListener('click', renderPredict);
+    $('#predict-view').replaceChildren(el('p', 'pempty', t('predict.err.load')), retry);
+  });
+}
+
+/* Before the season report has landed (or when it failed): the sections for
+   the open view, and the game if that is the view. Every other view waits for
+   the report, which draws the page again when it lands. */
+function renderWithoutReport() {
+  for (const section of document.querySelectorAll('[data-section]')) {
+    section.hidden = !section.dataset.section.split(' ').includes(state.activeView);
+  }
+  document.body.dataset.view = state.activeView;
+  document.body.dataset.viz = '';
+  const params = new URLSearchParams(window.location.search);
+  params.set('view', state.activeView);
+  const path = state.activeView === 'predict' ? '/predict/' : window.location.pathname;
+  window.history.replaceState(window.history.state, '', `${path}?${params.toString()}${window.location.hash}`);
+  if (state.activeView === 'predict') renderPredict();
+}
+
+/* A link to the game opens it at once, before the report has loaded. */
+function bootPredict() {
+  if (pageParams().get('view') !== 'predict') return;
+  state.activeView = 'predict';
+  markActiveView();
+  $('#status').hidden = true;
+  $('#content').hidden = false;
+  renderWithoutReport();
+}
+
 /* Clear skeletons after render */
 function clearSkeleton(view) {
   const section = document.querySelector(`[data-section="${view}"]`);
@@ -10617,6 +10701,19 @@ function render() {
   // A readout raised on the old view would float over the new one: a tap on
   // a club name both raises the stake readout and opens the club.
   hideTooltip();
+  if (state.activeView !== 'predict') {
+    window.PredictGame?.hide();
+    // The game's own addresses (#boards, #me, ...) are not another view's.
+    if (PREDICT_HASHES.has(window.location.hash.slice(1))) {
+      window.history.replaceState(window.history.state, '', window.location.pathname + window.location.search);
+    }
+  }
+  // The season is still on its way (or failed to come): only the game, which
+  // does not read it, can be drawn (bootPredict).
+  if (!report) {
+    renderWithoutReport();
+    return;
+  }
 
   // Always render these (they're either always visible or quick)
   renderSeasonOptions(report);
@@ -10633,7 +10730,7 @@ function render() {
   renderToolLinks(report);
 
   // Hide the rewind timeline on views where it isn't relevant
-  const noRewind = new Set(['matches', 'compare', 'model', 'team']);
+  const noRewind = new Set(['matches', 'compare', 'model', 'team', 'predict']);
   // In explore only the views of one rewound report follow it (EXPLORE_REWIND);
   // the mountain has its own build-up.
   placeTimeline(!noRewind.has(state.activeView)
@@ -10697,6 +10794,9 @@ function render() {
     case 'model':
       renderModelCard(report);
       break;
+    case 'predict':
+      renderPredict();
+      break;
   }
 
   // Persist active view to URL for linkability
@@ -10712,6 +10812,7 @@ function render() {
   if (state.activeView === 'explore' && state.exploreItem) params.set('viz', state.exploreItem);
   else params.delete('viz');
   if (state.activeView !== 'compare') params.delete('compare'); // renderCompare writes it
+  if (state.activeView !== 'predict') params.delete('join');
   const locked = state.activeView === 'explore' && state.exploreItem === 'whatif' ? lockParam(state.whatIfLocks, report) : '';
   if (locked) params.set('lock', locked);
   else params.delete('lock');
@@ -10733,7 +10834,8 @@ function render() {
   } else if (state.activeView === 'explore' && EXPLORE_ITEMS.includes(state.exploreItem)) {
     document.title = t('meta.tool.title', { tool: t(`explore.${state.exploreItem}.title`), league: meta.league, season: meta.season });
   }
-  document.querySelector('meta[name=description]').content = t('meta.desc', meta);
+  if (state.activeView === 'predict') document.title = window.PredictGame?.title() || `${t('predict.title')} — EliteTracker`;
+  document.querySelector('meta[name=description]').content = state.activeView === 'predict' ? t('predict.tagline') : t('meta.desc', meta);
   // The newest result the numbers rest on (the report holds no build time).
   const through = report.league.matchdays?.at(-1)?.date;
   $('#footer-data').textContent = through
@@ -10835,6 +10937,14 @@ function wire() {
   for (const button of document.querySelectorAll('[data-view]')) {
     button.addEventListener('click', () => {
       switchView(button.dataset.view);
+    });
+  }
+  // A plain link to a view (the footer's to the game) stays in the page.
+  for (const link of document.querySelectorAll('[data-view-link]')) {
+    link.addEventListener('click', (event) => {
+      if (event.ctrlKey || event.metaKey || event.shiftKey || event.button !== 0) return;
+      event.preventDefault();
+      switchView(link.dataset.viewLink);
     });
   }
 
@@ -11065,7 +11175,7 @@ function applyTeamParameter() {
    whole strip for its bottom bar. */
 /* The views in the navigation's order: the five the masthead always shows,
    then the three under More. A slide between views moves this way. */
-const VIEW_ORDER = ['overview', 'table', 'matches', 'grid', 'explore', 'ladder', 'compare', 'model'];
+const VIEW_ORDER = ['overview', 'table', 'matches', 'grid', 'explore', 'predict', 'ladder', 'compare', 'model'];
 
 /* The masthead's right-hand group keeps the width it has with every picker
    on show, so the views that hide the division picker (the overview, the
@@ -11205,7 +11315,7 @@ function applyViewParameter() {
   const asked = params.get('view');
   // Next Up and Played Results were merged into Matches; old links still land.
   const view = asked === 'next-up' || asked === 'played' ? 'matches' : asked;
-  const validViews = new Set(['overview', 'table', 'grid', 'ladder', 'matches', 'compare', 'explore', 'team', 'model']);
+  const validViews = new Set(['overview', 'table', 'grid', 'ladder', 'matches', 'compare', 'explore', 'team', 'model', 'predict']);
   if (view && validViews.has(view)) {
     state.activeView = view;
     if (EXPLORE_ITEMS.includes(params.get('viz'))) state.exploreItem = params.get('viz');
@@ -11897,6 +12007,7 @@ async function boot() {
   applyTranslations();
   wire();
   initConsent();
+  bootPredict();
   
   // The report draws the page. careers.json (club histories, head-to-heads,
   // the rating each result moved) is several times its size, so it follows
@@ -12198,7 +12309,7 @@ function initMobileGestures() {
     // turns it would otherwise pull to refresh.
     if (document.body.dataset.viz === 'mountain') return;
     if (ptrState.pulling || e.touches.length !== 1 || overlayOpen()) return;
-    if (e.target.closest('input[type="range"], .scroller, .tool-links__list, .odds, .grid-zones-wrap')) return;
+    if (e.target.closest('input[type="range"], .scroller, .tool-links__list, .odds, .grid-zones-wrap, .ptable__grip')) return;
     ptrState.startX = e.touches[0].clientX;
     ptrState.startY = e.touches[0].clientY;
     ptrState.axis = null;

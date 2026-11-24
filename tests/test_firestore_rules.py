@@ -133,11 +133,13 @@ def test_values_are_checked(admin):
     me = player("u1")
     for bad in (pick(h=50, d=30, a=30),            # sums to 110
                 pick(g=701),                        # gap out of range
-                pick(h=1, d=50, a=49),              # below the clip
+                pick(h=0, d=50, a=50),              # below the floor (1 %)
+                pick(h=99, d=1, a=0),               # above the ceiling (98 %)
                 pick(k=19), pick(k=4),              # draw tendency out of range
                 {**pick(), "extra": 1},             # unknown field
                 {**pick(), "t": NOW}):              # a client-chosen time
         assert denied(lambda b=bad: save(me, "u1", {"s1": b})), bad
+    save(me, "u1", {"s1": pick(h=98, d=1, a=1)})                                # a fine-tuned pick may go down to 1 %
     assert denied(lambda: save(me, "u1", {"s9": pick()}))                      # no such slot
     assert denied(lambda: save(me, "u1", {"s1": pick()}, extra={"curve": 2}))  # unknown curve
     assert denied(lambda: save(me, "u1", {"s1": pick()}, round_key="2027_eliteserien_6"))  # r must match the path

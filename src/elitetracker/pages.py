@@ -10,6 +10,7 @@ only the head and the `<noscript>` text differ.
     /obos-ligaen/          the second division's front page
     /klubb/<slug>/         one club, for every club in the current season
     /utforsk/<slug>/       one of the Explore tools
+    /predict/              the prediction game
 
 `sitemap.xml` is written from the same list. `SHORT_NAMES`, `club_slug` and
 `EXPLORE` mirror `app.js` (`SHORT_NAMES`, `clubSlug`, `EXPLORE_SLUGS`); the
@@ -178,7 +179,11 @@ def build_pages(site_dir: Path, data_dir: Path) -> list[str]:
         put(f"/utforsk/{slug}/", title=f"{name} — {first['league']['name']} {season} — EliteTracker",
             description=description, route={"view": "explore", "viz": item}, heading=name)
 
-    urls = [f"{SITE}/"] + [f"{SITE}{path}" for path in written] + [f"{SITE}/model.html", f"{SITE}/predict/"]
+    # The prediction game is a view of the app like the rest (app.js loads its code when it opens).
+    put("/predict/", title=f"Predict: tipp kampene i Eliteserien og OBOS-ligaen {season} — EliteTracker",
+        description=norwegian_copy(i18n_source, "predict.tagline"), route={"view": "predict"}, heading="Predict")
+
+    urls = [f"{SITE}/"] + [f"{SITE}{path}" for path in written] + [f"{SITE}/model.html"]
     sitemap = (
         '<?xml version="1.0" encoding="UTF-8"?>\n'
         '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n'

@@ -349,6 +349,36 @@ the comparison is the odds as published at kick-off, stored with the
 
 ## 5. Scoring spec (after FFI's tournament)
 
+**Revised 2026-11-24 (before launch): the leaderboard ranks by points, not by
+Accuracy against the median.** Points = 10 x (1 - Brier) for each tipped match (a mark out of 10),
+summed (`scoring.match_points`, `total_points`; twin `matchPoints`,
+`totalPoints` in `predict-core.js`). *Accuracy* is shown apart from it: the
+average Brier as a percent, 100 x (1 - Brier / 2) (`scoring.accuracy`). Why:
+
+- The owner wants tipping more matches rewarded, so the crowd signal has more
+  picks, and bad or confident losing calls punished. Under Accuracy against the
+  median the average player scores about 0 a match, so tipping more only pays
+  if you beat half the field. Under a "beat the coin flip" score (zero at
+  37 / 26 / 37) a pick that goes the wrong way loses points, which teaches that
+  skipping is safer. That was rejected for the same reason.
+- Any score of the form a - b x Brier keeps the honest forecast the best one, so
+  the only choice is where zero sits (and the scale: 10 rather than 100, so a
+  match is a mark out of 10 and a season a few hundred points). At Brier 2 (never negative) a coin-flip
+  pick already earns about 6.7 of 10, and the number of matches decides the
+  ranking. Zero at Brier 1 was chosen: a cautious pick (no outcome above about
+  60 %) can never go below zero, only a confident miss does (96 / 2 / 2 that
+  misses: -8.8), and by the player's own belief an honest pick always beats the
+  even one, which beats skipping.
+- Volume still weighs heavily: a model-level player earns about +4 a match,
+  and the gap between skill levels is a few tenths of a point a match. Accuracy is the
+  skill figure, in its own column. In the seeded test season (61 players) the
+  crowd average, which "plays" every match, tops the board.
+- The job keeps Accuracy against the median (`ab`), RPS (`ar`, `r`) and the
+  model comparison (`vm`) in the stats and on the boards: the "beat the field"
+  badge reads `ab`, and nothing has to be rescored to change the rule again.
+
+The original spec, kept for the record:
+
 FFI's page you linked (`/om-prosjektet/`) has no scoring text; the rules are on
 its FAQ (`/sporsmal-og-svar/`). What it does, and what we take:
 

@@ -43,7 +43,7 @@ VIEWPORTS = [
     ("1280x800", 1280, 800, False),
 ]
 EXPLORE = ["mountain", "attack", "luck", "races", "whatif", "runin", "playoff"]
-# /predict/, its four tabs and the guide, with Firestore answered from a small fixture (see predict_fixture).
+# The Predict view, its four tabs and the guide, with Firestore answered from a small fixture (see predict_fixture).
 PREDICT = ["predict", "predict:table", "predict:boards", "predict:me", "predict:how"]
 VIEWS = (["overview", "grid", "table", "matches", "ladder", "compare", "explore"]
          + [f"explore:{item}" for item in EXPLORE] + ["model", "team"] + PREDICT)
@@ -179,12 +179,15 @@ def predict_fixture(now: datetime | None = None) -> dict[str, dict]:
     now = now or datetime.now(timezone.utc)
     season = now.year
     docs: dict[str, dict] = {}
-    clubs = {f"c{i}": f"Klubb {chr(65 + i)}" for i in range(16)}
+    # Real club ids with a crest in public/logos (the cards and the table game show crests; a missing one is a 404).
+    ids = sorted(p.stem for p in (PUBLIC / "logos").glob("*.webp"))[:16]
+    clubs = {cid: f"Klubb {chr(65 + i)}" for i, cid in enumerate(ids)}
+    order = list(clubs)
     for slug in ("eliteserien", "obosligaen"):
         key = f"{season}_{slug}_5"
         kicks = [now + timedelta(days=1, hours=3 * i) for i in range(4)]
-        slots = {f"s{i + 1}": {"id": str(i), "home": clubs[f"c{2 * i}"], "away": clubs[f"c{2 * i + 1}"],
-                              "kickoff": kicks[i]} for i in range(4)}       # no crest ids: a crest would be a 404 in the console
+        slots = {f"s{i + 1}": {"id": str(i), "home": clubs[order[2 * i]], "away": clubs[order[2 * i + 1]],
+                              "home_id": order[2 * i], "away_id": order[2 * i + 1], "kickoff": kicks[i]} for i in range(4)}
         docs[f"fixtures/{key}"] = {"season": season, "league": slug, "round": 5, "opens": now - timedelta(days=2),
                                    "closes": kicks[0], "slots": slots}
         docs.setdefault("meta/rounds", {"season": season, "rounds": []})["rounds"].append(
@@ -225,7 +228,7 @@ def route_firestore(context, docs: dict[str, dict]) -> None:
 def url_for(base: str, view: str, team: str | None) -> str:
     if view.startswith("predict"):
         tab = view.split(":", 1)[1] if ":" in view else ""
-        return f"{base}/predict/" + (f"#{tab}" if tab else "")
+        return f"{base}/?view=predict" + (f"#{tab}" if tab else "")
     if view == "team":
         return f"{base}/?team={team}"
     if view.startswith("explore:"):

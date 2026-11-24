@@ -175,16 +175,29 @@ def test_a_late_joiner_is_not_charged_for_rounds_before_they_started():
     assert boards.player_streak(rounds, mine) == {"current": 3, "best": 3, "freezes": 0}
 
 
-def test_a_board_ranks_by_summed_accuracy_and_keeps_hidden_players_in_the_percentiles():
+def test_a_board_ranks_by_points_and_keeps_hidden_players_in_the_percentiles():
     players = [{"uid": "a", "nick": "Aa_1", "hidden": False, "totals": {"n": 3, "b": 1.0, "r": 0.3, "ab": 0.5, "ar": 0.2, "vm": 0.1}},
-               {"uid": "b", "nick": "Bb_1", "hidden": True, "totals": {"n": 3, "b": 1.0, "r": 0.3, "ab": 0.9, "ar": 0.2, "vm": 0.1}},
-               {"uid": "c", "nick": "Cc_1", "hidden": False, "totals": {"n": 0, "b": 0, "r": 0, "ab": 0, "ar": 0, "vm": 0}}]
+               {"uid": "b", "nick": "Bb_1", "hidden": True, "totals": {"n": 3, "b": 1.5, "r": 0.3, "ab": 0.9, "ar": 0.2, "vm": 0.1}},
+               {"uid": "c", "nick": "Cc_1", "hidden": False, "totals": {"n": 0, "b": 0, "r": 0, "ab": 0, "ar": 0, "vm": 0}},
+               {"uid": "d", "nick": "Dd_1", "hidden": False, "totals": {"n": 1, "b": 0.1, "r": 0.1, "ab": 0.9, "ar": 0.2, "vm": 0.1}}]
     model = {"n": 3, "b": 1.2, "r": 0.4, "ab": 0.7, "ar": 0.1, "vm": 0.0}
     board = boards.make_board("season", players, model=model, crowd=None, updated="now")
-    assert [r["nick"] for r in board["rows"]] == ["Modellen", "Aa_1"]      # hidden b and idle c are not listed
-    assert board["players"] == 2 and board["pct"][100] == 0.9 and board["pct"][0] == 0.5
+    # hidden b and idle c are not listed; three matches at a Brier of 1/3 beat one near-perfect match
+    assert [r["nick"] for r in board["rows"]] == ["Aa_1", "Modellen", "Dd_1"]
+    assert [r["pts"] for r in board["rows"]] == [20.0, 18.0, 9.0]
+    assert board["rows"][0]["acc"] == pytest.approx(100 * (1 - 1 / 3 / 2), abs=1e-4) and board["rows"][2]["acc"] == 95.0
+    assert board["players"] == 3 and board["pct"][100] == 20.0 and board["pct"][0] == 9.0
     assert boards.uid_hash("abc") == boards.uid_hash("abc") and len(boards.uid_hash("abc")) == 10
     assert boards.uid_hash("abc") != "abc"
+
+
+def test_points_are_brier_shifted_so_a_cautious_pick_never_loses():
+    assert scoring.match_points(0.0) == 10.0 and scoring.match_points(1.0) == 0.0
+    # 37 / 26 / 37 scores above zero whatever happens; 96 / 2 / 2 that misses loses 8.8
+    for result in (scoring.HOME, scoring.DRAW, scoring.AWAY):
+        assert scoring.match_points(brier(0.37, 0.26, 0.37, result)) > 0
+    assert scoring.match_points(brier(0.96, 0.02, 0.02, scoring.AWAY)) == pytest.approx(-8.824, abs=0.001)
+    assert scoring.total_points(2, 0.5) == 15.0 and scoring.accuracy(2, 0.8) == 80.0 and scoring.accuracy(0, 0) is None
 
 
 def test_percentiles():
@@ -211,3 +224,19 @@ def test_the_crowd_signal_is_zero_below_thirty_players_and_follows_a_real_deviat
     assert 0 < shift < 60                                                            # shrunk toward the model
     stale = [(model_gap + 60, 10.0)] * 40
     assert 0 < crowd.signal(0.5, 0.25, stale) < shift                                # an older pick weighs less
+
+
+def test_the_overall_board_adds_both_divisions_and_keeps_the_better_streak():
+    t = lambda n, b: {"n": n, "b": b, "r": 0.0, "ab": 0.0, "ar": 0.0, "vm": 0.0}
+    es_rounds = [{"key": "2026_eliteserien_1", "round": 1, "matches": 2, "settled": 2}]
+    obos_rounds = [{"key": "2026_obosligaen_1", "round": 1, "matches": 2, "settled": 2}]
+    es = {"a": {"nick": "Aa_1", "hidden": False, "rounds": {"2026_eliteserien_1": t(2, 0.4)}}}
+    obos = {"a": {"nick": "Aa_1", "hidden": False, "rounds": {"2026_obosligaen_1": t(1, 0.5)}},
+            "b": {"nick": "Bb_1", "hidden": False, "rounds": {"2026_obosligaen_1": t(2, 1.0)}}}
+    board = boards.build_overall_board(2026, {"eliteserien": (es, es_rounds), "obosligaen": (obos, obos_rounds)},
+                                       model_rounds={"2026_eliteserien_1": t(2, 0.6), "2026_obosligaen_1": t(2, 0.6)},
+                                       crowd_rounds={}, updated="now")
+    rows = {r["nick"]: r for r in board["rows"]}
+    assert rows["Aa_1"]["n"] == 3 and rows["Aa_1"]["pts"] == pytest.approx(30 - 9.0)
+    assert rows["Aa_1"]["streak"] == 1 and rows["Bb_1"]["streak"] == 1
+    assert rows["Modellen"]["n"] == 4 and board["players"] == 2 and board["league"] == "all"

@@ -1,12 +1,17 @@
-"""Scoring, after FFI's prediction tournament (docs/predict-plan.md, section 5).
+"""Scoring (docs/predict-plan.md, section 5).
 
-Per match: the Brier score (0 to 2) and the RPS, both lower-is-better. The
-headline is the *Accuracy* score: the median of everybody's score on that
-match, minus yours; positive means you beat at least half of the field. The
-model's locked odds are one more voter in the median, so a match with three
-players still has a sensible reference and the pull toward the model fades as
-the field grows. Both scores are proper and the reference does not depend on
-your own pick (up to your one vote), so the honest forecast is the best one.
+Per match: the Brier score (0 to 2, lower is better). The leaderboard ranks by
+*points*: 10 x (1 - Brier) a match, summed over the matches you tipped. A
+skipped match scores 0, a cautious pick (no outcome above about 60 %) can never
+go below 0, and only a confident pick that misses loses points, so tipping a
+match is always worth it and a bold miss still costs. *Accuracy* is the
+average Brier shown as a percent, 100 x (1 - Brier / 2), apart from the score.
+Points are a straight-line function of Brier, so the honest forecast is still
+the best one.
+
+The job also keeps each match's median Brier (the model's locked odds are one
+more voter in it) and the RPS: the score against the median and the RPS stay in
+the stats and on the boards for the badges and the record, not for the ranking.
 
 Picks are stored as whole percents (h, d, a); scores use those, never the
 slider position, so a later refit of the curve cannot rescore anything.
@@ -22,6 +27,22 @@ from elitetracker.model.scores import brier, rps
 # A match's three outcomes as the game stores them.
 HOME, DRAW, AWAY = "home_win", "draw", "away_win"
 MIN_CROWD = 5  # a published aggregate needs at least this many players
+
+
+def match_points(brier_score: float) -> float:
+    """One match's points: 10 x (1 - Brier), a mark out of 10. 10 for a certain call that comes
+    off, 0 at Brier 1, at worst -8.8 for a 96 % call that misses (picks are clipped to 2..96)."""
+    return 10.0 * (1.0 - brier_score)
+
+
+def total_points(n: int, brier_sum: float) -> float:
+    """Points over ``n`` tipped matches whose Brier scores add up to ``brier_sum``."""
+    return 10.0 * (n - brier_sum)
+
+
+def accuracy(n: int, brier_sum: float) -> float | None:
+    """The average Brier as a percent: 100 x (1 - mean Brier / 2); None with no matches."""
+    return 100.0 * (1.0 - brier_sum / n / 2.0) if n else None
 
 
 def outcome(home_goals: int, away_goals: int) -> str:

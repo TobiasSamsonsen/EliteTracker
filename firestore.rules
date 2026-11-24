@@ -22,7 +22,8 @@ service cloud.firestore {
     // p = { s1: {g, k, h, d, a, t}, ..., s8: {...} } keyed like the round's
     // fixture document. g: the slider's rating gap, k: draw tendency in tenths,
     // h/d/a: whole-percent odds, t: the server time of the last change.
-    function pct(v) { return v is int && v >= 2 && v <= 96; }
+    // 1..98: a fine-tuned pick goes down to 1 % (the curve's own picks stay within 2..96).
+    function pct(v) { return v is int && v >= 1 && v <= 98; }
 
     function slotValid(s) {
       return s is map

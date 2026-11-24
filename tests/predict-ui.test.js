@@ -7,6 +7,7 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const api = require('../public/predict-api.js');
 const util = require('../public/predict-util.js');
+const core = require('../public/predict-core.js');
 
 const local = api.predictConfig({ hostname: 'localhost', search: '?emulator=1&project=demo-x' });
 const live = api.predictConfig({ hostname: 'elitetracker.no', search: '?emulator=1&project=demo-x' });
@@ -144,8 +145,8 @@ test('the client signs in anonymously once, keeps the session, and refreshes an 
 
 test('numbers use a decimal point in both languages, with each language\'s thousands grouping', () => {
   assert.equal(util.fixed(0.5, 2), '0.50');
-  assert.equal(util.signed(-0.1234), '-0.12');
-  assert.equal(util.signed(0.04), '+0.04');
+  assert.equal(util.signedScore(-0.1234), '-0.12');
+  assert.equal(util.signedScore(0.04), '+0.04');
   assert.equal(util.groupThousands(1794, 'no'), '1794');                      // four digits: no grouping
   assert.match(util.groupThousands(50000, 'no'), /^50[\s  ]000$/);   // a space in Norwegian
   assert.equal(util.groupThousands(50000, 'en'), '50,000');
@@ -407,4 +408,74 @@ test('the standings document is public like the round index, so a broken session
   };
   const client = api.createClient({ config: local, fetchImpl, storage });
   assert.deepEqual(await client.get('meta/standings'), { season: 2027 });
+});
+
+test('a long leaderboard shows the top ten, you with five either side, and the model, with gaps between', () => {
+  const rows = Array.from({ length: 60 }, (_, i) => ({ rank: i + 1, kind: i === 24 ? 'model' : 'player' }));
+  const out = util.boardWindow(rows, 40, { top: 10, around: 5, always: (row) => row.kind === 'model' });
+  const shown = out.filter((x) => x.row).map((x) => x.row.rank);
+  assert.deepEqual(shown, [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 25, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46]);
+  assert.deepEqual(out.filter((x) => x.gap).map((x) => x.gap), [14, 10, 14]);
+  // near the top the two parts meet, and a gap of a single row is no gap
+  const near = util.boardWindow(rows.slice(0, 30), 15, { top: 10, around: 5 });
+  assert.equal(near.filter((x) => x.row).length, 21);
+  assert.deepEqual(near.filter((x) => x.gap).map((x) => x.gap), [9]);
+  assert.ok(util.boardWindow(rows.slice(0, 12), 11).every((x) => x.row), 'a short board is shown whole');
+  // not on the board: the top ten and the rest as one gap
+  assert.deepEqual(util.boardWindow(rows, -1).map((x) => x.gap || 'row').slice(-2), ['row', 50]);
+});
+
+test('each end of the draw block moves on its own: the other end stays put while the curve allows', () => {
+  const start = core.pickPercentages(0, core.DRAW_TENTHS.normal);
+  const left = util.positionForEdges(start[0] - 6, start[2], 'a');
+  const p = core.pickPercentages(left.gap, left.tenths);
+  assert.equal(p[2], start[2], 'the away end held');
+  assert.ok(Math.abs(p[0] - (start[0] - 6)) <= 1 && p[1] > start[1], 'the home end moved and the draw grew');
+  const right = util.positionForEdges(start[0], start[2] - 8, 'h');
+  const q = core.pickPercentages(right.gap, right.tenths);
+  assert.equal(q[0], start[0]);
+  assert.ok(q[1] > start[1] && q[2] < start[2]);
+  // a typed draw makes room on both sides and keeps the split between them
+  const typed = util.positionForTyped('d', 34, start);
+  const r = core.pickPercentages(typed.gap, typed.tenths);
+  assert.ok(Math.abs(r[1] - 34) <= 1 && Math.abs(r[0] - r[2]) <= 1);
+  // past what the draw tendency allows, the nearest the curve can do
+  const far = util.positionForEdges(5, 5, 'a');
+  assert.ok(far.tenths === core.DRAW_TENTHS.max);
+});
+
+test('fine-tune on: the ends move a whole percent at a time with no curve, and the pick stays valid', () => {
+  const p = [37, 26, 37];
+  assert.deepEqual(util.freeEdges(p, 'left', 20.4), [20, 43, 37]);
+  assert.deepEqual(util.freeEdges(p, 'right', 70), [37, 33, 30]);
+  assert.deepEqual(util.freeEdges(p, 'left', 99), [62, 1, 37], 'the draw never goes under 1');
+  assert.deepEqual(util.freeEdges(p, 'right', -5), [37, 1, 62]);
+  assert.deepEqual(util.freeEdges(p, 'move', 30), [17, 26, 57], 'the block keeps its width');
+  assert.deepEqual(util.freeEdges(p, 'move', 0), [1, 26, 73]);
+  assert.deepEqual(util.freeEdges([1, 1, 98], 'left', 0), [1, 1, 98], 'the floor holds at the very end');
+  for (const q of [util.freeTyped('h', 80, p), util.freeTyped('a', 0, p), util.freeTyped('d', 50, p), util.freeTyped('h', 99, p)]) {
+    assert.equal(q[0] + q[1] + q[2], 100);
+    assert.ok(q.every((x) => Number.isInteger(x) && x >= 1 && x <= 98), String(q));
+  }
+  assert.deepEqual(util.freeTyped('d', 50, p), [25, 50, 25]);
+  // the position stored beside free percents is inside the rules' ranges, and a curve pick is not free
+  const pos = util.freePosition([90, 8, 2]);
+  assert.ok(pos.gap <= core.GAP.max && pos.gap >= core.GAP.min && pos.gap % core.GAP.step === 0);
+  assert.ok(pos.tenths >= core.DRAW_TENTHS.min && pos.tenths <= core.DRAW_TENTHS.max);
+  const curve = core.pickPercentages(100, 10);
+  assert.equal(util.isFreePick({ g: 100, k: 10, h: curve[0], d: curve[1], a: curve[2] }), false);
+  assert.equal(util.isFreePick({ g: 100, k: 10, h: 50, d: 10, a: 40 }), true);
+});
+
+test('the table game: a dragged club lands by its middle, as many places away as it is dragged', () => {
+  const mids = [20, 60, 100, 140, 180, 220];            // rows 40px apart
+  assert.equal(util.dropIndex(mids, 0, 20), 0, 'not moved');
+  assert.equal(util.dropIndex(mids, 0, 145), 3, 'three places down in one drag');
+  assert.equal(util.dropIndex(mids, 5, 15), 0, 'from the bottom to the top');
+  assert.equal(util.dropIndex(mids, 2, 1000), 5, 'past the end is last');
+  assert.equal(util.dropIndex(mids, 2, 95), 2, 'a nudge stays put');
+  assert.equal(util.dropIndex(mids, 2, 55), 1, 'past the middle of the row above: one up');
+  assert.deepEqual(util.moveItem(['a', 'b', 'c', 'd', 'e'], 0, 3), ['b', 'c', 'd', 'a', 'e']);
+  assert.deepEqual(util.moveItem(['a', 'b', 'c', 'd', 'e'], 4, 0), ['e', 'a', 'b', 'c', 'd']);
+  assert.deepEqual(util.moveItem(['a', 'b', 'c'], 1, 9), ['a', 'c', 'b'], 'clamped to the end');
 });

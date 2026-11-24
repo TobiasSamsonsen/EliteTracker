@@ -115,3 +115,13 @@ test('a generated first nickname is always a legal one', () => {
 test('the public player id is the first ten hex digits of sha-256, like Python\'s uid_hash', async () => {
   assert.equal(await core.uidHash('abc'), 'ba7816bf8f');           // sha256("abc") = ba7816bf8f01cfea...
 });
+
+test('points are 10 x (1 - Brier), like predict/scoring.py: a cautious pick never loses, a 96 % miss costs 8.8', () => {
+  assert.equal(core.matchPoints(0), 10);
+  assert.equal(core.matchPoints(1), 0);
+  for (const result of ['home_win', 'draw', 'away_win']) assert.ok(core.matchPoints(core.brierScore(0.37, 0.26, 0.37, result)) > 0);
+  assert.ok(Math.abs(core.matchPoints(core.brierScore(0.96, 0.02, 0.02, 'away_win')) + 8.824) < 0.001);
+  assert.equal(core.totalPoints(2, 0.5), 15);
+  assert.equal(core.accuracyPercent(2, 0.8), 80);
+  assert.equal(core.accuracyPercent(0, 0), null);
+});

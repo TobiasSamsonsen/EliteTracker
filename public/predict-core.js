@@ -101,6 +101,13 @@ function scoreOwnPick(pick, model, result) {
   return { brier, rps, vsModel: modelBrier - brier };
 }
 
+/* Points and accuracy (predict/scoring.py): 10 x (1 - Brier) a match (a mark out of 10), summed, so a skipped match is 0,
+   a cautious pick never below it and only a confident miss negative; accuracy is the average Brier as
+   a percent, 100 x (1 - Brier / 2). */
+function matchPoints(brier) { return 10 * (1 - brier); }
+function totalPoints(n, brierSum) { return 10 * (n - brierSum); }
+function accuracyPercent(n, brierSum) { return n ? 100 * (1 - brierSum / n / 2) : null; }
+
 /* ---- the table game (predict/tables.py) -------------------------------------- */
 
 function footrule(order, truth) {
@@ -178,7 +185,7 @@ async function uidHash(uid) {
 if (typeof module !== 'undefined') {
   module.exports = {
     FROZEN_CURVE, GAP, DRAW_TENTHS, PCT, gameOdds, percentages, pickPercentages, gapForHome, equivalentGap,
-    parseNumber, brierScore, rpsScore, outcomeOf, scoreOwnPick, footrule, tableBonus, tableError,
+    parseNumber, brierScore, rpsScore, outcomeOf, scoreOwnPick, matchPoints, totalPoints, accuracyPercent, footrule, tableBonus, tableError,
     nickLower, nickKey, nickProblems, nickBlocked, generateNick, uidHash,
   };
 }

@@ -6,7 +6,7 @@
    A classic script: load it after predict-core.js. */
 
 const predictUtilCore = (typeof module !== 'undefined' && typeof require !== 'undefined')
-  ? require('./predict-core.js') : { GAP, DRAW_TENTHS, pickPercentages };
+  ? require('./predict-core.js') : { GAP, DRAW_TENTHS, pickPercentages, equivalentGap };
 
 /* ---- numbers ------------------------------------------------------------------------ */
 
@@ -29,7 +29,7 @@ function percentText(value, lang, digits = 1) {
 }
 
 /* A signed score: "+0.07", "-0.12". */
-function signed(value, digits = 2) {
+function signedScore(value, digits = 2) {
   const text = fixed(value, digits);
   return Number(text) > 0 ? `+${text}` : text;
 }
@@ -212,6 +212,96 @@ function nearestPosition(outcome, typed, gap, tenths, fineTune) {
   return best;
 }
 
+/* Every slider position (gap and draw tendency) with its whole percents, worked out once: the draw
+   block's ends and the typed numbers search it. */
+let positionCells = null;
+function positionGrid() {
+  if (!positionCells) {
+    const { GAP, DRAW_TENTHS, pickPercentages } = predictUtilCore;
+    positionCells = [];
+    for (let k = DRAW_TENTHS.min; k <= DRAW_TENTHS.max; k += 1) {
+      for (let g = GAP.min; g <= GAP.max; g += GAP.step) positionCells.push({ g, k, p: pickPercentages(g, k) });
+    }
+  }
+  return positionCells;
+}
+
+/* The slider position nearest a home and an away percent: the draw block's two ends, each dragged
+   on its own (the draw is what is left between them). `hold` ('h' or 'a') is the end that should
+   stay put: a miss there weighs four times as much, so dragging one end leaves the other where it
+   is while the curve allows. Ties go to the gap nearer the middle, then the draw tendency nearer
+   normal. Returns { gap, tenths }. */
+function positionForEdges(home, away, hold = null) {
+  const { DRAW_TENTHS } = predictUtilCore;
+  const wh = hold === 'h' ? 4 : 1;
+  const wa = hold === 'a' ? 4 : 1;
+  let best = null;
+  let bestMiss = Infinity;
+  for (const cell of positionGrid()) {
+    const miss = wh * Math.abs(cell.p[0] - home) + wa * Math.abs(cell.p[2] - away);
+    const tie = best && Math.abs(miss - bestMiss) < 1e-9;
+    if (miss < bestMiss - 1e-9 || (tie && (Math.abs(cell.g) < Math.abs(best.g)
+      || (Math.abs(cell.g) === Math.abs(best.g) && Math.abs(cell.k - DRAW_TENTHS.normal) < Math.abs(best.k - DRAW_TENTHS.normal))))) {
+      best = cell;
+      bestMiss = miss;
+    }
+  }
+  return { gap: best.g, tenths: best.k };
+}
+
+/* A typed number for one outcome ('h', 'd' or 'a'), from the pick on show (`p`, whole percents):
+   home or away moves its own end of the draw block and holds the other; a draw keeps the split
+   between home and away and makes room for itself on both sides. */
+function positionForTyped(outcome, typed, p) {
+  if (outcome === 'h') return positionForEdges(typed, p[2], 'a');
+  if (outcome === 'a') return positionForEdges(p[0], typed, 'h');
+  const rest = 100 - typed;
+  const sides = p[0] + p[2] || 1;
+  return positionForEdges((rest * p[0]) / sides, (rest * p[2]) / sides);
+}
+
+/* Fine-tune on: the pick is three whole percents of its own, off the curve, each at least 1 (so at
+   most 98) and summing to 100 (FREE_MIN; the curve's own picks stay within 2..96), moved one percent at a time. `mode` is the part dragged: 'left' (the home / draw edge, the
+   away share held), 'right' (the draw / away edge, the home share held) or 'move' (the whole block,
+   its width held; `percent` is then where its middle goes). */
+const FREE_MIN = 1;
+const FREE_MAX = 100 - 2 * FREE_MIN;
+const clampInt = (v, lo, hi) => Math.max(lo, Math.min(hi, Math.round(v)));
+function freeEdges(p, mode, percent) {
+  const [h, d, a] = p;
+  const room = 100 - FREE_MIN;
+  if (mode === 'left') { const nh = clampInt(percent, FREE_MIN, room - a); return [nh, 100 - nh - a, a]; }
+  if (mode === 'right') { const na = clampInt(100 - percent, FREE_MIN, room - h); return [h, 100 - h - na, na]; }
+  const nh = clampInt(percent - d / 2, FREE_MIN, room - d);
+  return [nh, d, 100 - nh - d];
+}
+
+/* A typed number with fine-tune on: home or away takes what it is given and the draw makes way (the
+   other side gives too, only when the draw is down to the floor); a draw keeps the split between the sides. */
+function freeTyped(outcome, typed, p) {
+  const v = clampInt(typed, FREE_MIN, FREE_MAX);
+  const room = 100 - FREE_MIN;
+  if (outcome === 'h') { const a = Math.min(p[2], room - v); return [v, 100 - v - a, a]; }
+  if (outcome === 'a') { const h = Math.min(p[0], room - v); return [h, 100 - h - v, v]; }
+  const rest = 100 - v;
+  const h = clampInt((rest * p[0]) / (p[0] + p[2] || 1), FREE_MIN, rest - FREE_MIN);
+  return [h, v, rest - h];
+}
+
+/* The slider position stored beside free percents (the rules want one, and the crowd's signal reads
+   the gap): the gap whose expected score the percents have, and the nearest draw tendency. */
+function freePosition(p) {
+  const { GAP, equivalentGap } = predictUtilCore;
+  const gap = clampInt(equivalentGap(p[0] / 100, p[1] / 100) / GAP.step, GAP.min / GAP.step, GAP.max / GAP.step) * GAP.step;
+  return { gap, tenths: positionForEdges(p[0], p[2]).tenths };
+}
+
+/* A saved pick made with fine-tune on: its percents are not the curve's at its position. */
+function isFreePick(pick) {
+  const { pickPercentages } = predictUtilCore;
+  return Boolean(pick) && Number.isInteger(pick.h) && String([pick.h, pick.d, pick.a]) !== String(pickPercentages(pick.g, pick.k));
+}
+
 /* The slider position under a pointer on the bar (left: the away side, right: the home side). */
 function gapAtFraction(fraction) {
   const { GAP } = predictUtilCore;
@@ -223,6 +313,22 @@ function gapAtFraction(fraction) {
 /* ---- the table game's rules text ------------------------------------------------------------------- */
 
 /* predict/tables.py BONUSES, as the page words them. */
+/* The table game's drag: where a dragged row lands is the number of the other rows whose middle
+   lies above its own middle (`mids`: the rows' middles before the drag, `from`: its place then). */
+function dropIndex(mids, from, centre) {
+  let n = 0;
+  mids.forEach((mid, i) => { if (i !== from && mid < centre) n += 1; });
+  return n;
+}
+
+/* A copy of `list` with the item at `from` moved to `to`, the rest closing up behind it. */
+function moveItem(list, from, to) {
+  const out = list.slice();
+  const [item] = out.splice(from, 1);
+  out.splice(Math.max(0, Math.min(out.length, to)), 0, item);
+  return out;
+}
+
 const TABLE_BONUS = {
   eliteserien: { champion: 6, relegation: 3 },
   obosligaen: { promotion: 4, relegation: 3 },
@@ -234,6 +340,28 @@ const draftKey = (uid, roundKey) => `predict.draft.${uid || 'new'}.${roundKey}`;
 const roundKeyOf = (season, league, round) => `${season}_${league}_${round}`;
 
 /* ---- where you stand: the season panel's numbers ------------------------------------------------ */
+
+/* A long leaderboard, shortened: the top `top` rows, the `around` rows above and below yours, and
+   every row `always` keeps (the model and the average), in the board's order, with { gap: n } where
+   n rows are left out. A gap of one row is no saving, so that row stays. */
+function boardWindow(rows, mine, { top = 10, around = 5, always = () => false } = {}) {
+  const keep = new Set();
+  for (let i = 0; i < Math.min(top, rows.length); i++) keep.add(i);
+  if (mine >= 0) for (let i = Math.max(0, mine - around); i <= Math.min(rows.length - 1, mine + around); i++) keep.add(i);
+  rows.forEach((row, i) => { if (always(row)) keep.add(i); });
+  const out = [];
+  let hidden = [];
+  const flush = () => {
+    if (hidden.length === 1) out.push({ row: rows[hidden[0]] });
+    else if (hidden.length) out.push({ gap: hidden.length });
+    hidden = [];
+  };
+  rows.forEach((row, i) => {
+    if (keep.has(i)) { flush(); out.push({ row }); } else hidden.push(i);
+  });
+  flush();
+  return out;
+}
 
 /* The share of players you beat (0..100), from a board's 101 percentile cut-offs. Up to 101 players
    the cut-offs are the players' own sorted scores, so the share is exact (the others below you
@@ -275,7 +403,8 @@ function roundForm(stats, season, league, count = 8) {
   const prefix = `${season}_${league}_`;
   return Object.entries((stats && stats.rounds) || {})
     .filter(([key]) => key.startsWith(prefix))
-    .map(([key, row]) => ({ round: Number(key.slice(prefix.length)), ab: row.ab || 0, n: row.n || 0 }))
+    .map(([key, row]) => ({ round: Number(key.slice(prefix.length)), ab: row.ab || 0, n: row.n || 0,
+      pts: 10 * ((row.n || 0) - (row.b || 0)) }))                      // points, as predict-core's totalPoints
     .sort((a, b) => a.round - b.round)
     .slice(-count);
 }
@@ -399,9 +528,9 @@ function analysePlay(rows) {
 
 if (typeof module !== 'undefined') {
   module.exports = {
-    groupThousands, fixed, percentText, signed, spanParts, ROUND_OVER_AFTER, roundStatus, roundScored, currentRoundIndex, isLocked,
+    groupThousands, fixed, percentText, signedScore, spanParts, ROUND_OVER_AFTER, roundStatus, roundScored, currentRoundIndex, isLocked,
     splitDraft, draftKeysToMove, moveDrafts, keysToReset, calibrationPoints, ringState,
-    computeStreak, calibrationBins, seasonTotals, badgesFor, nearestPosition, gapAtFraction, TABLE_BONUS, draftKey, roundKeyOf,
-    beatShare, normalFit, normalDensity, TIERS, tierOf, roundForm, analysePlay, ANALYSE_MIN,
+    computeStreak, calibrationBins, seasonTotals, badgesFor, nearestPosition, positionForEdges, positionForTyped, FREE_MIN, FREE_MAX, freeEdges, freeTyped, freePosition, isFreePick, gapAtFraction, dropIndex, moveItem, TABLE_BONUS, draftKey, roundKeyOf,
+    beatShare, boardWindow, normalFit, normalDensity, TIERS, tierOf, roundForm, analysePlay, ANALYSE_MIN,
   };
 }

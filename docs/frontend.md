@@ -8,12 +8,12 @@ Scripts load with `<script defer>`.
 | `index.html` + `app.js` + `i18n.js` + `styles.css` | the site |
 | `model.html` + `model.js` | the model page (`/model.html`) |
 | `elo-curve.js` | the model's price curve (`expectedScore`, `eloOdds`: `model/probabilities.py` in JavaScript), shared by the model page and the Predict game's slider; loaded before `model.js`, required by the node tests |
-| `predict/index.html`, `predict.js`, `predict.css` | the prediction game (`/predict/`), unlinked and `noindex` until the owner opens it ([predict.md](predict.md)) |
+| `predict.js`, `predict.css` | the prediction game, the Predict view of `index.html` (`?view=predict`; `/predict/` is its route page, written by `pages.py`). `app.js` fetches them, with `elo-curve.js` and the three files below, the first time the view opens (`loadPredict`) ([predict.md](predict.md)) |
 | `predict-core.js` | the game's pure logic: frozen price curve, whole-percent rounding, scoring, table error, nickname rules; the twin of `src/elitetracker/predict/`, pinned by `tests/fixtures/predict_vectors.json` |
 | `predict-api.js`, `predict-util.js` | the game's network layer (Identity Toolkit and Firestore over `fetch`, no SDK; request builders are pure) and its small helpers (formatting, rounds, ring, streak, badges) |
 | `season-sim.js` | the what-if page's season simulation (a Web Worker) and its re-rating of the clubs (`rerateSeason`, a port of the Elo and attack/defence updates); also the finish grid's "how it happens" analysis (`simulateSeason` with `record`, `scenarioAnalysis`); loaded as a plain script and required by the node tests |
 | `thumbs.js` | the sliding pill of every segmented control, on both pages |
-| `share.js` | sharing, loaded before `app.js` (it uses `app.js`'s helpers only when called): `shareButton` (the share icon: three circles, an angle), the browser's share sheet (`navigator.share`) or our own (`openShareSheet`: the picture with Share or Download, the link with Copy or Share), and a canvas picture for each view shared as one, in the format and theme the reader picks in the sheet (`renderShare`: wide 1200 x 630 for link previews, square 1080 x 1080, portrait 1080 x 1350, story 1080 x 1920; the site's dark or light palette, defaulting to the theme on show; both remembered per browser). Each picture lays itself out for its shape (larger type on a tall one; the designs were picked format by format in a review, November 2026): the title race (`shareTitleRace`, the overview: two contenders as figures over the split bar, along the foot when wide and up the right side when tall, each club level with its share; three or more as a row each with its own bar, `shareRaceRows`), each other race (`shareRace`, the overview's race cards: the same rows, the bars in the band's colour, a line saying so when a simulated play-off is counted), the finish grid (`shareFinishGrid`, Sluttabell: the grid on wide and square, its cells at most half again as wide as tall; on portrait and story the predicted table, `shareFinishTable`, with the table's band marks and a small chart of each club's chance of every place), a club (`shareClub`, the club page: the rating after its trend arrow and its rank among every club (`rankText`); likeliest place, expected points, points now; attack and defence as the club page's bars from the division average; the chance of each race), a match (`shareMatch`, Sammenlign: the sides tagged home in blue and away in red, the odds bar under them named in the same colours, and the score grid from 0-0 to 4-4 with its axes named after the clubs) and a club's chance of a place (`shareFinish`, the finish-path popup: the likeliest season it happens in, the club's run-in and the rivals' results it rests on, from the popup's own analysis, the spare height of a tall picture shared between the parts; or, where those do not fit, the chance of every place with where the club stands). Crests come from `logos/share/` (256 px, FotMob's large crest, loaded only when a picture is drawn), else the 192 px PNG; the pages keep the 96 px WebP. "Hva om" shares its link only (the locked results are in `?lock=`). A view without a picture opens the browser's sheet straight away; one with a picture opens ours first, to choose. Names here must not clash with `app.js`'s: both are classic scripts, and a function of the same name silently replaces the other |
+| `share.js` | sharing, loaded before `app.js` (it uses `app.js`'s helpers only when called): `shareButton` (the share icon: three circles, an angle; `url` shares another address than the page's), the browser's share sheet (`navigator.share`) or our own (`openShareSheet`: the picture with Share or Download, the link with Copy or Share), and a canvas picture for each view shared as one, in the format and theme the reader picks in the sheet (`renderShare`: wide 1200 x 630 for link previews, square 1080 x 1080, portrait 1080 x 1350, story 1080 x 1920; the site's dark or light palette, defaulting to the theme on show; both remembered per browser). Each picture lays itself out for its shape (larger type on a tall one; the designs were picked format by format in a review, November 2026): the title race (`shareTitleRace`, the overview: two contenders as figures over the split bar, along the foot when wide and up the right side when tall, each club level with its share; three or more as a row each with its own bar, `shareRaceRows`), each other race (`shareRace`, the overview's race cards: the same rows, the bars in the band's colour, a line saying so when a simulated play-off is counted), the finish grid (`shareFinishGrid`, Sluttabell: the grid on wide and square, its cells at most half again as wide as tall; on portrait and story the predicted table, `shareFinishTable`, with the table's band marks and a small chart of each club's chance of every place), a club (`shareClub`, the club page: the rating after its trend arrow and its rank among every club (`rankText`); likeliest place, expected points, points now; attack and defence as the club page's bars from the division average; the chance of each race), a match (`shareMatch`, Sammenlign: the sides tagged home in blue and away in red, the odds bar under them named in the same colours, and the score grid from 0-0 to 4-4 with its axes named after the clubs) and a club's chance of a place (`shareFinish`, the finish-path popup: the likeliest season it happens in, the club's run-in and the rivals' results it rests on, from the popup's own analysis, the spare height of a tall picture shared between the parts; or, where those do not fit, the chance of every place with where the club stands). Crests come from `logos/share/` (256 px, FotMob's large crest, loaded only when a picture is drawn), else the 192 px PNG; the pages keep the 96 px WebP. "Hva om" shares its link only (the locked results are in `?lock=`). A view without a picture opens the browser's sheet straight away; one with a picture opens ours first, to choose. Names here must not clash with `app.js`'s: both are classic scripts, and a function of the same name silently replaces the other |
 | `i18n.js` | `translations.en` and `translations.no`, one key table each; `t(key, vars)` |
 | `vendor/three/` | three.js r147, vendored; loaded only when the season mountain opens |
 | `fonts/`, `logos/`, `og.png` | assets (`logos/share/`: the larger crests the share pictures draw) |
@@ -114,7 +114,7 @@ In file order:
 - **state and formatting** (top): the `state` object, report URLs, number
   formatting
 - **accessibility utilities**, **tooltip**, **bands**, **legends**
-- the views: **the overview** (`renderOverview`, the landing page: both divisions, each opening with the title race as a row of its own (`overviewTitleCard`: up to five contenders' chances in display type, one decimal each, over one bar split between them, the favourite's share in the title gold, the rest of the field in one dim slate, no medal colour), then each other open race as a card in the band's colour (`overviewRaceCard`: up to four clubs, each with its chance large and a thick bar). Every live chance carries its move since the last round (`overviewBefore`: the report of the last matchday before the latest round's first match; `chanceChange`: the table's arrow from `trendArrowSVG`, upright past 10 percentage points, in the good or bad tone for the club). Then the match of the week, the one Kamper's hero shows (`weekMatch`, shared with `heroMatch`): drawn as a scoreboard (each club's crest large over its name, the kick-off time between them before the match and the score after, the loser then stepped back), the odds bar under it before and each side's chance before the match under it after, and a line per club on what it decides or did, marked in its band's colour; beside it the climber and the faller (`overviewMovers`, labelled, the table's arrows and colours). A finished division opens on its champion instead (`overviewChampionCard`: the club and its points in display type, places 2-4 smaller under it, each place in its band's colour) and then its promotion and relegation cards (`overviewOutcomes`): the clubs already up or down in words, those still in a play-off with their chance and bar. Block titles take the heroes' label type and every figure the heroes' figure type (Archivo at width 125, weight 800). Each division ends with two tiles on to its table (who tops it) and its matches (`overviewDivisionLinks`: when the next round starts and how many matches it has); its heading holds only the name and the round. The Explore tools close the page: on a desktop or tablet the six tools with thumbnail and description (`overviewTools`), on a phone one large button whose picture is the first four thumbnails two by two (`overviewExploreButton`). Its widths: the phone layout from 760px down, the narrowest phones (two title contenders a row, stacked tiles, the Explore button's thumbnails over its text) from 380px down, and two container queries: three race cards where only two fit give the third the whole row, and the champion's places 2-4 run three across only where the card is 46rem wide. Checked at 22 widths from 320 to 1600px through a season (pre-season, round one, April to November, OBOS-ligaen's last day, a finished season) for sideways scroll, overflow, overlap and cut-off names. Built from the other views' own pieces; every block is one button, and a club in it opens the club), **the finish grid** (and its animation), **standings**,
+- the views: **the overview** (`renderOverview`, the landing page: both divisions, each opening with the title race as a row of its own (`overviewTitleCard`: up to five contenders' chances in display type, one decimal each, over one bar split between them, the favourite's share in the title gold, the rest of the field in one dim slate, no medal colour), then each other open race as a card whose bars take the band's colour (`overviewRaceCard`: up to four clubs, each with its chance large and a thick bar). Every live chance carries its move since the last round (`overviewBefore`: the report of the last matchday before the latest round's first match; `chanceChange`: the table's arrow from `trendArrowSVG`, upright past 10 percentage points, in the good or bad tone for the club). Then the match of the week, the one Kamper's hero shows (`weekMatch`, shared with `heroMatch`): drawn as a scoreboard (each club's crest large over its name, the kick-off time between them before the match and the score after, the loser then stepped back), the odds bar under it before and each side's chance before the match under it after, and a line per club on what it decides or did, marked in its band's colour; beside it the climber and the faller (`overviewMovers`, labelled, the table's arrows and colours). A finished division opens on its champion instead (`overviewChampionCard`: the club and its points in display type, places 2-4 smaller under it, each place in its band's colour) and then its promotion and relegation cards (`overviewOutcomes`): the clubs already up or down in words, those still in a play-off with their chance and bar. Block titles take the heroes' label type and every figure the heroes' figure type (Archivo at width 125, weight 800). Each division ends with two tiles on to its table (who tops it) and its matches (`overviewDivisionLinks`: when the next round starts and how many matches it has); its heading holds only the name and the round. The Explore tools close the page: on a desktop or tablet the six tools with thumbnail and description (`overviewTools`), on a phone one large button whose picture is the first four thumbnails two by two (`overviewExploreButton`). Its widths: the phone layout from 760px down, the narrowest phones (two title contenders a row, stacked tiles, the Explore button's thumbnails over its text) from 380px down, and two container queries: three race cards where only two fit give the third the whole row, and the champion's places 2-4 run three across only where the card is 46rem wide. Checked at 22 widths from 320 to 1600px through a season (pre-season, round one, April to November, OBOS-ligaen's last day, a finished season) for sideways scroll, overflow, overlap and cut-off names. Built from the other views' own pieces; every block is one button, and a club in it opens the club), **the finish grid** (and its animation), **standings**,
   **season shape**, **rating ladder** (and its animation), **fixtures**,
   **high stakes**, **played results**, **hero & model card**,
   **model card: how accurate the model is**, **team** (one club's focus view),
@@ -179,7 +179,21 @@ arithmetic is checked against `tests/fixtures/match_odds.json`, which the
 Python model writes ([model.md](model.md), "The browser's copies").
 `tests/season-shape.dom.js` boots the real page in jsdom (dev only).
 
-## The Predict page
+## The Predict view
+
+Predict is a view of the app like the rest: a masthead tab after Explore (folded into More when the
+masthead is narrow; in the phone's More sheet), `<section data-section="predict">` in `index.html`,
+and `/predict/` its route page (`pages.py`, `{"view": "predict"}`). Its code is not on the page until
+the view opens: `renderPredict` in `app.js` loads `predict.css` and the five scripts (side by side,
+run in order) and calls `window.PredictGame.show()`; leaving the view calls `hide()`, which stops the
+game's clock and address handling. The game reads none of the season report, so `bootPredict` draws it
+at once on a link to it, before `report.json` has landed (`render` draws only the game while there
+is no report: `renderWithoutReport`). The game's classic scripts share the page's global scope with
+`app.js`: a top-level name in both is a load error (a `const`) or a silent replacement (a `function`),
+which is why `predict-util.js` says `signedScore`, not `signed`. The masthead's division picker and
+the title race are hidden on the view: the game has its own division switch and plays the current
+season only. Theme and language are the site's settings; a language change redraws the game and
+updates a signed-in player's profile locale.
 
 `public/predict.js` renders the game from plain DOM calls; strings are the `predict.*` block of
 `i18n.js` (nb + en, held to parity by `tests/frontend.test.js`). It reads about ten small Firestore
@@ -190,41 +204,111 @@ view's own `.odds` / `.odds__seg`; the card's drag is `touch-action: pan-y` so t
 
 The bar is the control: the grey draw block is the handle, and because its middle is always at the
 expected score (home + draw / 2), the gap under a finger is the logit of the finger's position
-(`gapUnder` in `predict.js`), so the block follows the finger whatever the draw tendency. A native
-range input sits invisibly on top for keyboards and screen readers (its focus ring is drawn on the
-bar, its `aria-valuetext` reads the three percents). Fine-tune (draw tendency, typed numbers) is a
-disclosure. After kick-off the card leads with a verdict (beat the model or not), dims the outcomes
-that did not happen, and keeps Brier / RPS behind "The scores". The reveal scores the stored whole
+(`gapUnder` in `predict.js`), so the block follows the finger whatever the draw tendency. Each end of
+the block is a handle too (a ridge just inside it): it moves that end alone and holds the other, which
+sets the draw tendency (`positionForEdges` in `predict-util.js`, a search over every gap and tendency;
+`dragBar` in `predict.js` decides by where the finger lands, and a grab keeps its distance from what
+it took, so nothing jumps). **Fine-tune** is a toggle pill on each card (the last choice is the
+default for a new card, `predict.fine` in the browser): on, the pick is three whole percents of its
+own, off the curve, every part moving a percent at a time with no limit but 1..98 (`freeEdges`; the
+middle slides the block at its width), the numbers can be typed (`freeTyped`), and the save stores
+those percents with the nearest curve position beside them (`freePosition`: the rules want a `g` and a
+`k`, and the crowd's signal reads the gap); off, it snaps back to the curve. A saved pick whose
+percents are not the curve's comes back with fine-tune on (`isFreePick`). On the curve, "Modellens
+uavgjort" puts a dragged draw back to the model's. Two native range inputs sit invisibly on top for
+keyboards and screen readers (the position and the width: gap and tendency on the curve, home and
+draw percent with fine-tune on; the focus ring is drawn on the bar, `aria-valuetext` reads the three
+percents). `pickSlider` is that control, shared by the cards and the guide's demo. After kick-off the card leads with a verdict (beat the model or not), dims the outcomes
+that did not happen, and keeps the Brier score behind "The scores". The reveal scores the stored whole
 percents, never the slider position. `styles.css` turns `.odds` into a padded scroller under 480px;
 `predict.css` resets that for the game's bars.
 
-Each section has an address (`#table`, `#boards`, `#me`; the tip view is the bare page), so links can
-open it and Back works; the chosen division is remembered. The browser session is stored per
+Each section has an address (`#table`, `#boards`, `#me`; the tip view is the bare `/predict/`), so links can
+open it and Back works (another view's render drops these hashes); the chosen division is remembered. The browser session is stored per
 project (`sessionKey`: the live project keeps `predict.session`, an emulator `demo-*` project gets
 its own key), and a public document (`meta/rounds`, `fixtures/`, `reveal/`, `boards/`,
 `tablegames/`) is read again without a token if a stored token is rejected, so a broken session
 never hides the game. Matches are grouped by matchday in kick-off order; the card shows the time,
 the day is its heading.
 
-The guide is a page of its own at `#how` (a header link and the first-visit box point to it):
+No Predict card carries a coloured edge (a thick left or top border): where a place or a row needs a
+mark it is the Tabell view's band mark, a 3px stripe on the row's leading edge (the table game's
+zones, your own leaderboard row), and the overview's cards have none either (its places 2-4 take
+the inline band mark). The table game (Tabelltipp) is a table like Tabell's (square rows on the panel, a line between them, no rounded box to cut the stripes) and drag only, with no arrow buttons and no save button: a club is
+picked up (a mouse anywhere on its row; a finger on the six-dot handle at once, or anywhere on the
+row after a 280 ms hold, so a swipe there still scrolls) and moves in its own lane as far as it is
+taken, the others sliding aside while the numbers and zone stripes show where everything lands
+(`dropIndex`, `moveItem` in `predict-util.js`); near the top or the bottom of the screen the page
+scrolls along, so a club goes from first to last in one drag. On the handle the keyboard moves it
+(arrows a place, Page Up and Down five, Home and End), the focus stays with the club and its new
+place is read out. The order saves itself a moment after each move, like a match tip (the draft in
+the browser holds it until the save is in, and an order left from an earlier visit is saved on the
+next); the line beside the zone legend (each zone with its bonus) says saved, saving or failed.
+
+The guide is a section of its own at `#how` (the panel head's link and the first-visit box point to it):
 six steps with a working demo bar and a scoring demo (pick a result, see the Brier score against an
 even guess), then questions. The page answers the player: each card reads the pick in words as it
 moves (`pickReading`), a phone ticks when the pick swings sides, a save pulses its dot, a live round
 breathes, a completed round pops its ring once, a reveal grows its bars into place the first time it
 is seen (IntersectionObserver), and a 30-second clock keeps the countdown current and locks a match
-that kicks off while the page is open. All motion stops under `prefers-reduced-motion`. The page is one
-centred column (48rem) with the site's own corner radii (`--radius`, `--radius-sm`, the odds bar's
-6px ends): a centred header, switches and round bar. A bar segment keeps its number while the
-number fits, measured against the bar's real width (`labelFits`), not a fixed 12 % cut-off.
+that kicks off while the page is open. All motion stops under `prefers-reduced-motion`. A bar
+segment keeps its number while the number fits, measured against the bar's real width (`labelFits`),
+not a fixed 12 % cut-off.
 
-On a wide screen the matches are the left column and "your season" the right one (`renderSide`,
-on the tip, table and boards views; Meg has the full numbers): your season accuracy counting up, a
+The layout is built for a glance (a UI pass in Chrome, November 2026). The view is one site panel:
+its head holds the title, the guide link and the four sections as a switch, so the first match sits
+about 250px from the top on a desktop. The tip view opens on one sticky bar under the masthead
+(`--predict-top`, measured from it): the division on the left, the round in the middle (its name
+opens the native list of rounds, laid invisibly over it), the deadline and your progress ring on the
+right; on a phone the division and the ring make the first row and the round and the deadline the
+second; the ring holds its own count (`3/8`) and is the height of the bar's other controls. Under each card's bar is one line: a dot for the save state (grey untipped, amber pending,
+green saved, red failed), the pick in words (`pickReading`, with the three numbers added only when a
+segment is too narrow to show its own), a short save word, and Clear and Fine-tune as small pills at the end (the
+full "saved 2 min ago" is its tooltip). Every button is the site's secondary pill (`.pbtn`, as
+`.whatif-reset`) or its accent pill, never bare text; controls are 2.5rem tall (switches 2rem
+inside their rim), small pills 2rem, and all 44px on touch. Sharing is the site's: the round recap
+has the share icon (`shareButton`), whose sheet draws the recap as a picture in share.js's frame
+(`sharePredictRound`), and a mini-league's invite is shared the same way (`shareButton`'s `url`).
+Crests stand beside clubs on the cards, the recap, the table game and the playing style's matches,
+and beside the club you follow on Meg. Matchday headings are the site's small uppercase labels. Cards
+are `--panel-sunk` wells inside the panel. The first-visit box is three numbered steps side by side.
+Notes (`#predict-note`) float at the foot of the screen, over the phone's tab bar. The game redraws a section whole on each tap, so nothing may flash
+between two draws: a switch drawn anew hands its pill to the sliding one at once (styles.css: the
+pressed button drops its own pill with no fade, or two pills showed for a few frames), a board read
+in the last five minutes is drawn at once (`cachedBoard`, `loadBoard`; the season panel's board is the
+same document), one not read yet leaves the board on show dimmed until it arrives, and the table
+game's documents are kept for the visit (`S.tables`, your pick updated when you save).
+
+From 1000px the matches are the left column and "your season" the right one (`renderSide`,
+on the tip and table views; the boards take the whole width, and Meg has the full numbers): your season points counting up, with your accuracy and matches under them, a
 tier by the share of players you beat (Gull 90 %, Sølv 75 %, Bronse 50 %, otherwise Utfordrer) with a
 progress bar to the next, a bell curve fitted to the board's percentile table (median as the middle,
 half the 16th-84th spread as the sd: `normalFit`) with the part you beat filled and your marker
-sliding in, your accuracy per recent round, four key numbers and your badges. The rank counts people
-only (board ranks include the model and crowd rows). On a phone the panel is a short strip above the
-matches. The maths is in `predict-util.js` (`beatShare`, `normalFit`, `tierOf`, `roundForm`).
+sliding in (both on points), your points per recent round and four key numbers (the badges are in Meg). The rank
+counts people only (board ranks include the model and crowd rows). Narrower than that the panel is one
+short strip above the matches (tier and rank, score), the rest behind a disclosure, and the strip is left out until you have a settled match. The maths is in `predict-util.js` (`beatShare`, `normalFit`, `tierOf`, `roundForm`).
+
+Two numbers, kept apart ([predict-plan.md](predict-plan.md), section 5, "Revised 2026-11-24"):
+**points** (Poeng), 10 x (1 - Brier) a tipped match (a mark out of 10), summed, which rank the leaderboard; and
+**accuracy** (Treffsikkerhet), the average Brier as a percent, 100 x (1 - Brier / 2). Both come
+from a player's matches and summed Brier (`totalPoints`, `accuracyPercent` in `predict-core.js`), so
+the stats documents and old boards need nothing new (`rowPts`, `rowAcc` fill them in for a board
+built before the job wrote `pts` and `acc`). Points show one decimal with the language's grouping
+(`ptsText`), accuracy two (`pctText`), Brier and "against the model" three. Everything is Brier:
+the job still computes RPS and Accuracy against the median (`stats/`, the boards' `ab`, `ar`, `r`),
+but the page reads only `ab`, for the "beat the field" badge. A match's details show its points,
+its Brier and its Brier against the model; Meg shows points, accuracy, matches and against the
+model; the round recap and its picture show the round's points. A long leaderboard is shortened (`boardWindow` in
+`predict-util.js`): the top 10, the five rows above and below yours, and the model and the average
+wherever they stand, with one row for each run left out ("23 spillere til") that opens the whole
+list, as does the button under it ("Vis alle 64", then "Vis topp 10 og deg"). The division switch
+has Begge too: both divisions together, a season board only (`season_{season}_all`; Round and Last 10
+are disabled while it is on). The leaderboard's controls start at the table's left edge, the season and round pickers
+last, so the round's picker (Runden) appears without moving anything; on a phone each switch has a
+row and the pickers share one. A row's controls are one height: 40px, and 52px on touch, where a
+switch's 44px buttons sit in its rim (the pickers, the round bar's arrows and its ring follow). A board's rows are all one height, and its sort arrow shows only once
+a column is sorted, hanging outside the label so a header lines up with its numbers. The window follows a
+column sort; "Gå til raden min" shows only in the whole list.
 
 Meg has "your playing style" (`analysisSection`): your settled picks (own entries, plus the round's
 `reveal` and `fixtures` documents; a finished round is cached in the browser, so it costs reads
@@ -242,7 +326,8 @@ Run it against the local emulators (no cloud involved):
 firebase emulators:start --only auth,firestore --project demo-elitetracker     # Auth :9099, Firestore :8085
 FIRESTORE_EMULATOR_HOST=127.0.0.1:8085 .venv/Scripts/python -m elitetracker.predict_sync     --project demo-predict-ui --report public/data/report.json --data-dir /tmp/predict --ics /tmp/rounds.ics --no-purge
 python -m http.server 8123 --directory public
-# then open http://localhost:8123/predict/?emulator=1&project=demo-predict-ui
+# then open http://localhost:8123/?view=predict&emulator=1&project=demo-predict-ui
+# (/predict/ itself is a route page: it exists once build_site, or pages.build_pages, has run)
 ```
 
 `?emulator=1` is honoured on `localhost` / `127.0.0.1` only. Tests: `node --test tests/predict.test.js

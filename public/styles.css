@@ -501,9 +501,13 @@ html { scroll-padding-top: 76px; }
     transition: transform 0.3s var(--ease), width 0.3s var(--ease);
   }
 
+  /* The pill takes over at once: a button that faded its own pill out (the buttons' background
+     transition) showed two pills for a few frames when a group was drawn anew, its own in the new
+     place and the sliding one on its way there. */
   :is(.switch, .table-controls, .grid-anim-speed):has(> .switch__thumb:not([hidden])) [aria-pressed="true"] {
     background: transparent;
     box-shadow: none;
+    transition: color 0.15s var(--ease);
   }
 
   @media (prefers-reduced-motion: reduce) {
@@ -866,9 +870,9 @@ html { scroll-padding-top: 76px; }
    the ladder, the compare tool, the model card and the attack map, the
    league's story is someone else's headline. The page heading stays (it is
    visually hidden), and so do the pickers in the masthead. */
-body:is([data-view="team"], [data-view="ladder"], [data-view="compare"], [data-view="model"], [data-view="explore"]) .race,
+body:is([data-view="team"], [data-view="ladder"], [data-view="compare"], [data-view="model"], [data-view="explore"], [data-view="predict"]) .race,
 body[data-view="overview"] #hero-race { display: none; }
-body:is([data-view="overview"], [data-view="team"], [data-view="ladder"], [data-view="compare"], [data-view="model"], [data-view="explore"]) .hero { padding-block: 0; }
+body:is([data-view="overview"], [data-view="team"], [data-view="ladder"], [data-view="compare"], [data-view="model"], [data-view="explore"], [data-view="predict"]) .hero { padding-block: 0; }
 /* The ladder and the compare tool take both divisions, and the model card
    holds for both, so only the season is a choice there. */
 body[data-view="overview"] .hero-title-part[data-role="division"],
@@ -878,6 +882,8 @@ body[data-view="model"] .hero-title-part[data-role="division"] { display: none; 
 /* Explore: the gallery shows no league's numbers and the season mountain has
    pickers of its own: no hero there, and no masthead pickers. */
 body[data-view="explore"]:is([data-viz=""], [data-viz="mountain"]) :is(.hero, .league-picker) { display: none; }
+/* Predict: the game picks its own division and plays only the current season. */
+body[data-view="predict"] :is(.hero, .league-picker) { display: none; }
 /* ---------- panels ------------------------------------------------ */
 
 section { margin-block: clamp(1.5rem, 3vw, 2.25rem); }
@@ -6229,18 +6235,18 @@ body.has-scenario { overflow: hidden; }
 /* A place in the final table: its badge (in its band's colour, as the table
    marks it), the club and its points. */
 .overview-top__row { display: grid; grid-template-columns: 1.75rem minmax(0, 1fr) auto; align-items: center; gap: var(--space-3); }
+/* The place with the Tabell view's band mark before it (.band-mark: a 3px stripe, 1.15em tall). */
 .overview-top__place {
-  display: grid;
-  place-items: center;
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
   height: 1.75rem;
-  border-radius: 6px;
-  border-left: 3px solid var(--strip, transparent);
-  background: var(--panel);
   font-size: 0.8125rem;
   font-weight: 700;
   font-variant-numeric: tabular-nums;
   color: var(--ink-muted);
 }
+.overview-top__place::before { content: ""; width: 3px; height: 1.15em; flex: none; border-radius: 2px; background: var(--strip, transparent); }
 .overview-top__points { font-size: 1.125rem; font-variant-numeric: tabular-nums; white-space: nowrap; }
 
 /* The races: a card each in the band's own colour, three across when there is
@@ -6264,7 +6270,6 @@ body.has-scenario { overflow: hidden; }
   padding: var(--space-4) var(--space-5) var(--space-5);
   background: var(--panel-sunk);
   border: 1px solid var(--rule);
-  border-top: 3px solid var(--band-color, var(--rule-strong));
 }
 .overview-race:hover,
 .overview-match:hover {
@@ -6359,7 +6364,6 @@ body.has-scenario { overflow: hidden; }
   padding: var(--space-4) var(--space-5) var(--space-5);
   background: var(--panel-sunk);
   border: 1px solid var(--rule);
-  border-top: 3px solid var(--band-color);
 }
 .overview-title:hover {
   border-color: color-mix(in srgb, var(--band-color) 55%, var(--rule));

@@ -18,12 +18,27 @@
   const S = {
     tab: 'tip', league: 'eliteserien', scope: 'season', index: null, indexError: null,
     roundAt: {}, data: {}, loading: {}, drafts: {}, status: {}, timers: {}, fine: false,
-    profile: undefined, stats: undefined, board: {}, tables: {}, myLeagues: [], note: null, ownHash: null, calibration: null,
+    profile: undefined, stats: undefined, boards: {}, tables: {}, myLeagues: [], note: null, ownHash: null, calibration: null,
   };
 
   /* ---- small helpers ------------------------------------------------------------ */
 
   const lang = () => (currentLang === 'en' ? 'en' : 'no');
+  // Two numbers, kept apart: the score is *points* (10 x (1 - Brier) a match, summed: predict-core's
+  // totalPoints), shown to one decimal with the language's grouping; *accuracy* is the average Brier as a
+  // percent (accuracyPercent), to two decimals. Brier itself, and Brier against the model, to three.
+  const accText = (value) => signedScore(value, 3);
+  const avgText = (value) => fixed(value, 3);
+  function ptsText(value, sign = false) {
+    const text = fixed(Math.abs(value), 1);
+    const [whole, decimals] = text.split('.');
+    const lead = Number(text) === 0 ? '' : value < 0 ? '-' : sign ? '+' : '';
+    return `${lead}${groupThousands(Number(whole), lang())}.${decimals}`;
+  }
+  const pctText = (value) => (value === null || value === undefined || !Number.isFinite(value) ? '–' : percentText(value, lang(), 2));
+  // A board row's points and accuracy; boards built before points existed have only n and the average Brier.
+  const rowPts = (row) => (Number.isFinite(row.pts) ? row.pts : totalPoints(row.n || 0, (row.b || 0) * (row.n || 0)));
+  const rowAcc = (row) => (Number.isFinite(row.acc) ? row.acc : row.b === null || row.b === undefined ? null : accuracyPercent(1, row.b));
   const now = () => client.serverNow();
   const json = (text, fallback) => { try { const value = JSON.parse(text); return value === null || value === undefined ? fallback : value; } catch (error) { return fallback; } };
 
@@ -202,9 +217,11 @@
     }
     if (!slots.length) return;
     const changed = {};
+    const sent = {};
     for (const slot of slots) {
-      const [h1, d1, a1] = pickPercentages(draft[slot].g, draft[slot].k);
+      const [h1, d1, a1] = percentsOf(draft[slot]);
       changed[slot] = { g: draft[slot].g, k: draft[slot].k, h: h1, d: d1, a: a1 };
+      sent[slot] = JSON.stringify(draft[slot]);
     }
     slots.forEach((slot) => setStatus(key, slot, 'saving'));
     try {
@@ -214,7 +231,7 @@
       const entry = record.entry || (record.entry = { curve: 1, r: key, p: {} });
       for (const slot of slots) {
         entry.p[slot] = { ...changed[slot], t: new Date(now()) };
-        if (draft[slot] && draft[slot].g === changed[slot].g && draft[slot].k === changed[slot].k) delete draft[slot];
+        if (draft[slot] && JSON.stringify(draft[slot]) === sent[slot]) delete draft[slot];      // not moved again while it saved
         setStatus(key, slot, 'saved');
       }
       saveDraft(key);
@@ -269,16 +286,21 @@
     node._percents = percents;
     const labelled = node.dataset.labelled !== 'false' || node._grown;
     const width = node.clientWidth;
+    let all = true;
     [...node.children].forEach((segment, i) => {
       segment.style.flex = String(Math.max(percents[i], 0.1));
-      segment.textContent = labelled && labelFits(percents[i], width, segment) ? String(Math.round(percents[i])) : '';
+      const fits = labelled && labelFits(percents[i], width, segment);
+      segment.textContent = fits ? String(Math.round(percents[i])) : '';
+      if (!fits) all = false;
     });
+    return all;                       // every segment shows its number
   }
 
   /* A club's crest from the site's own logos (by fotmob id); gone quietly when there is none. */
-  function crest(id) {
+  function crest(id, size = 24) {
     if (!id) return null;
-    const img = h('img', { class: 'pteam__crest', src: `/logos/${id}.webp`, alt: '', width: 28, height: 28, loading: 'lazy', decoding: 'async' });
+    const img = h('img', { class: 'pcrest', src: `/logos/${id}.webp`, alt: '', width: size, height: size, loading: 'lazy', decoding: 'async' });
+    img.style.setProperty('--crest', `${size}px`);
     img.addEventListener('error', () => img.remove());
     return img;
   }
@@ -306,6 +328,141 @@
     return Math.max(GAP.min, Math.min(GAP.max, gap));
   }
 
+  /* A position is { g, k } on the curve, or with fine-tune on { g, k, p }: p the pick's own three
+     whole percents (g and k then the nearest curve position, which the rules want and the crowd's
+     signal reads: freePosition). */
+  const percentsOf = (pos) => (pos.p ? pos.p.slice() : pickPercentages(pos.g, pos.k));
+  const freePos = (p) => { const at = freePosition(p); return { g: at.gap, k: at.tenths, p }; };
+  const curvePos = (pos) => { if (!pos.p) return pos; const at = positionForEdges(pos.p[0], pos.p[2]); return { g: at.gap, k: at.tenths }; };
+
+  /* The bar as a slider. A finger in the middle of the draw block moves the whole block; a finger on
+     either end of it moves that end alone, the other end staying put. On the curve the block's middle
+     is the gap (gapUnder) and an end sets the draw tendency (positionForEdges); with fine-tune on
+     every part moves a whole percent at a time with no curve to follow (freeEdges). A grab keeps its
+     distance from what it took hold of, so nothing jumps when a drag starts. While
+     `waitForSideways()` holds, a touch waits for a sideways move before it counts, so a scroll that
+     starts on the bar leaves no pick. */
+  function dragBar(oddsBar, { state, onMove, onStart = () => {}, onEnd = () => {}, waitForSideways = () => false }) {
+    let mode = null;
+    let armed = null;
+    let offset = 0;
+    const drawBox = () => oddsBar.querySelector('[data-outcome="draw"]').getBoundingClientRect();
+    const edgeAt = (x, pointerType) => {
+      const box = drawBox();
+      const zone = Math.min(pointerType === 'mouse' ? 9 : 16, box.width / 3);
+      if (Math.abs(x - box.left) <= zone) return 'left';
+      if (Math.abs(x - box.right) <= zone) return 'right';
+      return 'move';
+    };
+    const fraction = (x) => { const box = oddsBar.getBoundingClientRect(); return (x - box.left) / box.width; };
+    const move = (event) => {
+      const pos = state();
+      const at = fraction(event.clientX) + offset;
+      if (pos.p) { onMove(freePos(freeEdges(pos.p, mode, at * 100))); return; }
+      if (mode === 'move') { onMove({ g: gapUnder(at), k: pos.k }); return; }
+      const p = pickPercentages(pos.g, pos.k);
+      const edge = Math.min(100, Math.max(0, at * 100));
+      const next = mode === 'left' ? positionForEdges(edge, p[2], 'a') : positionForEdges(p[0], 100 - edge, 'h');
+      onMove({ g: next.gap, k: next.tenths });
+    };
+    const begin = (event, x) => {
+      mode = edgeAt(x, event.pointerType);
+      const box = drawBox();
+      const width = oddsBar.getBoundingClientRect().width || 1;
+      const inside = x >= box.left && x <= box.right;
+      offset = mode === 'left' ? (box.left - x) / width : mode === 'right' ? (box.right - x) / width
+        : inside ? ((box.left + box.right) / 2 - x) / width : 0;            // a press beside the block brings it there
+      oddsBar.dataset.drag = mode;
+      capture(oddsBar, event);
+      onStart();
+      move(event);
+    };
+    oddsBar.addEventListener('pointerdown', (event) => {
+      if (event.pointerType === 'mouse' || !waitForSideways()) begin(event, event.clientX);
+      else armed = { x: event.clientX, y: event.clientY };
+    });
+    oddsBar.addEventListener('pointermove', (event) => {
+      if (armed) {
+        const dx = Math.abs(event.clientX - armed.x);
+        if (dx > 8 && dx > Math.abs(event.clientY - armed.y)) { const x = armed.x; armed = null; begin(event, x); }
+        return;
+      }
+      if (mode) move(event);
+      else if (event.pointerType === 'mouse') oddsBar.dataset.hover = edgeAt(event.clientX, 'mouse');
+    });
+    oddsBar.addEventListener('pointerleave', () => { delete oddsBar.dataset.hover; });
+    const stop = () => { armed = null; if (mode) { mode = null; delete oddsBar.dataset.drag; onEnd(); } };
+    oddsBar.addEventListener('pointerup', stop);
+    oddsBar.addEventListener('pointercancel', stop);
+  }
+
+  /* The bar and the two invisible inputs under it, for keyboards and screen readers: where the block
+     is and how wide it is. On the curve those are the gap and the draw tendency; with fine-tune on,
+     the home percent and the draw percent, a step of 1 each. `onInput` runs on every change,
+     `onCommit` when a drag or a key lets go. */
+  function pickSlider(info, start, { onInput, onCommit = () => {}, onStart, onEnd, waitForSideways } = {}) {
+    let pos = start;
+    const oddsBar = bar(percentsOf(pos));
+    oddsBar.classList.add('pcard__bar');
+    oddsBar.setAttribute('aria-hidden', 'true');
+    const range = h('input', { type: 'range', class: 'pcard__range', attrs: { 'aria-label': t('predict.slider.label', { home: info.home, away: info.away }) } });
+    const drawRange = h('input', { type: 'range', class: 'pcard__range pcard__range--draw' });
+    const set = (attrs) => Object.entries(attrs).forEach(([k, v]) => { range[k] = v; });
+    const api = {
+      control: h('div', { class: 'pslider' }, oddsBar, range, drawRange),
+      oddsBar,
+      range,
+      get pos() { return pos; },
+      set pos(next) { pos = next; },
+      percents: () => percentsOf(pos),
+      setFree(on) { pos = on ? { ...pos, p: percentsOf(pos) } : curvePos(pos); },
+      /* Draws the bar and sets the inputs; true when every segment shows its own number. */
+      paint() {
+        const p = percentsOf(pos);
+        const all = paintBar(oddsBar, p);
+        const valueText = t('predict.slider.value', { h: p[0], d: p[1], a: p[2] });
+        if (pos.p) {
+          set({ min: FREE_MIN, max: 100 - FREE_MIN - p[1], step: 1 });
+          range.value = p[0];
+          Object.assign(drawRange, { min: FREE_MIN, max: FREE_MAX, step: 1 });
+          drawRange.value = p[1];
+          drawRange.setAttribute('aria-label', t('predict.fine.drawPct'));
+          drawRange.setAttribute('aria-valuetext', valueText);
+        } else {
+          set({ min: GAP.min, max: GAP.max, step: GAP.step });
+          range.value = pos.g;
+          Object.assign(drawRange, { min: DRAW_TENTHS.min, max: DRAW_TENTHS.max, step: 1 });
+          drawRange.value = pos.k;
+          drawRange.setAttribute('aria-label', t('predict.fine.label'));
+          drawRange.setAttribute('aria-valuetext', `${fixed(pos.k / 10, 1)}× · ${valueText}`);
+        }
+        range.setAttribute('aria-valuetext', valueText);
+        oddsBar.dataset.free = String(Boolean(pos.p));
+        return all;
+      },
+    };
+    range.addEventListener('input', () => {
+      const v = Number(range.value);
+      pos = pos.p ? freePos(freeEdges(pos.p, 'move', v + pos.p[1] / 2)) : { g: v, k: pos.k };
+      onInput();
+    });
+    drawRange.addEventListener('input', () => {
+      const v = Number(drawRange.value);
+      pos = pos.p ? freePos(freeTyped('d', v, pos.p)) : { g: pos.g, k: v };
+      onInput();
+    });
+    range.addEventListener('change', onCommit);
+    drawRange.addEventListener('change', onCommit);
+    dragBar(oddsBar, { state: () => pos, onMove: (next) => { pos = next; onInput(); }, onStart,
+      onEnd: () => { if (onEnd) onEnd(); onCommit(); }, waitForSideways });
+    return api;
+  }
+
+  /* The fine-tune switch: a pill that is lit while it is on. */
+  const fineSwitch = (on, controls, onToggle) => h('button', { type: 'button', class: 'pbtn pbtn--small pfine-toggle',
+    attrs: { 'aria-pressed': String(on), ...(controls ? { 'aria-controls': controls } : {}) }, on: { click: onToggle } },
+    h('span', { class: 'pfine-toggle__dot', attrs: { 'aria-hidden': 'true' } }), t('predict.fine'));
+
   /* Your pick in plain words: who you make favourite, and how strongly. */
   function pickReading(p, info) {
     const [home, draw, away] = p;
@@ -324,9 +481,12 @@
     const locked = isLocked(kickoff, now());
     const saved = savedPick(record, slot);
     const draft = (loadDraft(key)[slot]) || null;
-    let pos = draft ? { g: draft.g, k: draft.k } : saved ? { g: saved.g, k: saved.k } : { ...EVEN };
+    // A pick made with fine-tune on comes back with it on; an untouched card follows your last choice.
+    const savedFree = saved && isFreePick(saved);
     let tipped = Boolean(draft || saved);
-    let fine = S.fine || pos.k !== DRAW_TENTHS.normal;
+    const startPos = draft ? { g: draft.g, k: draft.k, ...(draft.p ? { p: draft.p.slice() } : {}) }
+      : saved ? (savedFree ? { g: saved.g, k: saved.k, p: [saved.h, saved.d, saved.a] } : { g: saved.g, k: saved.k })
+        : S.fine ? { ...EVEN, p: pickPercentages(EVEN.g, EVEN.k) } : { ...EVEN };
 
     const card = h('li', { class: 'pcard', data: { slot, round: key, state: locked ? 'locked' : tipped ? 'tipped' : 'untouched' } });
     if (locked) {
@@ -339,22 +499,22 @@
     }
     card.append(matchHead(info, clock(kickoff)));
 
-    const pct = () => pickPercentages(pos.g, pos.k);
-    const oddsBar = bar(pct());
-    oddsBar.classList.add('pcard__bar');
-    oddsBar.setAttribute('aria-hidden', 'true');
-    // The real control for keyboards and screen readers; visually it is the bar above.
-    const range = h('input', { type: 'range', class: 'pcard__range', min: GAP.min, max: GAP.max, step: GAP.step, value: pos.g,
-      attrs: { 'aria-label': t('predict.slider.label', { home: info.home, away: info.away }) } });
-    const control = h('div', { class: 'pslider' }, oddsBar, range);
+    // The bar is the control (pickSlider); the inputs under it serve keyboards and screen readers.
+    const slider = pickSlider(info, startPos, {
+      onInput: () => { touch(); paint(); },
+      onCommit: () => release(),
+      onStart: () => card.classList.add('is-dragging'),
+      onEnd: () => card.classList.remove('is-dragging'),
+      waitForSideways: () => !tipped,
+    });
+    const pct = () => slider.percents();
+    let fine = Boolean(slider.pos.p);
 
     const panelId = `pp-${key}-${slot}`;
+    // Back to the model's draw: only on the curve, once an end has been dragged.
     const resetFine = h('button', { type: 'button', class: 'pbtn pbtn--small pcard__reset', on: { click: () => {
-      pos.k = DRAW_TENTHS.normal; touch(); paint(); release();
+      slider.pos = { g: slider.pos.g, k: DRAW_TENTHS.normal }; touch(); release();
     } } }, t('predict.fine.reset'));
-    const fineRange = h('input', { type: 'range', class: 'pcard__fine-range', min: DRAW_TENTHS.min, max: DRAW_TENTHS.max, step: 1,
-      value: pos.k, attrs: { 'aria-label': t('predict.fine.label') } });
-    const fineValue = h('output', { class: 'pcard__fine-value' });
     const inputs = {};
     const readout = h('div', { class: 'pcard__readout' });
     for (const outcome of ['h', 'd', 'a']) {
@@ -364,34 +524,44 @@
       input.addEventListener('change', () => {
         const typed = parseNumber(input.value);
         if (Number.isNaN(typed)) { paint(); return; }
-        pos = nearestPosition(outcome, Math.round(typed), pos.g, pos.k, fine);
-        touch(); paint(); release();
+        if (slider.pos.p) slider.pos = freePos(freeTyped(outcome, typed, slider.pos.p));
+        else { const next = positionForTyped(outcome, Math.round(typed), pct()); slider.pos = { g: next.gap, k: next.tenths }; }
+        touch(); release();
       });
       input.addEventListener('keydown', (event) => { if (event.key === 'Enter') input.blur(); });
     }
     const panel = h('div', { class: 'pcard__panel', id: panelId, hidden: !fine },
-      h('label', { class: 'pcard__fine' }, h('span', {}, t('predict.fine.title')), fineRange, fineValue),
-      h('p', { class: 'pcard__hint' }, t('predict.fine.hint')), readout, resetFine);
-    const fineButton = h('button', { type: 'button', class: 'pcard__more', attrs: { 'aria-expanded': String(fine), 'aria-controls': panelId } }, t('predict.fine'));
-    const status = h('span', { class: 'pcard__status', attrs: { 'aria-live': 'polite' } });
-    const reading = h('p', { class: 'pcard__read' });
-    const nums = h('p', { class: 'pcard__nums', attrs: { 'aria-hidden': 'true' } });
-    const clearButton = h('button', { type: 'button', class: 'pcard__more pcard__clear', hidden: true, on: { click: () => clearPick() } }, t('predict.clear'));
-    card.append(control, nums, reading, h('div', { class: 'pcard__foot' }, status, h('span', { class: 'pcard__acts' }, clearButton, fineButton)), panel);
+      h('p', { class: 'pcard__hint' }, t('predict.fine.hint')), readout);
+    // Fine-tune on: the ends move freely, a percent at a time, and the numbers can be typed. Off: back
+    // to the curve's nearest position (a saved pick is saved again, since its numbers move).
+    const fineButton = fineSwitch(fine, panelId, () => {
+      fine = !fine;
+      S.fine = fine;
+      store.set('predict.fine', fine ? 'on' : 'off');
+      const before = String(pct());
+      slider.setFree(fine);
+      fineButton.setAttribute('aria-pressed', String(fine));
+      panel.hidden = !fine;
+      if (tipped && String(pct()) !== before) { touch(); release(); } else if (tipped) touch();
+      paint();
+    });
+    // One line under the bar: your pick in words (with the three numbers when a segment is too narrow
+    // to show its own), and the save state as a dot and a word.
+    const reading = h('span', { class: 'pcard__read' });
+    const saveWord = h('span', { class: 'pcard__save', attrs: { 'aria-live': 'polite' } });
+    const status = h('span', { class: 'pcard__status' }, reading, saveWord);
+    const clearButton = h('button', { type: 'button', class: 'pbtn pbtn--small pcard__clear', hidden: true, on: { click: () => clearPick() } }, t('predict.clear'));
+    card.append(slider.control, h('div', { class: 'pcard__foot' }, status, h('span', { class: 'pcard__acts' }, resetFine, clearButton, fineButton)), panel);
     let favourite = favouriteOf(pct());
 
     function paint() {
       const p = pct();
-      paintBar(oddsBar, p);
-      range.value = pos.g;
-      range.setAttribute('aria-valuetext', t('predict.slider.value', { h: p[0], d: p[1], a: p[2] }));
-      fineRange.value = pos.k;
-      fineValue.textContent = `${fixed(pos.k / 10, 1)}×`;
-      resetFine.hidden = pos.k === DRAW_TENTHS.normal;
+      const allShown = slider.paint();
+      resetFine.hidden = Boolean(slider.pos.p) || slider.pos.k === DRAW_TENTHS.normal;
       ['h', 'd', 'a'].forEach((o, i) => { if (document.activeElement !== inputs[o]) inputs[o].value = String(p[i]); });
       card.dataset.state = tipped ? 'tipped' : 'untouched';
-      reading.textContent = tipped ? pickReading(p, info) : '';
-      nums.textContent = `${t('predict.h')} ${p[0]} · ${t('predict.d')} ${p[1]} · ${t('predict.a')} ${p[2]}`;   // exact numbers on every card, even where a narrow segment shows none
+      const numbers = `${t('predict.h')} ${p[0]} · ${t('predict.d')} ${p[1]} · ${t('predict.a')} ${p[2]}`;
+      reading.textContent = !tipped ? t('predict.untipped') : allShown ? pickReading(p, info) : `${pickReading(p, info)} · ${numbers}`;
       clearButton.hidden = !tipped;
       // A tiny tap on a phone when the pick swings to the other side.
       const now_ = favouriteOf(p);
@@ -403,24 +573,27 @@
       const st = S.status[`${key}/${slot}`] || {};
       const current = savedPick(S.data[key], slot);
       let state = st.state || (tipped ? 'pending' : 'untouched');
-      if (st.state === 'saving') status.textContent = t('predict.saving');
+      status.title = '';
+      if (st.state === 'saving') saveWord.textContent = t('predict.saving');
       else if (st.state === 'error') {
-        status.replaceChildren(`${t('predict.notsaved')} ${st.message || ''} `,
+        saveWord.replaceChildren(`${t('predict.notsaved')} ${st.message || ''} `,
           h('button', { type: 'button', class: 'pcard__retry', on: { click: () => flushSave(key) } }, t('predict.retry')));
       }
-      else if (!tipped) status.textContent = t('predict.drag');
+      else if (!tipped) saveWord.textContent = '';
       else if (current && !((S.drafts[key] || {})[slot])) {
         const at = current.t instanceof Date ? current.t : new Date(now());
-        status.textContent = spanParts(now() - at.getTime()).unit === 'now' ? t('predict.saved.now') : t('predict.saved', { ago: agoText(at) });
+        saveWord.textContent = t('predict.saved.now');
+        status.title = spanParts(now() - at.getTime()).unit === 'now' ? t('predict.saved.now') : t('predict.saved', { ago: agoText(at) });
         state = 'saved';
       }
-      else status.textContent = t('predict.pending');
+      else saveWord.textContent = t('predict.pending');
       status.dataset.state = state;
     };
 
     function touch() {
       tipped = true;
-      loadDraft(key)[slot] = { g: pos.g, k: pos.k };
+      const pos = slider.pos;
+      loadDraft(key)[slot] = { g: pos.g, k: pos.k, ...(pos.p ? { p: pos.p.slice() } : {}) };
       saveDraft(key);
       S.status[`${key}/${slot}`] = { state: 'pending' };
       paintRing();
@@ -443,51 +616,19 @@
       delete S.status[`${key}/${slot}`];
       if (Object.keys(loadDraft(key)).length) scheduleSave(key);
       tipped = false;
-      pos = { ...EVEN };
+      slider.pos = fine ? { ...EVEN, p: pickPercentages(EVEN.g, EVEN.k) } : { ...EVEN };
       paint();
       paintRing();
     }
 
-    range.addEventListener('input', () => { pos.g = Number(range.value); touch(); paint(); });
-    range.addEventListener('change', release);
     // A keyboard user can accept the even 37 / 26 / 37 without nudging the slider away and back.
-    range.addEventListener('keydown', (event) => {
-      if (!tipped && (event.key === 'Enter' || event.key === ' ')) { event.preventDefault(); touch(); paint(); release(); }
+    slider.range.addEventListener('keydown', (event) => {
+      if (!tipped && (event.key === 'Enter' || event.key === ' ')) { event.preventDefault(); touch(); release(); }
     });
-    fineRange.addEventListener('input', () => { pos.k = Number(fineRange.value); touch(); paint(); });
-    fineRange.addEventListener('change', release);
-    fineButton.addEventListener('click', () => {
-      fine = !fine; S.fine = fine; panel.hidden = !fine;
-      fineButton.setAttribute('aria-expanded', String(fine));
-      paint();
-    });
-
-    // Dragging on the bar itself; the page still scrolls up and down (touch-action: pan-y in the css).
-    let dragging = false;
-    let armed = null;                       // a finger down on a card nobody has tipped yet: not a pick until it drags sideways
-    const move = (event) => {
-      const box = oddsBar.getBoundingClientRect();
-      pos.g = gapUnder((event.clientX - box.left) / box.width);
-      touch(); paint();
-    };
-    const begin = (event) => { dragging = true; card.classList.add('is-dragging'); capture(oddsBar, event); move(event); };
-    oddsBar.addEventListener('pointerdown', (event) => {
-      if (event.pointerType === 'mouse' || tipped) begin(event);       // a click, or a card already tipped: at once
-      else armed = { x: event.clientX, y: event.clientY };            // a scroll that starts on the bar must not leave a pick behind
-    });
-    oddsBar.addEventListener('pointermove', (event) => {
-      if (armed) {
-        const dx = Math.abs(event.clientX - armed.x);
-        if (dx > 8 && dx > Math.abs(event.clientY - armed.y)) { armed = null; begin(event); }
-        return;
-      }
-      if (dragging) move(event);
-    });
-    const stop = () => { armed = null; if (dragging) { dragging = false; card.classList.remove('is-dragging'); release(); } };
-    oddsBar.addEventListener('pointerup', stop);
-    oddsBar.addEventListener('pointercancel', stop);
 
     paint();
+    // Once laid out, the bar's real width decides whether the reading needs the numbers too.
+    requestAnimationFrame(() => { if (card.isConnected) paint(); });
     return card;
   }
 
@@ -544,12 +685,11 @@
     else if (!reveal.crowd) parts.push(h('p', { class: 'pcard__note' }, t('predict.wait.crowd')));
 
     if (own) {
-      const median = reveal.crowd && reveal.crowd.med ? signed(reveal.crowd.med.b - own.brier) : null;
+
       const item = (label, value) => [h('dt', {}, label), h('dd', {}, value)];
       parts.push(h('details', { class: 'pdetails' }, h('summary', {}, t('predict.details')),
-        h('dl', {}, item(t('predict.details.vs'), signed(own.vsModel)),
-          item(t('predict.details.median'), median !== null ? median : reveal.crowd ? t('predict.median.later') : t('predict.median.nocrowd')),
-          item('Brier', fixed(own.brier, 2)), item('RPS', fixed(own.rps, 2))),
+        h('dl', {}, item(t('predict.details.pts'), ptsText(matchPoints(own.brier), true)),
+          item('Brier', avgText(own.brier)), item(t('predict.details.vs'), accText(own.vsModel))),
         h('p', {}, t('predict.details.help'))));
     }
     return parts;
@@ -589,7 +729,8 @@
     const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
     svg.setAttribute('viewBox', '0 0 36 36');
     svg.setAttribute('class', 'pring__svg');
-    svg.innerHTML = `<circle class="pring__track" cx="18" cy="18" r="15"/><circle class="pring__arc" cx="18" cy="18" r="15" stroke-dasharray="${(circumference * state.fraction).toFixed(2)} ${circumference.toFixed(2)}" transform="rotate(-90 18 18)"/>`;
+    // No arc at all before the first pick: a round cap on an empty arc is a stray dot.
+    svg.innerHTML = `<circle class="pring__track" cx="18" cy="18" r="15"/>${state.fraction > 0 ? `<circle class="pring__arc" cx="18" cy="18" r="15" stroke-dasharray="${(circumference * state.fraction).toFixed(2)} ${circumference.toFixed(2)}" transform="rotate(-90 18 18)"/>` : ''}`;
     return h('div', { class: 'pring', data: { complete: String(state.complete) }, attrs: { role: 'img', 'aria-label': t('predict.ring', { done, total }) } },
       svg, h('span', { class: 'pring__text' }, `${done}/${total}`));
   }
@@ -625,14 +766,14 @@
     return h('span', { class: 'pbadge', data: { status, soon: String(soon) } }, text);
   }
 
-  /* How it works, shown until it is dismissed or the first pick is saved. */
+  /* How it works, in three short steps, until it is dismissed or the first pick is saved. */
   function introPanel() {
     if (store.get('predict.intro') === 'seen') return null;
     const ok = h('button', { type: 'button', class: 'pbtn pbtn--small' }, t('predict.intro.ok'));
     const box = h('section', { class: 'phow', attrs: { 'aria-labelledby': 'phow-title' } },
-      h('h2', { id: 'phow-title' }, t('predict.intro.title')),
+      h('h3', { id: 'phow-title', class: 'phow__title' }, t('predict.intro.title')),
       h('ol', { class: 'phow__steps' }, ['1', '2', '3'].map((n) => h('li', {}, t(`predict.intro.step${n}`)))),
-      h('div', { class: 'phow__actions' }, ok, h('a', { href: '#how', class: 'plink' }, t('predict.intro.more'))));
+      h('div', { class: 'phow__actions' }, h('a', { href: '#how', class: 'pbtn pbtn--small' }, t('predict.intro.more')), ok));
     ok.addEventListener('click', () => { store.set('predict.intro', 'seen'); box.remove(); });
     return box;
   }
@@ -640,18 +781,20 @@
   function renderTip(root) {
     const intro = introPanel();
     if (intro) root.append(intro);
-    root.append(leagueSwitch(render));
     const rounds = leagueRounds(S.league);
-    if (S.indexError || !rounds.length) { root.append(emptyState(S.indexError, loadAndRender, 'predict.empty.rounds')); return; }
+    if (S.indexError || !rounds.length) { root.append(leagueSwitch(render), emptyState(S.indexError, loadAndRender, 'predict.empty.rounds')); return; }
     const round = currentRound(S.league);
     const at = rounds.indexOf(round);
     const status = roundStatus(round, now());
     const go = (to) => { S.roundAt[S.league] = to; render(); };
+    // One bar that stays in view: the division on the left, the round in the middle (its name opens the
+    // list of rounds), and how long it stays open and how much of it you have tipped on the right.
     const nav = h('div', { class: 'pnav' },
+      h('div', { class: 'pnav__league' }, leagueSwitch(render)),
       h('div', { class: 'pnav__round' },
         h('button', { type: 'button', class: 'pbtn pbtn--icon', disabled: at <= 0, attrs: { 'aria-label': t('predict.round.prev') }, on: { click: () => go(at - 1) } }, '‹'),
         h('div', { class: 'pnav__titles' },
-          h('h2', { class: 'pnav__title' }, t('predict.round', { n: round.round })),
+          h('h3', { class: 'pnav__title' }, t('predict.round', { n: round.round }), h('span', { class: 'pnav__caret', attrs: { 'aria-hidden': 'true' } })),
           h('span', { class: 'pnav__dates' }, roundDates(round.closes, round.last || round.closes)),
           h('select', { class: 'pnav__pick', attrs: { 'aria-label': t('predict.round.pick') }, on: { change: (e) => go(Number(e.target.value)) } },
             rounds.map((r, i) => h('option', { value: String(i), selected: i === at }, `${t('predict.round', { n: r.round })} · ${t(`predict.pstatus.${roundStatus(r, now())}`)}`)))),
@@ -685,25 +828,25 @@
         if (!days.length || days[days.length - 1].day !== day) days.push({ day, date: slots[k].kickoff, keys: [] });
         days[days.length - 1].keys.push(k);
       }
-      return days.map((d) => h('section', { class: 'pday' }, h('h3', { class: 'pday__title' }, dayTitle(d.date)),
+      return days.map((d) => h('section', { class: 'pday' }, h('h4', { class: 'pday__title' }, dayTitle(d.date)),
         h('ol', { class: 'plist' }, d.keys.map(make))));
     };
     const recap = recapOf(round, record);
     if (recap) {
       const best = recap.best && recap.best.vs > 0 ? slots[recap.best.slot] : null;
       const mineRound = S.stats && S.stats.rounds && S.stats.rounds[round.key];
-      const text = t('predict.recap', { tipped: recap.tipped, total: recap.total, round: round.round, beat: recap.beat })
-        + (best ? ` ${t('predict.recap.best', { match: `${best.home}–${best.away}` })}` : '');
-      const stat = (value, label) => h('div', { class: 'precap__stat' }, h('strong', {}, value), h('span', {}, label));
+      const points = mineRound ? totalPoints(mineRound.n, mineRound.b) : null;
+      const stat = (value, label, tone) => h('div', { class: 'precap__stat', data: { tone: tone || 'even' } }, h('strong', {}, value), h('span', {}, label));
       out.append(h('section', { class: 'precap', attrs: { 'aria-label': t('predict.recap.title') } },
         h('div', { class: 'precap__stats' },
           stat(`${recap.tipped}/${recap.total}`, t('predict.recap.tipped')),
           stat(String(recap.beat), t('predict.recap.beat')),
-          mineRound ? stat(signed(mineRound.ab), t('predict.recap.acc')) : null,
-          best ? stat(`${best.home}–${best.away}`, t('predict.recap.bestLabel')) : null),
-        h('span', { class: 'precap__share' },
-          h('button', { type: 'button', class: 'pbtn pbtn--small', on: { click: () => shareText(text) } }, t('predict.share')),
-          h('button', { type: 'button', class: 'pbtn pbtn--small', on: { click: () => shareCard(round, recap, mineRound ? mineRound.ab : null, best ? `${best.home}–${best.away}` : null) } }, t('predict.share.picture')))));
+          points !== null ? stat(ptsText(points, true), t('predict.recap.pts'), points < 0 ? 'bad' : 'even') : null,
+          best ? h('div', { class: 'precap__stat precap__stat--match' },
+            h('strong', { class: 'precap__match' }, crest(best.home_id, 20), `${best.home}–${best.away}`, crest(best.away_id, 20)),
+            h('span', {}, t('predict.recap.bestLabel'))) : null),
+        shareButton({ title: () => `${t('predict.title')} · ${t('predict.round', { n: round.round })}`, className: 'precap__share',
+          image: () => sharePredictRound(round, recap, points, best) })));
     }
     if (status === 'future') {
       out.append(h('p', { class: 'popens' }, t('predict.opens', { when: when(round.opens) })));
@@ -714,58 +857,63 @@
       // A draft left from an earlier visit (closed tab, lost connection) is saved now, not forgotten.
       if (['open', 'live', 'partial'].includes(status) && Object.keys(loadDraft(round.key)).length) scheduleSave(round.key);
     }
-    out.append(h('p', { class: 'pfoot' }, h('a', { href: '/predict/rounds.ics' }, t('predict.calendar')),
+    out.append(h('p', { class: 'pfoot' }, h('a', { href: '/predict/rounds.ics', class: 'pbtn pbtn--small' }, t('predict.calendar')),
       status === 'live' || status === 'partial' ? h('button', { type: 'button', class: 'pbtn pbtn--small', on: { click: () => ensureRound(round, true).then(render) } }, t('predict.refresh')) : null));
     return out;
   }
 
-  /* The recap as a picture: a square card drawn on a canvas of its own, handed to the share sheet as a
-     file where the browser can, and downloaded where it cannot. */
-  async function shareCard(round, recap, accuracy, bestMatch) {
-    const size = 1080;
-    const canvas = document.createElement('canvas');
-    canvas.width = size;
-    canvas.height = size;
-    const ctx = canvas.getContext('2d');
-    const font = (weight, px) => { ctx.font = `${weight} ${px}px system-ui, -apple-system, "Segoe UI", sans-serif`; };
-    const text = (value, x, y, { px = 40, weight = 600, color = '#e8edf5', align = 'left' } = {}) => {
-      font(weight, px); ctx.fillStyle = color; ctx.textAlign = align; ctx.fillText(value, x, y);
-    };
-    ctx.fillStyle = '#080f1c';
-    ctx.fillRect(0, 0, size, size);
-    ctx.fillStyle = '#1f5eff';
-    ctx.fillRect(0, 0, size, 14);
-    text('Predict', 80, 150, { px: 96, weight: 800 });
-    text(`${LEAGUE_NAME[round.league]} · ${t('predict.round', { n: round.round })}`, 80, 215, { px: 44, color: '#98a3b7' });
-    const stats = [[`${recap.tipped}/${recap.total}`, t('predict.recap.tipped')], [String(recap.beat), t('predict.recap.beat')]];
-    if (accuracy !== null) stats.push([signed(accuracy), t('predict.recap.acc')]);
-    const column = (size - 160) / stats.length;
-    stats.forEach(([value, label], i) => {
-      const x = 80 + column * i + column / 2;
-      ctx.fillStyle = '#111929';
-      ctx.fillRect(80 + column * i + 8, 330, column - 16, 340);
-      text(value, x, 520, { px: 120, weight: 800, align: 'center', color: i === 2 && accuracy !== null ? (accuracy >= 0 ? '#588cff' : '#f4514f') : '#e8edf5' });
-      text(label, x, 600, { px: 38, color: '#98a3b7', align: 'center' });
-    });
-    if (bestMatch) text(t('predict.recap.best', { match: bestMatch }), 80, 790, { px: 46, weight: 700 });
-    text(`${location.host}/predict/`, 80, 990, { px: 44, weight: 700, color: '#588cff' });
-    const blob = await new Promise((resolve) => canvas.toBlob(resolve, 'image/png'));
-    if (!blob) { toast(t('predict.err.generic'), 'error'); return; }
-    const file = new File([blob], `predict-round-${round.round}.png`, { type: 'image/png' });
-    try {
-      if (navigator.canShare && navigator.canShare({ files: [file] })) { await navigator.share({ files: [file], title: 'Predict' }); return; }
-    } catch (error) { return; }                                   // the player closed the sheet
-    const link = h('a', { href: URL.createObjectURL(blob), download: file.name });
-    document.body.append(link);
-    link.click();
-    link.remove();
-    setTimeout(() => URL.revokeObjectURL(link.href), 4000);
-  }
-
-  async function shareText(text) {
-    const full = `${text} ${location.origin}/predict/`;
-    try { if (navigator.share) { await navigator.share({ title: 'Predict', text: full }); return; } } catch (error) { return; }
-    try { await navigator.clipboard.writeText(full); toast(t('predict.copied')); } catch (error) { toast(full); }
+  /* The recap as a picture, drawn the way every picture of the site is (share.js: its frame, its
+     type, its palette, in the format and theme picked in the share sheet): the round's three numbers
+     as figures and the best call with its crests. Resolves to a PNG blob. */
+  async function sharePredictRound(round, recap, points, best) {
+    const { ctx, canvas } = await shareCanvas();
+    const room = shareFrame(ctx, `${t('predict.title')} · ${LEAGUE_NAME[round.league]} · ${t('predict.round', { n: round.round })}`);
+    const u = shareU();
+    const tall = shareTall();
+    const stats = [[`${recap.tipped}/${recap.total}`, t('predict.recap.tipped'), SC.ink], [String(recap.beat), t('predict.recap.beat'), SC.ink]];
+    if (points !== null) stats.push([ptsText(points, true), t('predict.recap.pts'), points < 0 ? SC.badInk : SC.accentInk]);
+    const title = t('predict.recap.title');
+    const titleSize = (tall ? 62 : 52) * u;
+    const titleH = titleSize + (tall ? 64 : 34) * u;
+    // The figures: side by side, each on a panel of its own; on a tall picture one under the other.
+    // The whole block (title, figures, best call) sits in the middle of the room the frame leaves.
+    const gap = 20 * u;
+    const bestH = best ? (tall ? 150 : 96) * u : 0;
+    const rows = tall ? stats.length : 1;
+    const h1 = Math.min(tall ? 260 * u : 230, (room.h - titleH - bestH - gap * rows) / rows);
+    const total = titleH + rows * (h1 + gap) + bestH;
+    let y = room.y + Math.max(0, (room.h - total) / 2) + titleSize;
+    paintText(ctx, title, room.x, y, { size: titleSize, weight: 800, wide: true, maxWidth: room.w, fit: true });
+    y += titleH - titleSize;
+    if (tall) {
+      for (const [value, label, color] of stats) {
+        shareRect(ctx, room.x, y, room.w, h1, 18, SC.panel);
+        paintText(ctx, value, room.x + 44 * u, y + h1 / 2 + 34 * u, { size: 96 * u, weight: 800, wide: true, color });
+        paintText(ctx, label, room.x + room.w - 44 * u, y + h1 / 2 + 11 * u, { size: 30 * u, weight: 600, color: SC.muted, align: 'right' });
+        y += h1 + gap;
+      }
+    } else {
+      const w = (room.w - gap * (stats.length - 1)) / stats.length;
+      stats.forEach(([value, label, color], i) => {
+        const x = room.x + i * (w + gap);
+        shareRect(ctx, x, y, w, h1, 16, SC.panel);
+        paintText(ctx, value, x + w / 2, y + h1 / 2 + 22, { size: 84, weight: 800, wide: true, color, align: 'center', maxWidth: w - 32, fit: true });
+        paintText(ctx, label, x + w / 2, y + h1 / 2 + 70, { size: 24, weight: 600, color: SC.muted, align: 'center', maxWidth: w - 32 });
+      });
+      y += h1 + gap;
+    }
+    if (best) {
+      const size = (tall ? 40 : 30) * u;
+      const crestSize = size * 1.4;
+      const mid = y + bestH / 2;
+      paintText(ctx, t('predict.recap.bestLabel'), room.x, mid - size * 0.9, { size: 16 * u, weight: 600, color: SC.muted, label: true });
+      let x = room.x;
+      await shareDrawCrest(ctx, best.home_id, best.home, x, mid - crestSize / 2 + size * 0.35, crestSize);
+      x += crestSize + size * 0.35;
+      x += paintText(ctx, `${best.home} – ${best.away}`, x, mid + size * 0.7, { size, weight: 800, maxWidth: room.w - 2 * crestSize - size }) + size * 0.35;
+      await shareDrawCrest(ctx, best.away_id, best.away, x, mid - crestSize / 2 + size * 0.35, crestSize);
+    }
+    return shareBlob(canvas);
   }
 
   function emptyState(error, retry, emptyKey) {
@@ -786,10 +934,14 @@
     root.append(h('p', { class: 'pintro' }, t('predict.table.intro')));
     root.append(leagueSwitch(render));
     const season = S.index && S.index.season;
-    const body = h('div', {}, h('p', { class: 'pload' }, t('predict.loading')));
+    const key = `${season}_${S.league}`;
+    // The game and your pick, once read, stay for the visit (your pick is kept up to date when you
+    // save): a switch of tab or division draws at once instead of emptying to "loading".
+    const known = S.tables[key];
+    const body = h('div', {}, known ? tableBody(key, known.game, known.mine, known.extras, season) : h('p', { class: 'pload' }, t('predict.loading')));
     root.append(body);
     if (!season) { body.replaceChildren(emptyState(S.indexError, loadAndRender, 'predict.empty.rounds')); return; }
-    const key = `${season}_${S.league}`;
+    if (known) return;
     try {
       const game = await client.get(`tablegames/${key}`);
       const mine = client.uid ? await client.get(`tables/${client.uid}/picks/${key}`) : null;
@@ -801,7 +953,8 @@
         if (!extras.board) { try { extras.standings = await client.get('meta/standings'); } catch (error) { extras.standings = null; } }
         if (client.uid && S.stats === undefined) { try { S.stats = await client.get(`stats/${client.uid}`); } catch (error) { S.stats = null; } }
       }
-      if (S.tab !== 'table') return;
+      S.tables[key] = { game, mine, extras };
+      if (S.tab !== 'table' || !body.isConnected) return;
       body.replaceChildren(tableBody(key, game, mine, extras, season));
     } catch (error) { body.replaceChildren(emptyState(error, render)); }
   }
@@ -811,9 +964,9 @@
     const own = S.stats && S.stats.tables && S.stats.tables[key];
     const rows = (board.rows || []).map((row) => h('tr', { class: 'pboard__row', data: { kind: row.kind, mine: String(Boolean(S.ownHash && row.u === S.ownHash)) } },
       h('td', { class: 'pboard__rank' }, String(row.rank)), h('td', { class: 'pboard__name' }, h('span', { class: 'pboard__nick' }, row.nick || t('predict.anon'))),
-      h('td', {}, String(row.error)), h('td', { class: 'pboard__ab', data: { tone: row.accuracy > 0.00005 ? 'good' : row.accuracy < -0.00005 ? 'bad' : 'even' } }, signed(row.accuracy))));
+      h('td', {}, String(row.error)), h('td', { class: 'pboard__ab', data: { tone: row.accuracy > 0.00005 ? 'good' : row.accuracy < -0.00005 ? 'bad' : 'even' } }, accText(row.accuracy))));
     return h('section', { class: 'ptable__results' }, h('h3', {}, t('predict.table.result.title')),
-      own ? h('p', { class: 'pboard__me' }, t('predict.table.result.you', { error: own.error, acc: signed(own.accuracy) })) : h('p', { class: 'pmuted' }, t('predict.table.result.none')),
+      own ? h('p', { class: 'pboard__me' }, t('predict.table.result.you', { error: own.error, acc: accText(own.accuracy) })) : h('p', { class: 'pmuted' }, t('predict.table.result.none')),
       h('div', { class: 'pboard' }, h('div', { class: 'pscroll' }, h('table', {},
         h('thead', {}, h('tr', {}, ['rank', 'name'].map((c) => h('th', { scope: 'col', class: `pboard__${c}` }, t(`predict.col.${c}`))),
           h('th', { scope: 'col' }, t('predict.table.col.error')), h('th', { scope: 'col' }, t('predict.table.col.acc')))),
@@ -830,7 +983,7 @@
       const now_ = league.order.indexOf(id);
       const diff = now_ - i;
       return h('li', { class: 'ptable__row', data: { id } },
-        h('span', { class: 'ptable__pos' }, String(i + 1)), h('span', { class: 'ptable__name' }, game.names[id]),
+        h('span', { class: 'ptable__pos' }, String(i + 1)), h('span', { class: 'ptable__name' }, crest(id, 22), h('span', {}, game.names[id])),
         h('span', { class: 'ptable__now', data: { tone: diff === 0 ? 'good' : 'even' }, attrs: { 'aria-label': t('predict.table.now.aria', { club: game.names[id], place: now_ + 1 }) } },
           diff === 0 ? `= ${now_ + 1}` : `${diff > 0 ? '↓' : '↑'} ${now_ + 1}`));
     });
@@ -859,7 +1012,7 @@
       else {
         parts.push(h('p', { class: 'ptable__status' }, t('predict.table.yoursaved')));
         const frozen = h('ol', { class: 'ptable', data: { state } }, order.map((id, i) => h('li', { class: 'ptable__row', data: { id, zone: zoneOf(i, order.length) } },
-          h('span', { class: 'ptable__pos' }, String(i + 1)), h('span', { class: 'ptable__name' }, game.names[id]))));
+          h('span', { class: 'ptable__pos' }, String(i + 1)), h('span', { class: 'ptable__name' }, crest(id, 22), h('span', {}, game.names[id])))));
         parts.push(frozen);
         const checkpoint = !extras.board && extras.standings ? tableCheckpoint(order, game, extras.standings) : null;
         if (checkpoint) parts.push(checkpoint);
@@ -869,70 +1022,215 @@
     }
     const list = h('ol', { class: 'ptable', data: { state } });
     const status = h('p', { class: 'ptable__status', attrs: { 'aria-live': 'polite' } });
-    const keep = () => { if (state === 'open') { try { store.set(draftId, JSON.stringify(order)); } catch (error) { /* a convenience only */ } } };
+    const announce = h('p', { class: 'visually-hidden', attrs: { 'aria-live': 'assertive' } });
+    const open = state === 'open';
+    const keep = () => { if (open) { try { store.set(draftId, JSON.stringify(order)); } catch (error) { /* a convenience only */ } } };
+    let saveState = saved ? 'saved' : validOrder(draft) ? 'pending' : 'idle';
+    let saveError = '';
+    const paintStatus = () => {
+      const left = spanText(game.closes.getTime() - now());
+      status.dataset.state = state === 'soon' ? 'idle' : saveState;
+      if (state === 'soon') status.textContent = t('predict.table.soon', { span: spanText(game.opens.getTime() - now()) });
+      else if (saveState === 'saving' || saveState === 'pending') status.textContent = t('predict.saving');
+      else if (saveState === 'error') {
+        status.replaceChildren(`${t('predict.notsaved')} ${saveError} `,
+          h('button', { type: 'button', class: 'pcard__retry', on: { click: () => saveOrder() } }, t('predict.retry')));
+      } else status.textContent = saveState === 'saved' ? t('predict.table.savedLeft', { span: left }) : t('predict.table.start', { span: left });
+    };
+    const label = (id, i) => t('predict.table.drag', { club: game.names[id], place: i + 1, n: order.length });
     const paint = () => {
       list.replaceChildren(...order.map((id, i) => {
         const row = h('li', { class: 'ptable__row', data: { id, zone: zoneOf(i, order.length) } },
-          h('span', { class: 'ptable__pos' }, String(i + 1)), h('span', { class: 'ptable__name' }, game.names[id]));
-        if (state === 'open') {
-          const handle = h('button', { type: 'button', class: 'ptable__grip', attrs: { 'aria-label': t('predict.table.drag', { club: game.names[id] }) } }, '⋮⋮');
-          const up = h('button', { type: 'button', class: 'pbtn pbtn--icon', data: { move: 'up' }, attrs: { 'aria-label': t('predict.table.up', { club: game.names[id] }) }, disabled: i === 0, on: { click: () => shift(i, -1) } }, '↑');
-          const down = h('button', { type: 'button', class: 'pbtn pbtn--icon', data: { move: 'down' }, attrs: { 'aria-label': t('predict.table.down', { club: game.names[id] }) }, disabled: i === order.length - 1, on: { click: () => shift(i, 1) } }, '↓');
-          grip(handle, row);
-          row.append(handle, up, down);
+          h('span', { class: 'ptable__pos' }, String(i + 1)), h('span', { class: 'ptable__name' }, crest(id, 22), h('span', {}, game.names[id])));
+        if (open) {
+          const handle = h('button', { type: 'button', class: 'ptable__grip', attrs: { 'aria-label': label(id, i) } },
+            h('span', { attrs: { 'aria-hidden': 'true' } }));
+          handle.addEventListener('keydown', (event) => keyMove(event, id));
+          row.append(handle);
+          sortable(row);
         }
         return row;
       }));
-      status.textContent = state === 'soon' ? t('predict.table.soon', { span: spanText(game.opens.getTime() - now()) })
-        : saved ? t('predict.table.saved') : t('predict.table.unsaved', { span: spanText(game.closes.getTime() - now()) });
+      paintStatus();
     };
-    const legend = h('ul', { class: 'pzones', attrs: { 'aria-label': t('predict.zones') } },
-      (S.league === 'eliteserien' ? ['champion', 'relegation'] : ['promotion', 'relegation']).map((z) => h('li', { data: { zone: z } }, t(`predict.zone.${z}`))));
-    // A move redraws the list; the focus goes with the club, to the same arrow (or the other at an end).
-    const shift = (i, by) => {
-      const [moved] = order.splice(i, 1);
-      order.splice(i + by, 0, moved);
-      saved = false; keep(); paint();
-      const row = list.children[i + by];
-      const want = row && (row.querySelector(`[data-move="${by < 0 ? 'up' : 'down'}"]:not(:disabled)`) || row.querySelector('[data-move]:not(:disabled)'));
-      if (want) want.focus();
-    };
-    function grip(handle, row) {
-      handle.addEventListener('pointerdown', (event) => {
-        event.preventDefault();
-        capture(handle, event);
-        row.classList.add('is-dragging');
-        const move = (e) => {
-          const under = document.elementFromPoint(e.clientX, e.clientY);
-          const target = under && under.closest && under.closest('.ptable__row');
-          if (!target || target === row || !list.contains(target)) return;
-          const from = order.indexOf(row.dataset.id);
-          const to = order.indexOf(target.dataset.id);
-          const [moved] = order.splice(from, 1);
-          order.splice(to, 0, moved);
-          saved = false;
-          list.insertBefore(row, from < to ? target.nextSibling : target);
-          [...list.children].forEach((li, n) => { li.querySelector('.ptable__pos').textContent = String(n + 1); });
-        };
-        const end = () => { handle.removeEventListener('pointermove', move); handle.removeEventListener('pointerup', end); handle.removeEventListener('pointercancel', end); keep(); paint(); };
-        handle.addEventListener('pointermove', move); handle.addEventListener('pointerup', end); handle.addEventListener('pointercancel', end);
-      });
-    }
-    const save = h('button', { type: 'button', class: 'pbtn pbtn--primary', hidden: state !== 'open', on: { click: async () => {
-      status.textContent = t('predict.saving');
+
+    /* Saving: like a match tip, the order saves itself a moment after a move; the draft in the
+       browser holds it until the save is in. */
+    let saveTimer = null;
+    const scheduleOrderSave = () => { clearTimeout(saveTimer); saveState = 'pending'; paintStatus(); saveTimer = setTimeout(saveOrder, SAVE_DELAY); };
+    async function saveOrder() {
+      clearTimeout(saveTimer);
+      if (!open || now() >= game.closes.getTime()) return;
+      const sent = order.slice();
+      saveState = 'saving'; paintStatus();
       try {
         await ensureAccount();
-        await client.commit(tableWrites(config, client.uid, key, order));
-        saved = true;
-        store.remove(draftId); store.remove(`predict.tabledraft.new.${key}`);
-        paint();
-      } catch (error) { status.textContent = `${t('predict.notsaved')} ${errorText(error)}`; }
-    } } }, t('predict.table.save'));
+        await client.commit(tableWrites(config, client.uid, key, sent));
+        if (S.tables[key]) S.tables[key].mine = { ...(S.tables[key].mine || {}), order: sent };
+        if (sent.join() === order.join()) {
+          saveState = 'saved';
+          store.remove(draftId); store.remove(`predict.tabledraft.new.${key}`);
+        }
+      } catch (error) { saveState = 'error'; saveError = errorText(error); }
+      if (list.isConnected) paintStatus();
+    }
+    const moved = (from, to) => {
+      if (from === to) return;
+      order = moveItem(order, from, to);
+      keep();
+      scheduleOrderSave();
+    };
+
+    /* The keyboard: on a club's handle the arrow keys move it a place, Page Up and Down five, Home and
+       End to the top or the bottom; the focus stays with the club and its new place is read out. */
+    function keyMove(event, id) {
+      const from = order.indexOf(id);
+      const to = { ArrowUp: from - 1, ArrowDown: from + 1, PageUp: from - 5, PageDown: from + 5, Home: 0, End: order.length - 1 }[event.key];
+      if (to === undefined) return;
+      event.preventDefault();
+      const at = Math.max(0, Math.min(order.length - 1, to));
+      moved(from, at);
+      paint();
+      const grip = list.children[at] && list.children[at].querySelector('.ptable__grip');
+      if (grip) grip.focus();
+      announce.textContent = t('predict.table.moved', { club: game.names[id], place: at + 1 });
+    }
+
+    /* Dragging: a club moves in its own lane, up or down only, as far as it is taken; the others slide
+       aside, and the numbers and zones show where everything lands. A mouse drags a row from anywhere
+       on it; a finger from the handle at once, or from the rest of the row after a short hold (so a
+       swipe there still scrolls the page). Near the top or the bottom of the screen the page scrolls
+       along. */
+    let drag = null;
+    list.addEventListener('touchmove', (event) => { if (drag) event.preventDefault(); }, { passive: false });
+    list.addEventListener('contextmenu', (event) => { if (drag || event.target.closest('.ptable__row')) event.preventDefault(); });
+    function sortable(row) {
+      let press = null;
+      row.addEventListener('pointerdown', (event) => {
+        if (drag || (event.pointerType === 'mouse' && event.button !== 0)) return;
+        const onGrip = Boolean(event.target.closest('.ptable__grip'));
+        press = { x: event.clientX, y: event.clientY, id: event.pointerId, timer: null };
+        if (event.pointerType !== 'mouse' && !onGrip) {
+          press.timer = setTimeout(() => { if (press) { const p = press; press = null; begin(row, event, p.y); } }, 280);
+        } else {
+          press.direct = true;
+          capture(row, event);          // the moves come here even when the first one is already over another row
+        }
+      });
+      row.addEventListener('pointermove', (event) => {
+        if (!press || event.pointerId !== press.id) return;
+        const dx = event.clientX - press.x;
+        const dy = event.clientY - press.y;
+        if (press.direct && Math.hypot(dx, dy) > 3) { const p = press; press = null; begin(row, event, p.y); }
+        else if (!press.direct && Math.hypot(dx, dy) > 8) { clearTimeout(press.timer); press = null; }   // a scroll, not a hold
+      });
+      const cancel = () => { if (press) { clearTimeout(press.timer); press = null; } };
+      row.addEventListener('pointerup', cancel);
+      row.addEventListener('pointercancel', cancel);
+    }
+    function begin(row, event, startY) {
+      const rows = [...list.children];
+      const from = rows.indexOf(row);
+      const rects = rows.map((r) => r.getBoundingClientRect());
+      const scroll0 = window.scrollY;
+      const mids = rects.map((r) => r.top + scroll0 + r.height / 2);
+      const gap = rows.length > 1 ? rects[1].top - rects[0].bottom : 0;
+      const step = rects[from].height + gap;
+      drag = { row, rows, from, to: from, mids, step, startPage: startY + scroll0, y: event.clientY, frame: 0 };
+      capture(row, event);
+      list.classList.add('is-sorting');
+      row.classList.add('is-dragging');
+      if (navigator.vibrate && event.pointerType !== 'mouse') navigator.vibrate(10);
+      const onMove = (e) => { drag.y = e.clientY; place(); };
+      const onEnd = () => {
+        row.removeEventListener('pointermove', onMove);
+        row.removeEventListener('pointerup', onEnd);
+        row.removeEventListener('pointercancel', onEnd);
+        cancelAnimationFrame(drag.frame);
+        finish();
+      };
+      row.addEventListener('pointermove', onMove);
+      row.addEventListener('pointerup', onEnd);
+      row.addEventListener('pointercancel', onEnd);
+      const tick = () => { if (!drag) return; autoscroll(); drag.frame = requestAnimationFrame(tick); };
+      drag.frame = requestAnimationFrame(tick);
+      place();
+    }
+    function place() {
+      const { row, rows, from, mids, step, startPage } = drag;
+      const dy = drag.y + window.scrollY - startPage;
+      row.style.transform = `translateY(${dy.toFixed(1)}px)`;
+      const to = dropIndex(mids, from, mids[from] + dy);
+      if (to === drag.to && rows[0].dataset.placed) return;
+      drag.to = to;
+      const next = moveItem(order, from, to);
+      rows.forEach((r, i) => {
+        r.dataset.placed = '1';
+        if (i !== from) {
+          const shift = from < to && i > from && i <= to ? -step : to < from && i >= to && i < from ? step : 0;
+          r.style.transform = shift ? `translateY(${shift}px)` : '';
+        }
+        const at = next.indexOf(r.dataset.id);
+        r.querySelector('.ptable__pos').textContent = String(at + 1);
+        r.dataset.zone = zoneOf(at, next.length);
+      });
+    }
+    /* Near an edge of the screen (under the masthead, above the phone's bars) the page scrolls, the
+       faster the closer. */
+    function autoscroll() {
+      const top = (parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--predict-top')) || 0) + 56;
+      const bottom = window.innerHeight - (matchMedia('(max-width: 760px)').matches ? 52 : 0) - 56;
+      const speed = drag.y < top ? -(top - drag.y) : drag.y > bottom ? drag.y - bottom : 0;
+      if (!speed) return;
+      window.scrollBy(0, Math.max(-18, Math.min(18, speed / 3)));
+      place();
+    }
+    function finish() {
+      const { row, from, to } = drag;
+      const before = row.getBoundingClientRect().top;
+      drag = null;
+      list.classList.remove('is-sorting');
+      moved(from, to);
+      paint();
+      // The club settles into its place from where it was let go.
+      const landed = list.children[to];
+      if (landed && !matchMedia('(prefers-reduced-motion: reduce)').matches) {
+        landed.style.transform = `translateY(${(before - landed.getBoundingClientRect().top).toFixed(1)}px)`;
+        landed.classList.add('is-landing');
+        requestAnimationFrame(() => requestAnimationFrame(() => { landed.style.transform = ''; }));
+        setTimeout(() => landed.classList.remove('is-landing'), 260);
+      }
+      if (from !== to) announce.textContent = t('predict.table.moved', { club: game.names[order[to]], place: to + 1 });
+    }
+
+    const bonusOf = { champion: bonus.champion, promotion: bonus.promotion, relegation: bonus.relegation };
+    const legend = h('ul', { class: 'pzones', attrs: { 'aria-label': t('predict.zones') } },
+      (S.league === 'eliteserien' ? ['champion', 'relegation'] : ['promotion', 'relegation']).map((z) => h('li', { data: { zone: z } },
+        t(`predict.zone.${z}`), h('span', { class: 'pzones__bonus' }, t('predict.zone.bonus', { n: bonusOf[z] })))));
     paint();
-    return h('div', {}, legend, list, h('div', { class: 'ptable__bar', hidden: state !== 'open' }, status, save), state === 'open' ? null : status, rules);
+    // An order left in the browser (a closed tab, no connection) is saved now, not forgotten.
+    if (open && saveState === 'pending') scheduleOrderSave();
+    return h('div', { class: 'ptable-game' }, h('div', { class: 'ptable__head' }, legend, status), list, announce,
+      open ? h('p', { class: 'ptable__hint' }, t('predict.table.hint')) : null, rules);
   }
 
   /* ---- boards ---------------------------------------------------------------------------------------------- */
+
+  /* Boards change once an hour at most: one read serves for a few minutes, so a switch between
+     divisions or periods (and the season panel's board, the same document) draws at once. */
+  const BOARD_FRESH = 5 * 60 * 1000;
+  function cachedBoard(id) {
+    const hit = (S.boards || {})[id];
+    return hit && now() - hit.at < BOARD_FRESH ? hit : null;
+  }
+  async function loadBoard(id) {
+    const hit = cachedBoard(id);
+    if (hit) return hit.board;
+    const board = await client.get(`boards/${id}`);
+    S.boards = S.boards || {};
+    S.boards[id] = { board, at: now() };
+    return board;
+  }
 
   async function renderBoards(root) {
     const current = S.index && S.index.season;
@@ -944,35 +1242,59 @@
     // Rounds already scored this season, newest first: any of them has a board of its own.
     const scored = season === current ? leagueRounds(S.league).filter((r) => (Number.isInteger(r.settled) ? r.settled > 0 : roundStatus(r, now()) !== 'future')).reverse() : [];
     const pickedRound = (S.boardRound || {})[S.league] || null;
-    const roundPick = S.scope === 'round' && scored.length
+    // Both divisions together is a season board only (their rounds are not the same rounds).
+    const all = Boolean(S.boardAll);
+    const scope = all ? 'season' : S.scope;
+    const roundPick = scope === 'round' && scored.length
       ? h('select', { class: 'pfield pfield--pick', attrs: { 'aria-label': t('predict.round.pick') }, on: { change: (e) => { S.boardRound = { ...(S.boardRound || {}), [S.league]: Number(e.target.value) || null }; render(); } } },
         scored.map((r, i) => h('option', { value: String(i === 0 ? 0 : r.round), selected: i === 0 ? !pickedRound : pickedRound === r.round }, t('predict.round', { n: r.round }))))
       : null;
-    root.append(h('div', { class: 'ptoolbar' }, leagueSwitch(render),
+    const divisions = h('div', { class: 'switch', attrs: { role: 'group', 'aria-label': t('predict.division') } },
+      ['all', ...LEAGUES].map((id) => h('button', { type: 'button', data: { league: id }, attrs: { 'aria-pressed': String(id === 'all' ? all : !all && S.league === id) },
+        on: { click: () => {
+          S.boardAll = id === 'all';
+          if (id !== 'all') { S.league = id; store.set('predict.league', id); }
+          render();
+        } } }, id === 'all' ? t('predict.board.both') : LEAGUE_NAME[id])));
+    // The pickers come last, the round's after the season's, so the round's appearing (Runden) moves
+    // nothing that stands before it; on a phone they share a row of their own.
+    root.append(h('div', { class: 'ptoolbar ptoolbar--boards' }, divisions,
       h('div', { class: 'switch', attrs: { role: 'group', 'aria-label': t('predict.scope') } },
-        scopes.map((scope) => h('button', { type: 'button', attrs: { 'aria-pressed': String(S.scope === scope) }, on: { click: () => { S.scope = scope; render(); } } }, t(`predict.scope.${scope}`)))),
-      seasonPick, roundPick));
-    const body = h('div', {}, h('p', { class: 'pload' }, t('predict.loading')));
-    root.append(body);
+        scopes.map((one) => h('button', { type: 'button', disabled: all && one !== 'season', title: all && one !== 'season' ? t('predict.board.bothSeason') : null,
+          attrs: { 'aria-pressed': String(scope === one) }, on: { click: () => { S.scope = one; render(); } } }, t(`predict.scope.${one}`)))),
+      h('div', { class: 'ptoolbar__picks' }, seasonPick, roundPick)));
+    const body = h('div', { class: 'pboards' });
+    root.append(body, leaguesSection());
     if (!season) { body.replaceChildren(emptyState(S.indexError, loadAndRender, 'predict.empty.rounds')); return; }
-    const id = S.scope === 'round' && pickedRound ? `round_${season}_${S.league}_${pickedRound}` : `${S.scope}_${season}_${S.league}`;
+    const id = all ? `season_${season}_all` : scope === 'round' && pickedRound ? `round_${season}_${S.league}_${pickedRound}` : `${scope}_${season}_${S.league}`;
+    const show = (board) => {
+      body.replaceChildren(boardTable(board), percentileNote(board, season));
+      S.boardShown = body.firstChild;
+    };
+    // A board read in the last few minutes is drawn at once; otherwise the one on show stays, dimmed,
+    // until the new one is in (the first time, a placeholder of rows), so the page never empties.
+    const ready = cachedBoard(id);
+    if (ready && (!client.uid || (S.ownHash && S.stats !== undefined))) { show(ready.board); return; }
+    body.append(S.boardShown ? Object.assign(S.boardShown, { className: `${S.boardShown.className.replace(/ is-stale/g, '')} is-stale` })
+      : h('div', { class: 'pboard pskeleton pboard--skeleton', attrs: { 'aria-busy': 'true', 'aria-label': t('predict.loading') } },
+        Array.from({ length: 8 }, () => h('span'))));
+    const mine = body;
     try {
       if (client.uid && !S.ownHash) S.ownHash = await uidHash(client.uid);
-      const board = await client.get(`boards/${id}`);
-      if (S.tab !== 'boards') return;
-      body.replaceChildren(boardTable(board));
+      const board = await loadBoard(id);
       if (client.uid && S.stats === undefined) { try { S.stats = await client.get(`stats/${client.uid}`); } catch (error) { S.stats = null; } }
-      if (S.tab === 'boards') body.append(percentileNote(board, season));
-    } catch (error) { body.replaceChildren(emptyState(error, render)); }
-    root.append(leaguesSection());
+      if (S.tab !== 'boards' || !mine.isConnected) return;          // a newer draw has taken over
+      show(board);
+    } catch (error) { if (mine.isConnected) body.replaceChildren(emptyState(error, render)); }
   }
 
   /* Columns that sort, and which way is better the first time they are pressed. */
-  const BOARD_COLUMNS = [['rank', 'asc'], ['name', 'asc'], ['n', 'desc'], ['ab', 'desc'], ['ar', 'desc'], ['b', 'asc'], ['r', 'asc'], ['streak', 'desc']];
+  const BOARD_COLUMNS = [['rank', 'asc'], ['name', 'asc'], ['n', 'desc'], ['pts', 'desc'], ['acc', 'desc'], ['streak', 'desc']];
 
   function sortedRows(rows, sort) {
     if (!sort || sort.col === 'rank') return sort && sort.dir === 'desc' ? rows.slice().reverse() : rows;
-    const key = sort.col === 'name' ? (r) => String(r.nick || '').toLowerCase() : (r) => r[sort.col];
+    const key = sort.col === 'name' ? (r) => String(r.nick || '').toLowerCase()
+      : sort.col === 'pts' ? rowPts : sort.col === 'acc' ? rowAcc : (r) => r[sort.col];
     const sign = sort.dir === 'desc' ? -1 : 1;
     return rows.slice().sort((a, b) => {
       const x = key(a);
@@ -1007,21 +1329,34 @@
     const tbody = h('tbody', {});
     const headRow = h('tr', {});
     let sort = null;
-    const mineRow = () => board.rows.find((r) => S.ownHash && r.u === S.ownHash);
+    let all = false;                       // a long board shows the top, you and your neighbours until asked for all
+    const isMine = (row) => Boolean(S.ownHash && row.u === S.ownHash);
+    const mineRow = () => board.rows.find(isMine);
+    const rowNode = (row) => {
+      const mine = isMine(row);
+      const name = h('td', { class: 'pboard__name' }, h('span', { class: 'pboard__nick' }, row.nick || t('predict.anon')));
+      if (mine) name.append(h('span', { class: 'ptag ptag--you' }, t('predict.tag.you')));
+      else if (row.kind === 'model' || row.kind === 'crowd') name.append(h('span', { class: `ptag ptag--${row.kind}` }, t(`predict.tag.${row.kind}`)));
+      else if (row.kind === 'player' && row.nick) name.append(reportControl(row));
+      return h('tr', { class: 'pboard__row', tabIndex: -1, data: { kind: row.kind, mine: String(mine) } },
+        h('td', { class: 'pboard__rank' }, String(row.rank)), name, h('td', {}, String(row.n)),
+        h('td', { class: 'pboard__pts' }, ptsText(rowPts(row))),
+        h('td', { class: 'pboard__acc' }, pctText(rowAcc(row))),
+        h('td', {}, row.streak === null || row.streak === undefined ? '–' : String(row.streak)));
+    };
+    const gapNode = (n) => h('tr', { class: 'pboard__gap' }, h('td', { colSpan: BOARD_COLUMNS.length },
+      h('button', { type: 'button', class: 'pboard__more', on: { click: () => { all = true; paintRows(); } } },
+        h('span', { class: 'pboard__dots', attrs: { 'aria-hidden': 'true' } }, '⋯'), t('predict.board.more', { n: groupThousands(n, lang()) }))));
+    const toggle = h('button', { type: 'button', class: 'pbtn pbtn--small pboard__toggle', on: { click: () => { all = !all; paintRows(); } } });
     const paintRows = () => {
-      tbody.replaceChildren(...sortedRows(board.rows, sort).map((row) => {
-        const mine = Boolean(S.ownHash && row.u === S.ownHash);
-        const name = h('td', { class: 'pboard__name' }, h('span', { class: 'pboard__nick' }, row.nick || t('predict.anon')));
-        if (mine) name.append(h('span', { class: 'ptag ptag--you' }, t('predict.tag.you')));
-        else if (row.kind === 'model' || row.kind === 'crowd') name.append(h('span', { class: `ptag ptag--${row.kind}` }, t(`predict.tag.${row.kind}`)));
-        else if (row.kind === 'player' && row.nick) name.append(reportControl(row));
-        return h('tr', { class: 'pboard__row', tabIndex: -1, data: { kind: row.kind, mine: String(mine) } },
-          h('td', { class: 'pboard__rank' }, String(row.rank)), name, h('td', {}, String(row.n)),
-          h('td', { class: 'pboard__ab', data: { tone: tone(row.ab) } }, signed(row.ab)),
-          h('td', {}, signed(row.ar)),
-          h('td', {}, row.b === null ? '–' : fixed(row.b, 2)), h('td', {}, row.r === null ? '–' : fixed(row.r, 2)),
-          h('td', {}, row.streak === null || row.streak === undefined ? '–' : String(row.streak)));
-      }));
+      const rows = sortedRows(board.rows, sort);
+      const items = all ? rows.map((row) => ({ row }))
+        : boardWindow(rows, rows.findIndex(isMine), { top: 10, around: 5, always: (row) => row.kind === 'model' || row.kind === 'crowd' });
+      tbody.replaceChildren(...items.map((item) => (item.row ? rowNode(item.row) : gapNode(item.gap))));
+      const shortened = boardWindow(rows, rows.findIndex(isMine), { top: 10, around: 5, always: (row) => row.kind === 'model' || row.kind === 'crowd' }).some((item) => item.gap);
+      toggle.hidden = !shortened;
+      toggle.textContent = all ? t(mineRow() ? 'predict.board.fewer' : 'predict.board.top') : t('predict.board.all', { n: groupThousands(rows.length, lang()) });
+      if (jump) jump.hidden = !all;
     };
     const paintHead = () => headRow.replaceChildren(...BOARD_COLUMNS.map(([c, first]) => {
       const active = (sort || { col: 'rank' }).col === c;
@@ -1031,27 +1366,29 @@
           sort = active && sort ? { col: c, dir: sort.dir === 'asc' ? 'desc' : 'asc' } : { col: c, dir: first };
           if (sort.col === 'rank' && sort.dir === 'asc') sort = null;
           paintHead(); paintRows();
-        } } }, t(`predict.col.${c}`), h('span', { class: 'pboard__arrow', attrs: { 'aria-hidden': 'true' } }, dir === 'asc' ? ' ▲' : dir === 'desc' ? ' ▼' : '')));
+        } } }, t(`predict.col.${c}`), h('span', { class: 'pboard__arrow', attrs: { 'aria-hidden': 'true' } }, !sort ? '' : dir === 'asc' ? '▲' : dir === 'desc' ? '▼' : '')));
     }));
-    paintHead();
-    paintRows();
+    // In the full list your row can be far down: a button takes you there.
     const jump = mineRow() ? h('button', { type: 'button', class: 'pbtn pbtn--small pboard__jump', on: { click: () => {
       const row = tbody.querySelector('[data-mine="true"]');
       if (row) { row.scrollIntoView({ block: 'center', behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' }); row.focus({ preventScroll: true }); }
     } } }, t('predict.board.jump')) : null;
+    paintHead();
+    paintRows();
     return h('div', { class: 'pboard' }, h('p', { class: 'pboard__key' }, t('predict.board.key')), jump,
       h('div', { class: 'pscroll' }, h('table', {}, h('thead', {}, headRow), tbody)),
-      h('p', { class: 'pboard__note' }, t('predict.board.note', { players: groupThousands(board.players || 0, lang()) })));
+      h('div', { class: 'pboard__foot' }, toggle,
+        h('p', { class: 'pboard__note' }, t('predict.board.note', { players: groupThousands(board.players || 0, lang()) }))));
   }
 
   function percentileNote(board, season) {
-    if (S.scope !== 'season' || !board || !board.pct || !board.pct.length || !S.stats) return h('span');
-    const mine = seasonTotals(S.stats, season, S.league);
+    if ((S.scope !== 'season' && !S.boardAll) || !board || !board.pct || !board.pct.length || !S.stats) return h('span');
+    const mine = seasonTotals(S.stats, season, S.boardAll ? undefined : S.league);
     if (!mine.n) return h('p', { class: 'pboard__me' }, t('predict.board.nonescored'));
-    const beat = beatShare(board.pct, mine.ab, board.players);
+    const beat = beatShare(board.pct, totalPoints(mine.n, mine.b), board.players);
     const own = S.ownHash && board.rows.find((r) => r.u === S.ownHash);
     return h('p', { class: 'pboard__me' }, own ? t('predict.board.you.listed', { rank: own.rank, beat })
-      : t('predict.board.you', { beat, ab: signed(mine.ab), n: mine.n }));
+      : t('predict.board.you', { beat, pts: ptsText(totalPoints(mine.n, mine.b)), n: mine.n }));
   }
 
   /* The codes of the leagues a player is in: on the profile (so they follow a Google sign-in to another
@@ -1069,12 +1406,11 @@
     message.textContent = S.leagueNote || (S.pendingJoin ? t('predict.leagues.invited') : '');
     const saveLocal = () => store.set('predict.leagues', JSON.stringify(S.myLeagues));
     const inviteLink = (code) => `${location.origin}/predict/?join=${code}#boards`;
-    const copy = async (text) => { try { await navigator.clipboard.writeText(text); toast(t('predict.copied')); } catch (error) { toast(text); } };
 
     function paintList() {
       list.replaceChildren(...S.myLeagues.map((entry) => h('li', { class: 'pleagues__item' },
         h('button', { type: 'button', class: 'pchip', on: { click: () => showLeague(entry.code, shown) } }, h('span', {}, entry.name), h('code', {}, entry.code)),
-        h('button', { type: 'button', class: 'pbtn pbtn--small', attrs: { 'aria-label': t('predict.leagues.copyFor', { name: entry.name }) }, on: { click: () => copy(inviteLink(entry.code)) } }, t('predict.leagues.copy')),
+        shareButton({ title: entry.name, url: inviteLink(entry.code), label: t('predict.leagues.copyFor', { name: entry.name }) }),
         confirmable(t('predict.leagues.leave'), t('predict.leagues.leave.q', { name: entry.name }), () => leave(entry), 'pbtn pbtn--small'))));
     }
 
@@ -1133,7 +1469,8 @@
         h('label', { class: 'pfieldset' }, h('span', {}, t('predict.leagues.create')), h('span', { class: 'pinline' }, nameInput, create)),
         h('label', { class: 'pfieldset' }, h('span', {}, t('predict.leagues.join')), h('span', { class: 'pinline' }, codeInput, join))),
       message,
-      S.leagueCode ? h('button', { type: 'button', class: 'pbtn pbtn--small', on: { click: () => copy(inviteLink(S.leagueCode)) } }, t('predict.leagues.copy')) : null,
+      ...(S.leagueCode ? [h('div', { class: 'pleagues__invite' }, h('code', {}, S.leagueCode),
+        shareButton({ title: (S.myLeagues.find((e) => e.code === S.leagueCode) || {}).name || t('predict.leagues.title'), url: inviteLink(S.leagueCode), label: t('predict.leagues.copy') }))] : []),
       shown);
     paintList();
 
@@ -1250,8 +1587,8 @@
         h('span', { class: 'ph2h__w', style: `flex-basis: ${share(wins)}` }), h('span', { class: 'ph2h__t', style: `flex-basis: ${share(ties)}` }),
         h('span', { class: 'ph2h__l', style: `flex-basis: ${share(losses)}` })),
       h('p', { class: 'ph2h__legend' }, t('predict.style.h2hText', { w: wins, t: ties, l: losses })),
-      h('p', { class: 'ph2h__follow' }, followGain > 0 ? t('predict.style.follow.worse', { d: fixed(followGain, 2) })
-        : t('predict.style.follow.better', { d: fixed(-followGain, 2) })));
+      h('p', { class: 'ph2h__follow' }, followGain > 0 ? t('predict.style.follow.worse', { d: ptsText(10 * followGain) })
+        : t('predict.style.follow.better', { d: ptsText(-10 * followGain) })));
 
     // Your style against the model, trait by trait: the model is the centre line.
     const track = (id) => {
@@ -1271,7 +1608,7 @@
     const fmt = (v) => v.map((x) => Math.round(x)).join(' / ');
     const evidence = (indices) => (indices.length ? h('ul', { class: 'pinsight__rows' }, indices.map((i) => {
       const r = rows[i];
-      return h('li', {}, h('strong', {}, `${r.home}–${r.away} ${r.hg}–${r.ag}`),
+      return h('li', {}, h('strong', { class: 'pinsight__match' }, crest(r.hid, 18), `${r.home} ${r.hg}–${r.ag} ${r.away}`, crest(r.aid, 18)),
         h('span', {}, `${t('predict.you')} ${fmt(r.pick)} · ${t('predict.model')} ${fmt(r.model.map((x) => x * 100))}`));
     })) : null);
     const insights = out.insights.length
@@ -1286,7 +1623,7 @@
 
   /* ---- your season, beside the matches ---------------------------------------------------------- */
 
-  const SIDE_TABS = ['tip', 'table', 'boards'];
+  const SIDE_TABS = ['tip', 'table'];         // the boards take the whole width: they are a wide table
   const SVG_NS = 'http://www.w3.org/2000/svg';
   const svg = (tag, attrs = {}) => { const node = document.createElementNS(SVG_NS, tag); for (const [k, v] of Object.entries(attrs)) node.setAttribute(k, v); return node; };
 
@@ -1304,9 +1641,7 @@
     try {
       if (client.uid && S.stats === undefined) S.stats = await client.get(`stats/${client.uid}`);
       if (client.uid && !S.ownHash) S.ownHash = await uidHash(client.uid);
-      S.sideBoards = S.sideBoards || {};
-      const key = `${season}_${league}`;
-      if (season && !(key in S.sideBoards)) S.sideBoards[key] = await client.get(`boards/season_${key}`);
+      if (season) await loadBoard(`season_${season}_${league}`);
     } catch (error) { /* the panel shows what it has */ }
     if (S.league !== league || !SIDE_TABS.includes(S.tab)) return;
     side.replaceChildren(sidePanel(season, league));
@@ -1333,7 +1668,7 @@
   }
 
   function sidePanel(season, league) {
-    const board = (S.sideBoards || {})[`${season}_${league}`] || null;
+    const board = ((S.boards || {})[`season_${season}_${league}`] || {}).board || null;
     const mine = season && S.stats ? seasonTotals(S.stats, season, league) : { n: 0 };
     const nick = (S.profile && S.profile.nick) || t('predict.you');
     const head = h('div', { class: 'pside__head' },
@@ -1342,19 +1677,21 @@
     const card = h('section', { class: 'pside__card', attrs: { 'aria-label': t('predict.side.label') } }, head);
 
     if (!mine.n) {
-      const quiet = h('details', { class: 'pside__details', open: matchMedia('(min-width: 960px)').matches }, h('summary', {}, t('predict.side.moreSummary')));
+      card.classList.add('pside__card--empty');               // nothing of yours yet: on a narrow screen the matches come first
+      const quiet = h('details', { class: 'pside__details', open: matchMedia('(min-width: 1000px)').matches }, h('summary', {}, t('predict.side.moreSummary')));
       quiet.append(h('p', { class: 'pside__empty' }, t('predict.side.empty')), bellChart(board, null));
       card.append(quiet);
       return card;
     }
 
-    const beat = board ? beatShare(board.pct, mine.ab, board.players) : null;
+    const points = totalPoints(mine.n, mine.b);
+    const beat = board ? beatShare(board.pct, points, board.players) : null;
     // Rank among people: the board's own ranks also count the model and the crowd rows.
     const own = board && S.ownHash ? board.rows.find((r) => r.u === S.ownHash) : null;
-    const tone = mine.ab > 0.00005 ? 'good' : mine.ab < -0.00005 ? 'bad' : 'even';
-    const big = h('strong', { class: 'pside__score', data: { tone } }, signed(mine.ab));
-    countUp(big, mine.ab, `${season}_${league}`);
-    card.append(h('div', { class: 'pside__hero' }, big, h('span', { class: 'pside__label' }, t('predict.side.acc'))));
+    const big = h('strong', { class: 'pside__score', data: { tone: points < 0 ? 'bad' : 'even' } }, ptsText(points));
+    countUp(big, points, `${season}_${league}`);
+    card.append(h('div', { class: 'pside__hero' }, big, h('span', { class: 'pside__label' }, t('predict.side.pts')),
+      h('span', { class: 'pside__acc' }, t('predict.side.accLine', { acc: pctText(accuracyPercent(mine.n, mine.b)), n: mine.n }))));
 
     if (beat !== null) {
       const tier = tierOf(beat);
@@ -1372,29 +1709,26 @@
     }
 
     // The spread, the form, the numbers and the badges: open beside the matches on a wide screen, a tap away on a phone.
-    const more = h('details', { class: 'pside__details', open: matchMedia('(min-width: 960px)').matches }, h('summary', {}, t('predict.side.moreSummary')));
-    more.append(h('h3', { class: 'pside__h' }, t('predict.side.dist')), bellChart(board, mine.ab, beat));
+    const more = h('details', { class: 'pside__details', open: matchMedia('(min-width: 1000px)').matches }, h('summary', {}, t('predict.side.moreSummary')));
+    more.append(h('h3', { class: 'pside__h' }, t('predict.side.dist')), bellChart(board, points, beat));
 
     const form = roundForm(S.stats, season, league, 8);
     if (form.length) {
-      const top = Math.max(0.05, ...form.map((f) => Math.abs(f.ab)));
+      const top = Math.max(0.1, ...form.map((f) => Math.abs(f.pts)));
       more.append(h('h3', { class: 'pside__h' }, t('predict.side.form')),
         h('div', { class: 'pside__form', attrs: { role: 'img', 'aria-label': t('predict.side.formAria', { n: form.length }) } },
-          form.map((f) => h('span', { class: 'pside__bar', data: { tone: f.ab > 0 ? 'good' : f.ab < 0 ? 'bad' : 'even' },
-            title: `${t('predict.round', { n: f.round })}: ${signed(f.ab)}` },
-            h('i', { style: `height: ${Math.max(4, (Math.abs(f.ab) / top) * 48)}%` }), h('small', {}, String(f.round))))));
+          form.map((f) => h('span', { class: 'pside__bar', data: { tone: f.pts > 0 ? 'good' : f.pts < 0 ? 'bad' : 'even' },
+            title: `${t('predict.round', { n: f.round })}: ${ptsText(f.pts, true)}` },
+            h('i', { style: `height: ${Math.max(4, (Math.abs(f.pts) / top) * 48)}%` }), h('small', {}, String(f.round))))));
     }
 
     const streak = streakNow(league);
     const cell = (value, label, toneOf) => h('div', { class: 'pside__cell', data: { tone: toneOf || 'even' } }, h('strong', {}, value), h('small', {}, label));
     more.append(h('div', { class: 'pside__grid' },
       cell(String(mine.n), t('predict.col.n')),
-      cell(signed(mine.vm), t('predict.stats.vm'), mine.vm > 0 ? 'good' : mine.vm < 0 ? 'bad' : 'even'),
+      cell(accText(mine.vm), t('predict.stats.vm'), mine.vm > 0 ? 'good' : mine.vm < 0 ? 'bad' : 'even'),
       cell(String(streak.current), t('predict.stats.streak')),
-      cell(fixed(mine.b / mine.n, 2), t('predict.col.b'))));
-    const badges = badgesFor({ tips: mine.n, totals: mine, streak: streak.best }).filter((b) => b.earned);
-    if (badges.length) more.append(h('ul', { class: 'pbadges pside__badges' }, badges.map((b) => h('li', { class: 'pbadge pbadge--b', data: { earned: 'true' } },
-      h('span', { attrs: { 'aria-hidden': 'true' } }, '✓'), t(`predict.badge.${b.id}`)))));
+      cell(avgText(mine.b / mine.n), t('predict.col.b'))));
     card.append(more);
     const tip = json(store.get(`predict.tip.${client.uid}`), null);
     if (tip && tip.id && tip.stamp !== statsTotalN()) refreshTip();          // new rounds have settled since it was worked out
@@ -1402,7 +1736,7 @@
       card.append(h('button', { type: 'button', class: 'pside__tip', data: { tone: tip.tone || 'tip' }, on: { click: () => openTab('me') } },
         h('small', {}, t('predict.side.tip')), h('span', {}, t(`predict.insight.${tip.id}.title`, tip.params || {}))));
     }
-    card.append(h('button', { type: 'button', class: 'plink pside__more', on: { click: () => openTab('me') } }, t('predict.side.more')));
+    card.append(h('button', { type: 'button', class: 'pbtn pbtn--small pside__more', on: { click: () => openTab('me') } }, t('predict.side.more')));
     return card;
   }
 
@@ -1416,7 +1750,8 @@
       return h('p', { class: 'pside__note' }, t('predict.side.distLater'));
     }
     const model = (board.rows || []).find((r) => r.kind === 'model');
-    const points = [fit.mean - 3 * fit.sd, fit.mean + 3 * fit.sd, value, model && model.ab].filter((x) => x !== null && x !== undefined && Number.isFinite(x));
+    const modelPts = model ? rowPts(model) : null;
+    const points = [fit.mean - 3 * fit.sd, fit.mean + 3 * fit.sd, value, modelPts].filter((x) => x !== null && x !== undefined && Number.isFinite(x));
     const lo = Math.min(...points) - fit.sd * 0.3;
     const hi = Math.max(...points) + fit.sd * 0.3;
     const x = (v) => ((v - lo) / (hi - lo)) * W;
@@ -1447,9 +1782,9 @@
     if (model) {
       // Labels must not collide: the model's goes up top when it is near the median's, and is left
       // off (the dashed line stays) when it would also sit on yours.
-      const nearMedian = Math.abs(x(model.ab) - x(fit.mean)) < 48;
-      const nearYou = value !== null && Math.abs(x(model.ab) - x(value)) < 40;
-      const mark = tick(model.ab, nearMedian && nearYou ? '' : t('predict.model'), 'pbell__mark--model', nearMedian);
+      const nearMedian = Math.abs(x(modelPts) - x(fit.mean)) < 48;
+      const nearYou = value !== null && Math.abs(x(modelPts) - x(value)) < 40;
+      const mark = tick(modelPts, nearMedian && nearYou ? '' : t('predict.model'), 'pbell__mark--model', nearMedian);
       chart.append(mark);
     }
     if (value !== null) {
@@ -1472,10 +1807,10 @@
     const start = performance.now();
     const step = (time) => {
       const k = Math.min(1, (time - start) / 900);
-      node.textContent = signed(target * (1 - (1 - k) ** 3));
+      node.textContent = ptsText(target * (1 - (1 - k) ** 3));
       if (k < 1) requestAnimationFrame(step);
     };
-    node.textContent = signed(0);
+    node.textContent = ptsText(0);
     requestAnimationFrame(step);
   }
 
@@ -1484,31 +1819,20 @@
   function renderHow(root) {
     const info = { home: t('predict.how.home'), away: t('predict.how.away') };
     const even = pickPercentages(0, DRAW_TENTHS.normal);
-    let pos = { g: 60, k: DRAW_TENTHS.normal };
     let picked = null;
-
-    const demoBar = bar(pickPercentages(pos.g, pos.k));
-    demoBar.classList.add('pcard__bar');
-    demoBar.setAttribute('aria-hidden', 'true');
-    const demoRange = h('input', { type: 'range', class: 'pcard__range', min: GAP.min, max: GAP.max, step: GAP.step, value: pos.g,
-      attrs: { 'aria-label': t('predict.slider.label', info) } });
+    const demoSlider = pickSlider(info, { g: 60, k: DRAW_TENTHS.normal }, { onInput: () => paint(),
+      onStart: () => demo.classList.add('is-dragging'), onEnd: () => demo.classList.remove('is-dragging') });
     const reading = h('p', { class: 'pcard__read' });
-    const fine = h('input', { type: 'range', class: 'pcard__fine-range', min: DRAW_TENTHS.min, max: DRAW_TENTHS.max, step: 1, value: pos.k,
-      attrs: { 'aria-label': t('predict.fine.label') } });
-    const fineValue = h('output', { class: 'pcard__fine-value' });
     const score = h('div', { class: 'pguide__score', attrs: { 'aria-live': 'polite' } }, h('p', { class: 'pmuted' }, t('predict.how.pick')));
     const results = ['home_win', 'draw', 'away_win'].map((o) => h('button', { type: 'button', class: 'pbtn pbtn--small', data: { outcome: o },
       attrs: { 'aria-pressed': 'false' }, on: { click: () => { picked = o; results.forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.outcome === o))); paint(); } } },
       t(`predict.how.r.${o}`)));
 
     function paint() {
-      const p = pickPercentages(pos.g, pos.k);
-      paintBar(demoBar, p);
-      demoRange.value = pos.g;
-      demoRange.setAttribute('aria-valuetext', t('predict.slider.value', { h: p[0], d: p[1], a: p[2] }));
-      fine.value = pos.k;
-      fineValue.textContent = `${fixed(pos.k / 10, 1)}×`;
+      const p = demoSlider.percents();
+      demoSlider.paint();
       reading.textContent = pickReading(p, info);
+      reset.hidden = Boolean(demoSlider.pos.p) || demoSlider.pos.k === DRAW_TENTHS.normal;
       if (!picked) return;
       const you = scoreOwnPick(p, even.map((x) => x / 100), picked);
       const evenBrier = you.brier + you.vsModel;
@@ -1517,25 +1841,21 @@
       mini.dataset.hit = OUTCOME_SIDE[picked];
       mini.classList.add('pguide__mini');
       score.replaceChildren(mini,
-        h('p', { class: 'pguide__big' }, t('predict.how.score.you', { b: fixed(you.brier, 2) })),
-        h('p', {}, t('predict.how.score.even', { m: fixed(evenBrier, 2) })),
+        h('p', { class: 'pguide__big' }, t('predict.how.score.you', { b: avgText(you.brier), p: ptsText(matchPoints(you.brier), true) })),
+        h('p', {}, t('predict.how.score.even', { m: avgText(evenBrier), p: ptsText(matchPoints(evenBrier), true) })),
         h('div', { class: 'pverdict', data: { kind } }, h('strong', { class: 'pverdict__chip' }, t(`predict.how.score.${kind === 'even' ? 'even2' : kind}`))));
     }
-    const move = (event) => {
-      const box = demoBar.getBoundingClientRect();
-      pos.g = gapUnder((event.clientX - box.left) / box.width);
+    const reset = h('button', { type: 'button', class: 'pbtn pbtn--small', hidden: true,
+      on: { click: () => { demoSlider.pos = { g: demoSlider.pos.g, k: DRAW_TENTHS.normal }; paint(); } } }, t('predict.fine.reset'));
+    const demoFine = fineSwitch(false, null, () => {
+      const on = !demoSlider.pos.p;
+      demoSlider.setFree(on);
+      demoFine.setAttribute('aria-pressed', String(on));
       paint();
-    };
-    let dragging = false;
-    demoBar.addEventListener('pointerdown', (event) => { dragging = true; capture(demoBar, event); move(event); });
-    demoBar.addEventListener('pointermove', (event) => { if (dragging) move(event); });
-    demoBar.addEventListener('pointerup', () => { dragging = false; });
-    demoBar.addEventListener('pointercancel', () => { dragging = false; });
-    demoRange.addEventListener('input', () => { pos.g = Number(demoRange.value); paint(); });
-    fine.addEventListener('input', () => { pos.k = Number(fine.value); paint(); });
-
+    });
     const demo = h('div', { class: 'pcard pguide__demo', data: { state: 'tipped' } },
-      matchHead(info, t('predict.how.try')), h('div', { class: 'pslider' }, demoBar, demoRange), reading);
+      matchHead(info, t('predict.how.try')), demoSlider.control,
+      h('div', { class: 'pguide__demofoot' }, reading, h('span', { class: 'pcard__acts' }, reset, demoFine)));
     const step = (n, title, ...kids) => h('section', { class: 'pguide__step' },
       h('h2', {}, h('span', { class: 'pguide__n', attrs: { 'aria-hidden': 'true' } }, String(n)), title), ...kids);
     const faq = ['1', '2', '3', '4'].map((n) => h('details', { class: 'pdetails pguide__q' },
@@ -1545,8 +1865,7 @@
       h('h2', { class: 'pguide__title' }, t('predict.how.title')),
       h('p', { class: 'pguide__lead' }, t('predict.how.lead')),
       step(1, t('predict.how.s1.title'), h('p', {}, t('predict.how.s1.text')), demo),
-      step(2, t('predict.how.s2.title'), h('p', {}, t('predict.how.s2.text')),
-        h('label', { class: 'pcard__fine pguide__fine' }, h('span', {}, t('predict.fine.title')), fine, fineValue)),
+      step(2, t('predict.how.s2.title'), h('p', {}, t('predict.how.s2.text'))),
       step(3, t('predict.how.s3.title'), h('p', {}, t('predict.how.s3.text'))),
       step(4, t('predict.how.s4.title'), h('p', {}, t('predict.how.s4.text')),
         h('div', { class: 'pguide__results', attrs: { role: 'group', 'aria-label': t('predict.how.pick') } }, results), score,
@@ -1565,7 +1884,7 @@
   async function renderMe(root) {
     const body = h('div', {}, h('p', { class: 'pload' }, t('predict.loading')));
     root.append(body);
-    if (!client.uid) { body.replaceChildren(h('div', { class: 'pempty' }, h('p', {}, t('predict.me.none')), dataSection(false))); return; }
+    if (!client.uid) { body.replaceChildren(h('p', { class: 'pempty' }, t('predict.me.none')), dataSection(false)); return; }
     try {
       if (S.profile === undefined || S.profile === null) await loadProfile();
       if (S.stats === undefined) S.stats = await client.get(`stats/${client.uid}`);
@@ -1602,19 +1921,24 @@
       catch (error) { e.target.checked = !e.target.checked; toast(errorText(error), 'error'); }
     } } });
     // The clubs of the rounds already loaded, as suggestions.
-    const names = new Set();
-    Object.values(S.data).forEach((record) => Object.values((record.fixture && record.fixture.slots) || {}).forEach((m) => { names.add(m.home); names.add(m.away); }));
-    const list = h('datalist', { id: 'pclubs' }, [...names].sort((a, b) => a.localeCompare(b, 'nb')).map((n) => h('option', { value: n })));
+    const ids = new Map();
+    Object.values(S.data).forEach((record) => Object.values((record.fixture && record.fixture.slots) || {}).forEach((m) => { ids.set(m.home, m.home_id); ids.set(m.away, m.away_id); }));
+    const list = h('datalist', { id: 'pclubs' }, [...ids.keys()].sort((a, b) => a.localeCompare(b, 'nb')).map((n) => h('option', { value: n })));
+    // The club's crest beside its name, once the name is one the page knows.
+    const clubCrest = h('span', { class: 'pclub__crest', attrs: { 'aria-hidden': 'true' } });
+    const paintCrest = (name) => { const img = crest(ids.get(name.trim()), 28); clubCrest.replaceChildren(...(img ? [img] : [])); clubCrest.hidden = !img; };
     const club = h('input', { type: 'text', class: 'pfield', value: profile.club || '', maxLength: 40, id: 'pclub', attrs: { list: 'pclubs', autocomplete: 'off' },
       on: { change: async (e) => {
         const value = e.target.value.trim();
+        paintCrest(value);
         try { await client.commit(profileUpdateWrites(config, client.uid, { club: value })); S.profile = { ...S.profile, club: value }; toast(t('predict.me.clubSaved')); }
         catch (error) { toast(errorText(error), 'error'); }
       } } });
+    paintCrest(profile.club || '');
     return h('section', { class: 'ppanel pme' }, h('h2', {}, t('predict.me.title')),
       h('div', { class: 'pfieldset' }, h('label', { attrs: { for: 'pnick' } }, t('predict.me.nick')), h('div', { class: 'pinline' }, nick, change)), message,
       h('label', { class: 'pswitch-row' }, h('span', {}, h('strong', {}, t('predict.me.hidden')), h('small', {}, t('predict.me.hiddenHelp'))), hidden),
-      h('div', { class: 'pfieldset' }, h('label', { attrs: { for: 'pclub' } }, t('predict.me.club')), club, list));
+      h('div', { class: 'pfieldset' }, h('label', { attrs: { for: 'pclub' } }, t('predict.me.club')), h('div', { class: 'pinline pclub' }, clubCrest, club), list));
   }
 
   function statsSection() {
@@ -1626,14 +1950,14 @@
     const tone = (value) => (value > 0.00005 ? 'good' : value < -0.00005 ? 'bad' : 'even');
     const big = (label, value, toneOf) => h('div', { class: 'pstat', data: { tone: toneOf || 'even' } }, h('dd', {}, value), h('dt', {}, label));
     box.append(h('dl', { class: 'pstats__hero' },
+      big(t('predict.stats.pts'), ptsText(totalPoints(totals.n, totals.b))),
+      big(t('predict.stats.acc'), pctText(accuracyPercent(totals.n, totals.b))),
       big(t('predict.col.n'), String(totals.n)),
-      big(t('predict.stats.acc'), signed(totals.ab), tone(totals.ab)),
-      big(t('predict.stats.vm'), signed(totals.vm), tone(totals.vm)),
-      big(t('predict.stats.streak'), String(streak.current))));
+      big(t('predict.stats.vm'), accText(totals.vm), tone(totals.vm))));
     const small = (label, value) => [h('dt', {}, label), h('dd', {}, value)];
     box.append(h('dl', { class: 'pstats__more' },
-      small(t('predict.col.ar'), signed(totals.ar)), small(t('predict.col.b'), fixed(totals.b / totals.n, 2)),
-      small(t('predict.col.r'), fixed(totals.r / totals.n, 2)), small(t('predict.stats.bestStreak'), String(streak.best))));
+      small(t('predict.col.b'), avgText(totals.b / totals.n)), small(t('predict.stats.streak'), String(streak.current)),
+      small(t('predict.stats.bestStreak'), String(streak.best))));
     const badges = badgesFor({ tips: totals.n, totals, streak: streak.best });
     box.append(h('h3', {}, t('predict.badges')), h('ul', { class: 'pbadges' }, badges.map((b) => h('li', { class: 'pbadge pbadge--b', data: { earned: String(b.earned) } },
       h('span', { attrs: { 'aria-hidden': 'true' } }, b.earned ? '✓' : '○'), t(`predict.badge.${b.id}`)))));
@@ -1813,23 +2137,27 @@
     for (const key of keysToReset(store.keys(), keepSession ? sessionKey(config) : null)) store.remove(key);
     Object.values(S.timers).forEach((timer) => clearTimeout(timer));
     Object.assign(S, { data: {}, drafts: {}, status: {}, timers: {}, loading: {}, roundAt: {}, ownHash: null, stats: undefined,
-      profile: undefined, history: undefined, historyAt: 0, historyLoad: null, sideBoards: {}, tables: {}, board: {}, myLeagues: [],
+      profile: undefined, history: undefined, historyAt: 0, historyLoad: null, boards: {}, boardShown: null, tables: {}, myLeagues: [],
       counted: new Set(), revealSeen: new Set(), ringWas: {}, leagueNote: null, calibration: null });
   }
 
-  /* ---- the shell --------------------------------------------------------------------------------------------- */
+  /* ---- the shell: a view of the site (app.js mounts it; PredictGame below) ------------------------------- */
 
   const TABS = ['tip', 'table', 'boards', 'me'];
+  let active = false;                 // the view is on show; the clock and the address are the game's only then
 
   function renderTabs() {
     const holder = document.getElementById('predict-tabs');
-    holder.replaceChildren(h('div', { class: 'switch', attrs: { role: 'group', 'aria-label': t('predict.tabs') } },
+    holder.replaceChildren(h('div', { class: 'switch ptabs', attrs: { role: 'group', 'aria-label': t('predict.tabs') } },
       TABS.map((tab) => h('button', { type: 'button', data: { tab }, attrs: { 'aria-pressed': String(S.tab === tab) }, on: { click: () => openTab(tab) } }, t(`predict.tab.${tab}`)))));
   }
 
+  const pageTitle = () => (S.tab === 'tip' ? `${t('predict.title')} — EliteTracker` : `${t(`predict.tab.${S.tab}`)} · ${t('predict.title')} — EliteTracker`);
+
   function render() {
+    if (!active) return;
     renderTabs();
-    document.title = S.tab === 'tip' ? `${t('predict.title')} — EliteTracker` : `${t(`predict.tab.${S.tab}`)} · ${t('predict.title')} — EliteTracker`;
+    document.title = pageTitle();
     const root = document.getElementById('predict-view');
     root.replaceChildren();
     root.dataset.tab = S.tab;
@@ -1858,16 +2186,16 @@
   }
   const ROUTES = [...TABS, 'how'];
   const tabFromHash = () => (ROUTES.includes(location.hash.slice(1)) ? location.hash.slice(1) : 'tip');
-  window.addEventListener('popstate', () => { S.tab = tabFromHash(); render(); });
+  window.addEventListener('popstate', () => { if (active) { S.tab = tabFromHash(); render(); } });
   window.addEventListener('hashchange', () => {
     const next = tabFromHash();
-    if (next !== S.tab) { S.tab = next; render(); window.scrollTo(0, 0); }
+    if (active && next !== S.tab) { S.tab = next; render(); window.scrollTo(0, 0); }
   });
 
   /* The clock: the countdown keeps moving, and a match that kicks off while the page is open locks. */
   S.lastTick = now();
   setInterval(() => {
-    if (document.hidden || S.tab !== 'tip') { S.lastTick = now(); return; }
+    if (!active || document.hidden || S.tab !== 'tip') { S.lastTick = now(); return; }
     const round = currentRound(S.league);
     const badge = document.getElementById('predict-badge');
     if (!round || !badge) return;
@@ -1881,10 +2209,13 @@
   /* An invite link (/predict/?join=CODE) opens the boards with the code filled in; joining is still a tap. */
   function readInvite() {
     try {
-      const code = (new URLSearchParams(location.search).get('join') || '').trim().toUpperCase();
+      const params = new URLSearchParams(location.search);
+      const code = (params.get('join') || '').trim().toUpperCase();
       if (!isLeagueCode(code)) return;
       S.pendingJoin = code;
-      history.replaceState(null, '', location.pathname + '#boards');
+      params.delete('join');
+      const rest = params.toString();
+      history.replaceState(history.state, '', `${location.pathname}${rest ? `?${rest}` : ''}#boards`);
     } catch (error) { /* no address bar to read */ }
   }
 
@@ -1893,55 +2224,47 @@
     S.tab = tabFromHash();
     const remembered = store.get('predict.league');
     if (LEAGUES.includes(remembered)) S.league = remembered;
+    S.fine = store.get('predict.fine') === 'on';           // fine-tune: the last choice is the default for a new card
     await loadIndex();
     if (client.uid) loadProfile();
     render();
   }
 
-  /* Light or dark, kept in the key the rest of the site reads (elitetracker-theme). */
-  function paintTheme() {
-    const button = document.getElementById('predict-theme');
-    if (!button) return;
-    const dark = document.documentElement.dataset.resolvedTheme === 'dark';
-    button.setAttribute('aria-label', t(dark ? 'predict.theme.toLight' : 'predict.theme.toDark'));
-    button.title = button.getAttribute('aria-label');
-  }
-  const themeButton = document.getElementById('predict-theme');
-  if (themeButton) {
-    themeButton.addEventListener('click', () => {
-      const next = document.documentElement.dataset.resolvedTheme === 'dark' ? 'light' : 'dark';
-      try { localStorage.setItem('elitetracker-theme', next); } catch (error) { /* this visit only */ }
-      document.documentElement.dataset.resolvedTheme = next;
-      paintTheme();
-    });
+  /* The language is the site's (its settings); a signed-in player's follows them, on the profile too. */
+  function followLanguage(next) {
+    if (!client.uid || !S.profile) return;
+    const locale = next === 'no' ? 'nb' : 'en';
+    if (S.profile.locale === locale) return;
+    client.commit(profileUpdateWrites(config, client.uid, { locale })).then(() => { S.profile = { ...S.profile, locale }; }).catch(() => { /* a convenience only */ });
   }
 
-  function setLanguage(next) {
-    setLang(next);
-    // A signed-in player's language follows them: it is on the profile too.
-    if (client.uid && S.profile) {
-      const locale = next === 'no' ? 'nb' : 'en';
-      client.commit(profileUpdateWrites(config, client.uid, { locale })).then(() => { S.profile = { ...S.profile, locale }; }).catch(() => { /* a convenience only */ });
-    }
-    paintTheme();
-    document.documentElement.dataset.lang = next;
-    document.querySelectorAll('.doc__top [data-lang]').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.lang === next)));
-    translateStatic();
-    render();
+  /* The sticky round bar and side panel sit under the site's masthead, whatever its height. */
+  function measureMasthead() {
+    const masthead = document.querySelector('.masthead');
+    const height = masthead && getComputedStyle(masthead).position === 'sticky' ? masthead.offsetHeight : 0;
+    document.documentElement.style.setProperty('--predict-top', `${height}px`);
   }
+  window.addEventListener('resize', () => { if (active) measureMasthead(); });
 
-  function translateStatic() {
-    document.querySelectorAll('[data-t]').forEach((node) => { node.textContent = t(node.dataset.t); });
-  }
-
-  document.querySelectorAll('.doc__top [data-lang]').forEach((button) => {
-    button.setAttribute('aria-pressed', String(button.dataset.lang === lang()));
-    button.addEventListener('click', () => setLanguage(button.dataset.lang));
-  });
   document.addEventListener('visibilitychange', () => {
-    if (document.visibilityState === 'visible' && S.tab === 'tip') { const round = currentRound(S.league); if (round && ['live', 'partial'].includes(roundStatus(round, now()))) ensureRound(round, true).then(render); }
+    if (active && document.visibilityState === 'visible' && S.tab === 'tip') { const round = currentRound(S.league); if (round && ['live', 'partial'].includes(roundStatus(round, now()))) ensureRound(round, true).then(render); }
   });
-  translateStatic();
-  paintTheme();
-  boot();
+
+  let booted = false;
+  let shownLang = null;
+  window.PredictGame = {
+    /* app.js draws the view: the first time boots the game, later times draw it again (a language change, a
+       theme change, a return from another view). */
+    show() {
+      active = true;
+      measureMasthead();
+      if (shownLang !== null && shownLang !== lang()) followLanguage(lang());
+      shownLang = lang();
+      if (!booted) { booted = true; boot(); return; }
+      S.tab = tabFromHash();
+      render();
+    },
+    hide() { active = false; },
+    title: pageTitle,
+  };
 })();

@@ -500,6 +500,7 @@ def _boards(store: Any, season: int, matches_by_slug: Mapping, rounds_info: Mapp
     updated = now.isoformat(timespec="seconds")
     writes: list[Write] = []
 
+    divisions = {}
     for slug in matches_by_slug:
         prefix = f"{season}_{slug}_"
         players = {}
@@ -509,6 +510,7 @@ def _boards(store: Any, season: int, matches_by_slug: Mapping, rounds_info: Mapp
                 nick, hidden = shown(users.get(uid, {}))
                 players[uid] = {"nick": nick, "hidden": hidden, "rounds": mine}
         league_rounds = rounds_info.get(slug, [])
+        divisions[slug] = (players, league_rounds)
         made = boards_mod.build_season_boards(
             season, slug, players, rounds=league_rounds,
             model_rounds={k: v for k, v in model_rounds.items() if k.startswith(prefix)},
@@ -517,6 +519,14 @@ def _boards(store: Any, season: int, matches_by_slug: Mapping, rounds_info: Mapp
         for board_id, board in made.items():
             writes.append(Write.set(f"boards/{board_id}", board))
             summary["boards"].append(board_id)
+    if len(divisions) > 1:
+        this_season = f"{season}_"
+        overall = boards_mod.build_overall_board(
+            season, divisions, updated=updated,
+            model_rounds={k: v for k, v in model_rounds.items() if k.startswith(this_season)},
+            crowd_rounds={k: v for k, v in crowd_rounds.items() if k.startswith(this_season)})
+        writes.append(Write.set(f"boards/season_{season}_all", overall))
+        summary["boards"].append(f"season_{season}_all")
 
     writes += _league_boards(store, season, None, now, summary, gone, lambda uid: users.get(uid),
                              lambda uid: stats.get(uid), shown)
