@@ -16,6 +16,7 @@ import http.server
 import os
 import re
 import threading
+import urllib.parse
 import urllib.request
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
@@ -45,6 +46,13 @@ def site():
     class Quiet(http.server.SimpleHTTPRequestHandler):
         def log_message(self, *args):
             pass
+
+        def translate_path(self, path):
+            # The page moves to /predict/ after the first pick. build_site writes that route page; a checkout that
+            # has not built the site has none, and a reload would be a 404 (it passed locally only on a build's leftovers).
+            if urllib.parse.urlsplit(path).path == "/predict/":
+                path = "/index.html"
+            return super().translate_path(path)
     server = http.server.ThreadingHTTPServer(("127.0.0.1", 0), functools.partial(Quiet, directory=str(ROOT / "public")))
     threading.Thread(target=server.serve_forever, daemon=True).start()
     yield f"http://127.0.0.1:{server.server_address[1]}"
