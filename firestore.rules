@@ -97,6 +97,8 @@ service cloud.firestore {
     // round (the model's odds as published at kick-off, the crowd's aggregate
     // and the result), written by the job after kick-off.
     match /meta/rounds { allow get: if true; }
+    // The current table of each division (club ids, best first), for the table game's checkpoint.
+    match /meta/standings { allow get: if true; }
     match /reveal/{key} { allow get: if true; }
     // Boards: get only, so a private mini-league board (named by its secret
     // code) cannot be listed.
@@ -118,7 +120,7 @@ service cloud.firestore {
     }
     function profileFields(nw) {
       return nw.keys().hasOnly(['nick', 'nickLower', 'nickCustom', 'nickAt', 'club', 'locale',
-                                 'hidden', 'notify', 'created'])
+                                 'hidden', 'notify', 'created', 'leagues'])
         && nw.keys().hasAll(['nick', 'nickLower', 'nickCustom', 'nickAt', 'locale', 'hidden', 'created'])
         && nickValid(nw.nick)
         && nw.nickLower == lowerNb(nw.nick)
@@ -127,7 +129,10 @@ service cloud.firestore {
         && nw.locale in ['nb', 'en']
         && nw.hidden is bool
         && (!('club' in nw) || (nw.club is string && nw.club.size() <= 40))
-        && (!('notify' in nw) || nw.notify is bool);
+        && (!('notify' in nw) || nw.notify is bool)
+        // the mini-leagues the player is in (the codes), so they follow a sign-in to another device and
+        // the job knows which memberships to remove; the job checks each is a league code
+        && (!('leagues' in nw) || (nw.leagues is list && nw.leagues.size() <= 20));
     }
     // Nickname claims are keyed in ASCII (the emulator and existsAfter() do not
     // take non-ASCII path segments): ae, oe, aa become ~e, ~o, ~a, and '~' is
@@ -172,8 +177,11 @@ service cloud.firestore {
     }
 
     // ---- abuse reports, mini-leagues, deletion requests -------------------
+    // One report per reporter and name: the id is the name's claim key and the reporter. A second one
+    // is an update, which is not allowed, so a single player cannot hide a name by repeating.
     match /reports/{id} {
       allow create: if signedIn()
+        && id == nickKey(request.resource.data.nickLower) + '_' + request.auth.uid
         && request.resource.data.keys().hasOnly(['nickLower', 'by', 'at'])
         && request.resource.data.by == request.auth.uid
         && request.resource.data.at == request.time

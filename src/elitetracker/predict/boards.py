@@ -95,12 +95,13 @@ def make_board(scope: str, players: Iterable[dict], *, model: Mapping | None, cr
 
 def build_season_boards(season: int, slug: str, players: Mapping[str, dict], *, rounds: Sequence[Mapping],
                         model_rounds: Mapping[str, Mapping], crowd_rounds: Mapping[str, Mapping],
-                        updated: str) -> dict[str, dict]:
+                        updated: str, changed_rounds: Sequence[str] = ()) -> dict[str, dict]:
     """The boards of one league and season.
 
     ``players``: uid -> {nick, hidden, rounds: {key: totals}}. ``rounds``: the
     league's rounds with any settled match, oldest first, each {key, round,
-    matches, settled}; a round is *finished* when settled == matches."""
+    matches, settled}; a round is *finished* when settled == matches. ``changed_rounds`` (round keys)
+    also get a board of their own, `round_{season}_{slug}_{n}`, kept as a past round's board."""
     finished = [r for r in rounds if r["settled"] >= r["matches"]]
     boards: dict[str, dict] = {}
 
@@ -117,6 +118,10 @@ def build_season_boards(season: int, slug: str, players: Mapping[str, dict], *, 
 
     keys = [r["key"] for r in rounds]
     boards[f"season_{season}_{slug}"] = over(keys, "season", {"season": season, "league": slug})
+    for info in rounds:
+        if info["key"] in set(changed_rounds):
+            boards[f"round_{season}_{slug}_{info['round']}"] = over([info["key"]], "round",
+                                                                    {"season": season, "league": slug, "round": info["round"]})
     if rounds:
         latest = rounds[-1]
         boards[f"round_{season}_{slug}"] = over([latest["key"]], "round",

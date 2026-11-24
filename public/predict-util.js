@@ -50,22 +50,74 @@ function spanParts(ms) {
 
 const ROUND_OVER_AFTER = 3 * 3600 * 1000;   // a round is over three hours after its last kick-off
 
-/* future: not open yet; open: open and nothing has kicked off; live: the first match has
-   kicked off, the last is not over; done: all over. `round` has opens, closes, last (Dates). */
+/* future: not open yet; open: open and nothing has kicked off; live: a match is on (a kick-off in
+   the last three hours); partial: some matches are played and others are still ahead, none on now
+   (a match played early or put off); done: all over. `round` has opens, closes, last (Dates) and,
+   from the job, kicks (every distinct kick-off; without it a started round is simply live). */
 function roundStatus(round, nowMs) {
   if (round.opens.getTime() > nowMs) return 'future';
   if (round.closes.getTime() > nowMs) return 'open';
-  if (round.last && round.last.getTime() + ROUND_OVER_AFTER > nowMs) return 'live';
+  if (round.last && round.last.getTime() + ROUND_OVER_AFTER > nowMs) {
+    const kicks = Array.isArray(round.kicks) ? round.kicks : [];
+    const on = kicks.some((k) => k.getTime() <= nowMs && k.getTime() > nowMs - ROUND_OVER_AFTER);
+    return kicks.length && !on ? 'partial' : 'live';
+  }
   return 'done';
 }
 
-/* The round a division opens on: the first not over; the last when the season is. */
+/* A round counts for the streak once the job has scored all of it (`settled` in the index); an
+   older index without that count falls back to the clock. */
+function roundScored(round, nowMs) {
+  return Number.isInteger(round.settled) ? round.n > 0 && round.settled >= round.n : roundStatus(round, nowMs) === 'done';
+}
+
+/* The round a division opens on: the one with something to tip or watch soonest (a match on now, else the
+   earliest kick-off still ahead), the lower round on a tie; the last round when the season is over. A round
+   with one match put off for weeks is not it while the next round is days away. Without the kick-offs
+   (an older index) it is the first round not over. */
 function currentRoundIndex(rounds, nowMs) {
-  const index = rounds.findIndex((r) => roundStatus(r, nowMs) !== 'done');
-  return index === -1 ? Math.max(0, rounds.length - 1) : index;
+  const open = rounds.map((round, index) => ({ round, index })).filter(({ round }) => roundStatus(round, nowMs) !== 'done');
+  if (!open.length) return Math.max(0, rounds.length - 1);
+  if (open.some(({ round }) => !Array.isArray(round.kicks) || !round.kicks.length)) return open[0].index;
+  const soonest = ({ round }) => {
+    if (roundStatus(round, nowMs) === 'live') return -Infinity;
+    const ahead = round.kicks.map((k) => k.getTime()).filter((k) => k > nowMs);
+    return ahead.length ? Math.min(...ahead) : Infinity;
+  };
+  return open.reduce((best, one) => (soonest(one) < soonest(best) ? one : best)).index;
 }
 
 const isLocked = (kickoff, nowMs) => kickoff.getTime() <= nowMs;
+
+/* A draft is saved in one commit, and the rules refuse the whole commit if one slot has kicked off.
+   Split a draft into the slots still open and the ones that have locked (or are not in the round
+   at all); `slots` is the round's fixture slots, or null when they are not loaded (keep all). */
+function splitDraft(draft, slots, nowMs) {
+  const open = [];
+  const locked = [];
+  for (const slot of Object.keys(draft || {})) {
+    if (!slots) open.push(slot);
+    else if (slots[slot] && !isLocked(slots[slot].kickoff, nowMs)) open.push(slot);
+    else locked.push(slot);
+  }
+  return { open, locked };
+}
+
+/* Drafts saved while signed out belong to no account yet: the keys to move to `uid` once it exists. */
+const draftKeysToMove = (keys) => keys.filter((k) => k.startsWith('predict.draft.new.'));
+
+/* Move every draft saved before there was an account to the account's key, value and all: a draft for a
+   round the page has not loaded is in storage only, so it has to be carried over, not re-saved from memory. */
+function moveDrafts(storage, uid) {
+  for (const key of draftKeysToMove(storage.keys())) {
+    const value = storage.get(key);
+    storage.remove(key);
+    if (value !== null && value !== undefined) storage.set(key.replace('predict.draft.new.', `predict.draft.${uid}.`), value);
+  }
+}
+
+/* localStorage keys a reset clears: all of Predict's, except the one to keep (the session). */
+const keysToReset = (keys, keep) => keys.filter((k) => k.startsWith('predict.') && k !== keep);
 
 /* ---- progress, streaks, calibration ------------------------------------------------------ */
 
@@ -102,6 +154,17 @@ function calibrationBins(points, bins = 10) {
     bin.happened += hit;
   }
   return out.map((b) => ({ ...b, said: b.n ? b.said / b.n : null, happened: b.n ? b.happened / b.n : null }));
+}
+
+/* The calibration chart's points from the settled picks (the history rows): for each match three
+   statements, home, draw and away, each with what you said and whether it happened. */
+function calibrationPoints(rows) {
+  const points = [];
+  for (const row of rows || []) {
+    const hit = row.hg > row.ag ? 0 : row.hg < row.ag ? 2 : 1;
+    row.pick.forEach((percent, side) => points.push({ p: percent / 100, hit: side === hit ? 1 : 0 }));
+  }
+  return points;
 }
 
 /* Your round totals added up for a season (stats/{uid}.rounds keys are `${season}_${league}_${round}`). */
@@ -172,9 +235,18 @@ const roundKeyOf = (season, league, round) => `${season}_${league}_${round}`;
 
 /* ---- where you stand: the season panel's numbers ------------------------------------------------ */
 
-/* The share of players you beat (0..100), from a board's 101 percentile cut-offs. */
-function beatShare(pct, value) {
+/* The share of players you beat (0..100), from a board's 101 percentile cut-offs. Up to 101 players
+   the cut-offs are the players' own sorted scores, so the share is exact (the others below you
+   over the others); with more it is read off the cut-offs. */
+function beatShare(pct, value, players) {
   if (!pct || !pct.length) return null;
+  if (Number.isInteger(players) && players >= 1 && players <= 101) {
+    if (players === 1) return 0;
+    const last = players - 1;
+    let below = 0;
+    for (let i = 0; i <= last; i += 1) if (pct[Math.round((i * 100) / last)] < value) below += 1;
+    return Math.round((below / last) * 100);
+  }
   return Math.max(0, Math.min(100, pct.filter((v) => v < value).length - 1));
 }
 
@@ -327,7 +399,8 @@ function analysePlay(rows) {
 
 if (typeof module !== 'undefined') {
   module.exports = {
-    groupThousands, fixed, percentText, signed, spanParts, ROUND_OVER_AFTER, roundStatus, currentRoundIndex, isLocked, ringState,
+    groupThousands, fixed, percentText, signed, spanParts, ROUND_OVER_AFTER, roundStatus, roundScored, currentRoundIndex, isLocked,
+    splitDraft, draftKeysToMove, moveDrafts, keysToReset, calibrationPoints, ringState,
     computeStreak, calibrationBins, seasonTotals, badgesFor, nearestPosition, gapAtFraction, TABLE_BONUS, draftKey, roundKeyOf,
     beatShare, normalFit, normalDensity, TIERS, tierOf, roundForm, analysePlay, ANALYSE_MIN,
   };

@@ -77,20 +77,136 @@ def test_a_postponed_match_keeps_its_slot(tmp_path):
     assert doc["closes"] == T0 + timedelta(hours=3)
 
 
-def test_the_model_odds_are_snapshotted_in_the_last_hours_before_kickoff(tmp_path):
+def test_the_model_odds_are_kept_fresh_until_kickoff_and_the_last_run_before_it_holds_the_final_ones(tmp_path):
     store = FakeStore()
-    go(store, T0 - timedelta(hours=5), season(), tmp_path)
-    assert not (tmp_path / "predict" / "locked_odds.json").read_text() or "101" not in json.loads(
-        (tmp_path / "predict" / "locked_odds.json").read_text())
-    summary = go(store, T0 - timedelta(hours=2), season(), tmp_path)
-    snaps = json.loads((tmp_path / "predict" / "locked_odds.json").read_text())
-    assert summary["snapshots"] == 1 and snaps["101"]["h"] == 0.5 and snaps["101"]["v"] == "elo-v99.0"
-    assert "102" not in snaps            # kicks off in 5 h: outside the window
+    locked = tmp_path / "predict" / "locked_odds.json"
+    summary = go(store, T0 - timedelta(hours=30), season(), tmp_path)
+    snaps = json.loads(locked.read_text())
+    assert summary["snapshots"] == 2 and snaps["101"]["h"] == 0.5 and snaps["101"]["v"] == "elo-v99.0"   # 48 h ahead is in the window
+    assert go(store, T0 - timedelta(hours=29), season(), tmp_path)["snapshots"] == 0            # unchanged odds: no rewrite
+    newer = {**REPORT, "eliteserien": {**REPORT["eliteserien"], "fixtures": [
+        {"match_id": "101", "home_win": 0.6, "draw": 0.2, "away_win": 0.2},
+        {"match_id": "102", "home_win": 0.3, "draw": 0.3, "away_win": 0.4}]}}
+    assert go(store, T0 - timedelta(hours=1), season(), tmp_path, report=newer)["snapshots"] == 1
+    assert json.loads(locked.read_text())["101"]["h"] == 0.6            # the last run before kick-off is the one kept
     # later published odds (a new run) do not overwrite once the match has started
     changed = {**REPORT, "eliteserien": {**REPORT["eliteserien"], "fixtures": [
         {"match_id": "101", "home_win": 0.9, "draw": 0.05, "away_win": 0.05}]}}
     go(store, T0 + timedelta(minutes=1), season(), tmp_path, report=changed)
-    assert json.loads((tmp_path / "predict" / "locked_odds.json").read_text())["101"]["h"] == 0.5
+    assert json.loads(locked.read_text())["101"]["h"] == 0.6
+    # a match more than 48 h away has no snapshot yet
+    assert "103" not in snaps
+
+
+def test_the_locked_odds_are_saved_even_if_the_commit_fails(tmp_path):
+    class Failing(FakeStore):
+        def commit(self, writes, batch=400):
+            raise RuntimeError("firestore down")
+    with pytest.raises(RuntimeError):
+        go(Failing(), T0 - timedelta(hours=2), season(), tmp_path)
+    assert "101" in json.loads((tmp_path / "predict" / "locked_odds.json").read_text())
+
+
+def test_the_shadow_crowd_is_the_one_from_the_last_run_before_kickoff(tmp_path):
+    store = FakeStore()
+    go(store, T0 - timedelta(hours=3), season(), tmp_path)                       # snapshots 101
+    for i in range(6):
+        put_entry(store, f"u{i}", KEY, {"s1": (0, 50, 25, 25)}, T0 - timedelta(days=1))
+    summary = go(store, T0 - timedelta(minutes=30), season(), tmp_path)           # the last run before 101 kicks off
+    shadow = json.loads((tmp_path / "predict" / "shadow.json").read_text())
+    assert summary["shadow"] == 1 and shadow["101"]["n"] == 6 and "201" not in shadow    # 201 has no odds snapshot
+    put_entry(store, "late", KEY, {"s1": (300, 90, 5, 5)}, T0 - timedelta(minutes=10))   # a pick after that run, before kick-off
+    go(store, T0 + timedelta(minutes=5), season(), tmp_path)
+    crowd = json.loads((tmp_path / "predict" / "crowd.json").read_text())
+    shadow_after = json.loads((tmp_path / "predict" / "shadow.json").read_text())
+    assert crowd["101"]["n"] == 7 and shadow_after["101"]["n"] == 6           # the final crowd has it; the shadow does not
+    assert shadow_after["101"]["delta"] == shadow["101"]["delta"]
+
+
+def test_a_dry_run_leaves_the_shadow_file_alone(tmp_path):
+    store = FakeStore()
+    go(store, T0 - timedelta(minutes=30), season(), tmp_path, dry_run=True)
+    assert not (tmp_path / "predict").exists()
+
+
+def test_the_crowd_percentages_round_to_tenths_that_add_to_a_hundred():
+    for means in [(33.3333, 33.3333, 33.3334), (45.55, 27.25, 27.2), (10 / 3, 10 / 3, 100 - 20 / 3), (62.5, 12.5, 25.0)]:
+        assert sum(sync.tenths(*means)) == pytest.approx(100.0)
+    assert sync.tenths(57.5, 20.0, 22.5) == (57.5, 20.0, 22.5)
+    assert sync.tenths(33.34, 33.33, 33.33)[0] == 33.4
+
+
+def test_the_round_index_carries_kickoffs_and_how_much_is_scored(tmp_path):
+    store = FakeStore()
+    go(store, T0 - timedelta(hours=2), season(), tmp_path)
+    first = next(r for r in store.docs["meta/rounds"]["rounds"] if r["key"] == KEY)
+    assert first["ks"] == [T0, T0 + timedelta(hours=3), T0 + timedelta(days=1)] and first["settled"] == 0
+    for i in range(6):
+        put_entry(store, f"u{i}", KEY, {"s1": (0, 50, 25, 25)}, T0 - timedelta(days=1))
+    before = len(store.writes_to("meta/rounds"))
+    go(store, T0 + timedelta(hours=5), season(played={101: (1, 0)}), tmp_path)        # one match settles: the index follows
+    assert next(r for r in store.docs["meta/rounds"]["rounds"] if r["key"] == KEY)["settled"] == 1
+    count = len(store.writes_to("meta/rounds"))
+    assert count == before + 1
+    go(store, T0 + timedelta(hours=6), season(played={101: (1, 0)}), tmp_path)        # nothing new: no rewrite
+    assert len(store.writes_to("meta/rounds")) == count
+
+
+def test_a_league_joined_between_matches_gets_its_board_at_once_and_only_once(tmp_path):
+    store = FakeStore()
+    store.docs["users/u0"] = {"nick": "Navn_u0", "hidden": False, "created": T0 - timedelta(days=9)}
+    store.docs["users/u1"] = {"nick": "Navn_u1", "hidden": False, "created": T0 - timedelta(days=9)}
+    store.docs["leagues/ABCD2345"] = {"name": "Kontoret", "owner": "u0", "created": T0 - timedelta(days=5)}
+    store.docs["leagues/ABCD2345/members/u0"] = {"joined": T0 - timedelta(days=5)}
+    summary = go(store, T0 - timedelta(days=4), season(), tmp_path)                  # no match has settled
+    assert "league_ABCD2345" in summary["boards"] and store.docs["boards/league_ABCD2345"]["name"] == "Kontoret"
+    writes = len(store.writes_to("boards/league_ABCD2345"))
+    go(store, T0 - timedelta(days=3), season(), tmp_path)                            # nobody new: nothing rebuilt
+    assert len(store.writes_to("boards/league_ABCD2345")) == writes
+    store.docs["leagues/ABCD2345/members/u1"] = {"joined": T0 - timedelta(days=2, hours=12)}
+    store.docs["leagues/EFGH6789"] = {"name": "Andre", "owner": "u1", "created": T0 - timedelta(days=2)}
+    store.docs["leagues/EFGH6789/members/u1"] = {"joined": T0 - timedelta(days=2)}
+    summary = go(store, T0 - timedelta(days=1), season(), tmp_path)
+    assert sorted(b for b in summary["boards"] if b.startswith("league_")) == ["league_ABCD2345", "league_EFGH6789"]
+    assert len(store.writes_to("boards/league_ABCD2345")) == writes + 1
+
+
+def test_a_missing_members_index_warns_instead_of_stopping_the_job(tmp_path):
+    from elitetracker.sources.firestore import FirestoreError
+
+    class NoIndex(FakeStore):
+        def query_group_after(self, *args, **kwargs):
+            raise FirestoreError("the query requires an index", 400)
+    summary = go(NoIndex(), T0 - timedelta(days=4), season(), tmp_path)
+    assert any("members.joined" in w for w in summary["warnings"])
+
+
+def test_a_purge_removes_only_the_memberships_the_profile_lists(tmp_path):
+    store = FakeStore()
+    store.docs["users/u1"] = {"nick": "Tipper_1", "hidden": False, "created": T0 - timedelta(days=9),
+                              "leagues": ["ABCD2345", "../not/a/code"]}
+    store.docs["nicknames/tipper_1"] = {"uid": "u1"}
+    for code in ("ABCD2345", "EFGH6789"):
+        store.docs[f"leagues/{code}"] = {"name": code, "owner": "x", "created": T0}
+    store.docs["leagues/ABCD2345/members/u1"] = {"joined": T0}
+    store.docs["leagues/EFGH6789/members/u1"] = {"joined": T0}      # not on the profile: not touched
+    store.docs["deleteRequests/u1"] = {"at": T0}
+    deleted = [w.path for w in sync.purge_user(store, "u1")]
+    assert "leagues/ABCD2345/members/u1" in deleted and "leagues/EFGH6789/members/u1" not in deleted
+    assert not any("not/a" in path for path in deleted) and "users/u1" in deleted
+
+
+def test_a_season_that_has_just_ended_is_finished_without_touching_the_current_ones_documents(tmp_path):
+    store = FakeStore()
+    go(store, T0 - timedelta(days=20), season(), tmp_path)
+    index_writes = len(store.writes_to("meta/rounds"))
+    table_writes = len(store.writes_to("tablegames/"))
+    store.docs["deleteRequests/u9"] = {"at": T0}
+    summary = sync.run(store, now=T0 - timedelta(days=19), matches_by_slug=season(), season=SEASON, report=REPORT,
+                       data_dir=tmp_path / "predict", ics_path=tmp_path / "again.ics", publish=False)
+    assert summary["purged"] == [] and "deleteRequests/u9" in store.docs      # deletions belong to the current pass
+    assert len(store.writes_to("meta/rounds")) == index_writes and len(store.writes_to("tablegames/")) == table_writes
+    assert not (tmp_path / "again.ics").exists()
 
 
 def test_a_settled_round_is_scored_boards_are_built_and_a_rerun_is_idempotent(tmp_path):
@@ -264,3 +380,31 @@ def test_the_table_game_is_scored_when_the_season_is_complete(tmp_path):
     board = store.docs[f"boards/tables_{key}"]
     assert board["rows"][0]["nick"] == "Spot_On" and [r["kind"] for r in board["rows"]].count("model") == 1
     assert "tables" not in go_end(31)                                      # scored once only
+
+
+def test_every_round_scored_gets_its_own_board_and_the_standings_are_published(tmp_path):
+    store = FakeStore()
+    go(store, T0 - timedelta(hours=2), season(), tmp_path)
+    for i in range(6):
+        put_entry(store, f"u{i}", KEY, {"s1": (0, 50, 25, 25)}, T0 - timedelta(days=1))
+    go(store, T0 + timedelta(hours=5), season(played={101: (2, 0)}), tmp_path)
+    assert f"boards/round_{SEASON}_eliteserien_1" in store.docs and f"boards/round_{SEASON}_eliteserien" in store.docs
+    assert store.docs[f"boards/round_{SEASON}_eliteserien_1"]["round"] == 1
+    standings = store.docs["meta/standings"]
+    assert standings["leagues"]["eliteserien"]["order"][0] == "A-id" and standings["leagues"]["eliteserien"]["played"] == 1
+    writes = len(store.writes_to("meta/standings"))
+    go(store, T0 + timedelta(hours=6), season(played={101: (2, 0)}), tmp_path)           # nothing played since: not rewritten
+    assert len(store.writes_to("meta/standings")) == writes
+
+
+def test_the_odds_fall_back_to_the_local_build_when_the_live_report_cannot_be_read(tmp_path):
+    from elitetracker import predict_sync
+
+    local = tmp_path / "report.json"
+    local.write_text(json.dumps({"eliteserien": {"fixtures": []}}), encoding="utf-8")
+    report, warning = predict_sync.load_report_or_local("http://127.0.0.1:9/report.json", local=local)   # nothing listens there
+    assert report == {"eliteserien": {"fixtures": []}} and "report.json" in warning
+    report, warning = predict_sync.load_report_or_local(str(local), local=local)                          # a path is read as asked
+    assert warning is None and report["eliteserien"]["fixtures"] == []
+    with pytest.raises(OSError):
+        predict_sync.load_report_or_local("http://127.0.0.1:9/report.json", local=tmp_path / "missing.json")   # no fallback: the error stands

@@ -5,6 +5,7 @@ collection-group query, scores them and publishes boards. Skipped without the em
 
 from __future__ import annotations
 
+import json
 import os
 import urllib.request
 from datetime import datetime, timedelta, timezone
@@ -73,9 +74,12 @@ def test_picks_written_through_the_rules_are_scored_and_published_and_a_deletion
                     Write.set(f"users/{uid}", {"nick": f"Tipper_{i}", "nickLower": f"tipper_{i}", "nickCustom": False,
                                                "nickAt": SERVER_TIME, "locale": "nb", "hidden": False, "created": SERVER_TIME})])
 
-    # an hour or two before kick-off the job snapshots the model's odds
+    # the model's odds are kept from 48 hours out, and the crowd of the last run before kick-off is the shadow's
+    assert first["snapshots"] == 1
     snap = run(store, kickoff - timedelta(hours=2), kickoff, False, tmp_path, report)
-    assert snap["snapshots"] == 1 and snap["rounds"] == []
+    assert snap["snapshots"] == 0 and snap["rounds"] == []                       # the odds have not changed
+    last = run(store, kickoff - timedelta(minutes=30), kickoff, False, tmp_path, report)
+    assert last["shadow"] == 1 and json.loads((tmp_path / "predict" / "shadow.json").read_text())["101"]["n"] == 6
 
     # after full time: the round is read with a collection-group query, scored and ranked
     done = run(store, kickoff + timedelta(hours=5), kickoff, True, tmp_path, report)
@@ -99,3 +103,18 @@ def test_picks_written_through_the_rules_are_scored_and_published_and_a_deletion
     board = store.get(f"boards/season_{SEASON}_eliteserien")
     assert all(r["u"] != boards.uid_hash("u3") for r in board["rows"])
 
+
+def test_new_league_members_are_found_with_a_group_query_on_joined(store, tmp_path):
+    me, other = player("u1"), player("u2")
+    me.commit([Write.set("leagues/ABCD2345", {"name": "Kontoret", "owner": "u1", "created": SERVER_TIME})])
+    me.commit([Write.set("leagues/ABCD2345/members/u1", {"joined": SERVER_TIME})])
+    found = list(store.query_group_after("members", "joined"))
+    assert [path for path, _ in found] == ["leagues/ABCD2345/members/u1"]
+    newest = found[0][1]["joined"]
+    other.commit([Write.set("leagues/ABCD2345/members/u2", {"joined": SERVER_TIME})])
+    assert [path for path, _ in store.query_group_after("members", "joined", newest)] == ["leagues/ABCD2345/members/u2"]
+    assert list(store.query_group_after("members", "joined", datetime.now(timezone.utc) + timedelta(days=1))) == []
+    # and the job's own helper: only the league that gained a member, and the newest join
+    summary: dict = {"warnings": []}
+    codes, seen = sync._new_league_members(store, newest, summary)
+    assert codes == {"ABCD2345"} and seen > newest and not summary["warnings"]

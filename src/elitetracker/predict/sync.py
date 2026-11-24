@@ -22,9 +22,10 @@ from __future__ import annotations
 
 import hashlib
 import json
+import re
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
-from typing import Any, Mapping, Sequence
+from typing import Any, Iterable, Mapping, Sequence
 
 from elitetracker.model import crowd as crowd_model
 from elitetracker.model.table import table_from_matches
@@ -39,9 +40,12 @@ from elitetracker.sources.firestore import FirestoreError, Write
 LEAGUES = ("eliteserien", "obosligaen")
 MAX_SLOTS = 8                       # the rules know slots s1..s8
 OPENS_BEFORE = timedelta(days=7)    # a round opens a week before its first kick-off
-SNAPSHOT_AHEAD = timedelta(hours=3)  # keep the model's odds fresh for matches about to start
+SNAPSHOT_AHEAD = timedelta(hours=48)  # keep the model's odds fresh until kick-off: the last run before it is the one kept
+SHADOW_AHEAD = timedelta(hours=1)    # the crowd as it stood in the last run before kick-off (the shadow test's input)
+LEAGUE_CODE = re.compile(r"^[A-Z2-9]{8}$")
 INACTIVE_AFTER = timedelta(days=730)  # 24 months
 HOUR = 3600.0
+INDEX_VERSION = 2                   # 2: the index carries each round's kick-offs and scored count
 
 
 def round_key(season: int, slug: str, rnd: int) -> str:
@@ -106,12 +110,33 @@ def build_tablegames(matches_by_slug: Mapping[str, Sequence[Match]], season: int
     return docs
 
 
-def rounds_index(docs: Mapping[str, dict], season: int) -> dict:
+def rounds_index(docs: Mapping[str, dict], season: int, settled: Mapping[str, int] | None = None) -> dict:
     """meta/rounds: one small public document that lists the season's rounds, so a
-    page load needs one read instead of the whole fixtures collection."""
-    rounds = [{"key": key, "league": d["league"], "round": d["round"], "opens": d["opens"], "closes": d["closes"],
-               "last": max(v["kickoff"] for v in d["slots"].values()), "n": len(d["slots"])} for key, d in sorted(docs.items(), key=lambda kv: (kv[1]["round"], kv[1]["league"]))]
+    page load needs one read instead of the whole fixtures collection.
+
+    ``ks`` is every distinct kick-off of the round (a match played early or put off shows as a
+    gap, so the page can tell a round in progress from one being played now); ``settled`` is how
+    many of its matches the job has scored (the streak counts a round once all are)."""
+    rounds = []
+    for key, d in sorted(docs.items(), key=lambda kv: (kv[1]["round"], kv[1]["league"])):
+        kicks = sorted({v["kickoff"] for v in d["slots"].values()})
+        row = {"key": key, "league": d["league"], "round": d["round"], "opens": d["opens"], "closes": d["closes"],
+               "last": kicks[-1], "n": len(d["slots"]), "ks": kicks}
+        if settled is not None:
+            row["settled"] = int(settled.get(key, 0))
+        rounds.append(row)
     return {"season": season, "rounds": rounds}
+
+
+def standings_doc(matches_by_slug: Mapping[str, Sequence[Match]], season: int) -> dict:
+    """meta/standings: the current table of each division as club ids, best first, so the table game can
+    show "your table against the table now" from one small read (no report, no odds)."""
+    leagues = {}
+    for slug, matches in matches_by_slug.items():
+        if matches:
+            leagues[slug] = {"order": [row.team_id for row in table_from_matches(list(matches))],
+                             "played": sum(1 for m in matches if m.played)}
+    return {"season": season, "leagues": leagues}
 
 
 def reveal_doc(doc: Mapping, by_id: Mapping[str, Match], snaps: Mapping, crowd_file: Mapping, now: datetime) -> dict:
@@ -159,6 +184,29 @@ def report_odds(report: Mapping) -> dict[str, dict]:
 
 # ---- the run ------------------------------------------------------------------
 
+def tenths(h: float, d: float, a: float) -> tuple[float, float, float]:
+    """Three means of whole-percent picks (so they add to 100) rounded to a tenth by the
+    largest-remainder rule, so the rounded three still add to exactly 100.0."""
+    scaled = [h * 10, d * 10, a * 10]
+    floors = [int(x) for x in scaled]
+    order = sorted(range(3), key=lambda i: (-(scaled[i] - floors[i]), i))
+    for i in order[: max(0, 1000 - sum(floors))]:
+        floors[i] += 1
+    return floors[0] / 10, floors[1] / 10, floors[2] / 10
+
+
+def crowd_entry(picks: Sequence[Mapping], model: Mapping | None, kick: datetime) -> dict:
+    """The anonymous aggregate of a match's picks, with the shadow signal against the model's odds."""
+    n = len(picks)
+    h, d, a = tenths(sum(p["h"] for p in picks) / n, sum(p["d"] for p in picks) / n, sum(p["a"] for p in picks) / n)
+    entry = {"n": n, "v": CURVE_VERSION, "h": h, "d": d, "a": a}
+    if model:
+        rows = [(p["g"], max(0.0, (kick - (_utc(p["t"]) or kick)).total_seconds() / 86400.0)) for p in picks]
+        entry["delta"] = round(crowd_model.signal(model["h"], model["d"], rows), 2)
+        entry["model"] = model.get("v")
+    return entry
+
+
 def _entries(store: Any, key: str) -> dict[str, dict]:
     """uid -> the entry's slot map, for one round."""
     found = {}
@@ -173,9 +221,12 @@ def _utc(value: Any) -> datetime | None:
 
 def run(store: Any, *, now: datetime, matches_by_slug: Mapping[str, Sequence[Match]], season: int,
         report: Mapping, data_dir: Path, ics_path: Path | None = None, purge: bool = True,
-        dry_run: bool = False) -> dict:
-    summary: dict[str, Any] = {"fixtures": 0, "snapshots": 0, "rounds": [], "scored_players": 0, "boards": [],
-                               "purged": [], "unscorable": [], "warnings": []}
+        dry_run: bool = False, publish: bool = True) -> dict:
+    """One pass. ``publish`` False is for a season that has just ended while the next one's fixtures are
+    already in: it finishes scoring that season (rounds, boards, the table game) and leaves what belongs
+    to the current one (the round index, the table game's opening, the calendar, deletions) alone."""
+    summary: dict[str, Any] = {"fixtures": 0, "snapshots": 0, "shadow": 0, "rounds": [], "scored_players": 0,
+                               "boards": [], "purged": [], "unscorable": [], "warnings": []}
     writes: list[Write] = []
     meta = store.get("meta/sync") or {}
     known = dict(meta.get("fixtures", {}))
@@ -189,9 +240,7 @@ def run(store: Any, *, now: datetime, matches_by_slug: Mapping[str, Sequence[Mat
         if known.get(key) != digest:
             writes += [Write.set(f"fixtures/{key}", doc), Write.merge("meta/sync", {"fixtures": {key: digest}})]
             summary["fixtures"] += 1
-    tablegames = build_tablegames(matches_by_slug, season, now, meta.get("tablegames", {}))
-    if summary["fixtures"] or not meta.get("indexed"):
-        writes += [Write.set("meta/rounds", rounds_index(docs, season)), Write.merge("meta/sync", {"indexed": True})]
+    tablegames = build_tablegames(matches_by_slug, season, now, meta.get("tablegames", {})) if publish else {}
     for key, doc in tablegames.items():
         digest = _digest(doc)
         if known.get(f"table_{key}") != digest:
@@ -203,9 +252,13 @@ def run(store: Any, *, now: datetime, matches_by_slug: Mapping[str, Sequence[Mat
     published = report_odds(report)
     for doc in docs.values():
         for slot in doc["slots"].values():
+            # Until kick-off the latest published odds are kept, so the last run before it holds the final
+            # ones. A run that finds them unchanged leaves the file alone (one commit an hour is noise).
             if now < slot["kickoff"] <= now + SNAPSHOT_AHEAD and slot["id"] in published:
-                snaps[slot["id"]] = {**published[slot["id"]], "at": now.isoformat(timespec="seconds")}
-                summary["snapshots"] += 1
+                kept = snaps.get(slot["id"], {})
+                if any(kept.get(k) != published[slot["id"]][k] for k in ("h", "d", "a", "v")):
+                    snaps[slot["id"]] = {**published[slot["id"]], "at": now.isoformat(timespec="seconds")}
+                    summary["snapshots"] += 1
     crowd_file = _load(data_dir / "crowd.json")
     locked_tables = _load(data_dir / "locked_tables.json")
     for key in tablegames:                      # the model's expected table, kept fresh until the game closes
@@ -213,9 +266,39 @@ def run(store: Any, *, now: datetime, matches_by_slug: Mapping[str, Sequence[Mat
         if order:
             locked_tables[key] = order
 
+    def read_entries(key: str) -> dict[str, dict]:
+        try:
+            return _entries(store, key)
+        except FirestoreError as error:
+            # The collection-group index (firestore.indexes.json) is not deployed yet. A dry run
+            # carries on with no entries; a live run must not mistake "no players" for "none picked".
+            if not (dry_run and error.status == 400 and "index" in str(error).lower()):
+                raise
+            warning = "the collection-group index on rounds.r is not deployed (firestore.indexes.json)"
+            if warning not in summary["warnings"]:
+                summary["warnings"].append(warning)
+            return {}
+
+    # 2b. the crowd as it stood in the last run before each kick-off, kept apart from the final aggregate
+    # (which counts every pick up to kick-off, including ones made after this run): the shadow test of
+    # a crowd term has to use what could have been published in time (docs/predict-plan.md).
+    shadow_file = _load(data_dir / "shadow.json")
+    for key, doc in sorted(docs.items(), key=lambda kv: (kv[1]["league"], kv[1]["round"])):
+        due = [(s, v) for s, v in doc["slots"].items()
+               if now < v["kickoff"] <= now + SHADOW_AHEAD and v["id"] not in shadow_file and v["id"] in snaps]
+        if not due:
+            continue
+        entries = read_entries(key)
+        for slot, info in due:
+            picks = [p[slot] for p in entries.values() if slot in p]
+            shadow_file[info["id"]] = ({"hidden": True} if len(picks) < MIN_CROWD
+                                       else {**crowd_entry(picks, snaps[info["id"]], info["kickoff"]),
+                                             "at": now.isoformat(timespec="seconds")})
+            summary["shadow"] += 1
+
     # 3. deletion requests first: a request removes the account before anything is scored
     stripped: set[str] = set()
-    if purge:
+    if purge and publish:
         for uid, _ in store.list("deleteRequests"):
             writes += purge_user(store, uid)
             stripped.add(boards_mod.uid_hash(uid))
@@ -242,17 +325,7 @@ def run(store: Any, *, now: datetime, matches_by_slug: Mapping[str, Sequence[Mat
         played = [s for s, v in kicked.items() if by_id[v["id"]].played]
         if not new_crowd and len(settled) <= scored.get(key, 0) and len(played) <= revealed.get(key, 0):
             continue
-        try:
-            entries = _entries(store, key)
-        except FirestoreError as error:
-            # The collection-group index (firestore.indexes.json) is not deployed yet. A dry run
-            # carries on with no entries; a live run must not mistake "no players" for "none picked".
-            if not (dry_run and error.status == 400 and "index" in str(error).lower()):
-                raise
-            warning = "the collection-group index on rounds.r is not deployed (firestore.indexes.json)"
-            if warning not in summary["warnings"]:
-                summary["warnings"].append(warning)
-            entries = {}
+        entries = read_entries(key)
         summary["rounds"].append(key)
 
         for slot in new_crowd:
@@ -261,17 +334,7 @@ def run(store: Any, *, now: datetime, matches_by_slug: Mapping[str, Sequence[Mat
             if len(picks) < MIN_CROWD:
                 crowd_file[match_id] = {"hidden": True}
                 continue
-            n = len(picks)
-            entry = {"n": n, "v": CURVE_VERSION,
-                     "h": round(sum(p["h"] for p in picks) / n, 1), "d": round(sum(p["d"] for p in picks) / n, 1),
-                     "a": round(sum(p["a"] for p in picks) / n, 1)}
-            model = snaps.get(match_id)
-            if model:
-                kick = slots[slot]["kickoff"]
-                rows = [(p["g"], max(0.0, (kick - (_utc(p["t"]) or kick)).total_seconds() / 86400.0)) for p in picks]
-                entry["delta"] = round(crowd_model.signal(model["h"], model["d"], rows), 2)
-                entry["model"] = model.get("v")
-            crowd_file[match_id] = entry
+            crowd_file[match_id] = crowd_entry(picks, snaps.get(match_id), slots[slot]["kickoff"])
 
         if len(settled) > scored.get(key, 0):
             matches = [{"slot": s, "result": outcome(by_id[v["id"]].home_goals, by_id[v["id"]].away_goals),
@@ -303,6 +366,21 @@ def run(store: Any, *, now: datetime, matches_by_slug: Mapping[str, Sequence[Mat
     for info_list in rounds_info.values():
         info_list.sort(key=lambda r: r["round"])
 
+    # 4a. the round index: kick-offs, and how much of each round is scored (the page's streak counts a round
+    # once all of it is). Rewritten when a fixture changes or another match settles.
+    if publish:
+        settled_now = {k: scored[k] for k in docs if scored.get(k)}
+        if summary["fixtures"] or meta.get("indexed") != INDEX_VERSION or settled_now != dict(meta.get("indexed_settled") or {}):
+            writes += [Write.set("meta/rounds", rounds_index(docs, season, settled_now)),
+                       Write.merge("meta/sync", {"indexed": INDEX_VERSION, "indexed_settled": settled_now})]
+
+    # 4a2. the current standings, rewritten when a match has been played since
+    if publish:
+        standings = standings_doc(matches_by_slug, season)
+        digest = _digest(standings)
+        if known.get("standings") != digest:
+            writes += [Write.set("meta/standings", standings), Write.merge("meta/sync", {"fixtures": {"standings": digest}})]
+
     # 4b. the pre-season table game, once a division's season is complete
     tabled = dict(meta.get("tabled", {}))
     for slug, league_matches in matches_by_slug.items():
@@ -322,15 +400,27 @@ def run(store: Any, *, now: datetime, matches_by_slug: Mapping[str, Sequence[Mat
         summary["tables"] = summary.get("tables", []) + [key]
 
     # 5. leaderboards (only this season's: an earlier season's board is frozen as it was last built)
+    gone = set(summary["purged"])
     if changed_scores:
         writes += _boards(store, season, matches_by_slug, rounds_info, model_rounds, crowd_rounds, now, summary,
-                          fresh, set(summary["purged"]))
+                          fresh, gone, {key for rounds in fresh.values() for key in rounds})
+    if publish:
+        # a league made or joined since the last run gets its board now, not at the next settled match
+        joined, newest = _new_league_members(store, _utc(meta.get("joins")), summary)
+        if newest and newest != _utc(meta.get("joins")):
+            meta_updates["joins"] = newest
+        if joined and not changed_scores:
+            cache: dict[str, dict] = {}
+            reports_shown = _shown_by(_reports(store))
+            writes += _league_boards(store, season, joined, now, summary, gone,
+                                     lambda uid: cache.setdefault(f"u{uid}", store.get(f"users/{uid}") or {}),
+                                     lambda uid: cache.setdefault(f"s{uid}", store.get(f"stats/{uid}") or {}), reports_shown)
     if stripped:
         writes += _strip_boards(store, stripped)
 
     # 6. the oldest accounts, once a day
     today = now.date().isoformat()
-    if purge and meta.get("swept") != today:
+    if purge and publish and meta.get("swept") != today:
         meta_updates["swept"] = today
         for uid in _inactive(store, now):
             writes += purge_user(store, uid, keep_board_rows=True)
@@ -339,12 +429,15 @@ def run(store: Any, *, now: datetime, matches_by_slug: Mapping[str, Sequence[Mat
     if meta_updates:
         writes.append(Write.merge("meta/sync", meta_updates))
 
-    if ics_path is not None and not dry_run:
+    if ics_path is not None and publish and not dry_run:
         ics_path.parent.mkdir(parents=True, exist_ok=True)
         ics_path.write_text(calendar(docs.values(), now), encoding="utf-8", newline="")
     if not dry_run:
-        store.commit(writes)
+        # The model's odds as published are the one thing that cannot be had again, so they are saved
+        # before anything that can fail; the rest is repeated by the next run if the commit dies.
         _save(data_dir / "locked_odds.json", snaps)
+        _save(data_dir / "shadow.json", shadow_file)
+        store.commit(writes)
         _save(data_dir / "crowd.json", crowd_file)
         if locked_tables:
             _save(data_dir / "locked_tables.json", locked_tables)
@@ -372,25 +465,40 @@ def _rounded(totals: Mapping) -> dict:
 
 # ---- boards, mini-leagues, retention ----------------------------------------------
 
-def _boards(store: Any, season: int, matches_by_slug: Mapping, rounds_info: Mapping[str, list],
-            model_rounds: Mapping, crowd_rounds: Mapping, now: datetime, summary: dict,
-            fresh: Mapping[str, Mapping], gone: set[str]) -> list[Write]:
-    """The writes for this season's boards. ``fresh`` holds the totals scored in
-    this run and ``gone`` the players purged in it: neither is in the store yet."""
-    users = {uid: u for uid, u in store.list("users") if uid not in gone}
-    stats = {uid: s for uid, s in store.list("stats") if uid not in gone}
-    for uid, rounds in fresh.items():
-        stats.setdefault(uid, {}).setdefault("rounds", {}).update(rounds)
+def _reports(store: Any) -> dict[str, set]:
+    """nickLower -> the players who reported that name (one report per reporter and name)."""
     reports: dict[str, set] = {}
     for _, report in store.list("reports"):
         reports.setdefault(report.get("nickLower", ""), set()).add(report.get("by"))
-    updated = now.isoformat(timespec="seconds")
-    writes: list[Write] = []
+    return reports
 
+
+def _shown_by(reports: Mapping[str, set]):
+    """A function from a profile to (the nickname to show, hidden): a blocked or reported name is hidden."""
     def shown(user: Mapping) -> tuple[str, bool]:
         nick = user.get("nick", "")
         flagged = nicknames.blocked(nick) or len(reports.get(nicknames.lower(nick), ())) >= nicknames.REPORTS_TO_HIDE
         return ("" if flagged else nick), bool(user.get("hidden")) or flagged or not nick
+    return shown
+
+
+def _boards(store: Any, season: int, matches_by_slug: Mapping, rounds_info: Mapping[str, list],
+            model_rounds: Mapping, crowd_rounds: Mapping, now: datetime, summary: dict,
+            fresh: Mapping[str, Mapping], gone: set[str], changed_rounds: Iterable[str] = ()) -> list[Write]:
+    """The writes for this season's boards. ``fresh`` holds the totals scored in
+    this run and ``gone`` the players purged in it: neither is in the store yet.
+    ``changed_rounds`` are the rounds scored in this run: each gets (or keeps) its own board, so
+    a past round can be looked at; only those are written, not every round every time.
+
+    Reads scale with the players (every profile and stats document, once per scoring run), which is
+    what keeps a few thousand active players inside the free plan's day (docs/predict.md, Quotas)."""
+    users = {uid: u for uid, u in store.list("users") if uid not in gone}
+    stats = {uid: s for uid, s in store.list("stats") if uid not in gone}
+    for uid, rounds in fresh.items():
+        stats.setdefault(uid, {}).setdefault("rounds", {}).update(rounds)
+    shown = _shown_by(_reports(store))
+    updated = now.isoformat(timespec="seconds")
+    writes: list[Write] = []
 
     for slug in matches_by_slug:
         prefix = f"{season}_{slug}_"
@@ -404,26 +512,64 @@ def _boards(store: Any, season: int, matches_by_slug: Mapping, rounds_info: Mapp
         made = boards_mod.build_season_boards(
             season, slug, players, rounds=league_rounds,
             model_rounds={k: v for k, v in model_rounds.items() if k.startswith(prefix)},
-            crowd_rounds={k: v for k, v in crowd_rounds.items() if k.startswith(prefix)}, updated=updated)
+            crowd_rounds={k: v for k, v in crowd_rounds.items() if k.startswith(prefix)}, updated=updated,
+            changed_rounds=[k for k in changed_rounds if k.startswith(prefix)])
         for board_id, board in made.items():
             writes.append(Write.set(f"boards/{board_id}", board))
             summary["boards"].append(board_id)
 
-    # mini-leagues: one board per league over both divisions this season
+    writes += _league_boards(store, season, None, now, summary, gone, lambda uid: users.get(uid),
+                             lambda uid: stats.get(uid), shown)
+    return writes
+
+
+def _league_boards(store: Any, season: int, codes: Iterable[str] | None, now: datetime, summary: dict,
+                   gone: set[str], user_of, stats_of, shown) -> list[Write]:
+    """Mini-leagues: one board per league over both divisions this season. ``codes`` None is every
+    league; otherwise only those (a league that was just made or joined: its board should exist before
+    the next match settles). ``user_of`` and ``stats_of`` fetch one player's documents."""
     this_season = f"{season}_"
-    for code, league in store.list("leagues"):
-        members = [uid for uid, _ in store.list(f"leagues/{code}/members") if uid not in gone]
+    updated = now.isoformat(timespec="seconds")
+    leagues = list(store.list("leagues")) if codes is None else [(c, store.get(f"leagues/{c}")) for c in sorted(codes)]
+    writes: list[Write] = []
+    for code, league in leagues:
+        if not league:
+            continue
         rows = []
-        for uid in members:
-            s = stats.get(uid, {})
-            mine = [v for k, v in s.get("rounds", {}).items() if k.startswith(this_season)]
-            nick, hidden = shown(users.get(uid, {}))
-            rows.append({"uid": uid, "nick": nick, "hidden": False if nick else True, "totals": boards_mod.combine(mine)})
+        for uid, _ in store.list(f"leagues/{code}/members"):
+            if uid in gone:
+                continue
+            mine = [v for k, v in (stats_of(uid) or {}).get("rounds", {}).items() if k.startswith(this_season)]
+            nick, _hidden = shown(user_of(uid) or {})
+            rows.append({"uid": uid, "nick": nick, "hidden": not nick, "totals": boards_mod.combine(mine)})
         board = boards_mod.make_board("league", rows, model=None, crowd=None, updated=updated,
                                       extra={"season": season, "name": league.get("name", "")})
         writes.append(Write.set(f"boards/league_{code}", board))
         summary["boards"].append(f"league_{code}")
     return writes
+
+
+def _new_league_members(store: Any, since: datetime | None, summary: dict) -> tuple[set[str], datetime | None]:
+    """The leagues that gained a member after ``since``, and the newest join seen: one small query a run
+    (a collection-group query on members.joined, firestore.indexes.json), not a scan of every league."""
+    codes: set[str] = set()
+    newest = since
+    try:
+        for path, data in store.query_group_after("members", "joined", since):
+            parts = path.split("/")
+            if len(parts) == 4 and parts[0] == "leagues" and LEAGUE_CODE.match(parts[1]):
+                codes.add(parts[1])
+                joined = _utc(data.get("joined"))
+                if joined and (newest is None or joined > newest):
+                    newest = joined
+    except FirestoreError as error:
+        if error.status != 400 or "index" not in str(error).lower():
+            raise
+        warning = "the collection-group index on members.joined is not deployed (firestore.indexes.json)"
+        if warning not in summary["warnings"]:
+            summary["warnings"].append(warning)
+        return set(), since
+    return codes, newest
 
 
 def _table_results(store: Any, key: str, result: Mapping, now: datetime, gone: set[str]) -> list[Write]:
@@ -475,8 +621,10 @@ def purge_user(store: Any, uid: str, keep_board_rows: bool = False) -> list[Writ
         writes.append(Write.delete(f"entries/{uid}/rounds/{doc_id}"))
     for doc_id, _ in store.list(f"tables/{uid}/picks"):
         writes.append(Write.delete(f"tables/{uid}/picks/{doc_id}"))
-    for code, _ in store.list("leagues"):
-        writes.append(Write.delete(f"leagues/{code}/members/{uid}"))
+    leagues = (user or {}).get("leagues")
+    for code in (leagues if isinstance(leagues, list) else []):          # the profile's own list: no blind delete in every league
+        if isinstance(code, str) and LEAGUE_CODE.match(code):
+            writes.append(Write.delete(f"leagues/{code}/members/{uid}"))
     if user and user.get("nick"):
         writes.append(Write.delete(f"nicknames/{nicknames.key(user['nick'])}"))
     writes += [Write.delete(f"users/{uid}"), Write.delete(f"stats/{uid}"), Write.delete(f"deleteRequests/{uid}")]

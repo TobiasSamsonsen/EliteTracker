@@ -124,6 +124,14 @@ function entryWrites(config, uid, roundKey, changed) {
   return [writeMerge(config, `entries/${uid}/rounds/${roundKey}`, { curve: predictCoreRef.FROZEN_CURVE.version, r: roundKey, p })];
 }
 
+/* Withdraw picks before kick-off: the update mask names each slot and the document leaves it out
+   (the rules allow it while the slot is open, and it scores as a skipped match). */
+function entryWithdrawWrites(config, uid, roundKey, slots) {
+  return [{ update: { name: documentName(config, `entries/${uid}/rounds/${roundKey}`),
+    fields: { r: encodeValue(roundKey), curve: encodeValue(predictCoreRef.FROZEN_CURVE.version) } },
+  updateMask: { fieldPaths: ['curve', 'r', ...slots.map((s) => fieldPath('p', s))] } }];
+}
+
 /* A new player: the nickname claim and the profile, in one commit. */
 function profileCreateWrites(config, uid, { nick, locale = 'nb', club }) {
   const profile = { nick, nickLower: predictCoreRef.nickLower(nick), nickCustom: false, nickAt: SERVER_TIME, locale, hidden: false, created: SERVER_TIME };
@@ -131,8 +139,12 @@ function profileCreateWrites(config, uid, { nick, locale = 'nb', club }) {
   return [writeSet(config, `nicknames/${predictCoreRef.nickKey(nick)}`, { uid }), writeSet(config, `users/${uid}`, profile)];
 }
 
-/* A chosen nickname: claim the new one, release the old one, update the profile. */
+/* A chosen nickname: claim the new one, release the old one, update the profile. A change of case
+   only (ola_1 to Ola_1) keeps the claim and the 30-day clock: just the spelling is updated. */
 function nicknameChangeWrites(config, uid, oldNick, newNick) {
+  if (oldNick && predictCoreRef.nickLower(oldNick) === predictCoreRef.nickLower(newNick)) {
+    return [writeMerge(config, `users/${uid}`, { nick: newNick })];
+  }
   const writes = [writeSet(config, `nicknames/${predictCoreRef.nickKey(newNick)}`, { uid }),
     writeMerge(config, `users/${uid}`, { nick: newNick, nickLower: predictCoreRef.nickLower(newNick), nickCustom: true, nickAt: SERVER_TIME })];
   if (oldNick && predictCoreRef.nickKey(oldNick) !== predictCoreRef.nickKey(newNick)) writes.push(writeDelete(config, `nicknames/${predictCoreRef.nickKey(oldNick)}`));
@@ -148,8 +160,12 @@ function tableWrites(config, uid, key, order) {
   return [writeMerge(config, `tables/${uid}/picks/${key}`, { order, r: key, t: SERVER_TIME })];
 }
 
-function reportWrites(config, uid, nick, id) {
-  return [writeSet(config, `reports/${id}`, { nickLower: predictCoreRef.nickLower(nick), by: uid, at: SERVER_TIME })];
+/* One report per reporter per name: the id says so, and the rules check it (a second report is an
+   update, which they refuse). */
+const reportId = (nick, uid) => `${predictCoreRef.nickKey(nick)}_${uid}`;
+
+function reportWrites(config, uid, nick) {
+  return [writeSet(config, `reports/${reportId(nick, uid)}`, { nickLower: predictCoreRef.nickLower(nick), by: uid, at: SERVER_TIME })];
 }
 
 const LEAGUE_CODE_ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
@@ -205,6 +221,7 @@ function mapError(status, body) {
 /* Identity Toolkit's own messages, for sign-in and linking. */
 function mapAuthError(message) {
   const text = String(message || '');
+  if (/CREDENTIAL_TOO_OLD_LOGIN_AGAIN|REQUIRES_RECENT_LOGIN/.test(text)) return new PredictError('reauth', text, 400);
   if (/FEDERATED_USER_ID_ALREADY_LINKED|CREDENTIAL_ALREADY_IN_USE|EMAIL_EXISTS/.test(text)) return new PredictError('already_linked', text, 400);
   if (/INVALID_IDP_RESPONSE|INVALID_ID_TOKEN|INVALID_CREDENTIAL|TOKEN_EXPIRED/.test(text)) return new PredictError('bad_credential', text, 400);
   if (/TOO_MANY_ATTEMPTS|QUOTA_EXCEEDED/.test(text)) return new PredictError('quota', text, 429);
@@ -254,7 +271,7 @@ const SESSION_KEY = 'predict.session';
    local test session is never sent to the real project, or the other way round. */
 const sessionKey = (config) => (config.project === 'elitetrackerno' ? SESSION_KEY : `${SESSION_KEY}.${config.project}`);
 /* Documents anyone may read: a rejected token must not hide them. */
-const PUBLIC_DOCS = /^(meta\/rounds|fixtures\/|reveal\/|boards\/|tablegames\/)/;
+const PUBLIC_DOCS = /^(meta\/rounds|meta\/standings|fixtures\/|reveal\/|boards\/|tablegames\/)/;
 
 function createClient({ config, fetchImpl, storage, now = () => Date.now() }) {
   const doFetch = fetchImpl || ((...args) => fetch(...args));
@@ -348,10 +365,19 @@ function createClient({ config, fetchImpl, storage, now = () => Date.now() }) {
       }
     },
 
-    /* Own subcollection, one page (the rules let a player list only their own). */
-    async list(path, pageSize = 100) {
-      const reply = await authed('GET', `projects/${config.project}/databases/(default)/documents/${path}?pageSize=${pageSize}`);
-      return (reply.documents || []).map((d) => ({ id: d.name.split('/').pop(), data: decodeDocument(d) }));
+    /* Own subcollection, every page (the rules let a player list only their own); a page cap keeps a
+       runaway listing from eating the day's reads. */
+    async list(path, pageSize = 100, maxPages = 20) {
+      const out = [];
+      let token = '';
+      for (let page = 0; page < maxPages; page += 1) {
+        const query = `pageSize=${pageSize}${token ? `&pageToken=${encodeURIComponent(token)}` : ''}`;
+        const reply = await authed('GET', `projects/${config.project}/databases/(default)/documents/${path}?${query}`);
+        for (const d of (reply && reply.documents) || []) out.push({ id: d.name.split('/').pop(), data: decodeDocument(d) });
+        token = (reply && reply.nextPageToken) || '';
+        if (!token) break;
+      }
+      return out;
     },
 
     async commit(writes) {
@@ -387,8 +413,8 @@ function createClient({ config, fetchImpl, storage, now = () => Date.now() }) {
 if (typeof module !== 'undefined') {
   module.exports = {
     PREDICT_KEY, GOOGLE_CLIENT_ID, predictConfig, SERVER_TIME, encodeValue, decodeValue, decodeDocument, fieldPath, documentName,
-    writeSet, writeMerge, writeDelete, entryWrites, profileCreateWrites, nicknameChangeWrites, profileUpdateWrites, tableWrites,
-    reportWrites, newLeagueCode, isLeagueCode, leagueCreateWrites, leagueJoinWrites, deleteRequestWrites, randomId, PredictError,
+    writeSet, writeMerge, writeDelete, entryWrites, entryWithdrawWrites, profileCreateWrites, nicknameChangeWrites, profileUpdateWrites, tableWrites,
+    reportWrites, reportId, newLeagueCode, isLeagueCode, leagueCreateWrites, leagueJoinWrites, deleteRequestWrites, randomId, PredictError,
     mapError, mapAuthError, googleLinkRequest, safeStorage, createClient, SESSION_KEY, sessionKey,
   };
 }

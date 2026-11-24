@@ -255,3 +255,156 @@ test('a well-calibrated player gets praise, not a tip', () => {
   assert.ok(out.insights.some((x) => x.id === 'fav.good' && x.tone === 'praise'));
   assert.ok(!out.insights.some((x) => x.id === 'fav.over' || x.id === 'fav.under'));
 });
+
+
+test('a case-only nickname change is just the spelling: no new claim, no new clock', () => {
+  const writes = api.nicknameChangeWrites(local, 'u1', 'ola_1', 'Ola_1');
+  assert.equal(writes.length, 1);
+  assert.match(writes[0].update.name, /users\/u1$/);
+  assert.deepEqual(writes[0].updateMask.fieldPaths, ['nick']);
+  assert.equal(writes[0].updateTransforms, undefined);
+  const other = api.nicknameChangeWrites(local, 'u1', 'ola_1', 'Kari_2');          // a different name still claims and stamps
+  assert.ok(other.length >= 2 && other.some((w) => w.updateTransforms));
+});
+
+test('a report is one per reporter and name: the id says so', () => {
+  assert.equal(api.reportId('Øyvind_9', 'u1'), '~oyvind_9_u1');
+  const write = api.reportWrites(local, 'u1', 'Øyvind_9')[0];
+  assert.match(write.update.name, /reports\/~oyvind_9_u1$/);
+  assert.equal(write.update.fields.nickLower.stringValue, 'øyvind_9');
+});
+
+test('Google asking for a fresh sign-in is its own error', () => {
+  assert.equal(api.mapAuthError('CREDENTIAL_TOO_OLD_LOGIN_AGAIN').code, 'reauth');
+  assert.equal(api.mapAuthError('INVALID_ID_TOKEN').code, 'bad_credential');
+});
+
+test('listing a subcollection follows the page tokens', async () => {
+  const pages = [
+    { documents: [{ name: 'p/a/entries/u/rounds/r1', fields: { n: { integerValue: '1' } } }], nextPageToken: 'T1' },
+    { documents: [{ name: 'p/a/entries/u/rounds/r2', fields: { n: { integerValue: '2' } } }], nextPageToken: 'T2' },
+    { documents: [{ name: 'p/a/entries/u/rounds/r3', fields: { n: { integerValue: '3' } } }] },
+  ];
+  const urls = [];
+  const fetchImpl = async (url) => { urls.push(url); return { ok: true, json: async () => pages[urls.length - 1] }; };
+  const client = api.createClient({ config: local, fetchImpl, storage: { getItem: () => null, setItem() {}, removeItem() {} } });
+  const rows = await client.list('entries/u/rounds', 1);
+  assert.deepEqual(rows.map((r) => r.id), ['r1', 'r2', 'r3']);
+  assert.match(urls[1], /pageToken=T1/);
+  assert.match(urls[2], /pageToken=T2/);
+  assert.equal((await api.createClient({ config: local, fetchImpl: async () => ({ ok: true, json: async () => ({ documents: [], nextPageToken: 'X' }) }),
+    storage: { getItem: () => null, setItem() {}, removeItem() {} } }).list('a/b', 1, 3)).length, 0);   // a page cap stops a runaway listing
+});
+
+test('a draft saves only its open slots: a locked one is dropped, not retried for ever', () => {
+  const at = (ms) => new Date(ms);
+  const slots = { s1: { kickoff: at(1000) }, s2: { kickoff: at(5000) }, s3: { kickoff: at(9000) } };
+  const draft = { s1: { g: 0, k: 10 }, s2: { g: 50, k: 10 }, s9: { g: 1, k: 10 } };
+  assert.deepEqual(util.splitDraft(draft, slots, 2000), { open: ['s2'], locked: ['s1', 's9'] });   // s9 is not in the round at all
+  assert.deepEqual(util.splitDraft(draft, slots, 100), { open: ['s1', 's2'], locked: ['s9'] });
+  assert.deepEqual(util.splitDraft(draft, null, 99999).open, ['s1', 's2', 's9']);                  // fixture not loaded: keep all
+  assert.deepEqual(util.splitDraft(undefined, slots, 0), { open: [], locked: [] });
+});
+
+test('a reset keeps the session it was asked to keep, and only Predict\'s own keys go', () => {
+  const keys = ['predict.session', 'predict.draft.u1.r', 'predict.intro', 'elitetracker-theme', 'lang', 'predict.session.demo-x'];
+  assert.deepEqual(util.keysToReset(keys, 'predict.session'), ['predict.draft.u1.r', 'predict.intro', 'predict.session.demo-x']);
+  assert.deepEqual(util.keysToReset(keys, null).sort(), ['predict.draft.u1.r', 'predict.intro', 'predict.session', 'predict.session.demo-x']);
+  assert.deepEqual(util.draftKeysToMove(['predict.draft.new.2027_x_1', 'predict.draft.u1.2027_x_1', 'predict.intro']), ['predict.draft.new.2027_x_1']);
+  assert.equal(api.sessionKey(local), 'predict.session.demo-x');
+  assert.equal(util.draftKey(null, 'k'), 'predict.draft.new.k');
+});
+
+test('a round with a gap between its matches is in progress, not live; a round counts for the streak once scored', () => {
+  const hour = 3_600_000;
+  const day = 24 * hour;
+  const T = 100 * day;
+  // one match played three weeks ago, the others this coming weekend
+  const round = { opens: new Date(T - 28 * day), closes: new Date(T - 21 * day), last: new Date(T + 2 * day), n: 3, kicks: [new Date(T - 21 * day), new Date(T + 1 * day), new Date(T + 2 * day)] };
+  assert.equal(util.roundStatus(round, T - 10 * day), 'partial');
+  assert.equal(util.roundStatus(round, T - 21 * day + hour), 'live');           // the early match is on
+  assert.equal(util.roundStatus(round, T + day + hour), 'live');                // a match is on
+  assert.equal(util.roundStatus(round, T + day + 5 * hour), 'partial');         // between the two days
+  assert.equal(util.roundStatus(round, T + 2 * day + 4 * hour), 'done');
+  assert.equal(util.roundStatus({ ...round, kicks: undefined }, T - 10 * day), 'live');   // an older index: as before
+  assert.equal(util.currentRoundIndex([{ ...round, last: new Date(T - 21 * day), kicks: [new Date(T - 21 * day)] }, round], T - 10 * day), 1);
+  assert.equal(util.roundScored({ ...round, settled: 2 }, T + 9 * day), false);
+  assert.equal(util.roundScored({ ...round, settled: 3 }, T - 1), true);
+  assert.equal(util.roundScored(round, T + 9 * day), true);                       // no count in the index: the clock decides
+  assert.equal(util.roundScored(round, T - 10 * day), false);
+});
+
+test('calibration reads the settled picks: three statements a match, each with what happened', () => {
+  const rows = [{ pick: [60, 25, 15], hg: 2, ag: 0 }, { pick: [20, 30, 50], hg: 1, ag: 1 }];
+  const points = util.calibrationPoints(rows);
+  assert.equal(points.length, 6);
+  assert.deepEqual(points.slice(0, 3), [{ p: 0.6, hit: 1 }, { p: 0.25, hit: 0 }, { p: 0.15, hit: 0 }]);
+  assert.deepEqual(points.slice(3), [{ p: 0.2, hit: 0 }, { p: 0.3, hit: 1 }, { p: 0.5, hit: 0 }]);
+  assert.deepEqual(util.calibrationPoints(undefined), []);
+});
+
+test('the share you beat is exact for a small field and read off the cut-offs for a big one', () => {
+  // three players with accuracy -0.3, 0.1 and 0.4: nearest-rank cut-offs, as the job writes them
+  const scores = [-0.3, 0.1, 0.4];
+  const pct = Array.from({ length: 101 }, (_, p) => scores[Math.round((p / 100) * 2)]);
+  assert.equal(util.beatShare(pct, 0.4, 3), 100);          // above both others
+  assert.equal(util.beatShare(pct, 0.1, 3), 50);
+  assert.equal(util.beatShare(pct, -0.3, 3), 0);
+  assert.equal(util.beatShare(Array(101).fill(0.2), 0.2, 1), 0);
+  const even = Array.from({ length: 101 }, (_, i) => -0.5 + i / 100);
+  assert.equal(util.beatShare(even, 0, 5000), util.beatShare(even, 0));       // many players: the old reading
+});
+
+test('withdrawing a pick is a mask naming the slot over a document that leaves it out', () => {
+  const [write] = api.entryWithdrawWrites(local, 'u1', '2027_eliteserien_3', ['s2', 's5']);
+  assert.match(write.update.name, /entries\/u1\/rounds\/2027_eliteserien_3$/);
+  assert.deepEqual([...write.updateMask.fieldPaths].sort(), ['curve', 'p.s2', 'p.s5', 'r']);
+  assert.deepEqual(Object.keys(write.update.fields).sort(), ['curve', 'r']);          // no p: the named slots go
+  assert.equal(write.updateTransforms, undefined);
+});
+
+test('the page opens on the round with something to tip soonest, not on one with a match put off for weeks', () => {
+  const hour = 3_600_000;
+  const day = 24 * hour;
+  const T = 100 * day;
+  const at = (ms) => new Date(ms);
+  const round = (opens, kicks) => ({ opens: at(opens), closes: at(kicks[0]), last: at(kicks[kicks.length - 1]), kicks: kicks.map(at), n: kicks.length });
+  const five = round(T - 30 * day, [T - 20 * day, T + 25 * day, T + 25 * day + 3 * hour]);   // one match played early, the rest put off to next month
+  const six = round(T - 3 * day, [T + 4 * day, T + 4 * day + 3 * hour]);
+  const seven = round(T + 2 * day, [T + 11 * day]);
+  assert.equal(util.roundStatus(five, T), 'partial');
+  assert.equal(util.currentRoundIndex([five, six, seven], T), 1);                               // round 6: its kick-off is days away
+  // the remainder of round 5 is this weekend and round 6 next: round 5 still has the picks to make
+  const near = round(T - 30 * day, [T - 20 * day, T + 2 * day]);
+  assert.equal(util.currentRoundIndex([near, six, seven], T), 0);
+  // a match on now counts first
+  assert.equal(util.currentRoundIndex([near, six], T + 2 * day + hour), 0);
+  assert.equal(util.currentRoundIndex([six, seven], T + 20 * day), 1);                          // round 6 is over: round 7 (open next)
+  assert.equal(util.currentRoundIndex([six, seven], T + 30 * day), 1);                          // the season is over: the last round
+  // tied: the lower round
+  assert.equal(util.currentRoundIndex([round(T - 1 * day, [T + day]), round(T - 1 * day, [T + day])], T), 0);
+  // an older index without kick-offs: the first round not over, as before
+  const bare = (opens, closes, last) => ({ opens: at(opens), closes: at(closes), last: at(last) });
+  assert.equal(util.currentRoundIndex([bare(0, 10 * day, 11 * day), bare(0, 20 * day, 21 * day)], 15 * day), 1);
+});
+
+test('drafts saved before an account existed move to it, value and all, including rounds the page never loaded', () => {
+  const memory = new Map([['predict.draft.new.2027_x_5', '{"s1":{"g":1,"k":10}}'], ['predict.draft.new.2027_x_6', '{"s2":{"g":2,"k":10}}'],
+    ['predict.draft.abc.2027_x_4', 'keep'], ['predict.intro', 'seen']]);
+  const store = { keys: () => [...memory.keys()], get: (k) => (memory.has(k) ? memory.get(k) : null), set: (k, v) => memory.set(k, v), remove: (k) => memory.delete(k) };
+  util.moveDrafts(store, 'uid9');
+  assert.deepEqual([...memory.keys()].sort(), ['predict.draft.abc.2027_x_4', 'predict.draft.uid9.2027_x_5', 'predict.draft.uid9.2027_x_6', 'predict.intro']);
+  assert.equal(memory.get('predict.draft.uid9.2027_x_5'), '{"s1":{"g":1,"k":10}}');
+  assert.equal(memory.get('predict.draft.uid9.2027_x_6'), '{"s2":{"g":2,"k":10}}');
+});
+
+test('the standings document is public like the round index, so a broken session still reads it', async () => {
+  const memory = new Map([[api.sessionKey(local), JSON.stringify({ uid: 'u', idToken: 'BROKEN', refreshToken: 'R', expiresAt: 9e15 })]]);
+  const storage = { getItem: (k) => (memory.has(k) ? memory.get(k) : null), setItem: (k, v) => memory.set(k, v), removeItem: (k) => memory.delete(k) };
+  const fetchImpl = async (url, init) => {
+    if (init && init.headers && init.headers.Authorization) return { ok: false, status: 403, json: async () => ({ error: { message: 'PERMISSION_DENIED' } }) };
+    return { ok: true, json: async () => ({ fields: { season: { integerValue: '2027' } } }) };
+  };
+  const client = api.createClient({ config: local, fetchImpl, storage });
+  assert.deepEqual(await client.get('meta/standings'), { season: 2027 });
+});

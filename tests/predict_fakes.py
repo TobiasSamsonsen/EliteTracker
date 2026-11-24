@@ -58,6 +58,16 @@ class FakeStore:
             if len(parts) >= 2 and parts[-2] == collection_id and self.docs[path].get(field) == equals:
                 yield path, copy.deepcopy(self.docs[path])
 
+    def query_group_after(self, collection_id: str, field: str, after: datetime | None = None) -> Iterator[tuple[str, dict]]:
+        found = []
+        for path in sorted(self.docs):
+            parts = path.split("/")
+            value = self.docs[path].get(field)
+            if len(parts) >= 2 and parts[-2] == collection_id and isinstance(value, datetime) and (after is None or value > after):
+                found.append((value, path))
+        for _, path in sorted(found):
+            yield path, copy.deepcopy(self.docs[path])
+
     # writes
     def commit(self, writes: Iterable[Write], batch: int = 400) -> int:
         writes = list(writes)

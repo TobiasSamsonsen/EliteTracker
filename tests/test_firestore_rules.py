@@ -180,6 +180,24 @@ def test_the_browsers_cheap_documents_are_public_but_not_listable(admin):
         assert denied(lambda c=collection: list(player("u1").list(c)))
 
 
+def test_the_standings_document_is_public_like_the_round_index(admin):
+    admin.set("meta/standings", {"season": 2027, "leagues": {}})
+    assert player("u1").get("meta/standings")["season"] == 2027
+    assert denied(lambda: player("u1").set("meta/standings", {"season": 1}))
+
+
+def test_a_pick_can_be_withdrawn_before_kickoff_with_an_update_mask(admin):
+    admin.set(f"fixtures/{ROUND}", fixture_doc())
+    me = player("u1")
+    save(me, "u1", {"s1": pick(), "s2": pick()})
+    # what the page sends to clear s1: the mask names the slot, the document leaves it out
+    name = "entries/u1/rounds/" + ROUND
+    withdraw = Write(name, {"update": {"name": name, "fields": {"r": {"stringValue": ROUND}, "curve": {"integerValue": "1"}}},
+                            "updateMask": {"fieldPaths": ["curve", "r", "p.s1"]}})
+    me.commit([withdraw])
+    assert list(me.get(name)["p"]) == ["s2"]
+
+
 def test_boards_can_be_read_one_by_one_but_not_listed(admin):
     admin.set("boards/league_ABCD2345", {"rows": []})
     me = player("u1")
@@ -273,6 +291,23 @@ def test_other_profile_fields_change_freely(admin):
     assert me.get("users/u1")["hidden"] is True
 
 
+def test_a_case_only_nickname_change_keeps_the_claim_and_the_clock(admin):
+    me = player("u1")
+    create_profile(me, "u1", "Chosen_2", custom=True)
+    me.commit([Write.merge("users/u1", {"nick": "CHOSEN_2"})])                 # just the spelling: no new claim, no new nickAt
+    assert me.get("users/u1")["nick"] == "CHOSEN_2"
+    assert denied(lambda: me.commit([Write.merge("users/u1", {"nick": "Other_9"})]))     # a different name needs a claim
+
+
+def test_a_profile_may_list_its_mini_leagues(admin):
+    me = player("u1")
+    create_profile(me, "u1", "Chosen_2", custom=True)
+    me.commit([Write.merge("users/u1", {"leagues": ["ABCD2345", "EFGH6789"]})])
+    assert me.get("users/u1")["leagues"] == ["ABCD2345", "EFGH6789"]
+    assert denied(lambda: me.commit([Write.merge("users/u1", {"leagues": ["ABCD2345"] * 21})]))
+    assert denied(lambda: me.commit([Write.merge("users/u1", {"leagues": "ABCD2345"})]))
+
+
 def test_profiles_are_private(admin):
     create_profile(player("u1"), "u1")
     assert denied(lambda: player("u2").get("users/u1"))
@@ -288,8 +323,11 @@ def test_the_server_only_collections_are_closed_to_players(admin):
 
 def test_reports_leagues_and_deletion_requests(admin):
     me = player("u1")
-    me.commit([Write.set("reports/r1", {"nickLower": "badname", "by": "u1", "at": SERVER_TIME})])
-    assert denied(lambda: me.commit([Write.set("reports/r2", {"nickLower": "x", "by": "u2", "at": SERVER_TIME})]))
+    me.commit([Write.set("reports/badname_u1", {"nickLower": "badname", "by": "u1", "at": SERVER_TIME})])
+    assert denied(lambda: me.commit([Write.set("reports/badname_u1", {"nickLower": "badname", "by": "u1", "at": SERVER_TIME})]))   # twice
+    assert denied(lambda: me.commit([Write.set("reports/r1", {"nickLower": "badname", "by": "u1", "at": SERVER_TIME})]))           # not that id
+    assert denied(lambda: me.commit([Write.set("reports/x_u2", {"nickLower": "x", "by": "u2", "at": SERVER_TIME})]))               # not as u2
+    me.commit([Write.set("reports/~oyvind_u1", {"nickLower": "øyvind", "by": "u1", "at": SERVER_TIME})])                           # the ASCII claim key
     me.commit([Write.set("leagues/ABCD2345", {"name": "Kontoret", "owner": "u1", "created": SERVER_TIME})])
     assert denied(lambda: me.commit([Write.set("leagues/abcd2345", {"name": "Kontoret", "owner": "u1", "created": SERVER_TIME})]))
     other = player("u2")

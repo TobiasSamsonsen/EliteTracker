@@ -131,7 +131,8 @@ function tableError(order, truth, plan) {
 
 const NICK_RESERVED = ['modellen', 'folket', 'model', 'crowd', 'predict', 'admin', 'elitetracker', 'moderator'];
 const NICK_FORMAT = /^[A-Za-zÆØÅæøå0-9_-][A-Za-zÆØÅæøå0-9_ -]{1,18}[A-Za-zÆØÅæøå0-9_-]$/;
-const NICK_BLOCKED = ['fuck', 'shit', 'cunt', 'nigg', 'fitte', 'hore', 'faen', 'dritt', 'pikk', 'rasist', 'nazi', 'hitler'];
+const NICK_BLOCKED_ANYWHERE = ['fuck', 'shit', 'nigg', 'dritt', 'rasist', 'hitler'];
+const NICK_BLOCKED_WORDS = ['cunt', 'fitte', 'hore', 'faen', 'pikk', 'nazi'];
 
 function nickLower(nick) {
   return nick.toLowerCase();
@@ -149,9 +150,14 @@ function nickProblems(nick) {
   return found;
 }
 
+const nickLeet = (text) => text.replace(/0/g, 'o').replace(/1/g, 'i').replace(/3/g, 'e');
+
+/* The long words anywhere in the name, the short ones only as a whole word (so Thore and Scunthorpe pass). */
 function nickBlocked(nick) {
-  const squashed = nickLower(nick).replace(/[\s_-]+/g, '').replace(/0/g, 'o').replace(/1/g, 'i').replace(/3/g, 'e');
-  return NICK_BLOCKED.some((word) => squashed.includes(word));
+  const tokens = nickLower(nick).split(/[\s_-]+/).filter(Boolean);
+  const squashed = tokens.join('');
+  if (NICK_BLOCKED_ANYWHERE.some((word) => nickLeet(squashed).includes(word))) return true;
+  return [squashed, ...tokens].some((part) => NICK_BLOCKED_WORDS.includes(nickLeet(part.replace(/[0-9]+$/, ''))));
 }
 
 /* A first nickname for a new player, so nobody has to choose to start. `random` is Math.random-like. */

@@ -34,19 +34,20 @@ Project `elitetrackerno`, `(default)` database, `europe-north1`, Spark plan (fre
 
 | Path | Written by | Readable by | What |
 |---|---|---|---|
-| `meta/rounds` | job | anyone (get) | the season's round index: key, league, round, opens, closes, matches |
+| `meta/rounds` | job | anyone (get) | the season's round index: key, league, round, opens, closes, last, matches (`n`), every distinct kick-off (`ks`: a gap in it is a round in progress, not live) and how many matches are scored (`settled`: the streak counts a round once `settled == n`) |
+| `meta/standings` | job | anyone (get) | each division's current table as club ids, best first, and matches played: the table game's "your table against the table now" |
 | `fixtures/{season}_{league}_{round}` | job | anyone (get) | slots `s1..s8` (by match id, so a postponement keeps its slot), kick-offs, `opens` = 7 days before the first |
 | `tablegames/{season}_{league}` | job | anyone (get) | the pre-season table game: opens with the fixtures, closes at the first kick-off, the clubs |
 | `entries/{uid}/rounds/{key}` | the player | the player | `p.sN = {g, k, h, d, a, t}` (gap, draw tenths, whole percents, **server** time of the last change), `r` = round key, `curve` = 1 |
 | `tables/{uid}/picks/{key}` | the player | the player | `order` (club ids), `r`, `t` |
-| `users/{uid}`, `nicknames/{key}` | the player | the player (a claim: get) | profile; the nickname claim is keyed in ASCII (`~e ~o ~a` for æ ø å) and valid only with the profile that uses it |
+| `users/{uid}`, `nicknames/{key}` | the player | the player (a claim: get) | profile (`leagues`: the codes of the mini-leagues the player is in, at most 20, so they follow a sign-in and a purge knows which memberships to remove); the nickname claim is keyed in ASCII (`~e ~o ~a` for æ ø å) and valid only with the profile that uses it; a change of case only is a plain update of `nick` (no new claim, no new `nickAt`) |
 | `reveal/{key}` | job | anyone (get) | after kick-off: the model's odds as published, the crowd's aggregate (n >= 5, plus the field's median score once settled), the result |
 | `stats/{uid}` | job | the player | per-round totals (`n, b, r, ab, ar, vm, m`), last pick time |
-| `boards/{id}` | job | anyone (get, not list) | `season_`, `round_`, `last10_{season}_{league}` and `league_{code}` (a mini-league, named by its secret code) |
+| `boards/{id}` | job | anyone (get, not list) | `season_`, `round_`, `last10_{season}_{league}`, `round_{season}_{league}_{n}` (every round scored, kept as that round's board), `tables_{season}_{league}` and `league_{code}` (a mini-league, named by its secret code) |
 | `leagues/{code}` + `members/{uid}` | the player | get / own | mini-leagues, codes `[A-Z2-9]{8}` |
-| `reports/{id}` | the player (create) | job | a name report; three different reporters hide a name |
+| `reports/{nickKey}_{uid}` | the player (create) | job | a name report: one per reporter and name (the rules check the id, a repeat is an update and is refused); three different reporters hide a name |
 | `deleteRequests/{uid}` | the player (create) | job | asks the job to erase the account |
-| `meta/sync` | job | nobody | what the job has done (digests, scored rounds, sweep date) |
+| `meta/sync` | job | nobody | what the job has done (digests, scored rounds, the index version and scored counts, the newest mini-league join seen, sweep date) |
 
 Rules in one breath: only the owner reads or writes an entry; a write may change
 only slots whose kick-off is ahead and whose round has opened, with `t` equal to
@@ -65,17 +66,21 @@ totals, never incrementing, so a failed run is just repeated.
 ## The job (`predict/sync.py`)
 
 1. `fixtures`, `meta/rounds` and `tablegames` from `data/normalized` (written only when their digest changes).
-2. Snapshot the model's odds from the live site's `report.json` for matches kicking off within three hours: `data/predict/locked_odds.json` (git). Archived reports are re-rated by later releases, so this is the only honest "odds at kick-off".
+2. Snapshot the model's odds from the live site's `report.json` for matches kicking off within 48 hours: `data/predict/locked_odds.json` (git). The latest published odds are kept until kick-off (rewritten only when they change), so the last run before it holds the final ones, and a missed run or two no longer leaves a match unscorable. The file is saved before the Firestore commit. Archived reports are re-rated by later releases, so this is the only honest "odds at kick-off".
+   The crowd as it stood in the last run before each kick-off is kept apart in `data/predict/shadow.json` (one read of the round's entries per distinct kick-off, in the hour before it): the final aggregate in `crowd.json` includes picks made after that run, so the shadow test of a crowd term uses the shadow file.
 3. Deletion requests: erase entries, table picks, profile, claim, stats, mini-league memberships; strip the player's rows from every board.
 4. Per round with news: read its entries (collection-group query on `r`), publish the crowd aggregate for matches that kicked off (`data/predict/crowd.json`, git; `{"hidden": true}` below five players), compute the shadow delta (`model/crowd.py`), score settled matches, write `stats`, the `reveal` document.
 5. When a division's season is complete: score the table game (footrule less bonuses, against the model's expected table as locked while the game was open: `data/predict/locked_tables.json`), write `stats/{uid}.tables.{key}` and `boards/tables_{key}`.
-6. Rebuild this season's boards and the mini-league boards. An earlier season's boards are never rebuilt: they are the kept final scores.
+6. Rebuild this season's boards, the board of every round scored in the run (`round_{season}_{league}_{n}`) and the mini-league boards. A league made or joined since the last run gets its board at once, from one collection-group query on `members.joined` (the index is in `firestore.indexes.json`; without it the job warns and skips this). An earlier season's boards are never rebuilt: they are the kept final scores. `meta/rounds` is rewritten when a fixture changes or another match is scored, and `meta/standings` when a match has been played.
+   When the next season's fixtures are already in, `predict_sync` first runs the season before (`publish=False`: it scores and builds, and leaves the round index, the table game's opening, deletions and the calendar to the current season), if the job has played it.
 7. Once a day: delete accounts unused for 24 months (the board rows stay).
 8. `public/predict/rounds.ics`, the "round closes" calendar feed.
 
 A dry run (`--dry-run`, also the default of a manual `predict.yml` run) reads Firestore and
 writes nothing. Before the collection-group index is deployed it warns instead of failing;
 a live run fails loudly rather than treating "no index" as "no players".
+
+Reads in the free plan: a scoring run lists every profile and stats document once (and every league and its members), and the daily sweep lists every profile and stats document; that is what puts the ceiling at a few thousand active players (50,000 reads a day), after which Blaze with a budget cap is the escape. The hourly extras this audit added are small: one members query a run, one meta/sync read more for the season before, and the shadow read in the hour before each kick-off.
 
 Known limits: a player who only plays the table game and never has a match scored has no
 `last` activity date, so the 24-month sweep counts from sign-up; the sweep reads every
@@ -96,8 +101,13 @@ FIRESTORE_EMULATOR_HOST=127.0.0.1:8085 .venv/Scripts/python -m elitetracker.pred
 .venv/Scripts/python tools/predict_vectors.py                                # after changing curve, scoring, tables or nickname rules
 ```
 
-The rules tests (`tests/test_firestore_rules.py`) and the end-to-end loop
-(`tests/test_predict_emulator.py`) skip unless `FIRESTORE_EMULATOR_HOST` is set.
+`firebase emulators:exec --only auth,firestore --project demo-elitetracker "<command>"` starts the emulators, sets
+`FIRESTORE_EMULATOR_HOST`, runs the command and stops them; on Windows the command runs under `cmd`, so use
+`.venv\Scripts\python`. CI does the same (`.github/workflows/predict-tests.yml`).
+
+The rules tests (`tests/test_firestore_rules.py`), the end-to-end loop
+(`tests/test_predict_emulator.py`) and the page driven in Chromium (`tests/test_predict_browser.py`, needs Playwright)
+skip unless `FIRESTORE_EMULATOR_HOST` is set.
 Both use plain `urllib`: the emulator takes `Bearer owner` (admin) and unsigned
 JWTs (a player), so no Firebase SDK is needed.
 
@@ -118,12 +128,12 @@ Done (2026-11-23):
 
 Left, all the owner's:
 
-1. Review the two **[CHECK]** items in the privacy text (HTML comments in `personvern.html`: the
-   Google-script wording and the age limit).
+0. **Deploy the rules and indexes again** (`firebase deploy --only firestore:rules,firestore:indexes`) before merging: the 24 November audit changed the report ids, added `users.leagues` and `meta/standings` to the rules, and added the `members.joined` index.
+1. Glance at the two items that were **[CHECK]** comments in `personvern.html` (the Google-script wording, the age limit): both were checked on 24 November against the code and Norwegian law (13) and the comments replaced by notes saying so; change the wording if you disagree.
 2. **Launch:** merge `predict` into `main` and push. That deploys the page and the privacy text, and
    starts the hourly job.
 3. After the first runs: the Firestore Usage tab should show the free quota against `europe-north1`.
-4. Optional IAM: an Auth admin role on `predict-sync` for the 24-month sweep of Auth accounts.
+4. Optional IAM: an Auth admin role on `predict-sync` for the 24-month sweep of Auth accounts. Until then the privacy text says the sweep leaves the Authentication record (a random ID, and the email for a Google-linked account) until the player deletes from the game or asks.
 
 ## Not in this build
 

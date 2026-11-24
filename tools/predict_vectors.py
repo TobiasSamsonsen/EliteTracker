@@ -57,7 +57,9 @@ def make() -> dict:
         [True] * 5 + [False, False, True])]
 
     names = ["Tipper_1", "Øyvind_9", "ÆØÅ æøå", "ab", "Modellen", "FOLKET", " lead", "trail ", "x" * 21, "bad!name",
-             "Sh1t_head", "Greit-Navn", "Ola Nordmann", "a_b", "Åse"]
+             "Sh1t_head", "Greit-Navn", "Ola Nordmann", "a_b", "Åse",
+             "Thore", "Håkon_Thore", "Scunthorpe", "Hore", "Hore_99", "h0re", "h_o_r_e", "Pikk10", "Pikkolo", "Nazir",
+             "Cunt-face", "Fitte", "Mr Hitler", "Torshovdal"]
     nick_cases = [{"nick": n, "key": nicknames.key(n), "problems": nicknames.problems(n), "blocked": nicknames.blocked(n)}
                   for n in names]
     gaps = [{"home": h, "draw": d, "gap": r(curve.equivalent_gap(h, d))} for h, d in

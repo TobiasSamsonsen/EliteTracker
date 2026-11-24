@@ -263,6 +263,21 @@ class Firestore:
             if document:
                 yield document["name"][len(prefix):], decode_document(document)
 
+    def query_group_after(self, collection_id: str, field: str, after: datetime | None = None) -> Iterator[tuple[str, dict[str, Any]]]:
+        """Like ``query_group``, for every document whose timestamp ``field`` is later than ``after``
+        (every document that has the field when ``after`` is None), oldest first. The collection-group
+        index on that field is in firestore.indexes.json."""
+        query: dict[str, Any] = {"from": [{"collectionId": collection_id, "allDescendants": True}],
+                                 "orderBy": [{"field": {"fieldPath": field}, "direction": "ASCENDING"}]}
+        if after is not None:
+            query["where"] = {"fieldFilter": {"field": {"fieldPath": field}, "op": "GREATER_THAN", "value": encode(after)}}
+        reply = self._call("POST", f"projects/{self.project}/databases/(default)/documents:runQuery", {"structuredQuery": query})
+        prefix = self.root + "/"
+        for row in reply if isinstance(reply, list) else []:
+            document = row.get("document")
+            if document:
+                yield document["name"][len(prefix):], decode_document(document)
+
     # -- writes
     def commit(self, writes: Iterable[Write], batch: int = 400) -> int:
         """Apply the writes, in batches (each batch is atomic). Returns the count."""

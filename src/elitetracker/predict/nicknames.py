@@ -14,8 +14,11 @@ import re
 
 RESERVED = {"modellen", "folket", "model", "crowd", "predict", "admin", "elitetracker", "moderator"}
 _FORMAT = re.compile(r"^[A-Za-zÆØÅæøå0-9_-][A-Za-zÆØÅæøå0-9_ -]{1,18}[A-Za-zÆØÅæøå0-9_-]$")
-# A deliberately short list of the plain worst; the report link does the rest.
-_BLOCKED = ("fuck", "shit", "cunt", "nigg", "fitte", "hore", "faen", "dritt", "pikk", "rasist", "nazi", "hitler")
+# A deliberately short list of the plain worst; the report link does the rest. The long, unambiguous
+# words are caught anywhere in a name; the short ones only as a whole word, so Thore, Håkon_Thore and
+# Scunthorpe stay legal (and "Hore_99", "h0re" and "h_o_r_e" do not).
+_BLOCKED_ANYWHERE = ("fuck", "shit", "nigg", "dritt", "rasist", "hitler")
+_BLOCKED_WORDS = ("cunt", "fitte", "hore", "faen", "pikk", "nazi")
 REPORTS_TO_HIDE = 3
 
 
@@ -39,6 +42,14 @@ def problems(nick: str) -> list[str]:
     return found
 
 
+def _leet(text: str) -> str:
+    return text.replace("0", "o").replace("1", "i").replace("3", "e")
+
+
 def blocked(nick: str) -> bool:
-    squashed = re.sub(r"[\s_-]+", "", lower(nick)).replace("0", "o").replace("1", "i").replace("3", "e")
-    return any(word in squashed for word in _BLOCKED)
+    tokens = [part for part in re.split(r"[\s_-]+", lower(nick)) if part]
+    squashed = "".join(tokens)
+    if any(word in _leet(squashed) for word in _BLOCKED_ANYWHERE):
+        return True
+    # a whole word, with or without a number after it: "Hore", "hore99", "h0re", "h_o_r_e"
+    return any(_leet(part.rstrip("0123456789")) in _BLOCKED_WORDS for part in (squashed, *tokens))

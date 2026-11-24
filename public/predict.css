@@ -44,8 +44,8 @@
   background: color-mix(in srgb, var(--paper) 88%, transparent);
   backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
   border-bottom: 1px solid var(--rule);
+  justify-content: space-between; flex-wrap: wrap;
 }
-.pnav { justify-content: space-between; flex-wrap: wrap; }
 .pnav__round { display: flex; align-items: center; gap: 0.25rem; }
 .pnav__titles { display: grid; justify-items: center; min-width: 5.5rem; line-height: 1.15; }
 .pnav__title { margin: 0; font-size: 1.2rem; }
@@ -62,10 +62,11 @@
 .pbadge[data-status="open"] { color: var(--accent-ink); border-color: var(--accent); }
 .pbadge[data-soon="true"] { color: var(--edge-el); border-color: var(--edge-el); }
 .pbadge[data-status="live"] { color: var(--outcome-bad-ink); border-color: var(--outcome-bad); }
+.pbadge[data-status="partial"] { color: var(--accent-ink); border-color: var(--rule-strong); }
 
 /* ---- how it works (until dismissed) ----------------------------------------------------- */
 
-.phow { margin: 0 0 1.25rem; padding: 1rem 1.1rem; border-left: 4px solid var(--draw); background: var(--panel); border-radius: 0 var(--radius) var(--radius) 0; }
+.phow { margin: 0 0 1.25rem; padding: 1rem 1.1rem; background: var(--panel); border: 1px solid var(--rule); border-radius: var(--p-radius); text-align: left; }
 .phow h2 { margin-bottom: 0.5rem; }
 .phow__steps { margin: 0 0 0.85rem; padding-left: 1.25rem; display: grid; gap: 0.35rem; max-width: var(--measure); }
 .phow__steps li::marker { font-weight: 800; color: var(--ink-muted); }
@@ -129,7 +130,6 @@
     var(--draw);
 }
 .pcard.is-dragging .pcard__bar .odds__seg[data-outcome="draw"] { box-shadow: 0 0 0 2px var(--panel), 0 0 0 5px var(--accent), 0 4px 14px rgb(0 0 0 / 0.3); }
-.pcard .pcard__bar .odds__seg { transition: flex 80ms linear; }
 .pcard.is-dragging .pcard__bar .odds__seg { transition: none; }
 .pcard[data-state="untouched"] .pcard__bar .odds__seg:not([data-outcome="draw"]) { filter: saturate(0.35); opacity: 0.6; }
 /* A hint on a card nobody has touched: the handle nudges, once. */
@@ -149,6 +149,18 @@
 .pcard__retry { margin-left: 0.25rem; min-height: 32px; padding: 0 0.6rem; border-radius: 999px; border: 1px solid var(--outcome-bad);
   background: none; color: var(--outcome-bad-ink); font: inherit; font-size: 0.8125rem; font-weight: 700; cursor: pointer; }
 .pcard__more { min-height: 36px; padding: 0 0.25rem; background: none; border: 0; color: var(--accent-ink); font: inherit; font-size: 0.875rem; font-weight: 700; cursor: pointer; }
+.ptable__now { margin-left: auto; font-weight: 800; font-variant-numeric: tabular-nums; color: var(--ink-muted); }
+.ptable__now[data-tone="good"] { color: var(--outcome-good-ink); }
+.ptable__results, .ptable__checkpoint { margin: 1rem 0; }
+.ptable--now .ptable__row { cursor: default; }
+.precap__share { display: inline-flex; flex-wrap: wrap; gap: 0.5rem; }
+.pcard__acts { display: inline-flex; align-items: center; gap: 0.5rem; }
+.pcard__clear::after { content: none; }
+.pcard__clear { color: var(--ink-muted); }
+.pcard__reset { justify-self: start; }
+.pcard__nums { margin: 0.35rem 0 0; text-align: center; font-size: 0.8125rem; font-weight: 700; font-variant-numeric: tabular-nums; color: var(--ink-muted); letter-spacing: 0.01em; }
+.pcard[data-state="untouched"] .pcard__nums { opacity: 0.55; }
+.pnav__pick { margin-top: 0.2rem; max-width: 11rem; min-height: 28px; font: inherit; font-size: 0.75rem; font-weight: 600; color: var(--ink-muted); background: var(--panel); border: 1px solid var(--rule); border-radius: 8px; padding: 0 0.3rem; }
 .pcard__more::after { content: " ▾"; }
 .pcard__more[aria-expanded="true"]::after { content: " ▴"; }
 .pcard__panel { margin-top: 0.5rem; padding-top: 0.75rem; border-top: 1px dashed var(--rule); display: grid; gap: 0.6rem; }
@@ -267,10 +279,18 @@
   cursor: pointer; opacity: 0.45; font-size: 0.875rem; }
 .pboard__row:hover .preport, .preport:focus-visible { opacity: 1; }
 .preport:disabled { opacity: 0.8; color: var(--edge-ecl); }
-.pboard .is-extra { display: none; }
+.pboard table { min-width: 34rem; }                /* narrow screens scroll sideways: every column stays reachable */
+.pboard__sort { all: unset; box-sizing: border-box; cursor: pointer; display: inline-flex; align-items: center; min-height: 32px; min-width: 24px; font: inherit; color: inherit; white-space: nowrap; }
+.pboard__sort:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 4px; }
+.pboard th[aria-sort="ascending"], .pboard th[aria-sort="descending"] { color: var(--ink); }
+.pboard__jump { margin: 0 0 0.6rem; }
+.pboard__row:focus { outline: 2px solid var(--accent); outline-offset: -2px; }
+.pfield--pick { width: auto; min-height: 36px; padding: 0 0.5rem; }
+.preport--done { display: inline-grid; place-items: center; cursor: default; opacity: 1; color: var(--edge-ecl); }
+@media (pointer: coarse) { .preport { min-width: 44px; min-height: 44px; } }
 .pboard__note, .pboard__me { color: var(--ink-muted); font-size: 0.8125rem; margin: 0.6rem 0; }
 .pboard__me { color: var(--ink); font-weight: 600; }
-@media (min-width: 640px) { .pboard .is-extra { display: table-cell; } }
+
 
 /* ---- panels: you, your numbers, mini-leagues, data ---------------------------------------- */
 
@@ -425,7 +445,6 @@
 /* Rounder surfaces. */
 .pcard, .ppanel, .pskeleton { border-radius: var(--p-radius); }
 .pcard { padding: 1rem 1.1rem 0.9rem; }
-.phow { border-left: 0; border-radius: var(--p-radius); background: var(--panel); border: 1px solid var(--rule); text-align: left; }
 .ptable__row { border-radius: var(--p-radius-sm); }
 .pcard__num, .pfield, .pguide__score { border-radius: var(--p-radius-sm); }
 .pstat { border-radius: var(--p-radius-sm); text-align: center; }
@@ -529,14 +548,14 @@
 .pside__chart figcaption { text-align: center; margin-top: 0.2rem; }
 
 /* Form: one bar per round, up for a good round, down for a bad one. */
-.pside__form { display: flex; justify-content: center; align-items: stretch; gap: 0.35rem; height: 3.2rem; }
+.pside__form { display: flex; justify-content: center; align-items: stretch; gap: 0.35rem; height: 3.2rem;
+  margin-bottom: 0.9rem; background: linear-gradient(var(--rule), var(--rule)) center / 100% 1px no-repeat; }
 .pside__bar { position: relative; flex: 1; max-width: 1.6rem; display: flex; flex-direction: column; align-items: center; }
 .pside__bar i { position: absolute; left: 0; right: 0; border-radius: 3px; background: var(--rule-strong); }
 .pside__bar[data-tone="good"] i { bottom: 50%; height: auto; background: var(--outcome-good); }
 .pside__bar[data-tone="bad"] i { top: 50%; background: var(--outcome-bad); }
 .pside__bar[data-tone="even"] i { top: calc(50% - 1px); height: 2px !important; }
 .pside__bar small { position: absolute; bottom: -1.1rem; font-size: 0.6875rem; color: var(--ink-faint); }
-.pside__form { margin-bottom: 0.9rem; background: linear-gradient(var(--rule), var(--rule)) center / 100% 1px no-repeat; }
 
 .pside__grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; }
 .pside__cell { display: grid; padding: 0.55rem 0.65rem; border-radius: var(--radius-sm); background: var(--panel-sunk); text-align: center; }
@@ -549,7 +568,6 @@
 
 /* On a phone the panel is a short strip above the matches: who you are, your score, your tier. */
 @media (max-width: 959px) {
-  .pside__h, .pside__chart, .pside__form, .pside__grid, .pside__badges, .pside__note, .pside__next { display: none; }
   .pside__card { grid-template-columns: 1fr auto; align-items: center; gap: 0.5rem 1rem; }
   .pside__head, .pside__track, .pside__more, .pside__empty { grid-column: 1 / -1; }
   .pside__hero { justify-items: end; padding: 0; grid-column: 2; grid-row: 2; }
@@ -624,3 +642,24 @@
 .pside__tip span { font-weight: 800; font-size: 0.875rem; }
 @media (max-width: 959px) { .pside__tip { grid-column: 1 / -1; } }
 @media (prefers-reduced-motion: reduce) { .ptrait__dot { transition: none; } }
+
+/* The side panel's extras: a tap away on a phone, always open beside the matches. */
+.pside__details { grid-column: 1 / -1; display: grid; gap: 0.6rem; }
+.pside__details > summary::after { content: " ▾"; }
+.pside__details[open] > summary::after { content: " ▴"; }
+.pside__details > summary { cursor: pointer; font-weight: 700; color: var(--accent-ink); min-height: 44px; display: flex; align-items: center; }
+@media (min-width: 960px) { .pside__details > summary { display: none; } }
+.pcal__tick { font-size: 9px; fill: var(--ink-muted); font-variant-numeric: tabular-nums; }
+.pcal__axis { font-size: 9px; font-weight: 700; fill: var(--ink-muted); }
+.pcal__dot { cursor: pointer; }
+.pcal__dot:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.pthemebtn { min-width: 36px; }
+
+/* Phones: every control is a 44px target (experiments/mobile-audit/check.py checks it). */
+@media (pointer: coarse) {
+  .predict .doc__top a, .predict .doc__top button { min-height: 44px; display: inline-flex; align-items: center; }
+  .predict .doc__top .pthemebtn { min-width: 44px; justify-content: center; }
+  .predict .switch button, .predict .pbtn--small, .predict .phowlink, .predict .pcard__more, .predict .pnav__pick,
+  .predict .pfield--pick, .predict .pboard__sort { min-height: 44px; }
+  .predict .plink { display: inline-flex; align-items: center; min-height: 44px; }
+}
