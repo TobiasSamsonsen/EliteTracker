@@ -16,8 +16,9 @@ predictions are current too. A network failure or a file that fails validation
 leaves the previous normalized files untouched.
 
 By default a guard skips leagues whose normalized file already exists and has
-no unplayed matches with a past kickoff -- fotmob cannot have new results for
-them. ``--force`` disables this check.
+no unplayed match whose result is due -- 100 minutes after kick-off, and, for a
+match still without one 12 hours later (put off, most likely), only at 06 and 18
+UTC -- since fotmob cannot have new results for them. ``--force`` disables this check.
 
 Usage::
 
@@ -31,7 +32,7 @@ from __future__ import annotations
 import argparse
 import json
 import os
-from datetime import date, datetime, timezone
+from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any, Callable, Iterable
 
@@ -49,9 +50,27 @@ from elitetracker.sources.uefa import fetch_rank
 from elitetracker.validation.matches import validate
 
 
-def _needs_refresh(slug: str, season: int, root: Path) -> bool:
-    """True if the league file is missing or has unplayed matches whose
-    kickoff time has passed -- meaning results should be available on fotmob."""
+# The refresh is started every 15 minutes from outside (docs/operations.md), so it must not ask fotmob every
+# time: a match cannot be over before KICKOFF_GRACE (90 minutes and the interval, with stoppage time), and one
+# still without a result STALE_AFTER later was most likely put off, which is asked about twice a day.
+KICKOFF_GRACE = timedelta(minutes=100)
+STALE_AFTER = timedelta(hours=12)
+STALE_CHECK_HOURS = (6, 18)          # UTC, in the first quarter of the hour
+
+
+def _result_due(kickoff: datetime, now: datetime) -> bool:
+    """True when a match that has kicked off should have a result worth asking fotmob for."""
+    since = now - kickoff
+    if since < KICKOFF_GRACE:
+        return False
+    if since < STALE_AFTER:
+        return True
+    return now.hour in STALE_CHECK_HOURS and now.minute < 15
+
+
+def _needs_refresh(slug: str, season: int, root: Path, now: datetime | None = None) -> bool:
+    """True if the league file is missing or has an unplayed match whose result is due
+    (see ``_result_due``) -- meaning it should be available on fotmob."""
     path = root / f"{slug}_{season}_matches.json"
     if not path.exists():
         return True
@@ -59,13 +78,10 @@ def _needs_refresh(slug: str, season: int, root: Path) -> bool:
         matches = load_matches(path)
     except (json.JSONDecodeError, ValueError, TypeError):
         return True  # corrupted or unreadable -- refetch
-    now = datetime.now(timezone.utc)
-    for m in matches:
-        if m.played or m.kickoff_utc is None:
-            continue
-        if datetime.fromisoformat(m.kickoff_utc.replace("Z", "+00:00")) < now:
-            return True
-    return False
+    now = now or datetime.now(timezone.utc)
+    return any(not m.played and m.kickoff_utc is not None
+               and _result_due(datetime.fromisoformat(m.kickoff_utc.replace("Z", "+00:00")), now)
+               for m in matches)
 
 
 def refresh_matches(

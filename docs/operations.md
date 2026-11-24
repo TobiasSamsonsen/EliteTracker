@@ -37,8 +37,11 @@ before pushing.
 
 - **`refresh.yml`**, by the outside scheduler below every 15 minutes, and by its own (unreliable) hourly cron as the net: `elitetracker.refresh`, then a commit of
   `data/normalized` and `data/xg.json` if anything changed. The refresh guard
-  skips a league with no unplayed match past its kickoff, so quiet hours cost
-  nothing.
+  skips a league with no unplayed match whose result is due: 100 minutes after
+  kick-off (`KICKOFF_GRACE`), so the pings of a match's first hour and a half
+  cost fotmob nothing, and from then on at every run until the result is in. A
+  match still without one 12 hours later was most likely put off and is asked
+  about only at 06 and 18 UTC. Quiet hours cost nothing.
 - **`deploy.yml`**, on every push to `main` (the refresh's commits too) and
   on pull requests (a preview channel): unpacks the `past-seasons` and
   `current` release assets into `public/data`, builds the current season

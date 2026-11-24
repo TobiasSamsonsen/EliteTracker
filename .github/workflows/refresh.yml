@@ -2,8 +2,9 @@
 #
 # Tries every hour (at minute 23: GitHub drops the most scheduled runs at the top of the hour; at :00 this
 # ran about 4 times a day in November 2026); the refresh guard in elitetracker.refresh skips leagues
-# whose normalized file already has no unplayed matches with a past kickoff, so
-# fotmob is only hit when there are results to pick up. Days with no new results
+# whose normalized file already has no unplayed match whose result is due (100 minutes after kick-off;
+# a match 12 hours overdue is asked about only at 06 and 18 UTC), so fotmob is only hit when there
+# are results to pick up. Days with no new results
 # produce no diff, so no commit and no deploy happen.
 #
 # Note: GitHub Actions schedule triggers are best-effort and routinely delayed

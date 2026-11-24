@@ -5,7 +5,7 @@ fetch -> normalize -> validate -> write pipeline runs on inline payloads.
 """
 
 import json
-from datetime import date
+from datetime import date, datetime, timedelta, timezone
 
 import pytest
 
@@ -77,9 +77,9 @@ class TestRefreshMatches:
             tmp_path, season=2026, leagues=["eliteserien"],
             fetch=lambda *a, **k: first, today=TODAY,
         )
-        refresh_matches(
+        refresh_matches(                     # (the guard has its own tests below: these March kick-offs are long stale)
             tmp_path, season=2026, leagues=["eliteserien"],
-            fetch=lambda *a, **k: second, today=TODAY,
+            fetch=lambda *a, **k: second, today=TODAY, refresh_guard=False,
         )
         records = json.loads((tmp_path / "eliteserien_2026_matches.json").read_text(encoding="utf-8"))
         assert {m["match_id"] for m in records if m["played"]} == {"0001", "0002"}
@@ -257,3 +257,30 @@ def test_play_offs_are_asked_for_only_while_they_are_on(tmp_path):
     (tmp_path / "playoff_outcomes.json").write_text('{"2026": {}}', encoding="utf-8")
     refresh_playoffs(tmp_path, 2026, fetch=fetch, now=at(29, 18))
     assert calls == [2026] * 3                           # on file by hand: done
+
+
+def _league_file(tmp_path, kickoff, played=False):
+    record = {"match_id": "1", "date": kickoff.date().isoformat(), "time": "12:00", "home": "A", "away": "B",
+              "home_goals": 1 if played else None, "away_goals": 0 if played else None, "played": played,
+              "kickoff_utc": kickoff.isoformat().replace("+00:00", "Z"), "round": 1, "home_id": "a", "away_id": "b"}
+    (tmp_path / "eliteserien_2026_matches.json").write_text(json.dumps([record]), encoding="utf-8")
+
+
+def test_fotmob_is_asked_only_once_a_result_can_be_there(tmp_path):
+    kickoff = datetime(2026, 11, 28, 15, 0, tzinfo=timezone.utc)
+    _league_file(tmp_path, kickoff)
+    asked = lambda minutes: refresh._needs_refresh("eliteserien", 2026, tmp_path, kickoff + timedelta(minutes=minutes))  # noqa: E731
+    assert not asked(-30) and not asked(45) and not asked(99)     # before kick-off, and while the match is on
+    assert asked(100) and asked(115) and asked(11 * 60)             # from about the end, every time the refresh runs
+    # long past: probably put off, asked about at 06 and 18 UTC (first quarter of the hour) only
+    late = kickoff.replace(hour=6, minute=5) + timedelta(days=1)
+    assert refresh._needs_refresh("eliteserien", 2026, tmp_path, late)
+    assert not refresh._needs_refresh("eliteserien", 2026, tmp_path, late.replace(minute=30))
+    assert not refresh._needs_refresh("eliteserien", 2026, tmp_path, late.replace(hour=9))
+
+
+def test_a_played_match_or_a_missing_file_is_decided_as_before(tmp_path):
+    kickoff = datetime(2026, 11, 28, 15, 0, tzinfo=timezone.utc)
+    assert refresh._needs_refresh("eliteserien", 2026, tmp_path, kickoff)           # no file yet
+    _league_file(tmp_path, kickoff, played=True)
+    assert not refresh._needs_refresh("eliteserien", 2026, tmp_path, kickoff + timedelta(hours=3))
