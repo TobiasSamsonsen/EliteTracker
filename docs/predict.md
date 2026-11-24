@@ -84,7 +84,7 @@ Not every hour. GitHub's `schedule` is best effort: `refresh.yml`'s "hourly" cro
 in November 2026 (about 4 a day; median gap 6.5 hours, 58 % of gaps over 6 hours, longest 12.3 hours; one more gap of 40.8 hours, 5 to 6 November, was probably a GitHub account suspension), and the same
 cron on this job will do no better. So `predict.yml` runs on two triggers: after every successful Deploy of a push to
 `main` (which is how new results arrive: `refresh.yml` pushes, the push deploys), and on a schedule as the net
-(minute 41, off the top of the hour). The reliable trigger is an outside scheduler that starts `refresh.yml` every 15
+(once a day, 06:37 UTC). The reliable trigger is an outside scheduler that starts `refresh.yml` every 15
 minutes through `workflow_dispatch` (cron-job.org, with a fine-grained token that has `actions: write` on this repository
 only; the owner's setup, steps in [operations.md](operations.md), "Starting the refresh on time"). Until it is set up, or
 whenever it is down, expect this:

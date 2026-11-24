@@ -1,7 +1,9 @@
 # Scheduled refresh of the current-season match data, off the developer's machine.
 #
-# Tries every hour (at minute 23: GitHub drops the most scheduled runs at the top of the hour; at :00 this
-# ran about 4 times a day in November 2026); the refresh guard in elitetracker.refresh skips leagues
+# Started every 15 minutes from cron-job.org (docs/operations.md, "Starting the refresh on time"); this
+# schedule is only the net under that, once a day (06:07 UTC, which is also inside the hour in which the
+# guard asks about a match that is long overdue). GitHub's own "hourly" cron ran about 4 times a day in
+# November 2026, so it is no longer relied on; the refresh guard in elitetracker.refresh skips leagues
 # whose normalized file already has no unplayed match whose result is due (100 minutes after kick-off;
 # a match 12 hours overdue is asked about only at 06 and 18 UTC), so fotmob is only hit when there
 # are results to pick up. Days with no new results
@@ -16,7 +18,7 @@ name: Scheduled data refresh
 
 on:
   schedule:
-    - cron: "23 * * * *"
+    - cron: "7 6 * * *"
   workflow_dispatch:
 
 permissions:

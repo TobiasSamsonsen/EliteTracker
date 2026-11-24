@@ -4,7 +4,9 @@
 # Runs once this file is on main (the rules and indexes are deployed), on two triggers:
 #   - after every Deploy that a push to main made (new results come in through refresh.yml, which pushes,
 #     which deploys), so scores follow the results by minutes, not by whenever the next schedule fires;
-#   - on a schedule, as the net under that. GitHub's schedule is best effort: refresh.yml's "hourly" cron ran
+#   - from cron-job.org every 30 minutes through workflow_dispatch (docs/operations.md), which is what keeps the
+#     reveal after kick-off, the odds snapshots and deletions on time when no result has changed the data;
+#   - on a schedule once a day, as the net under those two. GitHub's schedule is best effort: refresh.yml's "hourly" cron ran
 #     about 4 times a day in November 2026 (median gap 6.5 hours, longest 12; one 41-hour gap was probably a GitHub account suspension), and Predict's is no better.
 #     The job is built for that (docs/predict.md, "When the job runs").
 # A manual run is a dry run unless `live` is ticked; every other run is live.
@@ -27,7 +29,7 @@ on:
     workflows: ["Deploy to Firebase Hosting"]
     types: [completed]
   schedule:
-    - cron: "41 * * * *"       # off the top of the hour, where GitHub drops the most scheduled runs
+    - cron: "37 6 * * *"       # once a day, off the top of the hour
 
 permissions:
   contents: write

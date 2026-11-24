@@ -35,7 +35,7 @@ before pushing.
 
 ## CI (`.github/workflows/`)
 
-- **`refresh.yml`**, by the outside scheduler below every 15 minutes, and by its own (unreliable) hourly cron as the net: `elitetracker.refresh`, then a commit of
+- **`refresh.yml`**, by the outside scheduler below every 15 minutes, and by its own (unreliable) cron once a day as the net: `elitetracker.refresh`, then a commit of
   `data/normalized` and `data/xg.json` if anything changed. The refresh guard
   skips a league with no unplayed match whose result is due: 100 minutes after
   kick-off (`KICKOFF_GRACE`), so the pings of a match's first hour and a half
@@ -58,7 +58,8 @@ before pushing.
   that touch only `data/predict/**`. See [predict.md](predict.md), "When the job runs".
 
 GitHub's `schedule` is best effort: `refresh.yml`'s "hourly" cron ran about 4 times a day in November
-2026 (median gap 6.5 hours). To have the refresh run on time, an outside scheduler starts it: see the next section.
+2026 (median gap 6.5 hours), so both workflows' own schedules are now a once-a-day net (06:07 and 06:37 UTC), and
+cron-job.org starts them on time: see the next section.
 
 - **`past-seasons.yml`**, by hand: rebuilds every past season, one job each,
   replaces the `past-seasons` asset and starts a deploy.
@@ -69,7 +70,7 @@ Why: [predict.md](predict.md), "When the job runs". A workflow started through t
 (`workflow_dispatch`) is not delayed or dropped the way a scheduled one is. `refresh.yml` takes about 20 seconds
 and its guard skips quiet hours, so asking every 15 minutes costs next to nothing. A refresh that finds new
 results pushes to `main`, the push deploys, and the deploy starts the Predict job, so one ping serves the
-site and the game. The workflows' own `schedule:` stays as the net.
+site and the game. The workflows' own `schedule:` stays as a once-a-day net.
 
 Do this **after `predict` is merged**: the API starts the workflow file that is on `main`.
 
@@ -109,9 +110,10 @@ that cannot see it, `422` a workflow without `workflow_dispatch` or a `ref` that
 Save, then "Test run": the history shows `204` and a refresh run appears in Actions. The token sits in the job's headers
 at cron-job.org, so use a password of its own there and turn on two-factor sign-in.
 
-**4. Optional: a second job for the Predict job itself** (a net for the rare deploy that does not happen, say a
-round that kicks off with no new results since): the same, with the URL ending `.../workflows/predict.yml/dispatches` and the body
-`{"ref":"main","inputs":{"live":"true"}}`, every 2 hours. (Without `live` the run is a dry run that writes nothing.)
+**4. A second job for the Predict job itself** (titled `EliteTracker predict job`; a clone of the first, same token): the same,
+with the URL ending `.../workflows/predict.yml/dispatches` and the body `{"ref":"main","inputs":{"live":"true"}}`, every 30 minutes.
+A deploy starts the Predict job only when new results changed the data; this one keeps the reveal after kick-off, the odds
+snapshots, deletions and new mini-league boards on time when nothing did. (Without `live` the run is a dry run that writes nothing.)
 
 **Upkeep.**
 
