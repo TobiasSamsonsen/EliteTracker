@@ -2773,7 +2773,7 @@
     if (tab !== S.tab) { S.leagueNote = null; S.leaguesFormOpen = false; }
     S.tab = tab;
     const hash = tab === 'tip' ? '' : `#${tab}`;
-    if (location.hash !== hash) history.pushState(null, '', hash || location.pathname + location.search);
+    if (location.hash !== hash) history.pushState({ n: (history.state && history.state.n) || 0 }, '', hash || location.pathname + location.search);
     render();
   }
   const ROUTES = [...TABS, 'how'];

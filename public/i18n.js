@@ -25,7 +25,7 @@ const translations = {
     // Explore
     'explore.title': 'Explore',
     'explore.desc': 'The model’s numbers from other angles.',
-    'explore.back': 'All visualisations',
+    'explore.back': 'Back',
     'explore.mountain.title': 'Season mountain',
     'explore.mountain.desc': 'The finishing chances round by round, stacked up from pre-season. The mountain narrows as the table takes shape.',
     'explore.mountain.short': 'Place chances round by round',
@@ -1438,7 +1438,7 @@ const translations = {
     // Utforsk
     'explore.title': 'Utforsk',
     'explore.desc': 'Modellens tall, sett fra andre vinkler.',
-    'explore.back': 'Alle visualiseringer',
+    'explore.back': 'Tilbake',
     'explore.mountain.title': 'Sesongfjellet',
     'explore.mountain.desc': 'Plasseringssjansene runde for runde, stablet oppå hverandre fra før sesongen. Fjellet smalner etter hvert som tabellen tar form.',
     'explore.mountain.short': 'Plasseringssjansene runde for runde',

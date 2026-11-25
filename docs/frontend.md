@@ -126,8 +126,7 @@ In file order:
 - **analytics**, **mobile gestures**
 
 The views share one `state` object and redraw through `render()`. The URL
-is read at boot and on `popstate`, and written by `render()` and
-`openTeamView`.
+is read at boot and on `popstate`, and written by `render()`.
 
 **Address.** `routePath()` gives the path for the view on show: `/klubb/<slug>/`
 for a club of the current season (`routeClubs`), `/utforsk/<slug>/` for an
@@ -139,12 +138,20 @@ query leaves out, at boot only (`pageParams()`); a query naming a view or a
 club wins. The local server answers any extension-less path with
 `index.html`, so a club address works without the pages built.
 
-**History.** `openTeamView` pushes an entry carrying `{ team, teamId }`;
-`render()` rewrites the current entry's state from the view on show
-(`entryState()`), so an entry names its club only while that club is open.
-`popstate` reopens the club of the entry it lands on (Back from club B lands
-on club A) and otherwise leaves the team view. Tabs, Explore tools and the
-scenario popup still replace the entry rather than push.
+**History.** A page is a view, an Explore tool and a club (`pageKeyOf`: `view|viz|team`, read from the
+query `render()` has just written). When that key changes `render()` pushes an entry (`{ n, y }`: how many
+app entries lie behind it, and where the page you left was scrolled to); anything else (the division,
+season, rewind, sort, locks, compared pair) only replaces the current one. So the phone's Back and swipe-back,
+and the installed app's, walk the pages you opened, and never leave the site while the app has something behind
+(`history.scrollRestoration` is manual: `restoreFromAddress` puts the scroll back). `popstate` →
+`restoreFromAddress` reads the page back from the query, resetting whatever it omits (no `league` is
+Eliteserien, no `viz` no tool, no `team` no club); a tab of the game (`#boards`) is its own entry, which
+`predict.js` pushes and the app ignores (same key). The pages' own arrows (`team-back`, `explore-back`, the
+mountain's) are `goBackOr`: the browser's Back when `n > 0`, else (a page opened by a link) their old target, the
+table or the gallery. The "what it takes" popup, the finish sheet, the share sheet and the More sheet take an entry of their own
+(`pushOverlay`, state `overlay`), so Back closes them and stays; their × / scrim / swipe is `dismissOverlay`
+(Back, or a direct close when the entry is not theirs), and going on from an overlay (a More item, a club in the
+popup) reuses its entry for the new page. A popup that a link opens (`?scenario=`) pushes none.
 
 **Bundles.** *Play season*, the *Season mountain*, the *Luck table* and the
 scorecard read `timeline-<season>.json` / `seasons-summary.json`

@@ -132,6 +132,12 @@ function shareChoice(label, options, current, onPick) {
   return row;
 }
 
+/* The sheet's ×, scrim and Escape: it closes, and its history entry is stepped back off (app.js). */
+function closeShareSheet() {
+  if (typeof dismissOverlay === 'function') dismissOverlay(() => shareClose?.());
+  else shareClose?.();
+}
+
 /* Our own share sheet: the picture, with its format and theme to choose,
    Share (the browser's sheet, where it takes files) and Download; then the
    link with Copy and, where the browser has one, Share. */
@@ -261,7 +267,7 @@ function openShareSheet({ url, title, image }, opener) {
   root.append(scrim, panel);
   document.body.appendChild(root);
   const release = trapFocus(panel);
-  const onKey = (event) => { if (event.key === 'Escape') shareClose?.(); };
+  const onKey = (event) => { if (event.key === 'Escape') closeShareSheet(); };
   document.addEventListener('keydown', onKey);
   shareClose = () => {
     release?.();
@@ -271,8 +277,9 @@ function openShareSheet({ url, title, image }, opener) {
     shareClose = null;
     opener?.focus();
   };
-  scrim.addEventListener('click', () => shareClose?.());
-  close.addEventListener('click', () => shareClose?.());
+  scrim.addEventListener('click', () => closeShareSheet());
+  close.addEventListener('click', () => closeShareSheet());
+  if (typeof pushOverlay === 'function') pushOverlay('share');      // Back closes it (app.js)
 }
 
 /* ---------- drawing ----------------------------------------------------- */

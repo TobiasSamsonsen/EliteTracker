@@ -761,7 +761,55 @@ function pageParams() {
    the club only while that club is open, so Back from a later club lands on a
    club or on the view the reader left, never on a stale one. */
 function entryState() {
-  return state.activeView === 'team' && state.teamFocusId ? { team: true, teamId: state.teamFocusId } : null;
+  return window.history.state;
+}
+
+/* Back. Every page the reader opens (a view, an Explore tool, a club) is a history entry of its own, pushed
+   by render's address write when the page's key changes, so the phone's Back and swipe-back, the installed
+   app's too, walk the same path as the arrows in the pages. Changes inside a page (the division, season,
+   rewind, sort, locks, compared pair) only replace the entry. The key reads the address render has just
+   written: view, tool and club. */
+let lastPageKey = null;
+function pageKeyOf(params) {
+  return [params.get('view') || '', params.get('viz') || '', params.get('team') || ''].join('|');
+}
+// How many entries of the app lie behind this one (0 on a page opened by a link); kept in the entry's state.
+function historyDepth() {
+  return (window.history.state && window.history.state.n) || 0;
+}
+/* The pages' own back arrows: the browser's Back where the app has somewhere behind, else `fallback`. */
+function goBackOr(fallback) {
+  if (historyDepth() > 0) window.history.back();
+  else fallback();
+}
+/* A popup or sheet over the page takes an entry of its own, so Back closes it and stays. It reuses an
+   entry that already is one (a popup opened from a sheet) and is not pushed while the page is still booting
+   (a link that opens one has nothing to go back to). */
+function pushOverlay(kind) {
+  if (!booted) return;
+  const current = window.history.state || {};
+  // An entry that already is an overlay's is reused when this is the only one open (a popup opened from a
+  // sheet, which closed first); one over another (the share sheet over the popup) gets its own.
+  if (current.overlay && openOverlays() <= 1) { window.history.replaceState({ ...current, overlay: kind }, ''); return; }
+  window.history.replaceState({ ...current, y: window.scrollY }, '');
+  window.history.pushState({ n: historyDepth() + 1, overlay: kind }, '', window.location.href);
+}
+/* The × / scrim / swipe of an overlay: it closes at once, and its entry, when it has one, is stepped back off
+   (the popstate then finds nothing left to close). */
+function dismissOverlay(close) {
+  const marked = Boolean(window.history.state && window.history.state.overlay);
+  close();
+  if (marked) window.history.back();
+}
+const dismissScenario = () => dismissOverlay(() => closeScenario());
+const dismissSheet = () => dismissOverlay(() => closeSheet());
+const shareOpen = () => typeof shareClose === 'function' && Boolean(shareClose);   // share.js
+function openOverlays() {
+  const sheet = $('#more-sheet');
+  return (scenarioState.root ? 1 : 0) + (sheet && !sheet.hidden ? 1 : 0) + (shareOpen() ? 1 : 0);
+}
+function overlayOpen() {
+  return openOverlays() > 0;
 }
 
 /* The links on Matches and Table into the Explore tools. */
@@ -784,7 +832,7 @@ function openScenario(report, teamId, position, trigger = null) {
 
   const root = el('div', 'scenario');
   const scrim = el('div', 'scenario__scrim');
-  scrim.addEventListener('click', () => closeScenario());
+  scrim.addEventListener('click', dismissScenario);
   const panel = el('div', 'scenario__panel');
   panel.setAttribute('role', 'dialog');
   panel.setAttribute('aria-modal', 'true');
@@ -802,7 +850,7 @@ function openScenario(report, teamId, position, trigger = null) {
   const close = el('button', 'scenario__close', '×');
   close.type = 'button';
   close.setAttribute('aria-label', t('scenario.close'));
-  close.addEventListener('click', () => closeScenario());
+  close.addEventListener('click', dismissScenario);
   // Shared as the club's chance of this place (share.js), or as the link.
   head.append(heading, shareButton({
     title: () => t('scenario.title', { team: row.team, place: ordinal(position) }),
@@ -851,14 +899,15 @@ function openScenario(report, teamId, position, trigger = null) {
   root.append(scrim, panel);
   document.body.appendChild(root);
   document.body.classList.add('has-scenario');
-  attachSheetDrag(panel, { scrim, dismiss: () => closeScenario(), handle: '.scenario__top' });
+  attachSheetDrag(panel, { scrim, dismiss: dismissScenario, handle: '.scenario__top' });
 
-  const onKey = (event) => { if (event.key === 'Escape') closeScenario(); };
+  const onKey = (event) => { if (event.key === 'Escape') dismissScenario(); };
   document.addEventListener('keydown', onKey);
   Object.assign(scenarioState, { root, trigger, onKey, untrap: trapFocus(panel) });
   // The popup opens on its close button, as before it had a share button
   // ahead of it.
   close.focus();
+  pushOverlay('scenario');
   scenarioUrl(`${row.team_id}:${position}`);
 
   load();
@@ -1309,14 +1358,15 @@ function openFinishSheet(report, row, trigger = null) {
   root.append(scrim, panel);
   document.body.appendChild(root);
   document.body.classList.add('has-scenario');
-  const onKey = (event) => { if (event.key === 'Escape') closeScenario(); };
+  const onKey = (event) => { if (event.key === 'Escape') dismissScenario(); };
   document.addEventListener('keydown', onKey);
   // It shares the popup's state, so opening "what it takes" from it, or
   // closing it, goes through closeScenario like the popup.
   Object.assign(scenarioState, { root, trigger, onKey, untrap: trapFocus(panel) });
-  scrim.addEventListener('click', () => closeScenario());
-  close.addEventListener('click', () => closeScenario());
-  attachSheetDrag(panel, { scrim, dismiss: () => closeScenario(), handle: '.scenario__top' });
+  scrim.addEventListener('click', dismissScenario);
+  close.addEventListener('click', dismissScenario);
+  pushOverlay('scenario');
+  attachSheetDrag(panel, { scrim, dismiss: dismissScenario, handle: '.scenario__top' });
   close.focus();
 }
 
@@ -4798,7 +4848,7 @@ function renderExplore(report) {
   $('#explore-desc').textContent = t(item ? `explore.${item}.desc` : 'explore.desc');
   const back = $('#explore-back');
   back.hidden = !item;
-  back.onclick = () => openExplore(null);
+  back.onclick = () => goBackOr(() => openExplore(null));
   const body = $('#explore-body');
   if (item !== 'mountain') mountainStop();
   if (item !== 'whatif') whatIfLeave();
@@ -7945,7 +7995,7 @@ function mountainRoot() {
     </div>
     <span class="mountain__probe" hidden></span>`;
   const redraw = () => drawMountain();
-  root.querySelector('.mountain__back').addEventListener('click', () => openExplore(null));
+  root.querySelector('.mountain__back').addEventListener('click', () => goBackOr(() => openExplore(null)));
   root.querySelector('.mountain__info').addEventListener('click', () => {
     if (mountain.facts) openFacts(t('explore.mountain.title'), mountain.facts);
   });
@@ -8628,7 +8678,7 @@ function followTeamLeague(teamId) {
   }
 }
 
-function openTeamView(teamId, fallbackName, { push = true } = {}) {
+function openTeamView(teamId, fallbackName) {
   if (anim.playing) animStop();
   followTeamLeague(teamId);
   state.teamFocusId = teamId;
@@ -8638,7 +8688,6 @@ function openTeamView(teamId, fallbackName, { push = true } = {}) {
   state.teamSeasonsPage = 0;
   state.activeView = 'team';
   markActiveView();
-  if (push) history.pushState({ team: true, teamId }, '');
   render();
   window.scrollTo({ top: 0, behavior: 'instant' });
 }
@@ -8662,7 +8711,7 @@ function renderTeamView(report) {
   back.innerHTML = '<svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>';
   back.appendChild(el('span', '', t('team.back')));
   back.setAttribute('aria-label', t('team.back'));
-  back.addEventListener('click', () => history.back());
+  back.addEventListener('click', () => goBackOr(() => switchView('table')));
 
   const row = report.table.find((t) => String(t.team_id) === String(teamId));
   const career = careerById(teamId);
@@ -11035,16 +11084,13 @@ function clearSkeleton(view) {
 /* ---------- wiring -------------------------------------------------- */
 
 function render() {
+  const scrolled = window.scrollY;         // before the sections change: a page that shortens clamps it
   const report = state.reports[state.league];
   // A readout raised on the old view would float over the new one: a tap on
   // a club name both raises the stake readout and opens the club.
   hideTooltip();
   if (state.activeView !== 'predict') {
     window.PredictGame?.hide();
-    // The game's own addresses (#boards, #leagues, #me, ...) are not another view's.
-    if (PREDICT_HASHES.has(window.location.hash.slice(1))) {
-      window.history.replaceState(window.history.state, '', window.location.pathname + window.location.search);
-    }
   }
   // The season is still on its way (or failed to come): only the game, which
   // does not read it, can be drawn (bootPredict).
@@ -11187,7 +11233,23 @@ function render() {
   }
   const route = routePath();
   canonical.href = `https://elitetracker.no${route}`;
-  window.history.replaceState(entryState(), '', `${route}?${params.toString()}${window.location.hash}`);
+  // The game's own addresses (#boards, #leagues, #me, ...) are not another view's.
+  const hash = state.activeView !== 'predict' && PREDICT_HASHES.has(window.location.hash.slice(1)) ? '' : window.location.hash;
+  const address = `${route}?${params.toString()}${hash}`;
+  const key = pageKeyOf(params);
+  const here = window.history.state || {};
+  if (lastPageKey !== null && key !== lastPageKey) {
+    // A new page. Remember where the old one was scrolled to; an overlay's entry becomes the new page's.
+    if (!here.overlay) {
+      window.history.replaceState({ ...here, y: scrolled }, '');
+      window.history.pushState({ n: historyDepth() + 1 }, '', address);
+    } else {
+      window.history.replaceState({ n: here.n }, '', address);
+    }
+  } else {
+    window.history.replaceState(entryState(), '', address);
+  }
+  lastPageKey = key;
   // After the title, which the page view carries.
   pageView();
   state._prevActiveView = state.activeView;
@@ -11338,11 +11400,11 @@ function wire() {
   if (moreButton) {
     moreButton.addEventListener('click', () => {
       if (moreSheet.hidden) openSheet();
-      else closeSheet();
+      else dismissSheet();
     });
   }
   for (const closer of document.querySelectorAll('[data-close-sheet]')) {
-    closer.addEventListener('click', closeSheet);
+    closer.addEventListener('click', dismissSheet);
   }
 
   const stepMatchday = (delta) => {
@@ -11453,18 +11515,39 @@ function wire() {
     if (link) openTool(link.dataset.openTool);
   });
 
-  window.addEventListener('popstate', (event) => {
-    // An entry pushed by openTeamView remembers its club, so Back from club B
-    // lands on club A instead of leaving the team view.
-    if (event.state?.teamId != null) {
-      openTeamView(event.state.teamId, null, { push: false });
-      return;
-    }
-    if (!state.teamFocusId) return;
-    state.teamFocusId = null;
-    applyViewParameter();
-    render();
-  });
+  window.addEventListener('popstate', (event) => restoreFromAddress(event.state));
+}
+
+/* Back and Forward: the page the address names. A popup or sheet open over the page closes first (Back
+   from it stays on the page); a different page (view, tool, club) is read back from the query, whatever it
+   leaves out reset to its default. The game's own entries (a tab's #hash) are its own. */
+function restoreFromAddress(entry) {
+  if (!booted || !state.reports[state.league]) return;
+  const params = new URLSearchParams(window.location.search);
+  // Landed on an overlay's own entry (Back from the share sheet over the popup): only what lies above it closes.
+  if (entry && entry.overlay) {
+    if (entry.overlay !== 'share' && shareOpen()) shareClose();
+    return;
+  }
+  // A popup, sheet or picker still open belongs to the page being left.
+  if (shareOpen()) shareClose();
+  closeScenario({ restore: false });
+  closeAllMenus();
+  const key = pageKeyOf(params);
+  if (key === lastPageKey) return;
+  lastPageKey = key;                       // so the draw below replaces the entry instead of pushing
+  if (anim.playing) animStop();
+  const league = params.get('league');
+  state.league = league && state.reports[league] ? league : 'eliteserien';
+  for (const button of document.querySelectorAll('[data-league]')) {
+    button.setAttribute('aria-pressed', String(button.dataset.league === state.league));
+  }
+  state.teamFocusId = null;
+  state.exploreItem = null;
+  applyViewParameter();
+  if (state.activeView === 'team') applyTeamParameter();
+  if (state.activeView !== 'team' || !state.teamFocusId) render();
+  window.scrollTo({ top: (entry && entry.y) || 0, behavior: 'instant' });
 }
 
 /* ?league=obosligaen&team=Viking makes any view linkable. Team is matched on
@@ -11498,7 +11581,7 @@ function applyTeamParameter() {
   if (!wanted) return;
   const pool = state.careers?.teams || Object.values(state.reports).flatMap((r) => r.table);
   const club = pool.find((team) => team.team.toLowerCase() === wanted.toLowerCase());
-  if (club) openTeamView(club.team_id, club.team, { push: false });
+  if (club) openTeamView(club.team_id, club.team);
 }
 
 /* The tab strip, mobile bar, and any other data-view buttons are marked from
@@ -11628,6 +11711,7 @@ function openSheet() {
   sheet.hidden = false;
   if (btn) btn.setAttribute('aria-expanded', 'true');
   sheetFocusCleanup = trapFocus(sheet.querySelector('.sheet__panel'));
+  pushOverlay('sheet');
 }
 
 function closeSheet() {
@@ -12336,7 +12420,8 @@ function drawCompareHistory(svg, careerA, careerB, labelA, labelB) {
 }
 
 async function boot() {
-  
+  // Back lands where the page was left (restoreFromAddress); the browser's own guess comes too early.
+  try { window.history.scrollRestoration = 'manual'; } catch { /* the browser's own */ }
   resolveTheme();
   document.documentElement.lang = htmlLang(currentLang);
   for (const button of document.querySelectorAll('[data-lang]')) {
@@ -12630,7 +12715,7 @@ function initMobileGestures() {
   let swipeState = { startX: 0, startY: 0, currentX: 0, swiping: false };
 
   // Swipe-to-dismiss sheet
-  attachSheetDrag(sheetPanel, { scrim: sheet?.querySelector('.sheet__scrim'), dismiss: closeSheet, handle: '.sheet__grip' });
+  attachSheetDrag(sheetPanel, { scrim: sheet?.querySelector('.sheet__scrim'), dismiss: dismissSheet, handle: '.sheet__grip' });
 
   // Touch ripple for interactive elements
   addTouchRipple();

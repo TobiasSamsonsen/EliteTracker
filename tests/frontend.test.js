@@ -1574,3 +1574,28 @@ test('the Overview shows the Predict invite only to a browser with no session', 
   assert.ok(!afterLoad.includes('fillPredictInvite'), 'a signed-in browser is never shown the invite');
   assert.match(body, /if \(!hasPredictSession\(\)\) return[^;]*fillPredictInvite/);
 });
+
+/* Back: a page is its view, Explore tool and club; the division, season, rewind and the like only replace the
+   history entry (render's address write), so Back walks the pages the reader opened. */
+eval(pick('pageKeyOf'));
+
+test('a history entry is a view, a tool and a club, and nothing else in the address', () => {
+  const key = (query) => pageKeyOf(new URLSearchParams(query));
+  assert.equal(key('view=overview'), 'overview||');
+  assert.notEqual(key('view=explore&viz=races'), key('view=explore'), 'a tool is a page of its own');
+  assert.notEqual(key('view=team&team=Viking'), key('view=team&team=Brann'), 'so is each club');
+  for (const rest of ['&league=obosligaen', '&season=2025', '&asof=2026-05-01', '&sort=rating&dir=desc', '&lock=1:2-1', '&compare=1:2', '&scenario=3:1']) {
+    assert.equal(key(`view=explore&viz=whatif${rest}`), key('view=explore&viz=whatif'), `${rest} stays on the page`);
+  }
+});
+
+test('Back goes through the app where the page has something behind it, else to the arrow\'s own fallback', () => {
+  const run = (history) => {
+    const calls = [];
+    new Function('window', 'goBackFallback', `${pick('historyDepth')}${pick('goBackOr')}goBackOr(goBackFallback);`)({ history: { ...history, back: () => calls.push('back') } }, () => calls.push('fallback'));
+    return calls;
+  };
+  assert.deepEqual(run({ state: { n: 2 } }), ['back']);
+  assert.deepEqual(run({ state: null }), ['fallback'], 'a page opened by a link never leaves the site');
+  assert.deepEqual(run({ state: { n: 0 } }), ['fallback']);
+});
