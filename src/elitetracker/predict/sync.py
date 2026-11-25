@@ -324,6 +324,7 @@ def run(store: Any, *, now: datetime, matches_by_slug: Mapping[str, Sequence[Mat
     crowd_rounds = dict(meta.get("crowd_rounds", {}))
     changed_scores = bool(stripped)
     fresh: dict[str, dict] = {}     # uid -> {round key: totals} written in this run, not yet in the store
+    fresh_tipped: dict[str, dict] = {}     # uid -> {round key: True}: tipped a round that has kicked off, in this run
     for key, doc in sorted(docs.items(), key=lambda kv: (kv[1]["league"], kv[1]["round"])):
         slots = doc["slots"]
         kicked = {s: v for s, v in slots.items() if v["kickoff"] <= now}
@@ -339,6 +340,15 @@ def run(store: Any, *, now: datetime, matches_by_slug: Mapping[str, Sequence[Mat
             continue
         entries = read_entries(key)
         summary["rounds"].append(key)
+
+        # The round's first kick-off locks the picks, and the entries are in hand: a player who tipped it
+        # stands on the boards (0 matches) until a match of theirs settles. No extra reads, one write each.
+        if new_crowd and len(new_crowd) == len(kicked) and not settled and not scored.get(key):
+            for uid, picks in entries.items():
+                if any(s in kicked for s in picks):
+                    writes.append(Write.merge(f"stats/{uid}", {"tipped": {key: True}}))
+                    fresh_tipped.setdefault(uid, {})[key] = True
+            changed_scores = changed_scores or bool(fresh_tipped)
 
         for slot in new_crowd:
             match_id = slots[slot]["id"]
@@ -417,7 +427,8 @@ def run(store: Any, *, now: datetime, matches_by_slug: Mapping[str, Sequence[Mat
     gone = set(summary["purged"])
     if changed_scores:
         writes += _boards(store, season, matches_by_slug, rounds_info, model_rounds, crowd_rounds, now, summary,
-                          fresh, gone, {key for rounds in fresh.values() for key in rounds}, current=publish)
+                          fresh, gone, {key for rounds in fresh.values() for key in rounds}, current=publish,
+                          fresh_tipped=fresh_tipped)
     if publish:
         # a league made or joined since the last run gets its board now, not at the next settled match
         joined, newest = _new_league_members(store, _utc(meta.get("joins")), summary)
@@ -497,9 +508,10 @@ def _shown_by(reports: Mapping[str, set]):
 def _boards(store: Any, season: int, matches_by_slug: Mapping, rounds_info: Mapping[str, list],
             model_rounds: Mapping, crowd_rounds: Mapping, now: datetime, summary: dict,
             fresh: Mapping[str, Mapping], gone: set[str], changed_rounds: Iterable[str] = (),
-            current: bool = True) -> list[Write]:
+            current: bool = True, fresh_tipped: Mapping[str, Mapping] = {}) -> list[Write]:
     """The writes for this season's boards. ``fresh`` holds the totals scored in
-    this run and ``gone`` the players purged in it: neither is in the store yet.
+    this run and ``gone`` the players purged in it: neither is in the store yet (nor ``fresh_tipped``, the
+    rounds tipped in it: a player who tipped a round that has kicked off, with nothing scored, is *pending*).
     ``changed_rounds`` are the rounds scored in this run: each gets (or keeps) its own board, so
     a past round can be looked at; only those are written, not every round every time.
 
@@ -509,6 +521,8 @@ def _boards(store: Any, season: int, matches_by_slug: Mapping, rounds_info: Mapp
     stats = {uid: s for uid, s in store.list("stats") if uid not in gone}
     for uid, rounds in fresh.items():
         stats.setdefault(uid, {}).setdefault("rounds", {}).update(rounds)
+    for uid, keys in fresh_tipped.items():
+        stats.setdefault(uid, {}).setdefault("tipped", {}).update(keys)
     shown = _shown_by(_reports(store))
     updated = now.isoformat(timespec="seconds")
     writes: list[Write] = []
@@ -519,9 +533,10 @@ def _boards(store: Any, season: int, matches_by_slug: Mapping, rounds_info: Mapp
         players = {}
         for uid, s in stats.items():
             mine = {k: v for k, v in s.get("rounds", {}).items() if k.startswith(prefix)}
-            if mine:
+            pending = not mine and any(k.startswith(prefix) for k in s.get("tipped", {}))
+            if mine or pending:
                 nick, hidden = shown(users.get(uid, {}))
-                players[uid] = {"nick": nick, "hidden": hidden, "rounds": mine}
+                players[uid] = {"nick": nick, "hidden": hidden, "rounds": mine, "pending": pending}
         league_rounds = rounds_info.get(slug, [])
         divisions[slug] = (players, league_rounds)
         made = boards_mod.build_season_boards(
@@ -565,9 +580,11 @@ def _league_boards(store: Any, season: int, codes: Iterable[str] | None, now: da
         for uid, _ in store.list(f"leagues/{code}/members"):
             if uid in gone:
                 continue
-            mine = [v for k, v in (stats_of(uid) or {}).get("rounds", {}).items() if k.startswith(this_season)]
+            theirs = stats_of(uid) or {}
+            mine = [v for k, v in theirs.get("rounds", {}).items() if k.startswith(this_season)]
             nick, _hidden = shown(user_of(uid) or {})
-            rows.append({"uid": uid, "nick": nick, "hidden": not nick, "totals": boards_mod.combine(mine)})
+            rows.append({"uid": uid, "nick": nick, "hidden": not nick, "totals": boards_mod.combine(mine),
+                         "pending": not mine and any(k.startswith(this_season) for k in theirs.get("tipped", {}))})
         board = boards_mod.make_board("league", rows, model=None, crowd=None, updated=updated,
                                       extra={"season": season, "name": league.get("name", "")})
         writes.append(Write.set(f"boards/league_{season}_{code}", board))

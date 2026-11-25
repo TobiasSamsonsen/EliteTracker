@@ -275,7 +275,7 @@ def test_a_played_match_without_a_snapshot_is_reported_not_scored(tmp_path):
     store = FakeStore()
     put_entry(store, "u1", KEY, {"s1": (0, 40, 30, 30)}, T0 - timedelta(days=1))
     summary = go(store, T0 + timedelta(hours=5), season(played={101: (1, 1)}), tmp_path)   # no earlier run: no snapshot
-    assert "101" in summary["unscorable"] and "stats/u1" not in store.docs
+    assert "101" in summary["unscorable"] and "rounds" not in store.docs.get("stats/u1", {})   # tipped, never scored
 
 
 def test_a_deletion_request_erases_the_player_and_strips_the_boards(tmp_path):
@@ -567,3 +567,22 @@ def test_load_report_or_local_falls_back_after_exhausting_500_retries(monkeypatc
     assert exc_info.value.code == 500
     assert calls == 2
     assert slept == [0.5]
+
+
+def test_a_player_who_tipped_a_round_that_has_kicked_off_is_on_the_board_before_a_match_settles(tmp_path):
+    store = FakeStore()
+    go(store, T0 - timedelta(hours=2), season(), tmp_path)
+    for i in range(6):
+        put_entry(store, f"u{i}", KEY, {"s1": (0, 60, 20, 20)}, T0 - timedelta(days=2))
+        store.docs[f"users/u{i}"] = {"nick": f"Tipper_{i}", "hidden": False, "created": T0 - timedelta(days=30)}
+    store.docs["users/idle"] = {"nick": "Idle_1", "hidden": False, "created": T0 - timedelta(days=30)}
+    go(store, T0 + timedelta(hours=1), season(), tmp_path)           # match 101 has kicked off, none is played
+    board = store.docs[f"boards/season_{SEASON}_eliteserien"]
+    players = [r for r in board["rows"] if r["kind"] == "player"]
+    assert len(players) == 6 and all(r["n"] == 0 and r["pts"] == 0 for r in players) and board["players"] == 6
+    assert store.docs["stats/u0"]["tipped"] == {KEY: True} and "rounds" not in store.docs["stats/u0"]
+    assert f"boards/season_{SEASON}_all" in store.docs and "stats/idle" not in store.docs
+    # once a match settles the player is an ordinary scored row, and the placeholder no longer lifts anyone
+    go(store, T0 + timedelta(hours=5), season(played={101: (2, 0)}), tmp_path)
+    board = store.docs[f"boards/season_{SEASON}_eliteserien"]
+    assert [r["n"] for r in board["rows"] if r["kind"] == "player"] == [1] * 6

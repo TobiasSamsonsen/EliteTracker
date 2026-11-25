@@ -1628,7 +1628,7 @@
     // Three players or more: the top three stand on the podium, and the table (in board order) goes on
     // from fourth place; sorted by another column it lists everyone again.
     const podiumRows = board.rows.filter((row) => row.kind === 'player').slice(0, 3);
-    const onPodium = podiumRows.length === 3 ? new Set(podiumRows) : null;
+    const onPodium = podiumRows.length === 3 && podiumRows.every((row) => row.n > 0) ? new Set(podiumRows) : null;   // three players with nothing scored yet are no podium
     const paintRows = () => {
       const sorted = sortedRows(board.rows, sort);
       const rows = onPodium && !sort ? sorted.filter((row) => !onPodium.has(row)) : sorted;

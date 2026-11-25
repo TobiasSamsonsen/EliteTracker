@@ -70,7 +70,9 @@ def make_board(scope: str, players: Iterable[dict], *, model: Mapping | None, cr
                updated: str, extra: Mapping | None = None) -> dict:
     """One board document. ``players``: dicts with ``uid``, ``nick``, ``hidden``,
     and ``totals``; ``model`` / ``crowd``: their totals."""
-    humans = [p for p in players if p["totals"]["n"] > 0]
+    # A player with nothing scored yet stands on the board when they have tipped a round that has kicked off
+    # (``pending``: 0 matches, 0 points, after everyone with points), so the board is not empty until a match settles.
+    humans = [p for p in players if p["totals"]["n"] > 0 or p.get("pending")]
     order = lambda r: (-r["pts"], -(r["acc"] or 0), r["u"])  # noqa: E731 - one sort key for places and ranks
     everyone = sorted(((_row("player", p["uid"], p["nick"], p["totals"]), p["hidden"]) for p in humans), key=lambda e: order(e[0]))
     for place, (row, _hidden) in enumerate(everyone, 1):
@@ -95,24 +97,25 @@ def build_season_boards(season: int, slug: str, players: Mapping[str, dict], *, 
                         updated: str, changed_rounds: Sequence[str] = ()) -> dict[str, dict]:
     """The boards of one league and season.
 
-    ``players``: uid -> {nick, hidden, rounds: {key: totals}}. ``rounds``: the
+    ``players``: uid -> {nick, hidden, rounds: {key: totals}, pending?}. ``rounds``: the
     league's rounds with any settled match, oldest first, each {key, round,
     matches, settled}; a round is *finished* when settled == matches. ``changed_rounds`` (round keys)
     also get a board of their own, `round_{season}_{slug}_{n}`, kept as a past round's board."""
     boards: dict[str, dict] = {}
 
-    def over(keys: Sequence[str], scope: str, extra: Mapping) -> dict:
+    def over(keys: Sequence[str], scope: str, extra: Mapping, pending: bool = False) -> dict:
         wanted = set(keys)
         rows = []
         for uid, p in players.items():
             mine = {k: v for k, v in p["rounds"].items() if k in wanted}
-            rows.append({"uid": uid, "nick": p["nick"], "hidden": p["hidden"], "totals": combine(mine.values())})
+            rows.append({"uid": uid, "nick": p["nick"], "hidden": p["hidden"], "totals": combine(mine.values()),
+                         "pending": pending and bool(p.get("pending"))})
         return make_board(scope, rows, model=combine(v for k, v in model_rounds.items() if k in wanted),
                           crowd=combine(v for k, v in crowd_rounds.items() if k in wanted),
                           updated=updated, extra=extra)
 
     keys = [r["key"] for r in rounds]
-    boards[f"season_{season}_{slug}"] = over(keys, "season", {"season": season, "league": slug})
+    boards[f"season_{season}_{slug}"] = over(keys, "season", {"season": season, "league": slug}, pending=True)
     for info in rounds:
         if info["key"] in set(changed_rounds):
             boards[f"round_{season}_{slug}_{info['round']}"] = over([info["key"]], "round",
@@ -121,7 +124,8 @@ def build_season_boards(season: int, slug: str, players: Mapping[str, dict], *, 
         latest = rounds[-1]
         boards[f"round_{season}_{slug}"] = over([latest["key"]], "round",
                                                 {"season": season, "league": slug, "round": latest["round"]})
-        boards[f"last10_{season}_{slug}"] = over(keys[-LAST_ROUNDS:], "last10", {"season": season, "league": slug})
+        boards[f"last10_{season}_{slug}"] = over(keys[-LAST_ROUNDS:], "last10", {"season": season, "league": slug},
+                                               pending=True)
     return boards
 
 
@@ -133,7 +137,9 @@ def build_overall_board(season: int, divisions: Mapping[str, tuple[Mapping[str, 
     merged: dict[str, dict] = {}
     for players, _rounds in divisions.values():
         for uid, p in players.items():
-            row = merged.setdefault(uid, {"uid": uid, "nick": p["nick"], "hidden": p["hidden"], "totals": _blank()})
+            row = merged.setdefault(uid, {"uid": uid, "nick": p["nick"], "hidden": p["hidden"], "totals": _blank(),
+                                          "pending": False})
+            row["pending"] = row["pending"] or bool(p.get("pending"))
             row["totals"] = combine([row["totals"], combine(p["rounds"].values())])
     return make_board("season", merged.values(), model=combine(model_rounds.values()), crowd=combine(crowd_rounds.values()),
                       updated=updated, extra={"season": season, "league": "all"})
