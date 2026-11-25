@@ -5964,11 +5964,6 @@ body.has-scenario { overflow: hidden; }
   .scenario__head { align-items: center; }
   .scenario-all__grid { grid-template-columns: 1fr; }
 }
-/* A finger's size for the close and share buttons in the popup's head. */
-@media (pointer: coarse), (max-width: 760px) {
-  .scenario__close { width: 44px; height: 44px; font-size: 1.5rem; }
-  .scenario__head .share-btn { width: 44px; height: 44px; }
-}
 .scenario__panel.is-dragging, .is-sheet.is-dragging { animation-play-state: paused; transition: transform 0.05s linear, opacity 0.05s linear; }
 .scenario__panel.is-dismissed, .is-sheet.is-dismissed {
   transform: translateY(100%);
@@ -6095,6 +6090,13 @@ body.has-scenario { overflow: hidden; }
 }
 .scenario__head .share-btn:hover { background: transparent; border-color: var(--accent); box-shadow: none; color: var(--accent-ink); }
 .scenario__head .share-btn svg { width: 16px; height: 16px; }
+/* A finger's size for the close and share buttons in the popup's head: the same 44px, on the same line
+   (after the share rule above, which would otherwise keep it 2rem and at the top). */
+@media (pointer: coarse), (max-width: 760px) {
+  .scenario__close { width: 44px; height: 44px; font-size: 1.5rem; }
+  .scenario__head .share-btn { width: 44px; height: 44px; align-self: auto; }
+  .scenario__head .share-btn svg { width: 20px; height: 20px; }
+}
 .footer__data { margin-bottom: 0.25rem; }
 
 /* ---------- overview ----------------------------------------------- */

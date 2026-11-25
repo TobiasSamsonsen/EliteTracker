@@ -360,10 +360,12 @@
      either end of it moves that end alone, the other end staying put. On the curve the block's middle
      is the gap (gapUnder) and an end sets the draw tendency (positionForEdges); with fine-tune on
      every part moves a whole percent at a time with no curve to follow (freeEdges). A grab keeps its
-     distance from what it took hold of, so nothing jumps when a drag starts. While
-     `waitForSideways()` holds, a touch waits for a sideways move before it counts, so a scroll that
-     starts on the bar leaves no pick. */
-  function dragBar(oddsBar, { state, onMove, onStart = () => {}, onEnd = () => {}, waitForSideways = () => false }) {
+     distance from what it took hold of, so nothing jumps when a drag starts. A finger (unlike a mouse)
+     waits for a sideways move before it counts, so a scroll or a tap that lands on the bar never moves
+     a pick. While `grabOnly()` holds (the match has a pick), a finger also has to start on the draw
+     block, or just beside it: a press anywhere else on the bar does nothing, so the block never jumps
+     to where a finger came down. */
+  function dragBar(oddsBar, { state, onMove, onStart = () => {}, onEnd = () => {}, grabOnly = () => false }) {
     let mode = null;
     let armed = null;
     let offset = 0;
@@ -387,11 +389,14 @@
       const next = mode === 'left' ? positionForEdges(edge, p[2], 'a') : positionForEdges(p[0], 100 - edge, 'h');
       onMove({ g: next.gap, k: next.tenths });
     };
+    const GRAB_SLACK = 20;                    // px a finger may miss the block by and still hold it
     const begin = (event, x) => {
       mode = edgeAt(x, event.pointerType);
       const box = drawBox();
       const width = oddsBar.getBoundingClientRect().width || 1;
-      const inside = x >= box.left && x <= box.right;
+      // A grab within the slack still holds the block where it is (no jump to the finger).
+      const slack = grabOnly() && event.pointerType !== 'mouse' ? GRAB_SLACK : 0;
+      const inside = x >= box.left - slack && x <= box.right + slack;
       offset = mode === 'left' ? (box.left - x) / width : mode === 'right' ? (box.right - x) / width
         : inside ? ((box.left + box.right) / 2 - x) / width : 0;            // a press beside the block brings it there
       oddsBar.dataset.drag = mode;
@@ -400,8 +405,12 @@
       move(event);
     };
     oddsBar.addEventListener('pointerdown', (event) => {
-      if (event.pointerType === 'mouse' || !waitForSideways()) begin(event, event.clientX);
-      else armed = { x: event.clientX, y: event.clientY };
+      if (event.pointerType === 'mouse') { begin(event, event.clientX); return; }
+      if (grabOnly()) {
+        const box = drawBox();
+        if (event.clientX < box.left - GRAB_SLACK || event.clientX > box.right + GRAB_SLACK) return;
+      }
+      armed = { x: event.clientX, y: event.clientY };
     });
     oddsBar.addEventListener('pointermove', (event) => {
       if (armed) {
@@ -422,7 +431,7 @@
      is and how wide it is. On the curve those are the gap and the draw tendency; with fine-tune on,
      the home percent and the draw percent, a step of 1 each. `onInput` runs on every change,
      `onCommit` when a drag or a key lets go. */
-  function pickSlider(info, start, { onInput, onCommit = () => {}, onStart, onEnd, waitForSideways } = {}) {
+  function pickSlider(info, start, { onInput, onCommit = () => {}, onStart, onEnd, grabOnly } = {}) {
     let pos = start;
     const oddsBar = bar(percentsOf(pos));
     oddsBar.classList.add('pcard__bar');
@@ -477,7 +486,7 @@
     range.addEventListener('change', onCommit);
     drawRange.addEventListener('change', onCommit);
     dragBar(oddsBar, { state: () => pos, onMove: (next) => { pos = next; onInput(); }, onStart,
-      onEnd: () => { if (onEnd) onEnd(); onCommit(); }, waitForSideways });
+      onEnd: () => { if (onEnd) onEnd(); onCommit(); }, grabOnly });
     return api;
   }
 
@@ -527,9 +536,9 @@
     const slider = pickSlider(info, startPos, {
       onInput: () => { touch(); paint(); },
       onCommit: () => release(),
-      onStart: () => card.classList.add('is-dragging'),
-      onEnd: () => card.classList.remove('is-dragging'),
-      waitForSideways: () => !tipped,
+      onStart: () => { card.classList.add('is-dragging'); beginDrag(); },
+      onEnd: () => { card.classList.remove('is-dragging'); endDrag(); },
+      grabOnly: () => tipped,
     });
     const pct = () => slider.percents();
     let fine = Boolean(slider.pos.p);
@@ -587,7 +596,27 @@
     const saveWord = h('span', { class: 'pcard__save', attrs: { 'aria-live': 'polite' } });
     const status = h('span', { class: 'pcard__status' }, reading, saveWord);
     const clearButton = h('button', { type: 'button', class: 'pbtn pbtn--small pcard__clear', hidden: true, on: { click: () => clearPick() } }, t('predict.clear'));
-    card.append(slider.control, h('div', { class: 'pcard__foot' }, status, h('span', { class: 'pcard__acts' }, resetFine, clearButton, fineButton)), panel);
+    // A drag that moved a pick that was already there can be taken back for a few seconds.
+    let undoPos = null;
+    let undoTimer = 0;
+    const undoButton = h('button', { type: 'button', class: 'pbtn pbtn--small pcard__undo', hidden: true, on: { click: () => {
+      if (!undoPos) return;
+      slider.pos = undoPos;
+      hideUndo();
+      touch(); release();
+    } } }, t('predict.undo'));
+    function hideUndo() { clearTimeout(undoTimer); undoPos = null; undoButton.hidden = true; }
+    let heldPos = null;
+    function beginDrag() { hideUndo(); heldPos = tipped ? { ...slider.pos, ...(slider.pos.p ? { p: slider.pos.p.slice() } : {}) } : null; }
+    function endDrag() {
+      const was = heldPos;
+      heldPos = null;
+      if (!was || JSON.stringify(was) === JSON.stringify(slider.pos)) return;
+      undoPos = was;
+      undoButton.hidden = false;
+      undoTimer = setTimeout(hideUndo, 8000);
+    }
+    card.append(slider.control, h('div', { class: 'pcard__foot' }, status, h('span', { class: 'pcard__acts' }, undoButton, resetFine, clearButton, fineButton)), panel);
     let favourite = favouriteOf(pct());
 
     function paint() {
@@ -627,6 +656,7 @@
     };
 
     function touch() {
+      hideUndo();
       tipped = true;
       const pos = slider.pos;
       loadDraft(key)[slot] = { g: pos.g, k: pos.k, ...(pos.p ? { p: pos.p.slice() } : {}) };
@@ -652,6 +682,7 @@
       delete S.status[`${key}/${slot}`];
       if (Object.keys(loadDraft(key)).length) scheduleSave(key);
       tipped = false;
+      hideUndo();
       slider.pos = fine ? { ...EVEN, p: pickPercentages(EVEN.g, EVEN.k) } : { ...EVEN };
       paint();
       paintRing();

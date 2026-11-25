@@ -251,7 +251,7 @@
 .pcard__status[data-state="error"] .pcard__save { color: var(--outcome-bad-ink); }
 .pcard__retry { margin-left: 0.25rem; min-height: 32px; padding: 0 0.6rem; border-radius: 999px; border: 1px solid var(--outcome-bad);
   background: none; color: var(--outcome-bad-ink); font: inherit; font-size: 0.8125rem; font-weight: 700; cursor: pointer; }
-.pcard__acts { display: inline-flex; align-items: center; gap: 0.4rem; margin-left: auto; }
+.pcard__acts { display: inline-flex; flex-wrap: wrap; justify-content: flex-end; align-items: center; gap: 0.4rem; margin-left: auto; }
 
 .pcard__panel { margin: 0.25rem 0 0.35rem; padding-top: 0.75rem; border-top: 1px dashed var(--rule); display: grid; gap: 0.6rem; }
 /* The fine-tune switch: a pill with a dot that lights with it. */

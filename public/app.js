@@ -4312,8 +4312,8 @@ async function loadOverviewPredict() {
   return answer;
 }
 
-/* The invite: Predict on the Overview for a browser that has not played (no session, or a session that
-   has tipped nothing yet). Built from the season report alone, so it fetches nothing: the next round of
+/* The invite: Predict on the Overview for a browser with no session, so nobody signed in is ever asked to
+   play (a session exists from the first pick, or the first Google sign-in). Built from the season report alone, so it fetches nothing: the next round of
    the division the game opens on, and that round's hardest match to call with the model's odds, as a
    question. Its × rests it for two weeks in this browser. */
 const PREDICT_INVITE_REST_KEY = 'predict.invite.rest';
@@ -4426,11 +4426,9 @@ function overviewPredict() {
   if (!hasPredictSession()) return !predictInviteResting() && fillPredictInvite(card) ? card : null;
   card.hidden = true;
   loadOverviewPredict().then((data) => {
-    // A session that has tipped nothing yet (one visit to the game) still gets the invite.
-    if (!data || (!data.played && !data.last && (!data.next || data.next.done === 0))) {
-      if (!predictInviteResting() && fillPredictInvite(card)) card.hidden = false;
-      return;
-    }
+    // A browser that holds a session is signed in: with nothing to show (no round ahead, a read that came
+    // back empty) it gets no card, never the invite. Someone who has not tipped yet sees the open round's.
+    if (!data) return;
     // The card is one slim row. Left: where the open round stands (nothing tipped, some, all) with a small
     // button while there is something to tip. Right: what the last scored round came to.
     card.appendChild(overviewCardHead(t('overview.predict.title'), t('overview.predict.caption'), () => switchView('predict')));
@@ -12797,7 +12795,9 @@ function initMobileGestures() {
 /* Touch ripple effect for buttons and interactive elements */
 function addTouchRipple() {
   const interactiveSelectors = [
-    'button:not(.switch button):not(.sort-btn):not(.grid-anim-speed button)',
+    // Not the Overview card's name button: its ::after is stretched over the card, and the ripple's
+    // position: relative would shrink that to the name, so a tap anywhere else on the card hit nothing.
+    'button:not(.switch button):not(.sort-btn):not(.grid-anim-speed button):not(.overview-card__open)',
     '.club-btn',
     '.played-card',
     '.ladder__team',

@@ -116,7 +116,7 @@ These issues should be fixed before merging `predict` into `main`:
 
 ### Tip Screen & Match Cards
 - **Withdraw / clear pick:** `firestore.rules:51` already permits withdrawing a pick before kick-off, and skipping = 0 is central to the scoring rule, yet the UI has no way to clear an open pick.
-- **Prevent accidental picks on mobile scroll/tap:** `pointerdown` ([`public/predict.js:418`](../public/predict.js#L418)) immediately jumps the slider and commits a draft; require horizontal drag intent (or a small movement threshold) on untouched cards.
+- **Prevent accidental picks on mobile scroll/tap:** `pointerdown` ([`public/predict.js:418`](../public/predict.js#L418)) immediately jumps the slider and commits a draft; require horizontal drag intent (or a small movement threshold) on untouched cards. **Done:** a finger waits for a sideways move (`dragBar`), and on a card with a pick only a grab of its draw block counts, with an Undo for a few seconds after a drag.
 - **Always-visible H/D/A readout:** Narrow segments lose their labels via `labelFits()`, forcing users into Fine-tune just to read exact percentages. Show a compact `H / D / A` readout on every card.
 - **Quick round picker:** Add a round selector dropdown or strip (with status and tipped counts) so users do not have to click `‹` 20 times to inspect earlier rounds.
 - **Keyboard confirmation on untouched `37 / 26 / 37`:** Allow keyboard users to confirm the neutral `37 / 26 / 37` pick without nudging away and back.

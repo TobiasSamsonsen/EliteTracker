@@ -684,3 +684,79 @@ test('a round board adds up that round, the last-10 board the last ten scored ro
   assert.deepEqual(util.keysTotals(stats, last), { n: 3, b: 0.75, r: 0, ab: 0, ar: 0, vm: 0, rounds: 2 });
   assert.equal(util.keysTotals(null, last).n, 0);
 });
+
+/* The bar's drag (dragBar in predict.js, inside the page's closure, so sliced out of the source with the
+   few helpers it reads stubbed). A finger that lands on the bar scrolling or tapping must never move a
+   pick, and on a card that has one the block is only held by grabbing it. */
+function barHarness({ grabOnly }) {
+  const fs = require('node:fs');
+  const source = fs.readFileSync(`${__dirname}/../public/predict.js`, 'utf8');
+  const start = source.indexOf('function dragBar(');
+  const body = source.slice(start, source.indexOf('\n  }\n', start) + 4);
+  const factory = new Function('capture', 'gapUnder', 'freePos', 'freeEdges', 'pickPercentages', 'positionForEdges', `${body}; return dragBar;`);
+  const dragBar = factory(() => {}, (at) => at, (p) => p, (p) => p, () => [0, 0, 0], () => ({ gap: 0, tenths: 0 }));
+  const handlers = {};
+  const rect = (left, width) => ({ left, right: left + width, width });
+  const seg = { getBoundingClientRect: () => rect(100, 60) };            // the draw block: 100..160
+  const bar = { dataset: {}, addEventListener: (type, fn) => { handlers[type] = fn; }, querySelector: () => seg,
+    getBoundingClientRect: () => rect(0, 400) };
+  const log = { start: 0, moves: [], end: 0 };
+  dragBar(bar, { state: () => ({ g: 0, k: 10 }), onMove: (pos) => log.moves.push(pos), onStart: () => { log.start += 1; },
+    onEnd: () => { log.end += 1; }, grabOnly: () => grabOnly });
+  const ev = (x, y, pointerType = 'touch') => ({ clientX: x, clientY: y, pointerType, pointerId: 1 });
+  return { handlers, log, ev };
+}
+
+test('a finger on a pick that exists moves it only when it grabbed the draw block and went sideways', () => {
+  const miss = barHarness({ grabOnly: true });
+  miss.handlers.pointerdown(miss.ev(300, 20));                  // far from the block
+  miss.handlers.pointermove(miss.ev(340, 20));
+  miss.handlers.pointerup(miss.ev(340, 20));
+  assert.equal(miss.log.start, 0);
+  assert.equal(miss.log.moves.length, 0, 'a press beside the block does not bring it to the finger');
+
+  const scroll = barHarness({ grabOnly: true });
+  scroll.handlers.pointerdown(scroll.ev(130, 20));              // on the block, but the finger scrolls
+  scroll.handlers.pointermove(scroll.ev(132, 60));
+  scroll.handlers.pointercancel(scroll.ev(132, 60));
+  assert.equal(scroll.log.moves.length, 0, 'a vertical scroll over the block moves nothing');
+
+  const tap = barHarness({ grabOnly: true });
+  tap.handlers.pointerdown(tap.ev(130, 20));
+  tap.handlers.pointerup(tap.ev(130, 20));
+  assert.equal(tap.log.moves.length, 0, 'a tap moves nothing');
+
+  const grab = barHarness({ grabOnly: true });
+  grab.handlers.pointerdown(grab.ev(130, 20));
+  grab.handlers.pointermove(grab.ev(150, 22));
+  grab.handlers.pointerup(grab.ev(150, 22));
+  assert.equal(grab.log.start, 1);
+  assert.ok(grab.log.moves.length >= 1, 'grabbing the block and dragging sideways moves it');
+  assert.equal(grab.log.end, 1);
+
+  const slack = barHarness({ grabOnly: true });                 // 5px beside the block (100..160): still held, still no jump
+  slack.handlers.pointerdown(slack.ev(165, 20));
+  slack.handlers.pointermove(slack.ev(185, 22));
+  assert.ok(Math.abs(slack.log.moves[0].g - 150 / 400) < 1e-9, 'the block keeps its distance from the finger');
+});
+
+test('on an untouched card a finger makes the first pick only by a sideways drag; a mouse still presses', () => {
+  const tap = barHarness({ grabOnly: false });
+  tap.handlers.pointerdown(tap.ev(300, 20));
+  tap.handlers.pointerup(tap.ev(300, 20));
+  assert.equal(tap.log.moves.length, 0);
+
+  const scroll = barHarness({ grabOnly: false });
+  scroll.handlers.pointerdown(scroll.ev(300, 20));
+  scroll.handlers.pointermove(scroll.ev(302, 70));
+  assert.equal(scroll.log.moves.length, 0);
+
+  const drag = barHarness({ grabOnly: false });
+  drag.handlers.pointerdown(drag.ev(300, 20));
+  drag.handlers.pointermove(drag.ev(320, 22));
+  assert.ok(drag.log.moves.length >= 1);
+
+  const mouse = barHarness({ grabOnly: true });
+  mouse.handlers.pointerdown(mouse.ev(300, 20, 'mouse'));
+  assert.ok(mouse.log.moves.length >= 1, 'a mouse click on the bar still sets the pick');
+});

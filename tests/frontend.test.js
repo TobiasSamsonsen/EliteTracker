@@ -1559,3 +1559,18 @@ test('the Predict invite names the next full round and its closest call', () => 
   assert.equal(predictInviteRound(fixtures, Date.parse('2026-12-11T12:00:00+01:00')), null, 'nothing ahead: no invite');
   assert.equal(predictInviteRound([], now), null);
 });
+
+/* The touch ripple puts position: relative on whatever it touches. A card's name button is stretched over its
+   card by an ::after, so rippling it shrinks that to the name and a tap elsewhere on the card opens nothing. */
+test('the touch ripple leaves the Overview card name buttons alone', () => {
+  const list = pick('addTouchRipple').match(/const interactiveSelectors = \[([\s\S]*?)\];/)[1];
+  assert.match(list, /'button:[^']*:not\(\.overview-card__open\)'/);
+});
+
+/* A browser holding a Predict session is signed in: its Overview card is the game's or nothing, never the invite. */
+test('the Overview shows the Predict invite only to a browser with no session', () => {
+  const body = pick('overviewPredict');
+  const afterLoad = body.slice(body.indexOf('loadOverviewPredict().then'));
+  assert.ok(!afterLoad.includes('fillPredictInvite'), 'a signed-in browser is never shown the invite');
+  assert.match(body, /if \(!hasPredictSession\(\)\) return[^;]*fillPredictInvite/);
+});

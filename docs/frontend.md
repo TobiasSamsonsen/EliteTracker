@@ -209,7 +209,7 @@ set with fine-tune on:** on the curve the whole block moves with the finger and 
 (the ends are no handles, no ridges are drawn, and the width input is disabled); with fine-tune on each
 end of the block is a handle (a ridge just inside it) that moves that end alone and holds the other
 (`dragBar` in `predict.js` decides by where the finger lands, and a grab keeps its distance from what it
-took, so nothing jumps; `positionForEdges` in `predict-util.js` still turns an end into a curve position
+took, so nothing jumps. A finger, unlike a mouse, waits for a sideways move before it counts, so a scroll or a tap on the bar never moves a pick; on a card that already has one it must also start on the draw block (20px of slack), so the block never jumps to where a finger came down, and a drag that moved such a pick leaves an Undo for eight seconds; `positionForEdges` in `predict-util.js` still turns an end into a curve position
 for a pick saved earlier). **Fine-tune** is a toggle pill on each card (every untouched card starts on the curve, with it off, unless Meg's "Always use fine-tune" is on: a switch kept in this browser as `predict.fine.always`, which opens every card with it on and hides the pill): on, the pick is three whole percents of its
 own, off the curve, every part moving a percent at a time with no limit but 1..98 (`freeEdges`; the
 middle slides the block at its width), the numbers can be typed (`freeTyped`), and the save stores
@@ -408,8 +408,8 @@ builder and error mapping are unit-tested; the sign-in itself needs the live OAu
   tap, drag or arrow keys to read a round), the best round, and in how many rounds you were ahead of the
   model. Its share icon draws the same as a picture (`sharePredictSeason`). Built from `stats/{uid}`
   only, so it costs no extra reads; badges are shown for the current season only.
-- **The Overview's Predict card.** For a browser that holds a Predict session and has played (else the invite
-  below). Short words throughout: room is short on a phone. Left: where the open round stands (`data-state` on
+- **The Overview's Predict card.** For a browser that holds a Predict session (Google or anonymous): its card
+  when there is anything to show, else nothing, never the invite (a browser with a session is signed in). Short words throughout: room is short on a phone. Left: where the open round stands (`data-state` on
   `.overview-predict`): **empty** ("Runde 28: ikke tippet", the invite's accent border and glow from the top
   right, a "Tipp nå →" pill), **partial** ("Runde 28: 3 av 8 tippet", the glow fainter, a "Fullfør →" pill),
   each with the time left ("3 dager igjen", bold under a day); **done** ("Tipsene dine er inne": a check in a
@@ -439,9 +439,8 @@ builder and error mapping are unit-tested; the sign-in itself needs the live OAu
   `stats/{uid}`, your entry for the next round and (with a scored round this season)
   `boards/season_{season}_{league}`, and keeps the answer for ten minutes in the tab's session storage under
   the player's id (saving a pick clears it). A browser without a session fetches nothing.
-- **The Overview's Predict invite.** For a browser that has not played: no session, or a session whose
-  answer shows nothing scored in any season (`played`, from `stats/{uid}`) and nothing tipped in the open
-  round. Built from the season report alone (`fillPredictInvite`; nothing is fetched): "Klarer du å slå
+- **The Overview's Predict invite.** For a browser with no session at all (a signed-in browser is never
+  shown it, whatever it has tipped). Built from the season report alone (`fillPredictInvite`; nothing is fetched): "Klarer du å slå
   modellen?" in display type, one line on the game ("Sett dine egne odds og bli målt mot modellen og alle
   andre."), a "Prøv nå →" pill with the round's matches and first day ("8 kamper
   fra lørdag 28. november"), or "Ta en titt →" and "Åpner lørdag 21. november" while the round is not open;
