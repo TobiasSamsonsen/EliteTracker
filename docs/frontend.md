@@ -331,10 +331,10 @@ switch's 44px buttons sit in its rim (the pickers, the round bar's arrows and it
 a column is sorted, hanging outside the label so a header lines up with its numbers. The window follows a
 column sort; "Gå til raden min" shows only in the whole list.
 
-Meg has "your playing style" (`analysisSection`): your settled picks (own entries, plus the round's
+Meg has "your playing style" (`analysisSection`; no button: below thirty settled matches, by the stats, it shows a note and reads nothing, from thirty it loads as the tab opens): your settled picks (own entries, plus the round's
 `reveal` and `fixtures` documents; a finished round is cached in the browser, so it costs reads
 once) compared with the model's locked odds and the results (`analysePlay` in `predict-util.js`,
-from five matches): you against the model match by match and what following it would have
+from thirty matches): you against the model match by match and what following it would have
 scored; four style tracks against the model (favourites, draws, home side, boldness); and tips,
 strongest first, each opening to the matches behind it: favourites over/under-valued (checked
 against how often they won), draws, home bias, a club you over/under-value (three matches or

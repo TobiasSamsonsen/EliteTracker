@@ -535,7 +535,7 @@ function seasonHighlights(series) {
 /* rows: { key, home, away, hid, aid, pick: [h, d, a] whole percents, model: [h, d, a] fractions,
    hg, ag, ko (ms), t (ms of your last change, or null) }. Everything is compared with the model's
    locked odds (what it said at kick-off) and with what happened. Percentage points are whole. */
-const ANALYSE_MIN = 5;
+const ANALYSE_MIN = 30;           // fewer matches say little about a style
 const TEAM_MIN = 3;
 
 function analysePlay(rows) {

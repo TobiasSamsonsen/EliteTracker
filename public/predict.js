@@ -1886,9 +1886,12 @@
       try { await ensureHistory(); paintAnalysis(body); }
       catch (error) { body.replaceChildren(emptyState(error, go)); }
     };
-    if (S.history && now() - S.historyAt < HISTORY_FRESH) paintAnalysis(body);
-    else if (store.get(`predict.hist.${client.uid}`)) go();          // analysed before: the cache makes it cheap
-    else body.append(h('button', { type: 'button', class: 'pbtn pbtn--primary', on: { click: go } }, t('predict.style.run')));
+    // Below the minimum nothing is read: the stats already say how many matches are settled. From it the
+    // style is worked out as the tab opens (a finished round is cached in the browser, so reads are once per round).
+    const settled = statsTotalN();
+    if (settled < ANALYSE_MIN) body.append(h('p', { class: 'pempty' }, t('predict.style.wait', { min: ANALYSE_MIN, n: ANALYSE_MIN - settled })));
+    else if (S.history && now() - S.historyAt < HISTORY_FRESH) paintAnalysis(body);
+    else go();
     return box;
   }
 
@@ -1907,7 +1910,7 @@
     const chips = h('div', { class: 'ptoolbar' }, divisions, seasonPick);
     const out = analysePlay(rows);
     if (!out.ready) {
-      body.replaceChildren(chips, h('p', { class: 'pempty' }, t('predict.style.wait', { n: out.missing })));
+      body.replaceChildren(chips, h('p', { class: 'pempty' }, t('predict.style.wait', { min: ANALYSE_MIN, n: out.missing })));
       return;
     }
     if (scope === 'all' && seasonScope === 'all' && out.insights[0]) {
@@ -2281,7 +2284,7 @@
     const T = S.tut || (S.tut = { step: 0, passed: new Set() });
     const steps = TUTORIAL.filter((s) => !s.account || !client.uid);
     const demo = guideDemo((flag) => { T.passed.add(flag); if (gate) gate(); });
-    const google = googleFlow(t('predict.google.signin'), switchToGoogle);
+    const google = googleFlow('signin_with', switchToGoogle);
     const body = h('div', { class: 'ptut__body' });
     const hint = h('p', { class: 'ptut__hint', attrs: { 'aria-live': 'polite' } });
     const back = h('button', { type: 'button', class: 'pbtn', on: { click: () => { T.step -= 1; show(true); } } }, t('predict.tut.back'));
@@ -2322,12 +2325,12 @@
         s.results ? demo.pickRow : null,
         s.results ? demo.score : null,
         s.results ? h('p', { class: 'ptut__text' }, t('predict.how.s4.bold')) : null,
-        s.account ? h('div', { class: 'pgoogle ptut__google' }, google.start, google.holder, google.message) : null].filter(Boolean));
+        s.account ? h('div', { class: 'pgoogle ptut__google' }, google.holder, google.message) : null].filter(Boolean));
+      if (s.account) google.mount();
       back.hidden = T.step === 0;
       const last = T.step === steps.length - 1;
       next.textContent = t(s.account ? 'predict.tut.anon' : last ? 'predict.tut.finish' : 'predict.tut.next');
       next.classList.toggle('pbtn--primary', !s.account);
-      google.start.classList.toggle('pbtn--primary', Boolean(s.account));
       gate();
       if (moved) title.focus({ preventScroll: true });
     }
@@ -2633,21 +2636,27 @@
     });
   }
 
-  /* Google's own button, on request: its script loads only when the player asks. The same flow links
-     a Google account to the one in use (Me) or signs in as one (a new device). */
-  function googleFlow(label, onCredential) {
+  /* Google's own button, drawn as soon as the block that holds it is on the page (``mount``): the script
+     is Google's and loads with the Me tab's sign-in block, or the tutorial's last step, not before. The
+     button is an iframe, so only Google's options style it: the pill shape matches our buttons, and the
+     filled-black theme goes with the dark theme. The same flow links a Google account to the one in use
+     (Me) or signs in as one (a new device). */
+  function googleFlow(text, onCredential) {
     const message = h('p', { class: 'pme__msg', attrs: { 'aria-live': 'polite' } });
     const holder = h('div', { class: 'pgoogle__button' });
-    const start = h('button', { type: 'button', class: 'pbtn', on: { click: async () => {
-      message.textContent = t('predict.loading');
+    let started = false;
+    async function mount() {
+      if (started) return;
+      started = true;
       try {
         await loadGoogle();
         window.google.accounts.id.initialize({ client_id: config.googleClientId, callback: (reply) => onCredential(reply.credential, message) });
-        window.google.accounts.id.renderButton(holder, { theme: 'outline', size: 'large', text: 'signin_with', locale: lang() === 'no' ? 'nb' : 'en' });
-        message.textContent = t('predict.google.pick');
-      } catch (error) { message.textContent = errorText(error); }
-    } } }, label);
-    return { start, holder, message };
+        const dark = document.documentElement.dataset.resolvedTheme === 'dark';
+        window.google.accounts.id.renderButton(holder, { type: 'standard', theme: dark ? 'filled_black' : 'outline', size: 'large', shape: 'pill',
+          text, logo_alignment: 'left', width: 280, locale: lang() === 'no' ? 'nb' : 'en' });
+      } catch (error) { started = false; message.textContent = errorText(error); }
+    }
+    return { holder, message, mount };
   }
 
   /* Back on this device with a Google account that already plays: take its history. The session
@@ -2663,8 +2672,9 @@
 
   /* The signed-out Me tab: a returning player signs in here, without tipping a match first. */
   function signInBlock() {
-    const { start, holder, message } = googleFlow(t('predict.google.signin'), switchToGoogle);
-    return h('div', { class: 'pgoogle' }, h('p', {}, t('predict.google.signin.why')), start, holder, message);
+    const { holder, message, mount } = googleFlow('signin_with', switchToGoogle);
+    mount();
+    return h('div', { class: 'pgoogle' }, h('p', {}, t('predict.google.signin.why')), holder, message);
   }
 
   function googleBlock() {
@@ -2673,7 +2683,7 @@
       return h('div', { class: 'pgoogle' }, h('p', {}, t('predict.google.linked')),
         confirmable(t('predict.signout'), t('predict.signout.q'), () => { client.signOut(); resetLocal(); toast(t('predict.signout.done')); render(); }, 'pbtn'));
     }
-    const { start, holder, message } = googleFlow(t('predict.google.link'), finish);
+    const { holder, message, mount } = googleFlow('continue_with', finish);
     async function finish(credential) {
       try {
         await client.linkGoogle(credential, location.origin);
@@ -2687,7 +2697,8 @@
         } else message.textContent = errorText(error);
       }
     }
-    return h('div', { class: 'pgoogle' }, h('p', {}, t('predict.google.why')), start, holder, message);
+    mount();
+    return h('div', { class: 'pgoogle' }, h('p', {}, t('predict.google.why')), holder, message);
   }
 
   function dataSection(signedIn) {
