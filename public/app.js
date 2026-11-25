@@ -655,7 +655,7 @@ function handleGridKeydown(event, cell, rows, cellIndex, rowIndex) {
    states, its figures sit a little off the grid's. */
 const scenarioState = { token: 0, root: null, trigger: null, untrap: null, onKey: null };
 // Whether the season shown avoids a finish decided on goal difference (the default; see `scenarioAnalysis`).
-let scenarioAvoidTie = true;
+let scenarioAvoidTie = false;           // allowing goal difference is the default: the single likeliest run of results
 const scenarioResults = new Map();
 const scenarioWarmed = new WeakSet();
 let scenarioLocal = null;
@@ -669,7 +669,7 @@ function scenarioAvailable(report) {
 
 /* The analysis for one club and place; no club only plays the season, so a click
    later finds it done. A worker that cannot start falls back to this thread. */
-async function scenarioRequest(report, club, place, avoidTie = true) {
+async function scenarioRequest(report, club, place, avoidTie = false) {
   const prepared = whatIfPrepare(report);
   const key = `${prepared.id}:${club}:${place}:${avoidTie ? 1 : 0}`;
   if (club != null && scenarioResults.has(key)) return scenarioResults.get(key);
@@ -932,7 +932,7 @@ function scenarioModeSwitch(onChange) {
     });
     bar.appendChild(button);
   }
-  wrap.append(bar, el('p', 'scenario__howto', t('scenario.modeNote')));
+  wrap.append(bar);
   return wrap;
 }
 
@@ -1026,11 +1026,9 @@ function scenarioDeciders(prepared, analysis) {
 const scenarioOwner = (name) => t(/[sxz]$/i.test(name) ? 'scenario.ownerAlt' : 'scenario.owner', { team: name });
 
 function scenarioKey(report, prepared, club, analysis, deciders) {
+  // Nothing outside the club's hands: one quiet line, not a section with a heading over a box.
+  if (!deciders.length) return el('p', 'scenario__alone', t('scenario.stepsNone', { team: report.table[club].team }));
   const section = scenarioSection(t('scenario.stepsTitle', { owner: scenarioOwner(report.table[club].team) }), t('scenario.stepsLead'));
-  if (!deciders.length) {
-    section.appendChild(el('p', 'scenario-empty', t('scenario.stepsNone', { team: report.table[club].team })));
-    return section;
-  }
   const list = el('div', 'scenario-matches');
   for (const decider of deciders) list.appendChild(scenarioMatchRow(report, prepared, analysis, decider.f, null, decider));
   section.appendChild(list);
@@ -1047,7 +1045,8 @@ function scenarioOwn(report, prepared, club, analysis) {
     results[mine[0] > mine[1] ? 0 : mine[0] === mine[1] ? 1 : 2] += 1;
   }
   const total = analysis.typical.table.find((entry) => entry.club === club).points;
-  const lead = t('scenario.ownSum', { w: results[0], d: results[1], l: results[2], pts: results[0] * 3 + results[1], max: analysis.own.length * 3, team, total });
+  const wdl = results.map((n, i) => `${n}${t(`form.${'WDL'[i]}`)}`).join(' ');
+  const lead = t('scenario.ownSum', { wdl, pts: results[0] * 3 + results[1], max: analysis.own.length * 3, total });
   const section = scenarioSection(t('scenario.ownTitle', { owner: scenarioOwner(team) }), lead);
   const list = el('div', 'scenario-matches');
   for (const f of scenarioByDate(prepared, analysis.own)) list.appendChild(scenarioMatchRow(report, prepared, analysis, f, club));
@@ -1140,6 +1139,15 @@ function scenarioAll(report, prepared, club, analysis) {
   return more;
 }
 
+/* The reading notes, folded away: what the two modes mean, what a bar is, what the figures are counted on. */
+function scenarioAbout(analysis) {
+  const about = el('details', 'scenario__about');
+  about.appendChild(el('summary', '', t('scenario.about')));
+  for (const key of ['scenario.modeNote', 'scenario.barNote']) about.appendChild(el('p', 'scenario__howto', t(key)));
+  about.appendChild(el('p', 'scenario__howto', t('scenario.note', { n: num(analysis.sims) })));
+  return about;
+}
+
 function scenarioFill(body, report, club, analysis) {
   if (!analysis.enough) {
     body.replaceChildren(el('p', 'scenario__wait', analysis.hits >= analysis.sims ? t('scenario.sure')
@@ -1149,18 +1157,17 @@ function scenarioFill(body, report, club, analysis) {
   const prepared = whatIfPrepare(report);
   const deciders = scenarioDeciders(prepared, analysis);
   const intro = el('div', 'scenario__intro');
-  intro.appendChild(el('p', 'scenario__lede', t('scenario.lede', { n: num(analysis.hits) })));
   const lock = el('button', 'scenario__lock', `${t('scenario.lock')} →`);
   lock.type = 'button';
   lock.addEventListener('click', () => lockScenario(prepared, [...analysis.own, ...deciders.map((d) => d.f)], analysis.typical));
-  intro.append(lock, el('p', 'scenario__howto', t('scenario.barNote')));
+  intro.appendChild(lock);
   body.replaceChildren(
     intro,
     scenarioKey(report, prepared, club, analysis, deciders),
     scenarioOwn(report, prepared, club, analysis),
     scenarioTable(report, club, analysis.typical, new Set(deciders.flatMap((d) => [prepared.games[d.f].home, prepared.games[d.f].away]).filter((c) => c !== club))),
     scenarioAll(report, prepared, club, analysis),
-    el('p', 'explore-note', t('scenario.note', { n: num(analysis.sims) })),
+    scenarioAbout(analysis),
   );
 }
 
