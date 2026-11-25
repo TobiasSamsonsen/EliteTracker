@@ -44,6 +44,9 @@ class HistoryConfig:
     by_round: bool = False
 
 
+SnapshotKey = tuple[str, int, int]
+
+
 @dataclass
 class HistorySnapshot:
     date: str  # ISO YYYY-MM-DD; the state at the end of this day
@@ -124,6 +127,47 @@ def _latest_round(matches: list[Match], on: str) -> int | None:
     return max(rounds) if rounds else None
 
 
+def build_snapshot(
+    on: str,
+    league_matches: list[Match],
+    all_matches: list[Match],
+    seeds: dict[str, TeamRating],
+    *,
+    prior: AttackDefence | None = None,
+    elo_config: EloConfig | None = None,
+    config: HistoryConfig | None = None,
+    shots: dict[str, tuple[float, ...]] | None = None,
+    league: str = "",
+    stakes_lines: tuple[int, ...] = (),
+) -> HistorySnapshot:
+    """One history snapshot as of `on`, rewound from `league_matches` and `all_matches`."""
+    elo_config = elo_config or EloConfig()
+    config = config or HistoryConfig()
+    prior = prior or AttackDefence()
+
+    rewound_all = as_of_date(all_matches, on)
+    rewound_league = as_of_date(league_matches, on)
+
+    ratings = build_rating_table(seeds, rewound_all, config=elo_config, shots=shots)
+    projection = simulate_season(
+        rewound_league,
+        ratings,
+        ad=prior.copy().replay(rewound_all),
+        config=SimulationConfig(simulations=config.simulations, seed=config.seed),
+        elo_config=elo_config,
+        tally_conditionals=False,  # a snapshot keeps only the finishing odds
+        league=league,
+        stakes_lines=stakes_lines,
+    )
+    return HistorySnapshot(
+        date=on,
+        matches_played=projection.matches_played,
+        latest_round=_latest_round(league_matches, on),
+        positions={team.team_id: team.position_probabilities for team in projection.teams},
+        ratings={team.team_id: ratings[team.team_id] for team in projection.teams},
+    )
+
+
 def build_history(
     league_matches: list[Match],
     all_matches: list[Match],
@@ -135,42 +179,44 @@ def build_history(
     shots: dict[str, tuple[float, ...]] | None = None,
     league: str = "",
     stakes_lines: tuple[int, ...] = (),
+    cache: dict[SnapshotKey, HistorySnapshot] | None = None,
 ) -> list[HistorySnapshot]:
     """One snapshot per sampled date, oldest first.
 
     `all_matches` spans both divisions so ratings stay on one scale; only
     `league_matches` is simulated. `prior` is the attack/defence state at the
     end of the previous season; each snapshot replays the rewound season on a
-    copy of it.
+    copy of it. When `cache` is provided, snapshots keyed by
+    `(date, simulations, seed)` are reused and populated.
     """
     elo_config = elo_config or EloConfig()
     config = config or HistoryConfig()
     prior = prior or AttackDefence()
 
+    dates = (
+        round_snapshot_dates(league_matches)
+        if config.by_round
+        else snapshot_dates(league_matches, config.max_snapshots)
+    )
     snapshots = []
-    for on in (round_snapshot_dates(league_matches) if config.by_round
-               else snapshot_dates(league_matches, config.max_snapshots)):
-        rewound_all = as_of_date(all_matches, on)
-        rewound_league = as_of_date(league_matches, on)
-
-        ratings = build_rating_table(seeds, rewound_all, config=elo_config, shots=shots)
-        projection = simulate_season(
-            rewound_league,
-            ratings,
-            ad=prior.copy().replay(rewound_all),
-            config=SimulationConfig(simulations=config.simulations, seed=config.seed),
+    for on in dates:
+        key: SnapshotKey = (on, config.simulations, config.seed)
+        if cache is not None and key in cache:
+            snapshots.append(cache[key])
+            continue
+        snap = build_snapshot(
+            on,
+            league_matches,
+            all_matches,
+            seeds,
+            prior=prior,
             elo_config=elo_config,
-            tally_conditionals=False,  # a snapshot keeps only the finishing odds
+            config=config,
+            shots=shots,
             league=league,
             stakes_lines=stakes_lines,
         )
-        snapshots.append(
-            HistorySnapshot(
-                date=on,
-                matches_played=projection.matches_played,
-                latest_round=_latest_round(league_matches, on),
-                positions={team.team_id: team.position_probabilities for team in projection.teams},
-                ratings={team.team_id: ratings[team.team_id] for team in projection.teams},
-            )
-        )
+        if cache is not None:
+            cache[key] = snap
+        snapshots.append(snap)
     return snapshots

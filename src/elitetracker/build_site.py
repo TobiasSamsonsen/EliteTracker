@@ -53,6 +53,7 @@ from elitetracker.pipeline import (
     NORMALIZED_DIR,
     available_seasons,
     build_all_careers,
+    build_history_snapshot,
     build_report,
     careers_payload,
     h2h_payload,
@@ -63,6 +64,12 @@ from elitetracker.pipeline import (
     rewound_configs,
 )
 from elitetracker.research import calibration_payload
+from elitetracker.simulation.history import (
+    HistoryConfig,
+    as_of_date,
+    round_snapshot_dates,
+    snapshot_dates,
+)
 
 MANIFEST_NAME = "build-manifest.json"
 
@@ -173,13 +180,61 @@ _ROOT = Path()
 _OUT = Path()
 _ELO = EloConfig()
 _CAREERS: dict[str, Any] = {}
+_HISTORY: dict[tuple[int, str], dict[tuple[str, int, int], Any]] = {}
 
 
-def _init_worker(root: str, out_dir: str, season_regression: float, careers: dict[str, Any]) -> None:
-    global _ROOT, _OUT, _ELO, _CAREERS
+def _init_worker(
+    root: str,
+    out_dir: str,
+    season_regression: float,
+    careers: dict[str, Any],
+    history: dict[tuple[int, str], dict[tuple[str, int, int], Any]] | None = None,
+) -> None:
+    global _ROOT, _OUT, _ELO, _CAREERS, _HISTORY
     _ROOT, _OUT = Path(root), Path(out_dir)
     _ELO = EloConfig(season_regression=season_regression)
     _CAREERS = careers
+    _HISTORY = history or {}
+
+
+def _history_snapshot_specs(
+    root: Path,
+    specs: list[tuple[int, str | None, bool]],
+) -> list[tuple[int, str, str, int, int]]:
+    """Unique `(season, slug, date, simulations, seed)` snapshots needed by `specs`."""
+    by_season: dict[int, list[str | None]] = {}
+    for season, asof, _ in specs:
+        by_season.setdefault(season, []).append(asof)
+    needed: set[tuple[int, str, str, int, int]] = set()
+    for season, asofs in by_season.items():
+        for slug in LEAGUE_SPECS:
+            full = load_matches(root / f"{slug}_{season}_matches.json")
+            for asof in asofs:
+                _, hist_cfg = rewound_configs(asof)
+                matches = as_of_date(full, asof) if asof else full
+                dates = (
+                    round_snapshot_dates(matches)
+                    if hist_cfg.by_round
+                    else snapshot_dates(matches, hist_cfg.max_snapshots)
+                )
+                for on in dates:
+                    needed.add((season, slug, on, hist_cfg.simulations, hist_cfg.seed))
+    return sorted(needed, key=lambda item: (item[0], item[2], item[1], item[3], item[4]))
+
+
+def _build_snapshot(spec: tuple[int, str, str, int, int]) -> tuple[int, str, str, int, int, Any]:
+    """Compute one history snapshot in a worker process."""
+    season, slug, on, simulations, seed = spec
+    snap = build_history_snapshot(
+        slug,
+        season,
+        on,
+        root=_ROOT,
+        careers=_CAREERS,
+        elo_config=_ELO,
+        config=HistoryConfig(simulations=simulations, seed=seed),
+    )
+    return season, slug, on, simulations, seed, snap
 
 
 def _build_view(spec: tuple[int, str | None, bool]) -> str:
@@ -193,6 +248,7 @@ def _build_view(spec: tuple[int, str | None, bool]) -> str:
         slug: build_report(
             slug, season, root=_ROOT, careers=_CAREERS, elo_config=_ELO,
             simulation=simulation, history=history, asof=asof, share=share,
+            history_cache=_HISTORY.get((season, slug)),
         )
         for slug in LEAGUE_SPECS
     }
@@ -280,6 +336,19 @@ def build_site(
     elo = EloConfig(season_regression=season_regression)
     careers = build_all_careers(root, elo_config=elo)
 
+    snapshot_specs = _history_snapshot_specs(root, specs)
+    history_cache: dict[tuple[int, str], dict[tuple[str, int, int], Any]] = {}
+    if snapshot_specs:
+        print(f"precomputing {len(snapshot_specs)} history snapshots on {jobs} workers", flush=True)
+        with Pool(
+            processes=jobs,
+            initializer=_init_worker,
+            initargs=(str(root), str(out_dir), season_regression, careers),
+        ) as pool:
+            for season, slug, on, simulations, seed, snap in pool.imap_unordered(_build_snapshot, snapshot_specs):
+                if snap is not None:
+                    history_cache.setdefault((season, slug), {})[(on, simulations, seed)] = snap
+
     # Use multiprocessing.Pool with maxtasksperchild to recycle workers and
     # prevent unbounded memory growth from accumulated garbage in long-running
     # simulation tasks. Each worker is replaced after 2 views at high concurrency
@@ -288,7 +357,7 @@ def build_site(
     with Pool(
         processes=jobs,
         initializer=_init_worker,
-        initargs=(str(root), str(out_dir), season_regression, careers),
+        initargs=(str(root), str(out_dir), season_regression, careers, history_cache),
         maxtasksperchild=max_tasks,
     ) as pool:
         for done, name in enumerate(pool.imap_unordered(_build_view, specs), 1):

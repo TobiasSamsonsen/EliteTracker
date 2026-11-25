@@ -217,6 +217,7 @@ class TestManifest:
 
         monkeypatch = pytest.MonkeyPatch()
         monkeypatch.setattr(build_site, "build_report", lambda *a, **kw: {"stub": True})
+        monkeypatch.setattr(build_site, "build_history_snapshot", lambda *a, **kw: None)
         monkeypatch.setattr(build_site, "matchday_dates", lambda root, season: ["2026-05-08"])
         monkeypatch.setattr(build_site, "build_all_careers", lambda root, **kw: {})
         monkeypatch.setattr(build_site, "careers_payload", lambda careers, **kw: {})

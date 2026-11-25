@@ -39,7 +39,14 @@ from elitetracker.sources.fotmob import XG_PATH, load_xg
 # Transfermarkt squad values per club-season, for the goals model's offseason
 # pull (`ADConfig.value_pull`); `research market-values` adds a season by hand.
 from elitetracker.sources.transfermarkt import MARKET_VALUES_PATH
-from elitetracker.simulation.history import HistoryConfig, as_of_date, build_history
+from elitetracker.simulation.history import (
+    HistoryConfig,
+    HistorySnapshot,
+    SnapshotKey,
+    as_of_date,
+    build_history,
+    build_snapshot,
+)
 from elitetracker.simulation.playoffs import LADDER_FROM, Opponent, Playoffs
 from elitetracker.simulation.season import (
     SeasonProjection, SimulationConfig, bracket_winners, kept_at, play_postseason, simulate_season,
@@ -490,6 +497,39 @@ def _season_seeds(careers: dict[str, TeamCareer], season: int) -> dict[str, Team
     return seeds
 
 
+def build_history_snapshot(
+    slug: str,
+    season: int,
+    on: str,
+    *,
+    root: Path = NORMALIZED_DIR,
+    careers: dict[str, TeamCareer] | None = None,
+    elo_config: EloConfig | None = None,
+    seeding: SeedingConfig | None = None,
+    config: HistoryConfig | None = None,
+) -> HistorySnapshot:
+    """One history snapshot for `(slug, season)` as of `on`, using the exact
+    same inputs `build_report` passes to `build_history`."""
+    elo_config = elo_config or EloConfig()
+    careers = careers if careers is not None else build_all_careers(root, elo_config=elo_config, seeding=seeding)
+    seeds = _season_seeds(careers, season)
+    by_league = {other: load_matches(_matches_path(other, season, root)) for other in LEAGUE_SPECS}
+    all_matches = [match for league_matches in by_league.values() for match in league_matches]
+    matches = by_league[slug]
+    return build_snapshot(
+        on,
+        matches,
+        all_matches,
+        seeds,
+        prior=prior_attack_defence(root, season),
+        elo_config=elo_config,
+        config=config,
+        shots=shot_table(root),
+        league=slug,
+        stakes_lines=stakes_lines(slug, season, matches, root),
+    )
+
+
 def build_report(
     slug: str,
     season: int | None = None,
@@ -502,6 +542,7 @@ def build_report(
     history: HistoryConfig | None = None,
     asof: str | None = None,
     share: dict[str, SeasonProjection] | None = None,
+    history_cache: dict[SnapshotKey, HistorySnapshot] | None = None,
 ) -> dict[str, Any]:
     """Ratings, table, odds, finishing-position matrix and its history.
 
@@ -660,7 +701,8 @@ def build_report(
         ),
         "history": _history_payload(
             build_history(matches, all_matches, seeds, prior=prior, elo_config=elo_config,
-                          config=history, shots=shots, league=slug, stakes_lines=lines),
+                          config=history, shots=shots, league=slug, stakes_lines=lines,
+                          cache=history_cache),
             {row.team_id: row.team for row in live_table},
         ),
     }

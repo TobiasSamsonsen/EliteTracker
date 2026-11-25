@@ -235,3 +235,46 @@ class TestBuildHistory:
     def test_no_played_matches_gives_no_history(self):
         games = two_team_season(played=0)
         assert build_history(games, games, SEEDS, config=FAST) == []
+
+    def test_cache_reuses_overlapping_snapshots_and_matches_uncached(self, monkeypatch):
+        import elitetracker.simulation.history as history_mod
+
+        games = two_team_season(played=4, total=4)
+        earlier = as_of_date(games, "2026-03-02")
+
+        calls = []
+        real_simulate = history_mod.simulate_season
+
+        def spy_simulate(*args, **kwargs):
+            calls.append(len([m for m in args[0] if m.played]))
+            return real_simulate(*args, **kwargs)
+
+        monkeypatch.setattr(history_mod, "simulate_season", spy_simulate)
+
+        cache = {}
+        first = build_history(earlier, earlier, SEEDS, config=FAST, cache=cache)
+        assert len(calls) == 3  # preseason, Mar 1, Mar 2
+        assert len(cache) == 3
+
+        calls.clear()
+        second = build_history(games, games, SEEDS, config=FAST, cache=cache)
+        # Only Mar 3 and Mar 4 should be simulated; the first 3 come from cache.
+        assert calls == [3, 4]
+        assert second[:3] == first
+        assert second == build_history(games, games, SEEDS, config=FAST)
+
+    def test_cache_does_not_collide_across_simulations_or_seed(self):
+        games = two_team_season(played=2, total=4)
+        cache = {}
+        cfg_a = HistoryConfig(simulations=60, seed=1)
+        cfg_b = HistoryConfig(simulations=80, seed=1)
+        cfg_c = HistoryConfig(simulations=60, seed=2)
+
+        res_a = build_history(games, games, SEEDS, config=cfg_a, cache=cache)
+        res_b = build_history(games, games, SEEDS, config=cfg_b, cache=cache)
+        res_c = build_history(games, games, SEEDS, config=cfg_c, cache=cache)
+
+        assert len(cache) == 9  # 3 dates x 3 distinct (simulations, seed) configs
+        assert res_a == build_history(games, games, SEEDS, config=cfg_a)
+        assert res_b == build_history(games, games, SEEDS, config=cfg_b)
+        assert res_c == build_history(games, games, SEEDS, config=cfg_c)

@@ -59,6 +59,7 @@ def stubbed(monkeypatch, tmp_path):
     # _build_view runs for real -- naming the files is what is worth testing.
     monkeypatch.setattr(build_site, "write_payload", fake_write)
     monkeypatch.setattr(build_site, "build_report", lambda *a, **kw: {})
+    monkeypatch.setattr(build_site, "build_history_snapshot", lambda *a, **kw: None)
     monkeypatch.setattr(
         build_site, "matchday_dates", lambda root, season: ["2026-05-01", "2026-05-08"]
     )
@@ -123,3 +124,49 @@ def test_a_season_not_yet_started_has_no_preseason_view(stubbed, monkeypatch, tm
 def test_only_season_rejects_unknown_season(stubbed, tmp_path):
     with pytest.raises(ValueError):
         build_site.build_site(out_dir=tmp_path, only_season=1999)
+
+
+def test_history_snapshot_specs_deduplicates_across_views():
+    assert build_site._history_snapshot_specs(build_site.NORMALIZED_DIR, []) == []
+    specs = [
+        (2016, None, False),
+        (2016, "2016-05-01", False),
+        (2016, "2016-07-10", False),
+    ]
+    needed = build_site._history_snapshot_specs(build_site.NORMALIZED_DIR, specs)
+    assert len(needed) == len(set(needed))
+    # All 3 views share early-season dates, so total unique snapshots is far
+    # below the sum of per-view snapshots.
+    assert 0 < len(needed) < 70
+
+
+def test_build_report_with_history_cache_matches_uncached_byte_for_byte():
+    import json
+    from elitetracker.pipeline import NORMALIZED_DIR, build_all_careers, build_history_snapshot, build_report, load_matches
+    from elitetracker.simulation.history import HistoryConfig, as_of_date, round_snapshot_dates
+    from elitetracker.simulation.season import SimulationConfig
+
+    season = 2016
+    slug = "eliteserien"
+    asof = "2016-07-10"
+    sim_cfg = SimulationConfig(simulations=200)
+    hist_cfg = HistoryConfig(simulations=200, by_round=True)
+    careers = build_all_careers(NORMALIZED_DIR)
+
+    rewound = as_of_date(load_matches(NORMALIZED_DIR / f"{slug}_{season}_matches.json"), asof)
+    cache = {
+        (on, hist_cfg.simulations, hist_cfg.seed): build_history_snapshot(
+            slug, season, on, root=NORMALIZED_DIR, careers=careers, config=hist_cfg,
+        )
+        for on in round_snapshot_dates(rewound)
+    }
+
+    uncached = build_report(
+        slug, season, root=NORMALIZED_DIR, careers=careers,
+        simulation=sim_cfg, history=hist_cfg, asof=asof, history_cache=None,
+    )
+    cached = build_report(
+        slug, season, root=NORMALIZED_DIR, careers=careers,
+        simulation=sim_cfg, history=hist_cfg, asof=asof, history_cache=cache,
+    )
+    assert json.dumps(cached) == json.dumps(uncached)
