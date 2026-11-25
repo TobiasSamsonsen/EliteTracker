@@ -15,7 +15,10 @@ from __future__ import annotations
 import argparse
 import json
 import sys
+import time
+import urllib.error
 import urllib.request
+from collections.abc import Callable
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -24,25 +27,47 @@ from elitetracker.predict.sync import LEAGUES, run
 from elitetracker.sources.firestore import PROJECT, Firestore
 
 REPORT_URL = "https://elitetracker.no/data/report.json"
+REPORT_RETRY_DELAYS = (2.0, 5.0, 10.0, 15.0)
 
 
-def load_report(source: str) -> dict:
-    if source.startswith(("http://", "https://")):
-        request = urllib.request.Request(source, headers={"User-Agent": "elitetracker-predict-sync"})
-        with urllib.request.urlopen(request, timeout=60) as reply:
-            return json.loads(reply.read().decode("utf-8"))
-    return json.loads(Path(source).read_text(encoding="utf-8"))
+def load_report(
+    source: str,
+    *,
+    retries: tuple[float, ...] = REPORT_RETRY_DELAYS,
+    sleep: Callable[[float], None] = time.sleep,
+) -> dict:
+    if not source.startswith(("http://", "https://")):
+        return json.loads(Path(source).read_text(encoding="utf-8"))
+    request = urllib.request.Request(source, headers={"User-Agent": "elitetracker-predict-sync"})
+    for attempt in range(len(retries) + 1):
+        try:
+            with urllib.request.urlopen(request, timeout=60) as reply:
+                return json.loads(reply.read().decode("utf-8"))
+        except urllib.error.HTTPError as error:
+            if attempt >= len(retries) or not (error.code == 429 or 500 <= error.code < 600):
+                raise
+        except (OSError, ValueError):
+            if attempt >= len(retries):
+                raise
+        sleep(retries[attempt])
+    raise AssertionError("unreachable")
 
 
 LOCAL_REPORT = Path("public/data/report.json")
 
 
-def load_report_or_local(source: str, local: Path = LOCAL_REPORT) -> tuple[dict, str | None]:
+def load_report_or_local(
+    source: str,
+    local: Path = LOCAL_REPORT,
+    *,
+    retries: tuple[float, ...] = REPORT_RETRY_DELAYS,
+    sleep: Callable[[float], None] = time.sleep,
+) -> tuple[dict, str | None]:
     """The published report, or (when the live site cannot be reached) the one built in this checkout,
     with a warning: those are the odds of the last build, not necessarily what a player saw. A match
     left without odds is unscorable for good, so a close copy beats none."""
     try:
-        return load_report(source), None
+        return load_report(source, retries=retries, sleep=sleep), None
     except (OSError, ValueError) as error:          # URLError and HTTPError are OSErrors; a bad body is a ValueError
         if not source.startswith(("http://", "https://")) or not local.exists():
             raise

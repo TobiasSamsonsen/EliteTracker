@@ -438,9 +438,132 @@ def test_the_odds_fall_back_to_the_local_build_when_the_live_report_cannot_be_re
 
     local = tmp_path / "report.json"
     local.write_text(json.dumps({"eliteserien": {"fixtures": []}}), encoding="utf-8")
-    report, warning = predict_sync.load_report_or_local("http://127.0.0.1:9/report.json", local=local)   # nothing listens there
+    report, warning = predict_sync.load_report_or_local("http://127.0.0.1:9/report.json", local=local, retries=())   # nothing listens there
     assert report == {"eliteserien": {"fixtures": []}} and "report.json" in warning
     report, warning = predict_sync.load_report_or_local(str(local), local=local)                          # a path is read as asked
     assert warning is None and report["eliteserien"]["fixtures"] == []
     with pytest.raises(OSError):
-        predict_sync.load_report_or_local("http://127.0.0.1:9/report.json", local=tmp_path / "missing.json")   # no fallback: the error stands
+        predict_sync.load_report_or_local("http://127.0.0.1:9/report.json", local=tmp_path / "missing.json", retries=())   # no fallback: the error stands
+
+
+def _fake_reply(payload: dict):
+    class _Reply:
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *args):
+            return False
+
+        def read(self) -> bytes:
+            return json.dumps(payload).encode("utf-8")
+
+    return _Reply()
+
+
+def test_load_report_retries_transient_http_5xx_and_succeeds(monkeypatch):
+    import urllib.error
+    import urllib.request
+    from elitetracker import predict_sync
+
+    calls = 0
+    slept = []
+
+    def fake_urlopen(request, timeout=60):
+        nonlocal calls
+        calls += 1
+        if calls == 1:
+            raise urllib.error.HTTPError(request.full_url, 500, "Internal Server Error", {}, None)
+        if calls == 2:
+            raise urllib.error.HTTPError(request.full_url, 503, "Service Unavailable", {}, None)
+        return _fake_reply({"ok": True})
+
+    monkeypatch.setattr(urllib.request, "urlopen", fake_urlopen)
+    result = predict_sync.load_report("https://example.test/report.json", retries=(1.0, 2.0, 3.0), sleep=slept.append)
+    assert result == {"ok": True}
+    assert calls == 3
+    assert slept == [1.0, 2.0]
+
+
+def test_load_report_does_not_retry_404(monkeypatch):
+    import urllib.error
+    import urllib.request
+    from elitetracker import predict_sync
+
+    calls = 0
+    slept = []
+
+    def fake_urlopen(request, timeout=60):
+        nonlocal calls
+        calls += 1
+        raise urllib.error.HTTPError(request.full_url, 404, "Not Found", {}, None)
+
+    monkeypatch.setattr(urllib.request, "urlopen", fake_urlopen)
+    with pytest.raises(urllib.error.HTTPError) as exc_info:
+        predict_sync.load_report("https://example.test/report.json", retries=(1.0, 2.0), sleep=slept.append)
+    assert exc_info.value.code == 404
+    assert calls == 1
+    assert slept == []
+
+
+def test_load_report_retries_urlerror_and_succeeds(monkeypatch):
+    import urllib.error
+    import urllib.request
+    from elitetracker import predict_sync
+
+    calls = 0
+    slept = []
+
+    def fake_urlopen(request, timeout=60):
+        nonlocal calls
+        calls += 1
+        if calls == 1:
+            raise urllib.error.URLError("timed out")
+        return _fake_reply({"ok": "after_urlerror"})
+
+    monkeypatch.setattr(urllib.request, "urlopen", fake_urlopen)
+    result = predict_sync.load_report("https://example.test/report.json", retries=(1.5,), sleep=slept.append)
+    assert result == {"ok": "after_urlerror"}
+    assert calls == 2
+    assert slept == [1.5]
+
+
+def test_load_report_or_local_falls_back_after_exhausting_500_retries(monkeypatch, tmp_path):
+    import urllib.error
+    import urllib.request
+    from elitetracker import predict_sync
+
+    calls = 0
+    slept = []
+
+    def fake_urlopen(request, timeout=60):
+        nonlocal calls
+        calls += 1
+        raise urllib.error.HTTPError(request.full_url, 500, "Internal Server Error", {}, None)
+
+    monkeypatch.setattr(urllib.request, "urlopen", fake_urlopen)
+    local = tmp_path / "report.json"
+    local.write_text(json.dumps({"eliteserien": {"fixtures": [{"match_id": "1"}]}}), encoding="utf-8")
+
+    report, warning = predict_sync.load_report_or_local(
+        "https://example.test/report.json",
+        local=local,
+        retries=(0.5, 1.0),
+        sleep=slept.append,
+    )
+    assert report == {"eliteserien": {"fixtures": [{"match_id": "1"}]}}
+    assert warning is not None and "500" in warning
+    assert calls == 3
+    assert slept == [0.5, 1.0]
+
+    calls = 0
+    slept.clear()
+    with pytest.raises(urllib.error.HTTPError) as exc_info:
+        predict_sync.load_report_or_local(
+            "https://example.test/report.json",
+            local=tmp_path / "missing.json",
+            retries=(0.5,),
+            sleep=slept.append,
+        )
+    assert exc_info.value.code == 500
+    assert calls == 2
+    assert slept == [0.5]

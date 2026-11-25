@@ -67,6 +67,17 @@ jobs:
           service_account: predict-sync@elitetrackerno.iam.gserviceaccount.com
           token_format: access_token
 
+      - name: Fetch fallback report.json
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          mkdir -p public/data
+          if gh release download current --pattern current.tar.gz --dir "$RUNNER_TEMP"; then
+            tar -xzf "$RUNNER_TEMP/current.tar.gz" -C public/data ./report.json 2>/dev/null || tar -xzf "$RUNNER_TEMP/current.tar.gz" -C public/data report.json 2>/dev/null || true
+          else
+            echo "::warning::No current release asset -- no local fallback if elitetracker.no is unreachable."
+          fi
+
       - name: Run the job
         env:
           FIRESTORE_ACCESS_TOKEN: ${{ steps.auth.outputs.access_token }}
