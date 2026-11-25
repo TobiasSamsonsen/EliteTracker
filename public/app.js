@@ -646,8 +646,8 @@ function handleGridKeydown(event, cell, rows, cellIndex, rowIndex) {
    evidence is the browser's own simulation, the one the What if page runs
    (`season-sim.js`, in its worker): the season is played 50,000 times with
    every score kept, and `scenarioAnalysis` reads them. It shows the likeliest
-   of the seasons that end this way, table and all: the other clubs' results in
-   it that are clearly more common here than usually, the club's own matches,
+   of the seasons that end this way, table and all: the club's own matches, the
+   other clubs' results in it that are clearly more common here than usually,
    and every result behind a fold. The key matches can be locked into What if in
    one click.
    Pointing at any cell starts the worker's season (`scenarioWarm`), so the
@@ -796,10 +796,13 @@ function pushOverlay(kind) {
 }
 /* The × / scrim / swipe of an overlay: it closes at once, and its entry, when it has one, is stepped back off
    (the popstate then finds nothing left to close). */
+let overlaySteppedBack = false;
 function dismissOverlay(close) {
   const marked = Boolean(window.history.state && window.history.state.overlay);
   close();
-  if (marked) window.history.back();
+  // The popstate this step fires closes nothing more: the share sheet over a popup opened by a link (which
+  // has no entry of its own) steps back onto the page's entry, and the popup under it stays.
+  if (marked) { overlaySteppedBack = true; window.history.back(); }
 }
 const dismissScenario = () => dismissOverlay(() => closeScenario());
 const dismissSheet = () => dismissOverlay(() => closeSheet());
@@ -876,6 +879,7 @@ function openScenario(report, teamId, position, trigger = null) {
     scenarioRequest(report, club, place, scenarioAvoidTie).then((analysis) => {
       if (token !== scenarioState.token || mine !== latest) return;
       heroSub.textContent = t('scenario.heroSub', { n: num(analysis.hits), total: num(sims), left: num(report.fixtures.length) });
+      about.note.textContent = t('scenario.note', { n: num(analysis.sims) });
       scenarioFill(body, report, club, analysis);
       // The buttons the body now holds belong in the focus loop; focus stays
       // where the reader had it (trapFocus moves it to the first button).
@@ -895,13 +899,17 @@ function openScenario(report, teamId, position, trigger = null) {
   grip.setAttribute('aria-hidden', 'true');
   const top = el('div', 'scenario__top');
   top.append(grip, head);
-  panel.append(top, hero, scenarioModeSwitch(load), body);
+  // The reading notes and the goal-difference switch sit folded under the body, outside it, so a
+  // switch press keeps the fold open and the focus where it was while the body is redrawn.
+  const about = scenarioAbout(load, sims);
+  panel.append(top, hero, body, about.fold);
   root.append(scrim, panel);
   document.body.appendChild(root);
   document.body.classList.add('has-scenario');
   attachSheetDrag(panel, { scrim, dismiss: dismissScenario, handle: '.scenario__top' });
 
-  const onKey = (event) => { if (event.key === 'Escape') dismissScenario(); };
+  // Escape with the share sheet open over the popup closes only the sheet (share.js).
+  const onKey = (event) => { if (event.key === 'Escape' && !shareOpen()) dismissScenario(); };
   document.addEventListener('keydown', onKey);
   Object.assign(scenarioState, { root, trigger, onKey, untrap: trapFocus(panel) });
   // The popup opens on its close button, as before it had a share button
@@ -913,8 +921,8 @@ function openScenario(report, teamId, position, trigger = null) {
   load();
 }
 
-/* Whether a season decided on goal difference is avoided (the default) or
-   allowed, with why avoiding is the default. */
+/* Whether a season decided on goal difference is avoided or allowed (the
+   default); it lives in the reading notes, beside what the two modes mean. */
 function scenarioModeSwitch(onChange) {
   const wrap = el('div', 'scenario__mode');
   const bar = el('div', 'switch');
@@ -979,35 +987,40 @@ function scenarioScoreLine(report, prepared, f, typical) {
   return line;
 }
 
-/* One match of the scenario. Its odds bar is the Matches page's, drawn from all
-   the simulations, with the result the scenario plays lit and the rest muted;
-   beside it, that result's chance in all simulations and in these ("53 % →
-   70 %"). A club's own match gets a chip for the result as that club saw it and
-   an accent edge; `entry` makes a draw count as one side not winning. */
-function scenarioMatchRow(report, prepared, analysis, f, club = null, entry = null) {
+/* One match of the scenario as a sentence about one club's result in it, the
+   result the season shown plays: the club's own match from its side ("Beat
+   Brann", "Lose to Sandefjord"), another match from the side that matters
+   (`subject`: "Bodø/Glimt lose to Molde"). A chip carries the same result in
+   colour; beside it the Matches page's odds bar, drawn from all the simulations,
+   with that result lit and the rest muted, and that result's chance. */
+function scenarioMatchRow(report, prepared, analysis, f, subject, own = false) {
   const { home, away, game } = prepared.games[f];
   const score = analysis.typical.scores[f];
+  const atHome = home === subject;
+  const mine = atHome ? score : [score[1], score[0]];
+  const letter = mine[0] > mine[1] ? 'W' : mine[0] === mine[1] ? 'D' : 'L';
+  const item = el('div', 'scenario-match');
+  item.appendChild(el('span', `form__chip form__chip--${letter.toLowerCase()}`, t(`form.${letter}`)));
+  const sentence = t(`scenario.${own ? 'own' : 'they'}${letter}`, { team: report.table[subject].team, other: report.table[atHome ? away : home].team });
+  const text = el('div', 'scenario-match__body');
+  text.append(el('p', 'scenario-match__main', sentence), el('p', 'scenario-match__meta', `${t(atHome ? 'scenario.home' : 'scenario.away')} · ${scenarioWhen(game)}`));
+  const bar = oddsBar(report.table[home].team, report.table[away].team, { home_win: analysis.prior[f * 3], draw: analysis.prior[f * 3 + 1], away_win: analysis.prior[f * 3 + 2] });
   const shown = scenarioOutcome(score);
-  const outcomes = entry ? entry.outcomes : [shown];
-  const sum = (shares) => outcomes.reduce((total, o) => total + shares[f * 3 + o], 0);
-  const item = el('div', `scenario-match${club != null ? ' is-own' : ''}`);
-  if (club != null) {
-    const mine = home === club ? score : [score[1], score[0]];
-    const letter = mine[0] > mine[1] ? 'W' : mine[0] === mine[1] ? 'D' : 'L';
-    item.appendChild(el('span', `form__chip form__chip--${letter.toLowerCase()}`, t(`form.${letter}`)));
-  }
-  const homeName = report.table[home].team;
-  const awayName = report.table[away].team;
-  const bar = oddsBar(homeName, awayName, { home_win: analysis.prior[f * 3], draw: analysis.prior[f * 3 + 1], away_win: analysis.prior[f * 3 + 2] });
-  [...bar.children].forEach((segment, o) => segment.classList.toggle('is-scenario', outcomes.includes(o)));
-  const chance = el('span', 'scenario-match__chance');
-  chance.append(`${pct(sum(analysis.prior), 0)} → `, el('strong', '', pct(sum(analysis.cond), 0)));
-  const meta = scenarioWhen(game) + (entry && entry.team != null ? ` · ${t('scenario.noWin', { team: report.table[entry.team].team })}` : '');
-  const mid = el('div', 'scenario-match__body');
-  mid.append(scenarioScoreLine(report, prepared, f, analysis.typical), el('p', 'scenario-match__meta', meta), el('div', 'scenario-match__odds'));
-  mid.lastChild.append(bar, chance);
-  item.appendChild(mid);
+  [...bar.children].forEach((segment, o) => segment.classList.toggle('is-scenario', o === shown));
+  // The lit result's chance as a figure beside the bar, as its segment is often too narrow to hold one.
+  const odds = el('div', 'scenario-match__odds');
+  odds.append(bar, el('span', 'scenario-match__pct', pct(analysis.prior[f * 3 + shown], 0)));
+  item.append(text, odds);
   return item;
+}
+
+/* The side of a key match that matters to the club: the one that must not win
+   where the analysis says so, else the one nearer the club in today's table. */
+function scenarioSubject(report, prepared, club, decider) {
+  if (decider.team != null) return decider.team;
+  const { home, away } = prepared.games[decider.f];
+  const gap = (c) => Math.abs(report.table[c].position - report.table[club].position);
+  return gap(home) <= gap(away) ? home : away;
 }
 
 /* The key matches the scenario shows: those the analysis found where the
@@ -1028,9 +1041,10 @@ const scenarioOwner = (name) => t(/[sxz]$/i.test(name) ? 'scenario.ownerAlt' : '
 function scenarioKey(report, prepared, club, analysis, deciders) {
   // Nothing outside the club's hands: one quiet line, not a section with a heading over a box.
   if (!deciders.length) return el('p', 'scenario__alone', t('scenario.stepsNone', { team: report.table[club].team }));
-  const section = scenarioSection(t('scenario.stepsTitle', { owner: scenarioOwner(report.table[club].team) }), t('scenario.stepsLead'));
+  const section = scenarioSection(t('scenario.stepsTitle', { owner: scenarioOwner(report.table[club].team) }), null);
+  const byF = new Map(deciders.map((decider) => [decider.f, decider]));
   const list = el('div', 'scenario-matches');
-  for (const decider of deciders) list.appendChild(scenarioMatchRow(report, prepared, analysis, decider.f, null, decider));
+  for (const f of scenarioByDate(prepared, byF.keys())) list.appendChild(scenarioMatchRow(report, prepared, analysis, f, scenarioSubject(report, prepared, club, byF.get(f))));
   section.appendChild(list);
   return section;
 }
@@ -1045,24 +1059,23 @@ function scenarioOwn(report, prepared, club, analysis) {
     results[mine[0] > mine[1] ? 0 : mine[0] === mine[1] ? 1 : 2] += 1;
   }
   const total = analysis.typical.table.find((entry) => entry.club === club).points;
-  const wdl = results.map((n, i) => `${n}${t(`form.${'WDL'[i]}`)}`).join(' ');
-  const lead = t('scenario.ownSum', { wdl, pts: results[0] * 3 + results[1], max: analysis.own.length * 3, total });
+  const lead = t('scenario.ownSum', { pts: results[0] * 3 + results[1], max: analysis.own.length * 3, total });
   const section = scenarioSection(t('scenario.ownTitle', { owner: scenarioOwner(team) }), lead);
   const list = el('div', 'scenario-matches');
-  for (const f of scenarioByDate(prepared, analysis.own)) list.appendChild(scenarioMatchRow(report, prepared, analysis, f, club));
+  for (const f of scenarioByDate(prepared, analysis.own)) list.appendChild(scenarioMatchRow(report, prepared, analysis, f, club, true));
   section.appendChild(list);
   return section;
 }
 
 /* The final table of the scenario, read against the real one: the places a club
-   gains or loses on today's table, and the points it takes from the matches left.
-   Clubs that play one of the key matches carry a dot. */
+   gains or loses on today's table, its goals for and against, and the points it
+   takes from the matches left. Clubs that play one of the key matches carry a dot. */
 function scenarioTable(report, club, typical, keyClubs) {
   const section = scenarioSection(t('scenario.tableTitle'), null);
   const table = el('table', 'scenario-table');
   table.setAttribute('aria-label', t('scenario.tableTitle'));
   const headRow = el('tr');
-  headRow.append(el('th', '', '#'), el('th', '', t('table.col.club')), el('th', '', t('scenario.tableGd')), el('th', '', t('scenario.tableGain')), el('th', '', t('scenario.tablePts')));
+  headRow.append(el('th', '', '#'), el('th', '', t('table.col.club')), el('th', '', t('scenario.tableGoals')), el('th', '', t('scenario.tableGd')), el('th', '', t('scenario.tableGain')), el('th', '', t('scenario.tablePts')));
   table.appendChild(el('thead')).appendChild(headRow);
   const tbody = el('tbody');
   const count = typical.table.length;
@@ -1082,7 +1095,8 @@ function scenarioTable(report, club, typical, keyClubs) {
       dot.title = t('scenario.tableKey');
       team.appendChild(dot);
     }
-    tr.append(place, team, el('td', '', signed(entry.goalDifference)), el('td', 'scenario-table__gain', `+${entry.points - now.points}`), el('td', 'scenario-table__pts', String(entry.points)));
+    const goals = `${entry.goalsFor}–${entry.goalsFor - entry.goalDifference}`;
+    tr.append(place, team, el('td', 'scenario-table__goals', goals), el('td', 'scenario-table__gd', signed(entry.goalDifference)), el('td', 'scenario-table__gain', `+${entry.points - now.points}`), el('td', 'scenario-table__pts', String(entry.points)));
     tbody.appendChild(tr);
   });
   table.appendChild(tbody);
@@ -1139,15 +1153,19 @@ function scenarioAll(report, prepared, club, analysis) {
   return more;
 }
 
-/* The reading notes, folded away: what the two modes mean, what a bar is, what the figures are counted on. */
-function scenarioAbout(analysis) {
-  const about = el('details', 'scenario__about');
-  about.appendChild(el('summary', '', t('scenario.about')));
-  for (const key of ['scenario.modeNote', 'scenario.barNote']) about.appendChild(el('p', 'scenario__howto', t(key)));
-  about.appendChild(el('p', 'scenario__howto', t('scenario.note', { n: num(analysis.sims) })));
-  return about;
+/* The reading notes, folded away: the goal-difference switch and what its two
+   modes mean, what the figures beside a match are, what they are counted on.
+   `note` is the last line, which the analysis fills in with its own count. */
+function scenarioAbout(onChange, sims) {
+  const fold = el('details', 'scenario__about');
+  fold.appendChild(el('summary', '', t('scenario.about')));
+  const note = el('p', 'scenario__howto', t('scenario.note', { n: num(sims) }));
+  fold.append(scenarioModeSwitch(onChange), el('p', 'scenario__howto', t('scenario.modeNote')), el('p', 'scenario__howto', t('scenario.chanceNote')), note);
+  return { fold, note };
 }
 
+/* The club's own run-in first, then what it needs from the others, the table
+   it ends in, the way into What if, and every result behind a fold. */
 function scenarioFill(body, report, club, analysis) {
   if (!analysis.enough) {
     body.replaceChildren(el('p', 'scenario__wait', analysis.hits >= analysis.sims ? t('scenario.sure')
@@ -1156,18 +1174,15 @@ function scenarioFill(body, report, club, analysis) {
   }
   const prepared = whatIfPrepare(report);
   const deciders = scenarioDeciders(prepared, analysis);
-  const intro = el('div', 'scenario__intro');
   const lock = el('button', 'scenario__lock', `${t('scenario.lock')} →`);
   lock.type = 'button';
   lock.addEventListener('click', () => lockScenario(prepared, [...analysis.own, ...deciders.map((d) => d.f)], analysis.typical));
-  intro.appendChild(lock);
   body.replaceChildren(
-    intro,
-    scenarioKey(report, prepared, club, analysis, deciders),
     scenarioOwn(report, prepared, club, analysis),
+    scenarioKey(report, prepared, club, analysis, deciders),
     scenarioTable(report, club, analysis.typical, new Set(deciders.flatMap((d) => [prepared.games[d.f].home, prepared.games[d.f].away]).filter((c) => c !== club))),
+    lock,
     scenarioAll(report, prepared, club, analysis),
-    scenarioAbout(analysis),
   );
 }
 
@@ -11531,15 +11546,19 @@ function wire() {
 function restoreFromAddress(entry) {
   if (!booted || !state.reports[state.league]) return;
   const params = new URLSearchParams(window.location.search);
+  const ownStep = overlaySteppedBack;      // an overlay's ×, scrim or Escape stepping off its entry (dismissOverlay)
+  overlaySteppedBack = false;
   // Landed on an overlay's own entry (Back from the share sheet over the popup): only what lies above it closes.
   if (entry && entry.overlay) {
     if (entry.overlay !== 'share' && shareOpen()) shareClose();
     return;
   }
   // A popup, sheet or picker still open belongs to the page being left.
-  if (shareOpen()) shareClose();
-  closeScenario({ restore: false });
-  closeAllMenus();
+  if (!ownStep) {
+    if (shareOpen()) shareClose();
+    closeScenario({ restore: false });
+    closeAllMenus();
+  }
   const key = pageKeyOf(params);
   if (key === lastPageKey) return;
   lastPageKey = key;                       // so the draw below replaces the entry instead of pushing

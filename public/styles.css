@@ -5830,14 +5830,15 @@ body.has-scenario { overflow: hidden; }
 .scenario__sub { margin: 0; font-size: 0.8125rem; color: var(--ink-faint); font-variant-numeric: tabular-nums; }
 
 .scenario__wait { margin: 1.5rem 0 0.5rem; color: var(--ink-muted); font-size: 0.875rem; }
-.scenario__intro { margin-top: 1rem; }
 .scenario__alone { margin: 1rem 0 0; color: var(--ink-muted); font-size: 0.875rem; }
-.scenario__mode { margin-top: 1rem; }
+.scenario__about .scenario__mode { margin-top: 0.75rem; }
 .scenario__about { margin-top: 1rem; }
 .scenario__about summary { cursor: pointer; color: var(--accent-ink); font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; font-size: 0.75rem; }
 .scenario__about .scenario__howto { margin-top: 0.6rem; }
 .scenario__howto { margin: 0.75rem 0 0; font-size: 0.75rem; line-height: 1.45; color: var(--ink-faint); }
 .scenario__lock {
+  display: block;
+  margin-top: 1.25rem;
   padding: 0.5rem 0.85rem;
   border: 0;
   border-radius: 8px;
@@ -5869,22 +5870,32 @@ body.has-scenario { overflow: hidden; }
 .scenario-side { display: inline-flex; align-items: center; gap: 0.35rem; min-width: 0; }
 
 .scenario-empty { margin: 0; padding: 0.75rem 0.9rem; border-radius: 10px; background: var(--panel-sunk); color: var(--ink-muted); font-size: 0.8125rem; }
-.scenario-matches { display: grid; gap: 0.4rem; }
-.scenario-match { display: flex; align-items: flex-start; gap: 0.6rem; padding: 0.6rem 0.75rem; border-radius: 10px; background: var(--panel-sunk); }
-/* The club's own matches carry its accent on the edge and the chip; the other clubs' matches have neither. */
-.scenario-match.is-own { box-shadow: inset 3px 0 0 var(--accent); }
-.scenario-match .form__chip { margin-top: 0.1rem; flex: none; }
-.scenario-match__body { flex: 1; min-width: 0; }
+.scenario-matches { display: grid; grid-template-columns: minmax(0, 1fr); gap: 0.35rem; }
+/* A row: the chip, the sentence over its home/away and date, and the odds bar
+   beside them; on a phone the bar drops under the sentence. */
+.scenario-match {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) minmax(9rem, 40%);
+  align-items: center;
+  gap: 0.4rem 0.7rem;
+  padding: 0.6rem 0.75rem;
+  border-radius: 10px;
+  background: var(--panel-sunk);
+}
+.scenario-match__main { margin: 0; font-size: 0.875rem; font-weight: 700; line-height: 1.3; }
+.scenario-match__odds { display: flex; align-items: center; gap: 0.6rem; }
+.scenario-match__odds .odds { flex: 1; height: 0.75rem; min-width: 0; padding: 0; margin: 0; overflow: visible; }
+.scenario-match__odds .odds__seg { color: transparent; }
+.scenario-match__odds .odds__seg:not(.is-scenario) { opacity: 0.3; }
+.scenario-match__pct { flex: none; min-width: 2.6rem; text-align: right; font-size: 0.875rem; font-weight: 700; font-variant-numeric: tabular-nums; }
+@media (max-width: 760px) {
+  .scenario-match { grid-template-columns: auto minmax(0, 1fr); }
+  .scenario-match__odds { grid-column: 2; }
+}
 .scenario-match__teams { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 0.15rem 0.5rem; font-size: 0.875rem; font-weight: 700; }
 .scenario-match__teams .is-loser { font-weight: 500; color: var(--ink-muted); }
 .scenario-match__score { padding: 0 0.4rem; border-radius: 5px; background: var(--panel); font-variant-numeric: tabular-nums; font-weight: 700; }
-.scenario-match__meta { margin: 0.2rem 0 0; font-size: 0.6875rem; color: var(--ink-muted); text-align: center; }
-.scenario-match__odds { display: flex; align-items: center; gap: 0.6rem; margin-top: 0.45rem; }
-.scenario-match__odds .odds { flex: 1; height: 1.1rem; min-width: 0; padding: 0; margin: 0; overflow: visible; }
-.scenario-match__odds .odds__seg { font-size: 0.625rem; }
-.scenario-match__odds .odds__seg:not(.is-scenario) { opacity: 0.3; color: transparent; }
-.scenario-match__chance { flex: none; font-size: 0.8125rem; font-variant-numeric: tabular-nums; color: var(--ink-muted); white-space: nowrap; }
-.scenario-match__chance strong { color: var(--accent-ink); font-size: 0.9375rem; }
+.scenario-match__meta { margin: 0.15rem 0 0; font-size: 0.6875rem; color: var(--ink-muted); }
 
 .scenario-table__wrap { overflow-x: auto; }
 .scenario-table { width: 100%; border-collapse: collapse; font-size: 0.8125rem; }
@@ -5924,9 +5935,8 @@ body.has-scenario { overflow: hidden; }
   .scenario-section__title { font-size: 0.875rem; }
   .scenario-section__sub { font-size: 0.8125rem; }
   .scenario-section__lead, .scenario-empty, .explore-note { font-size: 0.9375rem; }
-  .scenario-match__teams { font-size: 1rem; }
+  .scenario-match__teams, .scenario-match__main { font-size: 1rem; }
   .scenario-match__meta, .scenario-all__heading, .scenario-all__legend { font-size: 0.8125rem; }
-  .scenario-match__chance { font-size: 0.9375rem; }
   .scenario-table, .scenario-all { font-size: 0.9375rem; }
   .scenario-table th { font-size: 0.8125rem; }
   .scenario-all summary { font-size: 0.8125rem; }
@@ -6838,8 +6848,9 @@ body.has-scenario { overflow: hidden; }
 .overview-card__head .share-btn { position: relative; z-index: 1; width: 2rem; height: 2rem; margin: -0.35rem 0 -0.35rem var(--space-2); }
 .overview-card__head:has(.share-btn) { grid-template-columns: minmax(0, 1fr) auto; }
 
-/* The share sheet: a dialog over a scrim, a bottom sheet on a phone. */
-.share-sheet { position: fixed; inset: 0; z-index: 80; display: grid; place-items: center; padding: var(--space-4); }
+/* The share sheet: a dialog over a scrim, a bottom sheet on a phone. Above
+   the What it takes popup (90), whose share button opens it. */
+.share-sheet { position: fixed; inset: 0; z-index: 95; display: grid; place-items: center; padding: var(--space-4); }
 .share-sheet__scrim { position: absolute; inset: 0; background: rgb(4 8 16 / 0.6); }
 .share-sheet__panel {
   position: relative;
@@ -7028,7 +7039,7 @@ body.masthead-measure .hero-title-part[data-role="division"] { display: inline-f
   }
 }
 
-/* On a phone the scenario's table keeps the place, the club, the points gained and the total; goal difference is in the note when it decides. */
+/* On a phone the scenario's table keeps the place, the club, the goals, the points gained and the total; goal difference is in the note when it decides. */
 @media (max-width: 760px) {
-  .scenario-table th:nth-child(3), .scenario-table td:nth-child(3) { display: none; }
+  .scenario-table th:nth-child(4), .scenario-table td:nth-child(4) { display: none; }
 }

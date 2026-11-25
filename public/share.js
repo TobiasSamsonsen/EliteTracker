@@ -985,7 +985,8 @@ async function shareMatch({ label, home, away, odds, cells = [] }) {
 /* A club's chance of one place. Where the browser's own season has the
    likeliest way it happens (`scenarioRequest`, as the popup shows it) and its
    matches fit the picture, that season in two lists: the club's run-in, each
-   match's result from its side, and the rivals' results it rests on; side by
+   match's result from its side, and the rivals' results it rests on, each with
+   that result's chance in all simulations; side by
    side on a wide picture, one under the other on a tall one, where the rows
    grow with the room and the spare height goes between the parts. Otherwise
    the club's chance of every place as columns (shareFinishChart). */
@@ -1040,9 +1041,18 @@ async function shareFinish(report, teamId, position) {
   const headSize = 14 * headU;
   const ownX = room.x;
   const rivalX = tall ? room.x : room.x + colW + colGap;
+  // Each result's chance in all simulations, as the popup's figure beside its
+  // odds bar, in a column on the right under its own heading.
+  const chanceFont = { size: textSize * 0.8, weight: 700, color: SC.muted };
+  const chanceW = measureText(ctx, pct(1, 0), chanceFont) + textSize * 0.9;
+  const paintChance = (f, outcome, x, mid) => paintText(ctx, pct(analysis.prior[f * 3 + outcome], 0), x + colW, mid + textSize * 0.3, { ...chanceFont, align: 'right' });
+  const paintHead = (text, x, top) => {
+    paintText(ctx, text, x, top, { size: headSize, weight: 600, color: SC.faint, label: true, maxWidth: colW - chanceW });
+    paintText(ctx, t('scenario.statChance'), x + colW, top, { size: headSize, weight: 600, color: SC.faint, label: true, align: 'right' });
+  };
   let y = bodyY + 14 + gap;
-  paintText(ctx, t('scenario.ownTitle', { owner: scenarioOwner(row.team) }), ownX, y, { size: headSize, weight: 600, color: SC.faint, label: true, maxWidth: colW });
-  // The club's own matches: the opponent, home or away, the result from its side.
+  paintHead(t('scenario.ownTitle', { owner: scenarioOwner(row.team) }), ownX, y);
+  // The club's own matches: the opponent, home or away, the result from its side, its chance.
   const results = [0, 0, 0];
   let rowY = y + 26 * headU;
   for (const f of own) {
@@ -1054,28 +1064,33 @@ async function shareFinish(report, teamId, position) {
     const outcome = mine[0] > mine[1] ? 0 : mine[0] === mine[1] ? 1 : 2;
     results[outcome] += 1;
     const mid = rowY + rowH / 2;
-    const nameW = await shareClubLine(ctx, opponent, ownX, mid, { size: textSize, crest: small, weight: 600, maxWidth: colW - textSize * 5 });
+    const nameW = await shareClubLine(ctx, opponent, ownX, mid, { size: textSize, crest: small, weight: 600, maxWidth: colW - chanceW - textSize * 5 });
     paintText(ctx, t(home ? 'share.homeShort' : 'share.awayShort'), ownX + nameW + textSize * 0.4, mid + textSize * 0.35, { size: textSize * 0.75, weight: 600, color: SC.faint });
     const tone = outcome === 0 ? SC.goodInk : outcome === 2 ? SC.badInk : SC.muted;
-    paintText(ctx, `${mine[0]}–${mine[1]}`, ownX + colW, mid + textSize * 0.4, { size: textSize * 1.15, weight: 800, wide: true, align: 'right', color: tone });
+    paintText(ctx, `${mine[0]}–${mine[1]}`, ownX + colW - chanceW, mid + textSize * 0.4, { size: textSize * 1.15, weight: 800, wide: true, align: 'right', color: tone });
+    paintChance(f, scenarioOutcome(score), ownX, mid);
     rowY += rowH;
   }
   const total = analysis.typical.table.find((entry) => entry.club === club)?.points;
   paintText(ctx, t('share.ownSum', { w: results[0], d: results[1], l: results[2], total }), ownX, rowY + 26 * headU, { size: textSize * 0.72, weight: 600, color: SC.muted, maxWidth: colW });
   // The rivals' results it rests on.
   y = tall ? rowY + 90 * headU + gap : bodyY + 14 + gap;
-  paintText(ctx, t('scenario.stepsTitle', { owner: scenarioOwner(row.team) }), rivalX, y, { size: headSize, weight: 600, color: SC.faint, label: true, maxWidth: colW });
   rowY = y + 26 * headU;
-  if (!deciders.length) paintText(ctx, t('scenario.stepsNone', { team: row.team }), rivalX, rowY + rowH / 2 + textSize * 0.3, { size: textSize * 0.85, weight: 600, color: SC.muted, maxWidth: colW });
+  if (!deciders.length) {
+    paintText(ctx, t('scenario.stepsTitle', { owner: scenarioOwner(row.team) }), rivalX, y, { size: headSize, weight: 600, color: SC.faint, label: true, maxWidth: colW });
+    paintText(ctx, t('scenario.stepsNone', { team: row.team }), rivalX, rowY + rowH / 2 + textSize * 0.3, { size: textSize * 0.85, weight: 600, color: SC.muted, maxWidth: colW });
+  } else paintHead(t('scenario.stepsTitle', { owner: scenarioOwner(row.team) }), rivalX, y);
   for (const decider of deciders) {
     const game = prepared.games[decider.f];
     const score = analysis.typical.scores[decider.f];
     const mid = rowY + rowH / 2;
     const scoreW = measureText(ctx, '0–0', { size: textSize * 1.15, weight: 800, wide: true }) + textSize;
-    const half = (colW - scoreW) / 2;
+    const width = colW - chanceW;
+    const half = (width - scoreW) / 2;
     await shareClubLine(ctx, report.table[game.home], rivalX, mid, { size: textSize * 0.9, crest: small * 0.85, weight: 600, maxWidth: half });
     paintText(ctx, `${score[0]}–${score[1]}`, rivalX + half + scoreW / 2, mid + textSize * 0.4, { size: textSize * 1.15, weight: 800, wide: true, align: 'center' });
-    await shareClubLine(ctx, report.table[game.away], rivalX + colW, mid, { size: textSize * 0.9, crest: small * 0.85, weight: 600, align: 'right', maxWidth: half });
+    await shareClubLine(ctx, report.table[game.away], rivalX + width, mid, { size: textSize * 0.9, crest: small * 0.85, weight: 600, align: 'right', maxWidth: half });
+    paintChance(decider.f, scenarioOutcome(score), rivalX, mid);
     rowY += rowH;
   }
   return shareBlob(canvas);
