@@ -53,6 +53,7 @@ from collections import deque
 from dataclasses import dataclass, field
 
 from elitetracker.model.career import SeasonSlice, team_ids
+from elitetracker.model.elo import model_xg
 from elitetracker.model.probabilities import AWAY_WIN, DRAW, HOME_WIN, MatchProbabilities
 from elitetracker.normalize.matches import Match
 
@@ -136,12 +137,29 @@ class ADConfig:
     # decayed or tapered one (it forgets a keeper who has left). 0 is elo-v13.
     keeping_window: int = 45
     keeping_weight: float = 0.75
+    # elo-v19.0: a red card's man advantage taken out of what the ratings learn
+    # from: the home side's observation x exp(-man_advantage * f), the away
+    # side's x exp(man_advantage * f), f the home side's net man advantage
+    # (`man_advantage`). The Elo ratings are left alone: shifting their
+    # update made Elo's own odds worse. On 5,255 matches with card data
+    # -0.00011 log loss (t -0.75), Brier t -0.89, RPS t -0.95; halves
+    # +0.15 / -0.89, walk-forward ~0. Shipped on the owner's call; see
+    # PROJECT_STATUS.md, "Red cards". 0 is elo-v18.0.
+    man_advantage: float = 0.25
 
     def offseason(self, league: str) -> tuple[float, float]:
         """(season regression, value pull) for one division's offseason pull."""
         if league == "obosligaen":
             return self.obos_season_regression, self.obos_value_pull
         return self.season_regression, self.value_pull
+
+
+def man_advantage(reds: list[list[int]] | list[tuple[int, int]]) -> float:
+    """The home side's net man advantage over a match, as a share of its 90
+    minutes, from its red cards `[minute, side]` (side 0 the home side's):
+    each away red adds the share of the match left after it, each home red
+    takes it off. 0.0 without a red."""
+    return sum((1.0 if side else -1.0) * (90 - min(90, minute)) / 90 for minute, side in reds)
 
 
 def tau(home_goals: int, away_goals: int, lam: float, mu: float, rho: float) -> float:
@@ -226,6 +244,8 @@ class AttackDefence:
     shots: dict[str, tuple[float, ...]] = field(default_factory=dict)
     # season -> team_id -> Transfermarkt squad value (EUR), for `value_pull`.
     values: dict[int, dict[str, float]] = field(default_factory=dict)
+    # match_id -> the home side's man advantage (`man_advantage`), matches with a red card.
+    reds: dict[str, float] = field(default_factory=dict)
     attack: dict[str, float] = field(default_factory=dict)
     defence: dict[str, float] = field(default_factory=dict)
     # Season-level finishing: log(total goals / total xG) per team, carried across seasons.
@@ -245,10 +265,10 @@ class AttackDefence:
 
     @classmethod
     def from_slices(cls, slices: list[SeasonSlice], config: ADConfig | None = None, shots=None,
-                    values=None) -> "AttackDefence":
+                    values=None, reds=None) -> "AttackDefence":
         divisions = {(s.season, t): s.league for s in slices for m in s.matches for t in team_ids(m)}
         return cls(config=config or ADConfig(), divisions=divisions, shots=dict(shots or {}),
-                   values=dict(values or {}))
+                   values=dict(values or {}), reds=dict(reds or {}))
 
     def replay(self, matches: list[Match]) -> "AttackDefence":
         """Apply every played match in kickoff order; returns self."""
@@ -259,7 +279,7 @@ class AttackDefence:
     def copy(self) -> "AttackDefence":
         """An independent state to replay a different continuation from."""
         return AttackDefence(
-            config=self.config, divisions=self.divisions, shots=self.shots, values=self.values,
+            config=self.config, divisions=self.divisions, shots=self.shots, values=self.values, reds=self.reds,
             attack=dict(self.attack), defence=dict(self.defence), finishing=dict(self.finishing),
             _season_goals=dict(self._season_goals), _season_xg=dict(self._season_xg),
             season=self.season, _played=dict(self._played),
@@ -442,13 +462,22 @@ class AttackDefence:
     # -- learning --------------------------------------------------------
     def observed(self, match: Match) -> tuple[float, float, float]:
         """(home, away, step): goals blended with the shot-based signal where
-        there is one, and the step that observation earns."""
+        there is one, and the step that observation earns; a red card's man
+        advantage taken out (`ADConfig.man_advantage`)."""
+        home, away, k = self._observed(match)
+        f = self.reds.get(match.match_id, 0.0)
+        if f and self.config.man_advantage:
+            shift = math.exp(self.config.man_advantage * f)
+            home, away = home / shift, away * shift
+        return home, away, k
+
+    def _observed(self, match: Match) -> tuple[float, float, float]:
         goals = (float(match.home_goals), float(match.away_goals))
         shots = self.shots.get(match.match_id)
         cfg = self.config
         if not shots or cfg.alpha == 0.0:
             return goals[0], goals[1], cfg.k
-        signal = shots[2:4] if cfg.signal == "xgot" and len(shots) >= 4 else shots[0:2]
+        signal = shots[2:4] if cfg.signal == "xgot" and len(shots) >= 4 else model_xg(shots)
         a = cfg.alpha
         return (1 - a) * goals[0] + a * signal[0], (1 - a) * goals[1] + a * signal[1], cfg.k_shots or cfg.k
 

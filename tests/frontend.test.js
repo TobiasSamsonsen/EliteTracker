@@ -677,7 +677,8 @@ test('every version-history string exists in both languages', () => {
     'versions.xg', 'versions.tipXg', 'versions.fact.xg', 'versions.fact.xgText', 'versions.fact.xgMarket', 'versions.tipStep', 'versions.note', 'versions.fact.skill', 'versions.fact.skillText', 'versions.fact.step',
     'versions.fact.stepText', 'versions.fact.gap', 'versions.fact.gapText',
     ...['elo-v1', 'elo-v2', 'elo-v3', 'elo-v5', 'elo-v6', 'elo-v7', 'elo-v8', 'elo-v9', 'elo-v10', 'elo-v11',
-      'elo-v11.1', 'elo-v12.0', 'elo-v13.0', 'elo-v14.0', 'elo-v15.0', 'elo-v16.0', 'elo-v16.1', 'elo-v17.0'].map((v) => `versions.v.${v}`),
+      'elo-v11.1', 'elo-v12.0', 'elo-v13.0', 'elo-v14.0', 'elo-v15.0', 'elo-v16.0', 'elo-v16.1', 'elo-v17.0',
+      'elo-v18.0', 'elo-v19.0'].map((v) => `versions.v.${v}`),
   ]);
 });
 
@@ -796,7 +797,10 @@ test('a play-off result cannot take more than its own place offers', () => {
   assert.ok(seasonOutcomes(evenRow(), ELITE_BANDS, 'eliteserien').some((s) => s.key === 'Relegation play-off' && !s.hatch));
 });
 
-eval(pick('raceSeries') + pick('raceSwing') + pick('raceWeek') + pick('raceRounds') + pick('spreadLabels'));
+const RACE_MAX_FEATURED = 6;
+eval(pick('raceSeries') + pick('raceSwing') + pick('raceWeek') + pick('raceRounds') + pick('spreadLabels')
+  + pick('raceYMax') + pick('raceGroups') + pick('raceMatchesInWindow') + pick('raceCurvePath')
+  + pick('raceSwingMatches') + pick('raceStatus') + pick('raceHighlights'));
 
 const raceLayers = [
   { kind: 'pre', date: '2026-03-13', p: new Map([['A', [0.5, 0.3, 0.2]], ['B', [0.1, 0.2, 0.7]]]) },
@@ -849,8 +853,103 @@ test('the season bar and race-lines strings exist in both languages', () => {
     'table.col.seasonEnd', 'seasonbar.mid', 'seasonbar.promotedPlayoff', 'seasonbar.relegatedPlayoff',
     'explore.races.title', 'explore.races.desc', 'races.empty', 'races.pre', 'races.pick', 'races.aria', 'races.none',
     'races.tip', 'races.week', 'races.fact.leader', 'races.fact.leaderText', 'races.fact.swing',
-    'races.fact.swingText', 'races.fact.alive', 'races.fact.aliveText', 'races.note',
+    'races.fact.swingText', 'races.fact.swingMatch', 'races.fact.swingMatches', 'races.fact.alive', 'races.fact.aliveText',
+    'races.fact.riser', 'races.fact.riserText', 'races.fact.preFav', 'races.fact.preFavText',
+    'races.fact.fade', 'races.fact.fadeText', 'races.showFallen', 'races.hideFallen',
+    'races.status.open', 'races.status.likely', 'races.status.settled',
+    'races.col.club', 'races.col.pre', 'races.col.peak', 'races.col.now', 'races.col.moveShort', 'races.col.season',
+    'races.fallenGroup', 'races.openClub', 'races.focusHint', 'races.final', 'races.afterRound',
+    'races.preFull', 'races.playoffNote', 'races.methodTitle', 'races.note',
   ]);
+});
+
+test('raceYMax scales the axis to the peak value', () => {
+  assert.deepEqual(raceYMax([{ values: [0.1, 0.42] }]), { max: 0.5, ticks: [0, 0.1, 0.2, 0.3, 0.4, 0.5] });
+  assert.deepEqual(raceYMax([{ values: [0.2, 0.68] }]), { max: 0.75, ticks: [0, 0.25, 0.5, 0.75] });
+  assert.deepEqual(raceYMax([{ values: [0.2, 0.94] }]), { max: 1, ticks: [0, 0.25, 0.5, 0.75, 1] });
+});
+
+test('raceGroups splits active and fallen clubs and promotes challengers when settled', () => {
+  const s = [
+    { team_id: '1', team: 'A', values: [0.5, 1.0] },
+    { team_id: '2', team: 'B', values: [0.4, 0.0] },
+    { team_id: '3', team: 'C', values: [0.2, 0.0] },
+    { team_id: '4', team: 'D', values: [0.08, 0.0] },
+  ];
+  const g = raceGroups(s, true);
+  assert.equal(g.featured[0].series.team, 'A');
+  assert.equal(g.featured[0].challenger, false);
+  assert.ok(g.featured.some((f) => f.series.team === 'B' && f.challenger));
+  assert.ok(g.featured.some((f) => f.series.team === 'C' && f.challenger));
+  assert.deepEqual(g.fallen.map((x) => x.team), ['D']);
+});
+
+test('raceMatchesInWindow returns chronological matches in (from, to]', () => {
+  const res = [
+    { date: '2026-04-01', home_id: '1', away_id: '2', home: 'A', away: 'B', home_goals: 1, away_goals: 0 },
+    { date: '2026-04-05', home_id: '3', away_id: '1', home: 'C', away: 'A', home_goals: 2, away_goals: 2 },
+    { date: '2026-04-03', home_id: '1', away_id: '4', home: 'A', away: 'D', home_goals: 3, away_goals: 1 },
+  ];
+  const found = raceMatchesInWindow(res, '1', '2026-04-01', '2026-04-05');
+  assert.deepEqual(found.map((m) => m.date), ['2026-04-03', '2026-04-05']);
+});
+
+test('raceStatus distinguishes open, likely, and settled races', () => {
+  const band1 = { first: 1, last: 1 };
+  assert.equal(raceStatus([{ values: [0.5, 0.96] }], band1, false), 'settled');
+  assert.equal(raceStatus([{ values: [0.5, 0.85] }], band1, false), 'likely');
+  assert.equal(raceStatus([{ values: [0.5, 0.60] }], band1, false), 'open');
+  assert.equal(raceStatus([{ values: [0.5, 0.60] }], band1, true), 'settled');
+});
+
+test('raceHighlights finds swing with match, riser, and fade', () => {
+  const series = [
+    { team_id: 'A', team: 'A', values: [0.2, 0.3, 0.8, 0.85] },
+    { team_id: 'B', team: 'B', values: [0.6, 0.7, 0.2, 0.1] },
+  ];
+  const results = [{ date: '2026-03-28', home_id: 'A', away_id: 'B', home: 'A', away: 'B', home_goals: 3, away_goals: 0 }];
+  const items = raceHighlights(series, raceLayers, results, { first: 1, last: 1 });
+  assert.equal(items.length, 3);
+  assert.equal(items[0].kind, 'swing');
+  assert.equal(items[0].matches.length, 1);
+  assert.equal(items[1].kind, 'riser');
+  assert.equal(items[1].team, 'A');
+  assert.equal(items[2].kind, 'fade');
+  assert.equal(items[2].team, 'B');
+});
+
+test('raceCurvePath smooths without overshooting segment bounds', () => {
+  assert.equal(raceCurvePath([]), '');
+  const pts = [[0, 100], [40, 0], [80, 0], [120, 80]];
+  const d = raceCurvePath(pts);
+  assert.ok(d.startsWith('M0.0,100.0 C'));
+  assert.ok(d.endsWith('120.0,80.0'));
+  const cubics = [...d.matchAll(/C([\d.-]+),([\d.-]+) ([\d.-]+),([\d.-]+) ([\d.-]+),([\d.-]+)/g)];
+  assert.equal(cubics.length, 3);
+  cubics.forEach((m, i) => {
+    const lo = Math.min(pts[i][1], pts[i + 1][1]);
+    const hi = Math.max(pts[i][1], pts[i + 1][1]);
+    const cp1y = Number(m[2]);
+    const cp2y = Number(m[4]);
+    assert.ok(cp1y >= lo - 0.15 && cp1y <= hi + 0.15, `seg ${i} cp1y=${cp1y} outside [${lo},${hi}]`);
+    assert.ok(cp2y >= lo - 0.15 && cp2y <= hi + 0.15, `seg ${i} cp2y=${cp2y} outside [${lo},${hi}]`);
+  });
+});
+
+test('raceSwingMatches includes major counter-moving rivals and deduplicates clashes', () => {
+  const series = [
+    { team_id: '1', team: 'A', values: [0.3, 0.53] },
+    { team_id: '2', team: 'B', values: [0.4, 0.22] },
+    { team_id: '3', team: 'C', values: [0.25, 0.23] },
+  ];
+  const swing = { series: series[0], index: 1, change: 0.23, from: { date: '2026-10-25' }, to: { date: '2026-11-01' } };
+  const results = [
+    { match_id: '10', date: '2026-11-01', home_id: '4', away_id: '1', home: 'D', away: 'A', home_goals: 0, away_goals: 1 },
+    { match_id: '11', date: '2026-11-01', home_id: '5', away_id: '2', home: 'E', away: 'B', home_goals: 3, away_goals: 2 },
+    { match_id: '12', date: '2026-11-01', home_id: '3', away_id: '6', home: 'C', away: 'F', home_goals: 1, away_goals: 1 },
+  ];
+  const ms = raceSwingMatches(series, swing, results);
+  assert.deepEqual(ms.map((m) => m.match_id), ['10', '11']);
 });
 
 const SORT_THEN = { goals_for: 'goals_against', expected_goals_for: 'expected_goals_against' };
@@ -1598,4 +1697,187 @@ test('Back goes through the app where the page has something behind it, else to 
   assert.deepEqual(run({ state: { n: 2 } }), ['back']);
   assert.deepEqual(run({ state: null }), ['fallback'], 'a page opened by a link never leaves the site');
   assert.deepEqual(run({ state: { n: 0 } }), ['fallback']);
+});
+
+eval(pick('refereeMinFilter') + pick('expandReferees') + pick('refereeFilter') + pick('refereeOverview') + pick('refereePairings') + pick('clubDisciplineRows') + pick('seasonDisciplineRows') + pick('refereeTeamRows') + pick('teamRefereeRows') + pick('refereePairingMatches') + pick('redCardImpact') + pick('varEraComparison') + pick('feistiestMatches') + pick('refereeScatterLabels') + pick('refereeChanceSd') + pick('refereeChanceBand') + pick('refereeClubBaseline'));
+
+test('referee aggregation computes benefit/drawback, home bias, and fouls per card without foul-missing bias', () => {
+  const payload = {
+    leagues: ['eliteserien', 'obosligaen'],
+    referees: ['Ref A', 'Ref B'],
+    teams: { '1': 'Viking', '2': 'Brann', '3': 'Molde' },
+    seasons: [2024, 2025],
+    matches: [
+      // ... home rating change, expected change, home xG, away xG
+      ['m1', '2024-05-01', 2024, 0, 0, '1', '2', 2, 1, 1.8, 0.9, 2, 1, 0, 0, 10, 14, 4, 1, 1.8, 0.9],
+      ['m2', '2025-05-01', 2025, 0, 0, '3', '1', 0, 2, 1.5, 1.2, 1, 1, 0, 1, null, null, -5, 2, 0.7, 1.4],
+      ['m3', '2025-05-02', 2025, 0, 1, '2', '3', 1, 1, 1.4, 1.3, 3, 2, 0, 0, 12, 8, 0.5, -0.5, 1.2, 1.1],
+    ],
+  };
+  const rows = expandReferees(payload);
+  assert.equal(rows.length, 3);
+  assert.equal(rows[0].referee, 'Ref A');
+
+  const only2025 = refereeFilter(rows, { league: 'eliteserien', season: 2025 });
+  assert.equal(only2025.length, 2);
+
+  const overview = refereeOverview(rows);
+  assert.equal(overview[0].referee, 'Ref A');
+  assert.equal(overview[0].matches, 2);
+  assert.equal(overview[0].cards, 6);
+  // m1 has 24 fouls and 3 cards; m2 has null fouls (3 cards must not dilute foulsPerCard)
+  assert.equal(overview[0].foulsMatches, 1);
+  assert.equal(overview[0].foulsPerMatch, 24);
+  assert.equal(overview[0].foulsPerCard, 8);
+  assert.ok(Math.abs(overview[0].homeBias - (3 - 3.3)) < 1e-9);
+
+  const byClub = refereeTeamRows(rows, 'Ref A');
+  const viking = byClub.find((r) => r.team_id === '1');
+  assert.equal(viking.points, 6);
+  // Performance = rating change - expected change: m1 home +3, m2 away -(-5 - 2) = +7.
+  assert.equal(rows[1].away_perf, 7);
+  assert.ok(Math.abs(viking.diff - 10) < 1e-9);
+  assert.ok(Math.abs(viking.perMatch - 5) < 1e-9);
+
+  const byRef = teamRefereeRows(rows, '1');
+  assert.equal(byRef.length, 1);
+  assert.equal(byRef[0].referee, 'Ref A');
+  assert.equal(byRef[0].matches, 2);
+
+  assert.equal(refereeMinFilter([{ matches: 9 }, { matches: 10 }, { matches: 14 }], 10).length, 2);
+  assert.equal(refereeMinFilter([{ matches: 4 }, { matches: 10 }], 0).length, 2);
+
+  // Chance band: the spread of (points - expected) over all six team-matches,
+  // 1.96 sd / sqrt(n) per match and 1.96 sd sqrt(n) summed; a club's baseline
+  // is its points against expectation per match with every referee.
+  const diffs = [3, -3, -7, 7, 1, -1];
+  const mean = diffs.reduce((a, b) => a + b, 0) / diffs.length;
+  const sd = Math.sqrt(diffs.reduce((a, b) => a + (b - mean) ** 2, 0) / (diffs.length - 1));
+  assert.ok(Math.abs(refereeChanceSd(rows) - sd) < 1e-9);
+  assert.ok(Math.abs(refereeChanceBand(sd, 4, 'perMatch') - 1.96 * sd / 2) < 1e-9);
+  assert.ok(Math.abs(refereeChanceBand(sd, 4, 'total') - 1.96 * sd * 2) < 1e-9);
+  assert.equal(refereeChanceBand(sd, 0, 'perMatch'), 0);
+  assert.equal(refereeChanceSd([]), 0);
+  assert.ok(Math.abs(refereeClubBaseline(rows, '1') - 5) < 1e-9);
+  assert.equal(refereeClubBaseline(rows, '99'), null);
+
+  // Pairings, club discipline, and season trends
+  assert.equal(refereePairings(rows, 2).length, 1);
+  assert.equal(refereePairings(rows, 2)[0].team_id, '1');
+
+  const clubs = clubDisciplineRows(rows);
+  const vClub = clubs.find((c) => c.team_id === '1');
+  // m1: Viking (home) 2Y+0R vs 1Y+0R; m2: Viking (away) 1Y+1R vs 1Y+0R -> 4 cardsFor, 2 cardsAgainst
+  assert.equal(vClub.cardsFor, 4);
+  assert.equal(vClub.cardsAgainst, 2);
+  assert.equal(vClub.netCardsPerMatch, -1);
+  assert.equal(vClub.netReds, -1);
+  assert.equal(vClub.homeCardsPerMatch, 2);
+  assert.equal(vClub.awayCardsPerMatch, 2);
+  assert.equal(vClub.foulsForPerMatch, 10);
+  assert.equal(vClub.foulsAgainstPerMatch, 14);
+  assert.equal(vClub.netFoulsPerMatch, 4);
+  // m1 had 2 cards for Viking and 10 fouls; m2 had null fouls so its 2 cards must not dilute fpc
+  assert.equal(vClub.foulsPerCard, 5);
+
+  const seasons = seasonDisciplineRows(rows);
+  assert.deepEqual(seasons.map((s) => s.season), [2024, 2025]);
+  assert.equal(seasons[0].cardsPerMatch, 3);
+  assert.equal(seasons[0].foulsPerCard, 8);
+  assert.ok(Math.abs(seasons[1].redMatchPct - 50) < 1e-9);
+
+  // Pairing match log (newest first)
+  const pairingLog = refereePairingMatches(rows, 'Ref A', '1');
+  assert.equal(pairingLog.length, 2);
+  assert.equal(pairingLog[0].match_id, 'm2');
+  assert.equal(pairingLog[0].isHome, false);
+  assert.equal(pairingLog[0].rf, 1);
+  // Away side: changes flip sign; xG reads from the club's side.
+  assert.equal(pairingLog[0].change, 5);
+  assert.equal(pairingLog[0].expected, -2);
+  assert.equal(pairingLog[0].diff, 7);
+  assert.equal(pairingLog[0].xgf, 1.4);
+
+  // Red card impact & feistiest matches
+  const rc = redCardImpact(rows);
+  assert.equal(rc.received.n, 1);
+  assert.equal(rc.drawn.n, 1);
+  assert.equal(rc.received.diffPerMatch, 7);
+  assert.equal(rc.drawn.diffPerMatch, -7);
+  assert.ok(Math.abs(rc.redMatchPct - (100 / 3)) < 1e-9);
+  const feisty = feistiestMatches(rows, 2);
+  assert.equal(feisty[0].match_id, 'm3');
+  assert.equal(feisty[0].totalCards, 5);
+
+  // Disambiguating colliding referee surnames
+  const labels = refereeScatterLabels([{ referee: 'Christian Moen' }, { referee: 'Svein Oddvar Moen' }, { referee: 'Tore Hansen' }]);
+  assert.equal(labels.get('Christian Moen'), 'C. Moen');
+  assert.equal(labels.get('Svein Oddvar Moen'), 'S. O. Moen');
+  assert.equal(labels.get('Tore Hansen'), 'Hansen');
+
+  // VAR era comparison requires >=10 matches per era
+  assert.equal(varEraComparison(rows), null);
+  const manyPre = Array.from({ length: 10 }, (_, i) => ({ ...rows[0], match_id: `p${i}`, season: 2022 }));
+  const manyVar = Array.from({ length: 10 }, (_, i) => ({ ...rows[1], match_id: `v${i}`, season: 2023 }));
+  const varCmp = varEraComparison([...manyPre, ...manyVar]);
+  assert.equal(varCmp.preVar.n, 10);
+  assert.equal(varCmp.varEra.redsPerMatch, 1);
+});
+
+eval('const PERF_WINDOW = 5;' + pick('teamPerformanceRows'));
+
+test('team performance rows read from the club side, with a trailing 5-match average', () => {
+  const data = {
+    leagues: ['eliteserien', 'obosligaen'],
+    teams: { '1': 'Viking', '2': 'Brann' },
+    matches: [
+      // [date, season, league, home, away, hg, ag, home change, home expected]
+      ['2025-04-01', 2025, 0, '1', '2', 2, 0, 6, 2],
+      ['2025-04-08', 2025, 0, '2', '1', 1, 1, 1, -1],
+      ['2025-04-15', 2025, 0, '1', '2', 0, 1, -8, 3],
+      ['2025-04-22', 2025, 0, '2', '1', 0, 3, -9, 1],
+      ['2026-04-01', 2026, 1, '1', '2', 1, 0, 2, 2],
+      ['2026-04-08', 2026, 1, '2', '1', 2, 2, 0, 0],
+    ],
+  };
+  const rows = teamPerformanceRows(data, '1');
+  assert.equal(rows.length, 6);
+  // Home: 6 - 2 = +4. Away: -(1 - -1) = -2, and the opponent is named.
+  assert.equal(rows[0].perf, 4);
+  assert.equal(rows[1].perf, -2);
+  assert.equal(rows[1].isHome, false);
+  assert.equal(rows[1].opponent, 'Brann');
+  assert.equal(rows[1].change, -1);
+  assert.equal(rows[3].perf, 10);
+  assert.equal(rows[4].league, 'obosligaen');
+  // No average until five matches; then the mean of the last five.
+  assert.equal(rows[3].avg, null);
+  assert.equal(rows[4].avg, (4 - 2 - 11 + 10 + 0) / 5);
+  assert.equal(rows[5].avg, (-2 - 11 + 10 + 0 + 0) / 5);
+  // The rewind stops at its date.
+  assert.equal(teamPerformanceRows(data, '1', { asof: '2025-12-31' }).length, 4);
+  assert.deepEqual(teamPerformanceRows(data, '99'), []);
+});
+
+test('referee i18n keys exist in both English and Norwegian', () => {
+  assertBothLanguages([
+    'explore.referees.title', 'explore.referees.desc', 'team.tab.referees',
+    'referees.col.fpc', 'referees.col.reds', 'referees.col.awayGap',
+    'referees.how.title', 'referees.benefit', 'referees.drawback',
+    'referees.min.five', 'referees.min.ten', 'referees.min.all', 'referees.emptyMin',
+    'referees.showAllBtn', 'referees.obosNotice', 'referees.switchEliteserien',
+    'referees.teamEliteserienFallback',
+    'referees.section.overview', 'referees.section.clubs', 'referees.section.pairings',
+    'referees.hero.cardsLabel', 'referees.hero.redSwingLabel', 'referees.hero.varLabel', 'referees.hero.awayTiltLabel',
+    'referees.active.all', 'referees.active.only', 'referees.mode.byRef', 'referees.mode.byClub',
+    'referees.pairings.intro', 'referees.pairings.clickHint', 'referees.pairings.title',
+    'referees.clubs.viewChart', 'referees.clubs.viewTable', 'referees.clubs.factBestReds',
+    'referees.style.title', 'referees.seasons.title', 'referees.seasons.legendCards', 'referees.seasons.legendReds',
+    'referees.feisty.title', 'referees.clubs.scatterTitle', 'referees.clubs.metricReds', 'referees.clubs.netRedsTitle',
+    'referees.drawer.openClub', 'referees.drawer.openRef', 'referees.drawer.colDiff',
+    'referees.teamCard.title', 'referees.teamRecord.title',
+    'referees.explain.title', 'referees.explain.actual', 'referees.explain.expected', 'referees.explain.perf',
+    'referees.explain.line', 'referees.explain.win', 'referees.explain.loss', 'referees.explain.example',
+    'referees.tipInside', 'referees.tipOutside', 'referees.chanceNote', 'referees.chanceNoteClub', 'referees.how.chance',
+  ]);
 });

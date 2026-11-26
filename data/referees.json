@@ -1,0 +1,23964 @@
+{
+"matches": {
+"3237614": {
+"fouls": [
+11,
+11
+],
+"red": [
+0,
+0
+],
+"referee": "Kai Erik Steen",
+"yellow": [
+3,
+0
+]
+},
+"3237615": {
+"fouls": [
+12,
+9
+],
+"red": [
+0,
+1
+],
+"referee": "Kai Erik Steen",
+"yellow": [
+1,
+1
+]
+},
+"3237616": {
+"fouls": [
+20,
+14
+],
+"red": [
+0,
+0
+],
+"referee": "Marius Hansen Groetta",
+"yellow": [
+1,
+5
+]
+},
+"3237617": {
+"fouls": [
+16,
+13
+],
+"red": [
+0,
+0
+],
+"referee": "Sigurd Smehus Kringstad",
+"yellow": [
+1,
+1
+]
+},
+"3237618": {
+"fouls": [
+14,
+15
+],
+"red": [
+0,
+0
+],
+"referee": "Rohit Saggi",
+"yellow": [
+0,
+2
+]
+},
+"3237619": {
+"fouls": [
+16,
+10
+],
+"red": [
+0,
+0
+],
+"referee": "Tom Harald Hagen",
+"yellow": [
+0,
+1
+]
+},
+"3237620": {
+"fouls": [
+10,
+19
+],
+"red": [
+0,
+0
+],
+"referee": "Kai Erik Steen",
+"yellow": [
+2,
+3
+]
+},
+"3237621": {
+"fouls": [
+12,
+17
+],
+"red": [
+0,
+0
+],
+"referee": "Tore Hansen",
+"yellow": [
+0,
+2
+]
+},
+"3237622": {
+"fouls": [
+11,
+7
+],
+"red": [
+0,
+0
+],
+"referee": "Sigurd Smehus Kringstad",
+"yellow": [
+1,
+0
+]
+},
+"3237623": {
+"fouls": [
+13,
+8
+],
+"red": [
+0,
+0
+],
+"referee": "Tom Harald Hagen",
+"yellow": [
+3,
+1
+]
+},
+"3237624": {
+"fouls": [
+9,
+13
+],
+"red": [
+0,
+0
+],
+"referee": "Sigurd Smehus Kringstad",
+"yellow": [
+2,
+1
+]
+},
+"3237625": {
+"fouls": [
+14,
+17
+],
+"red": [
+0,
+0
+],
+"referee": "Rohit Saggi",
+"yellow": [
+1,
+5
+]
+},
+"3237626": {
+"fouls": [
+14,
+13
+],
+"red": [
+0,
+0
+],
+"referee": "Dag Vidar Hafsaas",
+"yellow": [
+3,
+1
+]
+},
+"3237627": {
+"fouls": [
+12,
+22
+],
+"red": [
+0,
+0
+],
+"referee": "Sigurd Smehus Kringstad",
+"yellow": [
+4,
+4
+]
+},
+"3237628": {
+"fouls": [
+10,
+8
+],
+"red": [
+0,
+0
+],
+"referee": "Espen Eskaas",
+"yellow": [
+3,
+0
+]
+},
+"3237629": {
+"fouls": [
+19,
+8
+],
+"red": [
+0,
+0
+],
+"referee": "Rohit Saggi",
+"yellow": [
+1,
+0
+]
+},
+"3237630": {
+"fouls": [
+16,
+14
+],
+"red": [
+0,
+0
+],
+"referee": "Rohit Saggi",
+"yellow": [
+0,
+3
+]
+},
+"3237631": {
+"fouls": [
+8,
+7
+],
+"red": [
+0,
+0
+],
+"referee": "Espen Eskaas",
+"yellow": [
+3,
+2
+]
+},
+"3237632": {
+"fouls": [
+15,
+14
+],
+"red": [
+0,
+0
+],
+"referee": "Marius Hansen Groetta",
+"yellow": [
+1,
+1
+]
+},
+"3237633": {
+"fouls": [
+8,
+9
+],
+"red": [
+0,
+0
+],
+"referee": "Ola Hobber Nilsen",
+"yellow": [
+1,
+2
+]
+},
+"3237634": {
+"fouls": [
+12,
+15
+],
+"red": [
+0,
+1
+],
+"referee": "Tore Hansen",
+"yellow": [
+1,
+2
+]
+},
+"3237635": {
+"fouls": [
+11,
+24
+],
+"red": [
+0,
+0
+],
+"referee": "Tommy Skjerven",
+"yellow": [
+1,
+2
+]
+},
+"3237636": {
+"fouls": [
+15,
+8
+],
+"red": [
+1,
+0
+],
+"referee": "Espen Eskaas",
+"yellow": [
+2,
+1
+]
+},
+"3237637": {
+"fouls": [
+11,
+9
+],
+"red": [
+0,
+0
+],
+"referee": "Mohammad Aslam",
+"yellow": [
+1,
+1
+]
+},
+"3237638": {
+"fouls": [
+7,
+11
+],
+"red": [
+0,
+0
+],
+"referee": "Kristoffer Hagenes",
+"yellow": [
+4,
+2
+]
+},
+"3237639": {
+"fouls": [
+9,
+10
+],
+"red": [
+0,
+0
+],
+"referee": "Rohit Saggi",
+"yellow": [
+1,
+2
+]
+},
+"3237640": {
+"fouls": [
+16,
+12
+],
+"red": [
+0,
+0
+],
+"referee": "Rohit Saggi",
+"yellow": [
+5,
+2
+]
+},
+"3237641": {
+"fouls": [
+11,
+14
+],
+"red": [
+0,
+0
+],
+"referee": "Sivert Oeksnes Amland",
+"yellow": [
+1,
+3
+]
+},
+"3237642": {
+"fouls": [
+5,
+14
+],
+"red": [
+0,
+0
+],
+"referee": "Tommy Skjerven",
+"yellow": [
+2,
+0
+]
+},
+"3237643": {
+"fouls": [
+19,
+6
+],
+"red": [
+0,
+0
+],
+"referee": "Tom Harald Hagen",
+"yellow": [
+3,
+0
+]
+},
+"3237644": {
+"fouls": [
+19,
+10
+],
+"red": [
+0,
+0
+],
+"referee": "Sigurd Smehus Kringstad",
+"yellow": [
+1,
+1
+]
+},
+"3237645": {
+"fouls": [
+14,
+15
+],
+"red": [
+0,
+0
+],
+"referee": "Tommy Skjerven",
+"yellow": [
+0,
+2
+]
+},
+"3237646": {
+"fouls": [
+16,
+11
+],
+"red": [
+0,
+0
+],
+"referee": "Kai Erik Steen",
+"yellow": [
+3,
+2
+]
+},
+"3237647": {
+"fouls": [
+15,
+14
+],
+"red": [
+1,
+0
+],
+"referee": "Tom Harald Hagen",
+"yellow": [
+2,
+3
+]
+},
+"3237648": {
+"fouls": [
+11,
+10
+],
+"red": [
+0,
+0
+],
+"referee": "Tom Harald Hagen",
+"yellow": [
+0,
+1
+]
+},
+"3237649": {
+"fouls": [
+12,
+15
+],
+"red": [
+0,
+0
+],
+"referee": "Tommy Skjerven",
+"yellow": [
+1,
+1
+]
+},
+"3237650": {
+"fouls": [
+11,
+9
+],
+"red": [
+0,
+0
+],
+"referee": "Tommy Skjerven",
+"yellow": [
+0,
+0
+]
+},
+"3237651": {
+"fouls": [
+13,
+11
+],
+"red": [
+0,
+0
+],
+"referee": "Svein Oddvar Moen",
+"yellow": [
+1,
+1
+]
+},
+"3237652": {
+"fouls": [
+20,
+9
+],
+"red": [
+0,
+0
+],
+"referee": "Kai Erik Steen",
+"yellow": [
+3,
+2
+]
+},
+"3237653": {
+"fouls": [
+14,
+10
+],
+"red": [
+0,
+0
+],
+"referee": "Tom Harald Hagen",
+"yellow": [
+1,
+0
+]
+},
+"3237654": {
+"fouls": [
+12,
+17
+],
+"red": [
+1,
+0
+],
+"referee": "Tom Harald Hagen",
+"yellow": [
+1,
+2
+]
+},
+"3237655": {
+"fouls": [
+15,
+8
+],
+"red": [
+0,
+0
+],
+"referee": "Sivert Oeksnes Amland",
+"yellow": [
+2,
+0
+]
+},
+"3237656": {
+"fouls": [
+9,
+14
+],
+"red": [
+0,
+0
+],
+"referee": "Tore Hansen",
+"yellow": [
+0,
+2
+]
+},
+"3237657": {
+"fouls": [
+11,
+11
+],
+"red": [
+1,
+0
+],
+"referee": "Marius Hansen Groetta",
+"yellow": [
+0,
+1
+]
+},
+"3237658": {
+"fouls": [
+16,
+11
+],
+"red": [
+0,
+0
+],
+"referee": "Marius Hansen Groetta",
+"yellow": [
+1,
+2
+]
+},
+"3237659": {
+"fouls": [
+15,
+8
+],
+"red": [
+0,
+1
+],
+"referee": "Kai Erik Steen",
+"yellow": [
+4,
+5
+]
+},
+"3237660": {
+"fouls": [
+17,
+7
+],
+"red": [
+0,
+0
+],
+"referee": "Ola Hobber Nilsen",
+"yellow": [
+0,
+2
+]
+},
+"3237661": {
+"fouls": [
+14,
+8
+],
+"red": [
+0,
+0
+],
+"referee": "Espen Eskaas",
+"yellow": [
+5,
+0
+]
+},
+"3237662": {
+"fouls": [
+11,
+7
+],
+"red": [
+0,
+0
+],
+"referee": "Dag Vidar Hafsaas",
+"yellow": [
+0,
+0
+]
+},
+"3237663": {
+"fouls": [
+14,
+13
+],
+"red": [
+0,
+0
+],
+"referee": "Mohammad Aslam",
+"yellow": [
+5,
+0
+]
+},
+"3237664": {
+"fouls": [
+13,
+19
+],
+"red": [
+0,
+0
+],
+"referee": "Mohammad Aslam",
+"yellow": [
+1,
+2
+]
+},
+"3237665": {
+"fouls": [
+11,
+8
+],
+"red": [
+0,
+0
+],
+"referee": "Tore Hansen",
+"yellow": [
+1,
+1
+]
+},
+"3237666": {
+"fouls": [
+17,
+8
+],
+"red": [
+0,
+0
+],
+"referee": "Kai Erik Steen",
+"yellow": [
+3,
+0
+]
+},
+"3237667": {
+"fouls": [
+15,
+20
+],
+"red": [
+0,
+0
+],
+"referee": "Ola Hobber Nilsen",
+"yellow": [
+2,
+3
+]
+},
+"3237668": {
+"fouls": [
+13,
+14
+],
+"red": [
+0,
+0
+],
+"referee": "Mohammad Aslam",
+"yellow": [
+0,
+0
+]
+},
+"3237669": {
+"fouls": [
+14,
+18
+],
+"red": [
+0,
+0
+],
+"referee": "Tom Harald Hagen",
+"yellow": [
+2,
+2
+]
+},
+"3237670": {
+"fouls": [
+11,
+13
+],
+"red": [
+0,
+0
+],
+"referee": "Tore Hansen",
+"yellow": [
+0,
+2
+]
+},
+"3237671": {
+"fouls": [
+18,
+19
+],
+"red": [
+0,
+0
+],
+"referee": "Ola Hobber Nilsen",
+"yellow": [
+1,
+2
+]
+},
+"3237672": {
+"fouls": [
+17,
+17
+],
+"red": [
+0,
+0
+],
+"referee": "Espen Eskaas",
+"yellow": [
+1,
+1
+]
+},
+"3237673": {
+"fouls": [
+8,
+9
+],
+"red": [
+0,
+0
+],
+"referee": "Tom Harald Hagen",
+"yellow": [
+1,
+3
+]
+},
+"3237674": {
+"fouls": [
+6,
+13
+],
+"red": [
+0,
+0
+],
+"referee": "Tore Hansen",
+"yellow": [
+0,
+1
+]
+},
+"3237675": {
+"fouls": [
+16,
+16
+],
+"red": [
+0,
+0
+],
+"referee": "Kristoffer Hagenes",
+"yellow": [
+1,
+0
+]
+},
+"3237676": {
+"fouls": [
+12,
+9
+],
+"red": [
+0,
+0
+],
+"referee": "Kai Erik Steen",
+"yellow": [
+1,
+1
+]
+},
+"3237677": {
+"fouls": [
+12,
+10
+],
+"red": [
+0,
+0
+],
+"referee": "Kristoffer Hagenes",
+"yellow": [
+1,
+2
+]
+},
+"3237678": {
+"fouls": [
+10,
+14
+],
+"red": [
+0,
+0
+],
+"referee": "Tommy Skjerven",
+"yellow": [
+2,
+2
+]
+},
+"3237679": {
+"fouls": [
+6,
+12
+],
+"red": [
+0,
+0
+],
+"referee": "Rohit Saggi",
+"yellow": [
+1,
+2
+]
+},
+"3237680": {
+"fouls": [
+20,
+13
+],
+"red": [
+0,
+0
+],
+"referee": "Sigurd Smehus Kringstad",
+"yellow": [
+4,
+2
+]
+},
+"3237681": {
+"fouls": [
+12,
+14
+],
+"red": [
+0,
+0
+],
+"referee": "Espen Eskaas",
+"yellow": [
+2,
+3
+]
+},
+"3237682": {
+"fouls": [
+16,
+13
+],
+"red": [
+0,
+0
+],
+"referee": "Sivert Oeksnes Amland",
+"yellow": [
+3,
+1
+]
+},
+"3237683": {
+"fouls": [
+19,
+16
+],
+"red": [
+0,
+0
+],
+"referee": "Rohit Saggi",
+"yellow": [
+2,
+1
+]
+},
+"3237684": {
+"fouls": [
+4,
+11
+],
+"red": [
+0,
+0
+],
+"referee": "Tore Hansen",
+"yellow": [
+0,
+0
+]
+},
+"3237685": {
+"fouls": [
+17,
+13
+],
+"red": [
+0,
+0
+],
+"referee": "Mohammad Aslam",
+"yellow": [
+1,
+3
+]
+},
+"3237686": {
+"fouls": [
+18,
+10
+],
+"red": [
+0,
+0
+],
+"referee": "Espen Eskaas",
+"yellow": [
+3,
+2
+]
+},
+"3237687": {
+"fouls": [
+15,
+16
+],
+"red": [
+0,
+0
+],
+"referee": "Kristoffer Hagenes",
+"yellow": [
+1,
+2
+]
+},
+"3237688": {
+"fouls": [
+13,
+11
+],
+"red": [
+0,
+0
+],
+"referee": "Tore Hansen",
+"yellow": [
+3,
+2
+]
+},
+"3237689": {
+"fouls": [
+8,
+16
+],
+"red": [
+0,
+0
+],
+"referee": "Sivert Oeksnes Amland",
+"yellow": [
+0,
+4
+]
+},
+"3237690": {
+"fouls": [
+10,
+14
+],
+"red": [
+0,
+0
+],
+"referee": "Rohit Saggi",
+"yellow": [
+3,
+2
+]
+},
+"3237691": {
+"fouls": [
+6,
+14
+],
+"red": [
+0,
+0
+],
+"referee": "Kai Erik Steen",
+"yellow": [
+2,
+2
+]
+},
+"3237692": {
+"fouls": [
+17,
+14
+],
+"red": [
+1,
+0
+],
+"referee": "Marius Hansen Groetta",
+"yellow": [
+1,
+4
+]
+},
+"3237693": {
+"fouls": [
+14,
+7
+],
+"red": [
+0,
+0
+],
+"referee": "Ola Hobber Nilsen",
+"yellow": [
+2,
+0
+]
+},
+"3237694": {
+"fouls": [
+10,
+6
+],
+"red": [
+0,
+0
+],
+"referee": "Dag Vidar Hafsaas",
+"yellow": [
+1,
+0
+]
+},
+"3237696": {
+"fouls": [
+10,
+15
+],
+"red": [
+0,
+0
+],
+"referee": "Marius Hansen Groetta",
+"yellow": [
+1,
+3
+]
+},
+"3237697": {
+"fouls": [
+18,
+14
+],
+"red": [
+0,
+0
+],
+"referee": "Kai Erik Steen",
+"yellow": [
+1,
+5
+]
+},
+"3237698": {
+"fouls": [
+14,
+8
+],
+"red": [
+0,
+0
+],
+"referee": "Espen Eskaas",
+"yellow": [
+2,
+2
+]
+},
+"3237699": {
+"fouls": [
+11,
+12
+],
+"red": [
+0,
+0
+],
+"referee": "Espen Eskaas",
+"yellow": [
+1,
+1
+]
+},
+"3237700": {
+"fouls": [
+9,
+14
+],
+"red": [
+0,
+0
+],
+"referee": "Marius Hansen Groetta",
+"yellow": [
+1,
+2
+]
+},
+"3237701": {
+"fouls": [
+20,
+19
+],
+"red": [
+0,
+0
+],
+"referee": "Tom Harald Hagen",
+"yellow": [
+1,
+2
+]
+},
+"3237702": {
+"fouls": [
+13,
+13
+],
+"red": [
+0,
+0
+],
+"referee": "Mohammad Aslam",
+"yellow": [
+1,
+2
+]
+},
+"3237703": {
+"fouls": [
+11,
+15
+],
+"red": [
+0,
+0
+],
+"referee": "Sivert Oeksnes Amland",
+"yellow": [
+1,
+1
+]
+},
+"3237704": {
+"fouls": [
+10,
+13
+],
+"red": [
+0,
+0
+],
+"referee": "Ola Hobber Nilsen",
+"yellow": [
+2,
+1
+]
+},
+"3237705": {
+"fouls": [
+8,
+10
+],
+"red": [
+0,
+0
+],
+"referee": "Tore Hansen",
+"yellow": [
+2,
+2
+]
+},
+"3237706": {
+"fouls": [
+15,
+15
+],
+"red": [
+0,
+0
+],
+"referee": "Sivert Oeksnes Amland",
+"yellow": [
+0,
+1
+]
+},
+"3237707": {
+"fouls": [
+12,
+12
+],
+"red": [
+0,
+0
+],
+"referee": "Marius Hansen Groetta",
+"yellow": [
+3,
+1
+]
+},
+"3237708": {
+"fouls": [
+13,
+12
+],
+"red": [
+0,
+0
+],
+"referee": "Marius Hansen Groetta",
+"yellow": [
+2,
+2
+]
+},
+"3237709": {
+"fouls": [
+6,
+12
+],
+"red": [
+0,
+0
+],
+"referee": "Espen Eskaas",
+"yellow": [
+0,
+2
+]
+},
+"3237710": {
+"fouls": [
+18,
+15
+],
+"red": [
+0,
+0
+],
+"referee": "Tommy Skjerven",
+"yellow": [
+2,
+0
+]
+},
+"3237711": {
+"fouls": [
+13,
+12
+],
+"red": [
+0,
+0
+],
+"referee": "Mohammad Aslam",
+"yellow": [
+1,
+2
+]
+},
+"3237712": {
+"fouls": [
+13,
+11
+],
+"red": [
+0,
+0
+],
+"referee": "Ola Hobber Nilsen",
+"yellow": [
+0,
+0
+]
+},
+"3237713": {
+"fouls": [
+14,
+8
+],
+"red": [
+0,
+0
+],
+"referee": "Sigurd Smehus Kringstad",
+"yellow": [
+2,
+1
+]
+},
+"3237714": {
+"fouls": [
+7,
+11
+],
+"red": [
+0,
+0
+],
+"referee": "Ola Hobber Nilsen",
+"yellow": [
+0,
+0
+]
+},
+"3237715": {
+"fouls": [
+7,
+11
+],
+"red": [
+0,
+0
+],
+"referee": "Rohit Saggi",
+"yellow": [
+0,
+0
+]
+},
+"3237716": {
+"fouls": [
+13,
+10
+],
+"red": [
+0,
+0
+],
+"referee": "Dag Vidar Hafsaas",
+"yellow": [
+1,
+0
+]
+},
+"3237717": {
+"fouls": [
+11,
+8
+],
+"red": [
+0,
+0
+],
+"referee": "Svein Oddvar Moen",
+"yellow": [
+0,
+2
+]
+},
+"3237718": {
+"fouls": [
+10,
+11
+],
+"red": [
+0,
+0
+],
+"referee": "Svein Oddvar Moen",
+"yellow": [
+1,
+2
+]
+},
+"3237719": {
+"fouls": [
+15,
+16
+],
+"red": [
+0,
+0
+],
+"referee": "Ola Hobber Nilsen",
+"yellow": [
+0,
+3
+]
+},
+"3237720": {
+"fouls": [
+18,
+9
+],
+"red": [
+0,
+0
+],
+"referee": "Espen Eskaas",
+"yellow": [
+3,
+1
+]
+},
+"3237721": {
+"fouls": [
+11,
+14
+],
+"red": [
+0,
+0
+],
+"referee": "Tom Harald Hagen",
+"yellow": [
+0,
+0
+]
+},
+"3237722": {
+"fouls": [
+10,
+12
+],
+"red": [
+0,
+0
+],
+"referee": "Svein Oddvar Moen",
+"yellow": [
+0,
+3
+]
+},
+"3237723": {
+"fouls": [
+10,
+8
+],
+"red": [
+0,
+0
+],
+"referee": "Tore Hansen",
+"yellow": [
+0,
+1
+]
+},
+"3237724": {
+"fouls": [
+8,
+11
+],
+"red": [
+0,
+0
+],
+"referee": "Sivert Oeksnes Amland",
+"yellow": [
+0,
+2
+]
+},
+"3237725": {
+"fouls": [
+12,
+11
+],
+"red": [
+0,
+0
+],
+"referee": "Kristoffer Hagenes",
+"yellow": [
+3,
+1
+]
+},
+"3237726": {
+"fouls": [
+8,
+16
+],
+"red": [
+0,
+0
+],
+"referee": "Sivert Oeksnes Amland",
+"yellow": [
+0,
+0
+]
+},
+"3237727": {
+"fouls": [
+17,
+11
+],
+"red": [
+0,
+0
+],
+"referee": "Tommy Skjerven",
+"yellow": [
+0,
+1
+]
+},
+"3237728": {
+"fouls": [
+13,
+15
+],
+"red": [
+0,
+0
+],
+"referee": "Mohammad Aslam",
+"yellow": [
+2,
+2
+]
+},
+"3237729": {
+"fouls": [
+17,
+14
+],
+"red": [
+0,
+0
+],
+"referee": "Dag Vidar Hafsaas",
+"yellow": [
+2,
+2
+]
+},
+"3237730": {
+"fouls": [
+13,
+15
+],
+"red": [
+1,
+0
+],
+"referee": "Ola Hobber Nilsen",
+"yellow": [
+3,
+1
+]
+},
+"3237731": {
+"fouls": [
+20,
+9
+],
+"red": [
+0,
+0
+],
+"referee": "Svein Oddvar Moen",
+"yellow": [
+1,
+3
+]
+},
+"3237732": {
+"fouls": [
+19,
+11
+],
+"red": [
+0,
+0
+],
+"referee": "Kristoffer Hagenes",
+"yellow": [
+3,
+1
+]
+},
+"3237733": {
+"fouls": [
+16,
+12
+],
+"red": [
+0,
+0
+],
+"referee": "Dag Vidar Hafsaas",
+"yellow": [
+3,
+1
+]
+},
+"3237734": {
+"fouls": [
+7,
+19
+],
+"red": [
+0,
+0
+],
+"referee": "Espen Eskaas",
+"yellow": [
+1,
+2
+]
+},
+"3237735": {
+"fouls": [
+13,
+13
+],
+"red": [
+0,
+0
+],
+"referee": "Svein-Erik Edvartsen",
+"yellow": [
+2,
+2
+]
+},
+"3237736": {
+"fouls": [
+8,
+15
+],
+"red": [
+0,
+0
+],
+"referee": "Dag Vidar Hafsaas",
+"yellow": [
+0,
+3
+]
+},
+"3237737": {
+"fouls": [
+6,
+12
+],
+"red": [
+0,
+0
+],
+"referee": "Tore Hansen",
+"yellow": [
+0,
+0
+]
+},
+"3237738": {
+"fouls": [
+12,
+10
+],
+"red": [
+0,
+0
+],
+"referee": "Mohammad Aslam",
+"yellow": [
+1,
+1
+]
+},
+"3237739": {
+"fouls": [
+13,
+14
+],
+"red": [
+0,
+0
+],
+"referee": "Ola Hobber Nilsen",
+"yellow": [
+3,
+3
+]
+},
+"3237740": {
+"fouls": [
+14,
+13
+],
+"red": [
+0,
+1
+],
+"referee": "Kristoffer Hagenes",
+"yellow": [
+2,
+1
+]
+},
+"3237741": {
+"fouls": [
+7,
+5
+],
+"red": [
+0,
+0
+],
+"referee": "Espen Eskaas",
+"yellow": [
+0,
+1
+]
+},
+"3237742": {
+"fouls": [
+11,
+7
+],
+"red": [
+0,
+0
+],
+"referee": "Tom Harald Hagen",
+"yellow": [
+0,
+0
+]
+},
+"3237743": {
+"fouls": [
+11,
+9
+],
+"red": [
+0,
+0
+],
+"referee": "Kristoffer Hagenes",
+"yellow": [
+2,
+1
+]
+},
+"3237744": {
+"fouls": [
+9,
+15
+],
+"red": [
+0,
+0
+],
+"referee": "Rohit Saggi",
+"yellow": [
+1,
+3
+]
+},
+"3237745": {
+"fouls": [
+9,
+12
+],
+"red": [
+0,
+0
+],
+"referee": "Ola Hobber Nilsen",
+"yellow": [
+0,
+1
+]
+},
+"3237746": {
+"fouls": [
+8,
+9
+],
+"red": [
+0,
+0
+],
+"referee": "Mohammad Aslam",
+"yellow": [
+3,
+2
+]
+},
+"3237747": {
+"fouls": [
+17,
+10
+],
+"red": [
+0,
+0
+],
+"referee": "Ola Hobber Nilsen",
+"yellow": [
+2,
+0
+]
+},
+"3237748": {
+"fouls": [
+11,
+13
+],
+"red": [
+0,
+0
+],
+"referee": "Rohit Saggi",
+"yellow": [
+3,
+0
+]
+},
+"3237749": {
+"fouls": [
+12,
+10
+],
+"red": [
+0,
+0
+],
+"referee": "Espen Eskaas",
+"yellow": [
+1,
+2
+]
+},
+"3237750": {
+"fouls": [
+12,
+12
+],
+"red": [
+0,
+0
+],
+"referee": "Tore Hansen",
+"yellow": [
+0,
+2
+]
+},
+"3237751": {
+"fouls": [
+8,
+15
+],
+"red": [
+0,
+0
+],
+"referee": "Rohit Saggi",
+"yellow": [
+1,
+4
+]
+},
+"3237752": {
+"fouls": [
+18,
+10
+],
+"red": [
+0,
+0
+],
+"referee": "Sigurd Smehus Kringstad",
+"yellow": [
+2,
+2
+]
+},
+"3237753": {
+"fouls": [
+20,
+13
+],
+"red": [
+0,
+0
+],
+"referee": "Mohammad Aslam",
+"yellow": [
+0,
+2
+]
+},
+"3237754": {
+"fouls": [
+7,
+11
+],
+"red": [
+0,
+0
+],
+"referee": "Ola Hobber Nilsen",
+"yellow": [
+1,
+3
+]
+},
+"3237755": {
+"fouls": [
+15,
+15
+],
+"red": [
+0,
+0
+],
+"referee": "Tommy Skjerven",
+"yellow": [
+1,
+1
+]
+},
+"3237756": {
+"fouls": [
+14,
+14
+],
+"red": [
+0,
+0
+],
+"referee": "Rohit Saggi",
+"yellow": [
+2,
+1
+]
+},
+"3237757": {
+"fouls": [
+9,
+20
+],
+"red": [
+0,
+0
+],
+"referee": "Tommy Skjerven",
+"yellow": [
+2,
+4
+]
+},
+"3237758": {
+"fouls": [
+20,
+17
+],
+"red": [
+0,
+0
+],
+"referee": "Sivert Oeksnes Amland",
+"yellow": [
+3,
+1
+]
+},
+"3237759": {
+"fouls": [
+19,
+8
+],
+"red": [
+0,
+0
+],
+"referee": "Ola Hobber Nilsen",
+"yellow": [
+1,
+2
+]
+},
+"3237760": {
+"fouls": [
+19,
+13
+],
+"red": [
+0,
+0
+],
+"referee": "Tommy Skjerven",
+"yellow": [
+3,
+2
+]
+},
+"3237761": {
+"fouls": [
+11,
+14
+],
+"red": [
+0,
+0
+],
+"referee": "Espen Eskaas",
+"yellow": [
+3,
+4
+]
+},
+"3237762": {
+"fouls": [
+10,
+12
+],
+"red": [
+0,
+0
+],
+"referee": "Tom Harald Hagen",
+"yellow": [
+0,
+0
+]
+},
+"3237763": {
+"fouls": [
+10,
+15
+],
+"red": [
+0,
+0
+],
+"referee": "Sigurd Smehus Kringstad",
+"yellow": [
+2,
+3
+]
+},
+"3237764": {
+"fouls": [
+20,
+14
+],
+"red": [
+0,
+0
+],
+"referee": "Tore Hansen",
+"yellow": [
+3,
+1
+]
+},
+"3237765": {
+"fouls": [
+8,
+14
+],
+"red": [
+0,
+0
+],
+"referee": "Tore Hansen",
+"yellow": [
+1,
+1
+]
+},
+"3237767": {
+"fouls": [
+16,
+15
+],
+"red": [
+1,
+0
+],
+"referee": "Rohit Saggi",
+"yellow": [
+3,
+3
+]
+},
+"3237768": {
+"fouls": [
+6,
+8
+],
+"red": [
+0,
+0
+],
+"referee": "Espen Eskaas",
+"yellow": [
+1,
+2
+]
+},
+"3237770": {
+"fouls": [
+12,
+14
+],
+"red": [
+0,
+0
+],
+"referee": "Sigurd Smehus Kringstad",
+"yellow": [
+1,
+2
+]
+},
+"3237771": {
+"fouls": [
+14,
+18
+],
+"red": [
+0,
+0
+],
+"referee": "Ola Hobber Nilsen",
+"yellow": [
+1,
+2
+]
+},
+"3237772": {
+"fouls": [
+14,
+11
+],
+"red": [
+0,
+0
+],
+"referee": "Mohammad Aslam",
+"yellow": [
+2,
+5
+]
+},
+"3237773": {
+"fouls": [
+8,
+11
+],
+"red": [
+0,
+0
+],
+"referee": "Tom Harald Hagen",
+"yellow": [
+2,
+0
+]
+},
+"3237774": {
+"fouls": [
+13,
+9
+],
+"red": [
+0,
+0
+],
+"referee": "Svein Oddvar Moen",
+"yellow": [
+2,
+3
+]
+},
+"3237775": {
+"fouls": [
+20,
+9
+],
+"red": [
+0,
+0
+],
+"referee": "Ola Hobber Nilsen",
+"yellow": [
+2,
+1
+]
+},
+"3237776": {
+"fouls": [
+17,
+3
+],
+"red": [
+0,
+0
+],
+"referee": "Sigurd Smehus Kringstad",
+"yellow": [
+0,
+0
+]
+},
+"3237777": {
+"fouls": [
+16,
+14
+],
+"red": [
+0,
+0
+],
+"referee": "Dag Vidar Hafsaas",
+"yellow": [
+0,
+2
+]
+},
+"3237778": {
+"fouls": [
+8,
+14
+],
+"red": [
+0,
+0
+],
+"referee": "Dag Vidar Hafsaas",
+"yellow": [
+1,
+4
+]
+},
+"3237779": {
+"fouls": [
+14,
+11
+],
+"red": [
+0,
+0
+],
+"referee": "Tore Hansen",
+"yellow": [
+3,
+3
+]
+},
+"3237780": {
+"fouls": [
+13,
+12
+],
+"red": [
+1,
+0
+],
+"referee": "Kristoffer Hagenes",
+"yellow": [
+0,
+6
+]
+},
+"3237781": {
+"fouls": [
+9,
+9
+],
+"red": [
+0,
+0
+],
+"referee": "Espen Eskaas",
+"yellow": [
+0,
+1
+]
+},
+"3237782": {
+"fouls": [
+12,
+13
+],
+"red": [
+0,
+0
+],
+"referee": "Tom Harald Hagen",
+"yellow": [
+0,
+2
+]
+},
+"3237783": {
+"fouls": [
+10,
+12
+],
+"red": [
+0,
+0
+],
+"referee": "Kai Erik Steen",
+"yellow": [
+2,
+1
+]
+},
+"3237784": {
+"fouls": [
+17,
+10
+],
+"red": [
+0,
+0
+],
+"referee": "Dag Vidar Hafsaas",
+"yellow": [
+1,
+3
+]
+},
+"3237785": {
+"fouls": [
+13,
+12
+],
+"red": [
+0,
+0
+],
+"referee": "Kai Erik Steen",
+"yellow": [
+3,
+1
+]
+},
+"3237786": {
+"fouls": [
+16,
+13
+],
+"red": [
+0,
+1
+],
+"referee": "Sigurd Smehus Kringstad",
+"yellow": [
+2,
+2
+]
+},
+"3237787": {
+"fouls": [
+12,
+7
+],
+"red": [
+1,
+0
+],
+"referee": "Tore Hansen",
+"yellow": [
+0,
+0
+]
+},
+"3237788": {
+"fouls": [
+12,
+9
+],
+"red": [
+0,
+0
+],
+"referee": "Sivert Oeksnes Amland",
+"yellow": [
+1,
+1
+]
+},
+"3237789": {
+"fouls": [
+20,
+16
+],
+"red": [
+0,
+0
+],
+"referee": "Mohammad Aslam",
+"yellow": [
+3,
+2
+]
+},
+"3237790": {
+"fouls": [
+15,
+14
+],
+"red": [
+0,
+1
+],
+"referee": "Kai Erik Steen",
+"yellow": [
+3,
+4
+]
+},
+"3237791": {
+"fouls": [
+15,
+14
+],
+"red": [
+1,
+0
+],
+"referee": "Tom Harald Hagen",
+"yellow": [
+2,
+2
+]
+},
+"3237792": {
+"fouls": [
+12,
+14
+],
+"red": [
+0,
+0
+],
+"referee": "Rohit Saggi",
+"yellow": [
+1,
+2
+]
+},
+"3237793": {
+"fouls": [
+9,
+8
+],
+"red": [
+0,
+0
+],
+"referee": "Tommy Skjerven",
+"yellow": [
+1,
+1
+]
+},
+"3237794": {
+"fouls": [
+7,
+11
+],
+"red": [
+0,
+0
+],
+"referee": "Tore Hansen",
+"yellow": [
+2,
+1
+]
+},
+"3237796": {
+"fouls": [
+16,
+11
+],
+"red": [
+0,
+0
+],
+"referee": "Dag Vidar Hafsaas",
+"yellow": [
+3,
+0
+]
+},
+"3237797": {
+"fouls": [
+16,
+7
+],
+"red": [
+0,
+0
+],
+"referee": "Kai Erik Steen",
+"yellow": [
+2,
+1
+]
+},
+"3237798": {
+"fouls": [
+18,
+16
+],
+"red": [
+0,
+0
+],
+"referee": "Svein Oddvar Moen",
+"yellow": [
+1,
+2
+]
+},
+"3237799": {
+"fouls": [
+10,
+12
+],
+"red": [
+0,
+0
+],
+"referee": "Tommy Skjerven",
+"yellow": [
+1,
+4
+]
+},
+"3237800": {
+"fouls": [
+15,
+16
+],
+"red": [
+0,
+0
+],
+"referee": "Sivert Oeksnes Amland",
+"yellow": [
+2,
+2
+]
+},
+"3237801": {
+"fouls": [
+11,
+9
+],
+"red": [
+0,
+0
+],
+"referee": "Tom Harald Hagen",
+"yellow": [
+0,
+1
+]
+},
+"3237802": {
+"fouls": [
+12,
+11
+],
+"red": [
+0,
+0
+],
+"referee": "Sigurd Smehus Kringstad",
+"yellow": [
+0,
+3
+]
+},
+"3237803": {
+"fouls": [
+9,
+10
+],
+"red": [
+0,
+0
+],
+"referee": "Mohammad Aslam",
+"yellow": [
+1,
+3
+]
+},
+"3237804": {
+"fouls": [
+11,
+15
+],
+"red": [
+0,
+0
+],
+"referee": "Tore Hansen",
+"yellow": [
+2,
+1
+]
+},
+"3237805": {
+"fouls": [
+14,
+9
+],
+"red": [
+0,
+0
+],
+"referee": "Marius Hansen Groetta",
+"yellow": [
+1,
+2
+]
+},
+"3237806": {
+"fouls": [
+12,
+6
+],
+"red": [
+1,
+0
+],
+"referee": "Tore Hansen",
+"yellow": [
+2,
+2
+]
+},
+"3237807": {
+"fouls": [
+12,
+12
+],
+"red": [
+0,
+0
+],
+"referee": "Rohit Saggi",
+"yellow": [
+0,
+1
+]
+},
+"3237808": {
+"fouls": [
+13,
+18
+],
+"red": [
+0,
+0
+],
+"referee": "Rohit Saggi",
+"yellow": [
+1,
+3
+]
+},
+"3237809": {
+"fouls": [
+14,
+14
+],
+"red": [
+0,
+0
+],
+"referee": "Kai Erik Steen",
+"yellow": [
+3,
+2
+]
+},
+"3237810": {
+"fouls": [
+12,
+12
+],
+"red": [
+0,
+0
+],
+"referee": "Espen Eskaas",
+"yellow": [
+1,
+4
+]
+},
+"3237811": {
+"fouls": [
+10,
+15
+],
+"red": [
+0,
+1
+],
+"referee": "Tommy Skjerven",
+"yellow": [
+1,
+2
+]
+},
+"3237812": {
+"fouls": [
+9,
+12
+],
+"red": [
+0,
+0
+],
+"referee": "Espen Eskaas",
+"yellow": [
+2,
+1
+]
+},
+"3237813": {
+"fouls": [
+13,
+8
+],
+"red": [
+0,
+0
+],
+"referee": "Ola Hobber Nilsen",
+"yellow": [
+1,
+2
+]
+},
+"3237814": {
+"fouls": [
+14,
+14
+],
+"red": [
+0,
+0
+],
+"referee": "Sivert Oeksnes Amland",
+"yellow": [
+2,
+1
+]
+},
+"3237815": {
+"fouls": [
+10,
+14
+],
+"red": [
+0,
+0
+],
+"referee": "Tore Hansen",
+"yellow": [
+2,
+1
+]
+},
+"3237816": {
+"fouls": [
+13,
+9
+],
+"red": [
+0,
+0
+],
+"referee": "Mohammad Aslam",
+"yellow": [
+2,
+2
+]
+},
+"3237817": {
+"fouls": [
+20,
+9
+],
+"red": [
+0,
+0
+],
+"referee": "Ola Hobber Nilsen",
+"yellow": [
+2,
+0
+]
+},
+"3237818": {
+"fouls": [
+9,
+18
+],
+"red": [
+0,
+0
+],
+"referee": "Tore Hansen",
+"yellow": [
+2,
+2
+]
+},
+"3237819": {
+"fouls": [
+17,
+12
+],
+"red": [
+0,
+0
+],
+"referee": "Marius Hansen Groetta",
+"yellow": [
+0,
+3
+]
+},
+"3237820": {
+"fouls": [
+17,
+15
+],
+"red": [
+0,
+0
+],
+"referee": "Tommy Skjerven",
+"yellow": [
+3,
+0
+]
+},
+"3237821": {
+"fouls": [
+12,
+20
+],
+"red": [
+0,
+0
+],
+"referee": "Marius Hansen Groetta",
+"yellow": [
+2,
+3
+]
+},
+"3237822": {
+"fouls": [
+13,
+10
+],
+"red": [
+0,
+0
+],
+"referee": "Kai Erik Steen",
+"yellow": [
+2,
+1
+]
+},
+"3237823": {
+"fouls": [
+13,
+14
+],
+"red": [
+0,
+1
+],
+"referee": "Sivert Oeksnes Amland",
+"yellow": [
+0,
+1
+]
+},
+"3237824": {
+"fouls": [
+11,
+9
+],
+"red": [
+0,
+0
+],
+"referee": "Marius Hansen Groetta",
+"yellow": [
+1,
+1
+]
+},
+"3237825": {
+"fouls": [
+8,
+11
+],
+"red": [
+0,
+0
+],
+"referee": "Rohit Saggi",
+"yellow": [
+0,
+4
+]
+},
+"3237826": {
+"fouls": [
+5,
+10
+],
+"red": [
+0,
+0
+],
+"referee": "Tore Hansen",
+"yellow": [
+0,
+1
+]
+},
+"3237827": {
+"fouls": [
+12,
+17
+],
+"red": [
+0,
+1
+],
+"referee": "Tommy Skjerven",
+"yellow": [
+0,
+1
+]
+},
+"3237828": {
+"fouls": [
+18,
+13
+],
+"red": [
+0,
+0
+],
+"referee": "Ola Hobber Nilsen",
+"yellow": [
+2,
+1
+]
+},
+"3237829": {
+"fouls": [
+13,
+13
+],
+"red": [
+0,
+0
+],
+"referee": "Kristoffer Hagenes",
+"yellow": [
+1,
+1
+]
+},
+"3237830": {
+"fouls": [
+18,
+3
+],
+"red": [
+0,
+0
+],
+"referee": "Rohit Saggi",
+"yellow": [
+5,
+3
+]
+},
+"3237831": {
+"fouls": [
+10,
+19
+],
+"red": [
+0,
+0
+],
+"referee": "Espen Eskaas",
+"yellow": [
+0,
+2
+]
+},
+"3237832": {
+"fouls": [
+9,
+11
+],
+"red": [
+0,
+0
+],
+"referee": "Kai Erik Steen",
+"yellow": [
+2,
+1
+]
+},
+"3237833": {
+"fouls": [
+15,
+11
+],
+"red": [
+0,
+0
+],
+"referee": "Rohit Saggi",
+"yellow": [
+4,
+2
+]
+},
+"3237834": {
+"fouls": [
+9,
+13
+],
+"red": [
+0,
+0
+],
+"referee": "Tore Hansen",
+"yellow": [
+2,
+4
+]
+},
+"3237835": {
+"fouls": [
+14,
+14
+],
+"red": [
+0,
+0
+],
+"referee": "Svein Oddvar Moen",
+"yellow": [
+0,
+1
+]
+},
+"3237836": {
+"fouls": [
+11,
+11
+],
+"red": [
+0,
+0
+],
+"referee": "Tom Harald Hagen",
+"yellow": [
+1,
+3
+]
+},
+"3237837": {
+"fouls": [
+20,
+15
+],
+"red": [
+0,
+0
+],
+"referee": "Tom Harald Hagen",
+"yellow": [
+3,
+5
+]
+},
+"3237838": {
+"fouls": [
+9,
+12
+],
+"red": [
+0,
+0
+],
+"referee": "Kristoffer Hagenes",
+"yellow": [
+0,
+1
+]
+},
+"3237840": {
+"fouls": [
+10,
+18
+],
+"red": [
+0,
+0
+],
+"referee": "Ola Hobber Nilsen",
+"yellow": [
+2,
+2
+]
+},
+"3237841": {
+"fouls": [
+15,
+11
+],
+"red": [
+0,
+0
+],
+"referee": "Sivert Oeksnes Amland",
+"yellow": [
+2,
+1
+]
+},
+"3237842": {
+"fouls": [
+13,
+14
+],
+"red": [
+0,
+0
+],
+"referee": "Sigurd Smehus Kringstad",
+"yellow": [
+1,
+1
+]
+},
+"3237843": {
+"fouls": [
+15,
+16
+],
+"red": [
+1,
+0
+],
+"referee": "Sivert Oeksnes Amland",
+"yellow": [
+2,
+3
+]
+},
+"3237844": {
+"fouls": [
+19,
+11
+],
+"red": [
+0,
+1
+],
+"referee": "Mohammad Aslam",
+"yellow": [
+4,
+2
+]
+},
+"3237845": {
+"fouls": [
+9,
+8
+],
+"red": [
+0,
+0
+],
+"referee": "Tom Harald Hagen",
+"yellow": [
+1,
+0
+]
+},
+"3237846": {
+"fouls": [
+14,
+10
+],
+"red": [
+0,
+0
+],
+"referee": "Kai Erik Steen",
+"yellow": [
+4,
+3
+]
+},
+"3237847": {
+"fouls": [
+9,
+13
+],
+"red": [
+0,
+0
+],
+"referee": "Tom Harald Hagen",
+"yellow": [
+0,
+0
+]
+},
+"3237849": {
+"fouls": [
+11,
+11
+],
+"red": [
+0,
+0
+],
+"referee": "Ola Hobber Nilsen",
+"yellow": [
+1,
+2
+]
+},
+"3237850": {
+"fouls": [
+13,
+13
+],
+"red": [
+0,
+1
+],
+"referee": "Sivert Oeksnes Amland",
+"yellow": [
+1,
+3
+]
+},
+"3237851": {
+"fouls": [
+13,
+10
+],
+"red": [
+0,
+0
+],
+"referee": "Marius Hansen Groetta",
+"yellow": [
+2,
+2
+]
+},
+"3237852": {
+"fouls": [
+18,
+10
+],
+"red": [
+0,
+1
+],
+"referee": "Marius Hansen Groetta",
+"yellow": [
+1,
+2
+]
+},
+"3237853": {
+"fouls": [
+13,
+18
+],
+"red": [
+0,
+0
+],
+"referee": "Rohit Saggi",
+"yellow": [
+1,
+3
+]
+},
+"3517057": {
+"fouls": [
+5,
+4
+],
+"red": [
+0,
+0
+],
+"referee": "Svein Oddvar Moen",
+"yellow": [
+0,
+0
+]
+},
+"3517059": {
+"fouls": [
+14,
+10
+],
+"red": [
+0,
+0
+],
+"referee": "Tore Hansen",
+"yellow": [
+2,
+1
+]
+},
+"3517060": {
+"fouls": [
+7,
+6
+],
+"red": [
+0,
+0
+],
+"referee": "Kai Erik Steen",
+"yellow": [
+0,
+1
+]
+},
+"3517061": {
+"fouls": [
+5,
+23
+],
+"red": [
+0,
+0
+],
+"referee": "Kai Erik Steen",
+"yellow": [
+0,
+4
+]
+},
+"3517062": {
+"fouls": [
+18,
+7
+],
+"red": [
+1,
+0
+],
+"referee": "Tom Harald Hagen",
+"yellow": [
+2,
+3
+]
+},
+"3517063": {
+"fouls": [
+14,
+11
+],
+"red": [
+0,
+0
+],
+"referee": "Mohammad Aslam",
+"yellow": [
+3,
+3
+]
+},
+"3517064": {
+"fouls": [
+8,
+9
+],
+"red": [
+0,
+0
+],
+"referee": "Mohammad Aslam",
+"yellow": [
+1,
+2
+]
+},
+"3517151": {
+"fouls": [
+8,
+7
+],
+"red": [
+0,
+0
+],
+"referee": "Espen Eskaas",
+"yellow": [
+1,
+2
+]
+},
+"3517152": {
+"fouls": [
+11,
+6
+],
+"red": [
+0,
+0
+],
+"referee": "Kai Erik Steen",
+"yellow": [
+1,
+1
+]
+},
+"3517153": {
+"fouls": [
+6,
+16
+],
+"red": [
+0,
+0
+],
+"referee": "Ola Hobber Nilsen",
+"yellow": [
+1,
+0
+]
+},
+"3517154": {
+"fouls": [
+13,
+7
+],
+"red": [
+0,
+0
+],
+"referee": "Tom Harald Hagen",
+"yellow": [
+2,
+2
+]
+},
+"3517155": {
+"fouls": [
+14,
+11
+],
+"red": [
+0,
+0
+],
+"referee": "Marius Hansen Groetta",
+"yellow": [
+1,
+1
+]
+},
+"3517156": {
+"fouls": [
+9,
+4
+],
+"red": [
+0,
+0
+],
+"referee": "Ola Hobber Nilsen",
+"yellow": [
+1,
+1
+]
+},
+"3517157": {
+"fouls": [
+11,
+12
+],
+"red": [
+0,
+0
+],
+"referee": "Espen Eskaas",
+"yellow": [
+0,
+1
+]
+},
+"3517159": {
+"fouls": [
+8,
+11
+],
+"red": [
+0,
+0
+],
+"referee": "Rohit Saggi",
+"yellow": [
+0,
+2
+]
+},
+"3517161": {
+"fouls": [
+14,
+11
+],
+"red": [
+0,
+0
+],
+"referee": "Tom Harald Hagen",
+"yellow": [
+3,
+1
+]
+},
+"3517164": {
+"fouls": [
+9,
+8
+],
+"red": [
+0,
+0
+],
+"referee": "Espen Eskaas",
+"yellow": [
+0,
+2
+]
+},
+"3517165": {
+"fouls": [
+14,
+18
+],
+"red": [
+0,
+0
+],
+"referee": "Sigurd Smehus Kringstad",
+"yellow": [
+1,
+0
+]
+},
+"3517191": {
+"fouls": [
+14,
+13
+],
+"red": [
+0,
+0
+],
+"referee": "Kai Erik Steen",
+"yellow": [
+1,
+4
+]
+},
+"3517192": {
+"fouls": [
+10,
+8
+],
+"red": [
+0,
+0
+],
+"referee": "Tore Hansen",
+"yellow": [
+0,
+2
+]
+},
+"3517193": {
+"fouls": [
+12,
+13
+],
+"red": [
+0,
+0
+],
+"referee": "Rohit Saggi",
+"yellow": [
+1,
+2
+]
+},
+"3517195": {
+"fouls": [
+11,
+11
+],
+"red": [
+0,
+0
+],
+"referee": "Rohit Saggi",
+"yellow": [
+2,
+1
+]
+},
+"3517258": {
+"fouls": [
+11,
+8
+],
+"red": [
+0,
+0
+],
+"referee": "Marius Hansen Groetta",
+"yellow": [
+1,
+0
+]
+},
+"3517259": {
+"fouls": [
+16,
+13
+],
+"red": [
+0,
+0
+],
+"referee": "Marius Hansen Groetta",
+"yellow": [
+2,
+4
+]
+},
+"3517260": {
+"fouls": [
+16,
+14
+],
+"red": [
+0,
+0
+],
+"referee": "Sigurd Smehus Kringstad",
+"yellow": [
+2,
+2
+]
+},
+"3517261": {
+"fouls": [
+12,
+11
+],
+"red": [
+0,
+0
+],
+"referee": "Rohit Saggi",
+"yellow": [
+1,
+1
+]
+},
+"3517262": {
+"fouls": [
+14,
+13
+],
+"red": [
+0,
+0
+],
+"referee": "Christian Moen",
+"yellow": [
+1,
+4
+]
+},
+"3517265": {
+"fouls": [
+8,
+9
+],
+"red": [
+0,
+0
+],
+"referee": "Kristoffer Hagenes",
+"yellow": [
+0,
+3
+]
+},
+"3517266": {
+"fouls": [
+14,
+12
+],
+"red": [
+0,
+0
+],
+"referee": "Tom Harald Hagen",
+"yellow": [
+2,
+5
+]
+},
+"3517267": {
+"fouls": [
+10,
+9
+],
+"red": [
+1,
+0
+],
+"referee": "Rohit Saggi",
+"yellow": [
+1,
+0
+]
+},
+"3517268": {
+"fouls": [
+9,
+7
+],
+"red": [
+0,
+0
+],
+"referee": "Kristoffer Hagenes",
+"yellow": [
+1,
+1
+]
+},
+"3517270": {
+"fouls": [
+11,
+11
+],
+"red": [
+0,
+0
+],
+"referee": "Marius Hansen Groetta",
+"yellow": [
+2,
+1
+]
+},
+"3517272": {
+"fouls": [
+10,
+13
+],
+"red": [
+0,
+0
+],
+"referee": "Kai Erik Steen",
+"yellow": [
+0,
+1
+]
+},
+"3517273": {
+"fouls": [
+9,
+10
+],
+"red": [
+0,
+0
+],
+"referee": "Tom Harald Hagen",
+"yellow": [
+0,
+3
+]
+},
+"3517274": {
+"fouls": [
+9,
+9
+],
+"red": [
+0,
+0
+],
+"referee": "Tom Harald Hagen",
+"yellow": [
+2,
+0
+]
+},
+"3517275": {
+"fouls": [
+10,
+13
+],
+"red": [
+0,
+0
+],
+"referee": "Marius Hansen Groetta",
+"yellow": [
+1,
+0
+]
+},
+"3517276": {
+"fouls": [
+15,
+9
+],
+"red": [
+0,
+0
+],
+"referee": "Espen Eskaas",
+"yellow": [
+3,
+1
+]
+},
+"3517277": {
+"fouls": [
+6,
+8
+],
+"red": [
+0,
+0
+],
+"referee": "Ola Hobber Nilsen",
+"yellow": [
+0,
+1
+]
+},
+"3517278": {
+"fouls": [
+17,
+7
+],
+"red": [
+0,
+0
+],
+"referee": "Tom Harald Hagen",
+"yellow": [
+1,
+0
+]
+},
+"3517279": {
+"fouls": [
+7,
+17
+],
+"red": [
+0,
+0
+],
+"referee": "Mohammad Aslam",
+"yellow": [
+0,
+1
+]
+},
+"3517280": {
+"fouls": [
+5,
+13
+],
+"red": [
+0,
+0
+],
+"referee": "Christian Moen",
+"yellow": [
+0,
+1
+]
+},
+"3517281": {
+"fouls": [
+13,
+5
+],
+"red": [
+0,
+0
+],
+"referee": "Tore Hansen",
+"yellow": [
+2,
+0
+]
+},
+"3517282": {
+"fouls": [
+12,
+15
+],
+"red": [
+0,
+0
+],
+"referee": "Tom Harald Hagen",
+"yellow": [
+0,
+1
+]
+},
+"3517285": {
+"fouls": [
+7,
+11
+],
+"red": [
+0,
+0
+],
+"referee": "Tom Harald Hagen",
+"yellow": [
+1,
+1
+]
+},
+"3517286": {
+"fouls": [
+8,
+19
+],
+"red": [
+0,
+0
+],
+"referee": "Svein Oddvar Moen",
+"yellow": [
+0,
+3
+]
+},
+"3517287": {
+"fouls": [
+12,
+6
+],
+"red": [
+0,
+0
+],
+"referee": "Espen Eskaas",
+"yellow": [
+3,
+1
+]
+},
+"3517288": {
+"fouls": [
+14,
+10
+],
+"red": [
+0,
+0
+],
+"referee": "Svein Oddvar Moen",
+"yellow": [
+1,
+1
+]
+},
+"3517370": {
+"fouls": [
+11,
+17
+],
+"red": [
+0,
+0
+],
+"referee": "Sivert Oeksnes Amland",
+"yellow": [
+0,
+2
+]
+},
+"3517373": {
+"fouls": [
+18,
+10
+],
+"red": [
+0,
+0
+],
+"referee": "Tore Hansen",
+"yellow": [
+3,
+1
+]
+},
+"3517374": {
+"fouls": [
+6,
+8
+],
+"red": [
+0,
+0
+],
+"referee": "Tore Hansen",
+"yellow": [
+1,
+1
+]
+},
+"3517375": {
+"fouls": [
+17,
+7
+],
+"red": [
+0,
+0
+],
+"referee": "Sivert Oeksnes Amland",
+"yellow": [
+4,
+0
+]
+},
+"3517376": {
+"fouls": [
+14,
+15
+],
+"red": [
+0,
+0
+],
+"referee": "Mohammad Aslam",
+"yellow": [
+1,
+3
+]
+},
+"3517377": {
+"fouls": [
+6,
+11
+],
+"red": [
+0,
+0
+],
+"referee": "Ola Hobber Nilsen",
+"yellow": [
+0,
+3
+]
+},
+"3517378": {
+"fouls": [
+14,
+12
+],
+"red": [
+0,
+0
+],
+"referee": "Rohit Saggi",
+"yellow": [
+2,
+0
+]
+},
+"3517381": {
+"fouls": [
+9,
+5
+],
+"red": [
+0,
+0
+],
+"referee": "Kristoffer Hagenes",
+"yellow": [
+2,
+2
+]
+},
+"3517382": {
+"fouls": [
+6,
+11
+],
+"red": [
+0,
+0
+],
+"referee": "Tore Hansen",
+"yellow": [
+0,
+0
+]
+},
+"3517383": {
+"fouls": [
+20,
+8
+],
+"red": [
+0,
+1
+],
+"referee": "Sivert Oeksnes Amland",
+"yellow": [
+1,
+1
+]
+},
+"3517384": {
+"fouls": [
+9,
+13
+],
+"red": [
+0,
+0
+],
+"referee": "Rohit Saggi",
+"yellow": [
+1,
+2
+]
+},
+"3517386": {
+"fouls": [
+15,
+14
+],
+"red": [
+0,
+0
+],
+"referee": "Sivert Oeksnes Amland",
+"yellow": [
+2,
+3
+]
+},
+"3517387": {
+"fouls": [
+20,
+12
+],
+"red": [
+0,
+0
+],
+"referee": "Kristoffer Hagenes",
+"yellow": [
+1,
+2
+]
+},
+"3517388": {
+"fouls": [
+8,
+13
+],
+"red": [
+0,
+0
+],
+"referee": "Dag Vidar Hafsaas",
+"yellow": [
+0,
+1
+]
+},
+"3517389": {
+"fouls": [
+9,
+7
+],
+"red": [
+0,
+0
+],
+"referee": "Kristoffer Hagenes",
+"yellow": [
+2,
+1
+]
+},
+"3517390": {
+"fouls": [
+13,
+10
+],
+"red": [
+0,
+0
+],
+"referee": "Rohit Saggi",
+"yellow": [
+1,
+1
+]
+},
+"3517391": {
+"fouls": [
+10,
+10
+],
+"red": [
+0,
+0
+],
+"referee": "Tom Harald Hagen",
+"yellow": [
+1,
+1
+]
+},
+"3517392": {
+"fouls": [
+12,
+16
+],
+"red": [
+0,
+0
+],
+"referee": "Marius Hansen Groetta",
+"yellow": [
+3,
+2
+]
+},
+"3517393": {
+"fouls": [
+6,
+7
+],
+"red": [
+0,
+0
+],
+"referee": "Espen Eskaas",
+"yellow": [
+1,
+2
+]
+},
+"3517433": {
+"fouls": [
+11,
+7
+],
+"red": [
+0,
+0
+],
+"referee": "Marius Hansen Groetta",
+"yellow": [
+2,
+0
+]
+},
+"3517434": {
+"fouls": [
+9,
+9
+],
+"red": [
+0,
+0
+],
+"referee": "Tom Harald Hagen",
+"yellow": [
+1,
+1
+]
+},
+"3517435": {
+"fouls": [
+11,
+17
+],
+"red": [
+0,
+0
+],
+"referee": "Marius Hansen Groetta",
+"yellow": [
+3,
+3
+]
+},
+"3517436": {
+"fouls": [
+12,
+8
+],
+"red": [
+0,
+0
+],
+"referee": "Rohit Saggi",
+"yellow": [
+3,
+3
+]
+},
+"3517437": {
+"fouls": [
+7,
+9
+],
+"red": [
+0,
+0
+],
+"referee": "Kristoffer Hagenes",
+"yellow": [
+1,
+2
+]
+},
+"3517438": {
+"fouls": [
+16,
+4
+],
+"red": [
+0,
+0
+],
+"referee": "Ola Hobber Nilsen",
+"yellow": [
+1,
+2
+]
+},
+"3517439": {
+"fouls": [
+14,
+9
+],
+"red": [
+0,
+0
+],
+"referee": "Sivert Oeksnes Amland",
+"yellow": [
+2,
+2
+]
+},
+"3517440": {
+"fouls": [
+11,
+10
+],
+"red": [
+0,
+0
+],
+"referee": "Kristoffer Hagenes",
+"yellow": [
+1,
+2
+]
+},
+"3517441": {
+"fouls": [
+19,
+15
+],
+"red": [
+0,
+0
+],
+"referee": "Marius Hansen Groetta",
+"yellow": [
+4,
+3
+]
+},
+"3517442": {
+"fouls": [
+5,
+5
+],
+"red": [
+0,
+0
+],
+"referee": "Ola Hobber Nilsen",
+"yellow": [
+1,
+1
+]
+},
+"3517444": {
+"fouls": [
+8,
+11
+],
+"red": [
+0,
+0
+],
+"referee": "Espen Eskaas",
+"yellow": [
+0,
+3
+]
+},
+"3517447": {
+"fouls": [
+10,
+9
+],
+"red": [
+0,
+0
+],
+"referee": "Sigurd Smehus Kringstad",
+"yellow": [
+1,
+2
+]
+},
+"3517449": {
+"fouls": [
+6,
+6
+],
+"red": [
+0,
+0
+],
+"referee": "Ola Hobber Nilsen",
+"yellow": [
+2,
+3
+]
+},
+"3517450": {
+"fouls": [
+12,
+15
+],
+"red": [
+0,
+0
+],
+"referee": "Rohit Saggi",
+"yellow": [
+2,
+1
+]
+},
+"3517455": {
+"fouls": [
+10,
+11
+],
+"red": [
+0,
+0
+],
+"referee": "Tore Hansen",
+"yellow": [
+0,
+1
+]
+},
+"3517540": {
+"fouls": [
+10,
+7
+],
+"red": [
+0,
+0
+],
+"referee": "Kristoffer Hagenes",
+"yellow": [
+1,
+0
+]
+},
+"3517541": {
+"fouls": [
+9,
+9
+],
+"red": [
+0,
+0
+],
+"referee": "Tommy Skjerven",
+"yellow": [
+3,
+1
+]
+},
+"3517543": {
+"fouls": [
+4,
+7
+],
+"red": [
+0,
+0
+],
+"referee": "Svein Oddvar Moen",
+"yellow": [
+0,
+1
+]
+},
+"3517544": {
+"fouls": [
+7,
+15
+],
+"red": [
+0,
+0
+],
+"referee": "Kai Erik Steen",
+"yellow": [
+1,
+4
+]
+},
+"3517546": {
+"fouls": [
+13,
+21
+],
+"red": [
+0,
+0
+],
+"referee": "Espen Eskaas",
+"yellow": [
+2,
+4
+]
+},
+"3517548": {
+"fouls": [
+11,
+12
+],
+"red": [
+0,
+0
+],
+"referee": "Kristoffer Hagenes",
+"yellow": [
+0,
+0
+]
+},
+"3517550": {
+"fouls": [
+11,
+11
+],
+"red": [
+0,
+0
+],
+"referee": "Espen Eskaas",
+"yellow": [
+1,
+4
+]
+},
+"3517551": {
+"fouls": [
+15,
+8
+],
+"red": [
+0,
+0
+],
+"referee": "Mohammad Aslam",
+"yellow": [
+3,
+0
+]
+},
+"3517552": {
+"fouls": [
+13,
+13
+],
+"red": [
+0,
+0
+],
+"referee": "Tom Harald Hagen",
+"yellow": [
+3,
+2
+]
+},
+"3517553": {
+"fouls": [
+11,
+16
+],
+"red": [
+0,
+0
+],
+"referee": "Sigurd Smehus Kringstad",
+"yellow": [
+3,
+4
+]
+},
+"3517555": {
+"fouls": [
+10,
+12
+],
+"red": [
+0,
+0
+],
+"referee": "Kai Erik Steen",
+"yellow": [
+1,
+1
+]
+},
+"3517556": {
+"fouls": [
+13,
+17
+],
+"red": [
+0,
+0
+],
+"referee": "Rohit Saggi",
+"yellow": [
+2,
+1
+]
+},
+"3517558": {
+"fouls": [
+8,
+6
+],
+"red": [
+0,
+0
+],
+"referee": "Espen Eskaas",
+"yellow": [
+1,
+1
+]
+},
+"3517559": {
+"fouls": [
+9,
+6
+],
+"red": [
+0,
+0
+],
+"referee": "Rohit Saggi",
+"yellow": [
+1,
+1
+]
+},
+"3517560": {
+"fouls": [
+14,
+12
+],
+"red": [
+0,
+0
+],
+"referee": "Sivert Oeksnes Amland",
+"yellow": [
+1,
+1
+]
+},
+"3517561": {
+"fouls": [
+11,
+14
+],
+"red": [
+0,
+0
+],
+"referee": "Tommy Skjerven",
+"yellow": [
+1,
+2
+]
+},
+"3517562": {
+"fouls": [
+6,
+13
+],
+"red": [
+0,
+0
+],
+"referee": "Kai Erik Steen",
+"yellow": [
+2,
+3
+]
+},
+"3517563": {
+"fouls": [
+14,
+19
+],
+"red": [
+0,
+0
+],
+"referee": "Tore Hansen",
+"yellow": [
+0,
+4
+]
+},
+"3517568": {
+"fouls": [
+7,
+14
+],
+"red": [
+0,
+0
+],
+"referee": "Sivert Oeksnes Amland",
+"yellow": [
+0,
+5
+]
+},
+"3517569": {
+"fouls": [
+8,
+5
+],
+"red": [
+0,
+0
+],
+"referee": "Kai Erik Steen",
+"yellow": [
+1,
+1
+]
+},
+"3517570": {
+"fouls": [
+11,
+9
+],
+"red": [
+0,
+1
+],
+"referee": "Kristoffer Hagenes",
+"yellow": [
+2,
+2
+]
+},
+"3517571": {
+"fouls": [
+17,
+12
+],
+"red": [
+0,
+0
+],
+"referee": "Svein Oddvar Moen",
+"yellow": [
+0,
+2
+]
+},
+"3517577": {
+"fouls": [
+12,
+13
+],
+"red": [
+0,
+0
+],
+"referee": "Dag Vidar Hafsaas",
+"yellow": [
+0,
+2
+]
+},
+"3517578": {
+"fouls": [
+11,
+11
+],
+"red": [
+0,
+0
+],
+"referee": "Sigurd Smehus Kringstad",
+"yellow": [
+2,
+1
+]
+},
+"3517579": {
+"fouls": [
+13,
+16
+],
+"red": [
+0,
+1
+],
+"referee": "Kai Erik Steen",
+"yellow": [
+3,
+3
+]
+},
+"3517582": {
+"fouls": [
+5,
+12
+],
+"red": [
+0,
+0
+],
+"referee": "Rohit Saggi",
+"yellow": [
+1,
+0
+]
+},
+"3517583": {
+"fouls": [
+5,
+9
+],
+"red": [
+0,
+0
+],
+"referee": "Espen Eskaas",
+"yellow": [
+0,
+0
+]
+},
+"3517584": {
+"fouls": [
+9,
+8
+],
+"red": [
+0,
+0
+],
+"referee": "Espen Eskaas",
+"yellow": [
+0,
+5
+]
+},
+"3517586": {
+"fouls": [
+9,
+10
+],
+"red": [
+0,
+0
+],
+"referee": "Mohammad Aslam",
+"yellow": [
+0,
+1
+]
+},
+"3517587": {
+"fouls": [
+9,
+5
+],
+"red": [
+0,
+0
+],
+"referee": "Kristoffer Hagenes",
+"yellow": [
+1,
+1
+]
+},
+"3517588": {
+"fouls": [
+8,
+13
+],
+"red": [
+0,
+0
+],
+"referee": "Tore Hansen",
+"yellow": [
+0,
+0
+]
+},
+"3517589": {
+"fouls": [
+8,
+6
+],
+"red": [
+0,
+0
+],
+"referee": "Marius Hansen Groetta",
+"yellow": [
+0,
+0
+]
+},
+"3517590": {
+"fouls": [
+13,
+11
+],
+"red": [
+0,
+0
+],
+"referee": "Tommy Skjerven",
+"yellow": [
+2,
+1
+]
+},
+"3517591": {
+"fouls": [
+16,
+12
+],
+"red": [
+0,
+0
+],
+"referee": "Sigurd Smehus Kringstad",
+"yellow": [
+2,
+2
+]
+},
+"3517592": {
+"fouls": [
+7,
+9
+],
+"red": [
+0,
+0
+],
+"referee": "Sigurd Smehus Kringstad",
+"yellow": [
+0,
+3
+]
+},
+"3517593": {
+"fouls": [
+6,
+12
+],
+"red": [
+0,
+0
+],
+"referee": "Tommy Skjerven",
+"yellow": [
+0,
+3
+]
+},
+"3517594": {
+"fouls": [
+14,
+4
+],
+"red": [
+0,
+0
+],
+"referee": "Marius Hansen Groetta",
+"yellow": [
+1,
+0
+]
+},
+"3517595": {
+"fouls": [
+13,
+5
+],
+"red": [
+0,
+0
+],
+"referee": "Kristoffer Hagenes",
+"yellow": [
+1,
+1
+]
+},
+"3517596": {
+"fouls": [
+9,
+5
+],
+"red": [
+0,
+0
+],
+"referee": "Svein Oddvar Moen",
+"yellow": [
+2,
+0
+]
+},
+"3517599": {
+"fouls": [
+5,
+12
+],
+"red": [
+0,
+0
+],
+"referee": "Marius Hansen Groetta",
+"yellow": [
+1,
+0
+]
+},
+"3517600": {
+"fouls": [
+12,
+8
+],
+"red": [
+0,
+0
+],
+"referee": "Tom Harald Hagen",
+"yellow": [
+1,
+3
+]
+},
+"3517601": {
+"fouls": [
+10,
+17
+],
+"red": [
+0,
+0
+],
+"referee": "Tom Harald Hagen",
+"yellow": [
+0,
+1
+]
+},
+"3517602": {
+"fouls": [
+13,
+4
+],
+"red": [
+0,
+0
+],
+"referee": "Svein Oddvar Moen",
+"yellow": [
+2,
+0
+]
+},
+"3517603": {
+"fouls": [
+11,
+14
+],
+"red": [
+0,
+0
+],
+"referee": "Tom Harald Hagen",
+"yellow": [
+1,
+3
+]
+},
+"3517605": {
+"fouls": [
+20,
+11
+],
+"red": [
+0,
+0
+],
+"referee": "Sigurd Smehus Kringstad",
+"yellow": [
+4,
+0
+]
+},
+"3517606": {
+"fouls": [
+14,
+17
+],
+"red": [
+0,
+0
+],
+"referee": "Sivert Oeksnes Amland",
+"yellow": [
+0,
+3
+]
+},
+"3517607": {
+"fouls": [
+11,
+10
+],
+"red": [
+0,
+0
+],
+"referee": "Sivert Oeksnes Amland",
+"yellow": [
+0,
+3
+]
+},
+"3517608": {
+"fouls": [
+13,
+12
+],
+"red": [
+0,
+0
+],
+"referee": "Svein Oddvar Moen",
+"yellow": [
+0,
+1
+]
+},
+"3517609": {
+"fouls": [
+10,
+10
+],
+"red": [
+0,
+0
+],
+"referee": "Svein Oddvar Moen",
+"yellow": [
+2,
+0
+]
+},
+"3517610": {
+"fouls": [
+12,
+10
+],
+"red": [
+0,
+0
+],
+"referee": "Sivert Oeksnes Amland",
+"yellow": [
+0,
+3
+]
+},
+"3517611": {
+"fouls": [
+13,
+10
+],
+"red": [
+0,
+1
+],
+"referee": "Kai Erik Steen",
+"yellow": [
+0,
+3
+]
+},
+"3517614": {
+"fouls": [
+11,
+9
+],
+"red": [
+0,
+0
+],
+"referee": "Sigurd Smehus Kringstad",
+"yellow": [
+1,
+1
+]
+},
+"3517615": {
+"fouls": [
+7,
+15
+],
+"red": [
+1,
+0
+],
+"referee": "Mohammad Aslam",
+"yellow": [
+1,
+2
+]
+},
+"3517616": {
+"fouls": [
+11,
+9
+],
+"red": [
+0,
+0
+],
+"referee": "Mohammad Aslam",
+"yellow": [
+0,
+1
+]
+},
+"3517630": {
+"fouls": [
+10,
+9
+],
+"red": [
+1,
+0
+],
+"referee": "Espen Eskaas",
+"yellow": [
+4,
+1
+]
+},
+"3517632": {
+"fouls": [
+9,
+13
+],
+"red": [
+0,
+0
+],
+"referee": "Mohammad Aslam",
+"yellow": [
+2,
+1
+]
+},
+"3517633": {
+"fouls": [
+15,
+18
+],
+"red": [
+0,
+0
+],
+"referee": "Sivert Oeksnes Amland",
+"yellow": [
+1,
+3
+]
+},
+"3517634": {
+"fouls": [
+9,
+10
+],
+"red": [
+0,
+0
+],
+"referee": "Svein Oddvar Moen",
+"yellow": [
+1,
+1
+]
+},
+"3517635": {
+"fouls": [
+11,
+19
+],
+"red": [
+1,
+0
+],
+"referee": "Marius Hansen Groetta",
+"yellow": [
+1,
+4
+]
+},
+"3517636": {
+"fouls": [
+13,
+12
+],
+"red": [
+0,
+0
+],
+"referee": "Tore Hansen",
+"yellow": [
+4,
+5
+]
+},
+"3517637": {
+"fouls": [
+11,
+10
+],
+"red": [
+0,
+0
+],
+"referee": "Rohit Saggi",
+"yellow": [
+0,
+1
+]
+},
+"3517638": {
+"fouls": [
+8,
+11
+],
+"red": [
+0,
+0
+],
+"referee": "Marius Lien",
+"yellow": [
+0,
+2
+]
+},
+"3517639": {
+"fouls": [
+12,
+6
+],
+"red": [
+0,
+1
+],
+"referee": "Kristoffer Hagenes",
+"yellow": [
+3,
+0
+]
+},
+"3517640": {
+"fouls": [
+10,
+7
+],
+"red": [
+1,
+0
+],
+"referee": "Tore Hansen",
+"yellow": [
+2,
+0
+]
+},
+"3517641": {
+"fouls": [
+10,
+14
+],
+"red": [
+0,
+0
+],
+"referee": "Tore Hansen",
+"yellow": [
+2,
+2
+]
+},
+"3517643": {
+"fouls": [
+14,
+15
+],
+"red": [
+0,
+0
+],
+"referee": "Tom Harald Hagen",
+"yellow": [
+3,
+1
+]
+},
+"3517644": {
+"fouls": [
+3,
+11
+],
+"red": [
+0,
+1
+],
+"referee": "Christian Moen",
+"yellow": [
+0,
+2
+]
+},
+"3517645": {
+"fouls": [
+10,
+15
+],
+"red": [
+0,
+0
+],
+"referee": "Ola Hobber Nilsen",
+"yellow": [
+2,
+5
+]
+},
+"3517646": {
+"fouls": [
+12,
+6
+],
+"red": [
+0,
+0
+],
+"referee": "Espen Eskaas",
+"yellow": [
+0,
+1
+]
+},
+"3517647": {
+"fouls": [
+10,
+7
+],
+"red": [
+0,
+0
+],
+"referee": "Tom Harald Hagen",
+"yellow": [
+1,
+1
+]
+},
+"3517648": {
+"fouls": [
+13,
+9
+],
+"red": [
+0,
+0
+],
+"referee": "Kristoffer Hagenes",
+"yellow": [
+1,
+2
+]
+},
+"3517650": {
+"fouls": [
+12,
+10
+],
+"red": [
+0,
+0
+],
+"referee": "Christian Moen",
+"yellow": [
+1,
+2
+]
+},
+"3517651": {
+"fouls": [
+4,
+11
+],
+"red": [
+0,
+0
+],
+"referee": "Tore Hansen",
+"yellow": [
+1,
+1
+]
+},
+"3517707": {
+"fouls": [
+14,
+5
+],
+"red": [
+0,
+0
+],
+"referee": "Tom Harald Hagen",
+"yellow": [
+0,
+0
+]
+},
+"3517709": {
+"fouls": [
+12,
+21
+],
+"red": [
+0,
+0
+],
+"referee": "Svein Oddvar Moen",
+"yellow": [
+1,
+4
+]
+},
+"3517710": {
+"fouls": [
+6,
+10
+],
+"red": [
+1,
+0
+],
+"referee": "Rohit Saggi",
+"yellow": [
+4,
+1
+]
+},
+"3517711": {
+"fouls": [
+9,
+6
+],
+"red": [
+0,
+0
+],
+"referee": "Christian Moen",
+"yellow": [
+3,
+0
+]
+},
+"3517712": {
+"fouls": [
+8,
+17
+],
+"red": [
+0,
+0
+],
+"referee": "Mohammad Aslam",
+"yellow": [
+0,
+1
+]
+},
+"3517713": {
+"fouls": [
+11,
+11
+],
+"red": [
+0,
+0
+],
+"referee": "Tore Hansen",
+"yellow": [
+2,
+2
+]
+},
+"3517714": {
+"fouls": [
+5,
+6
+],
+"red": [
+0,
+0
+],
+"referee": "Svein Oddvar Moen",
+"yellow": [
+0,
+0
+]
+},
+"3517715": {
+"fouls": [
+9,
+7
+],
+"red": [
+0,
+0
+],
+"referee": "Sivert Oeksnes Amland",
+"yellow": [
+1,
+1
+]
+},
+"3517716": {
+"fouls": [
+9,
+5
+],
+"red": [
+0,
+0
+],
+"referee": "Ola Hobber Nilsen",
+"yellow": [
+0,
+1
+]
+},
+"3517717": {
+"fouls": [
+6,
+19
+],
+"red": [
+0,
+0
+],
+"referee": "Tom Harald Hagen",
+"yellow": [
+0,
+3
+]
+},
+"3517718": {
+"fouls": [
+11,
+8
+],
+"red": [
+0,
+0
+],
+"referee": "Kristoffer Hagenes",
+"yellow": [
+1,
+2
+]
+},
+"3517720": {
+"fouls": [
+17,
+11
+],
+"red": [
+0,
+0
+],
+"referee": "Ola Hobber Nilsen",
+"yellow": [
+3,
+1
+]
+},
+"3517721": {
+"fouls": [
+14,
+11
+],
+"red": [
+0,
+0
+],
+"referee": "Sivert Oeksnes Amland",
+"yellow": [
+2,
+3
+]
+},
+"3517722": {
+"fouls": [
+4,
+11
+],
+"red": [
+0,
+0
+],
+"referee": "Svein Oddvar Moen",
+"yellow": [
+0,
+1
+]
+},
+"3517723": {
+"fouls": [
+8,
+14
+],
+"red": [
+0,
+0
+],
+"referee": "Espen Eskaas",
+"yellow": [
+1,
+3
+]
+},
+"3517724": {
+"fouls": [
+12,
+10
+],
+"red": [
+0,
+0
+],
+"referee": "Kai Erik Steen",
+"yellow": [
+1,
+2
+]
+},
+"3517725": {
+"fouls": [
+10,
+9
+],
+"red": [
+0,
+0
+],
+"referee": "Tommy Skjerven",
+"yellow": [
+0,
+1
+]
+},
+"3517726": {
+"fouls": [
+9,
+12
+],
+"red": [
+0,
+0
+],
+"referee": "Rohit Saggi",
+"yellow": [
+1,
+1
+]
+},
+"3517727": {
+"fouls": [
+7,
+9
+],
+"red": [
+0,
+0
+],
+"referee": "Svein Oddvar Moen",
+"yellow": [
+1,
+1
+]
+},
+"3517728": {
+"fouls": [
+13,
+9
+],
+"red": [
+0,
+1
+],
+"referee": "Svein Oddvar Moen",
+"yellow": [
+1,
+1
+]
+},
+"3517729": {
+"fouls": [
+3,
+14
+],
+"red": [
+1,
+0
+],
+"referee": "Kristoffer Hagenes",
+"yellow": [
+2,
+2
+]
+},
+"3517730": {
+"fouls": [
+11,
+18
+],
+"red": [
+0,
+0
+],
+"referee": "Tore Hansen",
+"yellow": [
+0,
+2
+]
+},
+"3517731": {
+"fouls": [
+6,
+9
+],
+"red": [
+0,
+0
+],
+"referee": "Mohammad Aslam",
+"yellow": [
+2,
+2
+]
+},
+"3517732": {
+"fouls": [
+6,
+15
+],
+"red": [
+0,
+0
+],
+"referee": "Rohit Saggi",
+"yellow": [
+0,
+3
+]
+},
+"3517733": {
+"fouls": [
+11,
+13
+],
+"red": [
+0,
+0
+],
+"referee": "Sivert Oeksnes Amland",
+"yellow": [
+1,
+1
+]
+},
+"3517734": {
+"fouls": [
+18,
+7
+],
+"red": [
+0,
+0
+],
+"referee": "Mohammad Aslam",
+"yellow": [
+2,
+0
+]
+},
+"3517735": {
+"fouls": [
+11,
+8
+],
+"red": [
+0,
+0
+],
+"referee": "Ola Hobber Nilsen",
+"yellow": [
+1,
+2
+]
+},
+"3517737": {
+"fouls": [
+11,
+9
+],
+"red": [
+1,
+0
+],
+"referee": "Tore Hansen",
+"yellow": [
+0,
+0
+]
+},
+"3517738": {
+"fouls": [
+12,
+15
+],
+"red": [
+0,
+0
+],
+"referee": "Kristoffer Hagenes",
+"yellow": [
+2,
+3
+]
+},
+"3803078": {
+"fouls": [
+8,
+8
+],
+"red": [
+0,
+0
+],
+"referee": "Tore Hansen",
+"yellow": [
+0,
+1
+]
+},
+"3803079": {
+"fouls": [
+10,
+7
+],
+"red": [
+0,
+1
+],
+"referee": "Kristoffer Hagenes",
+"yellow": [
+1,
+1
+]
+},
+"3803080": {
+"fouls": [
+10,
+13
+],
+"red": [
+0,
+0
+],
+"referee": "Ola Hobber Nilsen",
+"yellow": [
+2,
+0
+]
+},
+"3803081": {
+"fouls": [
+10,
+11
+],
+"red": [
+0,
+0
+],
+"referee": "Sivert Amland",
+"yellow": [
+1,
+2
+]
+},
+"3803082": {
+"fouls": [
+11,
+11
+],
+"red": [
+1,
+0
+],
+"referee": "Svein Oddvar Moen",
+"yellow": [
+3,
+1
+]
+},
+"3803083": {
+"fouls": [
+8,
+7
+],
+"red": [
+0,
+0
+],
+"referee": "Christian Moen",
+"yellow": [
+1,
+2
+]
+},
+"3803084": {
+"fouls": [
+14,
+9
+],
+"red": [
+0,
+0
+],
+"referee": "Rohit Saggi",
+"yellow": [
+2,
+1
+]
+},
+"3803085": {
+"fouls": [
+4,
+10
+],
+"red": [
+0,
+0
+],
+"referee": "Espen Eskås",
+"yellow": [
+0,
+4
+]
+},
+"3803086": {
+"fouls": [
+13,
+10
+],
+"red": [
+0,
+0
+],
+"referee": "Sigurd Smehus Kringstad",
+"yellow": [
+0,
+0
+]
+},
+"3803087": {
+"fouls": [
+8,
+6
+],
+"red": [
+0,
+0
+],
+"referee": "Kai Erik Steen",
+"yellow": [
+2,
+0
+]
+},
+"3803088": {
+"fouls": [
+13,
+11
+],
+"red": [
+0,
+0
+],
+"referee": "Kristoffer Hagenes",
+"yellow": [
+2,
+1
+]
+},
+"3803089": {
+"fouls": [
+7,
+12
+],
+"red": [
+0,
+0
+],
+"referee": "Tore Hansen",
+"yellow": [
+0,
+3
+]
+},
+"3803090": {
+"fouls": [
+7,
+5
+],
+"red": [
+0,
+0
+],
+"referee": "Ola Hobber Nilsen",
+"yellow": [
+2,
+1
+]
+},
+"3803091": {
+"fouls": [
+8,
+20
+],
+"red": [
+0,
+0
+],
+"referee": "Marius Hansen Grøtta",
+"yellow": [
+0,
+3
+]
+},
+"3803092": {
+"fouls": [
+7,
+8
+],
+"red": [
+0,
+0
+],
+"referee": "Mohammad Usman Aslam",
+"yellow": [
+0,
+2
+]
+},
+"3803093": {
+"fouls": [
+11,
+19
+],
+"red": [
+0,
+0
+],
+"referee": "Espen Eskås",
+"yellow": [
+0,
+3
+]
+},
+"3803094": {
+"fouls": [
+17,
+12
+],
+"red": [
+0,
+0
+],
+"referee": "Marius Lien",
+"yellow": [
+0,
+1
+]
+},
+"3803095": {
+"fouls": [
+13,
+5
+],
+"red": [
+0,
+0
+],
+"referee": "Svein Tore Sinnes",
+"yellow": [
+3,
+2
+]
+},
+"3803096": {
+"fouls": [
+13,
+12
+],
+"red": [
+0,
+0
+],
+"referee": "Kristoffer Hagenes",
+"yellow": [
+2,
+3
+]
+},
+"3803097": {
+"fouls": [
+8,
+9
+],
+"red": [
+0,
+0
+],
+"referee": "Christian Moen",
+"yellow": [
+1,
+1
+]
+},
+"3803098": {
+"fouls": [
+11,
+13
+],
+"red": [
+0,
+0
+],
+"referee": "Kai Erik Steen",
+"yellow": [
+2,
+2
+]
+},
+"3803099": {
+"fouls": [
+11,
+9
+],
+"red": [
+0,
+0
+],
+"referee": "Svein Oddvar Moen",
+"yellow": [
+2,
+1
+]
+},
+"3803100": {
+"fouls": [
+8,
+14
+],
+"red": [
+0,
+0
+],
+"referee": "Sivert Amland",
+"yellow": [
+2,
+1
+]
+},
+"3803101": {
+"fouls": [
+12,
+6
+],
+"red": [
+0,
+0
+],
+"referee": "Rohit Saggi",
+"yellow": [
+2,
+0
+]
+},
+"3803104": {
+"fouls": [
+8,
+12
+],
+"red": [
+0,
+0
+],
+"referee": "Sivert Amland",
+"yellow": [
+1,
+2
+]
+},
+"3803105": {
+"fouls": [
+6,
+16
+],
+"red": [
+0,
+1
+],
+"referee": "Ola Hobber Nilsen",
+"yellow": [
+4,
+0
+]
+},
+"3803106": {
+"fouls": [
+11,
+10
+],
+"red": [
+0,
+0
+],
+"referee": "Tore Hansen",
+"yellow": [
+1,
+2
+]
+},
+"3803107": {
+"fouls": [
+5,
+13
+],
+"red": [
+0,
+0
+],
+"referee": "Sivert Amland",
+"yellow": [
+0,
+1
+]
+},
+"3803108": {
+"fouls": [
+7,
+12
+],
+"red": [
+0,
+0
+],
+"referee": "Christian Moen",
+"yellow": [
+0,
+3
+]
+},
+"3803109": {
+"fouls": [
+18,
+8
+],
+"red": [
+0,
+0
+],
+"referee": "Kristoffer Hagenes",
+"yellow": [
+1,
+1
+]
+},
+"3803110": {
+"fouls": [
+4,
+11
+],
+"red": [
+0,
+0
+],
+"referee": "Espen Eskås",
+"yellow": [
+0,
+0
+]
+},
+"3803111": {
+"fouls": [
+11,
+13
+],
+"red": [
+0,
+0
+],
+"referee": "Tom Harald Hagen",
+"yellow": [
+3,
+4
+]
+},
+"3803112": {
+"fouls": [
+12,
+7
+],
+"red": [
+0,
+0
+],
+"referee": "Kai Erik Steen",
+"yellow": [
+3,
+2
+]
+},
+"3803113": {
+"fouls": [
+8,
+11
+],
+"red": [
+0,
+0
+],
+"referee": "Svein Tore Sinnes",
+"yellow": [
+1,
+2
+]
+},
+"3803114": {
+"fouls": [
+25,
+6
+],
+"red": [
+0,
+0
+],
+"referee": "Mohammad Usman Aslam",
+"yellow": [
+4,
+3
+]
+},
+"3803115": {
+"fouls": [
+5,
+7
+],
+"red": [
+0,
+0
+],
+"referee": "Tore Hansen",
+"yellow": [
+2,
+0
+]
+},
+"3803116": {
+"fouls": [
+15,
+12
+],
+"red": [
+2,
+0
+],
+"referee": "Rohit Saggi",
+"yellow": [
+4,
+3
+]
+},
+"3803117": {
+"fouls": [
+5,
+15
+],
+"red": [
+0,
+0
+],
+"referee": "Marius Hansen Grøtta",
+"yellow": [
+2,
+2
+]
+},
+"3803118": {
+"fouls": [
+9,
+12
+],
+"red": [
+0,
+0
+],
+"referee": "Sivert Amland",
+"yellow": [
+0,
+1
+]
+},
+"3803119": {
+"fouls": [
+8,
+10
+],
+"red": [
+0,
+0
+],
+"referee": "Christian Moen",
+"yellow": [
+1,
+2
+]
+},
+"3803120": {
+"fouls": [
+5,
+10
+],
+"red": [
+0,
+0
+],
+"referee": "Ola Hobber Nilsen",
+"yellow": [
+0,
+0
+]
+},
+"3803121": {
+"fouls": [
+17,
+15
+],
+"red": [
+0,
+0
+],
+"referee": "Christian Moen",
+"yellow": [
+3,
+5
+]
+},
+"3803122": {
+"fouls": [
+12,
+14
+],
+"red": [
+1,
+0
+],
+"referee": "Kristoffer Hagenes",
+"yellow": [
+3,
+2
+]
+},
+"3803123": {
+"fouls": [
+10,
+7
+],
+"red": [
+0,
+0
+],
+"referee": "Svein Oddvar Moen",
+"yellow": [
+0,
+1
+]
+},
+"3803124": {
+"fouls": [
+17,
+11
+],
+"red": [
+0,
+0
+],
+"referee": "Marius Hansen Grøtta",
+"yellow": [
+3,
+2
+]
+},
+"3803125": {
+"fouls": [
+7,
+6
+],
+"red": [
+0,
+1
+],
+"referee": "Daniel Higraff",
+"yellow": [
+0,
+1
+]
+},
+"3803126": {
+"fouls": [
+6,
+3
+],
+"red": [
+0,
+0
+],
+"referee": "Marius Lien",
+"yellow": [
+1,
+1
+]
+},
+"3803127": {
+"fouls": [
+8,
+12
+],
+"red": [
+0,
+0
+],
+"referee": "Rohit Saggi",
+"yellow": [
+0,
+2
+]
+},
+"3803128": {
+"fouls": [
+13,
+10
+],
+"red": [
+0,
+0
+],
+"referee": "Sivert Amland",
+"yellow": [
+0,
+6
+]
+},
+"3803129": {
+"fouls": [
+14,
+6
+],
+"red": [
+0,
+0
+],
+"referee": "Tore Hansen",
+"yellow": [
+5,
+1
+]
+},
+"3803130": {
+"fouls": [
+11,
+10
+],
+"red": [
+0,
+0
+],
+"referee": "Kai Erik Steen",
+"yellow": [
+3,
+3
+]
+},
+"3803131": {
+"fouls": [
+11,
+8
+],
+"red": [
+0,
+1
+],
+"referee": "Svein Oddvar Moen",
+"yellow": [
+1,
+2
+]
+},
+"3803132": {
+"fouls": [
+5,
+11
+],
+"red": [
+1,
+0
+],
+"referee": "Daniel Higraff",
+"yellow": [
+2,
+1
+]
+},
+"3803133": {
+"fouls": [
+13,
+6
+],
+"red": [
+0,
+0
+],
+"referee": "Espen Eskås",
+"yellow": [
+3,
+0
+]
+},
+"3803134": {
+"fouls": [
+14,
+15
+],
+"red": [
+0,
+0
+],
+"referee": "Mohammad Usman Aslam",
+"yellow": [
+4,
+1
+]
+},
+"3803135": {
+"fouls": [
+9,
+11
+],
+"red": [
+0,
+0
+],
+"referee": "Marius Hansen Grøtta",
+"yellow": [
+1,
+4
+]
+},
+"3803136": {
+"fouls": [
+6,
+9
+],
+"red": [
+0,
+0
+],
+"referee": "Marius Hansen Grøtta",
+"yellow": [
+0,
+2
+]
+},
+"3803137": {
+"fouls": [
+6,
+10
+],
+"red": [
+0,
+0
+],
+"referee": "Marius Lien",
+"yellow": [
+0,
+0
+]
+},
+"3803138": {
+"fouls": [
+10,
+8
+],
+"red": [
+0,
+0
+],
+"referee": "Tom Harald Hagen",
+"yellow": [
+1,
+0
+]
+},
+"3803139": {
+"fouls": [
+12,
+9
+],
+"red": [
+0,
+0
+],
+"referee": "Svein Tore Sinnes",
+"yellow": [
+1,
+2
+]
+},
+"3803140": {
+"fouls": [
+10,
+11
+],
+"red": [
+0,
+0
+],
+"referee": "Kristoffer Hagenes",
+"yellow": [
+2,
+1
+]
+},
+"3803141": {
+"fouls": [
+11,
+7
+],
+"red": [
+0,
+0
+],
+"referee": "Svein Oddvar Moen",
+"yellow": [
+1,
+2
+]
+},
+"3803142": {
+"fouls": [
+5,
+8
+],
+"red": [
+0,
+0
+],
+"referee": "Daniel Higraff",
+"yellow": [
+3,
+0
+]
+},
+"3803143": {
+"fouls": [
+7,
+7
+],
+"red": [
+0,
+0
+],
+"referee": "Christian Moen",
+"yellow": [
+1,
+3
+]
+},
+"3803146": {
+"fouls": [
+9,
+8
+],
+"red": [
+0,
+0
+],
+"referee": "Daniel Higraff",
+"yellow": [
+2,
+1
+]
+},
+"3803147": {
+"fouls": [
+9,
+9
+],
+"red": [
+0,
+0
+],
+"referee": "Svein Oddvar Moen",
+"yellow": [
+0,
+1
+]
+},
+"3803148": {
+"fouls": [
+7,
+9
+],
+"red": [
+0,
+0
+],
+"referee": "Mohammad Usman Aslam",
+"yellow": [
+0,
+1
+]
+},
+"3803149": {
+"fouls": [
+11,
+17
+],
+"red": [
+0,
+0
+],
+"referee": "Rohit Saggi",
+"yellow": [
+1,
+2
+]
+},
+"3803150": {
+"fouls": [
+6,
+14
+],
+"red": [
+0,
+0
+],
+"referee": "Kai Erik Steen",
+"yellow": [
+0,
+1
+]
+},
+"3803151": {
+"fouls": [
+17,
+7
+],
+"red": [
+0,
+1
+],
+"referee": "Tore Hansen",
+"yellow": [
+3,
+0
+]
+},
+"3803152": {
+"fouls": [
+7,
+13
+],
+"red": [
+0,
+0
+],
+"referee": "Marius Hansen Grøtta",
+"yellow": [
+1,
+2
+]
+},
+"3803153": {
+"fouls": [
+9,
+13
+],
+"red": [
+0,
+0
+],
+"referee": "Espen Eskås",
+"yellow": [
+2,
+3
+]
+},
+"3803154": {
+"fouls": [
+15,
+12
+],
+"red": [
+0,
+0
+],
+"referee": "Mohammad Usman Aslam",
+"yellow": [
+3,
+2
+]
+},
+"3803155": {
+"fouls": [
+8,
+7
+],
+"red": [
+0,
+0
+],
+"referee": "Kristoffer Hagenes",
+"yellow": [
+2,
+2
+]
+},
+"3803156": {
+"fouls": [
+10,
+6
+],
+"red": [
+0,
+0
+],
+"referee": "Christian Moen",
+"yellow": [
+3,
+0
+]
+},
+"3803157": {
+"fouls": [
+5,
+11
+],
+"red": [
+0,
+0
+],
+"referee": "Tore Hansen",
+"yellow": [
+0,
+4
+]
+},
+"3803158": {
+"fouls": [
+7,
+11
+],
+"red": [
+0,
+0
+],
+"referee": "Rohit Saggi",
+"yellow": [
+0,
+1
+]
+},
+"3803159": {
+"fouls": [
+6,
+9
+],
+"red": [
+0,
+0
+],
+"referee": "Espen Eskås",
+"yellow": [
+0,
+0
+]
+},
+"3803160": {
+"fouls": [
+10,
+16
+],
+"red": [
+0,
+1
+],
+"referee": "Kai Erik Steen",
+"yellow": [
+4,
+1
+]
+},
+"3803161": {
+"fouls": [
+8,
+10
+],
+"red": [
+0,
+0
+],
+"referee": "Sivert Oeksnes Amland",
+"yellow": [
+0,
+1
+]
+},
+"3803162": {
+"fouls": [
+11,
+11
+],
+"red": [
+1,
+0
+],
+"referee": "Kristoffer Hagenes",
+"yellow": [
+3,
+3
+]
+},
+"3803163": {
+"fouls": [
+11,
+9
+],
+"red": [
+0,
+1
+],
+"referee": "Mohammad Usman Aslam",
+"yellow": [
+1,
+1
+]
+},
+"3803164": {
+"fouls": [
+9,
+9
+],
+"red": [
+0,
+0
+],
+"referee": "Espen Eskås",
+"yellow": [
+2,
+3
+]
+},
+"3803165": {
+"fouls": [
+14,
+13
+],
+"red": [
+0,
+0
+],
+"referee": "Marius Lien",
+"yellow": [
+2,
+2
+]
+},
+"3803166": {
+"fouls": [
+18,
+9
+],
+"red": [
+0,
+0
+],
+"referee": "Ola Hobber Nilsen",
+"yellow": [
+1,
+1
+]
+},
+"3803167": {
+"fouls": [
+8,
+9
+],
+"red": [
+0,
+0
+],
+"referee": "Sivert Amland",
+"yellow": [
+1,
+4
+]
+},
+"3803168": {
+"fouls": [
+13,
+9
+],
+"red": [
+0,
+0
+],
+"referee": "Tore Hansen",
+"yellow": [
+3,
+1
+]
+},
+"3803169": {
+"fouls": [
+13,
+11
+],
+"red": [
+0,
+0
+],
+"referee": "Kai Erik Steen",
+"yellow": [
+4,
+2
+]
+},
+"3803170": {
+"fouls": [
+9,
+10
+],
+"red": [
+0,
+0
+],
+"referee": "Daniel Higraff",
+"yellow": [
+1,
+1
+]
+},
+"3803171": {
+"fouls": [
+9,
+12
+],
+"red": [
+0,
+0
+],
+"referee": "Tore Hansen",
+"yellow": [
+2,
+4
+]
+},
+"3803172": {
+"fouls": [
+7,
+8
+],
+"red": [
+0,
+0
+],
+"referee": "Svein Tore Sinnes",
+"yellow": [
+0,
+1
+]
+},
+"3803173": {
+"fouls": [
+13,
+11
+],
+"red": [
+0,
+0
+],
+"referee": "Sivert Amland",
+"yellow": [
+2,
+1
+]
+},
+"3803174": {
+"fouls": [
+9,
+3
+],
+"red": [
+0,
+0
+],
+"referee": "Marius Lien",
+"yellow": [
+0,
+1
+]
+},
+"3803175": {
+"fouls": [
+7,
+8
+],
+"red": [
+0,
+0
+],
+"referee": "Rohit Saggi",
+"yellow": [
+4,
+3
+]
+},
+"3803176": {
+"fouls": [
+8,
+13
+],
+"red": [
+0,
+0
+],
+"referee": "Mohammad Usman Aslam",
+"yellow": [
+1,
+3
+]
+},
+"3803177": {
+"fouls": [
+12,
+5
+],
+"red": [
+0,
+0
+],
+"referee": "Kristoffer Hagenes",
+"yellow": [
+2,
+0
+]
+},
+"3803178": {
+"fouls": [
+14,
+10
+],
+"red": [
+0,
+0
+],
+"referee": "Daniel Higraff",
+"yellow": [
+1,
+2
+]
+},
+"3803179": {
+"fouls": [
+6,
+4
+],
+"red": [
+0,
+0
+],
+"referee": "Svein Oddvar Moen",
+"yellow": [
+1,
+0
+]
+},
+"3803180": {
+"fouls": [
+9,
+11
+],
+"red": [
+0,
+0
+],
+"referee": "Kai Erik Steen",
+"yellow": [
+2,
+2
+]
+},
+"3803181": {
+"fouls": [
+3,
+8
+],
+"red": [
+0,
+0
+],
+"referee": "Kristoffer Hagenes",
+"yellow": [
+1,
+4
+]
+},
+"3803182": {
+"fouls": [
+3,
+11
+],
+"red": [
+0,
+0
+],
+"referee": "Marius Lien",
+"yellow": [
+1,
+1
+]
+},
+"3803183": {
+"fouls": [
+15,
+10
+],
+"red": [
+0,
+0
+],
+"referee": "Rohit Saggi",
+"yellow": [
+0,
+2
+]
+},
+"3803184": {
+"fouls": [
+11,
+15
+],
+"red": [
+0,
+0
+],
+"referee": "Kai Erik Steen",
+"yellow": [
+1,
+4
+]
+},
+"3803185": {
+"fouls": [
+9,
+5
+],
+"red": [
+0,
+0
+],
+"referee": "Christian Moen",
+"yellow": [
+0,
+1
+]
+},
+"3803186": {
+"fouls": [
+9,
+9
+],
+"red": [
+1,
+0
+],
+"referee": "Rohit Saggi",
+"yellow": [
+0,
+3
+]
+},
+"3803187": {
+"fouls": [
+12,
+10
+],
+"red": [
+0,
+0
+],
+"referee": "Svein Tore Sinnes",
+"yellow": [
+2,
+2
+]
+},
+"3803188": {
+"fouls": [
+10,
+18
+],
+"red": [
+0,
+0
+],
+"referee": "Sivert Amland",
+"yellow": [
+1,
+1
+]
+},
+"3803189": {
+"fouls": [
+9,
+10
+],
+"red": [
+0,
+0
+],
+"referee": "Mohammad Usman Aslam",
+"yellow": [
+0,
+0
+]
+},
+"3803190": {
+"fouls": [
+11,
+8
+],
+"red": [
+0,
+0
+],
+"referee": "Svein Oddvar Moen",
+"yellow": [
+0,
+2
+]
+},
+"3803191": {
+"fouls": [
+10,
+11
+],
+"red": [
+0,
+0
+],
+"referee": "Marius Hansen Grøtta",
+"yellow": [
+1,
+2
+]
+},
+"3803192": {
+"fouls": [
+10,
+6
+],
+"red": [
+0,
+0
+],
+"referee": "Espen Eskås",
+"yellow": [
+3,
+0
+]
+},
+"3803193": {
+"fouls": [
+12,
+13
+],
+"red": [
+0,
+0
+],
+"referee": "Tore Hansen",
+"yellow": [
+3,
+3
+]
+},
+"3803194": {
+"fouls": [
+16,
+14
+],
+"red": [
+0,
+0
+],
+"referee": "Sivert Amland",
+"yellow": [
+2,
+1
+]
+},
+"3803195": {
+"fouls": [
+10,
+10
+],
+"red": [
+0,
+0
+],
+"referee": "Daniel Higraff",
+"yellow": [
+2,
+1
+]
+},
+"3803196": {
+"fouls": [
+18,
+13
+],
+"red": [
+0,
+0
+],
+"referee": "Marius Hansen Grøtta",
+"yellow": [
+0,
+1
+]
+},
+"3803197": {
+"fouls": [
+14,
+13
+],
+"red": [
+0,
+0
+],
+"referee": "Espen Eskås",
+"yellow": [
+1,
+2
+]
+},
+"3803198": {
+"fouls": [
+6,
+10
+],
+"red": [
+0,
+0
+],
+"referee": "Mohammad Usman Aslam",
+"yellow": [
+1,
+3
+]
+},
+"3803199": {
+"fouls": [
+9,
+13
+],
+"red": [
+0,
+0
+],
+"referee": "Ola Hobber Nilsen",
+"yellow": [
+1,
+1
+]
+},
+"3803200": {
+"fouls": [
+6,
+13
+],
+"red": [
+0,
+0
+],
+"referee": "Svein Oddvar Moen",
+"yellow": [
+0,
+2
+]
+},
+"3803201": {
+"fouls": [
+14,
+10
+],
+"red": [
+0,
+0
+],
+"referee": "Kristoffer Hagenes",
+"yellow": [
+1,
+2
+]
+},
+"3803202": {
+"fouls": [
+15,
+12
+],
+"red": [
+0,
+1
+],
+"referee": "Rohit Saggi",
+"yellow": [
+2,
+3
+]
+},
+"3803203": {
+"fouls": [
+14,
+15
+],
+"red": [
+0,
+0
+],
+"referee": "Mohammad Usman Aslam",
+"yellow": [
+2,
+4
+]
+},
+"3803204": {
+"fouls": [
+14,
+8
+],
+"red": [
+0,
+0
+],
+"referee": "Espen Eskås",
+"yellow": [
+2,
+1
+]
+},
+"3803205": {
+"fouls": [
+8,
+8
+],
+"red": [
+0,
+0
+],
+"referee": "Ola Hobber Nilsen",
+"yellow": [
+1,
+1
+]
+},
+"3803206": {
+"fouls": [
+10,
+10
+],
+"red": [
+0,
+1
+],
+"referee": "Tore Hansen",
+"yellow": [
+3,
+4
+]
+},
+"3803207": {
+"fouls": [
+8,
+8
+],
+"red": [
+0,
+0
+],
+"referee": "Svein Tore Sinnes",
+"yellow": [
+0,
+2
+]
+},
+"3803208": {
+"fouls": [
+11,
+14
+],
+"red": [
+0,
+0
+],
+"referee": "Marius Lien",
+"yellow": [
+2,
+2
+]
+},
+"3803209": {
+"fouls": [
+9,
+1
+],
+"red": [
+0,
+0
+],
+"referee": "Christian Moen",
+"yellow": [
+1,
+0
+]
+},
+"3803210": {
+"fouls": [
+10,
+11
+],
+"red": [
+0,
+0
+],
+"referee": "Kristoffer Hagenes",
+"yellow": [
+3,
+3
+]
+},
+"3803211": {
+"fouls": [
+12,
+10
+],
+"red": [
+1,
+0
+],
+"referee": "Rohit Saggi",
+"yellow": [
+3,
+2
+]
+},
+"3803212": {
+"fouls": [
+11,
+12
+],
+"red": [
+0,
+0
+],
+"referee": "Marius Hansen Grøtta",
+"yellow": [
+0,
+1
+]
+},
+"3803213": {
+"fouls": [
+10,
+11
+],
+"red": [
+0,
+0
+],
+"referee": "Sivert Amland",
+"yellow": [
+3,
+1
+]
+},
+"3803214": {
+"fouls": [
+15,
+8
+],
+"red": [
+0,
+0
+],
+"referee": "Svein Oddvar Moen",
+"yellow": [
+2,
+1
+]
+},
+"3803215": {
+"fouls": [
+7,
+14
+],
+"red": [
+1,
+0
+],
+"referee": "Mohammad Usman Aslam",
+"yellow": [
+0,
+2
+]
+},
+"3803216": {
+"fouls": [
+12,
+10
+],
+"red": [
+0,
+0
+],
+"referee": "Svein Tore Sinnes",
+"yellow": [
+2,
+0
+]
+},
+"3803217": {
+"fouls": [
+10,
+11
+],
+"red": [
+1,
+1
+],
+"referee": "Tore Hansen",
+"yellow": [
+2,
+1
+]
+},
+"3803218": {
+"fouls": [
+8,
+13
+],
+"red": [
+0,
+0
+],
+"referee": "Tom Harald Hagen",
+"yellow": [
+1,
+3
+]
+},
+"3803219": {
+"fouls": [
+10,
+13
+],
+"red": [
+0,
+0
+],
+"referee": "Kristoffer Hagenes",
+"yellow": [
+1,
+2
+]
+},
+"3803220": {
+"fouls": [
+11,
+14
+],
+"red": [
+0,
+0
+],
+"referee": "Svein Tore Sinnes",
+"yellow": [
+1,
+2
+]
+},
+"3803221": {
+"fouls": [
+8,
+7
+],
+"red": [
+0,
+0
+],
+"referee": "Daniel Higraff",
+"yellow": [
+1,
+1
+]
+},
+"3803222": {
+"fouls": [
+10,
+7
+],
+"red": [
+0,
+0
+],
+"referee": "Christian Moen",
+"yellow": [
+1,
+3
+]
+},
+"3803223": {
+"fouls": [
+5,
+9
+],
+"red": [
+0,
+0
+],
+"referee": "Ola Hobber Nilsen",
+"yellow": [
+1,
+2
+]
+},
+"3803224": {
+"fouls": [
+8,
+13
+],
+"red": [
+0,
+0
+],
+"referee": "Marius Lien",
+"yellow": [
+1,
+0
+]
+},
+"3803225": {
+"fouls": [
+10,
+7
+],
+"red": [
+0,
+0
+],
+"referee": "Tore Hansen",
+"yellow": [
+2,
+2
+]
+},
+"3803226": {
+"fouls": [
+7,
+7
+],
+"red": [
+0,
+0
+],
+"referee": "Tom Harald Hagen",
+"yellow": [
+0,
+1
+]
+},
+"3803227": {
+"fouls": [
+14,
+6
+],
+"red": [
+0,
+0
+],
+"referee": "Daniel Higraff",
+"yellow": [
+2,
+0
+]
+},
+"3803228": {
+"fouls": [
+15,
+12
+],
+"red": [
+0,
+0
+],
+"referee": "Mohammad Usman Aslam",
+"yellow": [
+2,
+1
+]
+},
+"3803229": {
+"fouls": [
+15,
+7
+],
+"red": [
+0,
+0
+],
+"referee": "Marius Hansen Grøtta",
+"yellow": [
+0,
+0
+]
+},
+"3803230": {
+"fouls": [
+4,
+8
+],
+"red": [
+0,
+0
+],
+"referee": "Espen Eskås",
+"yellow": [
+1,
+0
+]
+},
+"3803231": {
+"fouls": [
+11,
+11
+],
+"red": [
+0,
+0
+],
+"referee": "Marius Lien",
+"yellow": [
+1,
+2
+]
+},
+"3803232": {
+"fouls": [
+6,
+10
+],
+"red": [
+0,
+0
+],
+"referee": "Kai Erik Steen",
+"yellow": [
+1,
+2
+]
+},
+"3803233": {
+"fouls": [
+15,
+9
+],
+"red": [
+0,
+0
+],
+"referee": "Svein Torre Sinnes",
+"yellow": [
+2,
+0
+]
+},
+"3803234": {
+"fouls": [
+14,
+14
+],
+"red": [
+0,
+0
+],
+"referee": "Mohammad Usman Aslam",
+"yellow": [
+2,
+3
+]
+},
+"3803235": {
+"fouls": [
+13,
+10
+],
+"red": [
+0,
+0
+],
+"referee": "Rohit Saggi",
+"yellow": [
+0,
+1
+]
+},
+"3803236": {
+"fouls": [
+12,
+6
+],
+"red": [
+0,
+0
+],
+"referee": "Ola Hobber Nilsen",
+"yellow": [
+2,
+1
+]
+},
+"3803237": {
+"fouls": [
+8,
+12
+],
+"red": [
+0,
+0
+],
+"referee": "Sivert Amland",
+"yellow": [
+1,
+1
+]
+},
+"3803238": {
+"fouls": [
+12,
+9
+],
+"red": [
+0,
+1
+],
+"referee": "Kai Erik Steen",
+"yellow": [
+1,
+2
+]
+},
+"3803239": {
+"fouls": [
+9,
+10
+],
+"red": [
+0,
+0
+],
+"referee": "Espen Eskås",
+"yellow": [
+3,
+3
+]
+},
+"3803240": {
+"fouls": [
+7,
+8
+],
+"red": [
+0,
+0
+],
+"referee": "Tore Hansen",
+"yellow": [
+3,
+1
+]
+},
+"3803241": {
+"fouls": [
+14,
+12
+],
+"red": [
+0,
+0
+],
+"referee": "Kristoffer Hagenes",
+"yellow": [
+4,
+2
+]
+},
+"3803242": {
+"fouls": [
+5,
+16
+],
+"red": [
+0,
+0
+],
+"referee": "Espen Eskås",
+"yellow": [
+1,
+3
+]
+},
+"3803243": {
+"fouls": [
+12,
+7
+],
+"red": [
+0,
+0
+],
+"referee": "Mohammad Usman Aslam",
+"yellow": [
+2,
+3
+]
+},
+"3803244": {
+"fouls": [
+6,
+10
+],
+"red": [
+0,
+0
+],
+"referee": "Christian Moen",
+"yellow": [
+2,
+2
+]
+},
+"3803245": {
+"fouls": [
+17,
+15
+],
+"red": [
+0,
+0
+],
+"referee": "Svein Tore Sinnes",
+"yellow": [
+3,
+2
+]
+},
+"3803246": {
+"fouls": [
+8,
+6
+],
+"red": [
+0,
+0
+],
+"referee": "Ola Hobber Nilsen",
+"yellow": [
+1,
+2
+]
+},
+"3803247": {
+"fouls": [
+9,
+7
+],
+"red": [
+0,
+0
+],
+"referee": "Sivert Amland",
+"yellow": [
+1,
+2
+]
+},
+"3803248": {
+"fouls": [
+15,
+6
+],
+"red": [
+0,
+1
+],
+"referee": "Marius Hansen Grøtta",
+"yellow": [
+1,
+2
+]
+},
+"3803249": {
+"fouls": [
+13,
+15
+],
+"red": [
+0,
+0
+],
+"referee": "Svein Oddvar Moen",
+"yellow": [
+0,
+2
+]
+},
+"3803250": {
+"fouls": [
+10,
+10
+],
+"red": [
+0,
+0
+],
+"referee": "Marius Hansen Grøtta",
+"yellow": [
+2,
+2
+]
+},
+"3803251": {
+"fouls": [
+8,
+8
+],
+"red": [
+0,
+0
+],
+"referee": "Kai Erik Steen",
+"yellow": [
+2,
+2
+]
+},
+"3803252": {
+"fouls": [
+12,
+6
+],
+"red": [
+0,
+0
+],
+"referee": "Espen Eskås",
+"yellow": [
+1,
+0
+]
+},
+"3803253": {
+"fouls": [
+7,
+10
+],
+"red": [
+0,
+0
+],
+"referee": "Daniel Higraff",
+"yellow": [
+0,
+2
+]
+},
+"3803254": {
+"fouls": [
+5,
+10
+],
+"red": [
+0,
+0
+],
+"referee": "Tore Hansen",
+"yellow": [
+2,
+4
+]
+},
+"3803255": {
+"fouls": [
+7,
+9
+],
+"red": [
+0,
+0
+],
+"referee": "Kristoffer Hagenes",
+"yellow": [
+1,
+2
+]
+},
+"3803256": {
+"fouls": [
+10,
+10
+],
+"red": [
+0,
+0
+],
+"referee": "Rohit Saggi",
+"yellow": [
+2,
+2
+]
+},
+"3803257": {
+"fouls": [
+12,
+14
+],
+"red": [
+0,
+0
+],
+"referee": "Tom Harald Hagen",
+"yellow": [
+3,
+2
+]
+},
+"3803258": {
+"fouls": [
+5,
+6
+],
+"red": [
+0,
+0
+],
+"referee": "Svein Tore Sinnes",
+"yellow": [
+1,
+2
+]
+},
+"3803259": {
+"fouls": [
+11,
+9
+],
+"red": [
+0,
+0
+],
+"referee": "Ola Hobber Nilsen",
+"yellow": [
+1,
+2
+]
+},
+"3803260": {
+"fouls": [
+5,
+10
+],
+"red": [
+0,
+0
+],
+"referee": "Svein Oddvar Moen",
+"yellow": [
+0,
+2
+]
+},
+"3803261": {
+"fouls": [
+6,
+11
+],
+"red": [
+0,
+0
+],
+"referee": "Rohit Saggi",
+"yellow": [
+4,
+1
+]
+},
+"3803262": {
+"fouls": [
+9,
+9
+],
+"red": [
+0,
+0
+],
+"referee": "Christian Moen",
+"yellow": [
+2,
+4
+]
+},
+"3803264": {
+"fouls": [
+12,
+6
+],
+"red": [
+0,
+0
+],
+"referee": "Sivert Amland",
+"yellow": [
+4,
+5
+]
+},
+"3803265": {
+"fouls": [
+13,
+7
+],
+"red": [
+0,
+0
+],
+"referee": "Mohammad Usman Aslam",
+"yellow": [
+1,
+1
+]
+},
+"3803266": {
+"fouls": [
+12,
+16
+],
+"red": [
+0,
+0
+],
+"referee": "Mohammad Usman Aslam",
+"yellow": [
+1,
+1
+]
+},
+"3803267": {
+"fouls": [
+14,
+6
+],
+"red": [
+0,
+0
+],
+"referee": "Marius Lien",
+"yellow": [
+2,
+1
+]
+},
+"3803268": {
+"fouls": [
+10,
+6
+],
+"red": [
+0,
+0
+],
+"referee": "Kai Erik Steen",
+"yellow": [
+3,
+2
+]
+},
+"3803269": {
+"fouls": [
+9,
+8
+],
+"red": [
+0,
+0
+],
+"referee": "Daniel Higraff",
+"yellow": [
+0,
+0
+]
+},
+"3803270": {
+"fouls": [
+13,
+6
+],
+"red": [
+0,
+0
+],
+"referee": "Tore Hansen",
+"yellow": [
+1,
+4
+]
+},
+"3803271": {
+"fouls": [
+5,
+11
+],
+"red": [
+0,
+0
+],
+"referee": "Marius Hansen Grøtta",
+"yellow": [
+0,
+2
+]
+},
+"3803272": {
+"fouls": [
+8,
+9
+],
+"red": [
+0,
+0
+],
+"referee": "Tom Harald Hagen",
+"yellow": [
+2,
+2
+]
+},
+"3803273": {
+"fouls": [
+6,
+11
+],
+"red": [
+0,
+0
+],
+"referee": "Espen Eskås",
+"yellow": [
+0,
+0
+]
+},
+"3803274": {
+"fouls": [
+11,
+7
+],
+"red": [
+0,
+0
+],
+"referee": "Sivert Amland",
+"yellow": [
+1,
+3
+]
+},
+"3803275": {
+"fouls": [
+8,
+16
+],
+"red": [
+0,
+0
+],
+"referee": "Rohit Saggi",
+"yellow": [
+3,
+2
+]
+},
+"3803276": {
+"fouls": [
+6,
+9
+],
+"red": [
+0,
+0
+],
+"referee": "Mohammad Usman Aslam",
+"yellow": [
+0,
+0
+]
+},
+"3803277": {
+"fouls": [
+14,
+7
+],
+"red": [
+0,
+0
+],
+"referee": "Tore Hansen",
+"yellow": [
+2,
+1
+]
+},
+"3803278": {
+"fouls": [
+12,
+7
+],
+"red": [
+0,
+0
+],
+"referee": "Svein Oddvar Moen",
+"yellow": [
+0,
+1
+]
+},
+"3803279": {
+"fouls": [
+9,
+14
+],
+"red": [
+0,
+0
+],
+"referee": "Ola Hobber Nilsen",
+"yellow": [
+1,
+1
+]
+},
+"3803280": {
+"fouls": [
+7,
+12
+],
+"red": [
+0,
+0
+],
+"referee": "Svein Tore Sinnes",
+"yellow": [
+1,
+1
+]
+},
+"3803281": {
+"fouls": [
+13,
+8
+],
+"red": [
+0,
+0
+],
+"referee": "Espen Eskås",
+"yellow": [
+3,
+2
+]
+},
+"3803283": {
+"fouls": [
+8,
+3
+],
+"red": [
+0,
+0
+],
+"referee": "Christian Moen",
+"yellow": [
+1,
+2
+]
+},
+"3803284": {
+"fouls": [
+8,
+6
+],
+"red": [
+0,
+0
+],
+"referee": "Tommy Skjerven",
+"yellow": [
+0,
+1
+]
+},
+"3803285": {
+"fouls": [
+6,
+7
+],
+"red": [
+0,
+0
+],
+"referee": "Tom Harald Hagen",
+"yellow": [
+1,
+1
+]
+},
+"3803286": {
+"fouls": [
+12,
+10
+],
+"red": [
+0,
+0
+],
+"referee": "Espen Eskås",
+"yellow": [
+3,
+1
+]
+},
+"3803287": {
+"fouls": [
+9,
+14
+],
+"red": [
+0,
+0
+],
+"referee": "Kristoffer Hagenes",
+"yellow": [
+2,
+2
+]
+},
+"3803288": {
+"fouls": [
+10,
+9
+],
+"red": [
+0,
+0
+],
+"referee": "Marius Hansen Grøtta",
+"yellow": [
+1,
+1
+]
+},
+"3803289": {
+"fouls": [
+12,
+13
+],
+"red": [
+0,
+0
+],
+"referee": "Marius Lien",
+"yellow": [
+2,
+0
+]
+},
+"3803290": {
+"fouls": [
+3,
+11
+],
+"red": [
+1,
+0
+],
+"referee": "Rohit Saggi",
+"yellow": [
+1,
+1
+]
+},
+"3803291": {
+"fouls": [
+8,
+8
+],
+"red": [
+0,
+0
+],
+"referee": "Espen Eskås",
+"yellow": [
+1,
+1
+]
+},
+"3803292": {
+"fouls": [
+10,
+12
+],
+"red": [
+0,
+0
+],
+"referee": "Kai Erik Steen",
+"yellow": [
+0,
+3
+]
+},
+"3803293": {
+"fouls": [
+5,
+8
+],
+"red": [
+0,
+0
+],
+"referee": "Daniel Higraff",
+"yellow": [
+1,
+2
+]
+},
+"3803294": {
+"fouls": [
+11,
+11
+],
+"red": [
+0,
+0
+],
+"referee": "Mohammad Usman Aslam",
+"yellow": [
+1,
+1
+]
+},
+"3803295": {
+"fouls": [
+12,
+13
+],
+"red": [
+0,
+0
+],
+"referee": "Ola Hobber Nilsen",
+"yellow": [
+1,
+2
+]
+},
+"3803296": {
+"fouls": [
+11,
+11
+],
+"red": [
+0,
+0
+],
+"referee": "Tore Hansen",
+"yellow": [
+2,
+2
+]
+},
+"3803297": {
+"fouls": [
+9,
+8
+],
+"red": [
+0,
+0
+],
+"referee": "Svein Tore Sinnes",
+"yellow": [
+1,
+0
+]
+},
+"3803298": {
+"fouls": [
+13,
+5
+],
+"red": [
+0,
+0
+],
+"referee": "Sivert Amland",
+"yellow": [
+3,
+2
+]
+},
+"3803299": {
+"fouls": [
+15,
+16
+],
+"red": [
+0,
+0
+],
+"referee": "Marius Lien",
+"yellow": [
+1,
+1
+]
+},
+"3803300": {
+"fouls": [
+6,
+8
+],
+"red": [
+0,
+0
+],
+"referee": "Ola Hobber Nilsen",
+"yellow": [
+2,
+3
+]
+},
+"3803301": {
+"fouls": [
+15,
+11
+],
+"red": [
+0,
+0
+],
+"referee": "Marius Hansen Grøtta",
+"yellow": [
+3,
+3
+]
+},
+"3803302": {
+"fouls": [
+10,
+10
+],
+"red": [
+0,
+0
+],
+"referee": "Kristoffer Hagenes",
+"yellow": [
+1,
+0
+]
+},
+"3803303": {
+"fouls": [
+7,
+10
+],
+"red": [
+0,
+0
+],
+"referee": "Rohit Saggi",
+"yellow": [
+0,
+2
+]
+},
+"3803304": {
+"fouls": [
+8,
+7
+],
+"red": [
+0,
+0
+],
+"referee": "Kai Erik Steen",
+"yellow": [
+0,
+1
+]
+},
+"3803305": {
+"fouls": [
+13,
+20
+],
+"red": [
+0,
+0
+],
+"referee": "Christian Moen",
+"yellow": [
+2,
+3
+]
+},
+"3803306": {
+"fouls": [
+7,
+15
+],
+"red": [
+0,
+0
+],
+"referee": "Tom Harald Hagen",
+"yellow": [
+1,
+2
+]
+},
+"3803307": {
+"fouls": [
+8,
+5
+],
+"red": [
+0,
+0
+],
+"referee": "Daniel Higraff",
+"yellow": [
+0,
+2
+]
+},
+"3803308": {
+"fouls": [
+8,
+13
+],
+"red": [
+0,
+0
+],
+"referee": "Ola Hobber Nilsen",
+"yellow": [
+1,
+2
+]
+},
+"3803309": {
+"fouls": [
+9,
+6
+],
+"red": [
+0,
+0
+],
+"referee": "Tommy Skjerven",
+"yellow": [
+0,
+0
+]
+},
+"3803310": {
+"fouls": [
+14,
+7
+],
+"red": [
+0,
+0
+],
+"referee": "Svein Tore Sinnes",
+"yellow": [
+3,
+1
+]
+},
+"3803311": {
+"fouls": [
+13,
+19
+],
+"red": [
+0,
+0
+],
+"referee": "Tom Harald Hagen",
+"yellow": [
+3,
+2
+]
+},
+"3803312": {
+"fouls": [
+8,
+11
+],
+"red": [
+0,
+0
+],
+"referee": "Mohammad Usman Aslam",
+"yellow": [
+0,
+3
+]
+},
+"3803313": {
+"fouls": [
+11,
+8
+],
+"red": [
+0,
+0
+],
+"referee": "Sivert Amland",
+"yellow": [
+2,
+1
+]
+},
+"3803314": {
+"fouls": [
+6,
+12
+],
+"red": [
+0,
+0
+],
+"referee": "Tore Hansen",
+"yellow": [
+3,
+0
+]
+},
+"3803315": {
+"fouls": [
+6,
+13
+],
+"red": [
+0,
+0
+],
+"referee": "Kristoffer Hagenes",
+"yellow": [
+1,
+2
+]
+},
+"3803316": {
+"fouls": [
+13,
+6
+],
+"red": [
+0,
+0
+],
+"referee": "Marius Hansen Grøtta",
+"yellow": [
+1,
+1
+]
+},
+"3803317": {
+"fouls": [
+6,
+6
+],
+"red": [
+0,
+0
+],
+"referee": "Svein Oddvar Moen",
+"yellow": [
+1,
+1
+]
+},
+"3803318": {
+"fouls": [
+12,
+11
+],
+"red": [
+0,
+0
+],
+"referee": "Espen Eskås",
+"yellow": [
+3,
+5
+]
+},
+"3803319": {
+"fouls": [
+10,
+9
+],
+"red": [
+0,
+0
+],
+"referee": "Tom Harald Hagen",
+"yellow": [
+3,
+1
+]
+},
+"3803320": {
+"fouls": [
+7,
+14
+],
+"red": [
+0,
+0
+],
+"referee": "Rohit Saggi",
+"yellow": [
+1,
+3
+]
+},
+"3803321": {
+"fouls": [
+10,
+8
+],
+"red": [
+1,
+0
+],
+"referee": "Tommy Skjerven",
+"yellow": [
+1,
+1
+]
+},
+"3803322": {
+"fouls": [
+4,
+17
+],
+"red": [
+0,
+0
+],
+"referee": "Kai Erik Steen",
+"yellow": [
+2,
+0
+]
+},
+"3804071": {
+"fouls": [
+8,
+12
+],
+"red": [
+0,
+0
+],
+"referee": "Kristoffer Hagenes",
+"yellow": [
+0,
+2
+]
+},
+"4076960": {
+"fouls": [
+9,
+8
+],
+"red": [
+0,
+0
+],
+"referee": "Sigurd Smehus Kringstad",
+"yellow": [
+1,
+0
+]
+},
+"4076961": {
+"fouls": [
+10,
+12
+],
+"red": [
+0,
+1
+],
+"referee": "Marius Hansen Grøtta",
+"yellow": [
+0,
+1
+]
+},
+"4076962": {
+"fouls": [
+10,
+13
+],
+"red": [
+0,
+1
+],
+"referee": "Tore Hansen",
+"yellow": [
+1,
+3
+]
+},
+"4076963": {
+"fouls": [
+11,
+8
+],
+"red": [
+0,
+1
+],
+"referee": "Sivert Øksnes Amland",
+"yellow": [
+0,
+0
+]
+},
+"4076964": {
+"fouls": [
+7,
+4
+],
+"red": [
+1,
+0
+],
+"referee": "Ajdin Medic",
+"yellow": [
+1,
+1
+]
+},
+"4076965": {
+"fouls": [
+13,
+13
+],
+"red": [
+0,
+0
+],
+"referee": "Kristoffer Hagenes",
+"yellow": [
+2,
+2
+]
+},
+"4076966": {
+"fouls": [
+7,
+5
+],
+"red": [
+0,
+0
+],
+"referee": "Espen Eskås",
+"yellow": [
+2,
+1
+]
+},
+"4076967": {
+"fouls": [
+8,
+14
+],
+"red": [
+0,
+0
+],
+"referee": "Svein Tore Sinnes",
+"yellow": [
+1,
+3
+]
+},
+"4076968": {
+"fouls": [
+11,
+12
+],
+"red": [
+0,
+0
+],
+"referee": "Jan Morten Tennøy",
+"yellow": [
+1,
+1
+]
+},
+"4076969": {
+"fouls": [
+4,
+7
+],
+"red": [
+0,
+0
+],
+"referee": "Tore Hansen",
+"yellow": [
+1,
+2
+]
+},
+"4076970": {
+"fouls": [
+11,
+14
+],
+"red": [
+0,
+0
+],
+"referee": "Sigurd Smehus Kringstad",
+"yellow": [
+1,
+2
+]
+},
+"4076971": {
+"fouls": [
+4,
+9
+],
+"red": [
+0,
+0
+],
+"referee": "Daniel Higraff",
+"yellow": [
+2,
+0
+]
+},
+"4076972": {
+"fouls": [
+7,
+7
+],
+"red": [
+0,
+1
+],
+"referee": "Christian Moen",
+"yellow": [
+2,
+0
+]
+},
+"4076973": {
+"fouls": [
+8,
+8
+],
+"red": [
+0,
+0
+],
+"referee": "Espen Eskås",
+"yellow": [
+0,
+0
+]
+},
+"4076974": {
+"fouls": [
+9,
+9
+],
+"red": [
+0,
+0
+],
+"referee": "Svein Oddvar Moen",
+"yellow": [
+0,
+1
+]
+},
+"4076975": {
+"fouls": [
+7,
+10
+],
+"red": [
+0,
+0
+],
+"referee": "Rohit Saggi",
+"yellow": [
+2,
+2
+]
+},
+"4076976": {
+"fouls": [
+3,
+5
+],
+"red": [
+0,
+0
+],
+"referee": "Mohammad Usman Aslam",
+"yellow": [
+2,
+1
+]
+},
+"4076977": {
+"fouls": [
+15,
+6
+],
+"red": [
+1,
+0
+],
+"referee": "Sigurd Smehus Kringstad",
+"yellow": [
+1,
+2
+]
+},
+"4076978": {
+"fouls": [
+10,
+10
+],
+"red": [
+0,
+0
+],
+"referee": "Rohit Saggi",
+"yellow": [
+2,
+2
+]
+},
+"4076979": {
+"fouls": [
+12,
+9
+],
+"red": [
+1,
+0
+],
+"referee": "Svein Tore Sinnes",
+"yellow": [
+2,
+1
+]
+},
+"4076980": {
+"fouls": [
+11,
+8
+],
+"red": [
+0,
+0
+],
+"referee": "Marius Lien",
+"yellow": [
+0,
+1
+]
+},
+"4076981": {
+"fouls": [
+12,
+13
+],
+"red": [
+0,
+0
+],
+"referee": "Marius Hansen Grøtta",
+"yellow": [
+0,
+3
+]
+},
+"4076982": {
+"fouls": [
+10,
+11
+],
+"red": [
+0,
+0
+],
+"referee": "Sivert Øksnes Amland",
+"yellow": [
+1,
+2
+]
+},
+"4076983": {
+"fouls": [
+12,
+7
+],
+"red": [
+0,
+0
+],
+"referee": "Ola Hobber Nilsen",
+"yellow": [
+2,
+1
+]
+},
+"4076984": {
+"fouls": [
+8,
+16
+],
+"red": [
+1,
+0
+],
+"referee": "Espen Eskås",
+"yellow": [
+0,
+2
+]
+},
+"4076985": {
+"fouls": [
+18,
+12
+],
+"red": [
+0,
+0
+],
+"referee": "Sivert Øksnes Amland",
+"yellow": [
+2,
+2
+]
+},
+"4076986": {
+"fouls": [
+8,
+10
+],
+"red": [
+0,
+0
+],
+"referee": "Rohit Saggi",
+"yellow": [
+0,
+2
+]
+},
+"4076987": {
+"fouls": [
+16,
+11
+],
+"red": [
+0,
+0
+],
+"referee": "Espen Eskås",
+"yellow": [
+5,
+1
+]
+},
+"4076988": {
+"fouls": [
+6,
+15
+],
+"red": [
+0,
+0
+],
+"referee": "Kristoffer Hagenes",
+"yellow": [
+1,
+2
+]
+},
+"4076989": {
+"fouls": [
+12,
+3
+],
+"red": [
+0,
+0
+],
+"referee": "Svein Oddvar Moen",
+"yellow": [
+0,
+0
+]
+},
+"4076990": {
+"fouls": [
+6,
+8
+],
+"red": [
+0,
+0
+],
+"referee": "Christian Moen",
+"yellow": [
+2,
+1
+]
+},
+"4076991": {
+"fouls": [
+8,
+13
+],
+"red": [
+0,
+0
+],
+"referee": "Tore Hansen",
+"yellow": [
+1,
+4
+]
+},
+"4076992": {
+"fouls": [
+14,
+10
+],
+"red": [
+0,
+0
+],
+"referee": "Christian Moen",
+"yellow": [
+0,
+2
+]
+},
+"4076993": {
+"fouls": [
+11,
+9
+],
+"red": [
+0,
+0
+],
+"referee": "Steinar Hauge",
+"yellow": [
+0,
+1
+]
+},
+"4076994": {
+"fouls": [
+13,
+7
+],
+"red": [
+1,
+0
+],
+"referee": "Mohammad Usman Aslam",
+"yellow": [
+2,
+5
+]
+},
+"4076995": {
+"fouls": [
+14,
+10
+],
+"red": [
+1,
+0
+],
+"referee": "Svein Tore Sinnes",
+"yellow": [
+1,
+2
+]
+},
+"4076996": {
+"fouls": [
+12,
+15
+],
+"red": [
+0,
+0
+],
+"referee": "Marius Hansen Grøtta",
+"yellow": [
+2,
+1
+]
+},
+"4076997": {
+"fouls": [
+9,
+13
+],
+"red": [
+0,
+0
+],
+"referee": "Sigurd Smehus Kringstad",
+"yellow": [
+2,
+1
+]
+},
+"4076998": {
+"fouls": [
+7,
+8
+],
+"red": [
+0,
+0
+],
+"referee": "Daniel Higraff",
+"yellow": [
+1,
+0
+]
+},
+"4076999": {
+"fouls": [
+17,
+11
+],
+"red": [
+0,
+1
+],
+"referee": "Sivert Øksnes Amland",
+"yellow": [
+1,
+1
+]
+},
+"4077000": {
+"fouls": [
+15,
+13
+],
+"red": [
+0,
+1
+],
+"referee": "Espen Eskås",
+"yellow": [
+4,
+3
+]
+},
+"4077001": {
+"fouls": [
+12,
+10
+],
+"red": [
+0,
+0
+],
+"referee": "Kristoffer Hagenes",
+"yellow": [
+3,
+1
+]
+},
+"4077002": {
+"fouls": [
+15,
+12
+],
+"red": [
+0,
+0
+],
+"referee": "Sivert Øksnes Amland",
+"yellow": [
+1,
+1
+]
+},
+"4077003": {
+"fouls": [
+6,
+11
+],
+"red": [
+0,
+0
+],
+"referee": "Tore Hansen",
+"yellow": [
+1,
+2
+]
+},
+"4077004": {
+"fouls": [
+12,
+16
+],
+"red": [
+1,
+0
+],
+"referee": "Ola Hobber Nilsen",
+"yellow": [
+1,
+1
+]
+},
+"4077005": {
+"fouls": [
+12,
+12
+],
+"red": [
+0,
+0
+],
+"referee": "Svein Tore Sinnes",
+"yellow": [
+1,
+1
+]
+},
+"4077006": {
+"fouls": [
+14,
+9
+],
+"red": [
+0,
+0
+],
+"referee": "Mohammad Usman Aslam",
+"yellow": [
+2,
+2
+]
+},
+"4077007": {
+"fouls": [
+10,
+19
+],
+"red": [
+0,
+0
+],
+"referee": "Rohit Saggi",
+"yellow": [
+0,
+5
+]
+},
+"4077008": {
+"fouls": [
+11,
+13
+],
+"red": [
+0,
+0
+],
+"referee": "Mohammad Usman Aslam",
+"yellow": [
+1,
+3
+]
+},
+"4077009": {
+"fouls": [
+5,
+7
+],
+"red": [
+0,
+0
+],
+"referee": "Marius Hansen Grøtta",
+"yellow": [
+0,
+1
+]
+},
+"4077010": {
+"fouls": [
+10,
+18
+],
+"red": [
+0,
+0
+],
+"referee": "Svein Tore Sinnes",
+"yellow": [
+2,
+1
+]
+},
+"4077011": {
+"fouls": [
+13,
+9
+],
+"red": [
+0,
+0
+],
+"referee": "Tore Hansen",
+"yellow": [
+3,
+3
+]
+},
+"4077012": {
+"fouls": [
+9,
+12
+],
+"red": [
+0,
+0
+],
+"referee": "Espen Eskås",
+"yellow": [
+1,
+2
+]
+},
+"4077013": {
+"fouls": [
+17,
+13
+],
+"red": [
+0,
+0
+],
+"referee": "Sigurd Smehus Kringstad",
+"yellow": [
+2,
+0
+]
+},
+"4077014": {
+"fouls": [
+12,
+14
+],
+"red": [
+0,
+0
+],
+"referee": "Daniel Higraff",
+"yellow": [
+2,
+3
+]
+},
+"4077015": {
+"fouls": [
+14,
+18
+],
+"red": [
+0,
+0
+],
+"referee": "Rohit Saggi",
+"yellow": [
+2,
+1
+]
+},
+"4077016": {
+"fouls": [
+9,
+15
+],
+"red": [
+0,
+0
+],
+"referee": "Tore Hansen",
+"yellow": [
+0,
+1
+]
+},
+"4077017": {
+"fouls": [
+13,
+7
+],
+"red": [
+0,
+0
+],
+"referee": "Mohammad Usman Aslam",
+"yellow": [
+3,
+0
+]
+},
+"4077018": {
+"fouls": [
+8,
+8
+],
+"red": [
+0,
+0
+],
+"referee": "Steinar Hauge",
+"yellow": [
+1,
+1
+]
+},
+"4077019": {
+"fouls": [
+11,
+15
+],
+"red": [
+0,
+0
+],
+"referee": "Kristoffer Hagenes",
+"yellow": [
+2,
+5
+]
+},
+"4077020": {
+"fouls": [
+4,
+14
+],
+"red": [
+0,
+0
+],
+"referee": "Svein Oddvar Moen",
+"yellow": [
+0,
+2
+]
+},
+"4077021": {
+"fouls": [
+10,
+10
+],
+"red": [
+0,
+1
+],
+"referee": "Marius Lien",
+"yellow": [
+0,
+0
+]
+},
+"4077022": {
+"fouls": [
+13,
+14
+],
+"red": [
+0,
+0
+],
+"referee": "Sivert Øksnes Amland",
+"yellow": [
+1,
+3
+]
+},
+"4077023": {
+"fouls": [
+3,
+13
+],
+"red": [
+0,
+1
+],
+"referee": "Ola Hobber Nilsen",
+"yellow": [
+1,
+0
+]
+},
+"4077024": {
+"fouls": [
+5,
+12
+],
+"red": [
+0,
+0
+],
+"referee": "Svein Oddvar Moen",
+"yellow": [
+0,
+4
+]
+},
+"4077025": {
+"fouls": [
+7,
+13
+],
+"red": [
+0,
+0
+],
+"referee": "Jan Morten Tennøy",
+"yellow": [
+1,
+1
+]
+},
+"4077026": {
+"fouls": [
+8,
+7
+],
+"red": [
+0,
+0
+],
+"referee": "Sigurd Smehus Kringstad",
+"yellow": [
+0,
+1
+]
+},
+"4077027": {
+"fouls": [
+13,
+9
+],
+"red": [
+0,
+0
+],
+"referee": "Ajdin Medic",
+"yellow": [
+1,
+2
+]
+},
+"4077028": {
+"fouls": [
+8,
+8
+],
+"red": [
+0,
+0
+],
+"referee": "Svein Tore Sinnes",
+"yellow": [
+0,
+1
+]
+},
+"4077029": {
+"fouls": [
+5,
+10
+],
+"red": [
+0,
+0
+],
+"referee": "Marius Hansen Grøtta",
+"yellow": [
+1,
+2
+]
+},
+"4077030": {
+"fouls": [
+10,
+14
+],
+"red": [
+0,
+0
+],
+"referee": "Daniel Higraff",
+"yellow": [
+2,
+2
+]
+},
+"4077031": {
+"fouls": [
+14,
+6
+],
+"red": [
+1,
+0
+],
+"referee": "Kristoffer Hagenes",
+"yellow": [
+0,
+0
+]
+},
+"4077032": {
+"fouls": [
+16,
+14
+],
+"red": [
+0,
+0
+],
+"referee": "Svein Oddvar Moen",
+"yellow": [
+2,
+2
+]
+},
+"4077033": {
+"fouls": [
+9,
+11
+],
+"red": [
+0,
+0
+],
+"referee": "Ola Hobber Nilsen",
+"yellow": [
+1,
+2
+]
+},
+"4077034": {
+"fouls": [
+14,
+9
+],
+"red": [
+1,
+0
+],
+"referee": "Marius Lien",
+"yellow": [
+1,
+0
+]
+},
+"4077035": {
+"fouls": [
+22,
+12
+],
+"red": [
+0,
+0
+],
+"referee": "Sivert Øksnes Amland",
+"yellow": [
+3,
+1
+]
+},
+"4077036": {
+"fouls": [
+10,
+7
+],
+"red": [
+0,
+0
+],
+"referee": "Marius Hansen Grøtta",
+"yellow": [
+1,
+3
+]
+},
+"4077037": {
+"fouls": [
+8,
+13
+],
+"red": [
+0,
+0
+],
+"referee": "Tore Hansen",
+"yellow": [
+0,
+2
+]
+},
+"4077038": {
+"fouls": [
+8,
+13
+],
+"red": [
+0,
+0
+],
+"referee": "Rohit Saggi",
+"yellow": [
+1,
+3
+]
+},
+"4077039": {
+"fouls": [
+7,
+9
+],
+"red": [
+0,
+0
+],
+"referee": "Mohammad Usman Aslam",
+"yellow": [
+0,
+3
+]
+},
+"4077040": {
+"fouls": [
+7,
+9
+],
+"red": [
+0,
+0
+],
+"referee": "Svein Tore Sinnes",
+"yellow": [
+2,
+2
+]
+},
+"4077041": {
+"fouls": [
+10,
+16
+],
+"red": [
+1,
+1
+],
+"referee": "Kristoffer Hagenes",
+"yellow": [
+2,
+3
+]
+},
+"4077042": {
+"fouls": [
+12,
+7
+],
+"red": [
+1,
+0
+],
+"referee": "Ajdin Medic",
+"yellow": [
+0,
+2
+]
+},
+"4077043": {
+"fouls": [
+8,
+10
+],
+"red": [
+0,
+0
+],
+"referee": "Daniel Higraff",
+"yellow": [
+0,
+1
+]
+},
+"4077044": {
+"fouls": [
+9,
+10
+],
+"red": [
+0,
+0
+],
+"referee": "Steinar Hauge",
+"yellow": [
+1,
+1
+]
+},
+"4077045": {
+"fouls": [
+17,
+10
+],
+"red": [
+0,
+0
+],
+"referee": "Marius Lien",
+"yellow": [
+2,
+0
+]
+},
+"4077046": {
+"fouls": [
+10,
+11
+],
+"red": [
+0,
+0
+],
+"referee": "Tore Hansen",
+"yellow": [
+0,
+1
+]
+},
+"4077047": {
+"fouls": [
+11,
+9
+],
+"red": [
+0,
+0
+],
+"referee": "Sigurd Smehus Kringstad",
+"yellow": [
+1,
+0
+]
+},
+"4077048": {
+"fouls": [
+13,
+9
+],
+"red": [
+0,
+0
+],
+"referee": "Sivert Øksnes Amland",
+"yellow": [
+4,
+2
+]
+},
+"4077049": {
+"fouls": [
+7,
+11
+],
+"red": [
+0,
+0
+],
+"referee": "Svein Oddvar Moen",
+"yellow": [
+0,
+0
+]
+},
+"4077050": {
+"fouls": [
+9,
+12
+],
+"red": [
+0,
+0
+],
+"referee": "Espen Eskås",
+"yellow": [
+0,
+3
+]
+},
+"4077051": {
+"fouls": [
+9,
+9
+],
+"red": [
+0,
+1
+],
+"referee": "Rohit Saggi",
+"yellow": [
+1,
+1
+]
+},
+"4077052": {
+"fouls": [
+13,
+6
+],
+"red": [
+0,
+0
+],
+"referee": "Marius Hansen Grøtta",
+"yellow": [
+3,
+0
+]
+},
+"4077053": {
+"fouls": [
+9,
+10
+],
+"red": [
+0,
+0
+],
+"referee": "Ola Hobber Nilsen",
+"yellow": [
+2,
+2
+]
+},
+"4077054": {
+"fouls": [
+8,
+16
+],
+"red": [
+0,
+0
+],
+"referee": "Kristoffer Hagenes",
+"yellow": [
+0,
+3
+]
+},
+"4077055": {
+"fouls": [
+8,
+6
+],
+"red": [
+0,
+0
+],
+"referee": "Mohammad Usman Aslam",
+"yellow": [
+1,
+0
+]
+},
+"4077056": {
+"fouls": [
+12,
+13
+],
+"red": [
+0,
+0
+],
+"referee": "Espen Eskås",
+"yellow": [
+1,
+3
+]
+},
+"4077057": {
+"fouls": [
+14,
+10
+],
+"red": [
+0,
+0
+],
+"referee": "Sigurd Smehus Kringstad",
+"yellow": [
+2,
+1
+]
+},
+"4077058": {
+"fouls": [
+6,
+9
+],
+"red": [
+0,
+0
+],
+"referee": "Steinar Hauge",
+"yellow": [
+0,
+3
+]
+},
+"4077059": {
+"fouls": [
+11,
+6
+],
+"red": [
+0,
+0
+],
+"referee": "Marius Lien",
+"yellow": [
+0,
+2
+]
+},
+"4077060": {
+"fouls": [
+12,
+11
+],
+"red": [
+0,
+0
+],
+"referee": "Jan Morten Tennøy",
+"yellow": [
+2,
+1
+]
+},
+"4077061": {
+"fouls": [
+5,
+9
+],
+"red": [
+0,
+0
+],
+"referee": "Svein Tore Sinnes",
+"yellow": [
+1,
+1
+]
+},
+"4077062": {
+"fouls": [
+9,
+11
+],
+"red": [
+2,
+0
+],
+"referee": "Rohit Saggi",
+"yellow": [
+1,
+0
+]
+},
+"4077063": {
+"fouls": [
+8,
+9
+],
+"red": [
+0,
+0
+],
+"referee": "Daniel Higraff",
+"yellow": [
+0,
+1
+]
+},
+"4077064": {
+"fouls": [
+10,
+8
+],
+"red": [
+1,
+0
+],
+"referee": "Marius Hansen Grøtta",
+"yellow": [
+1,
+2
+]
+},
+"4077065": {
+"fouls": [
+10,
+18
+],
+"red": [
+0,
+0
+],
+"referee": "Sivert Øksnes Amland",
+"yellow": [
+1,
+1
+]
+},
+"4077066": {
+"fouls": [
+8,
+6
+],
+"red": [
+0,
+0
+],
+"referee": "Espen Eskås",
+"yellow": [
+1,
+0
+]
+},
+"4077067": {
+"fouls": [
+12,
+11
+],
+"red": [
+0,
+0
+],
+"referee": "Mohammad Usman Aslam",
+"yellow": [
+1,
+3
+]
+},
+"4077068": {
+"fouls": [
+7,
+12
+],
+"red": [
+0,
+0
+],
+"referee": "Marius Lien",
+"yellow": [
+1,
+2
+]
+},
+"4077069": {
+"fouls": [
+10,
+9
+],
+"red": [
+0,
+0
+],
+"referee": "Kristoffer Hagenes",
+"yellow": [
+1,
+2
+]
+},
+"4077070": {
+"fouls": [
+7,
+10
+],
+"red": [
+0,
+0
+],
+"referee": "Tore Hansen",
+"yellow": [
+1,
+2
+]
+},
+"4077071": {
+"fouls": [
+7,
+12
+],
+"red": [
+1,
+0
+],
+"referee": "Ola Hobber Nilsen",
+"yellow": [
+3,
+1
+]
+},
+"4077072": {
+"fouls": [
+10,
+8
+],
+"red": [
+0,
+0
+],
+"referee": "Daniel Higraff",
+"yellow": [
+0,
+1
+]
+},
+"4077073": {
+"fouls": [
+9,
+3
+],
+"red": [
+0,
+0
+],
+"referee": "Steinar Hauge",
+"yellow": [
+1,
+1
+]
+},
+"4077074": {
+"fouls": [
+4,
+10
+],
+"red": [
+0,
+0
+],
+"referee": "Espen Eskås",
+"yellow": [
+2,
+0
+]
+},
+"4077075": {
+"fouls": [
+11,
+14
+],
+"red": [
+0,
+0
+],
+"referee": "Tore Hansen",
+"yellow": [
+4,
+4
+]
+},
+"4077076": {
+"fouls": [
+14,
+14
+],
+"red": [
+0,
+0
+],
+"referee": "Marius Lien",
+"yellow": [
+2,
+2
+]
+},
+"4077077": {
+"fouls": [
+11,
+7
+],
+"red": [
+0,
+0
+],
+"referee": "Svein Oddvar Moen",
+"yellow": [
+2,
+1
+]
+},
+"4077078": {
+"fouls": [
+11,
+9
+],
+"red": [
+0,
+0
+],
+"referee": "Svein Tore Sinnes",
+"yellow": [
+3,
+3
+]
+},
+"4077079": {
+"fouls": [
+9,
+11
+],
+"red": [
+0,
+0
+],
+"referee": "Rohit Saggi",
+"yellow": [
+2,
+3
+]
+},
+"4077080": {
+"fouls": [
+8,
+8
+],
+"red": [
+0,
+0
+],
+"referee": "Espen Eskås",
+"yellow": [
+1,
+1
+]
+},
+"4077081": {
+"fouls": [
+14,
+20
+],
+"red": [
+0,
+0
+],
+"referee": "Mohammad Usman Aslam",
+"yellow": [
+6,
+2
+]
+},
+"4077082": {
+"fouls": [
+14,
+8
+],
+"red": [
+0,
+0
+],
+"referee": "Kristoffer Hagenes",
+"yellow": [
+2,
+2
+]
+},
+"4077083": {
+"fouls": [
+11,
+12
+],
+"red": [
+0,
+0
+],
+"referee": "Marius Lien",
+"yellow": [
+0,
+0
+]
+},
+"4077084": {
+"fouls": [
+5,
+10
+],
+"red": [
+0,
+1
+],
+"referee": "Rohit Saggi",
+"yellow": [
+2,
+1
+]
+},
+"4077085": {
+"fouls": [
+9,
+10
+],
+"red": [
+0,
+0
+],
+"referee": "Ola Hobber Nilsen",
+"yellow": [
+3,
+0
+]
+},
+"4077086": {
+"fouls": [
+7,
+5
+],
+"red": [
+0,
+1
+],
+"referee": "Daniel Higraff",
+"yellow": [
+1,
+0
+]
+},
+"4077087": {
+"fouls": [
+7,
+6
+],
+"red": [
+0,
+0
+],
+"referee": "Kristoffer Hagenes",
+"yellow": [
+0,
+2
+]
+},
+"4077091": {
+"fouls": [
+9,
+5
+],
+"red": [
+0,
+0
+],
+"referee": "Daniel Higraff",
+"yellow": [
+1,
+0
+]
+},
+"4077092": {
+"fouls": [
+21,
+13
+],
+"red": [
+0,
+1
+],
+"referee": "Mohammad Usman Aslam",
+"yellow": [
+4,
+2
+]
+},
+"4077093": {
+"fouls": [
+5,
+7
+],
+"red": [
+0,
+0
+],
+"referee": "Sigurd Smehus Kringstad",
+"yellow": [
+1,
+1
+]
+},
+"4077094": {
+"fouls": [
+12,
+13
+],
+"red": [
+1,
+0
+],
+"referee": "Kai Erik Steen",
+"yellow": [
+0,
+2
+]
+},
+"4077095": {
+"fouls": [
+11,
+6
+],
+"red": [
+0,
+0
+],
+"referee": "Ola Hobber Nilsen",
+"yellow": [
+3,
+1
+]
+},
+"4077096": {
+"fouls": [
+7,
+6
+],
+"red": [
+0,
+0
+],
+"referee": "Ajdin Medic",
+"yellow": [
+0,
+0
+]
+},
+"4077097": {
+"fouls": [
+7,
+8
+],
+"red": [
+0,
+0
+],
+"referee": "Christian Moen",
+"yellow": [
+0,
+0
+]
+},
+"4077098": {
+"fouls": [
+9,
+7
+],
+"red": [
+0,
+0
+],
+"referee": "Tore Hansen",
+"yellow": [
+0,
+2
+]
+},
+"4077100": {
+"fouls": [
+11,
+16
+],
+"red": [
+0,
+0
+],
+"referee": "Tore Hansen",
+"yellow": [
+2,
+3
+]
+},
+"4077101": {
+"fouls": [
+10,
+11
+],
+"red": [
+0,
+0
+],
+"referee": "Kristoffer Hagenes",
+"yellow": [
+1,
+1
+]
+},
+"4077102": {
+"fouls": [
+11,
+14
+],
+"red": [
+0,
+1
+],
+"referee": "Kristoffer Hagenes",
+"yellow": [
+2,
+0
+]
+},
+"4077103": {
+"fouls": [
+12,
+13
+],
+"red": [
+0,
+1
+],
+"referee": "Sivert Øksnes Amland",
+"yellow": [
+4,
+2
+]
+},
+"4077104": {
+"fouls": [
+8,
+16
+],
+"red": [
+0,
+0
+],
+"referee": "Marius Hansen Grøtta",
+"yellow": [
+2,
+1
+]
+},
+"4077105": {
+"fouls": [
+8,
+8
+],
+"red": [
+0,
+0
+],
+"referee": "Marius Hansen Grøtta",
+"yellow": [
+0,
+2
+]
+},
+"4077106": {
+"fouls": [
+6,
+6
+],
+"red": [
+0,
+1
+],
+"referee": "Jan Morten Tennøy",
+"yellow": [
+0,
+1
+]
+},
+"4077107": {
+"fouls": [
+7,
+6
+],
+"red": [
+0,
+0
+],
+"referee": "Sigurd Smehus Kringstad",
+"yellow": [
+2,
+0
+]
+},
+"4077108": {
+"fouls": [
+14,
+11
+],
+"red": [
+1,
+0
+],
+"referee": "Mohammad Usman Aslam",
+"yellow": [
+3,
+6
+]
+},
+"4077109": {
+"fouls": [
+6,
+10
+],
+"red": [
+0,
+0
+],
+"referee": "Marius Lien",
+"yellow": [
+2,
+1
+]
+},
+"4077110": {
+"fouls": [
+10,
+11
+],
+"red": [
+0,
+0
+],
+"referee": "Svein Oddvar Moen",
+"yellow": [
+1,
+1
+]
+},
+"4077111": {
+"fouls": [
+16,
+10
+],
+"red": [
+0,
+0
+],
+"referee": "Ajdin Medic",
+"yellow": [
+3,
+3
+]
+},
+"4077112": {
+"fouls": [
+7,
+7
+],
+"red": [
+0,
+0
+],
+"referee": "Ola Hobber Nilsen",
+"yellow": [
+0,
+1
+]
+},
+"4077113": {
+"fouls": [
+4,
+14
+],
+"red": [
+0,
+0
+],
+"referee": "Rohit Saggi",
+"yellow": [
+0,
+1
+]
+},
+"4077114": {
+"fouls": [
+14,
+15
+],
+"red": [
+0,
+1
+],
+"referee": "Kristoffer Hagenes",
+"yellow": [
+1,
+5
+]
+},
+"4077115": {
+"fouls": [
+9,
+12
+],
+"red": [
+0,
+1
+],
+"referee": "Daniel Higraff",
+"yellow": [
+1,
+1
+]
+},
+"4077116": {
+"fouls": [
+6,
+9
+],
+"red": [
+0,
+0
+],
+"referee": "Christian Moen",
+"yellow": [
+0,
+1
+]
+},
+"4077117": {
+"fouls": [
+11,
+8
+],
+"red": [
+0,
+0
+],
+"referee": "Kristoffer Hagenes",
+"yellow": [
+0,
+0
+]
+},
+"4077118": {
+"fouls": [
+6,
+8
+],
+"red": [
+0,
+0
+],
+"referee": "Mohammad Usman Aslam",
+"yellow": [
+2,
+1
+]
+},
+"4077119": {
+"fouls": [
+14,
+8
+],
+"red": [
+0,
+0
+],
+"referee": "Sivert Øksnes Amland",
+"yellow": [
+2,
+3
+]
+},
+"4077120": {
+"fouls": [
+10,
+10
+],
+"red": [
+0,
+0
+],
+"referee": "Marius Hansen Grøtta",
+"yellow": [
+2,
+1
+]
+},
+"4077121": {
+"fouls": [
+14,
+7
+],
+"red": [
+0,
+0
+],
+"referee": "Svein Tore Sinnes",
+"yellow": [
+1,
+3
+]
+},
+"4077122": {
+"fouls": [
+12,
+5
+],
+"red": [
+0,
+0
+],
+"referee": "Tore Hansen",
+"yellow": [
+1,
+2
+]
+},
+"4077123": {
+"fouls": [
+14,
+12
+],
+"red": [
+0,
+0
+],
+"referee": "Rohit Saggi",
+"yellow": [
+2,
+0
+]
+},
+"4077124": {
+"fouls": [
+7,
+7
+],
+"red": [
+0,
+0
+],
+"referee": "Daniel Higraff",
+"yellow": [
+1,
+1
+]
+},
+"4077125": {
+"fouls": [
+9,
+7
+],
+"red": [
+0,
+0
+],
+"referee": "Rohit Saggi",
+"yellow": [
+4,
+1
+]
+},
+"4077126": {
+"fouls": [
+11,
+8
+],
+"red": [
+0,
+0
+],
+"referee": "Svein Tore Sinnes",
+"yellow": [
+1,
+0
+]
+},
+"4077127": {
+"fouls": [
+7,
+13
+],
+"red": [
+0,
+0
+],
+"referee": "Sigurd Smehus Kringstad",
+"yellow": [
+1,
+2
+]
+},
+"4077128": {
+"fouls": [
+10,
+5
+],
+"red": [
+0,
+1
+],
+"referee": "Mohammad Usman Aslam",
+"yellow": [
+2,
+1
+]
+},
+"4077129": {
+"fouls": [
+5,
+10
+],
+"red": [
+0,
+0
+],
+"referee": "Jan Morten Tennøy",
+"yellow": [
+1,
+1
+]
+},
+"4077130": {
+"fouls": [
+10,
+12
+],
+"red": [
+0,
+0
+],
+"referee": "Marius Lien",
+"yellow": [
+2,
+1
+]
+},
+"4077131": {
+"fouls": [
+13,
+7
+],
+"red": [
+0,
+0
+],
+"referee": "Tore Hansen",
+"yellow": [
+0,
+1
+]
+},
+"4077133": {
+"fouls": [
+14,
+7
+],
+"red": [
+0,
+0
+],
+"referee": "Espen Eskås",
+"yellow": [
+0,
+1
+]
+},
+"4077134": {
+"fouls": [
+9,
+9
+],
+"red": [
+0,
+0
+],
+"referee": "Tore Hansen",
+"yellow": [
+0,
+1
+]
+},
+"4077135": {
+"fouls": [
+10,
+9
+],
+"red": [
+0,
+0
+],
+"referee": "Rohit Saggi",
+"yellow": [
+3,
+3
+]
+},
+"4077136": {
+"fouls": [
+3,
+9
+],
+"red": [
+0,
+0
+],
+"referee": "Sivert Øksnes Amland",
+"yellow": [
+0,
+1
+]
+},
+"4077137": {
+"fouls": [
+8,
+7
+],
+"red": [
+0,
+0
+],
+"referee": "Kristoffer Hagenes",
+"yellow": [
+1,
+2
+]
+},
+"4077138": {
+"fouls": [
+11,
+9
+],
+"red": [
+0,
+0
+],
+"referee": "Marius Hansen Grøtta",
+"yellow": [
+2,
+1
+]
+},
+"4077139": {
+"fouls": [
+6,
+11
+],
+"red": [
+0,
+0
+],
+"referee": "Jan Morten Tennøy",
+"yellow": [
+0,
+1
+]
+},
+"4077140": {
+"fouls": [
+5,
+12
+],
+"red": [
+0,
+0
+],
+"referee": "Kai Erik Steen",
+"yellow": [
+0,
+2
+]
+},
+"4077313": {
+"fouls": [
+18,
+17
+],
+"red": [
+0,
+0
+],
+"referee": "Mohammad Usman Aslam",
+"yellow": [
+3,
+0
+]
+},
+"4077314": {
+"fouls": [
+6,
+5
+],
+"red": [
+0,
+0
+],
+"referee": "Svein Oddvar Moen",
+"yellow": [
+0,
+1
+]
+},
+"4077315": {
+"fouls": [
+18,
+14
+],
+"red": [
+0,
+0
+],
+"referee": "Svein Tore Sinnes",
+"yellow": [
+2,
+3
+]
+},
+"4077316": {
+"fouls": [
+6,
+8
+],
+"red": [
+0,
+1
+],
+"referee": "Kai Erik Steen",
+"yellow": [
+1,
+0
+]
+},
+"4077317": {
+"fouls": [
+11,
+15
+],
+"red": [
+0,
+1
+],
+"referee": "Ola Hobber Nilsen",
+"yellow": [
+1,
+3
+]
+},
+"4077318": {
+"fouls": [
+8,
+5
+],
+"red": [
+0,
+0
+],
+"referee": "Steinar Hauge",
+"yellow": [
+1,
+3
+]
+},
+"4077319": {
+"fouls": [
+13,
+7
+],
+"red": [
+0,
+0
+],
+"referee": "Marius Lien",
+"yellow": [
+2,
+1
+]
+},
+"4077320": {
+"fouls": [
+10,
+7
+],
+"red": [
+0,
+0
+],
+"referee": "Sigurd Smehus Kringstad",
+"yellow": [
+0,
+2
+]
+},
+"4077389": {
+"fouls": [
+11,
+8
+],
+"red": [
+0,
+0
+],
+"referee": "Tore Hansen",
+"yellow": [
+1,
+2
+]
+},
+"4077390": {
+"fouls": [
+13,
+11
+],
+"red": [
+0,
+0
+],
+"referee": "Sivert Øksnes Amland",
+"yellow": [
+4,
+2
+]
+},
+"4077391": {
+"fouls": [
+9,
+10
+],
+"red": [
+0,
+0
+],
+"referee": "Kai Erik Steen",
+"yellow": [
+3,
+1
+]
+},
+"4077392": {
+"fouls": [
+10,
+9
+],
+"red": [
+0,
+0
+],
+"referee": "Rohit Saggi",
+"yellow": [
+2,
+3
+]
+},
+"4077393": {
+"fouls": [
+12,
+7
+],
+"red": [
+0,
+0
+],
+"referee": "Espen Eskås",
+"yellow": [
+2,
+1
+]
+},
+"4077394": {
+"fouls": [
+13,
+9
+],
+"red": [
+0,
+0
+],
+"referee": "Svein Oddvar Moen",
+"yellow": [
+1,
+1
+]
+},
+"4077395": {
+"fouls": [
+15,
+10
+],
+"red": [
+0,
+0
+],
+"referee": "Ajdin Medic",
+"yellow": [
+2,
+3
+]
+},
+"4077396": {
+"fouls": [
+7,
+14
+],
+"red": [
+1,
+1
+],
+"referee": "Sigurd Smehus Kringstad",
+"yellow": [
+1,
+0
+]
+},
+"4077397": {
+"fouls": [
+9,
+8
+],
+"red": [
+0,
+0
+],
+"referee": "Svein Tore Sinnes",
+"yellow": [
+0,
+1
+]
+},
+"4077398": {
+"fouls": [
+5,
+7
+],
+"red": [
+0,
+0
+],
+"referee": "Daniel Higraff",
+"yellow": [
+2,
+1
+]
+},
+"4077399": {
+"fouls": [
+13,
+13
+],
+"red": [
+0,
+0
+],
+"referee": "Ola Hobber Nilsen",
+"yellow": [
+2,
+4
+]
+},
+"4077400": {
+"fouls": [
+16,
+6
+],
+"red": [
+0,
+0
+],
+"referee": "Marius Hansen Grøtta",
+"yellow": [
+1,
+3
+]
+},
+"4077401": {
+"fouls": [
+10,
+11
+],
+"red": [
+0,
+0
+],
+"referee": "Rohit Saggi",
+"yellow": [
+1,
+1
+]
+},
+"4077402": {
+"fouls": [
+17,
+9
+],
+"red": [
+0,
+1
+],
+"referee": "Sigurd Smehus Kringstad",
+"yellow": [
+3,
+0
+]
+},
+"4077403": {
+"fouls": [
+12,
+9
+],
+"red": [
+0,
+0
+],
+"referee": "Kristoffer Hagenes",
+"yellow": [
+3,
+3
+]
+},
+"4077404": {
+"fouls": [
+6,
+11
+],
+"red": [
+0,
+0
+],
+"referee": "Espen Eskås",
+"yellow": [
+2,
+3
+]
+},
+"4077405": {
+"fouls": [
+9,
+6
+],
+"red": [
+0,
+0
+],
+"referee": "Kai Erik Steen",
+"yellow": [
+0,
+1
+]
+},
+"4077406": {
+"fouls": [
+13,
+9
+],
+"red": [
+1,
+0
+],
+"referee": "Marius Lien",
+"yellow": [
+1,
+2
+]
+},
+"4077407": {
+"fouls": [
+12,
+9
+],
+"red": [
+0,
+0
+],
+"referee": "Svein Oddvar Moen",
+"yellow": [
+1,
+2
+]
+},
+"4077408": {
+"fouls": [
+8,
+10
+],
+"red": [
+0,
+0
+],
+"referee": "Mohammad Usman Aslam",
+"yellow": [
+4,
+0
+]
+},
+"4077409": {
+"fouls": [
+12,
+10
+],
+"red": [
+0,
+0
+],
+"referee": "Christian Moen",
+"yellow": [
+1,
+4
+]
+},
+"4077410": {
+"fouls": [
+10,
+6
+],
+"red": [
+0,
+0
+],
+"referee": "Jan Morten Tennøy",
+"yellow": [
+0,
+0
+]
+},
+"4077411": {
+"fouls": [
+13,
+11
+],
+"red": [
+0,
+0
+],
+"referee": "Steinar Hauge",
+"yellow": [
+3,
+1
+]
+},
+"4077412": {
+"fouls": [
+9,
+11
+],
+"red": [
+0,
+0
+],
+"referee": "Tore Hansen",
+"yellow": [
+2,
+2
+]
+},
+"4077413": {
+"fouls": [
+16,
+10
+],
+"red": [
+0,
+0
+],
+"referee": "Kristoffer Hagenes",
+"yellow": [
+2,
+2
+]
+},
+"4077414": {
+"fouls": [
+7,
+10
+],
+"red": [
+0,
+0
+],
+"referee": "Marius Hansen Grøtta",
+"yellow": [
+1,
+2
+]
+},
+"4077415": {
+"fouls": [
+10,
+8
+],
+"red": [
+0,
+0
+],
+"referee": "Ola Hobber Nilsen",
+"yellow": [
+3,
+0
+]
+},
+"4077416": {
+"fouls": [
+13,
+13
+],
+"red": [
+0,
+0
+],
+"referee": "Sigurd Smehus Kringstad",
+"yellow": [
+2,
+1
+]
+},
+"4077417": {
+"fouls": [
+11,
+9
+],
+"red": [
+1,
+1
+],
+"referee": "Rohit Saggi",
+"yellow": [
+3,
+3
+]
+},
+"4077418": {
+"fouls": [
+10,
+8
+],
+"red": [
+0,
+0
+],
+"referee": "Daniel Higraff",
+"yellow": [
+1,
+2
+]
+},
+"4077419": {
+"fouls": [
+8,
+3
+],
+"red": [
+0,
+0
+],
+"referee": "Sivert Øksnes Amland",
+"yellow": [
+0,
+0
+]
+},
+"4077420": {
+"fouls": [
+7,
+13
+],
+"red": [
+0,
+0
+],
+"referee": "Svein Tore Sinnes",
+"yellow": [
+2,
+2
+]
+},
+"4077421": {
+"fouls": [
+7,
+7
+],
+"red": [
+0,
+0
+],
+"referee": "Steinar Hauge",
+"yellow": [
+0,
+0
+]
+},
+"4077422": {
+"fouls": [
+15,
+13
+],
+"red": [
+0,
+0
+],
+"referee": "Ola Hobber Nilsen",
+"yellow": [
+3,
+2
+]
+},
+"4077423": {
+"fouls": [
+13,
+5
+],
+"red": [
+0,
+0
+],
+"referee": "Tore Hansen",
+"yellow": [
+0,
+1
+]
+},
+"4077424": {
+"fouls": [
+3,
+10
+],
+"red": [
+0,
+0
+],
+"referee": "Ajdin Medic",
+"yellow": [
+0,
+1
+]
+},
+"4077425": {
+"fouls": [
+5,
+8
+],
+"red": [
+0,
+0
+],
+"referee": "Kai Erik Steen",
+"yellow": [
+2,
+1
+]
+},
+"4077426": {
+"fouls": [
+15,
+10
+],
+"red": [
+0,
+0
+],
+"referee": "Sigurd Smehus Kringstad",
+"yellow": [
+1,
+1
+]
+},
+"4077427": {
+"fouls": [
+13,
+10
+],
+"red": [
+0,
+0
+],
+"referee": "Kristoffer Hagenes",
+"yellow": [
+1,
+2
+]
+},
+"4077428": {
+"fouls": [
+11,
+11
+],
+"red": [
+0,
+0
+],
+"referee": "Svein Oddvar Moen",
+"yellow": [
+1,
+1
+]
+},
+"4077429": {
+"fouls": [
+9,
+9
+],
+"red": [
+0,
+0
+],
+"referee": "Sivert Øksnes Amland",
+"yellow": [
+1,
+0
+]
+},
+"4077430": {
+"fouls": [
+18,
+13
+],
+"red": [
+0,
+0
+],
+"referee": "Svein Oddvar Moen",
+"yellow": [
+1,
+2
+]
+},
+"4077431": {
+"fouls": [
+8,
+4
+],
+"red": [
+0,
+0
+],
+"referee": "Kai Erik Steen",
+"yellow": [
+3,
+1
+]
+},
+"4077432": {
+"fouls": [
+9,
+10
+],
+"red": [
+0,
+0
+],
+"referee": "Svein Tore Sinnes",
+"yellow": [
+1,
+5
+]
+},
+"4077433": {
+"fouls": [
+13,
+9
+],
+"red": [
+0,
+0
+],
+"referee": "Marius Lien",
+"yellow": [
+1,
+1
+]
+},
+"4077434": {
+"fouls": [
+11,
+7
+],
+"red": [
+0,
+0
+],
+"referee": "Mohammad Usman Aslam",
+"yellow": [
+4,
+1
+]
+},
+"4077435": {
+"fouls": [
+12,
+10
+],
+"red": [
+0,
+0
+],
+"referee": "Rohit Saggi",
+"yellow": [
+1,
+2
+]
+},
+"4077436": {
+"fouls": [
+9,
+6
+],
+"red": [
+0,
+0
+],
+"referee": "Christian Moen",
+"yellow": [
+0,
+1
+]
+},
+"4077437": {
+"fouls": [
+10,
+13
+],
+"red": [
+0,
+0
+],
+"referee": "Marius Hansen Grøtta",
+"yellow": [
+2,
+1
+]
+},
+"4077438": {
+"fouls": [
+19,
+11
+],
+"red": [
+0,
+0
+],
+"referee": "Sigurd Smehus Kringstad",
+"yellow": [
+3,
+2
+]
+},
+"4077439": {
+"fouls": [
+7,
+5
+],
+"red": [
+0,
+0
+],
+"referee": "Jan Morten Tennøy",
+"yellow": [
+0,
+1
+]
+},
+"4077440": {
+"fouls": [
+12,
+12
+],
+"red": [
+0,
+0
+],
+"referee": "Kristoffer Hagenes",
+"yellow": [
+0,
+3
+]
+},
+"4077441": {
+"fouls": [
+11,
+7
+],
+"red": [
+0,
+0
+],
+"referee": "Svein Oddvar Moen",
+"yellow": [
+0,
+0
+]
+},
+"4077442": {
+"fouls": [
+9,
+11
+],
+"red": [
+0,
+0
+],
+"referee": "Ola Nielsen",
+"yellow": [
+2,
+1
+]
+},
+"4077443": {
+"fouls": [
+8,
+7
+],
+"red": [
+0,
+1
+],
+"referee": "Kai Erik Steen",
+"yellow": [
+5,
+2
+]
+},
+"4077444": {
+"fouls": [
+10,
+9
+],
+"red": [
+0,
+0
+],
+"referee": "Tore Hansen",
+"yellow": [
+0,
+1
+]
+},
+"4385393": {
+"fouls": [
+10,
+8
+],
+"red": [
+0,
+0
+],
+"referee": "Rohit Saggi",
+"yellow": [
+2,
+1
+]
+},
+"4385394": {
+"fouls": [
+11,
+16
+],
+"red": [
+0,
+0
+],
+"referee": "Mohammad Usman Aslam",
+"yellow": [
+1,
+4
+]
+},
+"4385395": {
+"fouls": [
+6,
+15
+],
+"red": [
+0,
+0
+],
+"referee": "Tore Hansen",
+"yellow": [
+0,
+2
+]
+},
+"4385396": {
+"fouls": [
+2,
+11
+],
+"red": [
+0,
+0
+],
+"referee": "Espen Eskås",
+"yellow": [
+2,
+1
+]
+},
+"4385397": {
+"fouls": [
+11,
+12
+],
+"red": [
+0,
+0
+],
+"referee": "Marius Hansen Grøtta",
+"yellow": [
+2,
+3
+]
+},
+"4385398": {
+"fouls": [
+17,
+13
+],
+"red": [
+0,
+0
+],
+"referee": "Sivert Øksnes Amland",
+"yellow": [
+3,
+2
+]
+},
+"4385399": {
+"fouls": [
+10,
+11
+],
+"red": [
+1,
+0
+],
+"referee": "Sigurd Smehus Kringstad",
+"yellow": [
+1,
+1
+]
+},
+"4385400": {
+"fouls": [
+10,
+11
+],
+"red": [
+0,
+0
+],
+"referee": "Kristoffer Hagenes",
+"yellow": [
+2,
+1
+]
+},
+"4385401": {
+"fouls": [
+5,
+9
+],
+"red": [
+0,
+0
+],
+"referee": "Espen Eskås",
+"yellow": [
+2,
+2
+]
+},
+"4385402": {
+"fouls": [
+6,
+7
+],
+"red": [
+0,
+0
+],
+"referee": "Ola Hobber Nilsen",
+"yellow": [
+0,
+3
+]
+},
+"4385403": {
+"fouls": [
+8,
+7
+],
+"red": [
+0,
+0
+],
+"referee": "Svein Tore Sinnes",
+"yellow": [
+0,
+2
+]
+},
+"4385404": {
+"fouls": [
+13,
+9
+],
+"red": [
+0,
+0
+],
+"referee": "Sivert Øksnes Amland",
+"yellow": [
+2,
+1
+]
+},
+"4385405": {
+"fouls": [
+10,
+11
+],
+"red": [
+0,
+0
+],
+"referee": "Marius Lien",
+"yellow": [
+1,
+3
+]
+},
+"4385406": {
+"fouls": [
+11,
+12
+],
+"red": [
+0,
+0
+],
+"referee": "Marius Hansen Grøtta",
+"yellow": [
+3,
+3
+]
+},
+"4385407": {
+"fouls": [
+12,
+13
+],
+"red": [
+0,
+0
+],
+"referee": "Rohit Saggi",
+"yellow": [
+1,
+4
+]
+},
+"4385408": {
+"fouls": [
+10,
+7
+],
+"red": [
+0,
+0
+],
+"referee": "Daniel Higraff",
+"yellow": [
+1,
+1
+]
+},
+"4385409": {
+"fouls": [
+10,
+11
+],
+"red": [
+0,
+0
+],
+"referee": "Sigurd Smehus Kringstad",
+"yellow": [
+2,
+2
+]
+},
+"4385410": {
+"fouls": [
+8,
+7
+],
+"red": [
+0,
+0
+],
+"referee": "Svein Tore Sinnes",
+"yellow": [
+0,
+1
+]
+},
+"4385411": {
+"fouls": [
+7,
+6
+],
+"red": [
+0,
+0
+],
+"referee": "Kristoffer Hagenes",
+"yellow": [
+0,
+3
+]
+},
+"4385412": {
+"fouls": [
+12,
+11
+],
+"red": [
+0,
+0
+],
+"referee": "Rohit Saggi",
+"yellow": [
+0,
+3
+]
+},
+"4385413": {
+"fouls": [
+11,
+13
+],
+"red": [
+0,
+0
+],
+"referee": "Christian Moen",
+"yellow": [
+1,
+2
+]
+},
+"4385414": {
+"fouls": [
+13,
+13
+],
+"red": [
+0,
+1
+],
+"referee": "Marius Hansen Grøtta",
+"yellow": [
+2,
+2
+]
+},
+"4385415": {
+"fouls": [
+11,
+11
+],
+"red": [
+0,
+0
+],
+"referee": "Mohammad Usman Aslam",
+"yellow": [
+2,
+5
+]
+},
+"4385416": {
+"fouls": [
+12,
+14
+],
+"red": [
+0,
+0
+],
+"referee": "Tore Hansen",
+"yellow": [
+2,
+1
+]
+},
+"4385417": {
+"fouls": [
+7,
+10
+],
+"red": [
+0,
+0
+],
+"referee": "Tore Hansen",
+"yellow": [
+1,
+4
+]
+},
+"4385418": {
+"fouls": [
+19,
+9
+],
+"red": [
+0,
+0
+],
+"referee": "Mohammad Usman Aslam",
+"yellow": [
+1,
+2
+]
+},
+"4385419": {
+"fouls": [
+11,
+11
+],
+"red": [
+0,
+0
+],
+"referee": "Kristoffer Hagenes",
+"yellow": [
+0,
+1
+]
+},
+"4385420": {
+"fouls": [
+10,
+10
+],
+"red": [
+0,
+0
+],
+"referee": "Ola Hobber Nilsen",
+"yellow": [
+2,
+3
+]
+},
+"4385421": {
+"fouls": [
+4,
+14
+],
+"red": [
+0,
+0
+],
+"referee": "Mathias Støfringshaug",
+"yellow": [
+2,
+2
+]
+},
+"4385422": {
+"fouls": [
+9,
+13
+],
+"red": [
+0,
+0
+],
+"referee": "Svein Tore Sinnes",
+"yellow": [
+1,
+1
+]
+},
+"4385423": {
+"fouls": [
+10,
+18
+],
+"red": [
+0,
+0
+],
+"referee": "Sivert Øksnes Amland",
+"yellow": [
+1,
+3
+]
+},
+"4385424": {
+"fouls": [
+13,
+17
+],
+"red": [
+0,
+0
+],
+"referee": "Marius Hansen Grøtta",
+"yellow": [
+0,
+5
+]
+},
+"4385425": {
+"fouls": [
+6,
+10
+],
+"red": [
+0,
+0
+],
+"referee": "Espen Eskås",
+"yellow": [
+1,
+1
+]
+},
+"4385426": {
+"fouls": [
+24,
+14
+],
+"red": [
+0,
+1
+],
+"referee": "Marius Hansen Grøtta",
+"yellow": [
+3,
+2
+]
+},
+"4385427": {
+"fouls": [
+12,
+11
+],
+"red": [
+1,
+0
+],
+"referee": "Daniel Higraff",
+"yellow": [
+2,
+2
+]
+},
+"4385428": {
+"fouls": [
+8,
+9
+],
+"red": [
+0,
+0
+],
+"referee": "Christian Moen",
+"yellow": [
+2,
+1
+]
+},
+"4385429": {
+"fouls": [
+10,
+19
+],
+"red": [
+1,
+0
+],
+"referee": "Sigurd Smehus Kringstad",
+"yellow": [
+2,
+2
+]
+},
+"4385430": {
+"fouls": [
+6,
+11
+],
+"red": [
+0,
+0
+],
+"referee": "Rohit Saggi",
+"yellow": [
+0,
+4
+]
+},
+"4385431": {
+"fouls": [
+12,
+9
+],
+"red": [
+0,
+0
+],
+"referee": "Ola Hobber Nilsen",
+"yellow": [
+1,
+3
+]
+},
+"4385432": {
+"fouls": [
+13,
+9
+],
+"red": [
+0,
+0
+],
+"referee": "Marius Lien",
+"yellow": [
+1,
+0
+]
+},
+"4385433": {
+"fouls": [
+6,
+14
+],
+"red": [
+0,
+0
+],
+"referee": "Sivert Øksnes Amland",
+"yellow": [
+0,
+2
+]
+},
+"4385434": {
+"fouls": [
+9,
+13
+],
+"red": [
+0,
+0
+],
+"referee": "Espen Eskås",
+"yellow": [
+1,
+2
+]
+},
+"4385435": {
+"fouls": [
+12,
+9
+],
+"red": [
+0,
+0
+],
+"referee": "Mathias Støfringshaug",
+"yellow": [
+2,
+1
+]
+},
+"4385436": {
+"fouls": [
+10,
+10
+],
+"red": [
+0,
+0
+],
+"referee": "Tore Hansen",
+"yellow": [
+1,
+2
+]
+},
+"4385437": {
+"fouls": [
+6,
+15
+],
+"red": [
+0,
+0
+],
+"referee": "Svein Tore Sinnes",
+"yellow": [
+0,
+1
+]
+},
+"4385438": {
+"fouls": [
+12,
+12
+],
+"red": [
+0,
+0
+],
+"referee": "Kristoffer Hagenes",
+"yellow": [
+2,
+2
+]
+},
+"4385439": {
+"fouls": [
+16,
+8
+],
+"red": [
+0,
+0
+],
+"referee": "Mohammad Usman Aslam",
+"yellow": [
+2,
+1
+]
+},
+"4385440": {
+"fouls": [
+10,
+15
+],
+"red": [
+0,
+0
+],
+"referee": "Rohit Saggi",
+"yellow": [
+3,
+3
+]
+},
+"4385441": {
+"fouls": [
+9,
+15
+],
+"red": [
+0,
+0
+],
+"referee": "Sigurd Smehus Kringstad",
+"yellow": [
+1,
+2
+]
+},
+"4385442": {
+"fouls": [
+14,
+10
+],
+"red": [
+0,
+0
+],
+"referee": "Marius Hansen Grøtta",
+"yellow": [
+1,
+2
+]
+},
+"4385443": {
+"fouls": [
+11,
+11
+],
+"red": [
+0,
+0
+],
+"referee": "Marius Lien",
+"yellow": [
+1,
+2
+]
+},
+"4385444": {
+"fouls": [
+9,
+14
+],
+"red": [
+0,
+1
+],
+"referee": "Rohit Saggi",
+"yellow": [
+1,
+2
+]
+},
+"4385445": {
+"fouls": [
+15,
+13
+],
+"red": [
+0,
+0
+],
+"referee": "Mohammad Usman Aslam",
+"yellow": [
+2,
+3
+]
+},
+"4385446": {
+"fouls": [
+11,
+10
+],
+"red": [
+0,
+0
+],
+"referee": "Tore Hansen",
+"yellow": [
+3,
+2
+]
+},
+"4385447": {
+"fouls": [
+5,
+7
+],
+"red": [
+0,
+0
+],
+"referee": "Christian Moen",
+"yellow": [
+1,
+1
+]
+},
+"4385448": {
+"fouls": [
+5,
+9
+],
+"red": [
+0,
+0
+],
+"referee": "Kristoffer Hagenes",
+"yellow": [
+1,
+2
+]
+},
+"4385449": {
+"fouls": [
+7,
+8
+],
+"red": [
+0,
+0
+],
+"referee": "Svein Tore Sinnes",
+"yellow": [
+0,
+1
+]
+},
+"4385450": {
+"fouls": [
+11,
+7
+],
+"red": [
+0,
+0
+],
+"referee": "Kristoffer Hagenes",
+"yellow": [
+3,
+1
+]
+},
+"4385451": {
+"fouls": [
+15,
+10
+],
+"red": [
+0,
+0
+],
+"referee": "Sigurd Smehus Kringstad",
+"yellow": [
+2,
+1
+]
+},
+"4385452": {
+"fouls": [
+5,
+6
+],
+"red": [
+0,
+0
+],
+"referee": "Sivert Øksnes Amland",
+"yellow": [
+0,
+1
+]
+},
+"4385453": {
+"fouls": [
+7,
+13
+],
+"red": [
+0,
+0
+],
+"referee": "Mathias Støfringshaug",
+"yellow": [
+1,
+2
+]
+},
+"4385454": {
+"fouls": [
+16,
+11
+],
+"red": [
+0,
+0
+],
+"referee": "Christian Moen",
+"yellow": [
+2,
+0
+]
+},
+"4385455": {
+"fouls": [
+10,
+14
+],
+"red": [
+0,
+0
+],
+"referee": "Ola Hobber Nilsen",
+"yellow": [
+2,
+4
+]
+},
+"4385456": {
+"fouls": [
+14,
+14
+],
+"red": [
+0,
+0
+],
+"referee": "Mohammad Aslam",
+"yellow": [
+4,
+6
+]
+},
+"4385457": {
+"fouls": [
+14,
+10
+],
+"red": [
+0,
+0
+],
+"referee": "Tore Hansen",
+"yellow": [
+2,
+2
+]
+},
+"4385458": {
+"fouls": [
+12,
+8
+],
+"red": [
+0,
+0
+],
+"referee": "Ola Hobber Nilsen",
+"yellow": [
+2,
+2
+]
+},
+"4385459": {
+"fouls": [
+8,
+10
+],
+"red": [
+0,
+0
+],
+"referee": "Mohammad Usman Aslam",
+"yellow": [
+1,
+2
+]
+},
+"4385460": {
+"fouls": [
+9,
+15
+],
+"red": [
+0,
+0
+],
+"referee": "Marius Lien",
+"yellow": [
+0,
+0
+]
+},
+"4385461": {
+"fouls": [
+12,
+12
+],
+"red": [
+0,
+0
+],
+"referee": "Kristoffer Hagenes",
+"yellow": [
+0,
+3
+]
+},
+"4385462": {
+"fouls": [
+13,
+7
+],
+"red": [
+0,
+0
+],
+"referee": "Sivert Øksnes Amland",
+"yellow": [
+0,
+1
+]
+},
+"4385463": {
+"fouls": [
+15,
+13
+],
+"red": [
+0,
+0
+],
+"referee": "Marius Hansen Groetta",
+"yellow": [
+3,
+3
+]
+},
+"4385464": {
+"fouls": [
+5,
+5
+],
+"red": [
+0,
+0
+],
+"referee": "Daniel Higraff",
+"yellow": [
+0,
+0
+]
+},
+"4385465": {
+"fouls": [
+6,
+14
+],
+"red": [
+0,
+0
+],
+"referee": "Sivert Øksnes Amland",
+"yellow": [
+0,
+0
+]
+},
+"4385466": {
+"fouls": [
+14,
+14
+],
+"red": [
+0,
+0
+],
+"referee": "Marius Hansen Grøtta",
+"yellow": [
+3,
+1
+]
+},
+"4385467": {
+"fouls": [
+12,
+9
+],
+"red": [
+0,
+0
+],
+"referee": "Svein Tore Sinnes",
+"yellow": [
+2,
+2
+]
+},
+"4385468": {
+"fouls": [
+5,
+11
+],
+"red": [
+0,
+0
+],
+"referee": "Sigurd Smehus Kringstad",
+"yellow": [
+0,
+0
+]
+},
+"4385469": {
+"fouls": [
+9,
+9
+],
+"red": [
+0,
+0
+],
+"referee": "Christian Moen",
+"yellow": [
+1,
+1
+]
+},
+"4385470": {
+"fouls": [
+9,
+12
+],
+"red": [
+0,
+0
+],
+"referee": "Kristoffer Hagenes",
+"yellow": [
+2,
+1
+]
+},
+"4385471": {
+"fouls": [
+16,
+10
+],
+"red": [
+0,
+0
+],
+"referee": "Rohit Saggi",
+"yellow": [
+3,
+2
+]
+},
+"4385472": {
+"fouls": [
+7,
+4
+],
+"red": [
+0,
+0
+],
+"referee": "Espen Eskås",
+"yellow": [
+1,
+1
+]
+},
+"4385473": {
+"fouls": [
+10,
+12
+],
+"red": [
+0,
+0
+],
+"referee": "Sivert Øksnes Amland",
+"yellow": [
+4,
+3
+]
+},
+"4385474": {
+"fouls": [
+8,
+10
+],
+"red": [
+0,
+0
+],
+"referee": "Daniel Higraff",
+"yellow": [
+1,
+2
+]
+},
+"4385475": {
+"fouls": [
+9,
+6
+],
+"red": [
+0,
+0
+],
+"referee": "Mathias Støfringshaug",
+"yellow": [
+1,
+0
+]
+},
+"4385476": {
+"fouls": [
+12,
+10
+],
+"red": [
+0,
+0
+],
+"referee": "Marius Lien",
+"yellow": [
+1,
+1
+]
+},
+"4385477": {
+"fouls": [
+10,
+8
+],
+"red": [
+0,
+0
+],
+"referee": "Mohammad Aslam",
+"yellow": [
+0,
+1
+]
+},
+"4385478": {
+"fouls": [
+16,
+8
+],
+"red": [
+0,
+0
+],
+"referee": "Ola Hobber Nilsen",
+"yellow": [
+1,
+3
+]
+},
+"4385479": {
+"fouls": [
+5,
+9
+],
+"red": [
+0,
+0
+],
+"referee": "Rohit Saggi",
+"yellow": [
+0,
+1
+]
+},
+"4385480": {
+"fouls": [
+15,
+12
+],
+"red": [
+0,
+0
+],
+"referee": "Marius Hansen Grøtta",
+"yellow": [
+2,
+5
+]
+},
+"4385481": {
+"fouls": [
+6,
+8
+],
+"red": [
+0,
+0
+],
+"referee": "Mohammad Usman Aslam",
+"yellow": [
+0,
+4
+]
+},
+"4385482": {
+"fouls": [
+7,
+12
+],
+"red": [
+0,
+0
+],
+"referee": "Christian Moen",
+"yellow": [
+1,
+2
+]
+},
+"4385483": {
+"fouls": [
+9,
+7
+],
+"red": [
+0,
+0
+],
+"referee": "Svein Tore Sinnes",
+"yellow": [
+3,
+2
+]
+},
+"4385484": {
+"fouls": [
+9,
+12
+],
+"red": [
+0,
+0
+],
+"referee": "Sivert Øksnes Amland",
+"yellow": [
+4,
+2
+]
+},
+"4385485": {
+"fouls": [
+8,
+3
+],
+"red": [
+0,
+0
+],
+"referee": "Tore Hansen",
+"yellow": [
+2,
+1
+]
+},
+"4385486": {
+"fouls": [
+10,
+10
+],
+"red": [
+0,
+0
+],
+"referee": "Sigurd Smehus Kringstad",
+"yellow": [
+0,
+2
+]
+},
+"4385487": {
+"fouls": [
+14,
+12
+],
+"red": [
+0,
+0
+],
+"referee": "Kristoffer Hagenes",
+"yellow": [
+3,
+1
+]
+},
+"4385488": {
+"fouls": [
+6,
+6
+],
+"red": [
+0,
+0
+],
+"referee": "Daniel Higraff",
+"yellow": [
+3,
+0
+]
+},
+"4385489": {
+"fouls": [
+11,
+11
+],
+"red": [
+0,
+0
+],
+"referee": "Mathias Støfringshaug",
+"yellow": [
+0,
+1
+]
+},
+"4385490": {
+"fouls": [
+14,
+16
+],
+"red": [
+0,
+0
+],
+"referee": "Marius Lien",
+"yellow": [
+2,
+1
+]
+},
+"4385491": {
+"fouls": [
+12,
+10
+],
+"red": [
+0,
+0
+],
+"referee": "Rohit Saggi",
+"yellow": [
+2,
+5
+]
+},
+"4385492": {
+"fouls": [
+10,
+9
+],
+"red": [
+0,
+0
+],
+"referee": "Ola Hobber Nilsen",
+"yellow": [
+1,
+1
+]
+},
+"4385493": {
+"fouls": [
+16,
+14
+],
+"red": [
+0,
+0
+],
+"referee": "Mohammad Usman Aslam",
+"yellow": [
+0,
+1
+]
+},
+"4385494": {
+"fouls": [
+10,
+7
+],
+"red": [
+0,
+0
+],
+"referee": "Tore Hansen",
+"yellow": [
+3,
+1
+]
+},
+"4385495": {
+"fouls": [
+6,
+9
+],
+"red": [
+0,
+0
+],
+"referee": "Marius Hansen Grøtta",
+"yellow": [
+2,
+1
+]
+},
+"4385496": {
+"fouls": [
+9,
+12
+],
+"red": [
+0,
+0
+],
+"referee": "Espen Eskås",
+"yellow": [
+1,
+2
+]
+},
+"4385497": {
+"fouls": [
+5,
+13
+],
+"red": [
+1,
+0
+],
+"referee": "Rohit Saggi",
+"yellow": [
+1,
+4
+]
+},
+"4385498": {
+"fouls": [
+6,
+20
+],
+"red": [
+0,
+0
+],
+"referee": "Ola Hobber Nilsen",
+"yellow": [
+0,
+3
+]
+},
+"4385499": {
+"fouls": [
+10,
+12
+],
+"red": [
+0,
+0
+],
+"referee": "Sigurd Smehus Kringstad",
+"yellow": [
+0,
+1
+]
+},
+"4385500": {
+"fouls": [
+8,
+6
+],
+"red": [
+0,
+0
+],
+"referee": "Espen Eskås",
+"yellow": [
+1,
+0
+]
+},
+"4385501": {
+"fouls": [
+13,
+13
+],
+"red": [
+0,
+0
+],
+"referee": "Tore Hansen",
+"yellow": [
+2,
+0
+]
+},
+"4385502": {
+"fouls": [
+15,
+11
+],
+"red": [
+0,
+1
+],
+"referee": "Daniel Higraff",
+"yellow": [
+2,
+0
+]
+},
+"4385503": {
+"fouls": [
+6,
+12
+],
+"red": [
+0,
+0
+],
+"referee": "Christian Moen",
+"yellow": [
+1,
+4
+]
+},
+"4385504": {
+"fouls": [
+9,
+10
+],
+"red": [
+0,
+0
+],
+"referee": "Svein Tore Sinnes",
+"yellow": [
+1,
+1
+]
+},
+"4385505": {
+"fouls": [
+8,
+7
+],
+"red": [
+0,
+0
+],
+"referee": "Mohammad Usman Aslam",
+"yellow": [
+1,
+2
+]
+},
+"4385506": {
+"fouls": [
+5,
+13
+],
+"red": [
+0,
+0
+],
+"referee": "Daniel Higraff",
+"yellow": [
+0,
+1
+]
+},
+"4385507": {
+"fouls": [
+8,
+12
+],
+"red": [
+0,
+0
+],
+"referee": "Marius Hansen Grøtta",
+"yellow": [
+2,
+1
+]
+},
+"4385508": {
+"fouls": [
+18,
+10
+],
+"red": [
+0,
+0
+],
+"referee": "Espen Eskås",
+"yellow": [
+2,
+1
+]
+},
+"4385509": {
+"fouls": [
+11,
+5
+],
+"red": [
+0,
+0
+],
+"referee": "Christian Moen",
+"yellow": [
+2,
+0
+]
+},
+"4385510": {
+"fouls": [
+11,
+10
+],
+"red": [
+0,
+0
+],
+"referee": "Rohit Saggi",
+"yellow": [
+2,
+4
+]
+},
+"4385511": {
+"fouls": [
+12,
+8
+],
+"red": [
+0,
+0
+],
+"referee": "Sivert Øksnes Amland",
+"yellow": [
+0,
+2
+]
+},
+"4385512": {
+"fouls": [
+14,
+10
+],
+"red": [
+0,
+1
+],
+"referee": "Kristoffer Hagenes",
+"yellow": [
+1,
+2
+]
+},
+"4385513": {
+"fouls": [
+8,
+12
+],
+"red": [
+0,
+0
+],
+"referee": "Tore Hansen",
+"yellow": [
+0,
+1
+]
+},
+"4385514": {
+"fouls": [
+10,
+20
+],
+"red": [
+0,
+1
+],
+"referee": "Rohit Saggi",
+"yellow": [
+2,
+5
+]
+},
+"4385515": {
+"fouls": [
+14,
+11
+],
+"red": [
+1,
+0
+],
+"referee": "Sivert Øksnes Amland",
+"yellow": [
+4,
+0
+]
+},
+"4385516": {
+"fouls": [
+10,
+15
+],
+"red": [
+0,
+0
+],
+"referee": "Mohammad Usman Aslam",
+"yellow": [
+0,
+2
+]
+},
+"4385517": {
+"fouls": [
+11,
+10
+],
+"red": [
+0,
+0
+],
+"referee": "Ola Hobber Nilsen",
+"yellow": [
+1,
+1
+]
+},
+"4385518": {
+"fouls": [
+7,
+8
+],
+"red": [
+0,
+0
+],
+"referee": "Svein Tore Sinnes",
+"yellow": [
+0,
+1
+]
+},
+"4385519": {
+"fouls": [
+8,
+11
+],
+"red": [
+0,
+0
+],
+"referee": "Sigurd Smehus Kringstad",
+"yellow": [
+0,
+1
+]
+},
+"4385520": {
+"fouls": [
+11,
+12
+],
+"red": [
+0,
+0
+],
+"referee": "Marius Lien",
+"yellow": [
+3,
+0
+]
+},
+"4385521": {
+"fouls": [
+11,
+7
+],
+"red": [
+0,
+0
+],
+"referee": "Marius Lien",
+"yellow": [
+2,
+2
+]
+},
+"4385522": {
+"fouls": [
+6,
+12
+],
+"red": [
+0,
+0
+],
+"referee": "Christian Moen",
+"yellow": [
+1,
+0
+]
+},
+"4385523": {
+"fouls": [
+8,
+9
+],
+"red": [
+0,
+0
+],
+"referee": "Daniel Higraff",
+"yellow": [
+2,
+2
+]
+},
+"4385524": {
+"fouls": [
+14,
+19
+],
+"red": [
+1,
+0
+],
+"referee": "Tore Hansen",
+"yellow": [
+1,
+2
+]
+},
+"4385525": {
+"fouls": [
+8,
+5
+],
+"red": [
+0,
+0
+],
+"referee": "Ola Hobber Nilsen",
+"yellow": [
+2,
+2
+]
+},
+"4385526": {
+"fouls": [
+21,
+15
+],
+"red": [
+0,
+0
+],
+"referee": "Sigurd Smehus Kringstad",
+"yellow": [
+2,
+3
+]
+},
+"4385527": {
+"fouls": [
+7,
+12
+],
+"red": [
+0,
+0
+],
+"referee": "Svein Tore Sinnes",
+"yellow": [
+3,
+1
+]
+},
+"4385528": {
+"fouls": [
+9,
+8
+],
+"red": [
+0,
+0
+],
+"referee": "Marius Hansen Grøtta",
+"yellow": [
+0,
+0
+]
+},
+"4385529": {
+"fouls": [
+6,
+10
+],
+"red": [
+0,
+0
+],
+"referee": "Mohammad Usman Aslam",
+"yellow": [
+0,
+1
+]
+},
+"4385530": {
+"fouls": [
+10,
+16
+],
+"red": [
+0,
+0
+],
+"referee": "Rohit Saggi",
+"yellow": [
+1,
+3
+]
+},
+"4385531": {
+"fouls": [
+13,
+7
+],
+"red": [
+0,
+0
+],
+"referee": "Daniel Higraff",
+"yellow": [
+1,
+1
+]
+},
+"4385532": {
+"fouls": [
+13,
+13
+],
+"red": [
+0,
+0
+],
+"referee": "Kristoffer Hagenes",
+"yellow": [
+1,
+2
+]
+},
+"4385533": {
+"fouls": [
+4,
+12
+],
+"red": [
+1,
+0
+],
+"referee": "Tore Hansen",
+"yellow": [
+2,
+1
+]
+},
+"4385534": {
+"fouls": [
+14,
+13
+],
+"red": [
+0,
+0
+],
+"referee": "Sigurd Smehus Kringstad",
+"yellow": [
+3,
+3
+]
+},
+"4385535": {
+"fouls": [
+11,
+9
+],
+"red": [
+0,
+0
+],
+"referee": "Marius Hansen Grøtta",
+"yellow": [
+2,
+1
+]
+},
+"4385536": {
+"fouls": [
+11,
+14
+],
+"red": [
+0,
+0
+],
+"referee": "Sivert Øksnes Amland",
+"yellow": [
+0,
+3
+]
+},
+"4385537": {
+"fouls": [
+13,
+8
+],
+"red": [
+0,
+0
+],
+"referee": "Rohit Saggi",
+"yellow": [
+3,
+0
+]
+},
+"4385538": {
+"fouls": [
+23,
+11
+],
+"red": [
+0,
+0
+],
+"referee": "Kristoffer Hagenes",
+"yellow": [
+3,
+2
+]
+},
+"4385539": {
+"fouls": [
+14,
+10
+],
+"red": [
+0,
+0
+],
+"referee": "Mohammad Usman Aslam",
+"yellow": [
+1,
+0
+]
+},
+"4385540": {
+"fouls": [
+4,
+6
+],
+"red": [
+0,
+0
+],
+"referee": "Ola Hobber Nilsen",
+"yellow": [
+2,
+2
+]
+},
+"4385541": {
+"fouls": [
+5,
+14
+],
+"red": [
+0,
+0
+],
+"referee": "Marius Lien",
+"yellow": [
+2,
+2
+]
+},
+"4385542": {
+"fouls": [
+10,
+8
+],
+"red": [
+0,
+0
+],
+"referee": "Mathias Støfringshaug",
+"yellow": [
+4,
+2
+]
+},
+"4385543": {
+"fouls": [
+6,
+9
+],
+"red": [
+0,
+0
+],
+"referee": "Espen Eskås",
+"yellow": [
+0,
+0
+]
+},
+"4385544": {
+"fouls": [
+14,
+13
+],
+"red": [
+0,
+0
+],
+"referee": "Sivert Øksnes Amland",
+"yellow": [
+2,
+3
+]
+},
+"4385545": {
+"fouls": [
+15,
+16
+],
+"red": [
+0,
+0
+],
+"referee": "Mathias Støfringshaug",
+"yellow": [
+3,
+4
+]
+},
+"4385546": {
+"fouls": [
+6,
+15
+],
+"red": [
+0,
+0
+],
+"referee": "Tore Hansen",
+"yellow": [
+0,
+3
+]
+},
+"4385547": {
+"fouls": [
+15,
+8
+],
+"red": [
+0,
+0
+],
+"referee": "Marius Lien",
+"yellow": [
+1,
+2
+]
+},
+"4385548": {
+"fouls": [
+10,
+6
+],
+"red": [
+0,
+1
+],
+"referee": "Daniel Higraff",
+"yellow": [
+0,
+2
+]
+},
+"4385549": {
+"fouls": [
+10,
+16
+],
+"red": [
+0,
+0
+],
+"referee": "Sivert Øksnes Amland",
+"yellow": [
+2,
+2
+]
+},
+"4385550": {
+"fouls": [
+12,
+5
+],
+"red": [
+0,
+0
+],
+"referee": "Steinar Hauge",
+"yellow": [
+1,
+1
+]
+},
+"4385551": {
+"fouls": [
+14,
+12
+],
+"red": [
+0,
+0
+],
+"referee": "Svein Tore Sinnes",
+"yellow": [
+2,
+1
+]
+},
+"4385552": {
+"fouls": [
+6,
+18
+],
+"red": [
+0,
+0
+],
+"referee": "Marius Hansen Grøtta",
+"yellow": [
+1,
+0
+]
+},
+"4385553": {
+"fouls": [
+16,
+13
+],
+"red": [
+0,
+0
+],
+"referee": "Sivert Øksnes Amland",
+"yellow": [
+2,
+0
+]
+},
+"4385554": {
+"fouls": [
+5,
+8
+],
+"red": [
+0,
+0
+],
+"referee": "Mohammad Usman Aslam",
+"yellow": [
+2,
+2
+]
+},
+"4385555": {
+"fouls": [
+13,
+11
+],
+"red": [
+0,
+0
+],
+"referee": "Sigurd Smehus Kringstad",
+"yellow": [
+1,
+1
+]
+},
+"4385556": {
+"fouls": [
+11,
+7
+],
+"red": [
+0,
+0
+],
+"referee": "Sivert Øksnes Amland",
+"yellow": [
+0,
+1
+]
+},
+"4385557": {
+"fouls": [
+8,
+12
+],
+"red": [
+0,
+0
+],
+"referee": "Kristoffer Hagenes",
+"yellow": [
+1,
+2
+]
+},
+"4385558": {
+"fouls": [
+11,
+13
+],
+"red": [
+0,
+0
+],
+"referee": "Rohit Saggi",
+"yellow": [
+1,
+1
+]
+},
+"4385559": {
+"fouls": [
+7,
+8
+],
+"red": [
+0,
+0
+],
+"referee": "Daniel Higraff",
+"yellow": [
+0,
+2
+]
+},
+"4385560": {
+"fouls": [
+10,
+12
+],
+"red": [
+0,
+0
+],
+"referee": "Ola Hobber Nilsen",
+"yellow": [
+1,
+2
+]
+},
+"4385561": {
+"fouls": [
+7,
+6
+],
+"red": [
+0,
+1
+],
+"referee": "Ola Hobber Nilsen",
+"yellow": [
+1,
+0
+]
+},
+"4385562": {
+"fouls": [
+7,
+14
+],
+"red": [
+1,
+0
+],
+"referee": "Mohammad Usman Aslam",
+"yellow": [
+1,
+3
+]
+},
+"4385563": {
+"fouls": [
+8,
+12
+],
+"red": [
+1,
+0
+],
+"referee": "Mathias Støfringshaug",
+"yellow": [
+2,
+3
+]
+},
+"4385564": {
+"fouls": [
+19,
+11
+],
+"red": [
+0,
+0
+],
+"referee": "Marius Hansen Grøtta",
+"yellow": [
+2,
+1
+]
+},
+"4385565": {
+"fouls": [
+12,
+10
+],
+"red": [
+0,
+1
+],
+"referee": "Marius Lien",
+"yellow": [
+1,
+2
+]
+},
+"4385566": {
+"fouls": [
+11,
+7
+],
+"red": [
+0,
+0
+],
+"referee": "Sivert Øksnes Amland",
+"yellow": [
+2,
+1
+]
+},
+"4385567": {
+"fouls": [
+12,
+20
+],
+"red": [
+0,
+0
+],
+"referee": "Svein Tore Sinnes",
+"yellow": [
+3,
+5
+]
+},
+"4385568": {
+"fouls": [
+11,
+9
+],
+"red": [
+0,
+0
+],
+"referee": "Christian Moen",
+"yellow": [
+2,
+2
+]
+},
+"4385569": {
+"fouls": [
+13,
+10
+],
+"red": [
+0,
+0
+],
+"referee": "Daniel Higraff",
+"yellow": [
+1,
+2
+]
+},
+"4385570": {
+"fouls": [
+5,
+12
+],
+"red": [
+0,
+0
+],
+"referee": "Kristoffer Hagenes",
+"yellow": [
+1,
+2
+]
+},
+"4385571": {
+"fouls": [
+7,
+13
+],
+"red": [
+0,
+0
+],
+"referee": "Espen Eskås",
+"yellow": [
+2,
+2
+]
+},
+"4385572": {
+"fouls": [
+16,
+10
+],
+"red": [
+0,
+0
+],
+"referee": "Sigurd Smehus Kringstad",
+"yellow": [
+1,
+1
+]
+},
+"4385573": {
+"fouls": [
+11,
+7
+],
+"red": [
+0,
+0
+],
+"referee": "Mohammad Usman Aslam",
+"yellow": [
+2,
+0
+]
+},
+"4385574": {
+"fouls": [
+12,
+11
+],
+"red": [
+0,
+0
+],
+"referee": "Svein Tore Sinnes",
+"yellow": [
+2,
+0
+]
+},
+"4385575": {
+"fouls": [
+9,
+15
+],
+"red": [
+0,
+0
+],
+"referee": "Marius Hansen Grøtta",
+"yellow": [
+1,
+4
+]
+},
+"4385576": {
+"fouls": [
+12,
+12
+],
+"red": [
+0,
+0
+],
+"referee": "Marius Lien",
+"yellow": [
+2,
+1
+]
+},
+"4385577": {
+"fouls": [
+6,
+10
+],
+"red": [
+0,
+0
+],
+"referee": "Christian Moen",
+"yellow": [
+2,
+2
+]
+},
+"4385578": {
+"fouls": [
+15,
+13
+],
+"red": [
+0,
+0
+],
+"referee": "Marius Lien",
+"yellow": [
+3,
+3
+]
+},
+"4385579": {
+"fouls": [
+9,
+13
+],
+"red": [
+0,
+0
+],
+"referee": "Kristoffer Hagenes",
+"yellow": [
+1,
+3
+]
+},
+"4385580": {
+"fouls": [
+6,
+6
+],
+"red": [
+0,
+0
+],
+"referee": "Daniel Higraff",
+"yellow": [
+1,
+0
+]
+},
+"4385581": {
+"fouls": [
+7,
+14
+],
+"red": [
+0,
+0
+],
+"referee": "Tore Hansen",
+"yellow": [
+2,
+2
+]
+},
+"4385582": {
+"fouls": [
+20,
+16
+],
+"red": [
+0,
+1
+],
+"referee": "Rohit Saggi",
+"yellow": [
+4,
+1
+]
+},
+"4385583": {
+"fouls": [
+8,
+9
+],
+"red": [
+0,
+0
+],
+"referee": "Sigurd Smehus Kringstad",
+"yellow": [
+3,
+1
+]
+},
+"4385585": {
+"fouls": [
+8,
+9
+],
+"red": [
+0,
+0
+],
+"referee": "Marius Hansen Grøtta",
+"yellow": [
+1,
+1
+]
+},
+"4385586": {
+"fouls": [
+11,
+14
+],
+"red": [
+0,
+0
+],
+"referee": "Espen Eskås",
+"yellow": [
+2,
+2
+]
+},
+"4385587": {
+"fouls": [
+5,
+14
+],
+"red": [
+1,
+0
+],
+"referee": "Rohit Saggi",
+"yellow": [
+0,
+2
+]
+},
+"4385588": {
+"fouls": [
+9,
+9
+],
+"red": [
+1,
+0
+],
+"referee": "Christian Moen",
+"yellow": [
+2,
+2
+]
+},
+"4385589": {
+"fouls": [
+10,
+8
+],
+"red": [
+0,
+0
+],
+"referee": "Daniel Higraff",
+"yellow": [
+2,
+1
+]
+},
+"4385590": {
+"fouls": [
+12,
+14
+],
+"red": [
+0,
+0
+],
+"referee": "Svein Tore Sinnes",
+"yellow": [
+2,
+1
+]
+},
+"4385591": {
+"fouls": [
+10,
+6
+],
+"red": [
+0,
+0
+],
+"referee": "Kristoffer Hagenes",
+"yellow": [
+2,
+1
+]
+},
+"4385592": {
+"fouls": [
+11,
+9
+],
+"red": [
+0,
+0
+],
+"referee": "Sigurd Smehus Kringstad",
+"yellow": [
+1,
+0
+]
+},
+"4385593": {
+"fouls": [
+6,
+15
+],
+"red": [
+0,
+0
+],
+"referee": "Marius Lien",
+"yellow": [
+0,
+1
+]
+},
+"4385594": {
+"fouls": [
+8,
+9
+],
+"red": [
+0,
+0
+],
+"referee": "Tore Hansen",
+"yellow": [
+3,
+1
+]
+},
+"4385595": {
+"fouls": [
+12,
+5
+],
+"red": [
+0,
+0
+],
+"referee": "Svein Tore Sinnes",
+"yellow": [
+1,
+0
+]
+},
+"4385596": {
+"fouls": [
+6,
+15
+],
+"red": [
+0,
+0
+],
+"referee": "Marius Hansen Grøtta",
+"yellow": [
+2,
+4
+]
+},
+"4385597": {
+"fouls": [
+12,
+17
+],
+"red": [
+0,
+0
+],
+"referee": "Sivert Øksnes Amland",
+"yellow": [
+2,
+3
+]
+},
+"4385598": {
+"fouls": [
+14,
+11
+],
+"red": [
+0,
+0
+],
+"referee": "Kristoffer Hagenes",
+"yellow": [
+0,
+3
+]
+},
+"4385599": {
+"fouls": [
+13,
+10
+],
+"red": [
+0,
+0
+],
+"referee": "Ola Hobber Nilsen",
+"yellow": [
+1,
+2
+]
+},
+"4385600": {
+"fouls": [
+15,
+13
+],
+"red": [
+0,
+0
+],
+"referee": "Rohit Saggi",
+"yellow": [
+3,
+1
+]
+},
+"4385601": {
+"fouls": [
+9,
+7
+],
+"red": [
+0,
+0
+],
+"referee": "Marius Lien",
+"yellow": [
+0,
+1
+]
+},
+"4385602": {
+"fouls": [
+9,
+6
+],
+"red": [
+0,
+0
+],
+"referee": "Mathias Støfringshaug",
+"yellow": [
+0,
+1
+]
+},
+"4385603": {
+"fouls": [
+9,
+8
+],
+"red": [
+0,
+0
+],
+"referee": "Christian Moen",
+"yellow": [
+2,
+2
+]
+},
+"4385604": {
+"fouls": [
+9,
+17
+],
+"red": [
+0,
+0
+],
+"referee": "Daniel Higraff",
+"yellow": [
+1,
+2
+]
+},
+"4385605": {
+"fouls": [
+10,
+15
+],
+"red": [
+0,
+0
+],
+"referee": "Daniel Higraff",
+"yellow": [
+1,
+1
+]
+},
+"4385606": {
+"fouls": [
+12,
+10
+],
+"red": [
+0,
+0
+],
+"referee": "Mohammad Usman Aslam",
+"yellow": [
+2,
+4
+]
+},
+"4385607": {
+"fouls": [
+18,
+7
+],
+"red": [
+0,
+0
+],
+"referee": "Ola Hobber Nilsen",
+"yellow": [
+1,
+0
+]
+},
+"4385608": {
+"fouls": [
+11,
+12
+],
+"red": [
+0,
+0
+],
+"referee": "Tore Hansen",
+"yellow": [
+2,
+0
+]
+},
+"4385609": {
+"fouls": [
+16,
+12
+],
+"red": [
+0,
+0
+],
+"referee": "Ola Hobber Nilsen",
+"yellow": [
+3,
+1
+]
+},
+"4385610": {
+"fouls": [
+12,
+10
+],
+"red": [
+0,
+0
+],
+"referee": "Marius Hansen Grøtta",
+"yellow": [
+2,
+3
+]
+},
+"4385611": {
+"fouls": [
+16,
+10
+],
+"red": [
+1,
+0
+],
+"referee": "Kristoffer Hagenes",
+"yellow": [
+2,
+3
+]
+},
+"4385612": {
+"fouls": [
+14,
+10
+],
+"red": [
+0,
+0
+],
+"referee": "Tore Hansen",
+"yellow": [
+4,
+1
+]
+},
+"4385613": {
+"fouls": [
+14,
+16
+],
+"red": [
+0,
+0
+],
+"referee": "Rohit Saggi",
+"yellow": [
+2,
+1
+]
+},
+"4385614": {
+"fouls": [
+14,
+8
+],
+"red": [
+0,
+0
+],
+"referee": "Svein Tore Sinnes",
+"yellow": [
+1,
+2
+]
+},
+"4385615": {
+"fouls": [
+5,
+11
+],
+"red": [
+0,
+0
+],
+"referee": "Tore Hansen",
+"yellow": [
+0,
+1
+]
+},
+"4385616": {
+"fouls": [
+13,
+8
+],
+"red": [
+0,
+0
+],
+"referee": "Mohammad Usman Aslam",
+"yellow": [
+1,
+1
+]
+},
+"4385617": {
+"fouls": [
+9,
+8
+],
+"red": [
+0,
+0
+],
+"referee": "Mohammad Aslam",
+"yellow": [
+1,
+3
+]
+},
+"4385618": {
+"fouls": [
+11,
+9
+],
+"red": [
+0,
+0
+],
+"referee": "Rohit Saggi",
+"yellow": [
+3,
+1
+]
+},
+"4385619": {
+"fouls": [
+11,
+6
+],
+"red": [
+1,
+0
+],
+"referee": "Tore Hansen",
+"yellow": [
+2,
+0
+]
+},
+"4385620": {
+"fouls": [
+9,
+6
+],
+"red": [
+0,
+0
+],
+"referee": "Daniel Higraff",
+"yellow": [
+0,
+3
+]
+},
+"4385621": {
+"fouls": [
+12,
+8
+],
+"red": [
+0,
+0
+],
+"referee": "Daniel Higraff",
+"yellow": [
+4,
+1
+]
+},
+"4385622": {
+"fouls": [
+15,
+16
+],
+"red": [
+0,
+0
+],
+"referee": "Espen Eskås",
+"yellow": [
+4,
+2
+]
+},
+"4385623": {
+"fouls": [
+12,
+7
+],
+"red": [
+0,
+0
+],
+"referee": "Christian Moen",
+"yellow": [
+2,
+2
+]
+},
+"4385624": {
+"fouls": [
+9,
+10
+],
+"red": [
+0,
+0
+],
+"referee": "Marius Lien",
+"yellow": [
+2,
+3
+]
+},
+"4385625": {
+"fouls": [
+9,
+8
+],
+"red": [
+0,
+0
+],
+"referee": "Daniel Higraff",
+"yellow": [
+1,
+1
+]
+},
+"4385626": {
+"fouls": [
+8,
+12
+],
+"red": [
+0,
+1
+],
+"referee": "Svein Tore Sinnes",
+"yellow": [
+0,
+1
+]
+},
+"4385627": {
+"fouls": [
+7,
+5
+],
+"red": [
+0,
+0
+],
+"referee": "Tore Hansen",
+"yellow": [
+0,
+0
+]
+},
+"4385628": {
+"fouls": [
+7,
+13
+],
+"red": [
+0,
+0
+],
+"referee": "Sivert Øksnes Amland",
+"yellow": [
+3,
+3
+]
+},
+"4385629": {
+"fouls": [
+15,
+9
+],
+"red": [
+0,
+0
+],
+"referee": "Ola Hobber Nilsen",
+"yellow": [
+2,
+0
+]
+},
+"4385630": {
+"fouls": [
+11,
+17
+],
+"red": [
+0,
+0
+],
+"referee": "Svein Tore Sinnes",
+"yellow": [
+1,
+2
+]
+},
+"4385631": {
+"fouls": [
+12,
+11
+],
+"red": [
+0,
+0
+],
+"referee": "Mathias Støfringshaug",
+"yellow": [
+1,
+0
+]
+},
+"4385632": {
+"fouls": [
+10,
+11
+],
+"red": [
+0,
+0
+],
+"referee": "Marius Hansen Grøtta",
+"yellow": [
+1,
+5
+]
+},
+"4583736": {
+"fouls": [
+12,
+12
+],
+"red": [
+0,
+0
+],
+"referee": "Rohit Saggi",
+"yellow": [
+1,
+1
+]
+},
+"4695350": {
+"fouls": [
+11,
+6
+],
+"red": [
+0,
+0
+],
+"referee": "Mohammad Aslam",
+"yellow": [
+1,
+0
+]
+},
+"4695351": {
+"fouls": [
+8,
+12
+],
+"red": [
+0,
+0
+],
+"referee": "Tore Hansen",
+"yellow": [
+0,
+1
+]
+},
+"4695352": {
+"fouls": [
+16,
+13
+],
+"red": [
+0,
+0
+],
+"referee": "Kristoffer Hagenes",
+"yellow": [
+3,
+1
+]
+},
+"4695353": {
+"fouls": [
+16,
+10
+],
+"red": [
+0,
+0
+],
+"referee": "Christian Moen",
+"yellow": [
+1,
+2
+]
+},
+"4695354": {
+"fouls": [
+10,
+12
+],
+"red": [
+0,
+0
+],
+"referee": "Daniel Higraff",
+"yellow": [
+3,
+2
+]
+},
+"4695355": {
+"fouls": [
+12,
+10
+],
+"red": [
+0,
+0
+],
+"referee": "Marius Hansen Grøtta",
+"yellow": [
+5,
+6
+]
+},
+"4695356": {
+"fouls": [
+13,
+13
+],
+"red": [
+0,
+0
+],
+"referee": "Sigurd Smehus Kringstad",
+"yellow": [
+1,
+1
+]
+},
+"4695357": {
+"fouls": [
+12,
+11
+],
+"red": [
+0,
+1
+],
+"referee": "Rohit Saggi",
+"yellow": [
+3,
+2
+]
+},
+"4695358": {
+"fouls": [
+7,
+6
+],
+"red": [
+0,
+0
+],
+"referee": "Espen Eskaas",
+"yellow": [
+0,
+1
+]
+},
+"4695359": {
+"fouls": [
+6,
+9
+],
+"red": [
+0,
+0
+],
+"referee": "Ola Hobber Nilsen",
+"yellow": [
+0,
+2
+]
+},
+"4695360": {
+"fouls": [
+8,
+13
+],
+"red": [
+0,
+0
+],
+"referee": "Svein Tore Sinnes",
+"yellow": [
+1,
+2
+]
+},
+"4695361": {
+"fouls": [
+7,
+11
+],
+"red": [
+0,
+0
+],
+"referee": "Mathias Støfringshaug",
+"yellow": [
+3,
+2
+]
+},
+"4695362": {
+"fouls": [
+14,
+10
+],
+"red": [
+0,
+0
+],
+"referee": "Rohit Saggi",
+"yellow": [
+1,
+1
+]
+},
+"4695363": {
+"fouls": [
+15,
+16
+],
+"red": [
+0,
+0
+],
+"referee": "Kristoffer Hagenes",
+"yellow": [
+3,
+3
+]
+},
+"4695364": {
+"fouls": [
+18,
+13
+],
+"red": [
+0,
+0
+],
+"referee": "Marius Lien",
+"yellow": [
+2,
+1
+]
+},
+"4695365": {
+"fouls": [
+13,
+13
+],
+"red": [
+0,
+0
+],
+"referee": "Tore Hansen",
+"yellow": [
+2,
+2
+]
+},
+"4695366": {
+"fouls": [
+15,
+15
+],
+"red": [
+0,
+0
+],
+"referee": "Ola Hobber Nilsen",
+"yellow": [
+2,
+1
+]
+},
+"4695367": {
+"fouls": [
+14,
+14
+],
+"red": [
+0,
+0
+],
+"referee": "Daniel Higraff",
+"yellow": [
+1,
+2
+]
+},
+"4695368": {
+"fouls": [
+8,
+10
+],
+"red": [
+0,
+0
+],
+"referee": "Sivert Øksnes Amland",
+"yellow": [
+1,
+0
+]
+},
+"4695369": {
+"fouls": [
+11,
+7
+],
+"red": [
+1,
+0
+],
+"referee": "Mohammad Usman Aslam",
+"yellow": [
+1,
+0
+]
+},
+"4695370": {
+"fouls": [
+11,
+7
+],
+"red": [
+0,
+0
+],
+"referee": "Rohit Saggi",
+"yellow": [
+3,
+1
+]
+},
+"4695371": {
+"fouls": [
+7,
+3
+],
+"red": [
+0,
+0
+],
+"referee": "Christian Moen",
+"yellow": [
+2,
+1
+]
+},
+"4695372": {
+"fouls": [
+13,
+8
+],
+"red": [
+0,
+0
+],
+"referee": "Stian Røvig Sletner",
+"yellow": [
+2,
+3
+]
+},
+"4695373": {
+"fouls": [
+15,
+12
+],
+"red": [
+0,
+0
+],
+"referee": "Sigurd Smehus Kringstad",
+"yellow": [
+1,
+2
+]
+},
+"4695374": {
+"fouls": [
+5,
+9
+],
+"red": [
+0,
+0
+],
+"referee": "Mathias Støfringshaug",
+"yellow": [
+1,
+1
+]
+},
+"4695375": {
+"fouls": [
+17,
+14
+],
+"red": [
+0,
+0
+],
+"referee": "Svein Tore Sinnes",
+"yellow": [
+2,
+4
+]
+},
+"4695376": {
+"fouls": [
+9,
+9
+],
+"red": [
+0,
+0
+],
+"referee": "Eivind Bodding",
+"yellow": [
+2,
+2
+]
+},
+"4695377": {
+"fouls": [
+13,
+17
+],
+"red": [
+0,
+0
+],
+"referee": "Kristoffer Hagenes",
+"yellow": [
+1,
+3
+]
+},
+"4695378": {
+"fouls": [
+11,
+15
+],
+"red": [
+0,
+0
+],
+"referee": "Espen Eskås",
+"yellow": [
+1,
+2
+]
+},
+"4695379": {
+"fouls": [
+13,
+15
+],
+"red": [
+0,
+0
+],
+"referee": "Marius Lien",
+"yellow": [
+0,
+1
+]
+},
+"4695380": {
+"fouls": [
+10,
+11
+],
+"red": [
+0,
+0
+],
+"referee": "Tore Hansen",
+"yellow": [
+0,
+0
+]
+},
+"4695381": {
+"fouls": [
+4,
+11
+],
+"red": [
+0,
+0
+],
+"referee": "Marius Hansen Groetta",
+"yellow": [
+2,
+4
+]
+},
+"4695382": {
+"fouls": [
+11,
+9
+],
+"red": [
+0,
+0
+],
+"referee": "Rohit Saggi",
+"yellow": [
+0,
+1
+]
+},
+"4695383": {
+"fouls": [
+10,
+9
+],
+"red": [
+0,
+0
+],
+"referee": "Sigurd Smehus Kringstad",
+"yellow": [
+2,
+2
+]
+},
+"4695384": {
+"fouls": [
+16,
+12
+],
+"red": [
+0,
+0
+],
+"referee": "Stian Røvig Sletner",
+"yellow": [
+2,
+4
+]
+},
+"4695385": {
+"fouls": [
+8,
+10
+],
+"red": [
+0,
+0
+],
+"referee": "Sivert Øksnes Amland",
+"yellow": [
+2,
+0
+]
+},
+"4695386": {
+"fouls": [
+13,
+11
+],
+"red": [
+0,
+0
+],
+"referee": "Daniel Higraff",
+"yellow": [
+3,
+3
+]
+},
+"4695387": {
+"fouls": [
+15,
+9
+],
+"red": [
+0,
+1
+],
+"referee": "Rohit Saggi",
+"yellow": [
+2,
+1
+]
+},
+"4695388": {
+"fouls": [
+11,
+12
+],
+"red": [
+0,
+0
+],
+"referee": "Ola Hobber Nilsen",
+"yellow": [
+2,
+0
+]
+},
+"4695389": {
+"fouls": [
+14,
+12
+],
+"red": [
+0,
+0
+],
+"referee": "Tore Hansen",
+"yellow": [
+2,
+3
+]
+},
+"4695390": {
+"fouls": [
+4,
+10
+],
+"red": [
+0,
+0
+],
+"referee": "Tore Hansen",
+"yellow": [
+0,
+1
+]
+},
+"4695391": {
+"fouls": [
+16,
+12
+],
+"red": [
+0,
+0
+],
+"referee": "Marius Hansen Grøtta",
+"yellow": [
+2,
+2
+]
+},
+"4695392": {
+"fouls": [
+9,
+8
+],
+"red": [
+0,
+0
+],
+"referee": "Kristoffer Hagenes",
+"yellow": [
+2,
+1
+]
+},
+"4695393": {
+"fouls": [
+12,
+15
+],
+"red": [
+1,
+0
+],
+"referee": "Espen Eskås",
+"yellow": [
+1,
+0
+]
+},
+"4695394": {
+"fouls": [
+14,
+8
+],
+"red": [
+0,
+0
+],
+"referee": "Eivind Bodding",
+"yellow": [
+1,
+1
+]
+},
+"4695395": {
+"fouls": [
+10,
+15
+],
+"red": [
+0,
+0
+],
+"referee": "Svein Tore Sinnes",
+"yellow": [
+2,
+3
+]
+},
+"4695396": {
+"fouls": [
+10,
+15
+],
+"red": [
+0,
+1
+],
+"referee": "Mathias Støfringshaug",
+"yellow": [
+1,
+1
+]
+},
+"4695397": {
+"fouls": [
+11,
+9
+],
+"red": [
+0,
+0
+],
+"referee": "Christian Moen",
+"yellow": [
+0,
+2
+]
+},
+"4695398": {
+"fouls": [
+19,
+16
+],
+"red": [
+0,
+0
+],
+"referee": "Rohit Saggi",
+"yellow": [
+0,
+1
+]
+},
+"4695399": {
+"fouls": [
+10,
+8
+],
+"red": [
+0,
+0
+],
+"referee": "Sivert Øksnes Amland",
+"yellow": [
+1,
+2
+]
+},
+"4695400": {
+"fouls": [
+4,
+7
+],
+"red": [
+0,
+0
+],
+"referee": "Sigurd Smehus Kringstad",
+"yellow": [
+1,
+1
+]
+},
+"4695401": {
+"fouls": [
+9,
+16
+],
+"red": [
+0,
+0
+],
+"referee": "Ola Hobber Nilsen",
+"yellow": [
+2,
+2
+]
+},
+"4695402": {
+"fouls": [
+11,
+14
+],
+"red": [
+0,
+0
+],
+"referee": "Espen Eskås",
+"yellow": [
+0,
+2
+]
+},
+"4695403": {
+"fouls": [
+13,
+6
+],
+"red": [
+0,
+0
+],
+"referee": "Daniel Higraff",
+"yellow": [
+4,
+2
+]
+},
+"4695404": {
+"fouls": [
+19,
+17
+],
+"red": [
+0,
+1
+],
+"referee": "Svein Tore Sinnes",
+"yellow": [
+1,
+3
+]
+},
+"4695405": {
+"fouls": [
+15,
+13
+],
+"red": [
+0,
+0
+],
+"referee": "Mohammad Usman Aslam",
+"yellow": [
+3,
+3
+]
+},
+"4695406": {
+"fouls": [
+11,
+9
+],
+"red": [
+0,
+0
+],
+"referee": "Tore Hansen",
+"yellow": [
+2,
+1
+]
+},
+"4695407": {
+"fouls": [
+11,
+5
+],
+"red": [
+0,
+0
+],
+"referee": "Marius Lien",
+"yellow": [
+1,
+0
+]
+},
+"4695408": {
+"fouls": [
+5,
+8
+],
+"red": [
+0,
+0
+],
+"referee": "Rohit Saggi",
+"yellow": [
+1,
+1
+]
+},
+"4695409": {
+"fouls": [
+12,
+15
+],
+"red": [
+0,
+0
+],
+"referee": "Mathias Støfringshaug",
+"yellow": [
+2,
+2
+]
+},
+"4695410": {
+"fouls": [
+13,
+15
+],
+"red": [
+1,
+0
+],
+"referee": "Marius Hansen Grøtta",
+"yellow": [
+3,
+2
+]
+},
+"4695411": {
+"fouls": [
+4,
+9
+],
+"red": [
+0,
+0
+],
+"referee": "Christian Moen",
+"yellow": [
+0,
+2
+]
+},
+"4695412": {
+"fouls": [
+15,
+9
+],
+"red": [
+0,
+0
+],
+"referee": "Stian Røvig Sletner",
+"yellow": [
+2,
+0
+]
+},
+"4695413": {
+"fouls": [
+8,
+17
+],
+"red": [
+0,
+0
+],
+"referee": "Sivert Øksnes Amland",
+"yellow": [
+3,
+1
+]
+},
+"4695414": {
+"fouls": [
+13,
+10
+],
+"red": [
+0,
+0
+],
+"referee": "Rohit Saggi",
+"yellow": [
+2,
+1
+]
+},
+"4695415": {
+"fouls": [
+18,
+12
+],
+"red": [
+0,
+0
+],
+"referee": "Eivind Bodding",
+"yellow": [
+2,
+0
+]
+},
+"4695416": {
+"fouls": [
+12,
+6
+],
+"red": [
+0,
+0
+],
+"referee": "Tore Hansen",
+"yellow": [
+3,
+2
+]
+},
+"4695417": {
+"fouls": [
+14,
+14
+],
+"red": [
+0,
+0
+],
+"referee": "Marius Hansen Grøtta",
+"yellow": [
+2,
+1
+]
+},
+"4695418": {
+"fouls": [
+14,
+14
+],
+"red": [
+0,
+0
+],
+"referee": "Ola Hobber Nilsen",
+"yellow": [
+2,
+2
+]
+},
+"4695419": {
+"fouls": [
+10,
+19
+],
+"red": [
+0,
+0
+],
+"referee": "Svein Tore Sinnes",
+"yellow": [
+2,
+2
+]
+},
+"4695420": {
+"fouls": [
+9,
+12
+],
+"red": [
+0,
+0
+],
+"referee": "Mathias Støfringshaug",
+"yellow": [
+1,
+3
+]
+},
+"4695421": {
+"fouls": [
+18,
+11
+],
+"red": [
+0,
+0
+],
+"referee": "Sigurd Smehus Kringstad",
+"yellow": [
+3,
+2
+]
+},
+"4695422": {
+"fouls": [
+9,
+12
+],
+"red": [
+0,
+0
+],
+"referee": "Ola Hobber Nilsen",
+"yellow": [
+1,
+0
+]
+},
+"4695423": {
+"fouls": [
+11,
+15
+],
+"red": [
+0,
+0
+],
+"referee": "Kristoffer Hagenes",
+"yellow": [
+0,
+2
+]
+},
+"4695424": {
+"fouls": [
+6,
+11
+],
+"red": [
+0,
+0
+],
+"referee": "Christian Moen",
+"yellow": [
+2,
+3
+]
+},
+"4695425": {
+"fouls": [
+9,
+9
+],
+"red": [
+0,
+0
+],
+"referee": "Marius Lien",
+"yellow": [
+3,
+2
+]
+},
+"4695426": {
+"fouls": [
+16,
+9
+],
+"red": [
+0,
+0
+],
+"referee": "Rohit Saggi",
+"yellow": [
+1,
+0
+]
+},
+"4695427": {
+"fouls": [
+10,
+14
+],
+"red": [
+0,
+0
+],
+"referee": "Stian Røvig Sletner",
+"yellow": [
+1,
+0
+]
+},
+"4695428": {
+"fouls": [
+12,
+7
+],
+"red": [
+0,
+0
+],
+"referee": "Mathias Støfringshaug",
+"yellow": [
+2,
+1
+]
+},
+"4695429": {
+"fouls": [
+13,
+9
+],
+"red": [
+0,
+0
+],
+"referee": "Tore Hansen",
+"yellow": [
+1,
+3
+]
+},
+"4695430": {
+"fouls": [
+5,
+10
+],
+"red": [
+0,
+0
+],
+"referee": "Mohammad Usman Aslam",
+"yellow": [
+0,
+1
+]
+},
+"4695431": {
+"fouls": [
+8,
+12
+],
+"red": [
+0,
+0
+],
+"referee": "Mathias Støfringshaug",
+"yellow": [
+1,
+2
+]
+},
+"4695432": {
+"fouls": [
+14,
+12
+],
+"red": [
+0,
+0
+],
+"referee": "Ola Hobber Nilsen",
+"yellow": [
+3,
+2
+]
+},
+"4695433": {
+"fouls": [
+9,
+6
+],
+"red": [
+0,
+0
+],
+"referee": "Eivind Bodding",
+"yellow": [
+1,
+1
+]
+},
+"4695434": {
+"fouls": [
+4,
+9
+],
+"red": [
+0,
+0
+],
+"referee": "Stian Røvig Sletner",
+"yellow": [
+0,
+2
+]
+},
+"4695435": {
+"fouls": [
+16,
+16
+],
+"red": [
+0,
+0
+],
+"referee": "Marius Lien",
+"yellow": [
+2,
+1
+]
+},
+"4695436": {
+"fouls": [
+7,
+11
+],
+"red": [
+0,
+0
+],
+"referee": "Rohit Saggi",
+"yellow": [
+2,
+3
+]
+},
+"4695437": {
+"fouls": [
+13,
+8
+],
+"red": [
+0,
+0
+],
+"referee": "Marius Hansen Grøtta",
+"yellow": [
+0,
+0
+]
+},
+"4695438": {
+"fouls": [
+13,
+11
+],
+"red": [
+0,
+0
+],
+"referee": "Marius Hansen Grøtta",
+"yellow": [
+0,
+0
+]
+},
+"4695439": {
+"fouls": [
+12,
+4
+],
+"red": [
+0,
+1
+],
+"referee": "Eivind Bodding",
+"yellow": [
+2,
+0
+]
+},
+"4695440": {
+"fouls": [
+8,
+12
+],
+"red": [
+0,
+1
+],
+"referee": "Sigurd Smehus Kringstad",
+"yellow": [
+1,
+1
+]
+},
+"4695441": {
+"fouls": [
+11,
+13
+],
+"red": [
+0,
+0
+],
+"referee": "Christian Moen",
+"yellow": [
+2,
+3
+]
+},
+"4695442": {
+"fouls": [
+11,
+19
+],
+"red": [
+0,
+0
+],
+"referee": "Svein Tore Sinnes",
+"yellow": [
+1,
+1
+]
+},
+"4695443": {
+"fouls": [
+15,
+10
+],
+"red": [
+0,
+1
+],
+"referee": "Rohit Saggi",
+"yellow": [
+3,
+0
+]
+},
+"4695444": {
+"fouls": [
+11,
+8
+],
+"red": [
+0,
+0
+],
+"referee": "Sivert Øksnes Amland",
+"yellow": [
+0,
+0
+]
+},
+"4695445": {
+"fouls": [
+6,
+15
+],
+"red": [
+0,
+0
+],
+"referee": "Daniel Higraff",
+"yellow": [
+0,
+3
+]
+},
+"4695446": {
+"fouls": [
+6,
+14
+],
+"red": [
+0,
+0
+],
+"referee": "Marius Lien",
+"yellow": [
+0,
+4
+]
+},
+"4695447": {
+"fouls": [
+12,
+14
+],
+"red": [
+1,
+0
+],
+"referee": "Tore Hansen",
+"yellow": [
+2,
+4
+]
+},
+"4695448": {
+"fouls": [
+11,
+10
+],
+"red": [
+0,
+0
+],
+"referee": "Mohammad Usman Aslam",
+"yellow": [
+2,
+1
+]
+},
+"4695449": {
+"fouls": [
+5,
+8
+],
+"red": [
+0,
+0
+],
+"referee": "Ola Hobber Nilsen",
+"yellow": [
+1,
+3
+]
+},
+"4695450": {
+"fouls": [
+11,
+5
+],
+"red": [
+0,
+0
+],
+"referee": "Sivert Øksnes Amland",
+"yellow": [
+0,
+1
+]
+},
+"4695451": {
+"fouls": [
+3,
+6
+],
+"red": [
+1,
+0
+],
+"referee": "Mathias Støfringshaug",
+"yellow": [
+1,
+3
+]
+},
+"4695452": {
+"fouls": [
+6,
+12
+],
+"red": [
+0,
+0
+],
+"referee": "Sigurd Smehus Kringstad",
+"yellow": [
+0,
+2
+]
+},
+"4695453": {
+"fouls": [
+12,
+8
+],
+"red": [
+0,
+0
+],
+"referee": "Stian Røvig Sletner",
+"yellow": [
+1,
+0
+]
+},
+"4695454": {
+"fouls": [
+13,
+11
+],
+"red": [
+0,
+0
+],
+"referee": "Espen Eskås",
+"yellow": [
+0,
+1
+]
+},
+"4695455": {
+"fouls": [
+9,
+14
+],
+"red": [
+1,
+1
+],
+"referee": "Rohit Saggi",
+"yellow": [
+0,
+3
+]
+},
+"4695456": {
+"fouls": [
+9,
+5
+],
+"red": [
+0,
+0
+],
+"referee": "Svein Tore Sinnes",
+"yellow": [
+2,
+0
+]
+},
+"4695457": {
+"fouls": [
+9,
+5
+],
+"red": [
+0,
+0
+],
+"referee": "Eivind Bodding",
+"yellow": [
+1,
+0
+]
+},
+"4695458": {
+"fouls": [
+15,
+15
+],
+"red": [
+0,
+0
+],
+"referee": "Tore Hansen",
+"yellow": [
+2,
+5
+]
+},
+"4695459": {
+"fouls": [
+9,
+7
+],
+"red": [
+0,
+0
+],
+"referee": "Christian Moen",
+"yellow": [
+1,
+3
+]
+},
+"4695460": {
+"fouls": [
+14,
+15
+],
+"red": [
+0,
+0
+],
+"referee": "Marius Hansen Grøtta",
+"yellow": [
+0,
+3
+]
+},
+"4695461": {
+"fouls": [
+11,
+13
+],
+"red": [
+0,
+0
+],
+"referee": "Kristoffer Hagenes",
+"yellow": [
+1,
+3
+]
+},
+"4695462": {
+"fouls": [
+13,
+9
+],
+"red": [
+0,
+0
+],
+"referee": "Sivert Øksnes Amland",
+"yellow": [
+0,
+0
+]
+},
+"4695463": {
+"fouls": [
+9,
+22
+],
+"red": [
+0,
+2
+],
+"referee": "Mohammad Usman Aslam",
+"yellow": [
+4,
+6
+]
+},
+"4695464": {
+"fouls": [
+15,
+16
+],
+"red": [
+0,
+0
+],
+"referee": "Espen Eskås",
+"yellow": [
+3,
+3
+]
+},
+"4695465": {
+"fouls": [
+12,
+9
+],
+"red": [
+0,
+0
+],
+"referee": "Sigurd Smehus Kringstad",
+"yellow": [
+1,
+1
+]
+},
+"4695466": {
+"fouls": [
+10,
+9
+],
+"red": [
+0,
+0
+],
+"referee": "Mathias Støfringshaug",
+"yellow": [
+0,
+0
+]
+},
+"4695467": {
+"fouls": [
+15,
+12
+],
+"red": [
+0,
+0
+],
+"referee": "Mohammad Usman Aslam",
+"yellow": [
+3,
+1
+]
+},
+"4695468": {
+"fouls": [
+12,
+20
+],
+"red": [
+0,
+1
+],
+"referee": "Marius Lien",
+"yellow": [
+2,
+3
+]
+},
+"4695469": {
+"fouls": [
+11,
+10
+],
+"red": [
+0,
+0
+],
+"referee": "Stian Røvig Sletner",
+"yellow": [
+4,
+4
+]
+},
+"4695470": {
+"fouls": [
+11,
+7
+],
+"red": [
+0,
+0
+],
+"referee": "Svein Tore Sinnes",
+"yellow": [
+2,
+0
+]
+},
+"4695471": {
+"fouls": [
+15,
+10
+],
+"red": [
+0,
+0
+],
+"referee": "Daniel Higraff",
+"yellow": [
+2,
+1
+]
+},
+"4695472": {
+"fouls": [
+9,
+12
+],
+"red": [
+0,
+0
+],
+"referee": "Mathias Støfringshaug",
+"yellow": [
+2,
+0
+]
+},
+"4695473": {
+"fouls": [
+9,
+12
+],
+"red": [
+0,
+0
+],
+"referee": "Ola Hobber Nilsen",
+"yellow": [
+1,
+0
+]
+},
+"4695474": {
+"fouls": [
+10,
+12
+],
+"red": [
+0,
+0
+],
+"referee": "Christian Moen",
+"yellow": [
+1,
+0
+]
+},
+"4695475": {
+"fouls": [
+14,
+15
+],
+"red": [
+0,
+0
+],
+"referee": "Kristoffer Hagenes",
+"yellow": [
+0,
+4
+]
+},
+"4695476": {
+"fouls": [
+9,
+13
+],
+"red": [
+0,
+0
+],
+"referee": "Mohammad Usman Aslam",
+"yellow": [
+1,
+1
+]
+},
+"4695477": {
+"fouls": [
+16,
+15
+],
+"red": [
+0,
+0
+],
+"referee": "Rohit Saggi",
+"yellow": [
+0,
+2
+]
+},
+"4695478": {
+"fouls": [
+8,
+7
+],
+"red": [
+0,
+0
+],
+"referee": "Ola Hobber Nilsen",
+"yellow": [
+0,
+1
+]
+},
+"4695479": {
+"fouls": [
+17,
+15
+],
+"red": [
+0,
+0
+],
+"referee": "Sigurd Smehus Kringstad",
+"yellow": [
+2,
+1
+]
+},
+"4695480": {
+"fouls": [
+14,
+9
+],
+"red": [
+0,
+0
+],
+"referee": "Marius Lien",
+"yellow": [
+1,
+2
+]
+},
+"4695481": {
+"fouls": [
+18,
+15
+],
+"red": [
+0,
+0
+],
+"referee": "Marius Hansen Groetta",
+"yellow": [
+2,
+3
+]
+},
+"4695482": {
+"fouls": [
+16,
+11
+],
+"red": [
+0,
+1
+],
+"referee": "Sigurd Smehus Kringstad",
+"yellow": [
+3,
+1
+]
+},
+"4695483": {
+"fouls": [
+10,
+13
+],
+"red": [
+0,
+0
+],
+"referee": "Eivind Bodding",
+"yellow": [
+0,
+0
+]
+},
+"4695484": {
+"fouls": [
+9,
+9
+],
+"red": [
+0,
+1
+],
+"referee": "Mohammad Usman Aslam",
+"yellow": [
+0,
+2
+]
+},
+"4695485": {
+"fouls": [
+14,
+23
+],
+"red": [
+0,
+0
+],
+"referee": "Mohammad Aslam",
+"yellow": [
+2,
+3
+]
+},
+"4695486": {
+"fouls": [
+9,
+12
+],
+"red": [
+0,
+0
+],
+"referee": "Espen Eskås",
+"yellow": [
+0,
+2
+]
+},
+"4695487": {
+"fouls": [
+13,
+22
+],
+"red": [
+0,
+0
+],
+"referee": "Marius Hansen Grøtta",
+"yellow": [
+2,
+3
+]
+},
+"4695488": {
+"fouls": [
+16,
+9
+],
+"red": [
+0,
+0
+],
+"referee": "Sigurd Smehus Kringstad",
+"yellow": [
+3,
+2
+]
+},
+"4695489": {
+"fouls": [
+13,
+8
+],
+"red": [
+0,
+0
+],
+"referee": "Daniel Higraff",
+"yellow": [
+3,
+3
+]
+},
+"4695490": {
+"fouls": [
+5,
+5
+],
+"red": [
+1,
+0
+],
+"referee": "Espen Eskås",
+"yellow": [
+1,
+0
+]
+},
+"4695491": {
+"fouls": [
+15,
+10
+],
+"red": [
+0,
+0
+],
+"referee": "Tore Hansen",
+"yellow": [
+2,
+3
+]
+},
+"4695492": {
+"fouls": [
+10,
+6
+],
+"red": [
+0,
+1
+],
+"referee": "Marius Lien",
+"yellow": [
+1,
+1
+]
+},
+"4695493": {
+"fouls": [
+9,
+11
+],
+"red": [
+0,
+0
+],
+"referee": "Mathias Støfringshaug",
+"yellow": [
+1,
+2
+]
+},
+"4695494": {
+"fouls": [
+9,
+11
+],
+"red": [
+1,
+0
+],
+"referee": "Kristoffer Hagenes",
+"yellow": [
+0,
+3
+]
+},
+"4695495": {
+"fouls": [
+10,
+10
+],
+"red": [
+0,
+0
+],
+"referee": "Tore Hansen",
+"yellow": [
+0,
+1
+]
+},
+"4695496": {
+"fouls": [
+15,
+10
+],
+"red": [
+0,
+0
+],
+"referee": "Stian Roevig Sletner",
+"yellow": [
+2,
+1
+]
+},
+"4695497": {
+"fouls": [
+10,
+14
+],
+"red": [
+0,
+0
+],
+"referee": "Mohammad Aslam",
+"yellow": [
+3,
+2
+]
+},
+"4695498": {
+"fouls": [
+8,
+10
+],
+"red": [
+0,
+0
+],
+"referee": "Sivert Oeksnes Amland",
+"yellow": [
+1,
+2
+]
+},
+"4695499": {
+"fouls": [
+12,
+19
+],
+"red": [
+0,
+0
+],
+"referee": "Rohit Saggi",
+"yellow": [
+2,
+2
+]
+},
+"4695500": {
+"fouls": [
+12,
+15
+],
+"red": [
+0,
+0
+],
+"referee": "Daniel Higraff",
+"yellow": [
+1,
+2
+]
+},
+"4695501": {
+"fouls": [
+19,
+10
+],
+"red": [
+0,
+0
+],
+"referee": "Ola Hobber Nilsen",
+"yellow": [
+2,
+2
+]
+},
+"4695502": {
+"fouls": [
+10,
+8
+],
+"red": [
+0,
+0
+],
+"referee": "Marius Hansen Groetta",
+"yellow": [
+2,
+1
+]
+},
+"4695503": {
+"fouls": [
+8,
+11
+],
+"red": [
+1,
+0
+],
+"referee": "Marius Lien",
+"yellow": [
+0,
+0
+]
+},
+"4695504": {
+"fouls": [
+13,
+11
+],
+"red": [
+0,
+0
+],
+"referee": "Sigurd Smehus Kringstad",
+"yellow": [
+4,
+2
+]
+},
+"4695505": {
+"fouls": [
+8,
+8
+],
+"red": [
+0,
+0
+],
+"referee": "Tore Hansen",
+"yellow": [
+5,
+2
+]
+},
+"4695506": {
+"fouls": [
+16,
+8
+],
+"red": [
+0,
+0
+],
+"referee": "Daniel Higraff",
+"yellow": [
+1,
+4
+]
+},
+"4695507": {
+"fouls": [
+13,
+7
+],
+"red": [
+1,
+0
+],
+"referee": "Svein Tore Sinnes",
+"yellow": [
+2,
+0
+]
+},
+"4695508": {
+"fouls": [
+18,
+18
+],
+"red": [
+0,
+0
+],
+"referee": "Kristoffer Hagenes",
+"yellow": [
+3,
+4
+]
+},
+"4695509": {
+"fouls": [
+10,
+13
+],
+"red": [
+0,
+0
+],
+"referee": "Christian Moen",
+"yellow": [
+2,
+2
+]
+},
+"4695510": {
+"fouls": [
+10,
+10
+],
+"red": [
+0,
+0
+],
+"referee": "Mohammad Aslam",
+"yellow": [
+0,
+1
+]
+},
+"4695511": {
+"fouls": [
+14,
+9
+],
+"red": [
+0,
+1
+],
+"referee": "Rohit Saggi",
+"yellow": [
+4,
+2
+]
+},
+"4695512": {
+"fouls": [
+8,
+10
+],
+"red": [
+0,
+0
+],
+"referee": "Mathias Støfringshaug",
+"yellow": [
+1,
+0
+]
+},
+"4695513": {
+"fouls": [
+13,
+9
+],
+"red": [
+0,
+0
+],
+"referee": "Ola Hobber Nilsen",
+"yellow": [
+1,
+1
+]
+},
+"4695514": {
+"fouls": [
+10,
+13
+],
+"red": [
+0,
+0
+],
+"referee": "Stian Røvig Sletner",
+"yellow": [
+1,
+2
+]
+},
+"4695515": {
+"fouls": [
+15,
+11
+],
+"red": [
+0,
+0
+],
+"referee": "Eivind Bodding",
+"yellow": [
+3,
+1
+]
+},
+"4695516": {
+"fouls": [
+13,
+9
+],
+"red": [
+0,
+0
+],
+"referee": "Daniel Higraff",
+"yellow": [
+3,
+2
+]
+},
+"4695517": {
+"fouls": [
+13,
+16
+],
+"red": [
+0,
+0
+],
+"referee": "Sivert Øksnes Amland",
+"yellow": [
+3,
+1
+]
+},
+"4695518": {
+"fouls": [
+14,
+12
+],
+"red": [
+0,
+0
+],
+"referee": "Marius Lien",
+"yellow": [
+0,
+3
+]
+},
+"4695519": {
+"fouls": [
+10,
+12
+],
+"red": [
+0,
+0
+],
+"referee": "Svein Tore Sinnes",
+"yellow": [
+2,
+1
+]
+},
+"4695520": {
+"fouls": [
+17,
+5
+],
+"red": [
+0,
+0
+],
+"referee": "Espen Eskås",
+"yellow": [
+3,
+1
+]
+},
+"4695521": {
+"fouls": [
+14,
+15
+],
+"red": [
+1,
+0
+],
+"referee": "Mathias Støfringshaug",
+"yellow": [
+0,
+2
+]
+},
+"4695522": {
+"fouls": [
+11,
+14
+],
+"red": [
+0,
+0
+],
+"referee": "Marius Hansen Grøtta",
+"yellow": [
+1,
+2
+]
+},
+"4695523": {
+"fouls": [
+12,
+12
+],
+"red": [
+0,
+0
+],
+"referee": "Sigurd Smehus Kringstad",
+"yellow": [
+2,
+1
+]
+},
+"4695524": {
+"fouls": [
+9,
+4
+],
+"red": [
+0,
+0
+],
+"referee": "Tore Hansen",
+"yellow": [
+1,
+1
+]
+},
+"4695525": {
+"fouls": [
+11,
+20
+],
+"red": [
+0,
+0
+],
+"referee": "Kristoffer Hagenes",
+"yellow": [
+2,
+4
+]
+},
+"4695526": {
+"fouls": [
+17,
+10
+],
+"red": [
+0,
+0
+],
+"referee": "Tore Hansen",
+"yellow": [
+4,
+2
+]
+},
+"4695527": {
+"fouls": [
+14,
+10
+],
+"red": [
+0,
+0
+],
+"referee": "Kristoffer Hagenes",
+"yellow": [
+5,
+1
+]
+},
+"4695528": {
+"fouls": [
+16,
+7
+],
+"red": [
+0,
+1
+],
+"referee": "Mohammad Usman Aslam",
+"yellow": [
+1,
+0
+]
+},
+"4695529": {
+"fouls": [
+13,
+18
+],
+"red": [
+0,
+0
+],
+"referee": "Eivind Bodding",
+"yellow": [
+2,
+3
+]
+},
+"4695530": {
+"fouls": [
+12,
+13
+],
+"red": [
+0,
+0
+],
+"referee": "Marius Hansen Grøtta",
+"yellow": [
+2,
+1
+]
+},
+"4695531": {
+"fouls": [
+14,
+10
+],
+"red": [
+0,
+0
+],
+"referee": "Marius Lien",
+"yellow": [
+1,
+1
+]
+},
+"4695532": {
+"fouls": [
+17,
+14
+],
+"red": [
+0,
+0
+],
+"referee": "Rohit Saggi",
+"yellow": [
+1,
+0
+]
+},
+"4695533": {
+"fouls": [
+13,
+5
+],
+"red": [
+0,
+0
+],
+"referee": "Christian Moen",
+"yellow": [
+3,
+1
+]
+},
+"4695534": {
+"fouls": [
+9,
+7
+],
+"red": [
+0,
+0
+],
+"referee": "Marius Lien",
+"yellow": [
+0,
+0
+]
+},
+"4695535": {
+"fouls": [
+8,
+12
+],
+"red": [
+0,
+0
+],
+"referee": "Stian Røvig Sletner",
+"yellow": [
+0,
+1
+]
+},
+"4695536": {
+"fouls": [
+8,
+10
+],
+"red": [
+0,
+0
+],
+"referee": "Rohit Saggi",
+"yellow": [
+1,
+2
+]
+},
+"4695537": {
+"fouls": [
+10,
+24
+],
+"red": [
+1,
+0
+],
+"referee": "Svein Tore Sinnes",
+"yellow": [
+0,
+3
+]
+},
+"4695538": {
+"fouls": [
+16,
+16
+],
+"red": [
+0,
+0
+],
+"referee": "Marius Hansen Grøtta",
+"yellow": [
+0,
+1
+]
+},
+"4695539": {
+"fouls": [
+14,
+8
+],
+"red": [
+0,
+0
+],
+"referee": "Sivert Øksnes Amland",
+"yellow": [
+1,
+3
+]
+},
+"4695540": {
+"fouls": [
+10,
+14
+],
+"red": [
+0,
+0
+],
+"referee": "Ola Hobber Nilsen",
+"yellow": [
+1,
+3
+]
+},
+"4695541": {
+"fouls": [
+17,
+14
+],
+"red": [
+0,
+0
+],
+"referee": "Daniel Higraff",
+"yellow": [
+5,
+1
+]
+},
+"4695542": {
+"fouls": [
+9,
+16
+],
+"red": [
+0,
+0
+],
+"referee": "Marius Hansen Grøtta",
+"yellow": [
+1,
+3
+]
+},
+"4695543": {
+"fouls": [
+15,
+12
+],
+"red": [
+0,
+0
+],
+"referee": "Rohit Saggi",
+"yellow": [
+1,
+3
+]
+},
+"4695544": {
+"fouls": [
+13,
+12
+],
+"red": [
+0,
+0
+],
+"referee": "Svein Tore Sinnes",
+"yellow": [
+3,
+1
+]
+},
+"4695545": {
+"fouls": [
+8,
+5
+],
+"red": [
+0,
+0
+],
+"referee": "Tore Hansen",
+"yellow": [
+1,
+0
+]
+},
+"4695546": {
+"fouls": [
+8,
+13
+],
+"red": [
+0,
+0
+],
+"referee": "Kristoffer Hagenes",
+"yellow": [
+2,
+3
+]
+},
+"4695547": {
+"fouls": [
+4,
+7
+],
+"red": [
+0,
+0
+],
+"referee": "Mohammad Usman Aslam",
+"yellow": [
+0,
+0
+]
+},
+"4695548": {
+"fouls": [
+6,
+8
+],
+"red": [
+0,
+0
+],
+"referee": "Daniel Higraff",
+"yellow": [
+0,
+1
+]
+},
+"4695549": {
+"fouls": [
+19,
+17
+],
+"red": [
+0,
+0
+],
+"referee": "Espen Eskås",
+"yellow": [
+1,
+1
+]
+},
+"4695550": {
+"fouls": [
+11,
+16
+],
+"red": [
+0,
+0
+],
+"referee": "Ola Hobber Nilsen",
+"yellow": [
+1,
+2
+]
+},
+"4695551": {
+"fouls": [
+17,
+20
+],
+"red": [
+0,
+0
+],
+"referee": "Kristoffer Hagenes",
+"yellow": [
+3,
+2
+]
+},
+"4695552": {
+"fouls": [
+11,
+10
+],
+"red": [
+0,
+0
+],
+"referee": "Eivind Bodding",
+"yellow": [
+2,
+1
+]
+},
+"4695553": {
+"fouls": [
+16,
+13
+],
+"red": [
+0,
+0
+],
+"referee": "Sigurd Smehus Kringstad",
+"yellow": [
+2,
+4
+]
+},
+"4695554": {
+"fouls": [
+11,
+6
+],
+"red": [
+0,
+0
+],
+"referee": "Christian Moen",
+"yellow": [
+0,
+0
+]
+},
+"4695555": {
+"fouls": [
+11,
+10
+],
+"red": [
+0,
+0
+],
+"referee": "Marius Lien",
+"yellow": [
+1,
+3
+]
+},
+"4695556": {
+"fouls": [
+8,
+13
+],
+"red": [
+0,
+0
+],
+"referee": "Sivert Øksnes Amland",
+"yellow": [
+1,
+1
+]
+},
+"4695557": {
+"fouls": [
+9,
+15
+],
+"red": [
+0,
+0
+],
+"referee": "Marius Hansen Grøtta",
+"yellow": [
+0,
+3
+]
+},
+"4695558": {
+"fouls": [
+17,
+15
+],
+"red": [
+0,
+1
+],
+"referee": "Mohammad Usman Aslam",
+"yellow": [
+2,
+0
+]
+},
+"4695559": {
+"fouls": [
+8,
+12
+],
+"red": [
+0,
+0
+],
+"referee": "Ola Hobber Nilsen",
+"yellow": [
+1,
+2
+]
+},
+"4695560": {
+"fouls": [
+17,
+13
+],
+"red": [
+0,
+0
+],
+"referee": "Marius Hansen Grøtta",
+"yellow": [
+1,
+2
+]
+},
+"4695561": {
+"fouls": [
+9,
+7
+],
+"red": [
+0,
+0
+],
+"referee": "Svein Tore Sinnes",
+"yellow": [
+1,
+3
+]
+},
+"4695562": {
+"fouls": [
+13,
+11
+],
+"red": [
+0,
+0
+],
+"referee": "Tore Hansen",
+"yellow": [
+4,
+3
+]
+},
+"4695563": {
+"fouls": [
+11,
+7
+],
+"red": [
+0,
+0
+],
+"referee": "Marius Lien",
+"yellow": [
+2,
+1
+]
+},
+"4695564": {
+"fouls": [
+10,
+12
+],
+"red": [
+0,
+0
+],
+"referee": "Stian Røvig Sletner",
+"yellow": [
+0,
+2
+]
+},
+"4695565": {
+"fouls": [
+14,
+10
+],
+"red": [
+0,
+0
+],
+"referee": "Sigurd Smehus Kringstad",
+"yellow": [
+0,
+1
+]
+},
+"4695566": {
+"fouls": [
+9,
+5
+],
+"red": [
+0,
+0
+],
+"referee": "Stian Røvig Sletner",
+"yellow": [
+0,
+1
+]
+},
+"4695567": {
+"fouls": [
+8,
+9
+],
+"red": [
+0,
+0
+],
+"referee": "Christian Moen",
+"yellow": [
+1,
+2
+]
+},
+"4695568": {
+"fouls": [
+11,
+9
+],
+"red": [
+0,
+0
+],
+"referee": "Eivind Bodding",
+"yellow": [
+0,
+2
+]
+},
+"4695569": {
+"fouls": [
+14,
+6
+],
+"red": [
+0,
+0
+],
+"referee": "Sigurd Smehus Kringstad",
+"yellow": [
+2,
+2
+]
+},
+"4695570": {
+"fouls": [
+10,
+10
+],
+"red": [
+0,
+1
+],
+"referee": "Kristoffer Hagenes",
+"yellow": [
+2,
+3
+]
+},
+"4695571": {
+"fouls": [
+16,
+10
+],
+"red": [
+0,
+0
+],
+"referee": "Marius Lien",
+"yellow": [
+2,
+2
+]
+},
+"4695572": {
+"fouls": [
+13,
+9
+],
+"red": [
+0,
+0
+],
+"referee": "Daniel Higraff",
+"yellow": [
+2,
+3
+]
+},
+"4695573": {
+"fouls": [
+14,
+15
+],
+"red": [
+0,
+0
+],
+"referee": "Svein Tore Sinnes",
+"yellow": [
+0,
+4
+]
+},
+"4695574": {
+"fouls": [
+11,
+8
+],
+"red": [
+0,
+0
+],
+"referee": "Christian Moen",
+"yellow": [
+3,
+1
+]
+},
+"4695575": {
+"fouls": [
+10,
+13
+],
+"red": [
+0,
+0
+],
+"referee": "Sigurd Smehus Kringstad",
+"yellow": [
+6,
+3
+]
+},
+"4695576": {
+"fouls": [
+14,
+7
+],
+"red": [
+0,
+0
+],
+"referee": "Tore Hansen",
+"yellow": [
+1,
+0
+]
+},
+"4695577": {
+"fouls": [
+16,
+8
+],
+"red": [
+0,
+0
+],
+"referee": "Mohammad Aslam",
+"yellow": [
+5,
+0
+]
+},
+"4695578": {
+"fouls": [
+11,
+10
+],
+"red": [
+0,
+0
+],
+"referee": "Svein Tore Sinnes",
+"yellow": [
+4,
+0
+]
+},
+"4695579": {
+"fouls": [
+12,
+18
+],
+"red": [
+0,
+0
+],
+"referee": "Marius Hansen Grøtta",
+"yellow": [
+3,
+0
+]
+},
+"4695580": {
+"fouls": [
+15,
+10
+],
+"red": [
+0,
+0
+],
+"referee": "Ola Hobber Nilsen",
+"yellow": [
+3,
+2
+]
+},
+"4695581": {
+"fouls": [
+13,
+12
+],
+"red": [
+1,
+0
+],
+"referee": "Daniel Higraff",
+"yellow": [
+2,
+0
+]
+},
+"4695582": {
+"fouls": [
+8,
+5
+],
+"red": [
+0,
+0
+],
+"referee": "Marius Hansen Grøtta",
+"yellow": [
+0,
+2
+]
+},
+"4695583": {
+"fouls": [
+11,
+8
+],
+"red": [
+0,
+1
+],
+"referee": "Marius Lien",
+"yellow": [
+1,
+4
+]
+},
+"4695584": {
+"fouls": [
+6,
+8
+],
+"red": [
+0,
+0
+],
+"referee": "Sivert Øksnes Amland",
+"yellow": [
+0,
+0
+]
+},
+"4695585": {
+"fouls": [
+13,
+14
+],
+"red": [
+0,
+0
+],
+"referee": "Mohammad Usman Aslam",
+"yellow": [
+1,
+2
+]
+},
+"4695586": {
+"fouls": [
+8,
+10
+],
+"red": [
+0,
+0
+],
+"referee": "Daniel Higraff",
+"yellow": [
+0,
+2
+]
+},
+"4695587": {
+"fouls": [
+15,
+11
+],
+"red": [
+0,
+0
+],
+"referee": "Eivind Bodding",
+"yellow": [
+2,
+2
+]
+},
+"4695588": {
+"fouls": [
+5,
+11
+],
+"red": [
+0,
+0
+],
+"referee": "Rohit Saggi",
+"yellow": [
+0,
+1
+]
+},
+"4695589": {
+"fouls": [
+18,
+13
+],
+"red": [
+0,
+0
+],
+"referee": "Tore Hansen",
+"yellow": [
+1,
+3
+]
+},
+"5104842": {
+"fouls": [
+14,
+14
+],
+"red": [
+0,
+0
+],
+"referee": "Marius Hansen Groetta",
+"yellow": [
+3,
+2
+]
+},
+"5104843": {
+"fouls": [
+14,
+13
+],
+"red": [
+0,
+0
+],
+"referee": "Tore Hansen",
+"yellow": [
+1,
+4
+]
+},
+"5104844": {
+"fouls": [
+12,
+13
+],
+"red": [
+0,
+0
+],
+"referee": "Mohammad Aslam",
+"yellow": [
+4,
+2
+]
+},
+"5104845": {
+"fouls": [
+13,
+13
+],
+"red": [
+0,
+0
+],
+"referee": "Christian Moen",
+"yellow": [
+1,
+2
+]
+},
+"5104846": {
+"fouls": [
+7,
+7
+],
+"red": [
+0,
+0
+],
+"referee": "Ola Hobber Nilsen",
+"yellow": [
+1,
+2
+]
+},
+"5104847": {
+"fouls": [
+11,
+7
+],
+"red": [
+0,
+0
+],
+"referee": "Rohit Saggi",
+"yellow": [
+0,
+1
+]
+},
+"5104848": {
+"fouls": [
+12,
+9
+],
+"red": [
+0,
+0
+],
+"referee": "Espen Eskaas",
+"yellow": [
+1,
+1
+]
+},
+"5104849": {
+"fouls": [
+12,
+4
+],
+"red": [
+0,
+0
+],
+"referee": "Daniel Higraff",
+"yellow": [
+0,
+1
+]
+},
+"5104850": {
+"fouls": [
+14,
+13
+],
+"red": [
+0,
+0
+],
+"referee": "Stian Røvig Sletner",
+"yellow": [
+1,
+2
+]
+},
+"5104851": {
+"fouls": [
+20,
+15
+],
+"red": [
+0,
+1
+],
+"referee": "Sivert Øksnes Amland",
+"yellow": [
+3,
+0
+]
+},
+"5104852": {
+"fouls": [
+9,
+19
+],
+"red": [
+0,
+0
+],
+"referee": "Sigurd Smehus Kringstad",
+"yellow": [
+1,
+2
+]
+},
+"5104853": {
+"fouls": [
+12,
+12
+],
+"red": [
+0,
+0
+],
+"referee": "Rohit Saggi",
+"yellow": [
+1,
+3
+]
+},
+"5104854": {
+"fouls": [
+7,
+11
+],
+"red": [
+0,
+0
+],
+"referee": "Svein Tore Sinnes",
+"yellow": [
+0,
+2
+]
+},
+"5104855": {
+"fouls": [
+9,
+17
+],
+"red": [
+2,
+0
+],
+"referee": "Sivert Oeksnes Amland",
+"yellow": [
+1,
+5
+]
+},
+"5104856": {
+"fouls": [
+18,
+7
+],
+"red": [
+0,
+0
+],
+"referee": "Marius Lien",
+"yellow": [
+2,
+1
+]
+},
+"5104857": {
+"fouls": [
+7,
+12
+],
+"red": [
+0,
+0
+],
+"referee": "Sivert Øksnes Amland",
+"yellow": [
+0,
+1
+]
+},
+"5104858": {
+"fouls": [
+7,
+14
+],
+"red": [
+1,
+0
+],
+"referee": "Tore Hansen",
+"yellow": [
+2,
+4
+]
+},
+"5104859": {
+"fouls": [
+11,
+10
+],
+"red": [
+0,
+0
+],
+"referee": "Stian Røvig Sletner",
+"yellow": [
+1,
+0
+]
+},
+"5104860": {
+"fouls": [
+9,
+6
+],
+"red": [
+0,
+0
+],
+"referee": "Marius Lien",
+"yellow": [
+2,
+1
+]
+},
+"5104861": {
+"fouls": [
+22,
+14
+],
+"red": [
+0,
+0
+],
+"referee": "Svein Tore Sinnes",
+"yellow": [
+1,
+2
+]
+},
+"5104862": {
+"fouls": [
+8,
+15
+],
+"red": [
+0,
+0
+],
+"referee": "Mohammad Usman Aslam",
+"yellow": [
+0,
+3
+]
+},
+"5104863": {
+"fouls": [
+8,
+8
+],
+"red": [
+0,
+0
+],
+"referee": "Ola Hobber Nilsen",
+"yellow": [
+0,
+3
+]
+},
+"5104864": {
+"fouls": [
+7,
+14
+],
+"red": [
+0,
+0
+],
+"referee": "Marius Hansen Groetta",
+"yellow": [
+1,
+3
+]
+},
+"5104865": {
+"fouls": [
+18,
+14
+],
+"red": [
+0,
+0
+],
+"referee": "Kristoffer Hagenes",
+"yellow": [
+4,
+2
+]
+},
+"5104866": {
+"fouls": [
+8,
+17
+],
+"red": [
+0,
+0
+],
+"referee": "Rohit Saggi",
+"yellow": [
+2,
+4
+]
+},
+"5104867": {
+"fouls": [
+9,
+12
+],
+"red": [
+0,
+0
+],
+"referee": "Stian Røvig Sletner",
+"yellow": [
+0,
+2
+]
+},
+"5104868": {
+"fouls": [
+10,
+9
+],
+"red": [
+0,
+0
+],
+"referee": "Espen Eskås",
+"yellow": [
+2,
+1
+]
+},
+"5104869": {
+"fouls": [
+10,
+8
+],
+"red": [
+0,
+0
+],
+"referee": "Christian Moen",
+"yellow": [
+3,
+1
+]
+},
+"5104870": {
+"fouls": [
+13,
+11
+],
+"red": [
+0,
+0
+],
+"referee": "Sivert Øksnes Amland",
+"yellow": [
+2,
+3
+]
+},
+"5104871": {
+"fouls": [
+11,
+15
+],
+"red": [
+1,
+0
+],
+"referee": "Marius Lien",
+"yellow": [
+3,
+2
+]
+},
+"5104872": {
+"fouls": [
+13,
+10
+],
+"red": [
+0,
+0
+],
+"referee": "Mischa Huru Kellerhals",
+"yellow": [
+2,
+2
+]
+},
+"5104873": {
+"fouls": [
+6,
+14
+],
+"red": [
+0,
+0
+],
+"referee": "Tore Hansen",
+"yellow": [
+1,
+2
+]
+},
+"5104874": {
+"fouls": [
+9,
+6
+],
+"red": [
+0,
+0
+],
+"referee": "Mohammad Usman Aslam",
+"yellow": [
+0,
+1
+]
+},
+"5104875": {
+"fouls": [
+17,
+12
+],
+"red": [
+0,
+0
+],
+"referee": "Marius Hansen Grøtta",
+"yellow": [
+3,
+1
+]
+},
+"5104876": {
+"fouls": [
+12,
+17
+],
+"red": [
+0,
+0
+],
+"referee": "Ola Hobber Nilsen",
+"yellow": [
+1,
+4
+]
+},
+"5104877": {
+"fouls": [
+10,
+7
+],
+"red": [
+0,
+0
+],
+"referee": "Sigurd Smehus Kringstad",
+"yellow": [
+3,
+5
+]
+},
+"5104878": {
+"fouls": [
+15,
+12
+],
+"red": [
+0,
+1
+],
+"referee": "Jørgen Haugen",
+"yellow": [
+1,
+0
+]
+},
+"5104879": {
+"fouls": [
+11,
+13
+],
+"red": [
+0,
+0
+],
+"referee": "Mischa Huru Kellerhals",
+"yellow": [
+2,
+1
+]
+},
+"5104880": {
+"fouls": [
+14,
+9
+],
+"red": [
+0,
+0
+],
+"referee": "Svein Tore Sinnes",
+"yellow": [
+0,
+1
+]
+},
+"5104881": {
+"fouls": [
+18,
+15
+],
+"red": [
+0,
+0
+],
+"referee": "Sivert Øksnes Amland",
+"yellow": [
+1,
+2
+]
+},
+"5104882": {
+"fouls": [
+10,
+11
+],
+"red": [
+0,
+0
+],
+"referee": "Sigurd Smehus Kringstad",
+"yellow": [
+0,
+2
+]
+},
+"5104883": {
+"fouls": [
+11,
+17
+],
+"red": [
+0,
+0
+],
+"referee": "Rohit Saggi",
+"yellow": [
+1,
+3
+]
+},
+"5104884": {
+"fouls": [
+6,
+7
+],
+"red": [
+0,
+0
+],
+"referee": "Christian Moen",
+"yellow": [
+1,
+1
+]
+},
+"5104885": {
+"fouls": [
+11,
+14
+],
+"red": [
+0,
+0
+],
+"referee": "Stian Røvig Sletner",
+"yellow": [
+1,
+1
+]
+},
+"5104886": {
+"fouls": [
+19,
+9
+],
+"red": [
+0,
+1
+],
+"referee": "Kristoffer Hagenes",
+"yellow": [
+2,
+2
+]
+},
+"5104887": {
+"fouls": [
+9,
+13
+],
+"red": [
+0,
+0
+],
+"referee": "Marius Lien",
+"yellow": [
+0,
+0
+]
+},
+"5104888": {
+"fouls": [
+14,
+10
+],
+"red": [
+0,
+0
+],
+"referee": "Ola Hobber Nilsen",
+"yellow": [
+2,
+3
+]
+},
+"5104889": {
+"fouls": [
+8,
+10
+],
+"red": [
+0,
+0
+],
+"referee": "Tore Hansen",
+"yellow": [
+0,
+0
+]
+},
+"5104890": {
+"fouls": [
+13,
+15
+],
+"red": [
+0,
+0
+],
+"referee": "Sivert Oeksnes Amland",
+"yellow": [
+2,
+3
+]
+},
+"5104891": {
+"fouls": [
+13,
+11
+],
+"red": [
+0,
+0
+],
+"referee": "Svein Tore Sinnes",
+"yellow": [
+1,
+1
+]
+},
+"5104892": {
+"fouls": [
+12,
+12
+],
+"red": [
+0,
+0
+],
+"referee": "Mohammad Usman Aslam",
+"yellow": [
+1,
+2
+]
+},
+"5104893": {
+"fouls": [
+6,
+14
+],
+"red": [
+0,
+0
+],
+"referee": "Christian Moen",
+"yellow": [
+2,
+2
+]
+},
+"5104894": {
+"fouls": [
+9,
+15
+],
+"red": [
+0,
+0
+],
+"referee": "Stian Røvig Sletner",
+"yellow": [
+1,
+3
+]
+},
+"5104895": {
+"fouls": [
+13,
+14
+],
+"red": [
+0,
+0
+],
+"referee": "Jørgen Haugen",
+"yellow": [
+3,
+2
+]
+},
+"5104896": {
+"fouls": [
+11,
+7
+],
+"red": [
+0,
+0
+],
+"referee": "Espen Eskås",
+"yellow": [
+6,
+1
+]
+},
+"5104897": {
+"fouls": [
+10,
+12
+],
+"red": [
+0,
+0
+],
+"referee": "Rohit Saggi",
+"yellow": [
+0,
+3
+]
+},
+"5104898": {
+"fouls": [
+10,
+12
+],
+"red": [
+0,
+0
+],
+"referee": "Svein Tore Sinnes",
+"yellow": [
+0,
+4
+]
+},
+"5104899": {
+"fouls": [
+15,
+20
+],
+"red": [
+0,
+0
+],
+"referee": "Sivert Øksnes Amland",
+"yellow": [
+4,
+4
+]
+},
+"5104900": {
+"fouls": [
+9,
+15
+],
+"red": [
+0,
+0
+],
+"referee": "Ola Hobber Nilsen",
+"yellow": [
+2,
+2
+]
+},
+"5104901": {
+"fouls": [
+13,
+2
+],
+"red": [
+1,
+0
+],
+"referee": "Marius Lien",
+"yellow": [
+1,
+0
+]
+},
+"5104902": {
+"fouls": [
+17,
+10
+],
+"red": [
+0,
+0
+],
+"referee": "Mischa Huru Kellerhals",
+"yellow": [
+1,
+2
+]
+},
+"5104903": {
+"fouls": [
+7,
+9
+],
+"red": [
+1,
+0
+],
+"referee": "Marius Lien",
+"yellow": [
+0,
+0
+]
+},
+"5104904": {
+"fouls": [
+11,
+8
+],
+"red": [
+0,
+0
+],
+"referee": "Kristoffer Hagenes",
+"yellow": [
+2,
+2
+]
+},
+"5104905": {
+"fouls": [
+17,
+15
+],
+"red": [
+0,
+0
+],
+"referee": "Joergen Haugen",
+"yellow": [
+1,
+3
+]
+},
+"5104906": {
+"fouls": [
+5,
+15
+],
+"red": [
+0,
+1
+],
+"referee": "Svein Tore Sinnes",
+"yellow": [
+1,
+3
+]
+},
+"5104907": {
+"fouls": [
+14,
+10
+],
+"red": [
+0,
+0
+],
+"referee": "Rohit Saggi",
+"yellow": [
+3,
+0
+]
+},
+"5104908": {
+"fouls": [
+13,
+12
+],
+"red": [
+0,
+1
+],
+"referee": "Espen Eskås",
+"yellow": [
+2,
+1
+]
+},
+"5104909": {
+"fouls": [
+6,
+14
+],
+"red": [
+0,
+0
+],
+"referee": "Sigurd Smehus Kringstad",
+"yellow": [
+1,
+2
+]
+},
+"5104910": {
+"fouls": [
+7,
+15
+],
+"red": [
+0,
+0
+],
+"referee": "Stian Røvig Sletner",
+"yellow": [
+2,
+6
+]
+},
+"5104911": {
+"fouls": [
+12,
+13
+],
+"red": [
+0,
+0
+],
+"referee": "Kristoffer Hagenes",
+"yellow": [
+2,
+3
+]
+},
+"5104912": {
+"fouls": [
+12,
+10
+],
+"red": [
+0,
+1
+],
+"referee": "Tore Hansen",
+"yellow": [
+0,
+1
+]
+},
+"5104913": {
+"fouls": [
+13,
+11
+],
+"red": [
+0,
+0
+],
+"referee": "Marius Lien",
+"yellow": [
+1,
+0
+]
+},
+"5104914": {
+"fouls": [
+9,
+10
+],
+"red": [
+0,
+0
+],
+"referee": "Espen Eskås",
+"yellow": [
+1,
+2
+]
+},
+"5104915": {
+"fouls": [
+12,
+9
+],
+"red": [
+0,
+0
+],
+"referee": "Marius Hansen Grøtta",
+"yellow": [
+2,
+0
+]
+},
+"5104916": {
+"fouls": [
+9,
+8
+],
+"red": [
+0,
+0
+],
+"referee": "Christian Moen",
+"yellow": [
+0,
+1
+]
+},
+"5104917": {
+"fouls": [
+6,
+12
+],
+"red": [
+0,
+0
+],
+"referee": "Rohit Saggi",
+"yellow": [
+1,
+0
+]
+},
+"5104918": {
+"fouls": [
+16,
+4
+],
+"red": [
+0,
+0
+],
+"referee": "Mischa Schaub Kellerhals",
+"yellow": [
+2,
+0
+]
+},
+"5104919": {
+"fouls": [
+12,
+12
+],
+"red": [
+0,
+0
+],
+"referee": "Mohammad Usman Aslam",
+"yellow": [
+2,
+3
+]
+},
+"5104920": {
+"fouls": [
+13,
+6
+],
+"red": [
+0,
+0
+],
+"referee": "Ola Hobber Nilsen",
+"yellow": [
+1,
+1
+]
+},
+"5104921": {
+"fouls": [
+11,
+15
+],
+"red": [
+0,
+0
+],
+"referee": "Mathias Støfringshaug",
+"yellow": [
+3,
+4
+]
+},
+"5104922": {
+"fouls": [
+15,
+9
+],
+"red": [
+0,
+0
+],
+"referee": "Sigurd Smehus Kringstad",
+"yellow": [
+1,
+1
+]
+},
+"5104923": {
+"fouls": [
+6,
+8
+],
+"red": [
+0,
+0
+],
+"referee": "Stian Roevig Sletner",
+"yellow": [
+2,
+2
+]
+},
+"5104924": {
+"fouls": [
+17,
+20
+],
+"red": [
+0,
+0
+],
+"referee": "Rohit Saggi",
+"yellow": [
+2,
+4
+]
+},
+"5104925": {
+"fouls": [
+16,
+13
+],
+"red": [
+0,
+0
+],
+"referee": "Sivert Oeksnes Amland",
+"yellow": [
+2,
+1
+]
+},
+"5104926": {
+"fouls": [
+13,
+11
+],
+"red": [
+0,
+0
+],
+"referee": "Joergen Haugen",
+"yellow": [
+1,
+3
+]
+},
+"5104927": {
+"fouls": [
+12,
+7
+],
+"red": [
+0,
+0
+],
+"referee": "Tore Hansen",
+"yellow": [
+1,
+1
+]
+},
+"5104928": {
+"fouls": [
+9,
+10
+],
+"red": [
+0,
+0
+],
+"referee": "Mathias Stoefringshaug",
+"yellow": [
+2,
+0
+]
+},
+"5104929": {
+"fouls": [
+15,
+10
+],
+"red": [
+0,
+1
+],
+"referee": "Marius Hansen Groetta",
+"yellow": [
+1,
+1
+]
+},
+"5104930": {
+"fouls": [
+11,
+11
+],
+"red": [
+0,
+0
+],
+"referee": "Marius Lien",
+"yellow": [
+3,
+2
+]
+},
+"5104931": {
+"fouls": [
+12,
+14
+],
+"red": [
+0,
+0
+],
+"referee": "Usman Aslam",
+"yellow": [
+3,
+1
+]
+},
+"5104932": {
+"fouls": [
+5,
+14
+],
+"red": [
+0,
+0
+],
+"referee": "Tore Hansen",
+"yellow": [
+1,
+4
+]
+},
+"5104933": {
+"fouls": [
+15,
+14
+],
+"red": [
+1,
+0
+],
+"referee": "Svein Tore Sinnes",
+"yellow": [
+2,
+2
+]
+},
+"5104934": {
+"fouls": [
+10,
+10
+],
+"red": [
+0,
+0
+],
+"referee": "Ola Hobber Nilsen",
+"yellow": [
+2,
+1
+]
+},
+"5104935": {
+"fouls": [
+11,
+8
+],
+"red": [
+0,
+1
+],
+"referee": "Mischa Huru",
+"yellow": [
+2,
+1
+]
+},
+"5104936": {
+"fouls": [
+16,
+16
+],
+"red": [
+0,
+0
+],
+"referee": "Rohit Saggi",
+"yellow": [
+1,
+1
+]
+},
+"5104937": {
+"fouls": [
+19,
+16
+],
+"red": [
+0,
+0
+],
+"referee": "Stian Røvig Sletner",
+"yellow": [
+3,
+2
+]
+},
+"5104938": {
+"fouls": [
+18,
+11
+],
+"red": [
+0,
+0
+],
+"referee": "Tore Hansen",
+"yellow": [
+1,
+3
+]
+},
+"5104939": {
+"fouls": [
+7,
+10
+],
+"red": [
+0,
+0
+],
+"referee": "Sigurd Smehus Kringstad",
+"yellow": [
+3,
+1
+]
+},
+"5104940": {
+"fouls": [
+10,
+9
+],
+"red": [
+0,
+0
+],
+"referee": "Rohit Saggi",
+"yellow": [
+1,
+0
+]
+},
+"5104941": {
+"fouls": [
+9,
+13
+],
+"red": [
+0,
+0
+],
+"referee": "Mathias Støfringshaug",
+"yellow": [
+1,
+1
+]
+},
+"5104942": {
+"fouls": [
+14,
+22
+],
+"red": [
+0,
+0
+],
+"referee": "Marius Lien",
+"yellow": [
+0,
+1
+]
+},
+"5104943": {
+"fouls": [
+6,
+9
+],
+"red": [
+0,
+0
+],
+"referee": "Marius Hansen Grøtta",
+"yellow": [
+0,
+2
+]
+},
+"5104944": {
+"fouls": [
+10,
+10
+],
+"red": [
+0,
+0
+],
+"referee": "Svein Tore Sinnes",
+"yellow": [
+1,
+1
+]
+},
+"5104945": {
+"fouls": [
+16,
+17
+],
+"red": [
+1,
+0
+],
+"referee": "Stian Røvig Sletner",
+"yellow": [
+1,
+2
+]
+},
+"5104946": {
+"fouls": [
+7,
+14
+],
+"red": [
+0,
+0
+],
+"referee": "Kristoffer Hagenes",
+"yellow": [
+1,
+4
+]
+},
+"5104947": {
+"fouls": [
+15,
+15
+],
+"red": [
+0,
+0
+],
+"referee": "Mohammad Usman Aslam",
+"yellow": [
+2,
+2
+]
+},
+"5104948": {
+"fouls": [
+13,
+15
+],
+"red": [
+0,
+0
+],
+"referee": "Marius Lien",
+"yellow": [
+4,
+1
+]
+},
+"5104949": {
+"fouls": [
+9,
+13
+],
+"red": [
+0,
+0
+],
+"referee": "Svein Tore Sinnes",
+"yellow": [
+0,
+4
+]
+},
+"5104950": {
+"fouls": [
+11,
+13
+],
+"red": [
+0,
+0
+],
+"referee": "Mischa Huru Kellerhals",
+"yellow": [
+0,
+0
+]
+},
+"5104951": {
+"fouls": [
+15,
+17
+],
+"red": [
+0,
+0
+],
+"referee": "Jørgen Haugen",
+"yellow": [
+2,
+2
+]
+},
+"5104952": {
+"fouls": [
+22,
+10
+],
+"red": [
+0,
+0
+],
+"referee": "Ola Hobber Nilsen",
+"yellow": [
+3,
+3
+]
+},
+"5104953": {
+"fouls": [
+7,
+5
+],
+"red": [
+0,
+0
+],
+"referee": "Daniel Higraff",
+"yellow": [
+0,
+0
+]
+},
+"5104954": {
+"fouls": [
+19,
+9
+],
+"red": [
+0,
+0
+],
+"referee": "Kristoffer Hagenes",
+"yellow": [
+3,
+3
+]
+},
+"5104955": {
+"fouls": [
+12,
+12
+],
+"red": [
+0,
+0
+],
+"referee": "Marius Lien",
+"yellow": [
+3,
+1
+]
+},
+"5104956": {
+"fouls": [
+15,
+9
+],
+"red": [
+0,
+0
+],
+"referee": "Ola Hobber Nilsen",
+"yellow": [
+1,
+0
+]
+},
+"5104957": {
+"fouls": [
+10,
+24
+],
+"red": [
+0,
+1
+],
+"referee": "Sigurd Smehus Kringstad",
+"yellow": [
+1,
+5
+]
+},
+"5104958": {
+"fouls": [
+8,
+10
+],
+"red": [
+0,
+0
+],
+"referee": "Sivert Øksnes Amland",
+"yellow": [
+3,
+3
+]
+},
+"5104959": {
+"fouls": [
+12,
+14
+],
+"red": [
+1,
+0
+],
+"referee": "Rohit Saggi",
+"yellow": [
+3,
+2
+]
+},
+"5104960": {
+"fouls": [
+18,
+8
+],
+"red": [
+0,
+0
+],
+"referee": "Stian Røvig Sletner",
+"yellow": [
+3,
+4
+]
+},
+"5104961": {
+"fouls": [
+13,
+7
+],
+"red": [
+0,
+0
+],
+"referee": "Mischa Huru Kellerhals",
+"yellow": [
+1,
+0
+]
+},
+"5104962": {
+"fouls": [
+11,
+16
+],
+"red": [
+0,
+0
+],
+"referee": "Mohammad Usman Aslam",
+"yellow": [
+0,
+2
+]
+},
+"5104963": {
+"fouls": [
+12,
+11
+],
+"red": [
+0,
+0
+],
+"referee": "Christian Moen",
+"yellow": [
+2,
+3
+]
+},
+"5104964": {
+"fouls": [
+10,
+9
+],
+"red": [
+0,
+0
+],
+"referee": "Tore Hansen",
+"yellow": [
+2,
+3
+]
+},
+"5104965": {
+"fouls": [
+9,
+11
+],
+"red": [
+0,
+0
+],
+"referee": "Daniel Higraff",
+"yellow": [
+0,
+1
+]
+},
+"5104966": {
+"fouls": [
+14,
+6
+],
+"red": [
+0,
+0
+],
+"referee": "Stian Røvig Sletner",
+"yellow": [
+1,
+1
+]
+},
+"5104967": {
+"fouls": [
+14,
+14
+],
+"red": [
+0,
+0
+],
+"referee": "Marius Hansen Grøtta",
+"yellow": [
+0,
+1
+]
+},
+"5104968": {
+"fouls": [
+18,
+22
+],
+"red": [
+1,
+0
+],
+"referee": "Mathias Støfringshaug",
+"yellow": [
+3,
+1
+]
+},
+"5104969": {
+"fouls": [
+17,
+12
+],
+"red": [
+0,
+0
+],
+"referee": "Sigurd Smehus Kringstad",
+"yellow": [
+3,
+1
+]
+},
+"5104970": {
+"fouls": [
+11,
+19
+],
+"red": [
+1,
+0
+],
+"referee": "Jørgen Haugen",
+"yellow": [
+2,
+3
+]
+},
+"5104971": {
+"fouls": [
+8,
+5
+],
+"red": [
+0,
+0
+],
+"referee": "Marius Lien",
+"yellow": [
+0,
+0
+]
+},
+"5104972": {
+"fouls": [
+12,
+9
+],
+"red": [
+0,
+0
+],
+"referee": "Sivert Øksnes Amland",
+"yellow": [
+1,
+0
+]
+},
+"5104973": {
+"fouls": [
+16,
+26
+],
+"red": [
+0,
+0
+],
+"referee": "Sigurd Smehus Kringstad",
+"yellow": [
+1,
+6
+]
+},
+"5104974": {
+"fouls": [
+10,
+11
+],
+"red": [
+0,
+0
+],
+"referee": "Ola Hobber Nilsen",
+"yellow": [
+2,
+1
+]
+},
+"5104975": {
+"fouls": [
+9,
+11
+],
+"red": [
+0,
+0
+],
+"referee": "Tore Hansen",
+"yellow": [
+2,
+3
+]
+},
+"5104976": {
+"fouls": [
+11,
+12
+],
+"red": [
+0,
+0
+],
+"referee": "Svein Tore Sinnes",
+"yellow": [
+2,
+3
+]
+},
+"5104977": {
+"fouls": [
+6,
+10
+],
+"red": [
+0,
+0
+],
+"referee": "Ola Hobber Nilsen",
+"yellow": [
+1,
+3
+]
+},
+"5104978": {
+"fouls": [
+16,
+12
+],
+"red": [
+0,
+0
+],
+"referee": "Espen Eskås",
+"yellow": [
+4,
+1
+]
+},
+"5104979": {
+"fouls": [
+17,
+10
+],
+"red": [
+0,
+0
+],
+"referee": "Rohit Saggi",
+"yellow": [
+0,
+0
+]
+},
+"5104980": {
+"fouls": [
+11,
+10
+],
+"red": [
+0,
+0
+],
+"referee": "Mischa Huru Kellerhals",
+"yellow": [
+0,
+1
+]
+},
+"5104981": {
+"fouls": [
+10,
+12
+],
+"red": [
+0,
+1
+],
+"referee": "Mohammad Usman Aslam",
+"yellow": [
+1,
+1
+]
+},
+"5104982": {
+"fouls": [
+12,
+13
+],
+"red": [
+0,
+0
+],
+"referee": "Marius Hansen Grøtta",
+"yellow": [
+1,
+3
+]
+},
+"5104983": {
+"fouls": [
+12,
+12
+],
+"red": [
+0,
+0
+],
+"referee": "Christian Moen",
+"yellow": [
+1,
+4
+]
+},
+"5104984": {
+"fouls": [
+7,
+15
+],
+"red": [
+0,
+0
+],
+"referee": "Mathias Støfringshaug",
+"yellow": [
+1,
+3
+]
+},
+"5104985": {
+"fouls": [
+10,
+8
+],
+"red": [
+0,
+0
+],
+"referee": "Tore Hansen",
+"yellow": [
+2,
+1
+]
+},
+"5104986": {
+"fouls": [
+4,
+13
+],
+"red": [
+0,
+0
+],
+"referee": "Ola Hobber Nilsen",
+"yellow": [
+1,
+1
+]
+},
+"5104987": {
+"fouls": [
+17,
+13
+],
+"red": [
+0,
+0
+],
+"referee": "Stian Røvig Sletner",
+"yellow": [
+2,
+1
+]
+},
+"5104988": {
+"fouls": [
+19,
+20
+],
+"red": [
+0,
+0
+],
+"referee": "Marius Hansen Grotta",
+"yellow": [
+2,
+3
+]
+},
+"5104989": {
+"fouls": [
+11,
+12
+],
+"red": [
+0,
+1
+],
+"referee": "Sigurd Smehus Kringstad",
+"yellow": [
+4,
+2
+]
+},
+"5104990": {
+"fouls": [
+11,
+6
+],
+"red": [
+0,
+0
+],
+"referee": "Svein Tore Sinnes",
+"yellow": [
+2,
+1
+]
+},
+"5104991": {
+"fouls": [
+5,
+14
+],
+"red": [
+0,
+0
+],
+"referee": "Mathias Støfringshaug",
+"yellow": [
+1,
+4
+]
+},
+"5104992": {
+"fouls": [
+10,
+9
+],
+"red": [
+0,
+0
+],
+"referee": "Christian Moen",
+"yellow": [
+3,
+2
+]
+},
+"5104993": {
+"fouls": [
+18,
+19
+],
+"red": [
+0,
+1
+],
+"referee": "Sigurd Smehus Kringstad",
+"yellow": [
+5,
+1
+]
+},
+"5104994": {
+"fouls": [
+8,
+5
+],
+"red": [
+0,
+0
+],
+"referee": "Stian Røvig Sletner",
+"yellow": [
+3,
+1
+]
+},
+"5104995": {
+"fouls": [
+12,
+8
+],
+"red": [
+0,
+0
+],
+"referee": "Espen Eskås",
+"yellow": [
+1,
+1
+]
+},
+"5104996": {
+"fouls": [
+13,
+23
+],
+"red": [
+0,
+0
+],
+"referee": "Usman Aslam",
+"yellow": [
+1,
+3
+]
+},
+"5104997": {
+"fouls": [
+7,
+10
+],
+"red": [
+0,
+1
+],
+"referee": "Mathias Støfringshaug",
+"yellow": [
+0,
+0
+]
+},
+"5104998": {
+"fouls": [
+9,
+14
+],
+"red": [
+0,
+0
+],
+"referee": "Marius Hansen Grøtta",
+"yellow": [
+1,
+1
+]
+},
+"5104999": {
+"fouls": [
+9,
+9
+],
+"red": [
+0,
+0
+],
+"referee": "Jørgen Haugen",
+"yellow": [
+2,
+1
+]
+},
+"5105000": {
+"fouls": [
+10,
+12
+],
+"red": [
+0,
+0
+],
+"referee": "Marius Lien",
+"yellow": [
+0,
+2
+]
+},
+"5105001": {
+"fouls": [
+10,
+15
+],
+"red": [
+0,
+0
+],
+"referee": "Ola Hobber Nilsen",
+"yellow": [
+0,
+3
+]
+},
+"5105002": {
+"fouls": [
+19,
+12
+],
+"red": [
+0,
+0
+],
+"referee": "Tore Hansen",
+"yellow": [
+2,
+3
+]
+},
+"5105003": {
+"fouls": [
+14,
+14
+],
+"red": [
+0,
+0
+],
+"referee": "Rohit Saggi",
+"yellow": [
+2,
+4
+]
+},
+"5105004": {
+"fouls": [
+9,
+15
+],
+"red": [
+0,
+0
+],
+"referee": "Usman Aslam",
+"yellow": [
+2,
+0
+]
+},
+"5105005": {
+"fouls": [
+9,
+12
+],
+"red": [
+0,
+0
+],
+"referee": "Svein Tore Sinnes",
+"yellow": [
+0,
+3
+]
+},
+"5105006": {
+"fouls": [
+10,
+10
+],
+"red": [
+0,
+0
+],
+"referee": "Mischa Kellerhals",
+"yellow": [
+0,
+1
+]
+},
+"5105007": {
+"fouls": [
+10,
+15
+],
+"red": [
+0,
+0
+],
+"referee": "Christian Moen",
+"yellow": [
+1,
+5
+]
+},
+"5105008": {
+"fouls": [
+14,
+9
+],
+"red": [
+0,
+0
+],
+"referee": "Espen Eskås",
+"yellow": [
+0,
+1
+]
+},
+"5105009": {
+"fouls": [
+7,
+9
+],
+"red": [
+0,
+0
+],
+"referee": "Jørgen Haugen",
+"yellow": [
+1,
+2
+]
+},
+"5105010": {
+"fouls": [
+9,
+12
+],
+"red": [
+0,
+1
+],
+"referee": "Sigurd Smehus Kringstad",
+"yellow": [
+0,
+1
+]
+},
+"5105011": {
+"fouls": [
+13,
+16
+],
+"red": [
+1,
+0
+],
+"referee": "Marius Hansen Grøtta",
+"yellow": [
+1,
+1
+]
+},
+"5105012": {
+"fouls": [
+8,
+9
+],
+"red": [
+0,
+0
+],
+"referee": "Mathias Støfringshaug",
+"yellow": [
+0,
+1
+]
+},
+"5105013": {
+"fouls": [
+13,
+16
+],
+"red": [
+0,
+0
+],
+"referee": "Marius Lien",
+"yellow": [
+1,
+0
+]
+},
+"5105014": {
+"fouls": [
+10,
+11
+],
+"red": [
+0,
+1
+],
+"referee": "Espen Eskås",
+"yellow": [
+2,
+1
+]
+},
+"5105015": {
+"fouls": [
+13,
+10
+],
+"red": [
+0,
+0
+],
+"referee": "Stian Røvig Sletner",
+"yellow": [
+1,
+1
+]
+},
+"5105016": {
+"fouls": [
+19,
+12
+],
+"red": [
+0,
+0
+],
+"referee": "Rohit Saggi",
+"yellow": [
+1,
+4
+]
+},
+"5105017": {
+"fouls": [
+11,
+10
+],
+"red": [
+0,
+0
+],
+"referee": "Sigurd Smehus Kringstad",
+"yellow": [
+1,
+1
+]
+},
+"5105018": {
+"fouls": [
+8,
+12
+],
+"red": [
+0,
+1
+],
+"referee": "Tore Hansen",
+"yellow": [
+2,
+0
+]
+},
+"5105019": {
+"fouls": [
+10,
+9
+],
+"red": [
+0,
+1
+],
+"referee": "Ola Hobber Nilsen",
+"yellow": [
+2,
+3
+]
+},
+"5105020": {
+"fouls": [
+16,
+14
+],
+"red": [
+1,
+1
+],
+"referee": "Christian Moen",
+"yellow": [
+2,
+0
+]
+},
+"5105021": {
+"fouls": [
+10,
+10
+],
+"red": [
+0,
+0
+],
+"referee": "Usman Aslam",
+"yellow": [
+0,
+0
+]
+},
+"5105022": {
+"fouls": [
+17,
+14
+],
+"red": [
+0,
+0
+],
+"referee": "Svein Tore Sinnes",
+"yellow": [
+1,
+2
+]
+},
+"5105023": {
+"fouls": [
+8,
+10
+],
+"red": [
+0,
+0
+],
+"referee": "Espen Eskås",
+"yellow": [
+0,
+4
+]
+},
+"5105024": {
+"fouls": [
+6,
+9
+],
+"red": [
+0,
+0
+],
+"referee": "Marius Lien",
+"yellow": [
+0,
+2
+]
+},
+"5105025": {
+"fouls": [
+8,
+10
+],
+"red": [
+0,
+0
+],
+"referee": "Jørgen Haugen",
+"yellow": [
+1,
+1
+]
+},
+"5105026": {
+"fouls": [
+15,
+11
+],
+"red": [
+0,
+0
+],
+"referee": "Marius Hansen Grøtta",
+"yellow": [
+3,
+2
+]
+},
+"5105027": {
+"fouls": [
+10,
+8
+],
+"red": [
+0,
+0
+],
+"referee": "Rohit Saggi",
+"yellow": [
+1,
+1
+]
+},
+"5105028": {
+"fouls": [
+10,
+16
+],
+"red": [
+0,
+0
+],
+"referee": "Mischa Huru",
+"yellow": [
+2,
+2
+]
+},
+"5105029": {
+"fouls": [
+6,
+10
+],
+"red": [
+0,
+0
+],
+"referee": "Stian Røvig Sletner",
+"yellow": [
+2,
+2
+]
+},
+"5105030": {
+"fouls": [
+12,
+11
+],
+"red": [
+0,
+0
+],
+"referee": "Tore Hansen",
+"yellow": [
+0,
+2
+]
+},
+"5105031": {
+"fouls": [
+13,
+12
+],
+"red": [
+0,
+0
+],
+"referee": "Sigurd Smehus Kringstad",
+"yellow": [
+4,
+3
+]
+},
+"5105032": {
+"fouls": [
+15,
+17
+],
+"red": [
+0,
+0
+],
+"referee": "Espen Eskås",
+"yellow": [
+2,
+3
+]
+},
+"5105033": {
+"fouls": [
+6,
+12
+],
+"red": [
+0,
+0
+],
+"referee": "Usman Aslam",
+"yellow": [
+1,
+3
+]
+},
+"5105034": {
+"fouls": [
+13,
+10
+],
+"red": [
+0,
+0
+],
+"referee": "Sigurd Smehus Kringstad",
+"yellow": [
+1,
+3
+]
+},
+"5105035": {
+"fouls": [
+12,
+11
+],
+"red": [
+0,
+0
+],
+"referee": "Espen Eskås",
+"yellow": [
+0,
+5
+]
+},
+"5105036": {
+"fouls": [
+15,
+13
+],
+"red": [
+0,
+0
+],
+"referee": "Mischa Huru",
+"yellow": [
+5,
+2
+]
+},
+"5105037": {
+"fouls": [
+13,
+13
+],
+"red": [
+1,
+0
+],
+"referee": "Mathias Støfringshaug",
+"yellow": [
+1,
+2
+]
+},
+"5105038": {
+"fouls": [
+12,
+11
+],
+"red": [
+0,
+2
+],
+"referee": "Marius Hansen Grøtta",
+"yellow": [
+2,
+0
+]
+},
+"5105039": {
+"fouls": [
+16,
+12
+],
+"red": [
+0,
+1
+],
+"referee": "Tore Hansen",
+"yellow": [
+4,
+2
+]
+},
+"5105040": {
+"fouls": [
+11,
+11
+],
+"red": [
+1,
+0
+],
+"referee": "Ola Hobber Nilsen",
+"yellow": [
+0,
+1
+]
+},
+"5105041": {
+"fouls": [
+13,
+11
+],
+"red": [
+0,
+0
+],
+"referee": "Ola Hobber Nilsen",
+"yellow": [
+0,
+1
+]
+},
+"5105042": {
+"fouls": [
+11,
+8
+],
+"red": [
+0,
+0
+],
+"referee": "Rohit Saggi",
+"yellow": [
+0,
+2
+]
+},
+"5105043": {
+"fouls": [
+10,
+8
+],
+"red": [
+0,
+0
+],
+"referee": "Jørgen Haugen",
+"yellow": [
+2,
+4
+]
+},
+"5105044": {
+"fouls": [
+10,
+12
+],
+"red": [
+0,
+0
+],
+"referee": "Stian Røvig Sletner",
+"yellow": [
+1,
+1
+]
+},
+"5105045": {
+"fouls": [
+11,
+12
+],
+"red": [
+0,
+1
+],
+"referee": "Tore Hansen",
+"yellow": [
+1,
+3
+]
+},
+"5105046": {
+"fouls": [
+10,
+12
+],
+"red": [
+0,
+0
+],
+"referee": "Marius Lien",
+"yellow": [
+4,
+2
+]
+},
+"5105047": {
+"fouls": [
+13,
+14
+],
+"red": [
+0,
+0
+],
+"referee": "Usman Aslam",
+"yellow": [
+2,
+2
+]
+},
+"5105048": {
+"fouls": [
+9,
+13
+],
+"red": [
+0,
+0
+],
+"referee": "Espen Eskås",
+"yellow": [
+2,
+3
+]
+},
+"5105049": {
+"fouls": [
+6,
+7
+],
+"red": [
+0,
+0
+],
+"referee": "Christian Moen",
+"yellow": [
+2,
+1
+]
+},
+"5105050": {
+"fouls": [
+11,
+7
+],
+"red": [
+0,
+0
+],
+"referee": "Mathias Støfringshaug",
+"yellow": [
+3,
+2
+]
+},
+"5105051": {
+"fouls": [
+14,
+9
+],
+"red": [
+0,
+0
+],
+"referee": "Rohit Saggi",
+"yellow": [
+2,
+0
+]
+},
+"5105052": {
+"fouls": [
+21,
+14
+],
+"red": [
+0,
+0
+],
+"referee": "Tore Hansen",
+"yellow": [
+2,
+2
+]
+},
+"5105053": {
+"fouls": [
+19,
+14
+],
+"red": [
+0,
+0
+],
+"referee": "Usman Aslam",
+"yellow": [
+4,
+2
+]
+},
+"5105054": {
+"fouls": [
+12,
+15
+],
+"red": [
+0,
+0
+],
+"referee": "Mischa Huru",
+"yellow": [
+2,
+2
+]
+},
+"5105055": {
+"fouls": [
+12,
+19
+],
+"red": [
+0,
+0
+],
+"referee": "Marius Hansen Grøtta",
+"yellow": [
+2,
+3
+]
+},
+"5105056": {
+"fouls": [
+3,
+12
+],
+"red": [
+0,
+0
+],
+"referee": "Ola Hobber Nilsen",
+"yellow": [
+0,
+2
+]
+},
+"5105081": {
+"fouls": [
+19,
+8
+],
+"red": [
+0,
+0
+],
+"referee": "Kristoffer Hagenes",
+"yellow": [
+1,
+2
+]
+}
+},
+"none": [
+"3237695",
+"3237766",
+"3237769",
+"3237795",
+"3237848",
+"3237839",
+"3517269",
+"3517263",
+"3517264",
+"3517380",
+"3517613",
+"3517629",
+"3517719",
+"3517631",
+"3517445",
+"3517198",
+"3517371",
+"3517542",
+"3517598",
+"3517708",
+"3517549",
+"3517372",
+"3517547",
+"3517564",
+"3517456",
+"3517058",
+"3517557",
+"3517597",
+"3517642",
+"3517197",
+"3517566",
+"3517196",
+"3517443",
+"3517448",
+"3517452",
+"3517379",
+"3517385",
+"3517451",
+"3517160",
+"3517580",
+"3517612",
+"3517158",
+"3517194",
+"3517271",
+"3517567",
+"3517446",
+"3517554",
+"3517454",
+"3517166",
+"3517565",
+"3517585",
+"3517736",
+"3517163",
+"3517162",
+"3517283",
+"3517284",
+"3517545",
+"3517581",
+"3517604",
+"3517652",
+"3517289",
+"3517453",
+"3517649"
+]
+}

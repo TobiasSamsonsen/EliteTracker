@@ -21,10 +21,11 @@ from typing import Any
 
 import numpy as np
 
-from elitetracker.model.attack_defence import ADConfig, AttackDefence, KEEPING_LEAGUE_ROWS, OUTCOME_BLEND
-from elitetracker.model.career import SeasonSlice, TeamCareer, build_careers, team_ids
+from elitetracker.model.attack_defence import ADConfig, AttackDefence, KEEPING_LEAGUE_ROWS, OUTCOME_BLEND, man_advantage
+from elitetracker.model.career import SeasonSlice, TeamCareer, build_careers, replay, team_ids
 from elitetracker.model.elo import (
-    MODEL_VERSION, EloConfig, effective_home_advantage, era_config, expected_score, xg_implied_score,
+    MODEL_VERSION, EloConfig, effective_home_advantage, era_config, expected_score, model_xg, xg_implied_score,
+    xg_score_part,
 )
 from elitetracker.model.initial_ratings import SeedingConfig, TeamRating, initial_ratings, rating_for_unseeded_team
 from elitetracker.model.pricing import SURFACE_LEAGUE, elo_odds, match_odds
@@ -35,7 +36,7 @@ from elitetracker.model.table import table_from_matches
 from elitetracker.normalize.matches import Match
 from elitetracker.normalize.standings import load_standings
 from elitetracker.normalize.surfaces import SURFACE_EDGE, is_grass, surface_edge
-from elitetracker.sources.fotmob import XG_PATH, load_xg
+from elitetracker.sources.fotmob import RED_CARDS_PATH, REFEREES_PATH, XG_PATH, load_red_cards, load_referees, load_xg
 # Transfermarkt squad values per club-season, for the goals model's offseason
 # pull (`ADConfig.value_pull`); `research market-values` adds a season by hand.
 from elitetracker.sources.transfermarkt import MARKET_VALUES_PATH
@@ -252,6 +253,10 @@ def _values_path(root: Path) -> Path:
     return Path(root).parent / MARKET_VALUES_PATH.name
 
 
+def _referees_path(root: Path) -> Path:
+    return Path(root).parent / REFEREES_PATH.name
+
+
 @functools.cache
 def load_slices(root: Path = NORMALIZED_DIR) -> list[SeasonSlice]:
     return [
@@ -287,6 +292,48 @@ def shot_table(root: Path = NORMALIZED_DIR) -> dict[str, tuple[float, ...]]:
     downstream reads the first two.
     """
     return {match_id: tuple(values) for match_id, values in load_xg(_xg_path(root))["matches"].items()}
+
+
+@functools.cache
+def red_table(root: Path = NORMALIZED_DIR) -> dict[str, float]:
+    """match_id -> the home side's man advantage (`attack_defence.man_advantage`)
+    for every match with a red card in `data/red_cards.json`, for the goals
+    model (elo-v19.0)."""
+    path = Path(root).parent / RED_CARDS_PATH.name
+    return {match_id: man_advantage(reds) for match_id, reds in load_red_cards(path).items() if reds}
+
+
+@functools.cache
+def referee_table(root: Path = NORMALIZED_DIR) -> dict[str, dict[str, Any]]:
+    """match_id -> {referee, yellow, red, fouls} from `data/referees.json`."""
+    return load_referees(_referees_path(root)).get("matches", {})
+
+
+# FotMob transliterated Norwegian characters (ø -> oe, å -> aa) and shortened
+# middle names in earlier seasons; fold known variants to one canonical name.
+_REFEREE_ALIASES: dict[str, str] = {
+    "Espen Eskaas": "Espen Eskås",
+    "Joergen Haugen": "Jørgen Haugen",
+    "Marius Hansen Groetta": "Marius Hansen Grøtta",
+    "Marius Hansen Grotta": "Marius Hansen Grøtta",
+    "Mathias Stoefringshaug": "Mathias Støfringshaug",
+    "Mischa Huru": "Mischa Huru Kellerhals",
+    "Mischa Kellerhals": "Mischa Huru Kellerhals",
+    "Mischa Schaub Kellerhals": "Mischa Huru Kellerhals",
+    "Mohammad Aslam": "Mohammad Usman Aslam",
+    "Usman Aslam": "Mohammad Usman Aslam",
+    "Ola Nielsen": "Ola Hobber Nilsen",
+    "Sivert Amland": "Sivert Øksnes Amland",
+    "Sivert Oeksnes Amland": "Sivert Øksnes Amland",
+    "Stian Roevig Sletner": "Stian Røvig Sletner",
+    "Svein Torre Sinnes": "Svein Tore Sinnes",
+}
+
+
+def normalize_referee_name(name: str) -> str:
+    """Map FotMob's historical spelling variants to one canonical referee name."""
+    cleaned = " ".join(name.split())
+    return _REFEREE_ALIASES.get(cleaned, cleaned)
 
 
 def stakes_lines(slug: str, season: int, matches: list[Match], root: Path = NORMALIZED_DIR) -> tuple[int, ...]:
@@ -332,7 +379,8 @@ def prior_attack_defence(root: Path, season: int) -> AttackDefence:
     state before replaying the season they are reporting on.
     """
     slices = load_slices(root)
-    return AttackDefence.from_slices(slices, ADConfig(), shots=shot_table(root), values=market_values(root)).replay(
+    return AttackDefence.from_slices(slices, ADConfig(), shots=shot_table(root), values=market_values(root),
+                                     reds=red_table(root)).replay(
         [match for slice_ in slices if slice_.season < season for match in slice_.matches]
     )
 
@@ -343,7 +391,8 @@ def season_end_rates(root: Path) -> dict[tuple[str, int], list[tuple[float, floa
     and against per match against an average side (the table's `attack` and
     `defence`). Every season is replayed once, in order."""
     slices = load_slices(root)
-    ad = AttackDefence.from_slices(slices, ADConfig(), shots=shot_table(root), values=market_values(root))
+    ad = AttackDefence.from_slices(slices, ADConfig(), shots=shot_table(root), values=market_values(root),
+                                   reds=red_table(root))
     rates: dict[tuple[str, int], list[tuple[float, float]]] = {}
     for season in available_seasons(root):
         ad.replay([match for slice_ in slices if slice_.season == season for match in slice_.matches])
@@ -407,8 +456,8 @@ def attack_trend(slug: str, season: int, root: Path = NORMALIZED_DIR) -> dict[st
 
 def reload_inputs() -> None:
     """Forget every input read so far: the next read takes the files as they are now."""
-    for loader in (load_slices, shot_table, stakes_table, market_values, prior_attack_defence, season_end_rates,
-                   first_xg_seasons):
+    for loader in (load_slices, shot_table, referee_table, stakes_table, market_values, prior_attack_defence,
+                   season_end_rates, first_xg_seasons, match_performance):
         loader.cache_clear()
 
 
@@ -1672,5 +1721,216 @@ def h2h_payload(root: Path = NORMALIZED_DIR) -> dict[str, Any]:
             matches.setdefault(f"{key[0]}\t{key[1]}", []).append(
                 [m.date, season, m.home_id, m.away_id, m.home_goals, m.away_goals, name_of(m.home), name_of(m.away)])
     return {"names": names, "matches": matches}
+
+
+def _expected_rating_change(
+    config: EloConfig, expected: float, home_win: float, draw: float,
+    goals: tuple[float, float] | None, calibrate: tuple[float, float],
+) -> float:
+    """The home side's rating change the published model expects before kickoff.
+
+    Mirrors `elo.updated_pair`: K x (observed - expected), the observed score
+    being the result at 1 - xg_alpha plus the xG part. The result part is
+    taken at the published odds (P(win) + P(draw)/2); the xG part at the grid's
+    expected goals, then mapped through `calibrate` (intercept, slope), which
+    corrects the curvature of the xG part (its value at the mean xG is not its
+    mean)."""
+    result = home_win + 0.5 * draw
+    if goals is None or config.xg_alpha <= 0.0:
+        return config.k_factor * (result - expected)
+    a, b = calibrate
+    observed = (1.0 - config.xg_alpha) * result + a + b * xg_score_part(goals[0], goals[1], config)
+    return config.k_factor * (observed - expected)
+
+
+def _fit_line(xs: list[float], ys: list[float]) -> tuple[float, float]:
+    """Least-squares (intercept, slope); (0, 1) when there is too little to fit."""
+    n = len(xs)
+    if n < 20:
+        return 0.0, 1.0
+    mx, my = sum(xs) / n, sum(ys) / n
+    sxx = sum((x - mx) ** 2 for x in xs)
+    if sxx <= 0.0:
+        return 0.0, 1.0
+    slope = sum((x - mx) * (y - my) for x, y in zip(xs, ys)) / sxx
+    return my - slope * mx, slope
+
+
+@dataclass(frozen=True)
+class MatchPerformance:
+    """One scored match, from the home side: the rating change the shipped
+    replay gave it, the change the published model expected before kickoff
+    (`_expected_rating_change`) and the published expected points. The away
+    side's changes are the negatives (the update is zero-sum)."""
+
+    change: float
+    expected: float
+    home_xpts: float
+    away_xpts: float
+
+    @property
+    def performance(self) -> float:
+        return self.change - self.expected
+
+
+@functools.cache
+def match_performance(root: Path = NORMALIZED_DIR) -> dict[str, MatchPerformance]:
+    """match_id -> `MatchPerformance` for every match the shipped model scored
+    (both divisions, SEED_SEASON + 1 on). Read by the referee view and the
+    club page's performance history; judged in PROJECT_STATUS.md, "Referee view
+    metric"."""
+    from elitetracker.model.backtest import shipped_cards
+
+    slices = load_slices(root)
+    seeds = {team_id: seed.rating for team_id, seed in seed_ratings(root).items()}
+    shots = shot_table(root)
+    values = market_values(root)
+    playoffs = playoff_played(root)
+    reds = red_table(root)
+    goals: dict[str, tuple[float, float]] = {}
+    _, shipped = shipped_cards(
+        slices,
+        seeds,
+        score_from_season=SEED_SEASON + 1,
+        shots=shots,
+        values=values,
+        stakes=stakes_table(root),
+        playoffs=playoffs,
+        goals=goals,
+        reds=reds,
+    )
+    # Each match's rating change, Elo's own expectation and the config it was rated with.
+    rated: dict[str, tuple[float, float, EloConfig]] = {}
+    for season, _, ratings, matches in replay(slices, seeds, shots=shots, values=values, playoffs=playoffs):
+        config = era_config(season, EloConfig())
+        for match, (home_before, away_before) in matches:
+            if match.match_id not in shipped.predictions:
+                continue
+            home_id, _ = team_ids(match)
+            expected = expected_score(home_before + effective_home_advantage(config, home_before, away_before), away_before)
+            rated[match.match_id] = (ratings[home_id] - home_before, expected, config)
+    # The xG part at the expected goals against the xG part each match produced.
+    with_xg = [mid for mid in rated if mid in shots and mid in goals]
+    calibrate = _fit_line(
+        [xg_score_part(*goals[mid], rated[mid][2]) for mid in with_xg],
+        [xg_score_part(*model_xg(shots[mid]), rated[mid][2]) for mid in with_xg],
+    )
+    out: dict[str, MatchPerformance] = {}
+    for mid, (change, expected, config) in rated.items():
+        probs, _ = shipped.predictions[mid]
+        out[mid] = MatchPerformance(
+            change=change,
+            expected=_expected_rating_change(
+                config, expected, probs.home_win, probs.draw,
+                goals.get(mid) if mid in shots else None, calibrate,
+            ),
+            home_xpts=3.0 * probs.home_win + probs.draw,
+            away_xpts=3.0 * probs.away_win + probs.draw,
+        )
+    return out
+
+
+def referees_payload(root: Path = NORMALIZED_DIR) -> dict[str, Any]:
+    """Per-match referee, rating change against expectation, cards and fouls (`referees.json`).
+
+    Compact row format:
+    [match_id, date, season, league_idx, ref_idx, home_id, away_id,
+     home_goals, away_goals, home_xpts, away_xpts,
+     home_yellow, away_yellow, home_red, away_red, home_fouls, away_fouls,
+     home_rating_change, home_expected_change, home_xg, away_xg].
+
+    The changes are the home side's (`match_performance`); actual minus
+    expected is the referee view's measure.
+    """
+    leagues = ["eliteserien", "obosligaen"]
+    refs = referee_table(root)
+    if not refs:
+        return {"leagues": leagues, "referees": [], "teams": {}, "seasons": [], "matches": []}
+
+    slices = load_slices(root)
+    shots = shot_table(root)
+    perf = match_performance(root)
+    league_index = {slug: i for i, slug in enumerate(leagues)}
+    played = sorted(
+        ((m, s.league, s.season) for s in slices for m in s.matches
+         if m.played and m.match_id in refs and m.match_id in perf),
+        key=lambda item: Match.sort_key(item[0]),
+    )
+    ref_names = sorted({normalize_referee_name(refs[m.match_id]["referee"]) for m, _, _ in played})
+    ref_index = {name: i for i, name in enumerate(ref_names)}
+    teams: dict[str, str] = {}
+    seasons_seen: set[int] = set()
+    rows: list[list[Any]] = []
+    for match, slug, season in played:
+        entry = refs[match.match_id]
+        ref_name = normalize_referee_name(entry["referee"])
+        one = perf[match.match_id]
+        xg = shots.get(match.match_id)
+        home_id, away_id = team_ids(match)
+        teams[home_id] = match.home
+        teams[away_id] = match.away
+        seasons_seen.add(season)
+        yellow = entry.get("yellow") or [0, 0]
+        red = entry.get("red") or [0, 0]
+        fouls = entry.get("fouls")
+        rows.append([
+            match.match_id,
+            match.date,
+            season,
+            league_index.get(slug, 0),
+            ref_index[ref_name],
+            home_id,
+            away_id,
+            match.home_goals,
+            match.away_goals,
+            round(one.home_xpts, 3),
+            round(one.away_xpts, 3),
+            yellow[0],
+            yellow[1],
+            red[0],
+            red[1],
+            fouls[0] if fouls else None,
+            fouls[1] if fouls else None,
+            round(one.change, 2),
+            round(one.expected, 2),
+            round(xg[0], 2) if xg else None,
+            round(xg[1], 2) if xg else None,
+        ])
+    return {
+        "leagues": leagues,
+        "referees": ref_names,
+        "teams": teams,
+        "seasons": sorted(seasons_seen),
+        "matches": rows,
+    }
+
+
+def performance_payload(root: Path = NORMALIZED_DIR) -> dict[str, Any]:
+    """Every scored match's rating change against expectation (`performance.json`),
+    which only the club page's history reads, so it is fetched when wanted.
+
+    Compact row format, oldest first:
+    [date, season, league_idx, home_id, away_id, home_goals, away_goals,
+     home_rating_change, home_expected_change]; the away side's are the negatives.
+    """
+    leagues = ["eliteserien", "obosligaen"]
+    league_index = {slug: i for i, slug in enumerate(leagues)}
+    perf = match_performance(root)
+    played = sorted(
+        ((m, s.league, s.season) for s in load_slices(root) for m in s.matches if m.played and m.match_id in perf),
+        key=lambda item: Match.sort_key(item[0]),
+    )
+    teams: dict[str, str] = {}
+    rows: list[list[Any]] = []
+    for match, slug, season in played:
+        one = perf[match.match_id]
+        home_id, away_id = team_ids(match)
+        teams[home_id] = match.home
+        teams[away_id] = match.away
+        rows.append([
+            match.date, season, league_index.get(slug, 0), home_id, away_id,
+            match.home_goals, match.away_goals, round(one.change, 1), round(one.expected, 1),
+        ])
+    return {"leagues": leagues, "teams": teams, "matches": rows}
 
 

@@ -31,7 +31,7 @@ from pathlib import Path
 
 from elitetracker.model.backtest import Scorecard, compare, paired, walk_forward
 from elitetracker.model.elo import EloConfig, MODERN_CONFIG, era_config
-from elitetracker.pipeline import load_slices, market_values, seed_ratings, shot_table, stakes_table
+from elitetracker.pipeline import load_slices, market_values, red_table, seed_ratings, shot_table, stakes_table
 
 
 def _frange(start: float, stop: float, step: float) -> list[float]:
@@ -56,7 +56,7 @@ def _blend_forward_split(slices, seeds, shots, score_from, split_season, gamma_v
     cards = []
     for gamma in gamma_values:
         ad_config = replace(ADConfig(), blend_gamma=gamma)
-        ad = AttackDefence.from_slices(slices, ad_config, shots=shots, values=market_values())
+        ad = AttackDefence.from_slices(slices, ad_config, shots=shots, values=market_values(), reds=red_table())
         card = Scorecard(name=f"g={gamma:.2f}")
         for match in sorted((m for s in slices for m in s.matches if m.played), key=Match.sort_key):
             if match.match_id not in elo_card.predictions:

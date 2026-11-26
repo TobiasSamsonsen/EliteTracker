@@ -57,6 +57,8 @@ from elitetracker.pipeline import (
     build_report,
     careers_payload,
     h2h_payload,
+    performance_payload,
+    referees_payload,
     current_season,
     inputs_digest,
     load_matches,
@@ -64,6 +66,7 @@ from elitetracker.pipeline import (
     rewound_configs,
 )
 from elitetracker.research import calibration_payload
+from elitetracker.sources.fotmob import REFEREES_PATH
 from elitetracker.simulation.history import (
     HistoryConfig,
     as_of_date,
@@ -146,6 +149,13 @@ def view_stamp(
 def careers_stamp(root: Path, *, season_regression: float) -> str:
     """Digest for careers.json, which spans every season and every input."""
     return _digest([MODEL_VERSION, str(season_regression), *_source_hashes(), inputs_digest(root)])
+
+
+def referees_stamp(root: Path, *, season_regression: float) -> str:
+    """Digest for referees.json, combining careers inputs and data/referees.json."""
+    ref_path = Path(root).parent / REFEREES_PATH.name
+    ref_hash = hashlib.sha256(ref_path.read_bytes()).hexdigest() if ref_path.exists() else ""
+    return _digest([careers_stamp(root, season_regression=season_regression), ref_hash])
 
 
 def reusable(names: list[str], stamp: str, previous: dict[str, str], out_dir: Path) -> bool:
@@ -374,6 +384,16 @@ def build_site(
     if previous.get("h2h.json") != careers_digest or not (out_dir / "h2h.json").exists():
         write_payload(out_dir / "h2h.json", h2h_payload(root))
     stamps["h2h.json"] = careers_digest
+    # Every match's rating change against expectation, which only a club's
+    # history reads: the same inputs as the careers.
+    if previous.get("performance.json") != careers_digest or not (out_dir / "performance.json").exists():
+        write_payload(out_dir / "performance.json", performance_payload(root))
+    stamps["performance.json"] = careers_digest
+
+    ref_digest = referees_stamp(root, season_regression=season_regression)
+    if previous.get("referees.json") != ref_digest or not (out_dir / "referees.json").exists():
+        write_payload(out_dir / "referees.json", referees_payload(root))
+    stamps["referees.json"] = ref_digest
 
     # The compact per-season timelines the animation and the mountain read.
     # Built from the report files on disk, for the seasons just rebuilt and for

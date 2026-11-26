@@ -5,7 +5,7 @@ import math
 import pytest
 
 from elitetracker.model.attack_defence import (
-    ADConfig, AttackDefence, blend_outcomes, conditional_scorelines, outcome_probabilities, score_grid, top_scorelines,
+    ADConfig, AttackDefence, blend_outcomes, man_advantage, conditional_scorelines, outcome_probabilities, score_grid, top_scorelines,
 )
 from elitetracker.model.career import SeasonSlice
 from elitetracker.model.probabilities import MatchProbabilities
@@ -359,3 +359,23 @@ def test_a_club_relegated_into_obos_ligaen_keeps_less_and_leans_on_its_value():
     # C went up: Eliteserien's ordinary pull.
     es_mean = (pre["attack"]["B"] + pre["attack"]["C"]) / 2
     assert abs(model.attack["C"] - (es_mean + 0.5 * (pre["attack"]["C"] - es_mean))) < 1e-12
+
+
+def test_observed_takes_a_red_cards_man_advantage_out():
+    """elo-v19.0: the home side's observation x exp(-a * f), the away side's
+    x exp(a * f), f the home side's man advantage; no red, no change."""
+    data = slices((2020, "top", [match("m1", "2020-05-01", "A", "B", 2, 1), match("m2", "2020-05-02", "C", "D", 1, 1)]))
+    cfg = ADConfig(man_advantage=0.2)
+    model = AttackDefence.from_slices(data, cfg, reds={"m1": 0.5})
+    home, away, _ = model.observed(data[0].matches[0])
+    assert (home, away) == pytest.approx((2 * math.exp(-0.1), 1 * math.exp(0.1)))
+    assert model.observed(data[0].matches[1])[:2] == (1.0, 1.0)
+    assert model.copy().reds == {"m1": 0.5}
+
+
+def test_man_advantage_is_the_share_of_the_match_left_after_each_red():
+    """elo-v19.0: + for an away red, - for a home red, the share of 90 minutes after it."""
+    assert man_advantage([]) == 0.0
+    assert man_advantage([[30, 1]]) == pytest.approx(60 / 90)
+    assert man_advantage([[30, 0], [75, 1]]) == pytest.approx(-60 / 90 + 15 / 90)
+    assert man_advantage([[94, 0]]) == 0.0  # stoppage time counts as the 90th minute

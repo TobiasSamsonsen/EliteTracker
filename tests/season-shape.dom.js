@@ -114,13 +114,11 @@ async function main() {
       verticals, horizontals,
     });
   })()`));
-  // The places are a gradient; what they are worth is drawn as lines between
-  // the bands, each named in the margin, so there is no legend under the chart.
-  // A line is kept only for a club it divides, so there may be few or none; the
-  // places the club cannot reach (never 2 % all season) are merged at either
-  // end, so there are at most one area per place.
-  check('areas per place or merged, band lines fewer than the bands, no mode line or end marker',
-    overlays.modeLine === 0 && overlays.edges < overlays.leagueBands &&
+  // The places are a gradient with no lines between the table's bands and no
+  // legend under the chart; the places the club cannot reach (never 2 % all
+  // season) are merged at either end, so there is at most one area per place.
+  check('areas per place or merged, no band lines, no mode line or end marker',
+    overlays.modeLine === 0 && overlays.edges === 0 &&
     overlays.bands >= 1 && overlays.bands <= 18 && overlays.dot === 0 && overlays.end === '', JSON.stringify(overlays));
   check('no legend under the chart', overlays.legend === 0, JSON.stringify(overlays));
   // Position numerals: named inside the bands they belong to, never outside,

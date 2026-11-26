@@ -237,7 +237,10 @@ from dataclasses import dataclass, replace
 # average club's displayed rates carry the division's mean finishing and keeping;
 # `era_config` keeps settings changed on its base. See PROJECT_STATUS.md, "Model
 # and simulation audit, batch 2" and "Engine, play-offs and payload audit, batch 3".
-MODEL_VERSION = "elo-v18.0"
+# elo-v19.0: penalty xG counts 1.5 times in the xG the model learns from
+# (`PENALTY_XG_WEIGHT`, `model_xg`; npxG filled into xg.json for Eliteserien
+# 2020-2026). See PROJECT_STATUS.md, "Penalty xG at 1.5".
+MODEL_VERSION = "elo-v19.0"
 
 # A 400-point rating gap means the stronger side is expected to score 10 times
 # as often as the weaker one; this is the constant that defines the ELO scale.
@@ -368,6 +371,26 @@ def expected_score(rating: float, opponent_rating: float) -> float:
     return 1.0 / (1.0 + 10.0 ** ((opponent_rating - rating) / _RATING_SCALE))
 
 
+# elo-v19.0: a penalty's xG counts 1.5 times in the xG the model learns from
+# (the Elo update and the goals model's observation). Winning penalties is
+# skill, and full weight under-reads it: x0 / x1.5 on Eliteserien 2016+
+# +0.00302 / -0.00056 log loss; finer sweep in PROJECT_STATUS.md, "Penalty
+# xG at 1.5". Displayed xG stays as the source gives it.
+PENALTY_XG_WEIGHT = 1.5
+
+
+def model_xg(values: tuple[float, ...] | list[float]) -> tuple[float, float]:
+    """The two sides' xG as the model reads it from a `shot_table` entry:
+    with npxG known (values 5 and 6, fotmob's `parse_match_details`), the
+    penalty part, xG less npxG, weighted by `PENALTY_XG_WEIGHT`; else the
+    stored xG (OBOS-ligaen's Sofascore pairs carry no npxG)."""
+    home, away = values[0], values[1]
+    if len(values) >= 6:
+        home = values[4] + PENALTY_XG_WEIGHT * (home - values[4])
+        away = values[5] + PENALTY_XG_WEIGHT * (away - values[5])
+    return home, away
+
+
 # Goals counted per side in `xg_implied_score`; the mass beyond is divided out.
 _XG_GOAL_CAP = 12
 
@@ -431,15 +454,22 @@ def updated_pair(
     expected_home = expected_score(home_rating + effective_home_advantage(config, home_rating, away_rating), away_rating)
     scored_home = actual_score(home_goals, away_goals)
     if home_xg is not None and away_xg is not None and config.xg_alpha > 0.0:
-        xg_score = xg_implied_score(home_xg, away_xg)
-        scored_home = (1.0 - config.xg_alpha) * scored_home + config.xg_alpha * xg_score
-        if config.xg_margin:
-            c = config.xg_margin_smoothing
-            ratio = math.log((home_xg + c) / (away_xg + c))
-            # Not clamped to [0, 1] (elo-v16.0): the step stays zero-sum either way.
-            scored_home += math.copysign(config.xg_margin * math.log(1.0 + abs(ratio)), ratio)
+        scored_home = (1.0 - config.xg_alpha) * scored_home + xg_score_part(home_xg, away_xg, config)
     change = config.k_factor * (scored_home - expected_home)
     return home_rating + change, away_rating - change
+
+
+def xg_score_part(home_xg: float, away_xg: float, config: EloConfig) -> float:
+    """What the two sides' xG add to the home side's observed score in
+    `updated_pair`: the xG-implied score at weight `xg_alpha`, plus the xG
+    margin. The result keeps the other 1 - xg_alpha."""
+    part = config.xg_alpha * xg_implied_score(home_xg, away_xg)
+    if config.xg_margin:
+        c = config.xg_margin_smoothing
+        ratio = math.log((home_xg + c) / (away_xg + c))
+        # Not clamped to [0, 1] (elo-v16.0): the step stays zero-sum either way.
+        part += math.copysign(config.xg_margin * math.log(1.0 + abs(ratio)), ratio)
+    return part
 
 
 def draw_probability(rating_difference: float, config: EloConfig) -> float:

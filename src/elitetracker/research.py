@@ -3,6 +3,7 @@ pulls a candidate model would need (closing odds, fotmob xG).
 
     python -m elitetracker.research odds                     # closing odds -> data/odds_closing.json
     python -m elitetracker.research xg --seasons 2020-2026   # fotmob xG, xGoT, npxG, red cards -> data/xg.json (manual backfill)
+    python -m elitetracker.research referees --seasons 2020-2026  # fotmob referees, cards, fouls -> data/referees.json (manual backfill)
     python -m elitetracker.research xg-obos                  # sofascore xG for OBOS-ligaen (2023+)
     python -m elitetracker.research run --score-from 2019    # Elo, the shipped blend and the market, paired
     python -m elitetracker.research market-values --season 2027 [--dry-run]  # Transfermarkt squad values
@@ -24,9 +25,12 @@ from pathlib import Path
 from elitetracker.model import benchmark
 from elitetracker.model.backtest import Scorecard, paired, reliability, restrict, shipped_cards
 from elitetracker.pipeline import (
-    NORMALIZED_DIR, load_matches, load_slices, market_values, playoff_played, seed_ratings, shot_table, stakes_table,
+    NORMALIZED_DIR, load_matches, load_slices, market_values, playoff_played, red_table, seed_ratings, shot_table,
+    stakes_table,
 )
-from elitetracker.sources.fotmob import FetchError, fetch_match_xg, load_xg, save_xg
+from elitetracker.sources.fotmob import (
+    REFEREES_PATH, FetchError, fetch_match_referee, fetch_match_xg, load_referees, load_xg, save_referees, save_xg,
+)
 from elitetracker.sources.sofascore import DEFAULT_DELAY
 
 
@@ -86,6 +90,73 @@ def cmd_xg(args: argparse.Namespace) -> int:
     save_xg(data)
     print(f"done: {len(data['matches'])} with xG, {len(data['none'])} without")
     return 0
+
+
+def backfill_referees(
+    seasons: str = "2020-2026",
+    *,
+    league: str = "eliteserien",
+    delay: float = 4.0,
+    limit: int | None = None,
+    refresh: bool = False,
+    root: Path = NORMALIZED_DIR,
+    path: Path = REFEREES_PATH,
+    fetch=fetch_match_referee,
+    sleep=time.sleep,
+) -> int:
+    """Manual, opt-in polite backfill of referee, cards and fouls from FotMob.
+
+    Follows docs/data.md scraping rules: one request at a time, jittered wait
+    of ``delay`` to ``2 * delay`` seconds between requests (4-8 s by default),
+    saved after every match, and stops immediately on HTTP 403 or 429.
+    """
+    import random
+
+    parts = [int(part) for part in seasons.split("-")]
+    first, last = (parts[0], parts[0]) if len(parts) == 1 else parts
+    leagues = {"eliteserien", "obosligaen"} if league == "all" else {league}
+    data = load_referees(path)
+    done = set() if refresh else (set(data["matches"]) | set(data["none"]))
+    todo = [
+        m for s in load_slices(root) if s.league in leagues and first <= s.season <= last
+        for m in s.matches if m.played and m.match_id not in done
+    ]
+    print(f"{len(todo)} matches to fetch ({len(data['matches'])} with referee, {len(data['none'])} without)")
+    for index, match in enumerate(todo[:limit] if limit else todo, 1):
+        if index > 1 and delay > 0:
+            sleep(random.uniform(delay, 2 * delay))
+        try:
+            entry = fetch(match.match_id)
+        except FetchError as exc:
+            if "HTTP 403" in str(exc) or "HTTP 429" in str(exc):
+                print(f"  stopping at {match.match_id}: {exc}")
+                return 1
+            print(f"  skipped {match.match_id}: {exc}")
+            continue
+        if entry is None:
+            if match.match_id not in data["none"]:
+                data["none"].append(match.match_id)
+        else:
+            data["matches"][match.match_id] = entry
+            if match.match_id in data["none"]:
+                data["none"].remove(match.match_id)
+        save_referees(data, path)
+        if index % 25 == 0:
+            print(f"  {index}/{len(todo)} ({match.date})", flush=True)
+    with_fouls = sum(1 for v in data["matches"].values() if v.get("fouls") is not None)
+    print(f"done: {len(data['matches'])} with referee ({with_fouls} with fouls), {len(data['none'])} without")
+    return 0
+
+
+def cmd_referees(args: argparse.Namespace) -> int:
+    """CLI handler for ``research referees``."""
+    return backfill_referees(
+        args.seasons,
+        league=args.league,
+        delay=args.delay,
+        limit=args.limit,
+        refresh=args.refresh,
+    )
 
 
 def cmd_playoffs(args: argparse.Namespace) -> int:
@@ -222,7 +293,7 @@ def market_comparison(score_from: int) -> int:
     dates = {m.match_id: m.date for s in slices for m in s.matches}
     elo, shipped = shipped_cards(slices, seeds, score_from_season=score_from, shots=shot_table(),
                                  values=market_values(), league="eliteserien", stakes=stakes_table(),
-                                 playoffs=playoff_played())
+                                 playoffs=playoff_played(), reds=red_table())
     matches = [m for s in slices for m in s.matches
                if s.league == "eliteserien" and int(m.date[:4]) >= score_from]
     prices = benchmark.load_prices()
@@ -267,14 +338,17 @@ def calibration_payload(score_from: int = 2016, root=NORMALIZED_DIR) -> dict:
     """The Explore view's match-odds calibration (`viz=calibration`): the
     shipped odds' reliability over every scored match of both divisions, and
     the scores against the closing line, three ways de-vigged, on the
-    Eliteserien matches it prices."""
+    Eliteserien matches with xG it prices (2020 on: the seasons the model
+    reads chances in, so the comparison is the model as it now runs)."""
     from elitetracker.model.elo import MODEL_VERSION
 
     slices = load_slices(root)
     seeds = {team_id: seed.rating for team_id, seed in seed_ratings(root).items()}
     scorelines: dict[tuple[int, int], list[float]] = {}
-    elo, shipped = shipped_cards(slices, seeds, score_from_season=score_from, shots=shot_table(root), values=market_values(root),
-                                 scorelines=scorelines, stakes=stakes_table(root), playoffs=playoff_played(root))
+    shots = shot_table(root)
+    elo, shipped = shipped_cards(slices, seeds, score_from_season=score_from, shots=shots, values=market_values(root),
+                                 scorelines=scorelines, stakes=stakes_table(root), playoffs=playoff_played(root),
+                                 reds=red_table(root))
     dates = {m.match_id: m.date for s in slices for m in s.matches}
     league = {m.match_id: s.league for s in slices for m in s.matches}
     es = [m for s in slices for m in s.matches if s.league == "eliteserien" and int(m.date[:4]) >= score_from]
@@ -286,12 +360,15 @@ def calibration_payload(score_from: int = 2016, root=NORMALIZED_DIR) -> dict:
         return {"n": card.matches, "log_loss": round(card.log_loss, 5), "brier": round(card.brier, 5),
                 "rps": round(card.rps, 5), "calibration": round(card.calibration_error(), 4)}
 
-    model_es = restrict(shipped, common, "model")
+    # The match-for-match comparison: the Eliteserien matches with xG only.
+    with_xg = {mid for mid in common if mid in shots}
+    model_es = restrict(shipped, with_xg, "model")
     market = None
-    if common:
-        market = {"model": scores(model_es), "elo": scores(restrict(elo, common, "elo"))}
+    if with_xg:
+        market = {"model": scores(model_es), "elo": scores(restrict(elo, with_xg, "elo")),
+                  "first_season": min(int(dates[mid][:4]) for mid in with_xg)}
         for method, card in markets.items():
-            market[method] = {**scores(restrict(card, common)), "paired_t": round(paired(model_es, card)[2], 2)}
+            market[method] = {**scores(restrict(card, with_xg)), "paired_t": round(paired(model_es, card)[2], 2)}
     # Matches on one date in id order: a set iterates in hash order, which
     # differs run to run and moved the bankroll's drawdown with it.
     order = sorted(common, key=lambda mid: (dates[mid], mid))
@@ -356,6 +433,11 @@ def main(argv: list[str] | None = None) -> int:
     xg = sub.add_parser("xg"); xg.add_argument("--seasons", default="2020-2026"); xg.add_argument("--delay", type=float, default=4.0)
     xg.add_argument("--limit", type=int); xg.add_argument("--refresh", action="store_true", help="refetch matches already stored")
     xg.set_defaults(func=cmd_xg)
+    refs = sub.add_parser("referees"); refs.add_argument("--seasons", default="2020-2026")
+    refs.add_argument("--league", default="eliteserien", choices=["eliteserien", "obosligaen", "all"])
+    refs.add_argument("--delay", type=float, default=4.0); refs.add_argument("--limit", type=int)
+    refs.add_argument("--refresh", action="store_true", help="refetch matches already stored")
+    refs.set_defaults(func=cmd_referees)
     obos = sub.add_parser("xg-obos"); obos.add_argument("--seasons", default="2023-2026")
     obos.add_argument("--delay", type=float, default=DEFAULT_DELAY)
     obos.set_defaults(func=cmd_xg_obos)

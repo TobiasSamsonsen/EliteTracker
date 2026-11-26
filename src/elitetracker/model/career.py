@@ -22,7 +22,7 @@ from dataclasses import dataclass, field
 from datetime import date, timedelta
 from typing import Callable, Iterator
 
-from elitetracker.model.elo import EloConfig, era_config, updated_pair
+from elitetracker.model.elo import EloConfig, era_config, model_xg, updated_pair
 from elitetracker.model.initial_ratings import TeamRating, rating_for_unseeded_team
 from elitetracker.model.table import table_from_matches
 from elitetracker.normalize.matches import Match
@@ -195,8 +195,7 @@ def replay(
                 home, away = team_ids(match)
                 before = (ratings[home], ratings[away])
                 match_shots = shots.get(match.match_id)
-                home_xg = match_shots[0] if match_shots and len(match_shots) >= 2 else None
-                away_xg = match_shots[1] if match_shots and len(match_shots) >= 2 else None
+                home_xg, away_xg = model_xg(match_shots) if match_shots and len(match_shots) >= 2 else (None, None)
                 ratings[home], ratings[away] = updated_pair(
                     ratings[home], ratings[away], match.home_goals, match.away_goals,
                     config_for(league, season), home_xg, away_xg,

@@ -44,6 +44,7 @@ EXPLORE = {
     "mountain": "sesongfjellet",
     "attack": "angrep-mot-forsvar",
     "luck": "flakstabellen",
+    "referees": "dommere",
     "races": "kapplopene",
     "whatif": "hva-om",
     "runin": "restprogrammet",

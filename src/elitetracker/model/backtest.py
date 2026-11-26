@@ -193,6 +193,8 @@ def shipped_cards(
     scorelines: dict[tuple[int, int], list[float]] | None = None,
     stakes: dict[str, float] | None = None,
     playoffs: dict[int, list[Match]] | None = None,
+    goals: dict[str, tuple[float, float]] | None = None,
+    reds: dict[str, float] | None = None,
 ) -> tuple[Scorecard, Scorecard]:
     """Elo alone and the odds the site shows (Elo blended with the
     attack/defence grid), walk-forward on the same matches.
@@ -206,11 +208,16 @@ def shipped_cards(
     elo = walk_forward(slices, seeds, EloConfig(), score_from_season=score_from_season, name="elo",
                        shots=shots, league=league, values=values, stakes=stakes, playoffs=playoffs)
     shipped = Scorecard(name="elo + attack/defence")
-    ad = AttackDefence.from_slices(slices, ADConfig(), shots=shots, values=values)
+    ad = AttackDefence.from_slices(slices, ADConfig(), shots=shots, values=values, reds=reds)
     for match in sorted((m for s in slices for m in s.matches if m.played), key=Match.sort_key):
         if match.match_id in elo.predictions:
             priced = match_odds(elo.predictions[match.match_id][0], ad, match, stakes=stakes.get(match.match_id, 0.0))
             shipped.observe(priced.odds, outcome_of(match), match.match_id)
+            if goals is not None:
+                goals[match.match_id] = (
+                    sum(i * p for i, row in enumerate(priced.grid) for p in row),
+                    sum(j * p for row in priced.grid for j, p in enumerate(row)),
+                )
             if scorelines is not None:
                 for (i, j), chance in conditional_scorelines(priced.grid, priced.odds).items():
                     scorelines.setdefault((min(i, SCORELINE_CAP), min(j, SCORELINE_CAP)), [0.0, 0])[0] += chance

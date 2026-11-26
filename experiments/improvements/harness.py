@@ -49,7 +49,10 @@ from elitetracker.model.initial_ratings import rating_for_unseeded_team
 from elitetracker.model.probabilities import match_probabilities
 from elitetracker.normalize.matches import Match
 from elitetracker.normalize.surfaces import surface_edge
+import elitetracker.model.elo as _elo
 import elitetracker.pipeline as _pipeline
+
+_model_xg = getattr(_elo, "model_xg", None)
 from elitetracker.pipeline import load_slices, market_values, seed_ratings, shot_table
 
 SLICES = load_slices()
@@ -74,6 +77,9 @@ HAS_XG = np.array([m.match_id in SHOTS for m, _, _ in PLAYED])
 _VERSION = tuple(int(x) for x in MODEL_VERSION.removeprefix("elo-v").split("."))
 CLAMPED = _VERSION < (16,)
 STAKES = _pipeline.stakes_table() if hasattr(_pipeline, "stakes_table") else {}
+# elo-v19.0: match_id -> the home side's man advantage (red cards), in the goals model's update.
+REDS = _pipeline.red_table() if hasattr(_pipeline, "red_table") else {}
+_REDS_KW = {"reds": REDS} if REDS else {}
 if STAKES:
     from elitetracker.model.stakes import STAKES_ELO, STAKES_GOALS
 else:
@@ -183,8 +189,8 @@ def elo_run(run: EloRun | None = None, gaps: np.ndarray | None = None) -> np.nda
             if gaps is not None:
                 gaps[i] = p.rating_gap
             xg = run.shots.get(m.match_id)
-            hxg = xg[0] if xg and len(xg) >= 2 else None
-            axg = xg[1] if xg and len(xg) >= 2 else None
+            # elo-v19.0 weights penalty xG (`model_xg`); before it, the stored pair.
+            hxg, axg = (_model_xg(xg) if _model_xg else xg[:2]) if xg and len(xg) >= 2 else (None, None)
             hu = h if run.shift_in_update else ratings[home]
             expected = expected_score(hu + effective_home_advantage(cfg, hu, a), a)
             scored = run.score(m.home_goals, m.away_goals, hxg, axg, cfg)
@@ -291,7 +297,7 @@ def ad_run(config: ADConfig | None = None, shots: dict | None = None, elo_gap: n
     """`cls`, a subclass of ADX, replaces the goals model's class; `stakes`
     False leaves the shipped table stakes out."""
     ad = (cls or ADX).from_slices(SLICES, config or ADConfig(), shots=SHOTS if shots is None else shots,
-                         values=market_values() if values is None else values)
+                         values=market_values() if values is None else values, **_REDS_KW)
     for name, hook in hooks.items():
         setattr(ad, name, hook)
     n = len(PLAYED)
@@ -451,7 +457,7 @@ def identity() -> None:
     worst = max(abs(np.array([p.home_win, p.draw, p.away_win]) - elo[INDEX[mid]]).max()
                 for mid, (p, _) in card.predictions.items())
     assert len(card.predictions) == len(IDS), (len(card.predictions), len(IDS))
-    real = AttackDefence.from_slices(SLICES, ADConfig(), shots=SHOTS, values=market_values())
+    real = AttackDefence.from_slices(SLICES, ADConfig(), shots=SHOTS, values=market_values(), **_REDS_KW)
     worst_mix = 0.0
     from elitetracker.model.probabilities import MatchProbabilities
     for i, (m, _, _) in enumerate(PLAYED):

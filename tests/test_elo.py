@@ -13,6 +13,7 @@ from elitetracker.model.elo import (
     actual_score,
     draw_probability,
     expected_score,
+    model_xg,
     update,
     updated_pair,
     xg_implied_score,
@@ -153,7 +154,7 @@ class TestConfig:
         assert config.season_regression == pytest.approx(0.88)
 
     def test_model_version_is_declared(self):
-        assert MODEL_VERSION == "elo-v18.0"
+        assert MODEL_VERSION == "elo-v19.0"
 
     def test_xg_alpha_default(self):
         config = EloConfig()
@@ -311,3 +312,12 @@ class TestUpdatedPairXg:
         config = EloConfig(xg_alpha=0.45)
         home, away = updated_pair(1500, 1500, 2, 1, config, home_xg=1.5, away_xg=0.8)
         assert home + away == pytest.approx(3000)
+
+
+def test_model_xg_weights_penalty_xg_where_npxg_is_known():
+    """elo-v19.0: xG less npxG (the penalties) counts 1.5 times; pairs
+    without npxG (Sofascore, older fotmob entries) are read as stored."""
+    assert model_xg([2.0, 0.5, 1.1, 0.3, 1.21, 0.5, 90]) == pytest.approx((1.21 + 1.5 * 0.79, 0.5))
+    assert model_xg([2.0, 0.5, 1.1, 0.3]) == (2.0, 0.5)
+    assert model_xg((1.4, 0.9)) == (1.4, 0.9)
+

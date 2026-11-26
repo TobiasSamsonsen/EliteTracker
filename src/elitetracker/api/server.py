@@ -31,6 +31,8 @@ from elitetracker.pipeline import (
     build_report,
     careers_payload,
     h2h_payload,
+    performance_payload,
+    referees_payload,
     current_season,
     reload_inputs,
     rewound_configs,
@@ -73,12 +75,26 @@ def calibration(root: Path) -> Any:
     return calibration_payload(root=root)
 
 
+@functools.cache
+def referees(root: Path) -> Any:
+    return referees_payload(root)
+
+
+@functools.cache
+def performance(root: Path) -> Any:
+    return performance_payload(root)
+
+
 def data_payload(root: Path, name: str) -> tuple[Any, int]:
     """What the static build would have written under /data/<name>, plus a status."""
     if name == "careers.json":
         return careers_payload(careers(root), root=root), 200
     if name == "h2h.json":
         return h2h_payload(root), 200
+    if name == "referees.json":
+        return referees(root), 200
+    if name == "performance.json":
+        return performance(root), 200
     if name == "calibration.json":
         return calibration(root), 200
     match = _REPORT_NAME.fullmatch(name)
@@ -118,6 +134,8 @@ class Handler(SimpleHTTPRequestHandler):
             reload_inputs()
             careers.cache_clear()
             calibration.cache_clear()
+            referees.cache_clear()
+            performance.cache_clear()
             reports.cache_clear()
         try:
             self._json(*data_payload(self.root, path.removeprefix("/data/")))

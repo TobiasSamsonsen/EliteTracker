@@ -9,6 +9,23 @@ const state = {
   careers: null,
   // All-time meetings (h2h.json), fetched when Compare first wants them.
   h2h: null,
+  // Referee stats (referees.json), fetched lazily for Explore and Team views.
+  referees: null,
+  refereeScope: 'all',
+  refereeMetric: 'perMatch',
+  refereeMinMatches: 5,
+  refereeActiveOnly: false,
+  refereeSelected: null,
+  refereeClubSelected: null,
+  refereePairingMode: 'referee',
+  refereePairingTeam: null,
+  refereeSort: { key: 'matches', dir: -1 },
+  refereeSection: 'overview',
+  refereeExplainOpen: false,
+  clubDisciplineMetric: 'cards',
+  clubDisciplineView: 'chart',
+  clubDisciplineSort: { key: 'netCardsPerMatch', dir: -1 },
+  teamRefereeSelected: null,
   // Default view is the league table as it actually stands.
   sort: { key: 'position', dir: 1 },
   // Table view mode: 'current' shows live stats, 'prediction' shows model stats.
@@ -359,6 +376,12 @@ function attachTip(target, html) {
 
 document.addEventListener('pointerdown', (event) => {
   if (event.pointerType === 'touch' && tooltipTrigger && !tooltipTrigger.contains(event.target)) hideTooltip();
+}, { passive: true });
+
+document.addEventListener('pointermove', (event) => {
+  if (event.pointerType !== 'touch' && tooltipTrigger && (!tooltipTrigger.isConnected || !tooltipTrigger.contains(event.target))) {
+    hideTooltip();
+  }
 }, { passive: true });
 
 /* ---------- bands ------------------------------------------------- */
@@ -718,7 +741,7 @@ function closeScenario({ restore = true } = {}) {
    `EXPLORE_SLUGS` mirror pages.py (a test compares them). */
 const EXPLORE_SLUGS = {
   mountain: 'sesongfjellet', attack: 'angrep-mot-forsvar', luck: 'flakstabellen',
-  races: 'kapplopene', whatif: 'hva-om', runin: 'restprogrammet', playoff: 'nedrykkskvalik',
+  referees: 'dommere', races: 'kapplopene', whatif: 'hva-om', runin: 'restprogrammet', playoff: 'nedrykkskvalik',
 };
 const routeClubs = new Set(); // slugs of the clubs that have a page, set at boot
 
@@ -1003,7 +1026,9 @@ function scenarioMatchRow(report, prepared, analysis, f, subject, own = false) {
   item.appendChild(el('span', `form__chip form__chip--${letter.toLowerCase()}`, t(`form.${letter}`)));
   const sentence = t(`scenario.${own ? 'own' : 'they'}${letter}`, { team: report.table[subject].team, other: report.table[atHome ? away : home].team });
   const text = el('div', 'scenario-match__body');
-  text.append(el('p', 'scenario-match__main', sentence), el('p', 'scenario-match__meta', `${t(atHome ? 'scenario.home' : 'scenario.away')} · ${scenarioWhen(game)}`));
+  const meta = el('p', 'scenario-match__meta');
+  meta.append(venueIcon(atHome, { badge: false }), document.createTextNode(` ${t(atHome ? 'scenario.home' : 'scenario.away')} · ${scenarioWhen(game)}`));
+  text.append(el('p', 'scenario-match__main', sentence), meta);
   const bar = oddsBar(report.table[home].team, report.table[away].team, { home_win: analysis.prior[f * 3], draw: analysis.prior[f * 3 + 1], away_win: analysis.prior[f * 3 + 2] });
   const shown = scenarioOutcome(score);
   [...bar.children].forEach((segment, o) => segment.classList.toggle('is-scenario', o === shown));
@@ -4724,11 +4749,11 @@ function overviewExploreButton() {
 /* ---------- explore: other ways to look at the numbers -------------- */
 
 /* A gallery of cards, each opening one visualisation in the same panel. */
-const EXPLORE_ITEMS = ['mountain', 'attack', 'luck', 'races', 'whatif', 'runin', 'playoff'];
+const EXPLORE_ITEMS = ['mountain', 'attack', 'luck', 'referees', 'races', 'whatif', 'runin', 'playoff'];
 /* The visualisations that follow the rewind slider: they read one day's
    report. The rest take a whole season or every season, or carry time along
    an axis of their own, which the slider would only cut short. */
-const EXPLORE_REWIND = new Set(['attack', 'luck', 'whatif', 'playoff']);
+const EXPLORE_REWIND = new Set(['attack', 'luck', 'referees', 'whatif', 'playoff']);
 
 function exploreThumb(id) {
   const svg = svgEl('svg', { class: 'explore-card__thumb', viewBox: '0 0 160 90', 'aria-hidden': 'true' });
@@ -4763,6 +4788,17 @@ function exploreThumb(id) {
         style: `fill: var(${v >= 0 ? '--outcome-good' : '--outcome-bad'})`,
       }));
     });
+  } else if (id === 'referees') {
+    // Yellow/red card pair, and a referee's plain black shirt beside them, a
+    // badge on the chest where the FIFA badge sits. The
+    // ink outline keeps the shirt visible on the dark theme's panel.
+    svg.appendChild(svgEl('rect', { x: 40, y: 30, width: 18, height: 26, rx: 3, style: 'fill: #eab308' }));
+    svg.appendChild(svgEl('rect', { x: 49, y: 38, width: 18, height: 26, rx: 3, style: 'fill: var(--outcome-bad); stroke: var(--panel); stroke-width: 1.5' }));
+    svg.appendChild(svgEl('path', {
+      d: 'M95 26 L88 28 L77 38 L82 45 L88 41 V68 H112 V41 L118 45 L123 38 L112 28 L105 26 Q100 32 95 26 Z',
+      style: 'fill: #16181d; stroke: var(--ink); stroke-width: 1.2; stroke-linejoin: round',
+    }));
+    svg.appendChild(svgEl('rect', { x: 103, y: 33.5, width: 5.5, height: 6, rx: 1, style: 'fill: #fff; opacity: 0.8' }));
   } else if (id === 'runin') {
     // Rows of cells, darker where a win is likelier.
     for (let r = 0; r < 5; r += 1) {
@@ -4877,6 +4913,7 @@ function renderExplore(report) {
   if (item === 'mountain') return renderMountain(report, body);
   if (item === 'attack') return renderAttackMap(report, body);
   if (item === 'luck') return renderLuck(report, body);
+  if (item === 'referees') return renderReferees(report, body);
   if (item === 'races') return renderTimeAxis(item, report, body, renderRaces, false);
   if (item === 'whatif') return renderWhatIf(report, body);
   if (item === 'runin') return renderTimeAxis(item, report, body, renderRunIn, true);
@@ -5136,21 +5173,24 @@ async function renderTimeAxis(item, report, body, draw, runIn) {
 
 /* ---------- explore: race lines (viz=races) ---------------------------- */
 
-/* One hue per club, in a fixed order by how likely the club is now; a ninth
-   line and on stay a quiet grey rather than a generated colour. */
-const RACE_HUES = [255, 25, 150, 80, 320, 195, 355, 110];
-const raceColour = (index) => (index < RACE_HUES.length ? `oklch(0.66 0.15 ${RACE_HUES[index]})` : 'var(--ink-faint)');
+/* Eight high-contrast, colour-vision-separated hues from CSS tokens (light & dark);
+   eliminated clubs beyond the featured set use a quiet muted grey. */
+const RACE_MAX_FEATURED = 6;
+const raceColour = (index) => (index < 8 ? `var(--race-${index + 1})` : 'var(--ink-faint)');
 
 /* Labels at the right end of a chart's lines, nudged apart so none overlap:
    `items` are {y, ...}; returns them sorted with `y` spread by `gap` and kept
    between `top` and `bottom`. */
 function spreadLabels(items, gap, top, bottom) {
   const sorted = [...items].sort((a, b) => a.y - b.y);
+  if (!sorted.length) return sorted;
+  sorted[0].y = Math.max(sorted[0].y, top);
   for (let i = 1; i < sorted.length; i += 1) sorted[i].y = Math.max(sorted[i].y, sorted[i - 1].y + gap);
-  const overflow = sorted.length ? sorted[sorted.length - 1].y - bottom : 0;
+  const overflow = sorted[sorted.length - 1].y - bottom;
   if (overflow > 0) for (const item of sorted) item.y -= overflow;
   for (let i = sorted.length - 2; i >= 0; i -= 1) sorted[i].y = Math.min(sorted[i].y, sorted[i + 1].y - gap);
-  for (const item of sorted) item.y = Math.max(item.y, top);
+  sorted[0].y = Math.max(sorted[0].y, top);
+  for (let i = 1; i < sorted.length; i += 1) sorted[i].y = Math.max(sorted[i].y, sorted[i - 1].y + gap);
   return sorted;
 }
 
@@ -5203,7 +5243,186 @@ function raceRounds(layers, report) {
   return xs;
 }
 
+/* Scale the Y axis to the data so low-probability races (e.g. relegation
+   play-off) use the vertical space rather than hugging the bottom half. */
+function raceYMax(series) {
+  let peak = 0;
+  for (const s of series) for (const v of s.values) if (v > peak) peak = v;
+  if (peak <= 0.45) return { max: 0.5, ticks: [0, 0.1, 0.2, 0.3, 0.4, 0.5] };
+  if (peak <= 0.72) return { max: 0.75, ticks: [0, 0.25, 0.5, 0.75] };
+  return { max: 1, ticks: [0, 0.25, 0.5, 0.75, 1] };
+}
+
+/* Split series into featured lines (coloured, labelled, shown by default) and
+   fallen lines (hidden behind the toggle). On settled/finished races where fewer
+   than two clubs remain active, promote the strongest past challengers with a
+   dashed line so the chart still tells the story of how the race was won. */
+function raceGroups(series, finished, maxFeatured = RACE_MAX_FEATURED) {
+  if (!series.length) return { featured: [], fallen: [] };
+  const last = series[0].values.length - 1;
+  const active = series.filter((s) => s.values[last] >= 0.01).slice(0, maxFeatured);
+  const featured = active.map((s) => ({ series: s, challenger: false }));
+  const seen = new Set(active);
+  if (finished || active.length < 2) {
+    const target = Math.min(Math.max(active.length + 2, 4), maxFeatured);
+    const challengers = series
+      .filter((s) => !seen.has(s) && Math.max(...s.values) >= 0.15)
+      .sort((a, b) => Math.max(...b.values) - Math.max(...a.values));
+    for (const s of challengers) {
+      if (featured.length >= target) break;
+      featured.push({ series: s, challenger: true });
+      seen.add(s);
+    }
+  }
+  const fallen = series
+    .filter((s) => !seen.has(s))
+    .sort((a, b) => Math.max(...b.values) - Math.max(...a.values));
+  return { featured, fallen };
+}
+
+/* Played matches for a club strictly after `fromDate` and up to `toDate`. */
+function raceMatchesInWindow(results, teamId, fromDate, toDate) {
+  const id = String(teamId);
+  return (results || [])
+    .filter((m) => m.date > fromDate && m.date <= toDate && (String(m.home_id) === id || String(m.away_id) === id))
+    .sort((a, b) => a.date.localeCompare(b.date));
+}
+
+/* Monotone cubic Hermite spline (Fritsch-Carlson with mild tangent damping)
+   so probability lines look slightly smoothed without ever overshooting
+   0 % or 100 % or distorting flat segments. */
+function raceCurvePath(points, tension = 0.7) {
+  const n = points.length;
+  if (!n) return '';
+  if (n === 1) return `M${points[0][0].toFixed(1)},${points[0][1].toFixed(1)}`;
+  if (n === 2) return `M${points[0][0].toFixed(1)},${points[0][1].toFixed(1)} L${points[1][0].toFixed(1)},${points[1][1].toFixed(1)}`;
+  const d = [];
+  for (let i = 0; i < n - 1; i += 1) {
+    const dx = points[i + 1][0] - points[i][0];
+    d.push(dx ? (points[i + 1][1] - points[i][1]) / dx : 0);
+  }
+  const m = new Array(n).fill(0);
+  m[0] = d[0];
+  m[n - 1] = d[n - 2];
+  for (let i = 1; i < n - 1; i += 1) {
+    m[i] = d[i - 1] * d[i] <= 0 ? 0 : (2 * d[i - 1] * d[i]) / (d[i - 1] + d[i]);
+  }
+  for (let i = 0; i < n - 1; i += 1) {
+    if (d[i] === 0) { m[i] = 0; m[i + 1] = 0; continue; }
+    const a = m[i] / d[i];
+    const b = m[i + 1] / d[i];
+    const h = Math.hypot(a, b);
+    if (h > 3) {
+      const s = 3 / h;
+      m[i] = s * a * d[i];
+      m[i + 1] = s * b * d[i];
+    }
+  }
+  let path = `M${points[0][0].toFixed(1)},${points[0][1].toFixed(1)}`;
+  for (let i = 0; i < n - 1; i += 1) {
+    const dx = points[i + 1][0] - points[i][0];
+    const k = (dx / 3) * tension;
+    const cp1x = points[i][0] + dx / 3;
+    const cp1y = points[i][1] + m[i] * k;
+    const cp2x = points[i + 1][0] - dx / 3;
+    const cp2y = points[i + 1][1] - m[i + 1] * k;
+    path += ` C${cp1x.toFixed(1)},${cp1y.toFixed(1)} ${cp2x.toFixed(1)},${cp2y.toFixed(1)} ${points[i + 1][0].toFixed(1)},${points[i + 1][1].toFixed(1)}`;
+  }
+  return path;
+}
+
+/* Key matches explaining a biggest swing: the swinging club's match plus up to
+   two major counter-moving rivals' matches in the same round window, deduplicated
+   for head-to-head clashes. */
+function raceSwingMatches(series, swing, results) {
+  if (!swing || !results?.length) return [];
+  const { index, from, to, change, series: main } = swing;
+  const minRivalMove = Math.max(0.08, 0.35 * Math.abs(change));
+  const rivals = series
+    .filter((s) => String(s.team_id) !== String(main.team_id))
+    .map((s) => ({ s, delta: s.values[index] - s.values[index - 1] }))
+    .filter(({ delta }) => delta * change < 0 && Math.abs(delta) >= minRivalMove)
+    .sort((a, b) => Math.abs(b.delta) - Math.abs(a.delta))
+    .slice(0, 2)
+    .map(({ s }) => s);
+  const seen = new Set();
+  const out = [];
+  for (const s of [main, ...rivals]) {
+    const ms = raceMatchesInWindow(results, s.team_id, from.date, to.date);
+    if (!ms.length) continue;
+    const m = ms[ms.length - 1];
+    const key = m.match_id != null ? String(m.match_id) : `${m.date}:${m.home_id}:${m.away_id}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    out.push(m);
+    if (out.length >= 3) break;
+  }
+  return out;
+}
+
+/* Whether a race is still open, likely decided, or settled. */
+function raceStatus(series, band, finished) {
+  if (finished) return 'settled';
+  if (!series.length) return 'open';
+  const last = series[0].values.length - 1;
+  const slots = Math.max(1, band.last - band.first + 1);
+  if (series.filter((s) => s.values[last] >= 0.95).length >= slots) return 'settled';
+  if (series.filter((s) => s.values[last] >= 0.8).length >= slots) return 'likely';
+  return 'open';
+}
+
+/* Up to three story highlights for the band: biggest single-round swing (with
+   match result), biggest climb (or pre-season favourite), and biggest fade from
+   peak (or clubs still in contention). */
+function raceHighlights(series, layers, results, band) {
+  if (!series.length) return [];
+  const last = layers.length - 1;
+  const items = [];
+  const swing = raceSwing(series, layers);
+  if (swing && Math.abs(swing.change) >= 0.05) {
+    items.push({
+      kind: 'swing',
+      team_id: swing.series.team_id,
+      team: swing.series.team,
+      change: swing.change,
+      index: swing.index,
+      from: swing.from,
+      to: swing.to,
+      matches: raceSwingMatches(series, swing, results),
+    });
+  }
+  let riser = null;
+  for (const s of series) {
+    const move = s.values[last] - s.values[0];
+    if (move >= 0.05 && (!riser || move > riser.move)) riser = { series: s, move };
+  }
+  if (riser) {
+    items.push({ kind: 'riser', team_id: riser.series.team_id, team: riser.series.team, move: riser.move, first: riser.series.values[0], now: riser.series.values[last] });
+  } else {
+    const preFav = [...series].sort((a, b) => b.values[0] - a.values[0])[0];
+    if (preFav) items.push({ kind: 'preFav', team_id: preFav.team_id, team: preFav.team, first: preFav.values[0], now: preFav.values[last] });
+  }
+  let fade = null;
+  for (const s of series) {
+    let peak = -1;
+    let peakIndex = 0;
+    s.values.forEach((v, i) => { if (v > peak) { peak = v; peakIndex = i; } });
+    const drop = peak - s.values[last];
+    if (drop >= 0.15 && (!fade || drop > fade.drop)) fade = { series: s, peak, peakIndex, peakLayer: layers[peakIndex], now: s.values[last], drop };
+  }
+  if (fade) {
+    items.push({ kind: 'fade', team_id: fade.series.team_id, team: fade.series.team, peak: fade.peak, peakIndex: fade.peakIndex, peakLayer: fade.peakLayer, now: fade.now, drop: fade.drop });
+  } else {
+    const alive = series.filter((s) => s.values[last] >= 0.05).length;
+    items.push({ kind: 'alive', team_id: series[0]?.team_id, alive });
+  }
+  return items.slice(0, 3);
+}
+
 let raceBand = null;
+let raceLastBand = null;
+let raceShowFallen = false;
+let raceFocus = null;
 let raceToken = 0;
 const raceCache = { report: null, layers: null };
 
@@ -5214,6 +5433,8 @@ async function renderRaces(report, body) {
     body.replaceChildren(el('p', 'explore-empty', t('mountain.loading')));
     raceCache.layers = await mountainLayers(report).catch(() => []);
     raceCache.report = report;
+    raceShowFallen = false;
+    raceFocus = null;
   }
   if (token !== raceToken || state.activeView !== 'explore' || state.exploreItem !== 'races') return;
   const layers = raceCache.layers;
@@ -5222,120 +5443,2662 @@ async function renderRaces(report, body) {
     return;
   }
   const band = bands.find((b) => b.label === raceBand) || bands[0];
+  if (band.label !== raceLastBand) {
+    raceShowFallen = false;
+    raceFocus = null;
+    raceLastBand = band.label;
+  }
+
+  const last = layers.length - 1;
+  const finished = report.model.matches_remaining === 0;
+  const isBadBand = band.tone === 'relegation';
+  const rangeText = (b) => (b.first === b.last ? `${b.first}.` : `${b.first}–${b.last}`);
+  const layerText = (layer) => {
+    if (layer.kind === 'pre') return t('races.preFull', { date: formatDate(layer.date) });
+    if (layer.kind === 'now') return finished ? `${t('races.final')} · ${formatDate(layer.date)}` : t('races.afterRound', { k: Math.round(report.model.matches_played / (report.table.length / 2)), date: formatDate(layer.date) });
+    return t('races.afterRound', { k: layer.k, date: formatDate(layer.date) });
+  };
+  const deltaTone = (delta) => {
+    if (Math.abs(delta * 100) < 0.05) return 'flat';
+    const good = isBadBand ? delta < 0 : delta > 0;
+    return good ? 'good' : 'bad';
+  };
+
+  const series = raceSeries(layers, band, report.table)
+    .filter((s) => Math.max(...s.values) >= 0.05)
+    .sort((a, b) => b.values[last] - a.values[last] || Math.max(...b.values) - Math.max(...a.values));
+  const { featured, fallen } = raceGroups(series, finished);
+  const colours = new Map();
+  featured.forEach((f, i) => colours.set(f.series.team_id, raceColour(i)));
+  fallen.forEach((s) => colours.set(s.team_id, 'var(--ink-faint)'));
+  const featuredIds = new Set(featured.map((f) => String(f.series.team_id)));
+  const byId = new Map(series.map((s) => [String(s.team_id), s]));
+  const teamRows = new Map(report.table.map((r) => [String(r.team_id), r]));
+
   const wrap = el('div', 'races');
+  wrap.tabIndex = -1;
+
+  // 1. Band picker + eliminated-clubs toggle
+  const bar = el('div', 'races__bar');
   const picker = el('div', 'races__picker');
   picker.setAttribute('role', 'group');
   picker.setAttribute('aria-label', t('races.pick'));
   for (const option of bands) {
-    const button = el('button', 'races__race', bandEdgeName(option));
+    const button = el('button', 'races__race');
     button.type = 'button';
     button.setAttribute('aria-pressed', String(option === band));
-    button.addEventListener('click', () => { raceBand = option.label; renderRaces(report, body); });
+    const dot = el('i', 'races__band-dot');
+    dot.style.setProperty('--band-dot', bandColor(option, report.table.length));
+    button.append(dot, el('span', '', bandEdgeName(option)), el('span', 'races__range', rangeText(option)));
+    button.addEventListener('click', () => {
+      raceBand = option.label;
+      raceShowFallen = false;
+      raceFocus = null;
+      renderRaces(report, body);
+    });
     picker.appendChild(button);
   }
-  wrap.appendChild(picker);
-  const last = layers.length - 1;
-  const series = raceSeries(layers, band, report.table)
-    .filter((s) => Math.max(...s.values) >= 0.05)
-    .sort((a, b) => b.values[last] - a.values[last]);
-  // Clubs still in the race (1 % or more now) are coloured and named, up to
-  // eight; the ones that fell away stay as quiet lines, named on hover.
-  const inRace = series.filter((s) => s.values[last] >= 0.01).slice(0, RACE_HUES.length);
-  const colours = new Map(series.map((s) => [s, inRace.includes(s) ? raceColour(inRace.indexOf(s)) : raceColour(RACE_HUES.length)]));
-  const svg = svgEl('svg', { class: 'chart', role: 'group', 'aria-label': t('races.aria', { race: bandName(band) }) });
-  wrap.appendChild(svg);
+  bar.appendChild(picker);
+
+  if (fallen.length) {
+    const toggle = el('button', 'races__toggle', t(raceShowFallen ? 'races.hideFallen' : 'races.showFallen', { n: fallen.length }));
+    toggle.type = 'button';
+    toggle.setAttribute('aria-pressed', String(raceShowFallen));
+    toggle.addEventListener('click', () => {
+      raceShowFallen = !raceShowFallen;
+      if (!raceShowFallen && raceFocus && !featuredIds.has(raceFocus)) raceFocus = null;
+      renderRaces(report, body);
+    });
+    bar.appendChild(toggle);
+  }
+  wrap.appendChild(bar);
+
+  // 2. Quiet band header + live round/date readout
+  const head = el('div', 'races__head');
+  const headMain = el('div', 'races__head-main');
+  const headDot = el('i', 'races__band-dot');
+  headDot.style.setProperty('--band-dot', bandColor(band, report.table.length));
+  const statusKind = raceStatus(series, band, finished);
+  const statusPill = el('span', `races__status${statusKind === 'settled' ? ' races__status--settled' : ''}`, t(`races.status.${statusKind}`));
+  headMain.append(headDot, el('h3', 'races__head-title', bandName(band)), el('span', 'races__head-range', rangeText(band)), statusPill);
+  const whenEl = el('span', 'races__when', layerText(layers[last]));
+  head.append(headMain, whenEl);
+  wrap.appendChild(head);
+
+  // 3. Chart
+  const chartWrap = el('div', 'races__chart-wrap');
+  const svg = svgEl('svg', { class: 'chart races__svg', role: 'group', 'aria-label': t('races.aria', { race: bandName(band) }) });
+  chartWrap.appendChild(svg);
+  wrap.appendChild(chartWrap);
+  if (series.length) wrap.appendChild(el('p', 'races__hint', t('races.focusHint')));
   body.replaceChildren(wrap);
 
-  const box = wrap.getBoundingClientRect().width || 940;
-  const narrow = box < SHAPE_NARROW;
-  const width = narrow ? Math.round(box) - 32 : 940;
-  const height = narrow ? 320 : 400;
-  const pad = { top: 14, right: narrow ? 92 : 140, bottom: 28, left: 40 };
+  const box = chartWrap.getBoundingClientRect().width || 940;
+  const narrow = box < 600;
+  const width = narrow ? Math.max(300, Math.round(box)) : 940;
+  const height = narrow ? 250 : 380;
+  const pad = narrow ? { top: 14, right: 16, bottom: 26, left: 38 } : { top: 18, right: 176, bottom: 30, left: 44 };
   svg.setAttribute('viewBox', `0 0 ${width} ${height}`);
+
+  const visibleForScale = raceShowFallen ? series : featured.map((f) => f.series);
+  const yScale = raceYMax(visibleForScale.length ? visibleForScale : series);
   const rounds = raceRounds(layers, report);
   const xMax = rounds[last] || 1;
-  const x = (round) => pad.left + (round / xMax) * (width - pad.left - pad.right);
-  const y = (p) => pad.top + (1 - p) * (height - pad.top - pad.bottom);
+  const plotLeft = pad.left;
+  const plotRight = width - pad.right;
+  const x = (round) => plotLeft + (round / xMax) * (plotRight - plotLeft);
+  const y = (p) => pad.top + (1 - Math.min(p, yScale.max) / yScale.max) * (height - pad.top - pad.bottom);
+  const svgText = (parent, className, content, attrs) => {
+    const node = svgEl('text', { class: className, ...attrs });
+    node.textContent = content;
+    parent.appendChild(node);
+    return node;
+  };
+
+  // Gradient defs for focused club area fill
+  const defs = svgEl('defs');
+  featured.forEach((f, i) => {
+    const grad = svgEl('linearGradient', { id: `race-grad-${i}`, x1: '0', y1: '0', x2: '0', y2: '1' });
+    const c = raceColour(i);
+    grad.appendChild(svgEl('stop', { offset: '0%', 'stop-color': c, 'stop-opacity': '0.24' }));
+    grad.appendChild(svgEl('stop', { offset: '100%', 'stop-color': c, 'stop-opacity': '0.01' }));
+    defs.appendChild(grad);
+  });
+  const fallenGrad = svgEl('linearGradient', { id: 'race-grad-fallen', x1: '0', y1: '0', x2: '0', y2: '1' });
+  fallenGrad.appendChild(svgEl('stop', { offset: '0%', 'stop-color': 'var(--ink-muted)', 'stop-opacity': '0.18' }));
+  fallenGrad.appendChild(svgEl('stop', { offset: '100%', 'stop-color': 'var(--ink-muted)', 'stop-opacity': '0.01' }));
+  defs.appendChild(fallenGrad);
+  svg.appendChild(defs);
+
+  // Gridlines & Y ticks
+  for (const p of yScale.ticks) {
+    svg.appendChild(svgEl('line', { class: p ? 'grid-line' : 'axis-line', x1: plotLeft, x2: plotRight, y1: y(p), y2: y(p) }));
+    svgText(svg, 'tick', `${num(p * 100)}${percentSign()}`, { x: plotLeft - 6, y: y(p) + 3.5, 'text-anchor': 'end' });
+  }
+
+  // Smart X ticks: Pre, every 5 (or 10 on phone), plus final round without overlap
+  const every = narrow ? 10 : 5;
+  svgText(svg, 'tick', t('races.pre'), { x: x(0), y: height - 8, 'text-anchor': 'start' });
+  const endX = x(xMax);
+  for (let k = every; k < xMax; k += every) {
+    if (endX - x(k) < 38) continue;
+    svgText(svg, 'tick', t('races.round', { k }), { x: x(k), y: height - 8, 'text-anchor': 'middle' });
+  }
+  const lastRoundNum = Math.round(report.model.matches_played / (report.table.length / 2));
+  if (lastRoundNum > 0 && endX - x(0) > 36) {
+    svgText(svg, 'tick', t('races.round', { k: lastRoundNum }), { x: endX, y: height - 8, 'text-anchor': 'end' });
+  }
+
+  if (!series.length) {
+    svgText(svg, 'races__none', t('races.none'), { x: (plotLeft + plotRight) / 2, y: height / 2, 'text-anchor': 'middle' });
+  }
+
+  const clubGroups = new Map();
+  const endGroups = new Map();
+  const baseY = y(0);
+
+  const drawClubLine = (s, { challenger, isFallen, featIdx }) => {
+    const id = String(s.team_id);
+    const colour = colours.get(s.team_id);
+    const g = svgEl('g', { class: 'races__club', 'data-team-id': id });
+    if (isFallen && !raceShowFallen) g.setAttribute('hidden', '');
+    const pts = s.values.map((v, i) => [x(rounds[i]), y(v)]);
+    const lineD = raceCurvePath(pts);
+    const areaD = `M${pts[0][0].toFixed(1)},${baseY.toFixed(1)} L${lineD.slice(1)} L${pts[pts.length - 1][0].toFixed(1)},${baseY.toFixed(1)} Z`;
+    const area = svgEl('path', { class: 'races__area', d: areaD, fill: `url(#${isFallen ? 'race-grad-fallen' : `race-grad-${featIdx}`})` });
+    const lineClass = `races__line${challenger ? ' races__line--challenger' : ''}${isFallen ? ' races__line--fallen' : ''}`;
+    const line = svgEl('path', { class: lineClass, style: `stroke: ${colour}`, d: lineD });
+    const dot = svgEl('circle', { class: 'races__end', style: `fill: ${colour}`, cx: pts[last][0], cy: pts[last][1], r: isFallen ? 2.5 : 3.5 });
+    g.append(area, line, dot);
+    svg.appendChild(g);
+    clubGroups.set(id, { g, s, isFallen, colour });
+  };
+
+  // Fallen first, then featured reversed so leader draws on top
+  fallen.forEach((s) => drawClubLine(s, { challenger: false, isFallen: true, featIdx: -1 }));
+  [...featured].reverse().forEach((f, revIdx) => {
+    const featIdx = featured.length - 1 - revIdx;
+    drawClubLine(f.series, { challenger: f.challenger, isFallen: false, featIdx });
+  });
+
+  // Desktop right-margin direct labels with elbow leader lines
+  if (!narrow && featured.length) {
+    const labelItems = featured.map((f) => ({
+      s: f.series,
+      dotY: y(f.series.values[last]),
+      y: y(f.series.values[last]),
+    }));
+    const placed = spreadLabels(labelItems, 18, pad.top + 4, height - pad.bottom - 2);
+    for (const item of placed) {
+      const id = String(item.s.team_id);
+      const colour = colours.get(item.s.team_id);
+      const eg = svgEl('g', { class: 'races__end-item', 'data-team-id': id, tabindex: 0, role: 'button', 'aria-label': `${item.s.team} ${shareText(item.s.values[last])}` });
+      if (Math.abs(item.y - item.dotY) > 2) {
+        const lx1 = plotRight + 3;
+        const lx2 = plotRight + 9;
+        const lx3 = plotRight + 14;
+        eg.appendChild(svgEl('path', { class: 'races__leader', d: `M${lx1},${item.dotY.toFixed(1)} L${lx2},${item.dotY.toFixed(1)} L${lx2},${item.y.toFixed(1)} L${lx3},${item.y.toFixed(1)}` }));
+      }
+      eg.appendChild(svgEl('circle', { cx: plotRight + 19, cy: item.y, r: 3.5, style: `fill: ${colour}` }));
+      const txt = svgEl('text', { x: plotRight + 27, y: item.y + 4 });
+      const nameSpan = svgEl('tspan', { class: 'races__label-name' });
+      nameSpan.textContent = `${item.s.team} `;
+      const pctSpan = svgEl('tspan', { class: 'races__label-pct' });
+      pctSpan.textContent = shareText(item.s.values[last]);
+      txt.append(nameSpan, pctSpan);
+      eg.appendChild(txt);
+      svg.appendChild(eg);
+      endGroups.set(id, eg);
+    }
+  }
+
+  // Biggest swing marker
+  const highlights = raceHighlights(series, layers, report.results, band);
+  const swingItem = highlights.find((h) => h.kind === 'swing');
+  let swingHalo = null;
+  let swingDot = null;
+  if (swingItem) {
+    const sid = String(swingItem.team_id);
+    const s = byId.get(sid);
+    const cx = x(rounds[swingItem.index]);
+    const cy = y(s.values[swingItem.index]);
+    const sc = colours.get(s.team_id);
+    swingHalo = svgEl('circle', { class: 'races__swing-halo', 'data-team-id': sid, cx, cy, r: 7, style: `stroke: ${sc}` });
+    swingDot = svgEl('circle', { class: 'races__swing-dot', 'data-team-id': sid, cx, cy, r: 3, style: `fill: ${sc}` });
+    if (!featuredIds.has(sid) && !raceShowFallen) {
+      swingHalo.setAttribute('hidden', '');
+      swingDot.setAttribute('hidden', '');
+    }
+    svg.append(swingHalo, swingDot);
+  }
+
+  // Peak marker (shown when a single club is focused)
+  const peakDot = svgEl('circle', { class: 'races__peak-dot', r: 4, hidden: '' });
+  svg.appendChild(peakDot);
+
+  // Crosshair & scrub dots
+  const crosshair = svgEl('line', { class: 'races__crosshair', y1: pad.top, y2: height - pad.bottom, x1: -10, x2: -10, hidden: '' });
+  const scrubLayer = svgEl('g', { class: 'races__scrub-dots' });
+  svg.append(crosshair, scrubLayer);
+
+  const scrubRect = svgEl('rect', { class: 'races__scrub', x: plotLeft, y: pad.top, width: Math.max(1, plotRight - plotLeft), height: Math.max(1, height - pad.top - pad.bottom) });
+  svg.appendChild(scrubRect);
+
+  // 4. Contenders table
+  const week = raceWeek(series, layers);
+  const weekMap = new Map((week?.changes || []).map((c) => [String(c.series.team_id), c.change]));
+  const moveLabel = !finished && week ? t('races.week', { date: formatDate(week.since) }) : t('races.col.season');
+
+  const rowEls = new Map();
+  const cardEls = [];
+
+  const applyFocus = (focusId) => {
+    const activeId = focusId || raceFocus;
+    svg.classList.toggle('is-focused', Boolean(activeId));
+    for (const [id, entry] of clubGroups) {
+      const match = id === activeId;
+      entry.g.classList.toggle('is-focused', match);
+      if (entry.isFallen) {
+        if (raceShowFallen || match) entry.g.removeAttribute('hidden');
+        else entry.g.setAttribute('hidden', '');
+      }
+    }
+    for (const [id, eg] of endGroups) eg.classList.toggle('is-focused', id === activeId);
+    if (swingHalo && swingDot) {
+      const sid = swingHalo.getAttribute('data-team-id');
+      const match = sid === activeId;
+      swingHalo.classList.toggle('is-focused', match);
+      swingDot.classList.toggle('is-focused', match);
+      if (!featuredIds.has(sid) && !raceShowFallen && !match) {
+        swingHalo.setAttribute('hidden', '');
+        swingDot.setAttribute('hidden', '');
+      } else {
+        swingHalo.removeAttribute('hidden');
+        swingDot.removeAttribute('hidden');
+      }
+    }
+    if (activeId && byId.has(activeId)) {
+      const s = byId.get(activeId);
+      let pk = 0;
+      s.values.forEach((v, i) => { if (v > s.values[pk]) pk = i; });
+      peakDot.setAttribute('cx', x(rounds[pk]));
+      peakDot.setAttribute('cy', y(s.values[pk]));
+      peakDot.style.fill = colours.get(s.team_id);
+      peakDot.removeAttribute('hidden');
+    } else {
+      peakDot.setAttribute('hidden', '');
+    }
+    for (const [id, tr] of rowEls) tr.classList.toggle('is-focused', id === activeId);
+    for (const { el: cardEl, id } of cardEls) cardEl.classList.toggle('is-focused', id === activeId);
+  };
+
+  const toggleFocus = (id) => {
+    raceFocus = raceFocus === id ? null : id;
+    applyFocus(null);
+  };
+
+  for (const [id, eg] of endGroups) {
+    eg.addEventListener('pointerenter', () => applyFocus(id));
+    eg.addEventListener('pointerleave', () => applyFocus(null));
+    eg.addEventListener('click', () => toggleFocus(id));
+    eg.addEventListener('keydown', (e) => {
+      if (e.key !== 'Enter' && e.key !== ' ') return;
+      e.preventDefault();
+      toggleFocus(id);
+    });
+  }
+
+  // Scrubber interactions
+  const showScrubAt = (event, idx) => {
+    const layer = layers[idx];
+    const sx = x(rounds[idx]);
+    crosshair.setAttribute('x1', sx);
+    crosshair.setAttribute('x2', sx);
+    crosshair.removeAttribute('hidden');
+    whenEl.textContent = layerText(layer);
+
+    const visibleList = series.filter((s) => featuredIds.has(String(s.team_id)) || raceShowFallen || String(s.team_id) === raceFocus);
+    scrubLayer.replaceChildren();
+    for (const s of visibleList) {
+      scrubLayer.appendChild(svgEl('circle', {
+        class: 'races__scrub-dot',
+        cx: sx,
+        cy: y(s.values[idx]),
+        r: String(s.team_id) === raceFocus ? 4.5 : 3.2,
+        style: `fill: ${colours.get(s.team_id)}`,
+      }));
+    }
+
+    const rankedAtIdx = [...visibleList].sort((a, b) => b.values[idx] - a.values[idx]);
+    const tipList = rankedAtIdx.slice(0, 5);
+    if (raceFocus && byId.has(raceFocus) && !tipList.some((s) => String(s.team_id) === raceFocus)) {
+      tipList[tipList.length - 1] = byId.get(raceFocus);
+    }
+    const rowsHtml = tipList.map((s) => {
+      const val = s.values[idx];
+      const delta = idx > 0 ? val - s.values[idx - 1] : 0;
+      const dStr = idx > 0 && Math.abs(delta * 100) >= 0.05 ? changeText(delta * 100, 1) : '';
+      const tone = deltaTone(delta);
+      const focused = String(s.team_id) === raceFocus;
+      return `<div class="races__tip-row${focused ? ' is-focused' : ''}">` +
+        `<i class="races__swatch" style="background:${colours.get(s.team_id)}"></i>` +
+        `<span class="races__tip-name">${esc(s.team)}</span>` +
+        `<span class="races__tip-pct">${esc(shareText(val))}</span>` +
+        `<span class="races__tip-delta races__delta--${tone}">${esc(dStr)}</span>` +
+        `</div>`;
+    }).join('');
+    const clubLabel = (name) => (typeof shortName === 'function' ? shortName(name) : name);
+    let matchHtml = '';
+    if (raceFocus && idx > 0) {
+      const ms = raceMatchesInWindow(report.results, raceFocus, layers[idx - 1].date, layer.date);
+      if (ms.length) {
+        const mText = ms.map((m) => `${esc(clubLabel(m.home))} ${m.home_goals}–${m.away_goals} ${esc(clubLabel(m.away))}`).join(' · ');
+        matchHtml = `<div class="races__tip-match">${mText}</div>`;
+      }
+    }
+    showTooltip(event, `<div class="races__tip-head"><span>${esc(mountainLabel(layer))}</span><span>${esc(formatDate(layer.date))}</span></div><div class="races__tip-rows">${rowsHtml}</div>${matchHtml}`, scrubRect);
+  };
+
+  const nearestIdx = (clientX) => {
+    const r = svg.getBoundingClientRect();
+    const lx = (clientX - r.left) * (width / r.width);
+    let best = 0;
+    for (let i = 1; i < rounds.length; i += 1) {
+      if (Math.abs(x(rounds[i]) - lx) < Math.abs(x(rounds[best]) - lx)) best = i;
+    }
+    return best;
+  };
+
+  scrubRect.addEventListener('pointermove', (event) => showScrubAt(event, nearestIdx(event.clientX)));
+  scrubRect.addEventListener('pointerleave', () => {
+    crosshair.setAttribute('hidden', '');
+    scrubLayer.replaceChildren();
+    whenEl.textContent = layerText(layers[last]);
+    hideTooltip();
+  });
+  scrubRect.addEventListener('click', (event) => {
+    const r = svg.getBoundingClientRect();
+    const ly = (event.clientY - r.top) * (height / r.height);
+    const idx = nearestIdx(event.clientX);
+    const visibleList = series.filter((s) => featuredIds.has(String(s.team_id)) || raceShowFallen || String(s.team_id) === raceFocus);
+    let best = null;
+    let bestDist = 22;
+    for (const s of visibleList) {
+      const dist = Math.abs(y(s.values[idx]) - ly);
+      if (dist < bestDist) { bestDist = dist; best = s; }
+    }
+    if (best) toggleFocus(String(best.team_id));
+    else if (raceFocus) { raceFocus = null; applyFocus(null); }
+  });
+
+  if (series.length) {
+    const tableWrap = el('div', 'races__table-wrap');
+    const table = el('table', 'races__table');
+    const thead = el('thead');
+    const htr = el('tr');
+    for (const label of [t('races.col.club'), t('races.col.pre'), t('races.col.peak'), t('races.col.now')]) {
+      htr.appendChild(el('th', '', label));
+    }
+    const moveTh = el('th');
+    moveTh.append(
+      el('span', 'races__move-long', moveLabel),
+      el('span', 'races__move-short', !finished && week ? t('races.col.moveShort') : t('races.col.season')),
+    );
+    htr.appendChild(moveTh);
+    thead.appendChild(htr);
+    table.appendChild(thead);
+
+    const tbody = el('tbody');
+    const buildRow = (s, { challenger, isFallen }) => {
+      const id = String(s.team_id);
+      const tr = el('tr', `races__row${isFallen ? ' is-fallen' : ''}`);
+      tr.tabIndex = 0;
+
+      const tdClub = el('td');
+      const cell = el('div', 'races__club-cell');
+      const swatch = el('i', `races__swatch${challenger ? ' races__swatch--challenger' : ''}`);
+      if (challenger) swatch.style.color = colours.get(s.team_id);
+      else swatch.style.background = colours.get(s.team_id);
+      cell.appendChild(swatch);
+      const crest = teamLogo(s.team_id, s.team, true);
+      if (crest) {
+        crest.className = 'races__crest';
+        crest.alt = '';
+        crest.setAttribute('aria-hidden', 'true');
+        cell.appendChild(crest);
+      }
+      cell.appendChild(el('span', 'races__club-name', s.team));
+      if (teamRows.has(id)) {
+        const openBtn = el('button', 'races__open-club', '›');
+        openBtn.type = 'button';
+        openBtn.setAttribute('aria-label', t('races.openClub', { team: s.team }));
+        openBtn.title = t('races.openClub', { team: s.team });
+        openBtn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          openTeamView(s.team_id, s.team);
+        });
+        cell.appendChild(openBtn);
+      }
+      tdClub.appendChild(cell);
+
+      let pkIdx = 0;
+      s.values.forEach((v, i) => { if (v > s.values[pkIdx]) pkIdx = i; });
+      const tdPre = el('td', '', shareText(s.values[0]));
+      const tdPeak = el('td');
+      tdPeak.appendChild(document.createTextNode(shareText(s.values[pkIdx])));
+      const pkShort = layers[pkIdx].kind === 'pre' ? t('races.pre') : layers[pkIdx].kind === 'now' ? t('races.final') : t('races.round', { k: layers[pkIdx].k });
+      tdPeak.appendChild(el('span', 'races__peak-round', `(${pkShort})`));
+      const tdNow = el('td', 'races__now-val', shareText(s.values[last]));
+
+      const delta = !finished && weekMap.has(id) ? weekMap.get(id) : s.values[last] - s.values[0];
+      const dStr = Math.abs(delta * 100) >= 0.05 ? changeText(delta * 100, 1) : '–';
+      const tdMove = el('td', `races__delta--${deltaTone(delta)}`, dStr);
+
+      tr.append(tdClub, tdPre, tdPeak, tdNow, tdMove);
+      tr.addEventListener('pointerenter', () => applyFocus(id));
+      tr.addEventListener('pointerleave', () => applyFocus(null));
+      tr.addEventListener('click', () => toggleFocus(id));
+      tr.addEventListener('keydown', (e) => {
+        if (e.key !== 'Enter' && e.key !== ' ') return;
+        e.preventDefault();
+        toggleFocus(id);
+      });
+      tbody.appendChild(tr);
+      rowEls.set(id, tr);
+    };
+
+    for (const f of featured) buildRow(f.series, { challenger: f.challenger, isFallen: false });
+    if (raceShowFallen && fallen.length) {
+      const gtr = el('tr', 'races__group-row');
+      const gth = el('th', '', t('races.fallenGroup'));
+      gth.colSpan = 5;
+      gtr.appendChild(gth);
+      tbody.appendChild(gtr);
+      for (const s of fallen) buildRow(s, { challenger: false, isFallen: true });
+    }
+    table.appendChild(tbody);
+    tableWrap.appendChild(table);
+    wrap.appendChild(tableWrap);
+  }
+
+  // 5. Story highlights strip
+  if (highlights.length) {
+    const grid = el('div', 'races__highlights');
+    for (const item of highlights) {
+      const card = el('button', 'races__card');
+      card.type = 'button';
+      const id = item.team_id != null ? String(item.team_id) : null;
+      const swatch = id && colours.has(item.team_id) ? el('i', 'races__swatch') : null;
+      if (swatch) swatch.style.background = colours.get(item.team_id);
+
+      if (item.kind === 'swing') {
+        card.appendChild(el('span', 'races__card-eyebrow', t('races.fact.swing')));
+        const ch = el('div', 'races__card-head');
+        const club = el('span', 'races__card-club');
+        if (swatch) club.appendChild(swatch);
+        club.appendChild(document.createTextNode(item.team));
+        const val = el('b', `races__card-val races__delta--${deltaTone(item.change)}`, `${changeText(item.change * 100, 1)} ${t('races.pp')}`);
+        ch.append(club, val);
+        card.append(ch, el('p', 'races__card-text', t('races.fact.swingText', { change: `${signed(item.change * 100, 1)} ${t('races.pp')}`, from: mountainLabel(item.from), to: mountainLabel(item.to) })));
+        if (item.matches.length) {
+          const fmt = (m) => `${typeof shortName === 'function' ? shortName(m.home) : m.home} ${m.home_goals}–${m.away_goals} ${typeof shortName === 'function' ? shortName(m.away) : m.away}`;
+          const text = item.matches.length === 1
+            ? t('races.fact.swingMatch', { match: fmt(item.matches[0]) })
+            : t('races.fact.swingMatches', { matches: item.matches.map(fmt).join(' · ') });
+          card.appendChild(el('p', 'races__card-match', text));
+        }
+      } else if (item.kind === 'riser') {
+        card.appendChild(el('span', 'races__card-eyebrow', t('races.fact.riser')));
+        const ch = el('div', 'races__card-head');
+        const club = el('span', 'races__card-club');
+        if (swatch) club.appendChild(swatch);
+        club.appendChild(document.createTextNode(item.team));
+        const val = el('b', `races__card-val races__delta--${deltaTone(item.move)}`, `${changeText(item.move * 100, 1)} ${t('races.pp')}`);
+        ch.append(club, val);
+        card.append(ch, el('p', 'races__card-text', t('races.fact.riserText', { first: shareText(item.first), now: shareText(item.now) })));
+      } else if (item.kind === 'preFav') {
+        card.appendChild(el('span', 'races__card-eyebrow', t('races.fact.preFav')));
+        const ch = el('div', 'races__card-head');
+        const club = el('span', 'races__card-club');
+        if (swatch) club.appendChild(swatch);
+        club.appendChild(document.createTextNode(item.team));
+        const val = el('b', 'races__card-val', shareText(item.first));
+        ch.append(club, val);
+        card.append(ch, el('p', 'races__card-text', t('races.fact.preFavText', { first: shareText(item.first), now: shareText(item.now) })));
+      } else if (item.kind === 'fade') {
+        card.appendChild(el('span', 'races__card-eyebrow', t('races.fact.fade')));
+        const ch = el('div', 'races__card-head');
+        const club = el('span', 'races__card-club');
+        if (swatch) club.appendChild(swatch);
+        club.appendChild(document.createTextNode(item.team));
+        const val = el('b', `races__card-val races__delta--${deltaTone(-item.drop)}`, `${changeText(-item.drop * 100, 1)} ${t('races.pp')}`);
+        ch.append(club, val);
+        card.append(ch, el('p', 'races__card-text', t('races.fact.fadeText', { peak: shareText(item.peak), when: mountainLabel(item.peakLayer), now: shareText(item.now) })));
+      } else {
+        card.appendChild(el('span', 'races__card-eyebrow', t('races.fact.alive')));
+        const ch = el('div', 'races__card-head');
+        ch.appendChild(el('b', 'races__card-val', String(item.alive)));
+        card.append(ch, el('p', 'races__card-text', t('races.fact.aliveText')));
+      }
+
+      if (id && byId.has(id)) {
+        card.addEventListener('pointerenter', () => applyFocus(id));
+        card.addEventListener('pointerleave', () => applyFocus(null));
+        card.addEventListener('click', () => toggleFocus(id));
+        cardEls.push({ el: card, id });
+      }
+      grid.appendChild(card);
+    }
+    wrap.appendChild(grid);
+  }
+
+  // 6. Footer: concise play-off caveat + collapsible method note
+  const foot = el('div', 'races__foot');
+  if (band.tone === 'relegation' || (band.tone === 'top' && report.league.slug === 'obosligaen')) {
+    foot.appendChild(el('p', 'races__playoff-note', t('races.playoffNote')));
+  }
+  const details = el('details', 'races__method');
+  details.appendChild(el('summary', '', t('races.methodTitle')));
+  details.appendChild(el('p', '', t('races.note')));
+  foot.appendChild(details);
+  wrap.appendChild(foot);
+
+  wrap.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && raceFocus) {
+      raceFocus = null;
+      applyFocus(null);
+    }
+  });
+}
+
+/* ---------- explore: referees (viz=referees) -------------------------- */
+
+function refereeMinFilter(rows, minMatches) {
+  return minMatches > 0 ? (rows || []).filter((r) => r.matches >= minMatches) : (rows || []);
+}
+
+/* How far a side's performance drifts from zero by luck alone: its spread
+   over every team-match in the selection.
+   Walk-forward, no referee-club pairing beats this (PROJECT_STATUS.md,
+   "Referee tracker"), so the charts shade the 95 % range it allows. */
+function refereeChanceSd(rows) {
+  let n = 0, sum = 0, sq = 0;
+  for (const r of rows || []) {
+    for (const d of [r.home_perf, r.away_perf]) { n += 1; sum += d; sq += d * d; }
+  }
+  return n > 1 ? Math.sqrt(Math.max(0, (sq - (sum * sum) / n) / (n - 1))) : 0;
+}
+
+/* Half-width of that 95 % range over `matches` matches, per match or summed. */
+function refereeChanceBand(sd, matches, metric) {
+  if (!sd || !matches) return 0;
+  return 1.96 * sd * (metric === 'perMatch' ? 1 / Math.sqrt(matches) : Math.sqrt(matches));
+}
+
+/* A club's performance per match with every referee: the
+   level its referee bars are read against (clubs beat or trail the model
+   for reasons of their own, and that carries over between seasons). */
+function refereeClubBaseline(rows, teamId) {
+  let matches = 0, diff = 0;
+  for (const row of teamRefereeRows(rows, teamId)) { matches += row.matches; diff += row.diff; }
+  return matches ? diff / matches : null;
+}
+
+function expandReferees(data) {
+  const leagues = data?.leagues || ['eliteserien', 'obosligaen'];
+  const refs = data?.referees || [];
+  const teams = data?.teams || {};
+  const label = (id) => {
+    const raw = teams[id] || String(id);
+    return typeof shortName === 'function' ? shortName(raw) : raw;
+  };
+  return (data?.matches || []).map((row) => ({
+    match_id: row[0],
+    date: row[1],
+    season: row[2],
+    league: leagues[row[3]] || 'eliteserien',
+    referee: refs[row[4]] || 'Unknown',
+    home_id: row[5],
+    away_id: row[6],
+    home: label(row[5]),
+    away: label(row[6]),
+    home_goals: row[7],
+    away_goals: row[8],
+    home_xpts: row[9],
+    away_xpts: row[10],
+    home_yellow: row[11] || 0,
+    away_yellow: row[12] || 0,
+    home_red: row[13] || 0,
+    away_red: row[14] || 0,
+    home_fouls: row[15] ?? null,
+    away_fouls: row[16] ?? null,
+    // Rating change against what the model expected before kickoff (home
+    // side; the away side's is the negative): the referee view's measure.
+    home_change: row[17] ?? 0,
+    home_expected: row[18] ?? 0,
+    home_perf: (row[17] ?? 0) - (row[18] ?? 0),
+    away_perf: (row[18] ?? 0) - (row[17] ?? 0),
+    home_xg: row[19] ?? null,
+    away_xg: row[20] ?? null,
+  }));
+}
+
+function refereeFilter(rows, { league, season, asof } = {}) {
+  return (rows || []).filter((r) => {
+    if (league && r.league !== league) return false;
+    if (season && season !== 'all' && r.season !== Number(season)) return false;
+    if (asof && r.date > asof) return false;
+    return true;
+  });
+}
+
+function refereeOverview(rows) {
+  const byRef = new Map();
+  for (const r of rows || []) {
+    const cur = byRef.get(r.referee) || {
+      referee: r.referee,
+      matches: 0,
+      seasonMin: r.season,
+      seasonMax: r.season,
+      homeWins: 0,
+      draws: 0,
+      awayWins: 0,
+      homePts: 0,
+      homeXpts: 0,
+      goals: 0,
+      yellows: 0,
+      reds: 0,
+      homeCards: 0,
+      awayCards: 0,
+      fouls: 0,
+      homeFouls: 0,
+      awayFouls: 0,
+      foulsMatches: 0,
+      cardsWithFouls: 0,
+    };
+    cur.matches += 1;
+    if (r.season < cur.seasonMin) cur.seasonMin = r.season;
+    if (r.season > cur.seasonMax) cur.seasonMax = r.season;
+    cur.goals += (r.home_goals || 0) + (r.away_goals || 0);
+    if (r.home_goals > r.away_goals) { cur.homeWins += 1; cur.homePts += 3; }
+    else if (r.home_goals === r.away_goals) { cur.draws += 1; cur.homePts += 1; }
+    else { cur.awayWins += 1; }
+    cur.homeXpts += r.home_xpts;
+    const matchYellows = r.home_yellow + r.away_yellow;
+    const matchReds = r.home_red + r.away_red;
+    cur.yellows += matchYellows;
+    cur.reds += matchReds;
+    cur.homeCards += r.home_yellow + r.home_red;
+    cur.awayCards += r.away_yellow + r.away_red;
+    if (r.home_fouls != null && r.away_fouls != null) {
+      cur.fouls += r.home_fouls + r.away_fouls;
+      cur.homeFouls += r.home_fouls;
+      cur.awayFouls += r.away_fouls;
+      cur.foulsMatches += 1;
+      cur.cardsWithFouls += matchYellows + matchReds;
+    }
+    byRef.set(r.referee, cur);
+  }
+  return [...byRef.values()]
+    .map((row) => {
+      const cards = row.yellows + row.reds;
+      const homeBias = row.homePts - row.homeXpts;
+      return {
+        ...row,
+        cards,
+        homeBias,
+        homeBiasPerMatch: row.matches ? homeBias / row.matches : 0,
+        goalsPerMatch: row.matches ? row.goals / row.matches : 0,
+        homeCardsPerMatch: row.matches ? row.homeCards / row.matches : 0,
+        awayCardsPerMatch: row.matches ? row.awayCards / row.matches : 0,
+        awayHomeCardGap: row.matches ? (row.awayCards - row.homeCards) / row.matches : 0,
+        redsPerMatch: row.matches ? row.reds / row.matches : 0,
+        cardsPerMatch: row.matches ? cards / row.matches : 0,
+        foulsPerMatch: row.foulsMatches ? row.fouls / row.foulsMatches : null,
+        homeFoulsPerMatch: row.foulsMatches ? row.homeFouls / row.foulsMatches : null,
+        awayFoulsPerMatch: row.foulsMatches ? row.awayFouls / row.foulsMatches : null,
+        foulsPerCard: row.foulsMatches && row.cardsWithFouls > 0 ? row.fouls / row.cardsWithFouls : null,
+      };
+    })
+    .sort((a, b) => b.matches - a.matches || a.referee.localeCompare(b.referee));
+}
+
+function refereePairings(rows, minMatches = 10) {
+  const byPair = new Map();
+  for (const r of rows || []) {
+    const sides = [
+      [r.home_id, r.home, r.home_goals, r.away_goals, r.home_perf],
+      [r.away_id, r.away, r.away_goals, r.home_goals, r.away_perf],
+    ];
+    for (const [id, team, gf, ga, perf] of sides) {
+      const key = `${r.referee}\t${id}`;
+      const cur = byPair.get(key) || {
+        referee: r.referee,
+        team_id: id,
+        team,
+        matches: 0,
+        wins: 0,
+        draws: 0,
+        losses: 0,
+        points: 0,
+        perf: 0,
+      };
+      cur.matches += 1;
+      if (gf > ga) { cur.wins += 1; cur.points += 3; }
+      else if (gf === ga) { cur.draws += 1; cur.points += 1; }
+      else { cur.losses += 1; }
+      cur.perf += perf;
+      byPair.set(key, cur);
+    }
+  }
+  return [...byPair.values()]
+    .filter((row) => row.matches >= minMatches)
+    .map((row) => {
+      return { ...row, diff: row.perf, perMatch: row.matches ? row.perf / row.matches : 0 };
+    })
+    .sort((a, b) => b.perMatch - a.perMatch || b.diff - a.diff);
+}
+
+function clubDisciplineRows(rows) {
+  const byClub = new Map();
+  for (const r of rows || []) {
+    const sides = [
+      [r.home_id, r.home, true, r.home_yellow, r.away_yellow, r.home_red, r.away_red, r.home_fouls, r.away_fouls],
+      [r.away_id, r.away, false, r.away_yellow, r.home_yellow, r.away_red, r.home_red, r.away_fouls, r.home_fouls],
+    ];
+    for (const [id, team, isHome, yf, ya, rf, ra, ff, fa] of sides) {
+      const cur = byClub.get(id) || {
+        team_id: id,
+        team,
+        matches: 0,
+        homeMatches: 0,
+        awayMatches: 0,
+        homeCardsFor: 0,
+        awayCardsFor: 0,
+        yellowsFor: 0,
+        yellowsAgainst: 0,
+        redsFor: 0,
+        redsAgainst: 0,
+        cardsForWithFouls: 0,
+        foulsFor: 0,
+        foulsAgainst: 0,
+        foulsMatches: 0,
+      };
+      cur.matches += 1;
+      if (isHome) { cur.homeMatches += 1; cur.homeCardsFor += yf + rf; }
+      else { cur.awayMatches += 1; cur.awayCardsFor += yf + rf; }
+      cur.yellowsFor += yf;
+      cur.yellowsAgainst += ya;
+      cur.redsFor += rf;
+      cur.redsAgainst += ra;
+      if (ff != null && fa != null) {
+        cur.foulsFor += ff;
+        cur.foulsAgainst += fa;
+        cur.foulsMatches += 1;
+        cur.cardsForWithFouls += yf + rf;
+      }
+      byClub.set(id, cur);
+    }
+  }
+  return [...byClub.values()]
+    .map((row) => {
+      const cardsFor = row.yellowsFor + row.redsFor;
+      const cardsAgainst = row.yellowsAgainst + row.redsAgainst;
+      const cardsForPerMatch = row.matches ? cardsFor / row.matches : 0;
+      const cardsAgainstPerMatch = row.matches ? cardsAgainst / row.matches : 0;
+      const foulsForPerMatch = row.foulsMatches ? row.foulsFor / row.foulsMatches : null;
+      const foulsAgainstPerMatch = row.foulsMatches ? row.foulsAgainst / row.foulsMatches : null;
+      return {
+        ...row,
+        cardsFor,
+        cardsAgainst,
+        cardsForPerMatch,
+        cardsAgainstPerMatch,
+        homeCardsPerMatch: row.homeMatches ? row.homeCardsFor / row.homeMatches : null,
+        awayCardsPerMatch: row.awayMatches ? row.awayCardsFor / row.awayMatches : null,
+        netCardsPerMatch: cardsAgainstPerMatch - cardsForPerMatch,
+        netReds: row.redsAgainst - row.redsFor,
+        totalCardsPerMatch: cardsForPerMatch + cardsAgainstPerMatch,
+        foulsForPerMatch,
+        foulsAgainstPerMatch,
+        netFoulsPerMatch: row.foulsMatches ? (row.foulsAgainst - row.foulsFor) / row.foulsMatches : null,
+        foulsPerCard: row.foulsMatches && row.cardsForWithFouls > 0 ? row.foulsFor / row.cardsForWithFouls : null,
+      };
+    })
+    .sort((a, b) => b.netCardsPerMatch - a.netCardsPerMatch || a.team.localeCompare(b.team));
+}
+
+function seasonDisciplineRows(rows) {
+  const bySeason = new Map();
+  for (const r of rows || []) {
+    const cur = bySeason.get(r.season) || {
+      season: r.season,
+      matches: 0,
+      matchesWithRed: 0,
+      yellows: 0,
+      reds: 0,
+      homeCards: 0,
+      awayCards: 0,
+      fouls: 0,
+      foulsMatches: 0,
+      cardsWithFouls: 0,
+    };
+    cur.matches += 1;
+    const my = r.home_yellow + r.away_yellow;
+    const mr = r.home_red + r.away_red;
+    if (mr > 0) cur.matchesWithRed += 1;
+    cur.yellows += my;
+    cur.reds += mr;
+    cur.homeCards += r.home_yellow + r.home_red;
+    cur.awayCards += r.away_yellow + r.away_red;
+    if (r.home_fouls != null && r.away_fouls != null) {
+      cur.fouls += r.home_fouls + r.away_fouls;
+      cur.foulsMatches += 1;
+      cur.cardsWithFouls += my + mr;
+    }
+    bySeason.set(r.season, cur);
+  }
+  return [...bySeason.values()]
+    .sort((a, b) => a.season - b.season)
+    .map((row) => ({
+      season: row.season,
+      matches: row.matches,
+      yellowsPerMatch: row.matches ? row.yellows / row.matches : 0,
+      redsPerMatch: row.matches ? row.reds / row.matches : 0,
+      redMatchPct: row.matches ? (100 * row.matchesWithRed) / row.matches : 0,
+      cardsPerMatch: row.matches ? (row.yellows + row.reds) / row.matches : 0,
+      foulsPerMatch: row.foulsMatches ? row.fouls / row.foulsMatches : null,
+      foulsPerCard: row.foulsMatches && row.cardsWithFouls > 0 ? row.fouls / row.cardsWithFouls : null,
+      awayHomeCardGap: row.matches ? (row.awayCards - row.homeCards) / row.matches : 0,
+    }));
+}
+
+function refereeTeamRows(rows, referee) {
+  const byTeam = new Map();
+  for (const r of rows || []) {
+    if (r.referee !== referee) continue;
+    const sides = [
+      [r.home_id, r.home, r.home_goals, r.away_goals, r.home_perf, r.home_yellow, r.away_yellow, r.home_red, r.away_red, r.home_fouls, r.away_fouls],
+      [r.away_id, r.away, r.away_goals, r.home_goals, r.away_perf, r.away_yellow, r.home_yellow, r.away_red, r.home_red, r.away_fouls, r.home_fouls],
+    ];
+    for (const [id, team, gf, ga, perf, yf, ya, rf, ra, ff, fa] of sides) {
+      const cur = byTeam.get(id) || {
+        team_id: id,
+        team,
+        matches: 0,
+        wins: 0,
+        draws: 0,
+        losses: 0,
+        points: 0,
+        perf: 0,
+        yellowsFor: 0,
+        yellowsAgainst: 0,
+        redsFor: 0,
+        redsAgainst: 0,
+        foulsFor: 0,
+        foulsAgainst: 0,
+        foulsMatches: 0,
+      };
+      cur.matches += 1;
+      if (gf > ga) { cur.wins += 1; cur.points += 3; }
+      else if (gf === ga) { cur.draws += 1; cur.points += 1; }
+      else { cur.losses += 1; }
+      cur.perf += perf;
+      cur.yellowsFor += yf;
+      cur.yellowsAgainst += ya;
+      cur.redsFor += rf;
+      cur.redsAgainst += ra;
+      if (ff != null && fa != null) {
+        cur.foulsFor += ff;
+        cur.foulsAgainst += fa;
+        cur.foulsMatches += 1;
+      }
+      byTeam.set(id, cur);
+    }
+  }
+  return [...byTeam.values()]
+    .map((row) => ({ ...row, diff: row.perf, perMatch: row.matches ? row.perf / row.matches : 0 }))
+    .sort((a, b) => b.diff - a.diff || a.team.localeCompare(b.team));
+}
+
+function teamRefereeRows(rows, teamId) {
+  const target = String(teamId);
+  const byRef = new Map();
+  for (const r of rows || []) {
+    const isHome = String(r.home_id) === target;
+    const isAway = String(r.away_id) === target;
+    if (!isHome && !isAway) continue;
+    const [gf, ga, perf, yf, ya, rf, ra, ff, fa] = isHome
+      ? [r.home_goals, r.away_goals, r.home_perf, r.home_yellow, r.away_yellow, r.home_red, r.away_red, r.home_fouls, r.away_fouls]
+      : [r.away_goals, r.home_goals, r.away_perf, r.away_yellow, r.home_yellow, r.away_red, r.home_red, r.away_fouls, r.home_fouls];
+    const cur = byRef.get(r.referee) || {
+      referee: r.referee,
+      matches: 0,
+      wins: 0,
+      draws: 0,
+      losses: 0,
+      points: 0,
+      perf: 0,
+      yellowsFor: 0,
+      yellowsAgainst: 0,
+      redsFor: 0,
+      redsAgainst: 0,
+      foulsFor: 0,
+      foulsAgainst: 0,
+      foulsMatches: 0,
+    };
+    cur.matches += 1;
+    if (gf > ga) { cur.wins += 1; cur.points += 3; }
+    else if (gf === ga) { cur.draws += 1; cur.points += 1; }
+    else { cur.losses += 1; }
+    cur.perf += perf;
+    cur.yellowsFor += yf;
+    cur.yellowsAgainst += ya;
+    cur.redsFor += rf;
+    cur.redsAgainst += ra;
+    if (ff != null && fa != null) {
+      cur.foulsFor += ff;
+      cur.foulsAgainst += fa;
+      cur.foulsMatches += 1;
+    }
+    byRef.set(r.referee, cur);
+  }
+  return [...byRef.values()]
+    .map((row) => ({ ...row, diff: row.perf, perMatch: row.matches ? row.perf / row.matches : 0 }))
+    .sort((a, b) => b.diff - a.diff || a.referee.localeCompare(b.referee));
+}
+
+function refereePairingMatches(rows, referee, teamId) {
+  const target = String(teamId);
+  const out = [];
+  for (const r of rows || []) {
+    if (r.referee !== referee) continue;
+    const isHome = String(r.home_id) === target;
+    const isAway = String(r.away_id) === target;
+    if (!isHome && !isAway) continue;
+    const sign = isHome ? 1 : -1;
+    const [gf, ga, xgf, xga, yf, rf, ya, ra, ff, fa, oppId, oppName, teamName] = isHome
+      ? [r.home_goals, r.away_goals, r.home_xg, r.away_xg, r.home_yellow, r.home_red, r.away_yellow, r.away_red, r.home_fouls, r.away_fouls, r.away_id, r.away, r.home]
+      : [r.away_goals, r.home_goals, r.away_xg, r.home_xg, r.away_yellow, r.away_red, r.home_yellow, r.home_red, r.away_fouls, r.home_fouls, r.home_id, r.home, r.away];
+    const pts = gf > ga ? 3 : (gf === ga ? 1 : 0);
+    out.push({
+      match_id: r.match_id,
+      date: r.date,
+      season: r.season,
+      isHome,
+      team_id: target,
+      team: teamName,
+      opponent_id: oppId,
+      opponent: oppName,
+      gf,
+      ga,
+      pts,
+      xgf,
+      xga,
+      change: sign * r.home_change,
+      expected: sign * r.home_expected,
+      diff: sign * (r.home_change - r.home_expected),
+      yf,
+      rf,
+      ya,
+      ra,
+      ff,
+      fa,
+    });
+  }
+  return out.sort((a, b) => b.date.localeCompare(a.date) || String(b.match_id).localeCompare(String(a.match_id)));
+}
+
+function redCardImpact(rows) {
+  let recN = 0, recPts = 0, recPerf = 0;
+  let drwN = 0, drwPts = 0, drwPerf = 0;
+  let redMatches = 0, totalReds = 0;
+  const totalMatches = (rows || []).length;
+  for (const r of rows || []) {
+    const matchReds = (r.home_red || 0) + (r.away_red || 0);
+    if (matchReds > 0) redMatches += 1;
+    totalReds += matchReds;
+    const hp = r.home_goals > r.away_goals ? 3 : (r.home_goals === r.away_goals ? 1 : 0);
+    const ap = r.away_goals > r.home_goals ? 3 : (r.away_goals === r.home_goals ? 1 : 0);
+    for (const [pts, perf, rf, ra] of [[hp, r.home_perf, r.home_red, r.away_red], [ap, r.away_perf, r.away_red, r.home_red]]) {
+      if (rf > 0 && ra === 0) { recN += 1; recPts += pts; recPerf += perf; }
+      else if (ra > 0 && rf === 0) { drwN += 1; drwPts += pts; drwPerf += perf; }
+    }
+  }
+  return {
+    totalMatches,
+    totalReds,
+    redMatchPct: totalMatches ? (100 * redMatches) / totalMatches : 0,
+    received: {
+      n: recN,
+      ptsPerMatch: recN ? recPts / recN : null,
+      diffPerMatch: recN ? recPerf / recN : null,
+    },
+    drawn: {
+      n: drwN,
+      ptsPerMatch: drwN ? drwPts / drwN : null,
+      diffPerMatch: drwN ? drwPerf / drwN : null,
+    },
+  };
+}
+
+function varEraComparison(rows) {
+  const agg = (subset) => {
+    const n = subset.length;
+    let cards = 0, reds = 0, redM = 0, fouls = 0, foulsM = 0;
+    for (const r of subset) {
+      const mr = (r.home_red || 0) + (r.away_red || 0);
+      cards += (r.home_yellow || 0) + (r.away_yellow || 0) + mr;
+      reds += mr;
+      if (mr > 0) redM += 1;
+      if (r.home_fouls != null && r.away_fouls != null) { fouls += r.home_fouls + r.away_fouls; foulsM += 1; }
+    }
+    return {
+      n,
+      cardsPerMatch: n ? cards / n : 0,
+      redsPerMatch: n ? reds / n : 0,
+      redMatchPct: n ? (100 * redM) / n : 0,
+      foulsPerMatch: foulsM ? fouls / foulsM : null,
+    };
+  };
+  const pre = (rows || []).filter((r) => r.season < 2023);
+  const varR = (rows || []).filter((r) => r.season >= 2023);
+  if (pre.length < 10 || varR.length < 10) return null;
+  const preVar = agg(pre);
+  const varEra = agg(varR);
+  const redLiftPct = preVar.redsPerMatch > 0 ? ((varEra.redsPerMatch - preVar.redsPerMatch) / preVar.redsPerMatch) * 100 : null;
+  return { preVar, varEra, redLiftPct };
+}
+
+function feistiestMatches(rows, limit = 5) {
+  return [...(rows || [])]
+    .map((r) => {
+      const yellows = (r.home_yellow || 0) + (r.away_yellow || 0);
+      const reds = (r.home_red || 0) + (r.away_red || 0);
+      const fouls = r.home_fouls != null && r.away_fouls != null ? r.home_fouls + r.away_fouls : null;
+      return { ...r, yellows, reds, totalCards: yellows + reds, totalFouls: fouls };
+    })
+    .sort((a, b) => b.totalCards - a.totalCards
+      || b.reds - a.reds
+      || (b.totalFouls ?? -1) - (a.totalFouls ?? -1)
+      || b.date.localeCompare(a.date))
+    .slice(0, limit);
+}
+
+let refereesPromise = null;
+function fetchReferees() {
+  if (state.referees) return Promise.resolve(state.referees);
+  if (!refereesPromise) {
+    refereesPromise = fetch('/data/referees.json')
+      .then((response) => {
+        if (!response.ok) throw new Error(`/data/referees.json ${response.status}`);
+        return response.json();
+      })
+      .then((data) => {
+        state.referees = { ...data, rows: expandReferees(data) };
+        return state.referees;
+      })
+      .catch((error) => {
+        console.warn('[Referees] referees.json unavailable', error);
+        return { leagues: ['eliteserien', 'obosligaen'], referees: [], teams: {}, seasons: [], rows: [] };
+      });
+  }
+  return refereesPromise;
+}
+
+/* Performance is in rating points: about ±10 a match, a few points a match
+   on average over a pairing, tens in total. */
+const refPerfDigits = (metric) => (metric === 'perMatch' ? 1 : 0);
+
+/* A round tick step (1, 2 or 5 times a power of ten) at least `raw`. */
+function refNiceStep(raw) {
+  const power = 10 ** Math.floor(Math.log10(Math.max(raw, 1e-9)));
+  return [1, 2, 5, 10].map((m) => m * power).find((v) => v >= raw - 1e-9);
+}
+
+/* Expected (hollow) to actual (filled) rating change on a shared ±scale: one
+   match at a glance. The bar between them is the performance. */
+function refPerfDumbbell(expected, actual, scale, width = 92) {
+  const height = 14;
+  const svg = svgEl('svg', { class: 'ref-dumbbell', width, height, viewBox: `0 0 ${width} ${height}`, 'aria-hidden': 'true' });
+  const x = (v) => 5 + ((Math.max(-scale, Math.min(scale, v)) + scale) / (2 * scale)) * (width - 10);
+  const up = actual >= expected;
+  svg.appendChild(svgEl('line', { class: 'ref-dumbbell__axis', x1: x(0), x2: x(0), y1: 1, y2: height - 1 }));
+  svg.appendChild(svgEl('line', {
+    class: `ref-dumbbell__bar ${up ? 'ref-dumbbell__bar--up' : 'ref-dumbbell__bar--down'}`,
+    x1: x(expected), x2: x(actual), y1: height / 2, y2: height / 2,
+  }));
+  svg.appendChild(svgEl('circle', { class: 'ref-dumbbell__exp', cx: x(expected), cy: height / 2, r: 3.6 }));
+  svg.appendChild(svgEl('circle', { class: `ref-dumbbell__act ${up ? 'ref-dumbbell__act--up' : 'ref-dumbbell__act--down'}`, cx: x(actual), cy: height / 2, r: 3.6 }));
+  return svg;
+}
+
+/* The measure, explained by two real matches from the selection: a win that
+   still scored below zero and a loss that scored above it. */
+function refPerfExplainer(rows, teamId = null) {
+  const sides = [];
+  for (const r of rows || []) {
+    for (const home of [true, false]) {
+      const id = home ? r.home_id : r.away_id;
+      if (teamId != null && String(id) !== String(teamId)) continue;
+      const sign = home ? 1 : -1;
+      const [gf, ga] = home ? [r.home_goals, r.away_goals] : [r.away_goals, r.home_goals];
+      sides.push({
+        r, gf, ga, team_id: id,
+        change: sign * r.home_change, expected: sign * r.home_expected, perf: home ? r.home_perf : r.away_perf,
+        xgf: home ? r.home_xg : r.away_xg, xga: home ? r.away_xg : r.home_xg,
+      });
+    }
+  }
+  // Only matches that make the point: a win below zero, a loss above it.
+  const lowWin = sides.filter((x) => x.gf > x.ga && x.perf < 0).sort((a, b) => a.perf - b.perf)[0];
+  const highLoss = sides.filter((x) => x.gf < x.ga && x.perf > 0 && x.r !== lowWin?.r).sort((a, b) => b.perf - a.perf)[0];
+
+  const box = el('details', 'ref-explain');
+  box.open = state.refereeExplainOpen;
+  box.addEventListener('toggle', () => { state.refereeExplainOpen = box.open; });
+  box.appendChild(el('summary', 'ref-explain__title', t('referees.explain.title')));
+  const eq = el('div', 'ref-explain__eq');
+  const chip = (cls, label) => {
+    const c = el('span', `ref-explain__chip ${cls}`);
+    c.append(el('i', 'ref-explain__dot'), label);
+    return c;
+  };
+  eq.append(
+    chip('ref-explain__chip--act', t('referees.explain.actual')),
+    el('span', 'ref-explain__op', '−'),
+    chip('ref-explain__chip--exp', t('referees.explain.expected')),
+    el('span', 'ref-explain__op', '='),
+    chip('ref-explain__chip--perf', t('referees.explain.perf')),
+  );
+  box.appendChild(eq);
+  box.appendChild(el('p', 'ref-explain__line', t('referees.explain.line')));
+  const examples = [[lowWin, 'referees.explain.win'], [highLoss, 'referees.explain.loss']].filter(([x]) => x);
+  if (examples.length) {
+    const scale = Math.max(5, ...examples.flatMap(([x]) => [Math.abs(x.change), Math.abs(x.expected)]));
+    const list = el('div', 'ref-explain__examples');
+    for (const [x, key] of examples) {
+      const row = el('div', 'ref-explain__example');
+      const logo = el('img', 'ref-explain__logo', '');
+      logo.src = `/logos/${x.team_id}.webp`;
+      logo.alt = '';
+      logo.width = 20;
+      logo.height = 20;
+      const text = el('span', 'ref-explain__text');
+      const r = x.r;
+      text.append(
+        el('strong', '', `${r.home} ${r.home_goals}–${r.away_goals} ${r.away}`),
+        el('small', '', [t(key), x.xgf != null ? `xG ${num(x.xgf, 1)}–${num(x.xga, 1)}` : '', r.referee].filter(Boolean).join(' · ')),
+      );
+      const value = el('span', `ref-explain__value ${x.perf >= 0 ? 'ref-pos' : 'ref-neg'}`, signed(x.perf, 1));
+      row.append(logo, text, refPerfDumbbell(x.expected, x.change, scale, 120), value);
+      row.title = t('referees.explain.example', { actual: signed(x.change, 1), expected: signed(x.expected, 1) });
+      list.appendChild(row);
+    }
+    box.appendChild(list);
+  }
+  return box;
+}
+
+function drawRefBarChart(wrap, rows, opts) {
+  const {
+    metric = 'total', kind = 'club', ariaLabel = '', onClickRow, emptyText = '',
+    activeKey = null, onRelaxMin = null, chanceSd = 0, baseline = null,
+  } = opts;
+  if (!rows.length) {
+    wrap.appendChild(refereeEmptyWithRelax(emptyText, onRelaxMin));
+    return;
+  }
+  const centreOf = (row) => (baseline == null ? 0 : (metric === 'perMatch' ? baseline : baseline * row.matches));
+  const valueOf = (row) => (metric === 'perMatch' ? row.perMatch : row.diff);
+  const digits = refPerfDigits(metric);
+  const sorted = [...rows].sort((a, b) => valueOf(b) - valueOf(a)
+    || (kind === 'club' ? a.team.localeCompare(b.team) : a.referee.localeCompare(b.referee)));
+
+  const svg = svgEl('svg', { class: 'chart', role: 'group', 'aria-label': ariaLabel });
+  wrap.appendChild(svg);
+  const box = wrap.getBoundingClientRect().width || 940;
+  const narrow = box < SHAPE_NARROW;
+  const width = narrow ? Math.round(box) : 940;
+  const rowHeight = 26;
+  const pad = { top: 26, bottom: 36, left: narrow ? 142 : 210, right: 48 };
+  const height = pad.top + sorted.length * rowHeight + pad.bottom;
+  svg.setAttribute('viewBox', `0 0 ${width} ${height}`);
+
+  const maxAbs = Math.max(...sorted.map((r) => Math.abs(valueOf(r))), baseline == null ? 0 : Math.abs(baseline), 1);
+  const baseStep = refNiceStep(maxAbs / 2);
+  const reach = Math.ceil(maxAbs / baseStep) * baseStep;
+  const x = (value) => pad.left + ((value + reach) / (2 * reach)) * (width - pad.left - pad.right);
   const text = (className, content, attrs) => {
     const node = svgEl('text', { class: className, ...attrs });
     node.textContent = content;
     svg.appendChild(node);
     return node;
   };
-  for (const p of [0, 0.25, 0.5, 0.75, 1]) {
-    svg.appendChild(svgEl('line', { class: p ? 'grid-line' : 'axis-line', x1: pad.left, x2: width - pad.right, y1: y(p), y2: y(p) }));
-    text('tick', `${num(p * 100)}${percentSign()}`, { x: pad.left - 6, y: y(p) + 3.5, 'text-anchor': 'end' });
+  const step = narrow ? reach : baseStep;
+  const tickDigits = step % 1 !== 0 ? 1 : 0;
+  for (let v = -reach; v <= reach + 1e-9; v += step) {
+    const rounded = Math.abs(v) < 1e-9 ? 0 : v;
+    svg.appendChild(svgEl('line', { class: rounded ? 'grid-line' : 'axis-line', x1: x(rounded), x2: x(rounded), y1: pad.top - 6, y2: height - pad.bottom }));
+    text('tick', rounded === 0 ? '0' : signed(rounded, tickDigits), { x: x(rounded), y: height - pad.bottom + 14, 'text-anchor': 'middle' });
   }
-  // The pre-season, then every fifth round (every tenth on a phone).
-  const every = narrow ? 10 : 5;
-  text('tick', t('races.pre'), { x: x(0), y: height - 8, 'text-anchor': 'start' });
-  for (let k = every; k <= xMax - every / 2; k += every) {
-    text('tick', t('races.round', { k }), { x: x(k), y: height - 8, 'text-anchor': 'middle' });
-  }
-  if (!series.length) {
-    text('races__none', t('races.none'), { x: (pad.left + width - pad.right) / 2, y: height / 2, 'text-anchor': 'middle' });
-  }
-
-  // Quiet lines first, so the coloured ones draw over them.
-  const labels = [];
-  [...series].reverse().forEach((s) => {
-    const colour = colours.get(s);
-    const g = svgEl('g', { class: 'races__club', tabindex: 0 });
-    const points = s.values.map((value, i) => `${x(rounds[i])},${y(value)}`).join(' ');
-    g.appendChild(svgEl('polyline', { class: 'races__line', style: `stroke: ${colour}`, points }));
-    g.appendChild(svgEl('polyline', { class: 'races__hit', points }));
-    const now = s.values[last];
-    g.appendChild(svgEl('circle', { class: 'races__end', style: `fill: ${colour}`, cx: x(rounds[last]), cy: y(now), r: 3.5 }));
-    const tip = t('races.tip', { team: s.team, race: bandName(band), first: shareText(s.values[0]), now: shareText(now), high: shareText(Math.max(...s.values)) });
-    g.setAttribute('aria-label', tip);
-    attachTip(g, tip);
-    svg.appendChild(g);
-    if (inRace.includes(s)) labels.push({ y: y(now), text: `${s.team} ${shareText(now)}` });
-  });
-  for (const label of spreadLabels(labels, 13, pad.top + 4, height - pad.bottom)) {
-    text('races__label', label.text, { x: width - pad.right + 10, y: label.y + 4 });
-  }
-
-  // The biggest move from one layer to the next, ringed where it lands.
-  const swing = raceSwing(series, layers);
-  const marked = swing && Math.abs(swing.change) >= 0.05;
-  if (marked) {
-    svg.appendChild(svgEl('circle', { class: 'races__swing', cx: x(rounds[swing.index]), cy: y(swing.series.values[swing.index]), r: 7 }));
-  }
-
-  if (series.length) {
-    const week = raceWeek(series, layers);
-    if (week) {
-      const moved = week.changes.filter((c) => inRace.includes(c.series) && Math.abs(c.change) >= 0.005);
-      if (moved.length) {
-        const row = el('div', 'races__week');
-        row.appendChild(el('span', 'races__week-title', t('races.week', { date: formatDate(week.since) })));
-        for (const { series: s, change } of moved) {
-          const chip = el('span', 'races__chip');
-          chip.appendChild(el('i', 'races__swatch'));
-          chip.lastChild.style.background = colours.get(s);
-          chip.appendChild(document.createTextNode(`${s.team} ${changeText(change * 100, 1)} ${t('races.pp')}`));
-          row.appendChild(chip);
-        }
-        wrap.appendChild(row);
-      }
+  text('axis-title', t(metric === 'perMatch' ? 'referees.xPerMatch' : (narrow ? 'referees.xShort' : 'referees.x')), { x: width - pad.right, y: height - 3, 'text-anchor': 'end' });
+  text('luck__side', t(narrow ? 'referees.drawbackShort' : 'referees.drawback'), { x: x(-reach), y: pad.top - 10 });
+  text('luck__side', t(narrow ? 'referees.benefitShort' : 'referees.benefit'), { x: x(reach), y: pad.top - 10, 'text-anchor': 'end' });
+  text('luck__side', t('referees.col.matches'), { x: 18, y: pad.top - 10, 'text-anchor': 'end' });
+  if (baseline != null && metric === 'perMatch') {
+    const bx = x(Math.max(-reach, Math.min(reach, baseline)));
+    svg.appendChild(svgEl('line', { class: 'attack-map__band', x1: bx, x2: bx, y1: pad.top - 4, y2: height - pad.bottom }));
+    if (!narrow) {
+      const lblX = Math.max(x(-reach) + 95, Math.min(x(reach) - 95, bx));
+      text('ref-baseline-label', t('referees.baselineLabel', { v: signed(baseline, 1) }), { x: lblX, y: pad.top - 10, 'text-anchor': 'middle' });
     }
-    const alive = series.filter((s) => s.values[last] >= 0.05).length;
-    const facts = [{ value: series[0].team, label: t('races.fact.leader'), text: t('races.fact.leaderText', { pct: shareText(series[0].values[last]) }) }];
-    if (marked) {
-      facts.push({
-        value: swing.series.team,
-        label: t('races.fact.swing'),
-        text: t('races.fact.swingText', { change: `${signed(swing.change * 100, 1)} ${t('races.pp')}`, from: mountainLabel(swing.from), to: mountainLabel(swing.to) }),
+  }
+  const clampX = (v) => x(Math.max(-reach, Math.min(reach, v)));
+
+  sorted.forEach((row, i) => {
+    const val = valueOf(row);
+    const top = pad.top + i * rowHeight;
+    const rowKey = kind === 'club' ? String(row.team_id) : row.referee;
+    const isActive = activeKey != null && String(activeKey) === rowKey;
+    const g = svgEl('g', { class: `luck__row${isActive ? ' ref-bar--active' : ''}`, tabindex: 0, role: 'button' });
+    const [a, b] = [x(0), x(val)];
+    const centre = centreOf(row);
+    const band = refereeChanceBand(chanceSd, row.matches, metric);
+    const withinChance = band > 0 && Math.abs(val - centre) <= band;
+    g.appendChild(svgEl('rect', {
+      class: isActive ? 'ref-bar__highlight' : 'ref-bar__hit',
+      x: 0, y: top + 1, width: width - 2, height: rowHeight - 2, rx: 4,
+    }));
+    if (band > 0) {
+      const [lo, hi] = [clampX(centre - band), clampX(centre + band)];
+      g.appendChild(svgEl('rect', { class: 'ref-chance', x: lo, y: top + 3, width: Math.max(1, hi - lo), height: rowHeight - 6, rx: 3 }));
+    }
+    g.appendChild(svgEl('rect', {
+      class: `luck__bar ${val >= 0 ? 'luck__bar--up' : 'luck__bar--down'}${withinChance ? ' ref-bar--chance' : ''}`,
+      x: Math.min(a, b), y: top + 5, width: Math.max(1, Math.abs(b - a)), height: rowHeight - 10, rx: 3,
+    }));
+    const countNode = svgEl('text', { class: 'luck__place', x: 18, y: top + 17, 'text-anchor': 'end' });
+    countNode.textContent = String(row.matches);
+    g.appendChild(countNode);
+    const label = kind === 'club' ? row.team : row.referee;
+    const displayLabel = narrow && label.length > 13 ? `${label.slice(0, 12)}…` : label;
+    if (kind === 'club') {
+      g.appendChild(svgEl('image', { href: `/logos/${row.team_id}.webp`, x: 24, y: top + 3, width: 20, height: 20 }));
+    }
+    const name = svgEl('text', { class: 'luck__name', x: kind === 'club' ? 50 : 26, y: top + 17 });
+    name.textContent = displayLabel;
+    g.appendChild(name);
+    const valueNode = svgEl('text', {
+      class: 'luck__value', y: top + 17,
+      x: val >= 0 ? b + 5 : b - 5, 'text-anchor': val >= 0 ? 'start' : 'end',
+    });
+    valueNode.textContent = signed(val, digits);
+    g.appendChild(valueNode);
+
+    const cardLine = t('referees.tipCards', {
+      yf: row.yellowsFor, rf: row.redsFor, ya: row.yellowsAgainst, ra: row.redsAgainst,
+    });
+    const foulLine = row.foulsMatches
+      ? `<br><span class="tooltip__muted">${t('referees.tipFouls', {
+        ff: num(row.foulsFor / row.foulsMatches, 1), fa: num(row.foulsAgainst / row.foulsMatches, 1),
+      })}</span>`
+      : '';
+    const mainLine = t('referees.tip', {
+      diff: signed(row.diff, 0), per: signed(row.perMatch, 1), n: row.matches, w: row.wins, d: row.draws, l: row.losses,
+    });
+    const chanceLine = band > 0
+      ? t(withinChance ? 'referees.tipInside' : 'referees.tipOutside', {
+        n: row.matches, lo: signed(centre - band, digits), hi: signed(centre + band, digits),
+      })
+      : '';
+    g.setAttribute('aria-label', `${label}: ${mainLine}${chanceLine ? `. ${chanceLine}` : ''}`);
+    attachTip(g, `<b>${esc(label)}</b><br>${mainLine}${chanceLine ? `<br>${chanceLine}` : ''}<br><span class="tooltip__muted">${cardLine}</span>${foulLine}`);
+    if (onClickRow) {
+      g.addEventListener('click', () => { hideTooltip(); onClickRow(row); });
+      g.addEventListener('keydown', (event) => {
+        if (event.key !== 'Enter' && event.key !== ' ') return;
+        event.preventDefault();
+        hideTooltip();
+        onClickRow(row);
       });
     }
-    facts.push({ value: String(alive), label: t('races.fact.alive'), text: t('races.fact.aliveText') });
-    wrap.appendChild(exploreFacts(facts));
-  }
-  wrap.appendChild(el('p', 'explore-note', t('races.note')));
+    svg.appendChild(g);
+  });
+  return sorted;
 }
 
-/* ---------- explore: luck table (viz=luck) ----------------------------- */
+function refereeEmptyWithRelax(message, onRelaxMin) {
+  const box = el('div', 'ref-empty-wrap');
+  box.appendChild(el('p', 'explore-empty', message));
+  if (onRelaxMin) {
+    const btn = el('button', 'ref-inline-btn', t('referees.showAllBtn'));
+    btn.type = 'button';
+    btn.addEventListener('click', onRelaxMin);
+    box.appendChild(btn);
+  }
+  return box;
+}
+
+function refereeCardPills(yellows, reds) {
+  const span = el('span', 'ref-card-pills');
+  if (yellows > 0) {
+    const y = el('span', 'ref-card-pill ref-card-pill--y', `${yellows}`);
+    y.title = t('referees.drawer.yellows');
+    span.appendChild(y);
+  }
+  if (reds > 0) {
+    const r = el('span', 'ref-card-pill ref-card-pill--r', `${reds}`);
+    r.title = t('referees.drawer.reds');
+    span.appendChild(r);
+  }
+  if (yellows === 0 && reds === 0) span.appendChild(el('span', 'ref-card-pill--none', '0'));
+  return span;
+}
+
+function venueIcon(isHome, { badge = true, className = '' } = {}) {
+  const label = t(isHome ? 'team.home' : 'team.away');
+  const cls = [
+    'venue-icon',
+    badge ? 'venue-icon--badge' : 'venue-icon--inline',
+    isHome ? 'venue-icon--home' : 'venue-icon--away',
+    className,
+  ].filter(Boolean).join(' ');
+  const wrap = el('span', cls);
+  wrap.title = label;
+  wrap.setAttribute('aria-label', label);
+  const svg = svgEl('svg', { viewBox: '0 0 16 16', 'aria-hidden': 'true' });
+  const d = isHome
+    ? 'M8 2.2 2 7.2v1.1h1.3V13.5h3.3V10h2.8v3.5h3.3V8.3H14V7.2L8 2.2Z'
+    : 'M14.2 1.8a1.1 1.1 0 0 0-1.55 0L9.1 5.35 3.2 3.3 2 4.5l4.8 3.1-2.5 2.5-1.9-.3-.9.9 2.4 1.4 1.4 2.4.9-.9-.3-1.9 2.5-2.5 3.1 4.8 1.2-1.2-2.05-5.9 3.55-3.55a1.1 1.1 0 0 0 0-1.55Z';
+  svg.appendChild(svgEl('path', { d, fill: 'currentColor' }));
+  wrap.appendChild(svg);
+  return wrap;
+}
+
+function renderPairingDrawer(rows, referee, teamId, opts) {
+  const { context = 'explore', onClose, onNavigate } = opts;
+  const matches = refereePairingMatches(rows, referee, teamId);
+  if (!matches.length) return null;
+
+  const teamName = matches[0].team;
+  let w = 0, d = 0, l = 0, perf = 0, yf = 0, rf = 0, ya = 0, ra = 0;
+  for (const m of matches) {
+    if (m.gf > m.ga) w += 1;
+    else if (m.gf === m.ga) d += 1;
+    else l += 1;
+    perf += m.diff;
+    yf += m.yf; rf += m.rf; ya += m.ya; ra += m.ra;
+  }
+  const perM = perf / matches.length;
+  const scale = Math.max(5, ...matches.flatMap((m) => [Math.abs(m.change), Math.abs(m.expected)]));
+
+  const drawer = el('div', 'ref-drawer');
+  const head = el('div', 'ref-drawer__head');
+  const titleWrap = el('div', 'ref-drawer__title');
+  const logo = el('img', 'ref-drawer__logo', '');
+  logo.src = `/logos/${teamId}.webp`;
+  logo.alt = '';
+  logo.width = 22;
+  logo.height = 22;
+  titleWrap.append(logo, el('h4', '', `${teamName} + ${referee}`));
+  head.appendChild(titleWrap);
+
+  const actions = el('div', 'ref-drawer__actions');
+  if (onNavigate) {
+    const navBtn = el('button', 'ref-inline-btn', t(context === 'team' ? 'referees.drawer.openRef' : 'referees.drawer.openClub'));
+    navBtn.type = 'button';
+    navBtn.addEventListener('click', onNavigate);
+    actions.appendChild(navBtn);
+  }
+  const closeBtn = el('button', 'ref-drawer__close', '×');
+  closeBtn.type = 'button';
+  closeBtn.setAttribute('aria-label', t('referees.drawer.close'));
+  closeBtn.addEventListener('click', onClose);
+  actions.appendChild(closeBtn);
+  head.appendChild(actions);
+  drawer.appendChild(head);
+
+  const summary = el('div', 'ref-badges ref-drawer__summary');
+  summary.appendChild(el('span', 'ref-badge', `${matches.length} ${t('referees.pairings.matches')} · ${w}-${d}-${l}`));
+  const diffBadge = el('span', `ref-badge ${perf >= 0 ? 'ref-pos' : 'ref-neg'}`,
+    t('referees.drawer.summaryPts', { sum: signed(perf, 0), per: signed(perM, 1) }));
+  summary.appendChild(diffBadge);
+  summary.appendChild(el('span', 'ref-badge', t('referees.tipCards', { yf, rf, ya, ra })));
+  drawer.appendChild(summary);
+
+  const tableWrap = el('div', 'ref-table-wrap ref-drawer__table-wrap');
+  const table = el('table', 'ref-table ref-drawer__table');
+  const thead = el('thead');
+  const hr = el('tr');
+  for (const [labelText, isNum] of [
+    [t('referees.drawer.colDate'), false],
+    [t('referees.drawer.colMatch'), false],
+    [t('referees.drawer.colScore'), true],
+    [t('referees.drawer.colXg'), true],
+    [t('referees.drawer.colDiff'), false],
+    [t('referees.drawer.colCardsPair', { team: teamName }), false],
+    [t('referees.drawer.colFouls'), true],
+  ]) {
+    hr.appendChild(el('th', isNum ? 'num' : '', labelText));
+  }
+  thead.appendChild(hr);
+  table.appendChild(thead);
+
+  const tbody = el('tbody');
+  for (const m of matches) {
+    const tr = el('tr');
+    tr.appendChild(el('td', 'ref-drawer__date', m.date));
+    const matchTd = el('td', 'ref-drawer__match');
+    const matchWrap = el('span', 'ref-drawer__match-wrap');
+    const oppLogo = el('img', 'ref-drawer__opp-logo', '');
+    oppLogo.src = `/logos/${m.opponent_id}.webp`;
+    oppLogo.alt = '';
+    oppLogo.width = 18;
+    oppLogo.height = 18;
+    matchWrap.append(
+      venueIcon(m.isHome, { className: 'ref-drawer__venue' }),
+      el('span', 'ref-drawer__vs-word', t('referees.drawer.vsTag')),
+      oppLogo,
+      el('span', 'ref-drawer__opp-name', m.opponent),
+    );
+    matchTd.appendChild(matchWrap);
+    tr.appendChild(matchTd);
+    tr.appendChild(el('td', 'num', `${m.gf}–${m.ga}`));
+    tr.appendChild(el('td', 'num ref-drawer__pts', m.xgf != null ? `${num(m.xgf, 1)}–${num(m.xga, 1)}` : '–'));
+    const perfTd = el('td', 'ref-drawer__perf');
+    perfTd.title = t('referees.explain.example', { actual: signed(m.change, 1), expected: signed(m.expected, 1) });
+    const perfWrap = el('span', 'ref-drawer__perf-wrap');
+    perfWrap.append(refPerfDumbbell(m.expected, m.change, scale), el('span', `ref-drawer__perf-val ${m.diff >= 0 ? 'ref-pos' : 'ref-neg'}`, signed(m.diff, 1)));
+    perfTd.appendChild(perfWrap);
+    tr.appendChild(perfTd);
+    // The flex row sits inside the cell: a flex <td> leaves the table and
+    // breaks the row's border.
+    const cardsTd = el('td');
+    const pills = el('span', 'ref-drawer__cards');
+    pills.append(refereeCardPills(m.yf, m.rf), el('span', 'ref-drawer__vs', '/'), refereeCardPills(m.ya, m.ra));
+    cardsTd.appendChild(pills);
+    tr.appendChild(cardsTd);
+    tr.appendChild(el('td', 'num', m.ff != null && m.fa != null ? `${m.ff}–${m.fa}` : '–'));
+    tbody.appendChild(tr);
+  }
+  table.appendChild(tbody);
+  tableWrap.appendChild(table);
+  drawer.appendChild(tableWrap);
+  return drawer;
+}
+
+function refereeHowBox(defaultOpen) {
+  const box = el('details', 'luck-how');
+  box.open = defaultOpen;
+  box.appendChild(el('summary', 'luck-how__title', t('referees.how.title')));
+  const steps = el('ol', 'luck-how__steps');
+  for (const key of ['referees.how.expected', 'referees.how.diff', 'referees.how.chance', 'referees.how.discipline', 'referees.how.sample']) {
+    const [lead, ...rest] = t(key).split('. ');
+    const item = el('li');
+    item.append(el('b', null, `${lead}.`), ` ${rest.join('. ')}`);
+    steps.appendChild(item);
+  }
+  box.appendChild(steps);
+  return box;
+}
+
+function refereeSwitchGroup(label, options, current, onChange) {
+  const group = el('div', 'switch ref-switch');
+  group.setAttribute('role', 'group');
+  group.setAttribute('aria-label', label);
+  for (const [value, textLabel] of options) {
+    const btn = el('button', '', textLabel);
+    btn.type = 'button';
+    btn.setAttribute('aria-pressed', String(current === value));
+    btn.addEventListener('click', () => {
+      if (current === value) return;
+      onChange(value);
+    });
+    group.appendChild(btn);
+  }
+  return group;
+}
+
+let refereesToken = 0;
+async function renderReferees(report, body, opts = {}) {
+  const token = ++refereesToken;
+  if (!state.referees && !body.querySelector('.referees')) body.replaceChildren(el('p', 'explore-empty', t('referees.loading')));
+  const payload = state.referees || await fetchReferees();
+  if (token !== refereesToken || state.activeView !== 'explore' || state.exploreItem !== 'referees') return;
+
+  const prevHeight = body.offsetHeight;
+  const prevScroll = window.scrollY;
+  if (prevHeight > 0) body.style.minHeight = `${prevHeight}px`;
+
+  const wrap = el('div', 'referees');
+  body.replaceChildren(wrap);
+  hideTooltip();
+
+  try {
+    const topbar = el('div', 'ref-topbar');
+    const sections = refereeSwitchGroup(
+      t('referees.section.label'),
+      [
+        ['overview', t('referees.section.overview')],
+        ['clubs', t('referees.section.clubs')],
+        ['pairings', t('referees.section.pairings')],
+      ],
+      state.refereeSection,
+      (val) => { state.refereeSection = val; renderReferees(report, body); },
+    );
+    sections.classList.add('ref-sections');
+    topbar.appendChild(sections);
+
+    const seasons = payload.seasons || [];
+    const allSpan = seasons.length >= 2 ? `${seasons[0]}–${seasons[seasons.length - 1]}` : t('referees.scope.all');
+    const seasonNow = Number(report.league.season);
+    const rightBar = el('div', 'ref-topbar__right');
+    if (state.refereeSection === 'overview' && state.refereeScope === 'all') {
+      rightBar.appendChild(refereeSwitchGroup(
+        t('referees.active.label'),
+        [['all', t('referees.active.all')], ['active', t('referees.active.only', { season: seasonNow })]],
+        state.refereeActiveOnly ? 'active' : 'all',
+        (val) => { state.refereeActiveOnly = (val === 'active'); renderReferees(report, body); },
+      ));
+    }
+    rightBar.appendChild(refereeSwitchGroup(
+      t('referees.scope.label'),
+      [['all', allSpan], ['season', String(report.league.season)]],
+      state.refereeScope,
+      (val) => {
+        state.refereeScope = val;
+        state.refereeMinMatches = val === 'all' ? 5 : 0;
+        state.refereePairingTeam = null;
+        renderReferees(report, body);
+      },
+    ));
+    topbar.appendChild(rightBar);
+    wrap.appendChild(topbar);
+
+    const filtered = refereeFilter(payload.rows, {
+      league: report.league.slug,
+      season: state.refereeScope === 'season' ? report.league.season : 'all',
+      asof: report.league.asof || null,
+    });
+    if (!filtered.length) {
+      if (report.league.slug !== 'eliteserien' && payload.rows.some((r) => r.league === 'eliteserien')) {
+        const box = el('div', 'ref-obos-notice');
+        box.appendChild(el('p', 'explore-empty', t('referees.obosNotice')));
+        const switchBtn = el('button', 'ref-inline-btn', t('referees.switchEliteserien'));
+        switchBtn.type = 'button';
+        switchBtn.addEventListener('click', () => {
+          showDivision('eliteserien');
+          render();
+        });
+        box.appendChild(switchBtn);
+        wrap.appendChild(box);
+        return;
+      }
+      wrap.appendChild(el('p', 'explore-empty', t('referees.empty')));
+      return;
+    }
+
+    const rerender = (subOpts) => renderReferees(report, body, subOpts);
+    if (state.refereeSection === 'clubs') {
+      renderClubDisciplineSection(report, wrap, filtered, rerender);
+      return;
+    }
+    if (state.refereeSection === 'pairings') {
+      renderRefPairingsSection(report, wrap, filtered, rerender);
+      return;
+    }
+    renderRefOverviewSection(report, wrap, filtered, rerender);
+  } finally {
+    body.style.minHeight = '';
+    if (opts.scrollToDrawer) {
+      const drawer = wrap.querySelector('.ref-drawer');
+      if (drawer) drawer.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    } else if (opts.scrollTop) {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    } else if (Math.abs(window.scrollY - prevScroll) > 2) {
+      window.scrollTo({ top: prevScroll, behavior: 'instant' });
+    }
+  }
+}
+
+function refHeroCard(label, value, detail, opts = {}) {
+  const { tone = '', onClick = null, club = null } = opts;
+  const card = el(onClick ? 'button' : 'div', `ref-hero-card${onClick ? ' ref-hero-card--interactive' : ''}`);
+  if (onClick) {
+    card.type = 'button';
+    card.addEventListener('click', onClick);
+  }
+  card.appendChild(el('span', 'ref-hero-card__label', label));
+  card.appendChild(el('strong', `ref-hero-card__value${tone ? ` ${tone}` : ''}`, value));
+  if (club) {
+    const clubRow = el('span', 'ref-hero-card__club');
+    const logo = el('img', '', '');
+    logo.src = `/logos/${club.id}.webp`;
+    logo.alt = '';
+    logo.width = 20;
+    logo.height = 20;
+    clubRow.append(logo, el('span', '', club.name));
+    card.appendChild(clubRow);
+  }
+  card.appendChild(el('span', 'ref-hero-card__detail', detail));
+  return card;
+}
+
+function renderRefOverviewSection(report, wrap, filtered, rerender) {
+  const seasonNow = Number(report.league.season);
+  const allRefs = refereeOverview(filtered);
+  const minFloor = state.refereeScope === 'all' ? 10 : 0;
+  const baseRefs = minFloor ? refereeMinFilter(allRefs, minFloor) : allRefs;
+  const displayRefs = state.refereeActiveOnly
+    ? baseRefs.filter((r) => r.seasonMax >= seasonNow)
+    : baseRefs;
+
+  const openRefDossier = (referee) => {
+    state.refereeSelected = referee;
+    state.refereePairingMode = 'referee';
+    state.refereePairingTeam = null;
+    state.refereeSection = 'pairings';
+    rerender({ scrollTop: true });
+  };
+
+  // 1. 3-Card Editorial Hero Strip
+  const totalMatches = filtered.length;
+  const totalCards = filtered.reduce((s, r) => s + r.home_yellow + r.away_yellow + r.home_red + r.away_red, 0);
+  const foulsRows = filtered.filter((r) => r.home_fouls != null && r.away_fouls != null);
+  const totalFouls = foulsRows.reduce((s, r) => s + r.home_fouls + r.away_fouls, 0);
+  const cardsWithFouls = foulsRows.reduce((s, r) => s + r.home_yellow + r.away_yellow + r.home_red + r.away_red, 0);
+  const avgCards = totalMatches ? totalCards / totalMatches : 0;
+  const avgFouls = foulsRows.length ? totalFouls / foulsRows.length : null;
+  const avgFpc = cardsWithFouls > 0 ? totalFouls / cardsWithFouls : null;
+  const awayGapAll = totalMatches
+    ? filtered.reduce((s, r) => s + (r.away_yellow + r.away_red) - (r.home_yellow + r.home_red), 0) / totalMatches
+    : 0;
+  const redStats = redCardImpact(filtered);
+  const varStats = state.refereeScope === 'all' ? varEraComparison(filtered) : null;
+
+  const hero = el('div', 'ref-hero-grid');
+  hero.appendChild(refHeroCard(
+    t('referees.hero.cardsLabel'),
+    num(avgCards, 2),
+    t('referees.hero.cardsDetail', {
+      f: avgFouls != null ? num(avgFouls, 1) : '–',
+      fpc: avgFpc != null ? num(avgFpc, 1) : '–',
+      n: totalMatches,
+    }),
+  ));
+  if (redStats.received.n > 0) {
+    hero.appendChild(refHeroCard(
+      t('referees.hero.redSwingLabel'),
+      signed(redStats.received.diffPerMatch, 1),
+      t('referees.hero.redSwingDetail', {
+        pts: num(redStats.received.ptsPerMatch, 2),
+        drw: signed(redStats.drawn.diffPerMatch, 1),
+        n: redStats.received.n,
+      }),
+      { tone: redStats.received.diffPerMatch >= 0 ? 'ref-pos' : 'ref-neg' },
+    ));
+  }
+  if (varStats) {
+    hero.appendChild(refHeroCard(
+      t('referees.hero.varLabel'),
+      `${num(varStats.preVar.redMatchPct, 1)} % → ${num(varStats.varEra.redMatchPct, 1)} %`,
+      t('referees.hero.varDetail', {
+        preR: num(varStats.preVar.redsPerMatch, 2),
+        varR: num(varStats.varEra.redsPerMatch, 2),
+      }),
+    ));
+  } else {
+    hero.appendChild(refHeroCard(
+      t('referees.hero.awayTiltLabel'),
+      signed(awayGapAll, 2),
+      t('referees.hero.awayTiltDetail', { n: totalMatches }),
+    ));
+  }
+  wrap.appendChild(hero);
+
+  // 2. Style Map (Active vs Earlier seasons)
+  const styleSec = el('section', 'ref-subsection');
+  const styleHead = el('div', 'ref-section-head');
+  const styleTitles = el('div', 'ref-section-head__text');
+  styleTitles.appendChild(el('h3', 'ref-section-title', t('referees.style.title')));
+  styleTitles.appendChild(el('p', 'explore-note explore-note--lead', t('referees.style.lead')));
+  styleHead.appendChild(styleTitles);
+  styleSec.appendChild(styleHead);
+  wrap.appendChild(styleSec);
+
+  const legend = el('div', 'ref-legend');
+  if (state.refereeScope === 'all' && !state.refereeActiveOnly) {
+    legend.innerHTML = `<span class="ref-legend__item"><i class="ref-legend__dot ref-legend__dot--active"></i>${esc(t('referees.style.legendActive', { season: seasonNow }))}</span>`
+      + `<span class="ref-legend__item"><i class="ref-legend__dot ref-legend__dot--past"></i>${esc(t('referees.style.legendPast'))}</span>`;
+  }
+  legend.innerHTML += `<span class="ref-legend__item">${esc(t('referees.style.legendSize'))}</span>`;
+  styleSec.appendChild(legend);
+  drawRefStyleScatter(styleSec, displayRefs, openRefDossier, seasonNow);
+
+  // 3. Visual Referee Ranking Table (replaces separate Away-Home bar chart + plain table)
+  const tableSec = el('section', 'ref-subsection');
+  tableSec.appendChild(el('h3', 'ref-section-title', t('referees.table.title')));
+  tableSec.appendChild(el('p', 'explore-note explore-note--lead', t('referees.table.lead')));
+  renderVisualRefTable(tableSec, displayRefs, openRefDossier, seasonNow);
+  wrap.appendChild(tableSec);
+
+  // 4. Bottom Editorial Row: Season Trends + Card-Heaviest Matches
+  const seasons = state.refereeScope === 'all' ? seasonDisciplineRows(filtered) : [];
+  const feisty = feistiestMatches(filtered, 5);
+  if (seasons.length >= 2 || feisty.length) {
+    const split = el('div', `ref-split-row${seasons.length >= 2 ? '' : ' ref-split-row--single'}`);
+    // In the page before drawing: the chart sizes itself to its column.
+    wrap.appendChild(split);
+    if (seasons.length >= 2) {
+      const seasonSec = el('section', 'ref-subsection');
+      split.appendChild(seasonSec);
+      seasonSec.appendChild(el('h3', 'ref-section-title', t('referees.seasons.title')));
+      seasonSec.appendChild(el('p', 'explore-note explore-note--lead', t('referees.seasons.lead')));
+      drawSeasonDisciplineChart(seasonSec, seasons);
+    }
+    if (feisty.length) {
+      const feistySec = el('section', 'ref-subsection');
+      feistySec.appendChild(el('h3', 'ref-section-title', t('referees.feisty.title')));
+      feistySec.appendChild(el('p', 'explore-note explore-note--lead', t('referees.feisty.lead')));
+      const list = el('div', 'ref-feisty-list');
+      for (const m of feisty) {
+        const rowBtn = el('button', 'ref-feisty-row');
+        rowBtn.type = 'button';
+        rowBtn.addEventListener('click', () => openRefDossier(m.referee));
+        const fixture = el('span', 'ref-feisty-row__match');
+        const hLogo = el('img', '', '');
+        hLogo.src = `/logos/${m.home_id}.webp`; hLogo.alt = ''; hLogo.width = 18; hLogo.height = 18;
+        const aLogo = el('img', '', '');
+        aLogo.src = `/logos/${m.away_id}.webp`; aLogo.alt = ''; aLogo.width = 18; aLogo.height = 18;
+        fixture.append(hLogo, el('strong', '', `${m.home} ${m.home_goals}–${m.away_goals} ${m.away}`), aLogo);
+        rowBtn.appendChild(fixture);
+        rowBtn.appendChild(el('span', 'ref-feisty-row__date', `${m.date} · ${m.referee}`));
+        const meta = el('span', 'ref-feisty-row__meta');
+        meta.appendChild(refereeCardPills(m.yellows, m.reds));
+        if (m.totalFouls != null) meta.appendChild(el('span', 'ref-feisty-row__fouls', `${m.totalFouls} ${t('referees.feisty.fouls')}`));
+        rowBtn.appendChild(meta);
+        list.appendChild(rowBtn);
+      }
+      feistySec.appendChild(list);
+      split.appendChild(feistySec);
+    }
+  }
+}
+
+function renderVisualRefTable(wrap, rows, onPickRef, seasonNow) {
+  const maxAbsGap = Math.max(...rows.map((r) => Math.abs(r.awayHomeCardGap)), 0.5);
+
+  const tableWrap = el('div', 'ref-table-wrap');
+  const table = el('table', 'ref-table ref-table--visual');
+  const thead = el('thead');
+  const headRow = el('tr');
+  const cols = [
+    ['referee', 'referee', false],
+    ['matches', 'matches', true],
+    ['cards', 'cardsPerMatch', true],
+    ['reds', 'redsPerMatch', true],
+    ['fouls', 'foulsPerMatch', true],
+    ['fpc', 'foulsPerCard', true],
+    ['awayGap', 'awayHomeCardGap', true],
+  ];
+  const tbody = el('tbody');
+
+  function sortRows() {
+    const { key, dir } = state.refereeSort;
+    const validKey = cols.some(([, sk]) => sk === key) ? key : 'matches';
+    return [...rows].sort((a, b) => {
+      const av = a[validKey];
+      const bv = b[validKey];
+      if (av == null && bv == null) return a.referee.localeCompare(b.referee);
+      if (av == null) return 1;
+      if (bv == null) return -1;
+      if (typeof av === 'string') return dir * av.localeCompare(bv);
+      return dir * (av - bv) || a.referee.localeCompare(b.referee);
+    });
+  }
+
+  function renderBody() {
+    tbody.replaceChildren();
+    const sortedKey = state.refereeSort.key;
+    for (const row of sortRows()) {
+      const isActive = row.seasonMax >= seasonNow;
+      const tr = el('tr', isActive ? '' : 'ref-row--inactive');
+      tr.tabIndex = 0;
+      tr.addEventListener('click', () => onPickRef(row.referee));
+      tr.addEventListener('keydown', (event) => {
+        if (event.key !== 'Enter' && event.key !== ' ') return;
+        event.preventDefault();
+        onPickRef(row.referee);
+      });
+
+      const nameTd = el('td', `ref-name${sortedKey === 'referee' ? ' ref-col--sorted' : ''}`);
+      nameTd.appendChild(el('span', '', row.referee));
+      if (!isActive) {
+        const spanTxt = row.seasonMin === row.seasonMax ? String(row.seasonMin) : `${row.seasonMin}–${String(row.seasonMax).slice(2)}`;
+        nameTd.appendChild(el('span', 'ref-inactive-tag', spanTxt));
+      }
+      tr.appendChild(nameTd);
+      tr.appendChild(el('td', `num${sortedKey === 'matches' ? ' ref-col--sorted' : ''}`, String(row.matches)));
+      tr.appendChild(el('td', `num${sortedKey === 'cardsPerMatch' ? ' ref-col--sorted' : ''}`, num(row.cardsPerMatch, 2)));
+      tr.appendChild(el('td', `num${row.redsPerMatch >= 0.17 ? ' ref-neg' : ''}${sortedKey === 'redsPerMatch' ? ' ref-col--sorted' : ''}`, num(row.redsPerMatch, 2)));
+      tr.appendChild(el('td', `num${sortedKey === 'foulsPerMatch' ? ' ref-col--sorted' : ''}`, row.foulsPerMatch != null ? num(row.foulsPerMatch, 1) : '–'));
+      tr.appendChild(el('td', `num${sortedKey === 'foulsPerCard' ? ' ref-col--sorted' : ''}`, row.foulsPerCard != null ? num(row.foulsPerCard, 1) : '–'));
+
+      // Away-Home diverging micro-bar (amber for away-more, slate for home-more)
+      const gapTd = el('td', `num ref-bar-cell${sortedKey === 'awayHomeCardGap' ? ' ref-col--sorted' : ''}`);
+      const gapWrap = el('div', 'ref-divbar');
+      const gapTrack = el('span', 'ref-divbar__track');
+      gapTrack.appendChild(el('span', 'ref-divbar__zero'));
+      const gapFill = el('span', `ref-divbar__fill ${row.awayHomeCardGap >= 0 ? 'ref-divbar__fill--away' : 'ref-divbar__fill--home'}`);
+      const pct = Math.min(50, Math.round((Math.abs(row.awayHomeCardGap) / maxAbsGap) * 50));
+      gapFill.style.width = `${pct}%`;
+      if (row.awayHomeCardGap >= 0) gapFill.style.left = '50%';
+      else gapFill.style.right = '50%';
+      gapTrack.appendChild(gapFill);
+      gapWrap.append(gapTrack, el('span', 'ref-vbar__num', signed(row.awayHomeCardGap, 2)));
+      gapTd.appendChild(gapWrap);
+      tr.appendChild(gapTd);
+
+      tbody.appendChild(tr);
+    }
+  }
+
+  for (const [labelKey, sortKey, isNum] of cols) {
+    const th = el('th', isNum ? 'num' : '', t(`referees.col.${labelKey}`));
+    th.dataset.sort = sortKey;
+    th.tabIndex = 0;
+    if (labelKey !== 'referee') th.title = t(`referees.colTip.${labelKey}`);
+    if (state.refereeSort.key === sortKey) {
+      th.setAttribute('aria-sort', state.refereeSort.dir === 1 ? 'ascending' : 'descending');
+    }
+    const toggle = () => {
+      const same = state.refereeSort.key === sortKey;
+      state.refereeSort = { key: sortKey, dir: same ? -state.refereeSort.dir : (sortKey === 'referee' ? 1 : -1) };
+      for (const other of headRow.querySelectorAll('th')) other.removeAttribute('aria-sort');
+      th.setAttribute('aria-sort', state.refereeSort.dir === 1 ? 'ascending' : 'descending');
+      renderBody();
+    };
+    th.addEventListener('click', toggle);
+    th.addEventListener('keydown', (event) => {
+      if (event.key !== 'Enter' && event.key !== ' ') return;
+      event.preventDefault();
+      toggle();
+    });
+    headRow.appendChild(th);
+  }
+  thead.appendChild(headRow);
+  table.appendChild(thead);
+  renderBody();
+  table.appendChild(tbody);
+  tableWrap.appendChild(table);
+  wrap.appendChild(tableWrap);
+}
+
+function renderRefPairingsSection(report, wrap, filtered, rerender) {
+  wrap.appendChild(el('p', 'explore-note ref-pairings-intro', t('referees.pairings.intro')));
+  wrap.appendChild(refPerfExplainer(filtered));
+
+  const allRefs = refereeOverview(filtered);
+  const allClubs = clubDisciplineRows(filtered).sort((a, b) => a.team.localeCompare(b.team));
+  const minMatches = state.refereeMinMatches;
+  const relaxMin = minMatches > 0 ? () => { state.refereeMinMatches = 0; rerender(); } : null;
+
+  if (!allRefs.some((r) => r.referee === state.refereeSelected)) {
+    state.refereeSelected = allRefs[0]?.referee || null;
+  }
+  if (!allClubs.some((c) => String(c.team_id) === String(state.refereeClubSelected))) {
+    state.refereeClubSelected = allClubs[0]?.team_id || null;
+  }
+
+  const explorer = el('section', 'ref-explorer-card');
+  const head = el('div', 'ref-explorer-card__head');
+  const leftControls = el('div', 'ref-explorer-card__left');
+  leftControls.appendChild(refereeSwitchGroup(
+    t('referees.mode.label'),
+    [['referee', t('referees.mode.byRef')], ['club', t('referees.mode.byClub')]],
+    state.refereePairingMode,
+    (val) => { state.refereePairingMode = val; state.refereePairingTeam = null; rerender(); },
+  ));
+
+  const pickerWrap = el('label', 'ref-picker');
+  const select = el('select', 'ref-picker__select');
+  if (state.refereePairingMode === 'club') {
+    for (const c of allClubs) {
+      const opt = el('option', '', `${c.team} (${c.matches})`);
+      opt.value = String(c.team_id);
+      if (String(c.team_id) === String(state.refereeClubSelected)) opt.selected = true;
+      select.appendChild(opt);
+    }
+    select.addEventListener('change', () => {
+      state.refereeClubSelected = select.value;
+      state.refereePairingTeam = null;
+      rerender();
+    });
+  } else {
+    for (const r of allRefs) {
+      const opt = el('option', '', `${r.referee} (${r.matches})`);
+      opt.value = r.referee;
+      if (r.referee === state.refereeSelected) opt.selected = true;
+      select.appendChild(opt);
+    }
+    select.addEventListener('change', () => {
+      state.refereeSelected = select.value;
+      state.refereePairingTeam = null;
+      rerender();
+    });
+  }
+  pickerWrap.appendChild(select);
+  leftControls.appendChild(pickerWrap);
+  head.appendChild(leftControls);
+
+  const rightControls = el('div', 'ref-explorer-card__right');
+  rightControls.appendChild(refereeSwitchGroup(
+    t('referees.metric.label'),
+    [['perMatch', t('referees.metric.perMatch')], ['total', t('referees.metric.total')]],
+    state.refereeMetric,
+    (val) => { state.refereeMetric = val; rerender(); },
+  ));
+  rightControls.appendChild(refereeSwitchGroup(
+    t('referees.min.label'),
+    [['5', t('referees.min.five')], ['10', t('referees.min.ten')], ['0', t('referees.min.all')]],
+    String(state.refereeMinMatches),
+    (val) => { state.refereeMinMatches = Number(val); rerender(); },
+  ));
+  head.appendChild(rightControls);
+  explorer.appendChild(head);
+
+  const metaLine = el('div', 'ref-meta-line');
+  const addMeta = (text) => metaLine.appendChild(el('span', 'ref-meta-line__item', text));
+  let chartRows = [];
+  let chartKind = 'club';
+  let activeKey = null;
+  let ariaLabel = '';
+
+  if (state.refereePairingMode === 'club') {
+    const activeClub = allClubs.find((c) => String(c.team_id) === String(state.refereeClubSelected)) || allClubs[0];
+    if (activeClub) {
+      addMeta(t('referees.badge.matches', { n: activeClub.matches }));
+      addMeta(t('referees.badge.cards', { v: num(activeClub.cardsForPerMatch, 2) }));
+      addMeta(t('referees.badge.netCards', { v: signed(activeClub.netCardsPerMatch, 2) }));
+      if (activeClub.homeCardsPerMatch != null && activeClub.awayCardsPerMatch != null) {
+        addMeta(t('referees.clubs.tipHomeAway', {
+          h: num(activeClub.homeCardsPerMatch, 2), a: num(activeClub.awayCardsPerMatch, 2),
+        }));
+      }
+      chartRows = refereeMinFilter(teamRefereeRows(filtered, activeClub.team_id), minMatches);
+      chartKind = 'referee';
+      activeKey = state.refereePairingTeam;
+      ariaLabel = t('referees.teamAria', { team: activeClub.team });
+    }
+  } else {
+    const activeRef = allRefs.find((r) => r.referee === state.refereeSelected) || allRefs[0];
+    if (activeRef) {
+      const spanStr = activeRef.seasonMin === activeRef.seasonMax ? String(activeRef.seasonMin) : `${activeRef.seasonMin}–${activeRef.seasonMax}`;
+      addMeta(`${t('referees.badge.matches', { n: activeRef.matches })} (${spanStr})`);
+      addMeta(t('referees.badge.cards', { v: num(activeRef.cardsPerMatch, 2) }));
+      addMeta(t('referees.badge.reds', { v: num(activeRef.redsPerMatch, 2) }));
+      if (activeRef.foulsPerMatch != null) addMeta(t('referees.badge.fouls', { v: num(activeRef.foulsPerMatch, 1) }));
+      chartRows = refereeMinFilter(refereeTeamRows(filtered, activeRef.referee), minMatches);
+      chartKind = 'club';
+      activeKey = state.refereePairingTeam;
+      ariaLabel = t('referees.aria', { ref: activeRef.referee });
+    }
+  }
+  explorer.appendChild(metaLine);
+  wrap.appendChild(explorer);
+
+  const baseline = state.refereePairingMode === 'club' && state.refereeClubSelected != null
+    ? refereeClubBaseline(filtered, state.refereeClubSelected)
+    : null;
+  drawRefBarChart(explorer, chartRows, {
+    metric: state.refereeMetric,
+    kind: chartKind,
+    ariaLabel,
+    emptyText: minMatches ? t('referees.emptyMin', { min: minMatches }) : t('referees.empty'),
+    activeKey,
+    onRelaxMin: relaxMin,
+    chanceSd: refereeChanceSd(filtered),
+    baseline,
+    onClickRow: (row) => {
+      const clickedKey = chartKind === 'club' ? String(row.team_id) : row.referee;
+      const closing = String(state.refereePairingTeam) === clickedKey;
+      state.refereePairingTeam = closing ? null : clickedKey;
+      rerender(closing ? {} : { scrollToDrawer: true });
+    },
+  });
+  if (chartRows.length) {
+    const foot = el('div', 'ref-chart-foot');
+    const key = el('span', 'ref-chance-key');
+    key.append(
+      el('i', 'ref-chance-swatch'),
+      el('span', '', baseline != null ? t('referees.chanceNoteClub', { v: signed(baseline, 1) }) : t('referees.chanceNote')),
+    );
+    foot.append(key, el('span', 'ref-chart-foot__hint', t('referees.pairings.clickHint')));
+    explorer.appendChild(foot);
+  }
+
+  if (state.refereePairingTeam != null) {
+    const drawerRef = state.refereePairingMode === 'club' ? state.refereePairingTeam : state.refereeSelected;
+    const drawerTeam = state.refereePairingMode === 'club' ? state.refereeClubSelected : state.refereePairingTeam;
+    const drawer = renderPairingDrawer(filtered, drawerRef, drawerTeam, {
+      context: 'explore',
+      onClose: () => { state.refereePairingTeam = null; rerender(); },
+      onNavigate: () => {
+        const clubObj = allClubs.find((c) => String(c.team_id) === String(drawerTeam));
+        state.teamTab = 'referees';
+        state.teamRefereeSelected = drawerRef;
+        openTeamView(drawerTeam, clubObj?.team || '');
+      },
+    });
+    if (drawer) explorer.appendChild(drawer);
+  }
+
+  // Notable pairings (10+ matches on All seasons so iconic samples lead)
+  const notableMin = state.refereeScope === 'all' ? Math.max(minMatches, 10) : minMatches;
+  const pairings = refereePairings(filtered, notableMin);
+  if (pairings.length >= 2) {
+    const pairingsWrap = el('section', 'ref-subsection');
+    pairingsWrap.appendChild(el('h3', 'ref-section-title', t('referees.pairings.title')));
+    pairingsWrap.appendChild(el('p', 'explore-note explore-note--lead', t('referees.pairings.leadMin', { min: notableMin || 1 })));
+    const byMetric = [...pairings].sort((a, b) => (state.refereeMetric === 'perMatch' ? b.perMatch - a.perMatch : b.diff - a.diff) || b.matches - a.matches);
+    const digits = refPerfDigits(state.refereeMetric);
+    const fmt = (row) => (state.refereeMetric === 'perMatch'
+      ? t('referees.unit.perMatch', { v: signed(row.perMatch, digits) })
+      : signed(row.diff, digits));
+    const grid = el('div', 'ref-pairings');
+    for (const [titleKey, tone, slice] of [
+      ['referees.pairings.best', 'ref-pos', byMetric.slice(0, 5)],
+      ['referees.pairings.worst', 'ref-neg', byMetric.slice(-5).reverse()],
+    ]) {
+      const card = el('div', 'ref-pairing-card');
+      card.appendChild(el('h4', 'ref-pairing-card__title', t(titleKey)));
+      const list = el('div', 'ref-pairing-list');
+      for (const row of slice) {
+        const btn = el('button', 'ref-pairing-row');
+        btn.type = 'button';
+        btn.appendChild(el('img', 'ref-pairing-row__logo', ''));
+        btn.lastChild.src = `/logos/${row.team_id}.webp`;
+        btn.lastChild.alt = '';
+        btn.lastChild.width = 20;
+        btn.lastChild.height = 20;
+        const textWrap = el('span', 'ref-pairing-row__text');
+        textWrap.appendChild(el('strong', '', `${row.team} + ${row.referee}`));
+        const altTotal = state.refereeMetric === 'perMatch'
+          ? t('referees.unit.pts', { v: signed(row.diff, 0) })
+          : t('referees.unit.perMatch', { v: signed(row.perMatch, 1) });
+        textWrap.appendChild(el('small', '', `${row.matches} ${t('referees.pairings.matches')} · ${row.wins}-${row.draws}-${row.losses} · ${altTotal}`));
+        btn.appendChild(textWrap);
+        btn.appendChild(el('span', `ref-pairing-row__val ${tone}`, fmt(row)));
+        btn.addEventListener('click', () => {
+          state.refereePairingMode = 'referee';
+          state.refereeSelected = row.referee;
+          state.refereePairingTeam = row.team_id;
+          rerender({ scrollToDrawer: true });
+        });
+        list.appendChild(btn);
+      }
+      card.appendChild(list);
+      grid.appendChild(card);
+    }
+    pairingsWrap.appendChild(grid);
+    wrap.appendChild(pairingsWrap);
+  }
+
+  wrap.appendChild(refereeHowBox(false));
+}
+
+function refereeScatterLabels(rows) {
+  const byLast = new Map();
+  for (const r of rows) {
+    const parts = r.referee.trim().split(/\s+/);
+    const last = parts[parts.length - 1];
+    byLast.set(last, (byLast.get(last) || 0) + 1);
+  }
+  return new Map(rows.map((r) => {
+    const parts = r.referee.trim().split(/\s+/);
+    const last = parts[parts.length - 1];
+    if ((byLast.get(last) || 0) <= 1 || parts.length === 1) return [r.referee, last];
+    const initials = parts.slice(0, -1).map((p) => `${p[0]}.`).join(' ');
+    return [r.referee, `${initials} ${last}`];
+  }));
+}
+
+function drawRefStyleScatter(wrap, rows, onPickRef, seasonNow = 0) {
+  const withFouls = rows.filter((r) => r.foulsPerMatch != null);
+  if (withFouls.length < 2) {
+    wrap.appendChild(el('p', 'explore-empty', t('referees.empty')));
+    return;
+  }
+  const svg = svgEl('svg', { class: 'chart', role: 'group', 'aria-label': t('referees.style.aria') });
+  wrap.appendChild(svg);
+  const box = wrap.getBoundingClientRect().width || 940;
+  const narrow = box < SHAPE_NARROW;
+  const width = narrow ? Math.round(box) : 940;
+  const height = narrow ? Math.round(width * 0.92) : 420;
+  const pad = narrow ? { top: 30, right: 16, bottom: 36, left: 40 } : { top: 34, right: 24, bottom: 42, left: 48 };
+  svg.setAttribute('viewBox', `0 0 ${width} ${height}`);
+
+  const fVals = withFouls.map((r) => r.foulsPerMatch);
+  const cVals = withFouls.map((r) => r.cardsPerMatch);
+  const [f0, f1] = [Math.floor(Math.min(...fVals) - 0.8), Math.ceil(Math.max(...fVals) + 0.8)];
+  const [c0, c1] = [Math.floor((Math.min(...cVals) - 0.2) * 4) / 4, Math.ceil((Math.max(...cVals) + 0.2) * 4) / 4];
+  const right = width - pad.right;
+  const bottom = height - pad.bottom;
+  const x = (v) => pad.left + ((v - f0) / (f1 - f0 || 1)) * (right - pad.left);
+  const y = (v) => bottom - ((v - c0) / (c1 - c0 || 1)) * (bottom - pad.top);
+
+  const fStep = (f1 - f0) > 6 ? 2 : 1;
+  for (let v = Math.ceil(f0); v <= f1; v += fStep) {
+    svg.appendChild(svgEl('line', { class: 'grid-line', x1: x(v), x2: x(v), y1: pad.top, y2: bottom }));
+    svg.appendChild(svgEl('text', { class: 'tick', x: x(v), y: bottom + 14, 'text-anchor': 'middle' })).textContent = num(v, 0);
+  }
+  const cStep = 0.5;
+  for (let v = Math.ceil(c0 * 2) / 2; v <= c1 + 1e-9; v += cStep) {
+    svg.appendChild(svgEl('line', { class: 'grid-line', x1: pad.left, x2: right, y1: y(v), y2: y(v) }));
+    svg.appendChild(svgEl('text', { class: 'tick', x: pad.left - 6, y: y(v) + 3.5, 'text-anchor': 'end' })).textContent = num(v, 1);
+  }
+
+  const totalM = withFouls.reduce((s, r) => s + r.matches, 0);
+  const avgF = withFouls.reduce((s, r) => s + r.foulsPerMatch * r.matches, 0) / totalM;
+  const avgC = withFouls.reduce((s, r) => s + r.cardsPerMatch * r.matches, 0) / totalM;
+  svg.appendChild(svgEl('line', { class: 'attack-map__band', x1: x(avgF), x2: x(avgF), y1: pad.top, y2: bottom }));
+  svg.appendChild(svgEl('line', { class: 'attack-map__band', x1: pad.left, x2: right, y1: y(avgC), y2: y(avgC) }));
+
+  const quad = (key, attrs) => {
+    const node = svgEl('text', { class: 'attack-map__quad', ...attrs });
+    node.textContent = t(key);
+    svg.appendChild(node);
+  };
+  quad('referees.style.qTopLeft', { x: pad.left + 6, y: pad.top + 14 });
+  quad('referees.style.qTopRight', { x: right - 6, y: pad.top + 14, 'text-anchor': 'end' });
+  quad('referees.style.qBotLeft', { x: pad.left + 6, y: bottom - 8 });
+  quad('referees.style.qBotRight', { x: right - 6, y: bottom - 8, 'text-anchor': 'end' });
+
+  svg.appendChild(svgEl('text', { class: 'axis-title', x: right, y: height - 6, 'text-anchor': 'end' })).textContent = t('referees.style.x');
+  svg.appendChild(svgEl('text', { class: 'axis-title', x: pad.left, y: pad.top - 10 })).textContent = t('referees.style.y');
+
+  const shortMap = refereeScatterLabels(withFouls);
+  const maxM = Math.max(...withFouls.map((r) => r.matches));
+  const placedBoxes = [];
+  const isAct = (r) => !seasonNow || r.seasonMax >= seasonNow;
+  // Place active labels first (largest first), then past seasons.
+  const sortedForLabels = [...withFouls].sort((a, b) => Number(isAct(b)) - Number(isAct(a)) || b.matches - a.matches);
+  const points = sortedForLabels.map((row) => ({
+    row,
+    active: isAct(row),
+    cx: x(row.foulsPerMatch),
+    cy: y(row.cardsPerMatch),
+    rad: (narrow ? 4.5 : 5.5) + (narrow ? 6 : 8) * Math.sqrt(row.matches / maxM),
+  }));
+
+  const dotNodes = [];
+  for (const pt of points) {
+    const { row, active, cx, cy, rad } = pt;
+    const g = svgEl('g', { class: `ref-scatter-dot${active ? '' : ' ref-scatter-dot--past'}`, tabindex: 0, role: 'button' });
+    g.appendChild(svgEl('circle', { cx, cy, r: rad }));
+    const shortRef = shortMap.get(row.referee) || row.referee;
+    const lblW = Math.max(30, shortRef.length * 6.8 + 4);
+    const lblH = 12;
+    const d = rad * 0.78;
+    const candidates = [
+      [cx, cy - rad - 4, 'middle', cx - lblW / 2, cy - rad - 4 - lblH],
+      [cx, cy + rad + 11, 'middle', cx - lblW / 2, cy + rad + 1],
+      [cx + rad + 4, cy + 3.5, 'start', cx + rad + 4, cy - 6],
+      [cx - rad - 4, cy + 3.5, 'end', cx - rad - 4 - lblW, cy - 6],
+      [cx + d + 3, cy - d - 2, 'start', cx + d + 3, cy - d - 2 - lblH],
+      [cx - d - 3, cy - d - 2, 'end', cx - d - 3 - lblW, cy - d - 2 - lblH],
+      [cx + d + 3, cy + d + 10, 'start', cx + d + 3, cy + d],
+      [cx - d - 3, cy + d + 10, 'end', cx - d - 3 - lblW, cy + d],
+    ];
+    const fits = (bx, by) => bx >= pad.left + 2 && bx + lblW <= right - 2 && by >= pad.top + 14 && by + lblH <= bottom - 14
+      && !placedBoxes.some(([px, py, pw, ph]) => bx < px + pw + 3 && bx + lblW + 3 > px && by < py + ph + 2 && by + lblH + 2 > py)
+      && !points.some((o) => o.row !== row && o.cx + o.rad + 3 > bx && o.cx - o.rad - 3 < bx + lblW && o.cy + o.rad + 3 > by && o.cy - o.rad - 3 < by + lblH);
+    if (!narrow || row.matches >= 30) {
+      const chosen = candidates.find(([, , , bx, by]) => fits(bx, by));
+      if (chosen) {
+        const [lx, ly, anchor, bx, by] = chosen;
+        const lbl = svgEl('text', { class: `ref-scatter-label${active ? '' : ' ref-scatter-label--past'}`, x: lx, y: ly, 'text-anchor': anchor });
+        lbl.textContent = shortRef;
+        g.appendChild(lbl);
+        placedBoxes.push([bx, by, lblW, lblH]);
+      }
+    }
+    const spanTxt = row.seasonMin === row.seasonMax ? String(row.seasonMin) : `${row.seasonMin}–${row.seasonMax}`;
+    const tip = `${t('referees.style.tip', {
+      n: row.matches, c: num(row.cardsPerMatch, 2), f: num(row.foulsPerMatch, 1), fpc: num(row.foulsPerCard, 1),
+    })}<br><span class="tooltip__muted">${t('referees.style.tipMore', {
+      r: num(row.redsPerMatch, 2), gap: signed(row.awayHomeCardGap, 2),
+    })} · ${spanTxt}</span>`;
+    g.setAttribute('aria-label', `${row.referee}: ${t('referees.style.tip', {
+      n: row.matches, c: num(row.cardsPerMatch, 2), f: num(row.foulsPerMatch, 1), fpc: num(row.foulsPerCard, 1),
+    })}`);
+    attachTip(g, `<b>${esc(row.referee)}</b><br>${tip}`);
+    g.addEventListener('click', () => { hideTooltip(); onPickRef(row.referee); });
+    g.addEventListener('keydown', (event) => {
+      if (event.key !== 'Enter' && event.key !== ' ') return;
+      event.preventDefault();
+      hideTooltip();
+      onPickRef(row.referee);
+    });
+    dotNodes.push({ g, active });
+  }
+  // Draw past-season dots first so active dots sit on top.
+  for (const d of dotNodes) if (!d.active) svg.appendChild(d.g);
+  for (const d of dotNodes) if (d.active) svg.appendChild(d.g);
+}
+
+function drawSeasonDisciplineChart(wrap, seasons) {
+  const legend = el('div', 'ref-legend');
+  legend.innerHTML = `<span class="ref-legend__item"><i class="ref-legend__swatch ref-legend__swatch--cards"></i>${esc(t('referees.seasons.legendCards'))}</span>`
+    + `<span class="ref-legend__item"><i class="ref-legend__swatch ref-legend__swatch--reds"></i>${esc(t('referees.seasons.legendReds'))}</span>`;
+  wrap.appendChild(legend);
+
+  const svg = svgEl('svg', { class: 'chart', role: 'group', 'aria-label': t('referees.seasons.aria') });
+  wrap.appendChild(svg);
+  const box = wrap.getBoundingClientRect().width || 520;
+  const narrow = box < SHAPE_NARROW;
+  const width = Math.max(320, Math.min(620, Math.round(box)));
+  const height = 240;
+  const pad = { top: 30, right: 44, bottom: 32, left: 36 };
+  svg.setAttribute('viewBox', `0 0 ${width} ${height}`);
+
+  const right = width - pad.right;
+  const bottom = height - pad.bottom;
+  const stepX = (right - pad.left) / seasons.length;
+  const xAt = (i) => pad.left + (i + 0.5) * stepX;
+  const maxC = Math.max(4, Math.ceil(Math.max(...seasons.map((s) => s.cardsPerMatch)) * 2) / 2);
+  const maxR = Math.max(0.25, Math.ceil(Math.max(...seasons.map((s) => s.redsPerMatch)) * 10) / 10);
+  const y = (v) => bottom - (v / maxC) * (bottom - pad.top);
+  const yR = (v) => bottom - (v / maxR) * (bottom - pad.top);
+
+  for (let v = 0; v <= maxC + 1e-9; v += 1) {
+    svg.appendChild(svgEl('line', { class: v ? 'grid-line' : 'axis-line', x1: pad.left, x2: right, y1: y(v), y2: y(v) }));
+    svg.appendChild(svgEl('text', { class: 'tick', x: pad.left - 6, y: y(v) + 3.5, 'text-anchor': 'end' })).textContent = num(v, 0);
+  }
+  const rStep = maxR > 0.3 ? 0.1 : 0.05;
+  for (let rv = 0; rv <= maxR + 1e-9; rv += rStep * 2) {
+    svg.appendChild(svgEl('text', { class: 'tick ref-season-rtick', x: right + 6, y: yR(rv) + 3.5 })).textContent = num(rv, 2);
+  }
+  svg.appendChild(svgEl('text', { class: 'axis-title', x: pad.left, y: pad.top - 10 })).textContent = t('referees.seasons.y');
+  svg.appendChild(svgEl('text', { class: 'axis-title ref-season-rtick', x: right, y: pad.top - 10, 'text-anchor': 'end' })).textContent = t('referees.seasons.yRed');
+
+  const varIdx = seasons.findIndex((s) => s.season === 2023);
+  if (varIdx >= 0) {
+    const vx = xAt(varIdx);
+    svg.appendChild(svgEl('line', { class: 'attack-map__band', x1: vx, x2: vx, y1: pad.top, y2: bottom }));
+    svg.appendChild(svgEl('text', { class: 'tick ref-var-label', x: vx, y: pad.top - 10, 'text-anchor': 'middle' })).textContent = 'VAR';
+  }
+
+  const pts = seasons.map((s, i) => `${xAt(i)},${y(s.cardsPerMatch)}`).join(' ');
+  svg.appendChild(svgEl('polyline', { class: 'ref-season-line', points: pts }));
+
+  const barW = Math.min(20, Math.max(10, Math.round(stepX * 0.34)));
+  seasons.forEach((s, i) => {
+    const cx = xAt(i);
+    const cy = y(s.cardsPerMatch);
+    const g = svgEl('g', { class: 'ref-season-pt', tabindex: 0 });
+    const redH = Math.max(2, bottom - yR(s.redsPerMatch));
+    g.appendChild(svgEl('rect', { class: 'ref-season-bar', x: cx - barW / 2, y: bottom - redH, width: barW, height: redH, rx: 2 }));
+    g.appendChild(svgEl('circle', { class: 'ref-season-dot', cx, cy, r: 4.5 }));
+    const lbl = svgEl('text', { class: 'tick', x: cx, y: cy - 8, 'text-anchor': 'middle' });
+    lbl.textContent = num(s.cardsPerMatch, 2);
+    g.appendChild(lbl);
+    const yr = svgEl('text', { class: 'tick', x: cx, y: bottom + 16, 'text-anchor': 'middle' });
+    yr.textContent = String(s.season);
+    g.appendChild(yr);
+    const tip = t('referees.seasons.tip', {
+      s: s.season, c: num(s.cardsPerMatch, 2), y: num(s.yellowsPerMatch, 2), r: num(s.redsPerMatch, 2),
+      rpct: num(s.redMatchPct, 1),
+      f: s.foulsPerMatch != null ? num(s.foulsPerMatch, 1) : '–', fpc: s.foulsPerCard != null ? num(s.foulsPerCard, 1) : '–',
+    });
+    g.setAttribute('aria-label', tip);
+    attachTip(g, `<b>${s.season}</b><br>${tip}`);
+    svg.appendChild(g);
+  });
+}
+
+function renderClubDisciplineSection(report, wrap, filtered, rerender) {
+  const minFloor = state.refereeScope === 'all' ? 10 : 0;
+  const clubs = minFloor ? refereeMinFilter(clubDisciplineRows(filtered), minFloor) : clubDisciplineRows(filtered);
+  if (!clubs.length) {
+    wrap.appendChild(el('p', 'explore-empty', t('referees.empty')));
+    return;
+  }
+  const openClub = (teamId, teamName) => {
+    state.teamTab = 'referees';
+    openTeamView(teamId, teamName);
+  };
+
+  // 1. 3-Card Editorial Hero Strip
+  const byBooked = [...clubs].sort((a, b) => a.cardsForPerMatch - b.cardsForPerMatch);
+  const byDrawn = [...clubs].sort((a, b) => b.cardsAgainstPerMatch - a.cardsAgainstPerMatch);
+  const byNetReds = [...clubs].sort((a, b) => b.netReds - a.netReds || a.team.localeCompare(b.team));
+  const cleanest = byBooked[0];
+  const mostDrawn = byDrawn[0];
+  const bestReds = byNetReds[0];
+
+  const hero = el('div', 'ref-hero-grid');
+  hero.appendChild(refHeroCard(
+    t('referees.clubs.factClean'),
+    num(cleanest.cardsForPerMatch, 2),
+    t('referees.clubs.factCleanSub', { a: num(cleanest.cardsAgainstPerMatch, 2), n: cleanest.matches }),
+    { club: { id: cleanest.team_id, name: cleanest.team }, onClick: () => openClub(cleanest.team_id, cleanest.team) },
+  ));
+  hero.appendChild(refHeroCard(
+    t('referees.clubs.factDrawn'),
+    num(mostDrawn.cardsAgainstPerMatch, 2),
+    t('referees.clubs.factDrawnSub', { f: num(mostDrawn.cardsForPerMatch, 2), n: mostDrawn.matches }),
+    { club: { id: mostDrawn.team_id, name: mostDrawn.team }, onClick: () => openClub(mostDrawn.team_id, mostDrawn.team) },
+  ));
+  hero.appendChild(refHeroCard(
+    t('referees.clubs.factBestReds'),
+    signed(bestReds.netReds, 0),
+    t('referees.clubs.factRedsSub', { rf: bestReds.redsFor, ra: bestReds.redsAgainst, n: bestReds.matches }),
+    { tone: bestReds.netReds >= 0 ? 'ref-pos' : 'ref-neg', club: { id: bestReds.team_id, name: bestReds.team }, onClick: () => openClub(bestReds.team_id, bestReds.team) },
+  ));
+  wrap.appendChild(hero);
+
+  // 2. Crest Scatter Plot
+  const scatterSec = el('section', 'ref-subsection');
+  scatterSec.appendChild(el('h3', 'ref-section-title', t('referees.clubs.scatterTitle')));
+  scatterSec.appendChild(el('p', 'explore-note explore-note--lead', t('referees.clubs.scatterLead')));
+  wrap.appendChild(scatterSec);
+  drawClubDisciplineScatter(scatterSec, clubs, openClub);
+
+  // 3. Unified Club Ranking Section (Chart <-> Table Switcher)
+  const rankSec = el('section', 'ref-subsection');
+  wrap.appendChild(rankSec);
+  const rankHead = el('div', 'ref-section-head');
+  const rankTitles = el('div', 'ref-section-head__text');
+  const netMeta = state.clubDisciplineMetric === 'fouls'
+    ? ['referees.clubs.netFoulsTitle', 'referees.clubs.netFoulsLead']
+    : state.clubDisciplineMetric === 'reds'
+      ? ['referees.clubs.netRedsTitle', 'referees.clubs.netRedsLead']
+      : ['referees.clubs.netCardsTitle', 'referees.clubs.netCardsLead'];
+  rankTitles.appendChild(el('h3', 'ref-section-title', state.clubDisciplineView === 'table' ? t('referees.clubs.tableTitle') : t(netMeta[0])));
+  rankTitles.appendChild(el('p', 'explore-note explore-note--lead', state.clubDisciplineView === 'table' ? t('referees.clubs.tableLead') : t(netMeta[1])));
+  rankHead.appendChild(rankTitles);
+
+  const rankControls = el('div', 'ref-section-head__controls');
+  if (state.clubDisciplineView === 'chart') {
+    rankControls.appendChild(refereeSwitchGroup(
+      t('referees.clubs.metricLabel'),
+      [
+        ['cards', t('referees.clubs.metricCards')],
+        ['fouls', t('referees.clubs.metricFouls')],
+        ['reds', t('referees.clubs.metricReds')],
+      ],
+      state.clubDisciplineMetric,
+      (val) => { state.clubDisciplineMetric = val; rerender(); },
+    ));
+  }
+  rankControls.appendChild(refereeSwitchGroup(
+    t('referees.clubs.viewLabel'),
+    [['chart', t('referees.clubs.viewChart')], ['table', t('referees.clubs.viewTable')]],
+    state.clubDisciplineView,
+    (val) => { state.clubDisciplineView = val; rerender(); },
+  ));
+  rankHead.appendChild(rankControls);
+  rankSec.appendChild(rankHead);
+
+  if (state.clubDisciplineView === 'chart') {
+    drawClubNetChart(rankSec, clubs, state.clubDisciplineMetric, openClub);
+    return;
+  }
+
+  const tableWrap = el('div', 'ref-table-wrap');
+  const table = el('table', 'ref-table');
+  const thead = el('thead');
+  const headRow = el('tr');
+  const cols = [
+    ['club', 'team', false],
+    ['matches', 'matches', true],
+    ['cardsFor', 'cardsForPerMatch', true],
+    ['cardsAgainst', 'cardsAgainstPerMatch', true],
+    ['netCards', 'netCardsPerMatch', true],
+    ['netReds', 'netReds', true],
+    ['foulsFor', 'foulsForPerMatch', true],
+    ['foulsAgainst', 'foulsAgainstPerMatch', true],
+    ['fpc', 'foulsPerCard', true],
+  ];
+  const tbody = el('tbody');
+
+  function sortClubs() {
+    const { key, dir } = state.clubDisciplineSort;
+    return [...clubs].sort((a, b) => {
+      const av = a[key];
+      const bv = b[key];
+      if (av == null && bv == null) return a.team.localeCompare(b.team);
+      if (av == null) return 1;
+      if (bv == null) return -1;
+      if (typeof av === 'string') return dir * av.localeCompare(bv);
+      return dir * (av - bv) || a.team.localeCompare(b.team);
+    });
+  }
+
+  function renderClubTableBody() {
+    tbody.replaceChildren();
+    const sortedKey = state.clubDisciplineSort.key;
+    for (const row of sortClubs()) {
+      const tr = el('tr');
+      tr.tabIndex = 0;
+      tr.addEventListener('click', () => openClub(row.team_id, row.team));
+      tr.addEventListener('keydown', (event) => {
+        if (event.key !== 'Enter' && event.key !== ' ') return;
+        event.preventDefault();
+        openClub(row.team_id, row.team);
+      });
+      const tdName = el('td', `ref-club-cell${sortedKey === 'team' ? ' ref-col--sorted' : ''}`);
+      const logo = el('img', '', '');
+      logo.src = `/logos/${row.team_id}.webp`;
+      logo.alt = '';
+      logo.width = 18;
+      logo.height = 18;
+      tdName.append(logo, el('span', '', row.team));
+      tr.appendChild(tdName);
+      tr.appendChild(el('td', `num${sortedKey === 'matches' ? ' ref-col--sorted' : ''}`, String(row.matches)));
+      tr.appendChild(el('td', `num${sortedKey === 'cardsForPerMatch' ? ' ref-col--sorted' : ''}`, num(row.cardsForPerMatch, 2)));
+      tr.appendChild(el('td', `num${sortedKey === 'cardsAgainstPerMatch' ? ' ref-col--sorted' : ''}`, num(row.cardsAgainstPerMatch, 2)));
+      tr.appendChild(el('td', `num ${row.netCardsPerMatch >= 0 ? 'ref-pos' : 'ref-neg'}${sortedKey === 'netCardsPerMatch' ? ' ref-col--sorted' : ''}`, signed(row.netCardsPerMatch, 2)));
+      const redsTd = el('td', `num ${row.netReds > 0 ? 'ref-pos' : row.netReds < 0 ? 'ref-neg' : ''}${sortedKey === 'netReds' ? ' ref-col--sorted' : ''}`, signed(row.netReds, 0));
+      redsTd.title = t('referees.clubs.tipReds', { rf: row.redsFor, ra: row.redsAgainst, net: signed(row.netReds, 0), n: row.matches });
+      tr.appendChild(redsTd);
+      tr.appendChild(el('td', `num${sortedKey === 'foulsForPerMatch' ? ' ref-col--sorted' : ''}`, row.foulsForPerMatch != null ? num(row.foulsForPerMatch, 1) : '–'));
+      tr.appendChild(el('td', `num${sortedKey === 'foulsAgainstPerMatch' ? ' ref-col--sorted' : ''}`, row.foulsAgainstPerMatch != null ? num(row.foulsAgainstPerMatch, 1) : '–'));
+      tr.appendChild(el('td', `num${sortedKey === 'foulsPerCard' ? ' ref-col--sorted' : ''}`, row.foulsPerCard != null ? num(row.foulsPerCard, 1) : '–'));
+      tbody.appendChild(tr);
+    }
+  }
+
+  for (const [labelKey, sortKey, isNum] of cols) {
+    const th = el('th', isNum ? 'num' : '', t(`referees.clubs.col.${labelKey}`));
+    th.dataset.sort = sortKey;
+    th.tabIndex = 0;
+    if (labelKey !== 'club') th.title = t(`referees.clubs.colTip.${labelKey}`);
+    if (state.clubDisciplineSort.key === sortKey) {
+      th.setAttribute('aria-sort', state.clubDisciplineSort.dir === 1 ? 'ascending' : 'descending');
+    }
+    const toggle = () => {
+      const same = state.clubDisciplineSort.key === sortKey;
+      state.clubDisciplineSort = { key: sortKey, dir: same ? -state.clubDisciplineSort.dir : (sortKey === 'team' ? 1 : -1) };
+      for (const other of headRow.querySelectorAll('th')) other.removeAttribute('aria-sort');
+      th.setAttribute('aria-sort', state.clubDisciplineSort.dir === 1 ? 'ascending' : 'descending');
+      renderClubTableBody();
+    };
+    th.addEventListener('click', toggle);
+    th.addEventListener('keydown', (event) => {
+      if (event.key !== 'Enter' && event.key !== ' ') return;
+      event.preventDefault();
+      toggle();
+    });
+    headRow.appendChild(th);
+  }
+  thead.appendChild(headRow);
+  table.appendChild(thead);
+  renderClubTableBody();
+  table.appendChild(tbody);
+  tableWrap.appendChild(table);
+  rankSec.appendChild(tableWrap);
+}
+
+function drawClubDisciplineScatter(wrap, clubs, onPickClub) {
+  const svg = svgEl('svg', { class: 'chart', role: 'group', 'aria-label': t('referees.clubs.scatterAria') });
+  wrap.appendChild(svg);
+  const box = wrap.getBoundingClientRect().width || 940;
+  const narrow = box < SHAPE_NARROW;
+  const width = narrow ? Math.round(box) : 940;
+  const height = narrow ? width : 520;
+  const pad = narrow ? { top: 30, right: 14, bottom: 34, left: 38 } : { top: 34, right: 24, bottom: 40, left: 48 };
+  const crest = narrow ? 22 : 26;
+  svg.setAttribute('viewBox', `0 0 ${width} ${height}`);
+
+  const allVals = clubs.flatMap((c) => [c.cardsForPerMatch, c.cardsAgainstPerMatch]);
+  const lo = Math.max(0, Math.floor((Math.min(...allVals) - 0.06) * 10) / 10);
+  const hi = Math.ceil((Math.max(...allVals) + 0.06) * 10) / 10;
+  const right = width - pad.right;
+  const bottom = height - pad.bottom;
+  const x = (v) => pad.left + ((v - lo) / (hi - lo || 1)) * (right - pad.left);
+  const y = (v) => bottom - ((v - lo) / (hi - lo || 1)) * (bottom - pad.top);
+
+  const step = (hi - lo) > 1.0 ? 0.2 : 0.1;
+  for (let v = lo; v <= hi + 1e-9; v += step) {
+    svg.appendChild(svgEl('line', { class: 'grid-line', x1: x(v), x2: x(v), y1: pad.top, y2: bottom }));
+    svg.appendChild(svgEl('text', { class: 'tick', x: x(v), y: bottom + 14, 'text-anchor': 'middle' })).textContent = num(v, 1);
+    svg.appendChild(svgEl('line', { class: 'grid-line', x1: pad.left, x2: right, y1: y(v), y2: y(v) }));
+    svg.appendChild(svgEl('text', { class: 'tick', x: pad.left - 6, y: y(v) + 3.5, 'text-anchor': 'end' })).textContent = num(v, 1);
+  }
+  svg.appendChild(svgEl('line', { class: 'attack-map__even', x1: x(lo), y1: y(lo), x2: x(hi), y2: y(hi) }));
+  const totalM = clubs.reduce((s, c) => s + c.matches, 0);
+  const avg = clubs.reduce((s, c) => s + c.cardsForPerMatch * c.matches, 0) / (totalM || 1);
+  svg.appendChild(svgEl('line', { class: 'attack-map__band', x1: x(avg), x2: x(avg), y1: pad.top, y2: bottom }));
+  svg.appendChild(svgEl('line', { class: 'attack-map__band', x1: pad.left, x2: right, y1: y(avg), y2: y(avg) }));
+
+  const quad = (key, attrs) => {
+    const node = svgEl('text', { class: 'attack-map__quad', ...attrs });
+    node.textContent = t(key);
+    svg.appendChild(node);
+  };
+  quad('referees.clubs.qTopLeft', { x: pad.left + 6, y: pad.top + 14 });
+  quad('referees.clubs.qTopRight', { x: right - 6, y: pad.top + 14, 'text-anchor': 'end' });
+  quad('referees.clubs.qBotLeft', { x: pad.left + 6, y: bottom - 8 });
+  quad('referees.clubs.qBotRight', { x: right - 6, y: bottom - 8, 'text-anchor': 'end' });
+
+  svg.appendChild(svgEl('text', { class: 'axis-title', x: right, y: height - 6, 'text-anchor': 'end' })).textContent = t('referees.clubs.x');
+  svg.appendChild(svgEl('text', { class: 'axis-title', x: pad.left, y: pad.top - 10 })).textContent = t('referees.clubs.y');
+
+  for (const row of clubs) {
+    const cx = x(row.cardsForPerMatch);
+    const cy = y(row.cardsAgainstPerMatch);
+    const club = svgEl('g', { class: 'attack-map__club', tabindex: 0, role: 'button' });
+    club.appendChild(svgEl('circle', { cx, cy, r: crest / 2 + 2 }));
+    club.appendChild(svgEl('image', { href: `/logos/${row.team_id}.webp`, x: cx - crest / 2, y: cy - crest / 2, width: crest, height: crest }));
+    const tipMain = t('referees.clubs.tip', {
+      f: num(row.cardsForPerMatch, 2), a: num(row.cardsAgainstPerMatch, 2), net: signed(row.netCardsPerMatch, 2), n: row.matches,
+    });
+    const tipHomeAway = row.homeCardsPerMatch != null && row.awayCardsPerMatch != null
+      ? `<br><span class="tooltip__muted">${t('referees.clubs.tipHomeAway', { h: num(row.homeCardsPerMatch, 2), a: num(row.awayCardsPerMatch, 2) })}</span>`
+      : '';
+    const tipSub = row.foulsForPerMatch != null
+      ? `<br><span class="tooltip__muted">${t('referees.clubs.tipFouls', {
+        ff: num(row.foulsForPerMatch, 1), fa: num(row.foulsAgainstPerMatch, 1), fpc: num(row.foulsPerCard, 1),
+      })}</span>`
+      : '';
+    club.setAttribute('aria-label', `${row.team}: ${tipMain}`);
+    attachTip(club, `<b>${esc(row.team)}</b><br>${tipMain}${tipHomeAway}${tipSub}`);
+    club.addEventListener('pointerenter', () => { svg.appendChild(club); });
+    club.addEventListener('focus', () => { svg.appendChild(club); });
+    club.addEventListener('click', () => { hideTooltip(); onPickClub(row.team_id, row.team); });
+    club.addEventListener('keydown', (event) => {
+      if (event.key !== 'Enter' && event.key !== ' ') return;
+      event.preventDefault();
+      hideTooltip();
+      onPickClub(row.team_id, row.team);
+    });
+    svg.appendChild(club);
+  }
+}
+
+function drawClubNetChart(wrap, clubs, metric, onPickClub) {
+  const isFouls = metric === 'fouls';
+  const isReds = metric === 'reds';
+  const rows = clubs.filter((c) => (!isFouls || c.netFoulsPerMatch != null));
+  if (!rows.length) {
+    wrap.appendChild(el('p', 'explore-empty', t('referees.empty')));
+    return;
+  }
+  const valueOf = (r) => (isFouls ? r.netFoulsPerMatch : isReds ? r.netReds : r.netCardsPerMatch);
+  const digits = isFouls ? 1 : isReds ? 0 : 2;
+  const sorted = [...rows].sort((a, b) => valueOf(b) - valueOf(a) || a.team.localeCompare(b.team));
+
+  const ariaKey = isFouls ? 'referees.clubs.netFoulsTitle' : isReds ? 'referees.clubs.netRedsTitle' : 'referees.clubs.netCardsTitle';
+  const svg = svgEl('svg', { class: 'chart', role: 'group', 'aria-label': t(ariaKey) });
+  wrap.appendChild(svg);
+  const box = wrap.getBoundingClientRect().width || 940;
+  const narrow = box < SHAPE_NARROW;
+  const width = narrow ? Math.round(box) : 940;
+  const rowHeight = 25;
+  const pad = { top: 26, bottom: 30, left: narrow ? 136 : 190, right: 48 };
+  const height = pad.top + sorted.length * rowHeight + pad.bottom;
+  svg.setAttribute('viewBox', `0 0 ${width} ${height}`);
+
+  const maxAbs = Math.max(...sorted.map((r) => Math.abs(valueOf(r))), isFouls ? 1.0 : isReds ? 4 : 0.4);
+  const reach = isFouls
+    ? Math.max(1, Math.ceil(maxAbs))
+    : isReds
+      ? Math.max(4, Math.ceil(maxAbs / 2) * 2)
+      : Math.max(0.5, Math.ceil(maxAbs * 4) / 4);
+  const x = (v) => pad.left + ((v + reach) / (2 * reach)) * (width - pad.left - pad.right);
+  const step = narrow
+    ? (reach / 2)
+    : (isFouls ? (reach > 3 ? 1 : 0.5) : isReds ? (reach > 8 ? 4 : 2) : (reach > 0.8 ? 0.25 : 0.2));
+  for (let v = -reach; v <= reach + 1e-9; v += step) {
+    const r = Math.abs(v) < 1e-9 ? 0 : v;
+    const tDigits = (step % 1 !== 0) ? (isFouls ? 1 : 2) : 0;
+    svg.appendChild(svgEl('line', { class: r ? 'grid-line' : 'axis-line', x1: x(r), x2: x(r), y1: pad.top - 6, y2: height - pad.bottom }));
+    svg.appendChild(svgEl('text', { class: 'tick', x: x(r), y: height - pad.bottom + 14, 'text-anchor': 'middle' })).textContent = r === 0 ? '0' : signed(r, tDigits);
+  }
+  const xTitleKey = isFouls ? 'referees.clubs.netFoulsX' : isReds ? 'referees.clubs.netRedsX' : 'referees.clubs.netCardsX';
+  svg.appendChild(svgEl('text', { class: 'axis-title', x: width - pad.right, y: height - 4, 'text-anchor': 'end' })).textContent = t(xTitleKey);
+  svg.appendChild(svgEl('text', { class: 'luck__side', x: x(-reach), y: pad.top - 10 })).textContent = t('referees.clubs.netNeg');
+  svg.appendChild(svgEl('text', { class: 'luck__side', x: x(reach), y: pad.top - 10, 'text-anchor': 'end' })).textContent = t('referees.clubs.netPos');
+  svg.appendChild(svgEl('text', { class: 'luck__side', x: 18, y: pad.top - 10, 'text-anchor': 'end' })).textContent = t('referees.clubs.col.matches');
+
+  sorted.forEach((row, i) => {
+    const val = valueOf(row);
+    const top = pad.top + i * rowHeight;
+    const g = svgEl('g', { class: 'luck__row', tabindex: 0, role: 'button' });
+    const [a, b] = [x(0), x(val)];
+    g.appendChild(svgEl('rect', { class: 'ref-bar__hit', x: 0, y: top + 1, width: width - 2, height: rowHeight - 2, rx: 4 }));
+    g.appendChild(svgEl('rect', {
+      class: `luck__bar ${val >= 0 ? 'luck__bar--up' : 'luck__bar--down'}`,
+      x: Math.min(a, b), y: top + 5, width: Math.max(1, Math.abs(b - a)), height: rowHeight - 10, rx: 3,
+    }));
+    const count = svgEl('text', { class: 'luck__place', x: 18, y: top + 17, 'text-anchor': 'end' });
+    count.textContent = String(row.matches);
+    g.appendChild(count);
+    g.appendChild(svgEl('image', { href: `/logos/${row.team_id}.webp`, x: 24, y: top + 3, width: 20, height: 20 }));
+    const name = svgEl('text', { class: 'luck__name', x: 50, y: top + 17 });
+    name.textContent = narrow && row.team.length > 11 ? `${row.team.slice(0, 10)}…` : row.team;
+    g.appendChild(name);
+    const valNode = svgEl('text', { class: 'luck__value', y: top + 17, x: val >= 0 ? b + 5 : b - 5, 'text-anchor': val >= 0 ? 'start' : 'end' });
+    valNode.textContent = signed(val, digits);
+    g.appendChild(valNode);
+    const tip = isReds
+      ? t('referees.clubs.tipReds', { rf: row.redsFor, ra: row.redsAgainst, net: signed(row.netReds, 0), n: row.matches })
+      : t('referees.clubs.tip', { f: num(row.cardsForPerMatch, 2), a: num(row.cardsAgainstPerMatch, 2), net: signed(row.netCardsPerMatch, 2), n: row.matches });
+    g.setAttribute('aria-label', `${row.team}: ${signed(val, digits)}`);
+    attachTip(g, `<b>${esc(row.team)}</b><br>${tip}`);
+    g.addEventListener('click', () => { hideTooltip(); onPickClub(row.team_id, row.team); });
+    g.addEventListener('keydown', (event) => {
+      if (event.key !== 'Enter' && event.key !== ' ') return;
+      event.preventDefault();
+      hideTooltip();
+      onPickClub(row.team_id, row.team);
+    });
+    svg.appendChild(g);
+  });
+}
 
 /* Expected points from one match's xG: each side's goals Poisson at its xG,
    summed to 12 goals and normalised (as model.elo.xg_implied_score). */
@@ -7034,7 +9797,7 @@ async function renderCalibration(report, body) {
       for (const metric of ['log_loss', 'brier', 'rps']) tr.appendChild(el('td', '', num(row[metric], 4)));
       table.appendChild(tr);
     }
-    const caption = el('caption', '', t('calib.tableCaption', { n: num(data.market.model.n) }));
+    const caption = el('caption', '', t('calib.tableCaption', { n: num(data.market.model.n), from: data.market.first_season }));
     table.prepend(caption);
     wrap.appendChild(table);
   }
@@ -7061,7 +9824,7 @@ function calibrationFacts(data) {
     facts.push({
       value: signed(market.model.log_loss - market.power.log_loss, 3),
       label: t('calib.fact.market'),
-      text: t('calib.fact.marketText', { n: num(market.model.n), t: num(market.power.paired_t, 1) }),
+      text: t('calib.fact.marketText', { n: num(market.model.n), from: market.first_season, t: num(market.power.paired_t, 1) }),
     });
   }
   const signedPct = (value) => `${signed(value * 100, 1)}${percentSign()}`;
@@ -7411,7 +10174,7 @@ function drawRunIn(report, content, average) {
       cell.style.background = seqColor(game.points / 3);
       const logo = teamLogo(game.opponent_id, game.opponent);
       if (logo) cell.appendChild(logo);
-      cell.appendChild(el('span', 'runin__venue', t(game.home ? 'runin.home' : 'runin.away')));
+      cell.appendChild(venueIcon(game.home, { badge: false, className: 'runin__venue' }));
       cell.appendChild(el('b', '', num(game.points, 2)));
       const tip = t('runin.tip', {
         subject: average ? t('runin.averageSide') : row.team, opponent: game.opponent,
@@ -8719,7 +11482,7 @@ function openTeamView(teamId, fallbackName) {
    a phone shows one group at a time instead of eleven sections in a row.
    Only the open group is drawn: the charts size themselves to their box,
    which a hidden panel does not have. A finished season has no forecast. */
-const TEAM_TABS = [['overview', 'team.tab.overview'], ['forecast', 'team.tab.forecast'], ['history', 'team.tab.history']];
+const TEAM_TABS = [['overview', 'team.tab.overview'], ['forecast', 'team.tab.forecast'], ['history', 'team.tab.history'], ['referees', 'team.tab.referees']];
 
 function renderTeamView(report) {
   const teamId = state.teamFocusId;
@@ -8788,8 +11551,11 @@ function renderTeamView(report) {
         if (section.childNodes.length) forecast.appendChild(section);
       }, 'stakes');
       safeRender(() => renderTeamFixtures(teamId, teamName, report, forecast), 'fixtures');
+    } else if (state.teamTab === 'referees') {
+      safeRender(() => renderTeamReferees(teamId, teamName, report, content), 'referees');
     } else {
       if (career?.points?.length >= 2) safeRender(() => renderTeamRatingHistory(career, content), 'ratingHistory');
+      safeRender(() => renderTeamPerformanceHistory(teamId, content, report), 'performance');
       if (career?.seasons?.length) safeRender(() => renderSeasonBySeason(career, teamId, content, report), 'seasons');
     }
   };
@@ -8843,6 +11609,181 @@ function renderTeamRatingHistory(career, content) {
   chartSection.appendChild(stats);
   content.appendChild(chartSection);
   drawTeamChart(career);
+}
+
+/* ---------- team history: performance against expectation ------------- */
+
+/* performance.json: every scored match's rating change and the change the
+   model expected before kickoff (pipeline.performance_payload), fetched the
+   first time a club's history is opened. */
+let performancePromise = null;
+function fetchPerformance() {
+  if (!performancePromise) {
+    performancePromise = fetch('/data/performance.json')
+      .then((response) => {
+        if (!response.ok) throw new Error(`/data/performance.json ${response.status}`);
+        return response.json();
+      })
+      .catch((error) => {
+        console.warn('[Performance] performance.json unavailable', error);
+        performancePromise = null;
+        return { leagues: [], teams: {}, matches: [] };
+      });
+  }
+  return performancePromise;
+}
+
+const PERF_WINDOW = 5;
+const PERF_SEASONS = 3;
+
+/* One club's matches, oldest first, from its side: performance = rating
+   change - expected change, and the trailing PERF_WINDOW-match average
+   (over its whole history, so the first match shown already has one). */
+function teamPerformanceRows(data, teamId, { asof = null } = {}) {
+  const id = String(teamId);
+  const name = (tid) => {
+    const raw = data?.teams?.[tid] || String(tid);
+    return typeof shortName === 'function' ? shortName(raw) : raw;
+  };
+  const rows = [];
+  for (const m of data?.matches || []) {
+    const [date, season, league, homeId, awayId, hg, ag, change, expected] = m;
+    if (asof && date > asof) continue;
+    const isHome = String(homeId) === id;
+    if (!isHome && String(awayId) !== id) continue;
+    const sign = isHome ? 1 : -1;
+    rows.push({
+      date, season, league: data.leagues?.[league] || 'eliteserien', isHome,
+      opponent: name(isHome ? awayId : homeId),
+      gf: isHome ? hg : ag, ga: isHome ? ag : hg,
+      change: sign * change, expected: sign * expected, perf: sign * (change - expected),
+    });
+  }
+  let sum = 0;
+  rows.forEach((row, i) => {
+    sum += row.perf;
+    if (i >= PERF_WINDOW) sum -= rows[i - PERF_WINDOW].perf;
+    row.avg = i >= PERF_WINDOW - 1 ? sum / PERF_WINDOW : null;
+  });
+  return rows;
+}
+
+let teamPerfToken = 0;
+async function renderTeamPerformanceHistory(teamId, content, report) {
+  const token = ++teamPerfToken;
+  const section = el('div', 'team-section team-perf');
+  section.appendChild(el('div', 'label', t('team.perf.title')));
+  const body = el('div', 'team-perf__body');
+  body.appendChild(el('p', 'team-section__hint', t('team.perf.loading')));
+  section.appendChild(body);
+  content.appendChild(section);
+
+  const data = await fetchPerformance();
+  if (token !== teamPerfToken || state.activeView !== 'team' || state.teamTab !== 'history' || String(state.teamFocusId) !== String(teamId)) return;
+  const all = teamPerformanceRows(data, teamId, { asof: report.league.asof || null });
+  const seasonNow = Number(report.league.season);
+  const seasons = [...new Set(all.map((r) => r.season))].filter((s) => s <= seasonNow).slice(-PERF_SEASONS);
+  const rows = all.filter((r) => seasons.includes(r.season));
+  if (rows.length < 2) {
+    section.remove();
+    return;
+  }
+  body.replaceChildren();
+  body.appendChild(el('p', 'team-section__hint', t('team.perf.hint')));
+
+  // Three numbers first: the recent run, this season, the one before.
+  const stats = el('div', 'team-perf__stats');
+  const stat = (label, values) => {
+    if (!values.length) return;
+    const mean = values.reduce((a, b) => a + b, 0) / values.length;
+    const item = el('div', 'team-perf__stat');
+    item.appendChild(el('span', 'label', label));
+    item.appendChild(el('strong', `team-perf__value ${mean >= 0 ? 'ref-pos' : 'ref-neg'}`, signed(mean, 1)));
+    item.appendChild(el('span', 'team-perf__sub', t('team.perf.perMatch', { n: values.length })));
+    stats.appendChild(item);
+  };
+  stat(t('team.perf.last', { n: PERF_WINDOW }), rows.slice(-PERF_WINDOW).map((r) => r.perf));
+  const last = seasons[seasons.length - 1];
+  stat(t('team.perf.season', { season: last }), rows.filter((r) => r.season === last).map((r) => r.perf));
+  if (seasons.length >= 2) {
+    const prev = seasons[seasons.length - 2];
+    stat(t('team.perf.season', { season: prev }), rows.filter((r) => r.season === prev).map((r) => r.perf));
+  }
+  body.appendChild(stats);
+
+  const legend = el('div', 'ref-legend');
+  legend.innerHTML = `<span class="ref-legend__item"><i class="team-perf__swatch team-perf__swatch--bar"></i>${esc(t('team.perf.legendMatch'))}</span>`
+    + `<span class="ref-legend__item"><i class="team-perf__swatch team-perf__swatch--line"></i>${esc(t('team.perf.legendAvg', { n: PERF_WINDOW }))}</span>`;
+  body.appendChild(legend);
+  drawTeamPerformance(body, rows);
+}
+
+function drawTeamPerformance(wrap, rows) {
+  const svg = svgEl('svg', { class: 'chart team-perf__chart', role: 'group', 'aria-label': t('team.perf.aria', { n: PERF_WINDOW }) });
+  wrap.appendChild(svg);
+  const box = wrap.getBoundingClientRect().width || 940;
+  const narrow = box < SHAPE_NARROW;
+  const width = narrow ? Math.round(box) : 940;
+  const height = narrow ? 210 : 240;
+  const pad = { top: 22, right: 10, bottom: 14, left: narrow ? 30 : 36 };
+  svg.setAttribute('viewBox', `0 0 ${width} ${height}`);
+
+  // The scale follows the average, so the line reads; a single match beyond
+  // it is cut at the edge (its tooltip has the number).
+  const avgs = rows.map((r) => r.avg).filter((v) => v != null);
+  const bars = rows.map((r) => Math.abs(r.perf)).sort((a, b) => a - b);
+  const p80 = bars[Math.floor(bars.length * 0.8)] || 1;
+  const want = Math.max(p80, ...avgs.map((v) => Math.abs(v) * 1.4), 2);
+  const step = refNiceStep(want / 2);
+  const reach = Math.ceil(want / step) * step;
+  const bottom = height - pad.bottom;
+  const right = width - pad.right;
+  const y = (v) => pad.top + ((reach - Math.max(-reach, Math.min(reach, v))) / (2 * reach)) * (bottom - pad.top);
+  const slot = (right - pad.left) / rows.length;
+  const xAt = (i) => pad.left + (i + 0.5) * slot;
+
+  for (let v = -reach; v <= reach + 1e-9; v += step) {
+    const r = Math.abs(v) < 1e-9 ? 0 : v;
+    svg.appendChild(svgEl('line', { class: r ? 'grid-line' : 'axis-line', x1: pad.left, x2: right, y1: y(r), y2: y(r) }));
+    svg.appendChild(svgEl('text', { class: 'tick', x: pad.left - 5, y: y(r) + 3.5, 'text-anchor': 'end' })).textContent = r === 0 ? '0' : signed(r, step % 1 ? 1 : 0);
+  }
+
+  // Season dividers, each season named over its first match.
+  rows.forEach((row, i) => {
+    if (i && row.season === rows[i - 1].season) return;
+    const x = pad.left + i * slot;
+    if (i) svg.appendChild(svgEl('line', { class: 'team-perf__season', x1: x, x2: x, y1: pad.top - 14, y2: bottom }));
+    const label = row.league === 'obosligaen' ? `${row.season} · OBOS` : String(row.season);
+    svg.appendChild(svgEl('text', { class: 'tick team-perf__season-label', x: x + 4, y: pad.top - 8 })).textContent = label;
+  });
+
+  const barWidth = Math.max(1.5, Math.min(7, slot * 0.6));
+  rows.forEach((row, i) => {
+    const [a, b] = [y(0), y(row.perf)];
+    svg.appendChild(svgEl('rect', {
+      class: `team-perf__bar ${row.perf >= 0 ? 'team-perf__bar--up' : 'team-perf__bar--down'}`,
+      x: xAt(i) - barWidth / 2, y: Math.min(a, b), width: barWidth, height: Math.max(1, Math.abs(b - a)), rx: Math.min(1.5, barWidth / 2),
+    }));
+  });
+
+  // The average, broken where it has no value yet.
+  let path = '';
+  rows.forEach((row, i) => {
+    if (row.avg == null) return;
+    path += `${path && rows[i - 1]?.avg != null ? 'L' : 'M'}${xAt(i).toFixed(1)},${y(row.avg).toFixed(1)}`;
+  });
+  if (path) svg.appendChild(svgEl('path', { class: 'team-perf__line', d: path }));
+
+  // One hit strip per match.
+  rows.forEach((row, i) => {
+    const hit = svgEl('rect', { class: 'team-perf__hit', x: pad.left + i * slot, y: pad.top, width: slot, height: bottom - pad.top, tabindex: i === rows.length - 1 ? 0 : -1 });
+    const where = `${row.isHome ? t('referees.drawer.homeTag') : t('referees.drawer.awayTag')} ${row.opponent} ${row.gf}–${row.ga}`;
+    const main = t('team.perf.tip', { change: signed(row.change, 1), expected: signed(row.expected, 1), perf: signed(row.perf, 1) });
+    const avg = row.avg != null ? t('team.perf.tipAvg', { n: PERF_WINDOW, v: signed(row.avg, 1) }) : '';
+    hit.setAttribute('aria-label', `${row.date} ${where}: ${main}${avg ? `. ${avg}` : ''}`);
+    attachTip(hit, `<b>${esc(row.date)}</b> ${esc(where)}<br>${main}${avg ? `<br><span class="tooltip__muted">${avg}</span>` : ''}`);
+    svg.appendChild(hit);
+  });
 }
 
 function renderSeasonBySeason(career, teamId, container, currentReport) {
@@ -9042,7 +11983,6 @@ function renderSeasonShapeInContainer(season, league, teamId, container, current
       el('div', 'label', t('team.seasonShapeYear', { year: season })),
       chart
     );
-    syncShapeKey(chart);
     // The rows highlight what is on show, so both branches record it.
     state.activeSeasonShape = { season, league };
     updateActiveSeasonRow(season, league);
@@ -9376,7 +12316,12 @@ function renderTeamSplit(teamId, report, container) {
   cells('team-split__head', ['', t('team.mini.played'), t('form.W'), t('form.D'), t('form.L'), t('team.gf'), t('team.ga'), t('team.mini.pts')]);
   for (const key of ['home', 'away']) {
     const x = split[key];
-    cells('', [t(`team.${key}`), x.p, x.w, x.d, x.l, x.gf, x.ga, x.w * 3 + x.d].map(String));
+    const labelCell = el('span', 'team-split__cell team-split__label');
+    labelCell.append(venueIcon(key === 'home', { badge: false }), el('span', '', t(`team.${key}`)));
+    grid.appendChild(labelCell);
+    [x.p, x.w, x.d, x.l, x.gf, x.ga, x.w * 3 + x.d].forEach((v) => {
+      grid.appendChild(el('span', 'team-split__cell num', String(v)));
+    });
   }
   section.appendChild(grid);
   container.appendChild(section);
@@ -9693,10 +12638,14 @@ function stakeRow(entry, report, count) {
   if (crest) who.appendChild(crest);
   who.appendChild(el('span', '', entry.opponent));
   const legs = stakeLegs(entry, report.fixtures || []);
-  const when = legs.length >= 2
-    ? legs.map((leg) => formatDate(leg.date)).join(' \u00b7 ')
-    : `${t(String(entry.home_id) === String(entry.team_id) ? 'team.homeShort' : 'team.awayShort')} \u00b7 ${formatDate(entry.date)}`;
-  head.append(race, who, el('span', 'stake__when', when));
+  const whenEl = el('span', 'stake__when');
+  if (legs.length >= 2) {
+    whenEl.textContent = legs.map((leg) => formatDate(leg.date)).join(' \u00b7 ');
+  } else {
+    const isHome = String(entry.home_id) === String(entry.team_id);
+    whenEl.append(venueIcon(isHome, { badge: false }), document.createTextNode(` \u00b7 ${formatDate(entry.date)}`));
+  }
+  head.append(race, who, whenEl);
   item.appendChild(head);
 
   const drop = entry.band_tone === 'relegation';
@@ -9796,6 +12745,201 @@ function renderTeamGridRow(teamId, row, report, container) {
     while (wrap.children.length > Math.max(fit, to - start + 1, MIN_CELLS)) wrap.lastElementChild.remove();
   }
   return section;
+}
+
+let teamRefereesToken = 0;
+async function renderTeamReferees(teamId, teamName, report, content) {
+  const token = ++teamRefereesToken;
+  const section = el('div', 'team-section team-referees');
+  section.appendChild(el('p', 'explore-empty', t('referees.loading')));
+  content.appendChild(section);
+
+  const payload = await fetchReferees();
+  if (token !== teamRefereesToken || state.activeView !== 'team' || state.teamTab !== 'referees' || String(state.teamFocusId) !== String(teamId)) return;
+
+  function drawSection() {
+    const prevHeight = section.offsetHeight;
+    const prevScroll = window.scrollY;
+    if (prevHeight > 0) section.style.minHeight = `${prevHeight}px`;
+    section.replaceChildren();
+    hideTooltip();
+    try {
+      const seasons = payload.seasons || [];
+    const allSpan = seasons.length >= 2 ? `${seasons[0]}–${seasons[seasons.length - 1]}` : t('referees.scope.all');
+    const topBar = el('div', 'ref-team-top');
+    topBar.appendChild(el('h3', 'ref-section-title', t('referees.teamCard.title')));
+    topBar.appendChild(refereeSwitchGroup(
+      t('referees.scope.label'),
+      [['all', allSpan], ['season', String(report.league.season)]],
+      state.refereeScope,
+      (val) => {
+        state.refereeScope = val;
+        state.refereeMinMatches = val === 'all' ? 5 : 0;
+        state.teamRefereeSelected = null;
+        drawSection();
+      },
+    ));
+    section.appendChild(topBar);
+
+    let filtered = refereeFilter(payload.rows, {
+      league: report.league.slug,
+      season: state.refereeScope === 'season' ? report.league.season : 'all',
+      asof: report.league.asof || null,
+    });
+    let usedEliteserienFallback = false;
+    const hasClubInLeague = filtered.some((r) => String(r.home_id) === String(teamId) || String(r.away_id) === String(teamId));
+    if (!hasClubInLeague && report.league.slug !== 'eliteserien') {
+      const esFiltered = refereeFilter(payload.rows, {
+        league: 'eliteserien',
+        season: state.refereeScope === 'season' ? report.league.season : 'all',
+        asof: report.league.asof || null,
+      });
+      const esHas = esFiltered.some((r) => String(r.home_id) === String(teamId) || String(r.away_id) === String(teamId));
+      const esAny = esHas ? esFiltered : refereeFilter(payload.rows, { league: 'eliteserien', season: 'all', asof: report.league.asof || null });
+      if (esAny.some((r) => String(r.home_id) === String(teamId) || String(r.away_id) === String(teamId))) {
+        filtered = esAny;
+        usedEliteserienFallback = true;
+      }
+    }
+
+    if (usedEliteserienFallback) {
+      section.appendChild(el('p', 'explore-note explore-note--lead', t('referees.teamEliteserienFallback')));
+    }
+
+    const clubRows = clubDisciplineRows(filtered);
+    const club = clubRows.find((c) => String(c.team_id) === String(teamId));
+    if (club) {
+      const cleanRank = [...clubRows].sort((a, b) => a.cardsForPerMatch - b.cardsForPerMatch).findIndex((c) => c.team_id === club.team_id) + 1;
+      const avgFpc = clubRows.filter((c) => c.foulsPerCard != null).reduce((s, c) => s + c.foulsFor, 0)
+        / (clubRows.filter((c) => c.foulsPerCard != null).reduce((s, c) => s + c.cardsForWithFouls, 0) || 1);
+      const hero = el('div', 'ref-hero-grid ref-hero-grid--four');
+      const haNote = club.homeCardsPerMatch != null && club.awayCardsPerMatch != null
+        ? ` · ${t('referees.teamCard.homeAwaySub', { h: num(club.homeCardsPerMatch, 2), a: num(club.awayCardsPerMatch, 2) })}`
+        : '';
+      hero.appendChild(refHeroCard(
+        t('referees.teamCard.cards'),
+        num(club.cardsForPerMatch, 2),
+        t('referees.teamCard.cardsText', { rank: cleanRank, of: clubRows.length, opp: num(club.cardsAgainstPerMatch, 2) }) + haNote,
+      ));
+      hero.appendChild(refHeroCard(
+        t('referees.teamCard.netCards'),
+        signed(club.netCardsPerMatch, 2),
+        t('referees.teamCard.netCardsText', { rf: club.redsFor, ra: club.redsAgainst, n: club.matches }),
+        { tone: club.netCardsPerMatch >= 0 ? 'ref-pos' : 'ref-neg' },
+      ));
+      if (club.foulsForPerMatch != null) {
+        hero.appendChild(refHeroCard(
+          t('referees.teamCard.fouls'),
+          `${num(club.foulsForPerMatch, 1)} / ${num(club.foulsAgainstPerMatch, 1)}`,
+          t('referees.teamCard.foulsText', { net: signed(club.netFoulsPerMatch, 1) }),
+        ));
+      }
+      if (club.foulsPerCard != null) {
+        hero.appendChild(refHeroCard(
+          t('referees.teamCard.fpc'),
+          num(club.foulsPerCard, 1),
+          t('referees.teamCard.fpcText', { avg: num(avgFpc, 1) }),
+        ));
+      }
+      section.appendChild(hero);
+    }
+
+    const refSub = el('section', 'ref-subsection');
+    const refHead = el('div', 'ref-section-head');
+    const refTitles = el('div', 'ref-section-head__text');
+    refTitles.appendChild(el('h3', 'ref-section-title', t('referees.teamRecord.title')));
+    refTitles.appendChild(el('p', 'explore-note explore-note--lead', t('referees.teamRecord.lead')));
+    refHead.appendChild(refTitles);
+    const refControls = el('div', 'ref-section-head__controls');
+    refControls.appendChild(refereeSwitchGroup(
+      t('referees.metric.label'),
+      [['perMatch', t('referees.metric.perMatch')], ['total', t('referees.metric.total')]],
+      state.refereeMetric,
+      (val) => { state.refereeMetric = val; drawSection(); },
+    ));
+    refControls.appendChild(refereeSwitchGroup(
+      t('referees.min.label'),
+      [['5', t('referees.min.five')], ['10', t('referees.min.ten')], ['0', t('referees.min.all')]],
+      String(state.refereeMinMatches),
+      (val) => { state.refereeMinMatches = Number(val); drawSection(); },
+    ));
+    refHead.appendChild(refControls);
+    refSub.appendChild(refHead);
+    refSub.appendChild(refPerfExplainer(filtered, teamId));
+    section.appendChild(refSub);
+
+    const minMatches = state.refereeMinMatches;
+    const rows = refereeMinFilter(teamRefereeRows(filtered, teamId), minMatches);
+    if (state.teamRefereeSelected && !rows.some((r) => r.referee === state.teamRefereeSelected)) {
+      state.teamRefereeSelected = null;
+    }
+    const relaxMin = minMatches > 0 ? () => { state.refereeMinMatches = 0; drawSection(); } : null;
+    const baseline = refereeClubBaseline(filtered, teamId);
+    const sorted = drawRefBarChart(refSub, rows, {
+      metric: state.refereeMetric,
+      kind: 'referee',
+      ariaLabel: t('referees.teamAria', { team: teamName }),
+      emptyText: minMatches ? t('referees.emptyMin', { min: minMatches }) : t('referees.empty'),
+      activeKey: state.teamRefereeSelected,
+      onRelaxMin: relaxMin,
+      chanceSd: refereeChanceSd(filtered),
+      baseline,
+      onClickRow: (row) => {
+        state.teamRefereeSelected = state.teamRefereeSelected === row.referee ? null : row.referee;
+        drawSection();
+      },
+    });
+    if (rows.length) {
+      refSub.appendChild(el('p', 'explore-note ref-chance-note', t('referees.chanceNoteClub', { v: signed(baseline ?? 0, 1) })));
+    }
+
+    if (state.teamRefereeSelected) {
+      const drawer = renderPairingDrawer(filtered, state.teamRefereeSelected, teamId, {
+        context: 'team',
+        onClose: () => { state.teamRefereeSelected = null; drawSection(); },
+        onNavigate: () => {
+          state.refereePairingMode = 'referee';
+          state.refereeSelected = state.teamRefereeSelected;
+          state.refereePairingTeam = teamId;
+          state.refereeSection = 'pairings';
+          state.activeView = 'explore';
+          state.exploreItem = 'referees';
+          markActiveView();
+          render();
+          window.scrollTo({ top: 0, behavior: 'instant' });
+        },
+      });
+      if (drawer) refSub.appendChild(drawer);
+    }
+
+    if (sorted?.length >= 2) {
+      const best = sorted[0];
+      const worst = sorted[sorted.length - 1];
+      const digits = refPerfDigits(state.refereeMetric);
+      const val = (r) => signed(state.refereeMetric === 'perMatch' ? r.perMatch : r.diff, digits);
+      refSub.appendChild(exploreFacts([
+        {
+          value: best.referee,
+          label: t('referees.fact.teamBest'),
+          text: t('referees.fact.rowText', { diff: val(best), n: best.matches, w: best.wins, d: best.draws, l: best.losses }),
+        },
+        {
+          value: worst.referee,
+          label: t('referees.fact.teamWorst'),
+          text: t('referees.fact.rowText', { diff: val(worst), n: worst.matches, w: worst.wins, d: worst.draws, l: worst.losses }),
+        },
+      ]));
+    }
+    section.appendChild(refereeHowBox(false));
+    } finally {
+      section.style.minHeight = '';
+      if (Math.abs(window.scrollY - prevScroll) > 2) {
+        window.scrollTo({ top: prevScroll, behavior: 'instant' });
+      }
+    }
+  }
+
+  drawSection();
 }
 
 /* Under the finish strip: expected points and the chance of each race the
@@ -9969,9 +13113,7 @@ function teamMatchRow(match, teamId, report, ratingChanges, { scorelines = false
   const home = String(match.home_id) === String(teamId);
   const row = el('div', 'team-match');
   row.appendChild(el('span', 'team-match__date', formatDate(match.date)));
-  const venue = el('span', 'team-match__venue', t(home ? 'team.homeShort' : 'team.awayShort'));
-  venue.title = t(home ? 'team.home' : 'team.away');
-  row.appendChild(venue);
+  row.appendChild(venueIcon(home, { className: 'team-match__venue' }));
   const opponent = sideBlock(home ? match.away : match.home, home ? match.away_id : match.home_id, true, 'team-match__name');
   opponent.classList.add('team-match__opponent');
   // The name and any stake dot share a box, so a narrow screen can stand the
@@ -10143,38 +13285,17 @@ function renderTeamResults(teamId, teamName, report, container) {
    ticks to 4px. `lastShape` is what a window resize redraws when the chart
    crosses that width. */
 const SHAPE_NARROW = 640;
-/* Below this the chart has no room for names in its margin: a key beneath names
-   the lines, and the plot is made taller to fill the box. */
+/* Below this the chart is a phone's: a shorter plot and larger position numbers. */
 const SHAPE_COMPACT = 460;
 let lastShape = null;
 
 /* Season-shape fills: a gradient down the places, the best the brightest, the
-   same ramp as the finish grid and the season mountain. What a place is worth
-   is drawn as lines between the bands (see drawTeamShape), not as colour. */
+   same ramp as the finish grid and the season mountain. */
 function positionColor(position, count) {
   const step = seqColor(count > 1 ? (count - position) / (count - 1) : 1);
   // Sixteen places on a seven-stop ramp differ by a few percent each; every
   // other one a little lighter keeps 1st and 2nd, 2nd and 3rd, apart.
   return position % 2 === 0 ? `color-mix(in oklab, ${step}, white 9%)` : step;
-}
-
-/* The key under a phone's chart: a swatch in each line's colour and its name,
-   for the lines drawn. A wide chart names them in its margin, so has none. */
-function syncShapeKey(chart) {
-  const holder = chart.parentElement;
-  if (!holder) return;
-  holder.querySelector('.shape-key')?.remove();
-  const lines = chart.shapeLines || [];
-  if (!chart.shapeCompact || !lines.length) return;
-  const key = el('div', 'legend shape-key');
-  for (const line of lines) {
-    const entry = el('span', 'legend__key');
-    const swatch = el('span', 'shape-key__line');
-    swatch.style.background = line.color;
-    entry.append(swatch, el('span', '', line.label));
-    key.appendChild(entry);
-  }
-  chart.after(key);
 }
 
 function drawTeamShape(report, team, chart, boxWidth) {
@@ -10190,61 +13311,21 @@ function drawTeamShape(report, team, chart, boxWidth) {
     return running;
   });
 
-  // The lines between the bands: the lower edge of each top band (title,
-  // Europe, promotion) and the upper edge of each bottom one (play-off, drop).
-  // A line belongs on the chart only for a club it divides: one that spends
-  // most of the season within 2.5 % of the top or the bottom (a title line for
-  // a mid-table club, a drop line for a leader) is left out altogether, and one
-  // that stays is drawn the whole season, not in pieces. One on the same place
-  // as another is drawn once. Each is named in the margin, level with where it
-  // ends, so the margin's width is the longest name.
-  const FRAME = 0.025;
-  const lines = [];
-  const placed = new Set();
-  for (const band of report.league.bands) {
-    const bottom = band.first > count / 2;
-    const edge = bottom ? band.first - 1 : band.last;
-    if (edge < 1 || edge >= count || placed.has(edge)) continue;
-    const values = cumulative.map((run) => run[edge]);
-    const inFrame = values.filter((value) => value > FRAME && value < 1 - FRAME).length;
-    if (inFrame * 2 < snapshots) continue;
-    placed.add(edge);
-    lines.push({ color: bandColor(band, count), values, label: bandEdgeName(band) });
-  }
-
   const box = boxWidth || 900;
   const narrow = box < SHAPE_NARROW;
   const compact = box < SHAPE_COMPACT;
   const width = narrow ? Math.round(box) : 900;
   // A phone's plot has the box's whole width now, so it needs less height to read.
   const height = compact ? 270 : 310;
-  // The margin: a pointer, then the name (smaller on a phone), sized to the
-  // longest name as it is set -- the chart's own font, capitals and tracking --
-  // so no room is left over beside it.
-  const nameSize = compact ? 8.5 : 9;
-  const nameWidth = (text) => {
-    const tracking = text.length * nameSize * (narrow ? 0.04 : 0.05);
-    try {
-      const ctx = document.createElement('canvas').getContext('2d');
-      ctx.font = `700 ${nameSize}px ${getComputedStyle(document.body).fontFamily}`;
-      return ctx.measureText(text.toUpperCase()).width + tracking;
-    } catch {
-      return text.length * nameSize * 0.6 + tracking;
-    }
-  };
-  // A phone has no width to spare: its lines are named in a key beneath instead.
-  const margin = lines.length && !compact ? Math.ceil(Math.max(...lines.map((l) => nameWidth(l.label)))) + 17 : 0;
   // The desktop gutter (40/12 of 900) is a sixth of a phone's 340px box. The
   // narrow box trims it so the bands start where the rating chart's line does
   // above it; the "100%" tick hangs left into the section's own padding.
   const pad = narrow
-    ? { top: 10, right: Math.max(6, margin), bottom: 30, left: 20 }
-    : { top: 10, right: Math.max(12, margin), bottom: 30, left: 40 };
+    ? { top: 10, right: 6, bottom: 30, left: 20 }
+    : { top: 10, right: 12, bottom: 30, left: 40 };
   const plotWidth = width - pad.left - pad.right;
   const plotHeight = height - pad.top - pad.bottom;
   lastShape = { report, team, chart, narrow, compact };
-  chart.shapeLines = lines.map(({ color, label }) => ({ color, label }));
-  chart.shapeCompact = compact;
 
   chart.setAttribute('viewBox', `0 0 ${width} ${height}`);
   chart.replaceChildren();
@@ -10329,46 +13410,7 @@ function drawTeamShape(report, team, chart, boxWidth) {
     svgEl('line', { class: 'axis-line', x1: pad.left, x2: width - pad.right, y1: y(1), y2: y(1) })
   );
 
-  // The lines, in each band's colour on a halo that lifts them off the
-  // gradient, and each named in the margin level with where it ends: a short
-  // pointer in the band's colour to the name in ink (blue words on a
-  // blue-green gradient could not be read). Names that would touch are eased
-  // apart, the pointer bending to keep its own level.
-  const plotRight = pad.left + plotWidth;
-  const tags = lines.map((line) => ({
-    ...line,
-    level: y(line.values[snapshots - 1]),
-    labelY: Math.max(pad.top + 8, Math.min(y(line.values[snapshots - 1]) + 3.5, pad.top + plotHeight - 2)),
-  })).sort((a, b) => a.labelY - b.labelY);
-  tags.forEach((tag, i) => { if (i && tag.labelY - tags[i - 1].labelY < 11) tag.labelY = tags[i - 1].labelY + 11; });
-  for (let i = tags.length - 1; i >= 0; i -= 1) {
-    const ceiling = i === tags.length - 1 ? pad.top + plotHeight + 2 : tags[i + 1].labelY - 11;
-    tags[i].labelY = Math.min(tags[i].labelY, ceiling);
-  }
-  // Held just inside the frame, so a stretch that nears the top or bottom is
-  // not cut in half by it.
-  const inside = (value) => Math.min(Math.max(y(value), pad.top + 1.5), pad.top + plotHeight - 1.5);
-  const pointsOf = (line) => line.values.map((value, index) => `${x(index)},${inside(value)}`).join(' ');
-  for (const line of lines) chart.appendChild(svgEl('polyline', { class: 'band-edge-halo', points: pointsOf(line) }));
-  for (const line of lines) {
-    const stroke = svgEl('polyline', { class: 'band-edge', points: pointsOf(line) });
-    stroke.style.stroke = line.color;
-    chart.appendChild(stroke);
-  }
-  for (const tag of compact ? [] : tags) {
-    const pointer = svgEl('line', {
-      class: 'band-edge-swatch',
-      x1: plotRight + 1, y1: tag.level, x2: plotRight + 11, y2: tag.labelY - 3.5,
-    });
-    pointer.style.stroke = tag.color;
-    chart.appendChild(pointer);
-    const name = svgEl('text', { class: 'band-edge-label', x: plotRight + 15, y: tag.labelY });
-    name.textContent = tag.label;
-    chart.appendChild(name);
-  }
-
-  // Position numbers inside the bands, so the reader can name a band without a
-  // boundary line drawn across it. Each goes where its whole text box lies
+  // Position numbers inside the bands, so the reader can name a band. Each goes where its whole text box lies
   // inside its own band: every spot along the plot is tried, the band's upper
   // and lower edge read across the text's width (the edges are straight
   // between snapshots), and the spot with the most room left over wins, the
@@ -11948,12 +14990,15 @@ function topScorelines(model, odds, homeId, awayId, n = 5) {
   return cells.sort((a, b) => b.probability - a.probability).slice(0, n);
 }
 
-function compareTeamBlock(id, name, rating, crest, side) {
+function compareTeamBlock(id, name, rating, crest, side, isHome = null) {
   const block = el('div', 'compare__team');
   const main = el('div', 'compare__card-main');
   if (crest) main.appendChild(crest);
   const text = el('div', 'compare__team-text');
-  text.appendChild(el('div', 'compare__team-side', side));
+  const sideEl = el('div', 'compare__team-side');
+  if (isHome != null) sideEl.append(venueIcon(isHome, { badge: false }), el('span', '', side));
+  else sideEl.textContent = side;
+  text.appendChild(sideEl);
   text.appendChild(el('div', 'compare__team-name', name));
   text.appendChild(el('div', 'compare__team-rating', String(Math.round(rating))));
   main.appendChild(text);
@@ -12172,8 +15217,8 @@ function renderCompare(report) {
   }));
 
   const teamsRow = el('div', 'compare__teams');
-  const homeBlock = compareTeamBlock(homeId, homeName, homeRating, teamLogo(homeId, homeName), t('compare.home'));
-  const awayBlock = compareTeamBlock(awayId, awayName, awayRating, teamLogo(awayId, awayName), t('compare.away'));
+  const homeBlock = compareTeamBlock(homeId, homeName, homeRating, teamLogo(homeId, homeName), t('compare.home'), true);
+  const awayBlock = compareTeamBlock(awayId, awayName, awayRating, teamLogo(awayId, awayName), t('compare.away'), false);
   const swapBtn = el('button', 'compare__swap-center', '⇄');
   swapBtn.type = 'button';
   swapBtn.setAttribute('aria-label', t('compare.swap'));
@@ -13012,7 +16057,6 @@ window.addEventListener('resize', () => {
     if (!box) return;
     if ((box < SHAPE_NARROW) !== lastShape.narrow || (box < SHAPE_COMPACT) !== lastShape.compact) {
       drawTeamShape(lastShape.report, lastShape.team, lastShape.chart, box);
-      syncShapeKey(lastShape.chart);
     }
   }, 150);
 });

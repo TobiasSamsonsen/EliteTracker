@@ -42,7 +42,7 @@ VIEWPORTS = [
     ("430x932", 430, 932, True),
     ("1280x800", 1280, 800, False),
 ]
-EXPLORE = ["mountain", "attack", "luck", "races", "whatif", "runin", "playoff"]
+EXPLORE = ["mountain", "attack", "luck", "referees", "races", "whatif", "runin", "playoff"]
 # The Predict view, its five tabs and the guide, with Firestore answered from a small fixture (see predict_fixture).
 # "predict:tutorial" is the first visit (the guide stands in front of the round); the others are a returning visitor's.
 PREDICT = ["predict:tutorial", "predict", "predict:table", "predict:boards", "predict:leagues", "predict:me", "predict:how"]

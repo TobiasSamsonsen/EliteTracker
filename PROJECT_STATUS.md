@@ -83,6 +83,7 @@ reports and `careers.json` carry them).
 | elo-v17.0 | 2026-11-21 | the batches 2-3 commit | major | batches 2 and 3 of the model and simulation audits (batch 3: one shared play-off tie, finished seasons' play-offs as played, displayed average rates, `era_config`, payloads): published run-in stakes only for a side's next match (the later fixtures' odds change); the simulation's last tiebreak favours the club higher in today's table (a MINOR change, so the release is MAJOR) |
 | elo-v16.1 | 2026-10-27 | c3dae7e | minor | the prediction's expected points the median of the simulated seasons' points, the mean breaking ties in the order (ratings and match odds unchanged; the backtest is under "xPts and the expected place as medians") |
 | elo-v18.0 | 2026-11-22 | the play-off automation commit | major | the running season's play-off matches fetched by `refresh` (`playoff_fixtures.json`): a played ladder match, and the tie once both legs are played, go as they went in every run; a played play-off match moves both clubs' Elo (new data the ratings read); with the follow-up commit, every season's play-off matches 2015-2025 (`research playoffs`) in the replay too, so every season from 2016 starts from ratings that saw the play-off before it, and the backtest and the calibration view rate them. Absorbs the unreleased elo-v17.1 (the play-off results alone); deployed in two pushes the same evening, one version on the owner's call -- **the deployed version** |
+| elo-v19.0 | 2026-11-26 | not committed yet | major | penalty xG counts 1.5 times in the xG the model learns from (the Elo update and the goals model's observation; `elo.PENALTY_XG_WEIGHT`, `model_xg`), read from npxG, which `xg.json` now holds for Eliteserien 2020-2026 (filled from the local shots for 1,608 matches; new data the ratings read). Also a red card's man advantage in the goals model's update (`ADConfig.man_advantage` 0.25, `attack_defence.man_advantage`; the Elo ratings untouched), read from the new `data/red_cards.json` (Eliteserien 2015 on, OBOS-ligaen 2015-2026; the refresh adds Eliteserien's from the match details it already fetches). Both shipped on the owner's call below the out-of-sample bar: see "Penalty xG at 1.5" and "Red cards" |
 
 Unbumped commits that only added output fields (`position_points`, projected
 goals, high-stakes swings, the pre-season view) or touched presentation were
@@ -123,6 +124,14 @@ from 2020 and OBOS-ligaen from 2023 -- 1.06251; Eliteserien 1.05915). The closin
 | elo-v16.0 | 0.99966 | 5.9 % | 6.0 % | 7.4 % | -0.00064 (-2.60) |
 | elo-v17.0 | 0.99966 | 5.9 % | 6.0 % | 7.4 % | 0.00000 (0.00) |
 | elo-v18.0 | 0.99960 | 5.9 % | 6.0 % | 7.5 % | -0.00006 (-1.10) |
+| elo-v19.0 | 0.99934 | 5.9 % | 6.1 % | 7.5 % | -0.00026 (-1.01) |
+
+elo-v19.0 gains mostly on Eliteserien (penalty xG weighted where npxG is
+known, and the red cards' man advantage): Eliteserien 0.99525 -> 0.99467,
+its xG seasons 0.97184 -> 0.97094. The penalty weight alone scored 0.99938
+(-0.00023, t -1.01); the red cards (goals model only) add -0.00004 on these
+4,800 matches (with an Elo shift as well it was -0.00002). Its elo-v18.0 run (today's `src` with the weight at 1)
+reproduced the stored row to the last digit.
 
 elo-v18.0 gains through the play-off matches in the Elo replay (every season's
 opening ratings); its v17.0 run reproduced the stored row to the last digit.
@@ -1562,7 +1571,7 @@ readings, all at prediction time on top of elo-v12.0, scored 2016+:
   seasons: −0.00005 (t −0.1) out of sample, first half −0.0005 (t −2.1),
   second half +0.0004. The pick wanders (n 5→12→8, β 0→1). Rejected.
 
-### Penalties and red cards — measured, nothing to change
+### Penalties and red cards — measured; the red cards' man advantage shipped in elo-v19.0 on the owner's call
 
 fotmob's match details for every Eliteserien match 2020–2026 (1,608) are in
 `data/raw/fotmob_match_extras.json`: each shot's minute, side, xG and situation
@@ -1585,7 +1594,161 @@ Penalties are signal, not noise: a side that wins them dominates the box, and
 taking them out costs in both halves. Weighting them up is picked every season
 walk-forward and is worth −0.00005 (t −0.2) out of sample, with Brier and RPS
 slightly positive — nothing. Red cards flip sign between the halves; walk-forward
-keeps the plain update every season. Both closed.
+keeps the plain update every season. Both closed. (The script behind this table
+was never committed, so whether its penalty rows read the extras' sides the
+right way round cannot be checked; the red-card rows do not depend on the
+side, and the penalties were re-measured with the sides corrected in
+"fotmob's shot sides" below, with the same verdict.)
+
+**Re-tested on elo-v18.0 (2026-11-26, `experiments/improvements/red_cards_v18.py`).**
+Same extras (1,608 matches, 185 with a red, 82 with the first before 60'), scored
+on those matches paired against the shipped model, with walk-forward selection from 2021.
+Three new angles: a *bigger* step after an early red ("oversampling" the
+match), a side-aware correction (each side judged against an expectation that
+knows about the man advantage), and the suspension in the next match (pre-match
+information). A lone red before 80' moves xG a minute ×2.12 for the side a man up, ×0.64 for
+the side a man down, so the effect in the match is large.
+
+| variant | log loss | t | Brier t | RPS t | halves (log loss t) |
+|---|---|---|---|---|---|
+| early-red step ×0.5 | +0.00052 | +0.64 | +0.40 | +0.30 | +0.95 / −0.01 |
+| early-red step ×1.5 | +0.00110 | +1.57 | +1.60 | +1.69 | −0.04 / +2.14 |
+| early-red step ×2.0 | +0.00230 | +1.88 | +1.96 | +2.04 | +0.16 / +2.35 |
+| early-red step ×3.0 | +0.00635 | +2.69 | +2.78 | +2.82 | +0.79 / +2.87 |
+| man advantage, Elo 300 pts × share of match | −0.00012 | −0.84 | −1.07 | −1.16 | −0.83 / −0.44 |
+| man advantage, goals obs × e^∓0.2·share | −0.00015 | −0.51 | −0.75 | −0.93 | −0.16 / −0.52 |
+| both (Elo 300, goals 0.2) | −0.00021 | −0.50 | −0.74 | −0.90 | −0.30 / −0.40 |
+| suspended next match, Elo −20 | +0.00002 | +0.17 | +0.35 | +0.37 | +0.00 / +0.22 |
+| suspended next match, goals ×(1∓0.03) | +0.00008 | +0.29 | +0.47 | +0.51 | +0.05 / +0.34 |
+
+The extras' `side` is 1 for the home team (shots and cards alike; see
+`shots_local.py`). A first run read side 0 as home and logged the man-advantage
+and suspension rows with their sign flipped (+0.00012 … +0.00104); the rows
+above are the corrected run, with each match oriented by its shots against
+the stored xG. The step rows do not depend on the side.
+
+Walk-forward from 2021: the step keeps the plain model from 2022 (OOS
++0.00176, t +1.98); the man advantage picks Elo 300 every season (with goals
+0.2–0.35 from 2023), OOS −0.00017 (t −0.35, Brier −0.58, RPS −0.78; halves
+−0.62 / +0.08); the suspension is never picked. Up-weighting gets worse the
+bigger it is: no. The man-advantage correction points the right way on every
+metric but is far from the bar on 1,608 matches, so a card backfill
+(`fetch_red_cards.py`: Eliteserien 2015–2019 and late 2026, OBOS-ligaen
+2015–2026, 4,128 matches, `data/raw/fotmob_match_cards.json`; 4,127 stored,
+1 without events, no 403/429) re-tested it on 3.6× the matches.
+
+**On all the card data (5,735 matches, 592 with a red; 5,255 scored 2016+),
+elo-v19.0's penalty weight underneath.** `red_cards_v18.py` and
+`man_advantage_fine.py` (Elo 0–4,800 points × goals 0–0.4).
+
+- Early-red step: worse the bigger it is, now significantly (an earlier
+  partial run on 4,083: ×1.5 +0.00083, t +2.36; ×2 t +2.93; ×3 t +4.04, both
+  divisions). A red-card match says *less* about strength, not more. Rejected.
+- Suspension in the next match: worse on every setting, never picked. Rejected.
+- Man advantage: flat at about −0.00013 log loss across a wide ridge
+  (Elo 1,600 / goals 0.15 to Elo 200 / goals 0.3), t −0.5 to −0.6. The
+  divisions disagree: Eliteserien 2020+ gains more the bigger the Elo setting
+  (−0.00047 at 2,000 / 0.15, t −0.82), OBOS-ligaen nothing anywhere and worse
+  from about 600 points with goals 0.2. Walk-forward from 2017 −0.00000
+  (t −0.02); from 2020 −0.00005 (t −0.18; halves −1.16 / +0.67).
+
+The referee view's red-card cost is real (a side sent off alone: −0.58 points
+and −6.1 rating points against expectation on 185 sides) but it is the match
+itself, which no pre-match model can see. What the update can fix is a
+~6-point mislearning in about 12 % of matches, which later results correct
+anyway: worth about 0.0001 at most. Part of the cost is the side playing
+worse (outplayed sides collect reds), which the rating should keep.
+
+**Shipped in elo-v19.0 on the owner's call** ("I still want to keep it"). First
+at Elo 300 / goals 0.25 (the best Brier and RPS t of the ridge and the least
+calibration cost; Elo 1,600 / 0.2 takes it from 0.0041 to 0.0071):
+
+| Elo 300 / goals 0.25 vs no correction | log loss | t | Brier t | RPS t | halves t | calibration error |
+|---|---|---|---|---|---|---|
+| all 2016+ | −0.00013 | −0.64 | −0.75 | −0.81 | +0.07 / −0.74 | 0.0040 → 0.0046 |
+| Eliteserien | −0.00024 | −0.71 | −0.86 | −0.97 | +0.54 / −1.03 | 0.0056 → 0.0072 |
+| OBOS-ligaen | −0.00002 | −0.09 | −0.10 | −0.06 | −0.60 / +0.20 | 0.0069 → 0.0069 |
+| xG matches | −0.00022 | −0.58 | −0.70 | −0.79 | +0.17 / −0.96 | 0.0088 → 0.0073 |
+
+then, before release, **the goals model's 0.25 alone** (below): the Elo shift
+made Elo's own odds worse (+0.00008 on all 2016+, worse still the bigger it
+is), so the ratings on the site are left as they were and only the goals
+model learns differently from a red-card match. It misses both bars (|t| ≥ 2;
+and the small-upgrade bar: the first half is positive and the walk-forward is
+null). How it works: `attack_defence.man_advantage(reds)` is the home side's
+net man advantage as a share of the match (each away red +(90 − minute)/90,
+each home red the negative), and the goals model's observation is ×e^∓0.25×it
+(`AttackDefence.observed`). Post-match information: no prediction moves except
+through the goals model's ratings. The red cards are `data/red_cards.json`
+(`{match_id: [[minute, side]]}`, side 0 home), built by `build_red_cards.py`
+from the two raw card files and topped up by the hourly refresh from the
+Eliteserien match details it already fetches (`fotmob.parse_match_reds`, 0
+extra requests). OBOS-ligaen matches from December 2026 have none (fotmob's
+details for them are never fetched), so they get no correction; its gain was
+nil anyway. The harness reads the same file (`harness.REDS`; identity
+7.8e-16); the research scripts switch it off to measure against the model
+without it. The version history: elo-v19.0 0.99934 (−0.00026 against
+elo-v18.0, t −1.01).
+
+**The xG seasons alone (`man_advantage_fine.py --xg`, 2,596 matches:
+Eliteserien 2020+, OBOS-ligaen 2023+).** They want a far stronger Elo
+correction, still rising at 4,800 points and flat from 16,000 (where a red
+makes the side a man up an expected win): Elo 16,000 / goals 0.1 −0.00045
+(t −1.04), Brier t −1.07, RPS t −1.00, halves −0.31 / −1.14, calibration
+0.0088 → 0.0064; the shipped 300 / 0.25 gets −0.00022 (t −0.58) there.
+Walk-forward picks 4,800–32,000 every season: Elo alone from 2021 −0.00033
+(t −0.91, halves −0.02 / −1.28), from 2022 −0.00040 (t −1.03, +0.18 / −1.71).
+Everywhere, 16,000 / 0.1 is worse than shipped (+0.00003; OBOS-ligaen +0.00008):
+the goals-only seasons do not want it. A split, scored on all 5,255 matches:
+
+| variant | vs no correction | vs shipped | halves t vs none | calibration |
+|---|---|---|---|---|
+| shipped: 300 / 0.25 everywhere | −0.00013 (t −0.64) | — | +0.07 / −0.74 | 0.0046 |
+| xG matches 16,000 / 0.1, others 300 / 0.25 | −0.00022 (t −1.02; Brier −1.06, RPS −0.99) | −0.00009 (t −0.94; halves −1.93 / −0.54) | −0.40 / −0.93 | 0.0052 |
+| xG matches 16,000 / 0.1, others none | −0.00018 (t −0.90) | −0.00005 (t −0.41) | −0.15 / −0.89 | 0.0057 |
+| xG matches 4,800 / 0.15, others 300 / 0.25 | −0.00020 (t −0.84) | −0.00007 (t −0.81) | −0.30 / −0.78 | 0.0055 |
+
+(no correction 0.0039.) The split is negative on every score and both halves
+against no correction and against shipped; its walk-forward is not run (four
+numbers on the same matches). Not shipped: the owner's call.
+
+**Is the big Elo number undoing xG the red inflated? (`red_xg_part.py`.)**
+Correcting the xG the Elo update reads instead (home xG × e^(−b·f), away
+× e^(b·f), result part alone) helps the Elo update's own odds a little; the shift on the
+expectation makes them *worse*: Elo's own odds against no correction —
+
+| Elo variant | all 2016+ | Eliteserien | OBOS-ligaen | xG matches |
+|---|---|---|---|---|
+| shipped: 300 on the expectation | +0.00008 (t +0.31) | −0.00006 | +0.00022 | +0.00008 |
+| 16,000 on xG matches, 300 others | +0.00055 (t +0.82) | +0.00005 | +0.00104 | +0.00098 |
+| xG corrected b 1.0, others none | −0.00006 (t −0.31) | −0.00026 (t −0.84) | +0.00015 | −0.00016 |
+
+So the 16,000 setting's gain lives only in the blend with the goals model
+(its own odds worse, calibration 0.0046 → 0.0088 on xG matches): not better
+ratings, an interaction. Most of the shipped gain is the goals model's 0.25
+(goals alone −0.00011 of the −0.00013). In the blend the xG correction reaches
+−0.00027 on xG matches at b 2.0 / goals 0.25 (t −0.61, grid edge; −0.00015
+on all 2016+, about the shipped −0.00013, +0.00007 against the split);
+walk-forward from 2021 −0.00016 (t −0.51). It explains part of the xG
+seasons' appetite, not all of it. Brann 0–2 Viking (2026-10-09, Viking down to
+ten from 39', Brann won the xG 2.33–1.39): Brann's rating change −2.5 with no
+correction, −9.7 shipped, −22.5 at 16,000 (three-quarters of K), −9.0 with
+the xG corrected at b 1.0.
+
+**The goals model's correction alone (Elo untouched), on 5,255 matches:**
+
+| goals a | log loss vs none | Brier t | RPS t | halves t | vs shipped | calibration (none 0.0039) |
+|---|---|---|---|---|---|---|
+| 0.1 | −0.00006 (t −0.99) | −1.13 | −1.19 | +0.10 / −1.13 | +0.00007 | 0.0041 |
+| 0.2 | −0.00010 (t −0.84) | −0.98 | −1.03 | +0.12 / −0.97 | +0.00003 | 0.0045 |
+| 0.25 | −0.00011 (t −0.75) | −0.89 | −0.95 | +0.15 / −0.89 | +0.00002 | 0.0042 |
+| 0.3 | −0.00012 (t −0.67) | −0.81 | −0.87 | +0.17 / −0.81 | +0.00001 | 0.0041 |
+
+Eliteserien −0.00020 at 0.25 (t −0.79), OBOS-ligaen −0.00003; walk-forward
+(goals only) from 2017 −0.00004 (t −0.22), from 2020 −0.00007 (t −0.25).
+Nearly all of the Elo 300 / goals 0.25 gain, with the Elo ratings left as they
+are (the Elo ratings never read the goals model: its odds only go into the
+published blend and the season simulation). **Shipped this way in elo-v19.0.**
 
 ### Data sources, for the record
 
@@ -2003,7 +2166,9 @@ publishes changes, so no version bump.
 
 Re-tested on elo-v13.0 with the local match extras (Eliteserien 2020-2026,
 1,608 matches, 503 penalties, 185 red cards): penalty xG x0 / x0.5 / x1.5
-+0.00058 / 0.00000 / +0.00078, OOS +0.00045 (t +0.87); a step down-weighted by
++0.00058 / 0.00000 / +0.00078, OOS +0.00045 (t +0.87) (these penalty numbers
+moved the wrong side's penalties: the extras' `side` is 1 for home; corrected
+in "fotmob's shot sides" below, verdict unchanged); a step down-weighted by
 an early red card (r = 1 - s (90 - minute) / 90, s 0.35 / 0.65) +0.00040 /
 +0.00055 and never picked OOS. Neither is used, so neither gets a parser.
 Lineup values: elo-v4 above (even a perfect starting XI is worth at most 0.0025;
@@ -2169,6 +2334,51 @@ Better in both halves and both divisions, on every score: shipped under the
 small-change bar (both halves, no knob to fit). Too small to show in the model
 view's version history (0.006 points of skill), so `model_versions.json` was
 not rerun for it.
+
+## 🧪 Penalty xG at 1.5 (elo-v19.0, November 2026) - shipped on the owner's call
+
+The penalty weight, swept finer on elo-v18.0 with the sides corrected
+(`experiments/improvements/penalty_weight_fine.py`; as Rank 5: the weighted xG
+feeds the Elo update and the goals model's observation, not rescaled;
+finishing and keeping read the stored xG). Paired against elo-v18.0,
+Eliteserien 2016+ (2,616 matches; only the 1,608 with shots change directly):
+
+| penalty xG | log loss | t | Brier t | RPS t | halves (log loss t) |
+|---|---|---|---|---|---|
+| x1.1 | -0.00016 | -1.81 | -1.58 | -1.38 | -1.21 / -1.40 |
+| x1.2 | -0.00029 | -1.68 | -1.45 | -1.26 | -1.14 / -1.28 |
+| x1.3 | -0.00040 | -1.55 | -1.32 | -1.13 | -1.08 / -1.17 |
+| x1.4 | -0.00049 | -1.42 | -1.19 | -1.00 | -1.01 / -1.06 |
+| **x1.5** | **-0.00056** | **-1.29** | -1.06 | -0.88 | -0.94 / -0.96 |
+| x1.6 | -0.00060 | -1.16 | -0.93 | -0.75 | -0.87 / -0.85 |
+| x1.7 | -0.00063 | -1.03 | -0.80 | -0.63 | -0.81 / -0.74 |
+| x1.8 | -0.00062 | -0.90 | -0.66 | -0.50 | -0.72 / -0.63 |
+| x2.0 | -0.00054 | -0.63 | -0.39 | -0.23 | -0.55 / -0.42 |
+| x2.25 | -0.00030 | -0.28 | -0.04 | +0.11 | -0.32 / -0.15 |
+| x2.5 | +0.00003 | +0.03 | +0.27 | +0.41 | -0.14 / +0.11 |
+| x3.0 | +0.00108 | +0.65 | +0.89 | +1.01 | +0.18 / +0.64 |
+
+Log loss bottoms out at 1.7-1.8, Brier at 1.6-1.7 and RPS at 1.5-1.6;
+between 1.5 and 1.7 the difference (0.00007) is a tenth of its standard
+error. Walk-forward (each season the weight that did best before it) picks
+1.7-2.5 and loses: from 2021 +0.00029 (t +0.22; 2021 picked 2.5), from 2022
+-0.00055 (t -0.42) with RPS +0.00004. Chasing the log-loss optimum
+overshoots, so the value is 1.5, where all three scores gain in both halves.
+It fails the small-upgrade bar (out of sample, both halves) and the |t| >= 2
+bar for new data the model reads; shipped on the owner's call ("push out
+every bit of accuracy").
+
+Shipped as `model_xg`: npxG + 1.5 (xG - npxG) where npxG is known, the
+stored pair elsewhere (OBOS-ligaen from Sofascore has no npxG). npxG was
+filled into `xg.json` for the 1,608 Eliteserien matches 2020-2026 from the
+local shots (`npxg_from_extras.py`: the stored xG less the side's penalty
+xG, sides oriented; the 15 September 2026 matches fotmob revised after the
+pull keep their revised xG, a penalty's xG being a fixed 0.79); `refresh`
+has written npxG since October 2026. 8 Eliteserien 2026 matches between the
+two still have none and read at weight 1 until fetched. Against elo-v18.0
+with the shipped code: Eliteserien 2016+ -0.00051 (t -1.16), Brier -0.00027,
+RPS -0.00010, calibration error 0.0077 -> 0.0055, halves -0.94 / -0.81; every
+match 2016+ -0.00025 (t -1.14).
 
 ## 🔎 IMPROVEMENTS.md, checked item by item (October 2026)
 
@@ -4163,3 +4373,56 @@ Full findings and line references are in `docs/predict-audit.md`. `MODEL_VERSION
 #### P3 — QA & CI
 - [x] `experiments/mobile-audit/check.py` covers `/predict/` (tip, table, boards, me, how) with Firestore answered from a small fixture, so no real project is touched; phone targets are 44 px.
 - [x] `.github/workflows/predict-tests.yml` runs the rules, the end-to-end loop and the browser test against the emulators, then the rest of the suite and the node tests; the case for `firebase-tools` and Java is written in the file.
+
+## 🧑‍⚖️ Referee tracker & walk-forward test (2026-11-25)
+
+Added polite referee, card, and foul extraction from FotMob's `matchDetails` payload (`sources/fotmob.py`, piggybacked at 0 extra HTTP requests in `refresh` and exposed via the manual opt-in `research referees` CLI), `/data/referees.json` (actual vs pre-match model expected points, cards, fouls), and the Explore "Referees" + Team-view "Referees" views.
+
+**Backfill & walk-forward model test — rejected for `elo-v18.0` (`experiments/improvements/referees.py`):**
+Backfilled Eliteserien 2020–2026: **1,593 of 1,656** played matches with referee and fouls (63 without; 42 unique referees, median 29.0 / max 133 matches; 573 `(referee, club)` pairs, median 4.0 / max 25; 1,450 `(referee, home, away)` triples, median 1.0 / max 4). Evaluated walk-forward (`shift_in_update=False`) against the `elo-v18.0` shipped blend on `n=1,593` (`es16`, OOS 2021+ `n=1,416`):
+
+| variant | in-sample best LL (t) | halves t | OOS 2021+ LL (t) | verdict |
+|---|---|---|---|---|
+| Referee home-advantage tilt (`prior` 15–60, `scale` 20–80) | +0.00002 to +0.00020 (+3.52 to +3.88) | +3.36/+1.92 | +0.00000 (0.00, all `base`) | Rejected — hurts in every cell |
+| Referee × club independent (`prior` 10–50, `scale` 20–100) | −0.00021 to −0.00001 (−1.46 to −1.66) | +0.84/−2.53 | −0.00002 (−0.16, halves +1.04/−1.20) | Rejected — flips sign between halves, OOS indistinguishable from noise |
+| Referee × club × opponent (`prior` 5–30, `scale` 20–100) | −0.00000 (−0.10 to −0.22) | +0.69/−0.55 | +0.00002 (+0.59, halves +0.65/+0.26) | Rejected — median 1 match per triple, worse OOS |
+
+`MODEL_VERSION` remains `elo-v18.0`.
+
+### Multi-section Referee & Discipline UI plan & status (2026-11-26)
+
+- **Implemented & verified** ([app.js](public/app.js), [i18n.js](public/i18n.js), [styles.css](public/styles.css), [frontend.test.js](tests/frontend.test.js)):
+  - Pure aggregations: `refereePairings`, `clubDisciplineRows` (including home/away card rates and `netReds`), `seasonDisciplineRows` (including `redMatchPct`), `refereePairingMatches`, `redCardImpact`, `varEraComparison`, `feistiestMatches`, and `refereeScatterLabels`.
+  - **Explore → Referees** split into 3 clean, focused sections (`.ref-topbar`: `Referees`, `Clubs`, `Club × Ref`) with a single `2020–2026` / `2026` scope switch in the top bar and contextual controls inside each section:
+    1. **Referees (`overview`)**: 3-card display-typography hero strip (Cards/m, Red-card point swing `−0.59 / +0.63`, VAR red-card surge `9.4 % → 13.8 %` or single-season away tilt), Style Map distinguishing active (`2026`) vs earlier-season referees, unified sortable table with inline micro-bars and neutral/amber Away−Home diverging bars, and a side-by-side bottom row of Season Trends (dual-axis `Cards/m` + `Reds/m`) and Card-Heaviest Matches.
+    2. **Clubs (`clubs`)**: 3 clickable hero cards (Cleanest club, Draws most cards, Best red-card balance), crest scatter plot, and a unified ranking section toggling between Chart (`Net cards/m`, `Net fouls/m`, `Red card diff`) and Full Table.
+    3. **Club × Ref (`pairings`)**: interactive pairing explorer (`By referee` or `By club`, `Per match` / `Total`, `5+` / `10+` / `All`), inline **Pairing Match Log** drawer (`Pts (xPts)`, `Diff`, club-labelled card pills, fouls), 10+ match **Notable pairings**, and collapsed methodology box.
+  - **Team view → Referees tab**: single top scope switch, 4-card display-typography **Club discipline profile** (including Home/Away card rates), **Record by referee** bar chart with inline **Pairing Match Log** drawer, Best/Toughest referee summary, and automatic Eliteserien fallback for OBOS-ligaen clubs with historical Eliteserien data.
+- **Verification (2026-11-26):**
+  - [x] Full Python & Node test suites pass (`542 passed, 37 skipped` in `pytest`; `188 passed, 0 failed` across `frontend.test.js`, `predict.test.js`, `predict-ui.test.js`).
+  - [x] Playwright mobile/desktop audit (`experiments/mobile-audit/check.py --views explore,explore:referees,team`) passes with `0 finding(s)` across all 5 viewports (`360x800`–`1280x800`).
+  - [x] Playwright E2E interaction & visual screenshot check across all 3 Explore sections, Team → Referees (`Bodø/Glimt`, `KFUM`), OBOS-ligaen fallback, light & dark themes, desktop & `360x800` mobile.
+  - [x] Static route pages rebuilt (`python -m elitetracker.pages`).
+
+### Referee view metric: points vs expected, or rating change vs expected? (2026-11-26)
+
+Asked whether the referee view should show rating change against the expected rating change instead of points against expected points, since points come only as 0, 1 or 3 and a win always beats the expectation. Tested in `experiments/improvements/referee_metric.py` on the 1,593 Eliteserien matches with a referee (3,186 team-matches), five per-match measures:
+
+| measure | per-match r with points | strength bias, strong favourites / underdogs (SD) | ref × club split-half r, 10+ (95 % range) | 6+ | club control r, 60+ | walk-forward t (→ next pts−xPts) |
+|---|---|---|---|---|---|---|
+| points − expected points (shipped) | 1 | +0.03 / −0.02 | +0.05 (−0.09, +0.19) | +0.12 | +0.07 | +1.07 |
+| rating change vs Elo's own E | 0.92 | **+0.11 / −0.11** | +0.13 (0.00, +0.25) | +0.09 | +0.36 | +0.80 |
+| result score vs published odds (S − Pw − Pd/2) | 0.99 | +0.02 / −0.02 | +0.07 | +0.10 | +0.10 | +0.80 |
+| rating change vs site-expected change (xG part plugged in from the goal rates) | 0.93 | −0.06 / +0.06 | +0.09 | +0.07 | −0.10 | +0.68 |
+| same, xG part calibrated | 0.93 | +0.03 / −0.03 | +0.10 (−0.01, +0.23) | +0.07 | +0.10 | +0.63 |
+| rating change vs site-**median** change (result simulated from the odds, xG part drawn from real matches with that result) | 0.89 | **−0.32 / +0.32** | +0.13 (+0.01, +0.26) | +0.10 | +0.27 | +0.65 |
+
+- A win always scores above its expectation in every measure (strong favourites' wins: +0.61 SD in points, +0.62 in rating change); losses and draws cancel it, and points minus expected points stays unbiased across strength bands. Rating change against Elo's own expectation does not: favourites gain and underdogs lose on average, and that leak is where its higher "club control" reliability comes from. Taking the expectation from the site's model removes the leak once the xG part is calibrated.
+- No measure finds a referee effect that lasts: referee × club split-half reliability is 0.1–0.2 at best, referee home tilt is negative in all five, and no walk-forward predictor reaches |t| 1.6 against any target. The five agree with each other per match at r ≥ 0.92.
+- The median expectation is badly skewed: a favourite's typical result is a win, so the median expects a win's change and every draw or loss counts heavily against it; its higher club-control reliability is that skew leaking strength. The expectation is the mean.
+- **Decision (owner, 2026-11-26):** the view shows **performance = actual rating change − the rating change the published model expected** (the calibrated row): as unbiased as points, as stable, and it reads the whole match the rating reads, so a win the other side out-created can score below zero. `referees.json` carries the home side's rating change and expected change (`pipeline._expected_rating_change`; result part at the published odds, xG part at the grid's expected goals through a line refit each build, `xg_score_part` shared with `elo.updated_pair`) plus the xG. Bars, match log (expected → actual dumbbell per match), notable pairings, red-card cost and team facts are in rating points; a "How performance is scored" box shows the formula as chips and two real matches from the selection (a win below zero, a loss above it). The 95 % chance band and the club's own level stay. `MODEL_VERSION` unchanged (display only: no rating or odds moves).
+
+### Club history: performance against expectation (2026-11-26)
+
+- The club page's History tab shows the same measure as the referee view (actual rating change minus the change the published model expected) for every match of the club's last three seasons up to the season shown: a faint bar per match, a trailing 5-match average line over the club's whole history (so the first match shown has one), season dividers (OBOS-ligaen seasons labelled), and the last 5 matches, this season and last season per match above it.
+- `pipeline.match_performance` now computes the measure once for every scored match (both divisions, 2015 on; the xG calibration line is fitted over every match with xG, not only the referee matches) and feeds both `referees.json` and the new `performance.json` (5,736 matches, ~280 KB, fetched only by a club's history; stamped with the careers inputs). Display only: `MODEL_VERSION` unchanged.

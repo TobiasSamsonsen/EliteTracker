@@ -26,6 +26,8 @@ from typing import Any
 
 RAW_DIR = Path("data/raw")
 XG_PATH = Path("data/xg.json")
+REFEREES_PATH = Path("data/referees.json")
+RED_CARDS_PATH = Path("data/red_cards.json")
 
 # fotmob serves the SPA shell to unknown clients; a browser UA gets the real page.
 _USER_AGENT = "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36"
@@ -153,9 +155,9 @@ def parse_match_details(data: dict[str, Any]) -> tuple[float, ...] | None:
 
     The last three ride on the same response (IMPROVEMENTS 2.1): xG without
     penalties (a penalty is ~0.79 xG) and the minute of the first red card in
-    the match, 90 when there was none. The model reads neither -- both were
-    re-measured and rejected (PROJECT_STATUS.md, elo-v13.0, "Scrapers") -- they
-    are kept so a later season can test them again without a backfill.
+    the match, 90 when there was none. The model reads npxG to weight penalty
+    xG (`elo.model_xg`, elo-v19.0); the red cards it reads are
+    `parse_match_reds`'s, with their side.
     """
     content = data.get("content") or {}
     shots = (content.get("shotmap") or {}).get("shots") or []
@@ -182,6 +184,50 @@ def parse_match_details(data: dict[str, Any]) -> tuple[float, ...] | None:
     )
 
 
+def parse_match_reds(data: dict[str, Any]) -> list[list[int]] | None:
+    """Every red card (a second yellow too) in one match-details payload as
+    `[minute, side]`, side 0 the home side's, in match order: [] without one,
+    None when the payload has no match events to tell (the model's man
+    advantage in the goals model, `attack_defence.man_advantage`, elo-v19.0)."""
+    content = data.get("content") or {}
+    events = ((content.get("matchFacts") or {}).get("events") or {}).get("events")
+    if not events:
+        return None
+    home_team = str((data.get("general") or {}).get("homeTeam", {}).get("id"))
+    reds = []
+    for event in events:
+        if not isinstance(event, dict) or event.get("type") != "Card" or event.get("card") not in ("Red", "YellowRed"):
+            continue
+        if not isinstance(event.get("time"), (int, float)):
+            continue
+        home = bool(event["isHome"]) if event.get("isHome") is not None else str(event.get("teamId")) == home_team
+        reds.append([int(event["time"]), 0 if home else 1])
+    return reds
+
+
+def load_red_cards(path: Path = RED_CARDS_PATH) -> dict[str, list[list[int]]]:
+    """match_id -> its red cards `[minute, side]` (side 0 home), for the
+    matches with one; a match not listed had none or is not known."""
+    if path.exists():
+        return json.loads(path.read_text(encoding="utf-8"))
+    return {}
+
+
+def save_red_cards(data: dict[str, list[list[int]]], path: Path = RED_CARDS_PATH) -> None:
+    temp = path.with_suffix(".json.tmp")
+    temp.write_text(json.dumps(data, sort_keys=True, separators=(",", ":")) + "\n", encoding="utf-8")
+    os.replace(temp, path)
+
+
+def fetch_match_payload(match_id: str) -> dict[str, Any]:
+    """Fetch the raw JSON payload for one match from FotMob's matchDetails endpoint."""
+    url = f"https://www.fotmob.com/api/data/matchDetails?matchId={match_id}"
+    try:
+        return json.loads(_download(url))
+    except json.JSONDecodeError as exc:
+        raise FetchError(f"{url}: not JSON ({exc})") from exc
+
+
 def fetch_match_xg(match_id: str) -> tuple[float, ...] | None:
     """The match-details endpoint, parsed by `parse_match_details`: one
     request per match, as `refresh` has always made.
@@ -189,12 +235,96 @@ def fetch_match_xg(match_id: str) -> tuple[float, ...] | None:
     fotmob carries per-shot xG and xG-on-target for Eliteserien from 2020;
     OBOS-ligaen and earlier seasons have no shotmap and return None.
     """
-    url = f"https://www.fotmob.com/api/data/matchDetails?matchId={match_id}"
-    try:
-        data = json.loads(_download(url))
-    except json.JSONDecodeError as exc:
-        raise FetchError(f"{url}: not JSON ({exc})") from exc
-    return parse_match_details(data)
+    return parse_match_details(fetch_match_payload(match_id))
+
+
+def _stat_pair(value: Any) -> list[int] | None:
+    """Parse a [home, away] stat pair into ints, or None when unusable."""
+    if not isinstance(value, (list, tuple)) or len(value) < 2:
+        return None
+    out = []
+    for item in value[:2]:
+        if isinstance(item, bool):
+            return None
+        try:
+            out.append(int(item))
+        except (TypeError, ValueError):
+            return None
+    return out
+
+
+def parse_match_referee(data: dict[str, Any]) -> dict[str, Any] | None:
+    """Extract referee, card counts and fouls from one matchDetails payload.
+
+    Returns ``{"referee": name, "yellow": [h, a], "red": [h, a], "fouls": [h, a] | None}``
+    or ``None`` when no referee is named. Cards prefer the match stats table
+    where present and fall back to card events (for OBOS-ligaen and older
+    Eliteserien seasons where ``stats`` is empty).
+    """
+    content = data.get("content") or {}
+    facts = content.get("matchFacts") or {}
+    info = facts.get("infoBox") or {}
+    raw_ref = info.get("Referee")
+    name = raw_ref.get("text") if isinstance(raw_ref, dict) else raw_ref
+    name = str(name).strip() if name is not None else ""
+    if not name:
+        return None
+
+    stats_groups = (((content.get("stats") or {}).get("Periods") or {}).get("All") or {}).get("stats") or []
+    found_stats: dict[str, list[int]] = {}
+    for group in stats_groups:
+        if not isinstance(group, dict):
+            continue
+        for item in group.get("stats") or []:
+            if not isinstance(item, dict):
+                continue
+            key = item.get("key")
+            if key in ("fouls", "yellow_cards", "red_cards") and key not in found_stats:
+                pair = _stat_pair(item.get("stats"))
+                if pair is not None:
+                    found_stats[key] = pair
+
+    home_team = str((data.get("general") or {}).get("homeTeam", {}).get("id"))
+    events = ((facts.get("events") or {}).get("events")) or []
+    ev_yellow = [0, 0]
+    ev_red = [0, 0]
+    for event in events:
+        if not isinstance(event, dict) or event.get("type") != "Card":
+            continue
+        is_home = bool(event["isHome"]) if event.get("isHome") is not None else str(event.get("teamId")) == home_team
+        side = 0 if is_home else 1
+        card = event.get("card")
+        if card == "Yellow":
+            ev_yellow[side] += 1
+        elif card in ("Red", "YellowRed"):
+            ev_red[side] += 1
+
+    return {
+        "referee": name,
+        "yellow": found_stats.get("yellow_cards", ev_yellow),
+        "red": found_stats.get("red_cards", ev_red),
+        "fouls": found_stats.get("fouls"),
+    }
+
+
+def fetch_match_referee(match_id: str) -> dict[str, Any] | None:
+    """Fetch and parse referee, card counts and fouls for one match."""
+    return parse_match_referee(fetch_match_payload(match_id))
+
+
+def load_referees(path: Path = REFEREES_PATH) -> dict[str, Any]:
+    """Load ``{"matches": {match_id: {...}}, "none": [...]}`` from disk."""
+    if path.exists():
+        return json.loads(path.read_text(encoding="utf-8"))
+    return {"matches": {}, "none": []}
+
+
+def save_referees(data: dict[str, Any], path: Path = REFEREES_PATH) -> None:
+    """Atomically write ``data/referees.json``."""
+    path.parent.mkdir(parents=True, exist_ok=True)
+    temp = path.with_suffix(".json.tmp")
+    temp.write_text(json.dumps(data, indent=0, sort_keys=True, ensure_ascii=False) + "\n", encoding="utf-8")
+    os.replace(temp, path)
 
 
 def load_xg(path: Path = XG_PATH) -> dict[str, Any]:
@@ -249,10 +379,11 @@ def update_xg(
     matches: list,
     *,
     path: Path = XG_PATH,
-    fetch=fetch_match_xg,
+    fetch=None,
     delay: float = 1.0,
     refetch_hours: tuple[float, ...] = REFETCH_HOURS,
     now: datetime | None = None,
+    referee_path: Path | None = None,
 ) -> int:
     """Add or refresh shot data for played matches; returns how many were fetched.
 
@@ -265,12 +396,22 @@ def update_xg(
     is still ahead, which is marked pending without a request (fetched before
     this rule existed).
 
+    When `fetch` is None (the live refresh path), the single `matchDetails`
+    response also populates `referees.json` and `red_cards.json` at zero
+    extra HTTP requests.
+
     Never raises: the model falls back to goals for a match without xG, so a
     failed fetch is printed and skipped rather than allowed to block a refresh.
     """
     now = now or datetime.now(timezone.utc)
     data = load_xg(path)
     pending = data.setdefault("pending", {})
+    ref_target = referee_path or (path.parent / REFEREES_PATH.name)
+    ref_data = load_referees(ref_target) if fetch is None else None
+    ref_changed = False
+    red_target = path.parent / RED_CARDS_PATH.name
+    red_data = load_red_cards(red_target) if fetch is None else None
+    red_changed = False
     added = 0
     marked = False
     for match in matches:
@@ -294,7 +435,14 @@ def update_xg(
             if now < due:
                 continue
         try:
-            shots = fetch(match.match_id)
+            if fetch is None:
+                raw = fetch_match_payload(match.match_id)
+                shots = parse_match_details(raw)
+                ref_entry = parse_match_referee(raw)
+                reds = parse_match_reds(raw)
+            else:
+                shots = fetch(match.match_id)
+                ref_entry = reds = None
         except FetchError as exc:
             print(f"  xG for {match.match_id} skipped: {exc}")
             continue
@@ -306,6 +454,21 @@ def update_xg(
             # Remove from "none" if it was previously recorded there
             if match.match_id in data["none"]:
                 data["none"].remove(match.match_id)
+        if ref_data is not None:
+            if ref_entry is not None:
+                ref_data["matches"][match.match_id] = ref_entry
+                if match.match_id in ref_data["none"]:
+                    ref_data["none"].remove(match.match_id)
+                ref_changed = True
+            elif match.match_id not in ref_data["matches"] and match.match_id not in ref_data["none"]:
+                ref_data["none"].append(match.match_id)
+                ref_changed = True
+        if red_data is not None and reds is not None and red_data.get(match.match_id, []) != reds:
+            if reds:
+                red_data[match.match_id] = reds
+            else:
+                del red_data[match.match_id]
+            red_changed = True
         if any(moment > now for moment in refetches):
             pending[match.match_id] = _stamp(now)
         else:
@@ -314,4 +477,8 @@ def update_xg(
         time.sleep(delay)
     if added or marked:
         save_xg(data, path)
+    if ref_data is not None and ref_changed:
+        save_referees(ref_data, ref_target)
+    if red_data is not None and red_changed:
+        save_red_cards(red_data, red_target)
     return added

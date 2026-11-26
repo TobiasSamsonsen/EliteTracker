@@ -222,6 +222,7 @@ class TestManifest:
         monkeypatch.setattr(build_site, "build_all_careers", lambda root, **kw: {})
         monkeypatch.setattr(build_site, "careers_payload", lambda careers, **kw: {})
         monkeypatch.setattr(build_site, "h2h_payload", lambda *a, **kw: {})
+        monkeypatch.setattr(build_site, "performance_payload", lambda *a, **kw: {})
         monkeypatch.setattr(build_site, "calibration_payload", lambda **kw: {})
         monkeypatch.setattr(build_site, "Pool", _SyncPool)
         try:
