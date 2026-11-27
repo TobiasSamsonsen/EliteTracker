@@ -672,10 +672,19 @@ test('the version history measures each version against base rates and labels it
 test('every version-history string exists in both languages', () => {
   assertBothLanguages([
     // versions.es is 'Eliteserien' in both languages, so it is left out here.
-    'accuracy.versions', 'accuracy.versionsLead', 'versions.empty', 'versions.all', 'versions.market',
-    'versions.marketShort', 'versions.marketXg', 'versions.marketXgShort', 'versions.aria', 'versions.y', 'versions.x', 'versions.tipAll', 'versions.tipEs',
-    'versions.xg', 'versions.tipXg', 'versions.fact.xg', 'versions.fact.xgText', 'versions.fact.xgMarket', 'versions.tipStep', 'versions.note', 'versions.fact.skill', 'versions.fact.skillText', 'versions.fact.step',
-    'versions.fact.stepText', 'versions.fact.gap', 'versions.fact.gapText',
+    'accuracy.versions', 'accuracy.versionsLead', 'accuracy.scope', 'accuracy.jumpAria',
+    'accuracy.jump.versions', 'accuracy.jump.matches', 'accuracy.jump.table',
+    'model.step2.spec', 'model.kpi.skill', 'model.kpi.skillSub', 'model.kpi.gap', 'model.kpi.gapSub',
+    'model.kpi.calib', 'model.kpi.calibSub', 'model.kpi.closed', 'model.kpi.closedSub',
+    'model.group.elo', 'model.group.goals', 'model.group.sim',
+    'calib.guide', 'calib.skill', 'calib.glossary', 'calib.stakingTitle',
+    'scorecard.legend.band', 'scorecard.legend.exact', 'scorecard.legend.last',
+    'versions.empty', 'versions.all', 'versions.xgAll', 'versions.xgAllShort', 'versions.market',
+    'versions.marketShort', 'versions.marketXg', 'versions.marketXgShort', 'versions.aria', 'versions.y', 'versions.x',
+    'versions.tipAll', 'versions.tipXgAll', 'versions.tipEs', 'versions.xg', 'versions.tipXg',
+    'versions.fact.xg', 'versions.fact.xgText', 'versions.fact.xgMarketTitle', 'versions.fact.xgMarket',
+    'versions.tipStep', 'versions.tipStepNoT', 'versions.note', 'versions.fact.skill', 'versions.fact.skillText',
+    'versions.fact.step', 'versions.fact.stepText', 'versions.fact.stepTextNoT', 'versions.fact.gap', 'versions.fact.gapText',
     ...['elo-v1', 'elo-v2', 'elo-v3', 'elo-v5', 'elo-v6', 'elo-v7', 'elo-v8', 'elo-v9', 'elo-v10', 'elo-v11',
       'elo-v11.1', 'elo-v12.0', 'elo-v13.0', 'elo-v14.0', 'elo-v15.0', 'elo-v16.0', 'elo-v16.1', 'elo-v17.0',
       'elo-v18.0', 'elo-v19.0'].map((v) => `versions.v.${v}`),

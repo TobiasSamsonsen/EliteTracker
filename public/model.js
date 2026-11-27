@@ -4,13 +4,13 @@
    numbers. */
 
 // The version the page's text describes; a newer one in the report raises a note.
-const PAGE_VERSION = 'elo-v17.0';
+const PAGE_VERSION = 'elo-v19.0';
 // Not in the report: the xG margin and its smoothing (model/elo.py) and the
 // grid's goal cap (model/attack_defence.py).
 const XG_MARGIN = 0.12;
 const XG_SMOOTHING = 0.25;
 const GOAL_CAP = 8;
-// elo-v17.0's settings (unchanged since elo-v16.0), for the figures until the report is in (or if it
+// elo-v19.0's settings, for the figures until the report is in (or if it
 // never comes).
 const DEFAULTS = {
   k_factor: 30, home_advantage: 60, xg_alpha: 0.3, draw_base: 0.26, draw_scale: 375,

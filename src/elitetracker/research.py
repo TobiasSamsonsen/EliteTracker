@@ -19,6 +19,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import math
 import time
 from pathlib import Path
 
@@ -334,31 +335,50 @@ BETTING_FROM = 2021
 SMALL_EDGE = 0.15
 
 
+def _base_rate_log_loss(card: Scorecard) -> float | None:
+    """Log loss of predicting the empirical outcome shares over `card`."""
+    if not card.matches:
+        return None
+    from elitetracker.model.probabilities import AWAY_WIN, DRAW, HOME_WIN
+
+    outcomes = [outcome for _, outcome in card.predictions.values()]
+    n = len(outcomes)
+    freqs = {key: outcomes.count(key) / n for key in (HOME_WIN, DRAW, AWAY_WIN)}
+    return sum(-math.log(freqs[outcome]) for outcome in outcomes) / n
+
+
 def calibration_payload(score_from: int = 2016, root=NORMALIZED_DIR) -> dict:
-    """The Explore view's match-odds calibration (`viz=calibration`): the
-    shipped odds' reliability over every scored match of both divisions, and
-    the scores against the closing line, three ways de-vigged, on the
-    Eliteserien matches with xG it prices (2020 on: the seasons the model
-    reads chances in, so the comparison is the model as it now runs)."""
+    """The Model view's accuracy & calibration (`calibration.json`): ratings
+    warm up from 2015 walk-forward, and reliability, scores, scorelines, and
+    market comparisons are all evaluated on the xG seasons (matches with xG:
+    Eliteserien from 2020, OBOS-ligaen from 2023)."""
     from elitetracker.model.elo import MODEL_VERSION
 
     slices = load_slices(root)
     seeds = {team_id: seed.rating for team_id, seed in seed_ratings(root).items()}
     scorelines: dict[tuple[int, int], list[float]] = {}
     shots = shot_table(root)
+    scoreline_ids = set(shots) if shots else None
     elo, shipped = shipped_cards(slices, seeds, score_from_season=score_from, shots=shots, values=market_values(root),
-                                 scorelines=scorelines, stakes=stakes_table(root), playoffs=playoff_played(root),
-                                 reds=red_table(root))
+                                 scorelines=scorelines, scoreline_ids=scoreline_ids, stakes=stakes_table(root),
+                                 playoffs=playoff_played(root), reds=red_table(root))
     dates = {m.match_id: m.date for s in slices for m in s.matches}
     league = {m.match_id: s.league for s in slices for m in s.matches}
+    xg_ids = {mid for mid in shipped.losses if mid in shots}
+    shipped_xg = restrict(shipped, xg_ids, "model") if xg_ids else shipped
+
     es = [m for s in slices for m in s.matches if s.league == "eliteserien" and int(m.date[:4]) >= score_from]
     prices = benchmark.load_prices()
     markets = benchmark.market_cards(prices, es) if prices else {}
     common = set(shipped.losses) & set.intersection(*(set(card.losses) for card in markets.values())) if markets else set()
 
     def scores(card: Scorecard) -> dict:
-        return {"n": card.matches, "log_loss": round(card.log_loss, 5), "brier": round(card.brier, 5),
-                "rps": round(card.rps, 5), "calibration": round(card.calibration_error(), 4)}
+        base = _base_rate_log_loss(card)
+        out = {"n": card.matches, "log_loss": round(card.log_loss, 5), "brier": round(card.brier, 5),
+               "rps": round(card.rps, 5), "calibration": round(card.calibration_error(), 4)}
+        if base is not None and not math.isnan(base):
+            out["base_rate_log_loss"] = round(base, 5)
+        return out
 
     # The match-for-match comparison: the Eliteserien matches with xG only.
     with_xg = {mid for mid in common if mid in shots}
@@ -367,6 +387,9 @@ def calibration_payload(score_from: int = 2016, root=NORMALIZED_DIR) -> dict:
     if with_xg:
         market = {"model": scores(model_es), "elo": scores(restrict(elo, with_xg, "elo")),
                   "first_season": min(int(dates[mid][:4]) for mid in with_xg)}
+        base_market = _base_rate_log_loss(model_es)
+        if base_market is not None:
+            market["base_rate_log_loss"] = round(base_market, 5)
         for method, card in markets.items():
             market[method] = {**scores(restrict(card, with_xg)), "paired_t": round(paired(model_es, card)[2], 2)}
     # Matches on one date in id order: a set iterates in hash order, which
@@ -395,24 +418,31 @@ def calibration_payload(score_from: int = 2016, root=NORMALIZED_DIR) -> dict:
         "n": shape["n"], "margin": round(shape["margin"], 4), "pinnacle_margin": round(shape["pinnacle_margin"], 4),
         **staking(benchmark.reprice({mid: prices[mid] for mid in bet_order}, shape["fit"])),
     } if shape else None
+    first_seasons = {
+        lg: min(int(dates[mid][:4]) for mid in shipped_xg.losses if league[mid] == lg)
+        for lg in ("eliteserien", "obosligaen")
+        if any(league[mid] == lg for mid in shipped_xg.losses)
+    }
     return {
         "version": MODEL_VERSION,
-        "first_season": score_from,
-        "last_season": max(int(dates[mid][:4]) for mid in shipped.losses),
+        "xg_only": bool(xg_ids),
+        "first_season": min((int(dates[mid][:4]) for mid in shipped_xg.losses), default=score_from),
+        "first_seasons": first_seasons,
+        "last_season": max((int(dates[mid][:4]) for mid in shipped_xg.losses), default=score_from),
         "scores": {
-            "all": scores(shipped),
-            **{lg: scores(restrict(shipped, {m for m in shipped.losses if league[m] == lg}))
+            "all": scores(shipped_xg),
+            **{lg: scores(restrict(shipped_xg, {m for m in shipped_xg.losses if league[m] == lg}))
                for lg in ("eliteserien", "obosligaen")},
         },
         # 5 % bins: the view draws a 95 % interval on each, so narrow bins stay readable.
-        "reliability": reliability(shipped, bins=20),
+        "reliability": reliability(shipped_xg, bins=20),
         # Per scoreline (4 = 4 or more): the share of matches the model gave it
         # on average against the share that ended that way.
         "scorelines": [
-            {"home": i, "away": j, "predicted": round(chance / shipped.matches, 5),
-             "observed": round(count / shipped.matches, 5)}
+            {"home": i, "away": j, "predicted": round(chance / shipped_xg.matches, 5),
+             "observed": round(count / shipped_xg.matches, 5)}
             for (i, j), (chance, count) in sorted(scorelines.items())
-        ] if shipped.matches else [],
+        ] if shipped_xg.matches else [],
         "market": market,
         "kelly": kelly,
         "norsk_tipping": norsk_tipping,

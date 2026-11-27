@@ -235,13 +235,14 @@ def combine(in_dir: str, out_path: str) -> None:
         rows = [_scores(odds[mid], y[mid]) for mid in ids]
         return [sum(r[i] for r in rows) / len(rows) for i in range(3)], [r[0] for r in rows]
 
-    out = {"first_season": FIRST, "last_season": LAST, "n": len(order), "n_eliteserien": len(es), "n_xg": len(xg),
-           "n_priced": len(priced), "versions": []}
+    out = {"first_season": FIRST, "last_season": LAST, "first_season_eliteserien_xg": 2020, "first_season_obos_xg": 2023,
+           "n": len(order), "n_eliteserien": len(es), "n_xg": len(xg), "n_priced": len(priced), "versions": []}
     previous = None
+    previous_xg = None
     for run in runs:
         (ll, brier, rps), lls = score(run["odds"], order)
         (es_ll, _, _), _ = score(run["odds"], es)
-        (xg_ll, _, _), _ = score(run["odds"], xg)
+        (xg_ll, _, _), xg_lls = score(run["odds"], xg)
         (es_xg_ll, _, _), _ = score(run["odds"], es_xg)
         (pr_ll, _, _), _ = score(run["odds"], priced) if priced else ((None, None, None), None)
         row = {"version": run["version"], "released": RELEASED.get(run["version"]), "log_loss": round(ll, 5), "brier": round(brier, 5), "rps": round(rps, 5),
@@ -251,8 +252,13 @@ def combine(in_dir: str, out_path: str) -> None:
             d = [a - b for a, b in zip(lls, previous)]
             row["vs_previous"] = round(sum(d) / len(d), 5)
             row["t_vs_previous"] = round(_t(d), 2)
+        if previous_xg:
+            d_xg = [a - b for a, b in zip(xg_lls, previous_xg)]
+            row["vs_previous_xg"] = round(sum(d_xg) / len(d_xg), 5)
+            row["t_vs_previous_xg"] = round(_t(d_xg), 2)
         out["versions"].append(row)
         previous = lls
+        previous_xg = xg_lls
         print(f"{run['version']:>10}  LL {ll:.5f}  Brier {brier:.5f}  RPS {rps:.5f}  ES {es_ll:.5f}"
               f"  priced {pr_ll if pr_ll is None else round(pr_ll, 5)}"
               f"  vs prev {row.get('vs_previous', 0):+.5f} (t {row.get('t_vs_previous', 0):+.2f})")

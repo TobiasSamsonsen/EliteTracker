@@ -426,30 +426,65 @@
     </section>
 
     <section data-section="model">
-      <div class="panel">
+      <div class="panel model-card">
         <div class="panel__head">
           <div>
             <h2 data-i18n="model.title">Model card</h2>
             <p data-i18n="model.desc">Every number above comes from these settings and this data.</p>
           </div>
+          <div class="panel__tools">
+            <span class="model-version-pill" id="model-version-pill"></span>
+          </div>
         </div>
-        <dl class="model-grid" id="model-grid"></dl>
-        <div class="caveats">
-          <div class="label" data-i18n="model.howItWorks">How it works</div>
-          <ol class="steps">
-            <li><span class="steps__n">01</span><b data-i18n="model.step1.title">Rating</b><p data-i18n="model.step1.text">Each club has a strength rating that moves after every match. Expected goals (xG) separate luck from good play.</p></li>
-            <li><span class="steps__n">02</span><b data-i18n="model.step2.title">Goals</b><p data-i18n="model.step2.text">A separate goals model counts goals scored and conceded. The match odds blend the two.</p></li>
-            <li><span class="steps__n">03</span><b data-i18n="model.step3.title">Simulation</b><p data-i18n="model.step3.text">The rest of the season is played 50,000 times. The table chances are how often each club finishes in each place.</p></li>
+        <div class="model-kpis" id="model-kpis" aria-live="polite"></div>
+        <div class="model-flow">
+          <div class="model-flow__head">
+            <div class="label" data-i18n="model.howItWorks">How it works</div>
+            <a class="model-flow__cta" href="/model.html" data-i18n="model.howLink">How the model works, in plain words and with every formula →</a>
+          </div>
+          <ol class="steps model-flow__steps">
+            <li>
+              <div class="model-flow__top">
+                <span class="steps__n">01</span>
+                <span class="model-flow__spec" id="model-step1-spec"></span>
+              </div>
+              <b data-i18n="model.step1.title">Rating</b>
+              <p data-i18n="model.step1.text">Each club has a strength rating that moves after every match. Expected goals (xG) separate luck from good play.</p>
+            </li>
+            <li>
+              <div class="model-flow__top">
+                <span class="steps__n">02</span>
+                <span class="model-flow__spec" id="model-step2-spec"></span>
+              </div>
+              <b data-i18n="model.step2.title">Goals</b>
+              <p data-i18n="model.step2.text">A separate goals model counts goals scored and conceded. The match odds blend the two.</p>
+            </li>
+            <li>
+              <div class="model-flow__top">
+                <span class="steps__n">03</span>
+                <span class="model-flow__spec" id="model-step3-spec"></span>
+              </div>
+              <b data-i18n="model.step3.title">Simulation</b>
+              <p data-i18n="model.step3.text">The rest of the season is played 50,000 times. The table chances are how often each club finishes in each place.</p>
+            </li>
           </ol>
-          <a class="caveats__link" href="/model.html" data-i18n="model.howLink">How the model works, in plain words and with every formula →</a>
         </div>
+        <div class="model-spec" id="model-grid"></div>
       </div>
       <div class="panel model-accuracy">
         <div class="panel__head">
           <div>
             <h2 data-i18n="model.accuracy.title">How accurate is the model?</h2>
-            <p data-i18n="model.accuracy.desc">How the odds have improved version by version, how well they match what happens game by game, and how well the table was called before the season.</p>
+            <p data-i18n="model.accuracy.desc">How well the model does: match by match, on the final table, and across its versions.</p>
           </div>
+        </div>
+        <div class="accuracy__bar">
+          <span class="accuracy__scope" data-i18n="accuracy.scope">xG seasons · Eliteserien 2020– · OBOS-ligaen 2023–</span>
+          <nav class="accuracy__jump" aria-label="Accuracy sections" data-i18n-aria-label="accuracy.jumpAria">
+            <a href="#accuracy-versions" data-i18n="accuracy.jump.versions">01 Versions</a>
+            <a href="#accuracy-matches" data-i18n="accuracy.jump.matches">02 Match odds</a>
+            <a href="#accuracy-table" data-i18n="accuracy.jump.table">03 Pre-season table</a>
+          </nav>
         </div>
         <div id="model-accuracy"></div>
       </div>

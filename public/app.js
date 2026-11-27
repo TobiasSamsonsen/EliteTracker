@@ -3721,50 +3721,130 @@ function renderHero(report) {
 
 }
 
+function modelSpecGroup(title, rows) {
+  const group = el('section', 'model-spec__group');
+  group.appendChild(el('h3', 'model-spec__title', title));
+  const list = el('dl', 'model-spec__list');
+  for (const [name, value] of rows) {
+    const row = el('div', 'model-spec__row');
+    row.appendChild(el('dt', '', name));
+    row.appendChild(el('dd', '', String(value)));
+    list.appendChild(row);
+  }
+  group.appendChild(list);
+  return group;
+}
+
+function renderModelKpis(container, data) {
+  if (!container) return;
+  const items = [];
+  const market = data?.market;
+  const history = data?.versions;
+  if (market?.model && market?.power && market?.base_rate_log_loss) {
+    const modelSkill = versionSkill(market.model.log_loss, market.base_rate_log_loss);
+    const marketSkill = versionSkill(market.power.log_loss, market.base_rate_log_loss);
+    items.push({
+      value: `${num(modelSkill, 1)}${percentSign()}`,
+      label: t('model.kpi.skill'),
+      sub: t('model.kpi.skillSub', { market: num(marketSkill, 1), n: num(market.model.n) }),
+    });
+    items.push({
+      value: signed(market.model.log_loss - market.power.log_loss, 3),
+      label: t('model.kpi.gap'),
+      sub: t('model.kpi.gapSub', { t: num(market.power.paired_t, 1), from: market.first_season }),
+    });
+  }
+  if (data?.scores?.all) {
+    const all = data.scores.all;
+    items.push({
+      value: pct(all.calibration, 1),
+      label: t('model.kpi.calib'),
+      sub: t('model.kpi.calibSub', { n: num(all.n), from: data.first_season, to: data.last_season }),
+    });
+  }
+  if (history?.versions?.length >= 2 && history.market_log_loss_eliteserien_xg != null) {
+    const first = history.versions[0];
+    const last = history.versions[history.versions.length - 1];
+    const closed = (first.log_loss_eliteserien_xg - last.log_loss_eliteserien_xg)
+      / (first.log_loss_eliteserien_xg - history.market_log_loss_eliteserien_xg);
+    items.push({
+      value: pct(closed, 0),
+      label: t('model.kpi.closed'),
+      sub: t('model.kpi.closedSub', { first: first.version, last: last.version, n: num(history.n_eliteserien_xg) }),
+    });
+  }
+  if (!items.length) return;
+  container.replaceChildren(...items.map((item) => {
+    const card = el('div', 'model-kpi');
+    card.appendChild(el('div', 'model-kpi__value', item.value));
+    card.appendChild(el('div', 'model-kpi__label', item.label));
+    card.appendChild(el('p', 'model-kpi__sub', item.sub));
+    return card;
+  }));
+}
+
 function renderModelCard(report) {
   const model = report.model;
-  const grid = $('#model-grid');
-  grid.replaceChildren();
-  const rows = [
+  const pill = $('#model-version-pill');
+  if (pill) pill.textContent = model.version;
+  const s1 = $('#model-step1-spec');
+  if (s1) s1.textContent = `K = ${model.k_factor} · ${pct(model.xg_alpha, 0)} xG`;
+  const s2 = $('#model-step2-spec');
+  if (s2) s2.textContent = t('model.step2.spec');
+  const s3 = $('#model-step3-spec');
+  if (s3) s3.textContent = model.strength_sd ? `${num(model.simulations)} · ±${model.strength_sd}` : num(model.simulations);
+
+  const eloRows = [
     [t('model.version'), model.version],
     [t('model.kfactor'), model.k_factor],
     [t('model.homeAdvantage'), `${model.home_advantage} ${t('model.pts')}`],
   ];
-  if (model.home_advantage_beta) {
-    rows.push([t('model.homeAdvantageBeta'), model.home_advantage_beta]);
-  }
-  if (model.surface) rows.push([t('model.surfaceEdge'), `${model.surface.edge} ${t('model.pts')}`]);
-  if (model.stakes) {
-    rows.push([t('model.stakes'), t('model.stakesValue', { elo: model.stakes.elo, from: model.stakes.from })]);
-    rows.push([t('model.stakesScope'), t('model.stakesScopeValue')]);
-  }
-  if (model.attack_defence.keeping_window) {
-    rows.push([t('model.keeping'), t('model.keepingValue', { n: model.attack_defence.keeping_window })]);
-  }
-  rows.push(
+  if (model.home_advantage_beta) eloRows.push([t('model.homeAdvantageBeta'), model.home_advantage_beta]);
+  if (model.surface) eloRows.push([t('model.surfaceEdge'), `${model.surface.edge} ${t('model.pts')}`]);
+  eloRows.push(
     [t('model.xgAlpha'), pct(model.xg_alpha, 0)],
     [t('model.crossRegression'), `${pct(1 - model.season_regression, 0)} ${t('model.towardMean')}`],
   );
-  if (model.attack_defence.blend_gamma) {
-    rows.push([t('model.blendGamma'), model.attack_defence.blend_gamma]);
-  }
-  rows.push(
-    [t('model.peakDraw'), pct(model.draw_base, 0)],
+
+  const goalsRows = [
     [t('model.outcomeOdds'), t('model.outcomeOddsValue')],
     [t('model.scorelines'), t('model.scorelinesValue')],
-    [t('model.simulations'), num(model.simulations)],
-    [t('model.tiebreak'), t('model.tiebreakValue')],
-    [t('model.expectedPoints'), t('model.expectedPointsValue')],
-  );
-  if (model.strength_sd) {
-    rows.push([t('model.strengthSd'), `±${model.strength_sd}`]);
+    [t('model.peakDraw'), pct(model.draw_base, 0)],
+  ];
+  if (model.attack_defence.keeping_window) {
+    goalsRows.push([t('model.keeping'), t('model.keepingValue', { n: model.attack_defence.keeping_window })]);
   }
-  rows.push([t('model.seed'), model.seed]);
-  for (const [name, value] of rows) {
-    const cell = el('div');
-    cell.appendChild(el('dt', '', name));
-    cell.appendChild(el('dd', '', String(value)));
-    grid.appendChild(cell);
+  if (model.attack_defence.blend_gamma) {
+    goalsRows.push([t('model.blendGamma'), model.attack_defence.blend_gamma]);
+  }
+  if (model.stakes) {
+    goalsRows.push([t('model.stakes'), t('model.stakesValue', { elo: model.stakes.elo, from: model.stakes.from })]);
+    goalsRows.push([t('model.stakesScope'), t('model.stakesScopeValue')]);
+  }
+
+  const simRows = [
+    [t('model.simulations'), num(model.simulations)],
+  ];
+  if (model.strength_sd) simRows.push([t('model.strengthSd'), `±${model.strength_sd}`]);
+  simRows.push(
+    [t('model.expectedPoints'), t('model.expectedPointsValue')],
+    [t('model.tiebreak'), t('model.tiebreakValue')],
+    [t('model.seed'), model.seed],
+  );
+
+  const grid = $('#model-grid');
+  grid.replaceChildren(
+    modelSpecGroup(t('model.group.elo'), eloRows),
+    modelSpecGroup(t('model.group.goals'), goalsRows),
+    modelSpecGroup(t('model.group.sim'), simRows),
+  );
+
+  const kpis = $('#model-kpis');
+  if (kpis) {
+    loadCalibration().then(
+      (data) => { if (state.activeView === 'model') renderModelKpis(kpis, data); },
+      () => {},
+    );
   }
   const accuracy = $('#model-accuracy');
   if (accuracy) renderAccuracy(report, accuracy);
@@ -9341,6 +9421,9 @@ function renderWhatIf(report, body) {
 
 /* ---------- model card: how accurate the model is ---------------------- */
 
+/* First season with xG per division (Eliteserien 2020 FotMob, OBOS-ligaen 2023 Sofascore). */
+const XG_FIRST_SEASON = { eliteserien: 2020, obosligaen: 2023 };
+
 /* The division the pre-season scorecard shows. The model card's hero offers
    only the season, so the scorecard carries a division switch of its own. */
 function accuracyLeague() {
@@ -9348,29 +9431,37 @@ function accuracyLeague() {
 }
 
 /* How accurate the model is, under the model card, in three parts: how every
-   model version's odds compare on the same matches; match by match, its odds
-   against what happened (both divisions, every season); and before the
-   season, the table it called against the one that came (one division). */
+   model version's odds compare on the xG seasons; match by match, its odds
+   against what happened (both divisions, xG seasons); and before the season,
+   the table it called against the one that came (one division, xG seasons). */
 async function renderAccuracy(report, body) {
   body.replaceChildren();
-  const part = (key) => {
+  const part = (key, numTag, id) => {
     const section = el('section', 'accuracy__part');
-    section.appendChild(el('h3', 'accuracy__title', t(`accuracy.${key}`)));
-    section.appendChild(el('p', 'accuracy__lead', t(`accuracy.${key}Lead`)));
+    section.id = id;
+    const head = el('div', 'accuracy__head');
+    const titleWrap = el('div');
+    titleWrap.appendChild(el('div', 'accuracy__eyebrow', numTag));
+    titleWrap.appendChild(el('h3', 'accuracy__title', t(`accuracy.${key}`)));
+    titleWrap.appendChild(el('p', 'accuracy__lead', t(`accuracy.${key}Lead`)));
+    head.appendChild(titleWrap);
+    section.appendChild(head);
     const content = el('div');
     section.appendChild(content);
     body.appendChild(section);
-    return content;
+    return { section, head, content };
   };
   // Newest view of the model first: the versions, then match by match, then the table.
-  const [versionsPart, matches, table] = [part('versions'), part('matches'), part('table')];
+  const versionsSec = part('versions', '01', 'accuracy-versions');
+  const matchesSec = part('matches', '02', 'accuracy-matches');
+  const tableSec = part('table', '03', 'accuracy-table');
   const divisions = el('div', 'accuracy__divisions');
   divisions.setAttribute('role', 'group');
   divisions.setAttribute('aria-label', t('accuracy.division'));
   const drawTable = () => {
     const slug = accuracyLeague();
     for (const button of divisions.children) button.setAttribute('aria-pressed', String(button.dataset.league === slug));
-    return renderScorecard(state.reports[slug] || report, table);
+    return renderScorecard(state.reports[slug] || report, tableSec.content);
   };
   for (const [slug, other] of Object.entries(state.reports || {})) {
     const button = el('button', 'accuracy__division', other.league.name);
@@ -9382,13 +9473,13 @@ async function renderAccuracy(report, body) {
     });
     divisions.appendChild(button);
   }
-  table.before(divisions);
-  versionsPart.appendChild(el('p', 'explore-empty', t('calib.loading')));
+  tableSec.head.appendChild(divisions);
+  versionsSec.content.appendChild(el('p', 'explore-empty', t('calib.loading')));
   const versions = loadCalibration().then(
-    (data) => { if (state.activeView === 'model') renderVersionHistory(report, versionsPart, data); },
-    () => renderVersionHistory(report, versionsPart, null),
+    (data) => { if (state.activeView === 'model') renderVersionHistory(report, versionsSec.content, data); },
+    () => renderVersionHistory(report, versionsSec.content, null),
   );
-  await Promise.all([drawTable(), renderCalibration(report, matches), versions]);
+  await Promise.all([drawTable(), renderCalibration(report, matchesSec.content), versions]);
 }
 
 /* Before the season: the prediction scorecard. */
@@ -9471,8 +9562,10 @@ async function scorecardSeason(season, slug, seasons) {
 async function renderScorecard(report, body) {
   const slug = report.league.slug;
   body.replaceChildren(el('p', 'explore-empty', t('scorecard.loading')));
-  const seasons = report.league.seasons || [];
-  const settled = await Promise.all(seasons.map((season) => scorecardSeason(season, slug, seasons).catch(() => [])));
+  const allSeasons = report.league.seasons || [];
+  const firstXg = XG_FIRST_SEASON[slug] || 2020;
+  const seasons = allSeasons.filter((season) => season >= firstXg);
+  const settled = await Promise.all(seasons.map((season) => scorecardSeason(season, slug, allSeasons).catch(() => [])));
   if (state.activeView !== 'model' || accuracyLeague() !== slug) return;
   const rows = settled.flat();
   if (!rows.length) {
@@ -9480,8 +9573,13 @@ async function renderScorecard(report, body) {
     return;
   }
   const wrap = el('div', 'scorecard');
+  const layout = el('div', 'scorecard__layout');
+  const plotWrap = el('div', 'scorecard__plot');
   const svg = svgEl('svg', { class: 'chart', role: 'group', 'aria-label': t('scorecard.aria') });
-  wrap.appendChild(svg);
+  plotWrap.appendChild(svg);
+  const side = el('div', 'scorecard__side');
+  layout.append(plotWrap, side);
+  wrap.appendChild(layout);
   body.replaceChildren(wrap);
   const places = Math.max(...rows.map((row) => row.finished), 16);
   const box = wrap.getBoundingClientRect().width || 600;
@@ -9596,8 +9694,18 @@ async function renderScorecard(report, body) {
     button.addEventListener('click', () => pick(rate));
     strip.appendChild(button);
   }
-  wrap.appendChild(strip);
-  wrap.appendChild(note);
+  const legend = el('div', 'scorecard__legend');
+  const addKey = (cls, labelKey) => {
+    const item = el('span', 'scorecard__legend-item');
+    item.append(el('i', `scorecard__swatch ${cls}`), t(labelKey));
+    legend.appendChild(item);
+  };
+  addKey('scorecard__swatch--band', 'scorecard.legend.band');
+  addKey('scorecard__swatch--diag', 'scorecard.legend.exact');
+  addKey('scorecard__swatch--last', 'scorecard.legend.last');
+  side.appendChild(strip);
+  side.appendChild(legend);
+  side.appendChild(note);
   pick(null);
 
   const best = [...rates].sort((a, b) => b.hits / b.n - a.hits / a.n || b.season - a.season)[0];
@@ -9781,35 +9889,59 @@ async function renderCalibration(report, body) {
   CALIBRATION_SERIES.forEach(([, labelKey, colour], i) => {
     if (kept[i].length) panels.appendChild(calibrationPanel(kept[i], labelKey, colour, biggest));
   });
+  wrap.appendChild(el('p', 'explore-note calibration__guide', t('calib.guide')));
   wrap.appendChild(panels);
   wrap.appendChild(el('p', 'explore-note calibration__note', t('calib.note', { n: CALIBRATION_MIN_N, dropped: num(dropped) })));
 
   if (data.market) {
+    const tableWrap = el('div', 'calibration__table-wrap');
     const table = el('table', 'calibration__table');
+    const hasBase = data.market.base_rate_log_loss != null;
     const head = el('tr');
-    for (const label of ['', t('calib.ll'), t('calib.brier'), t('calib.rps')]) head.appendChild(el('th', '', label));
+    const cols = ['', ...(hasBase ? [t('calib.skill')] : []), t('calib.ll'), t('calib.brier'), t('calib.rps')];
+    for (const label of cols) head.appendChild(el('th', '', label));
     table.appendChild(head);
     for (const [key, labelKey] of [['model', 'calib.model'], ['elo', 'calib.elo'], ['proportional', 'calib.proportional'], ['power', 'calib.power'], ['shin', 'calib.shin']]) {
       const row = data.market[key];
       if (!row) continue;
-      const tr = el('tr', key === 'model' ? 'calibration__ours' : '');
+      const cls = [
+        key === 'model' ? 'calibration__ours' : '',
+        key === 'proportional' ? 'calibration__market-start' : '',
+      ].filter(Boolean).join(' ');
+      const tr = el('tr', cls);
       tr.appendChild(el('th', '', t(labelKey)));
+      if (hasBase) {
+        tr.appendChild(el('td', '', `${num(versionSkill(row.log_loss, data.market.base_rate_log_loss), 1)}${percentSign()}`));
+      }
       for (const metric of ['log_loss', 'brier', 'rps']) tr.appendChild(el('td', '', num(row[metric], 4)));
       table.appendChild(tr);
     }
     const caption = el('caption', '', t('calib.tableCaption', { n: num(data.market.model.n), from: data.market.first_season }));
     table.prepend(caption);
-    wrap.appendChild(table);
+    tableWrap.appendChild(table);
+    tableWrap.appendChild(el('p', 'explore-note calibration__glossary', t('calib.glossary')));
+    wrap.appendChild(tableWrap);
   }
   wrap.appendChild(exploreFacts(calibrationFacts(data)));
+  const staking = calibrationStakingFacts(data);
+  if (staking.length) {
+    const box = exploreFacts(staking);
+    box.classList.add('calibration__staking');
+    box.querySelector('.explore-facts__title').textContent = t('calib.stakingTitle');
+    wrap.appendChild(box);
+  }
 }
 
 function calibrationFacts(data) {
   const all = data.scores.all;
+  const esFrom = data.first_seasons?.eliteserien || data.first_season;
+  const obosFrom = data.first_seasons?.obosligaen || 2023;
   const facts = [{
     value: pct(all.calibration, 1),
     label: t('calib.fact.error'),
-    text: t('calib.fact.errorText', { n: num(all.n), from: data.first_season, to: data.last_season }),
+    text: t('calib.fact.errorText', {
+      n: num(all.n), esFrom, obosFrom, to: data.last_season,
+    }),
   }];
   const favourites = calibrationPool(data.reliability.all, 0.7);
   if (favourites) {
@@ -9827,6 +9959,11 @@ function calibrationFacts(data) {
       text: t('calib.fact.marketText', { n: num(market.model.n), from: market.first_season, t: num(market.power.paired_t, 1) }),
     });
   }
+  return facts;
+}
+
+function calibrationStakingFacts(data) {
+  const facts = [];
   const signedPct = (value) => `${signed(value * 100, 1)}${percentSign()}`;
   // A bankroll can end above where it started: pct() stops at 100 %.
   const bankroll = (value) => `${num(value * 100, 0)}${percentSign()}`;
@@ -9881,36 +10018,36 @@ function versionShort(version) {
 
 function renderVersionHistory(report, body, data) {
   const history = data && data.versions;
-  if (!history || !history.versions || history.versions.length < 2) {
+  if (!history || !history.versions || history.versions.length < 2 || history.base_rate_log_loss_xg == null) {
     body.replaceChildren(el('p', 'explore-empty', t('versions.empty')));
     return;
   }
-  // The xG line is Eliteserien's xG seasons (2020 on), where the bookmakers'
-  // closing odds price the same matches; OBOS-ligaen has none here.
-  const hasXg = history.base_rate_log_loss_eliteserien_xg != null;
-  const rows = history.versions.map((row) => ({
-    ...row,
-    all: versionSkill(row.log_loss, history.base_rate_log_loss),
-    es: versionSkill(row.log_loss_eliteserien, history.base_rate_log_loss_eliteserien),
-    xg: hasXg ? versionSkill(row.log_loss_eliteserien_xg, history.base_rate_log_loss_eliteserien_xg) : null,
-  }));
+  // 100 % xG seasons: both divisions (Eliteserien 2020–2025 + OBOS-ligaen 2023–2025)
+  // and Eliteserien's xG seasons (2020–2025) against the bookmakers' closing odds.
+  const baseXg = history.base_rate_log_loss_xg;
+  const baseEsXg = history.base_rate_log_loss_eliteserien_xg;
+  const hasEsXg = baseEsXg != null;
+  const rows = history.versions.map((row, i) => {
+    const prev = i > 0 ? history.versions[i - 1] : null;
+    const deltaXg = row.vs_previous_xg ?? (prev ? row.log_loss_xg - prev.log_loss_xg : null);
+    return {
+      ...row,
+      xgAll: versionSkill(row.log_loss_xg, baseXg),
+      xgEs: hasEsXg ? versionSkill(row.log_loss_eliteserien_xg, baseEsXg) : null,
+      deltaXg,
+      tXg: row.t_vs_previous_xg ?? null,
+    };
+  });
   const series = [
-    { key: 'all', label: t('versions.all'), colour: 'var(--versions-all)' },
-    { key: 'es', label: t('versions.es'), colour: 'var(--versions-es)' },
-    ...(hasXg ? [{ key: 'xg', label: t('versions.xg'), colour: 'var(--versions-xg)' }] : []),
+    { key: 'xgAll', label: t('versions.xgAll'), short: t('versions.xgAllShort'), colour: 'var(--versions-all)' },
+    ...(hasEsXg ? [{ key: 'xgEs', label: t('versions.xg'), short: t('versions.xgShort'), colour: 'var(--versions-xg)' }] : []),
   ];
-  // The bookmakers on exactly the matches of the line of the same colour, dashed.
-  const markets = [
-    history.market_log_loss_priced != null && {
-      value: versionSkill(history.market_log_loss_priced, history.base_rate_log_loss_eliteserien),
-      label: t('versions.market'), short: t('versions.marketShort'), colour: 'var(--versions-es)',
-    },
-    hasXg && history.market_log_loss_eliteserien_xg != null && {
-      value: versionSkill(history.market_log_loss_eliteserien_xg, history.base_rate_log_loss_eliteserien_xg),
-      label: t('versions.marketXg'), short: t('versions.marketXgShort'), colour: 'var(--versions-xg)',
-    },
-  ].filter(Boolean);
-  const market = markets.length ? markets[0].value : null;
+  const marketXg = hasEsXg && history.market_log_loss_eliteserien_xg != null ? {
+    value: versionSkill(history.market_log_loss_eliteserien_xg, baseEsXg),
+    label: t('versions.marketXg'),
+    short: t('versions.marketXgShort'),
+    colour: 'var(--versions-xg)',
+  } : null;
 
   const wrap = el('div', 'versions');
   const legend = el('div', 'versions__legend');
@@ -9921,25 +10058,28 @@ function renderVersionHistory(report, body, data) {
     item.append(swatch, label);
     legend.appendChild(item);
   }
-  for (const { label, colour } of markets) {
+  if (marketXg) {
     const item = el('span', 'versions__key');
     const swatch = el('i', 'versions__swatch versions__swatch--market');
-    swatch.style.setProperty('--swatch', colour);
-    item.append(swatch, label);
+    swatch.style.setProperty('--swatch', marketXg.colour);
+    item.append(swatch, marketXg.label);
     legend.appendChild(item);
   }
   wrap.appendChild(legend);
   const svg = svgEl('svg', { class: 'chart', role: 'group', 'aria-label': t('versions.aria') });
   wrap.appendChild(svg);
+  const readout = el('div', 'versions__readout');
+  readout.setAttribute('aria-live', 'polite');
+  wrap.appendChild(readout);
   body.replaceChildren(wrap);
 
   const box = wrap.getBoundingClientRect().width || 720;
   const width = Math.min(760, Math.round(box));
   const narrow = width < 520;
-  const height = narrow ? 260 : 300;
-  const pad = { top: 14, right: narrow ? 64 : 172, bottom: 40, left: 40 };
+  const height = narrow ? 250 : 290;
+  const pad = { top: 14, right: narrow ? 44 : 156, bottom: 40, left: 40 };
   svg.setAttribute('viewBox', `0 0 ${width} ${height}`);
-  const values = rows.flatMap((row) => series.map(({ key }) => row[key])).concat(markets.map((m) => m.value));
+  const values = rows.flatMap((row) => series.map(({ key }) => row[key])).concat(marketXg ? [marketXg.value] : []);
   const top = Math.ceil(Math.max(...values) + 0.5);
   const bottom = Math.min(0, Math.floor(Math.min(...values)));
   const step = (width - pad.left - pad.right) / (rows.length - 1);
@@ -9962,9 +10102,9 @@ function renderVersionHistory(report, body, data) {
   text('axis-title', t('versions.y'), { x: pad.left, y: pad.top - 3 });
   text('axis-title', t('versions.x'), { x: width - pad.right, y: height - 4, 'text-anchor': 'end' });
 
-  for (const { value, colour } of markets) {
+  if (marketXg) {
     svg.appendChild(svgEl('line', {
-      class: 'versions__market', x1: pad.left, x2: width - pad.right, y1: y(value), y2: y(value), style: `stroke: ${colour}`,
+      class: 'versions__market', x1: pad.left, x2: width - pad.right, y1: y(marketXg.value), y2: y(marketXg.value), style: `stroke: ${marketXg.colour}`,
     }));
   }
   const guide = svgEl('line', { class: 'versions__guide', y1: pad.top, y2: height - pad.bottom, x1: 0, x2: 0 });
@@ -9977,9 +10117,11 @@ function renderVersionHistory(report, body, data) {
       svg.appendChild(svgEl('circle', { class: 'versions__dot', cx: x(i), cy: y(row[key]), r: 4, style: `fill: ${colour}` }));
     });
   }
-  // Direct labels at the right end, in ink, nudged apart where they would touch.
-  const ends = series.map(({ key, label }) => ({ label, v: rows[rows.length - 1][key] }));
-  for (const { short, value } of markets) ends.push({ label: short, v: value });
+  const activeDots = series.map(({ colour }) => svgEl('circle', {
+    class: 'versions__active', r: 6.5, fill: 'none', stroke: colour, 'stroke-width': 2,
+  }, svg));
+  const ends = series.map(({ key, short }) => ({ label: short, v: rows[rows.length - 1][key] }));
+  if (marketXg) ends.push({ label: marketXg.short, v: marketXg.value });
   const placed = ends.map((end) => ({ ...end, at: y(end.v) })).sort((a, b) => a.at - b.at);
   for (let i = 1; i < placed.length; i += 1) placed[i].at = Math.max(placed[i].at, placed[i - 1].at + 15);
   if (!narrow) {
@@ -9988,8 +10130,35 @@ function renderVersionHistory(report, body, data) {
     }
   }
 
-  // One hover column per version: the guide line and both series in the tooltip.
   const date = (iso) => new Date(`${iso}T12:00:00Z`).toLocaleDateString(localeDate(), { day: 'numeric', month: 'short', year: 'numeric' });
+  const showReadout = (i) => {
+    const row = rows[i];
+    const previous = rows[i - 1];
+    guide.setAttribute('x1', x(i));
+    guide.setAttribute('x2', x(i));
+    guide.classList.add('is-on');
+    series.forEach(({ key }, sIdx) => {
+      activeDots[sIdx].setAttribute('cx', x(i));
+      activeDots[sIdx].setAttribute('cy', y(row[key]));
+    });
+    const head = el('div', 'versions__readout-head');
+    head.appendChild(el('span', 'versions__readout-ver', row.version));
+    if (row.released) head.appendChild(el('span', 'versions__readout-date', date(row.released)));
+    if (previous && row.deltaXg != null) {
+      const stepText = row.tXg != null
+        ? t('versions.tipStep', { delta: signed(row.deltaXg, 4), previous: previous.version, t: num(row.tXg, 1) })
+        : t('versions.tipStepNoT', { delta: signed(row.deltaXg, 4), previous: previous.version });
+      head.appendChild(el('span', 'versions__readout-step', stepText));
+    }
+    const desc = el('p', 'versions__readout-desc', t(`versions.v.${row.version}`));
+    const metrics = el('div', 'versions__readout-metrics');
+    metrics.appendChild(el('span', '', t('versions.tipXgAll', { skill: num(row.xgAll, 1), ll: num(row.log_loss_xg, 4) })));
+    if (hasEsXg) {
+      metrics.appendChild(el('span', '', t('versions.tipXg', { skill: num(row.xgEs, 1), ll: num(row.log_loss_eliteserien_xg, 4) })));
+    }
+    readout.replaceChildren(head, desc, metrics);
+  };
+
   rows.forEach((row, i) => {
     const hit = svgEl('rect', {
       class: 'versions__hit', x: x(i) - step / 2, y: pad.top, width: step, height: height - pad.top - pad.bottom, tabindex: 0,
@@ -9998,73 +10167,69 @@ function renderVersionHistory(report, body, data) {
     const tip = () => [
       `<b>${row.version}</b>${row.released ? ` · ${date(row.released)}` : ''}`,
       t(`versions.v.${row.version}`),
-      t('versions.tipAll', { skill: num(row.all, 1), ll: num(row.log_loss, 4) }),
-      t('versions.tipEs', { skill: num(row.es, 1), ll: num(row.log_loss_eliteserien, 4) }),
-      hasXg ? t('versions.tipXg', { skill: num(row.xg, 1), ll: num(row.log_loss_xg, 4) }) : '',
-      previous ? t('versions.tipStep', {
-        delta: signed(row.vs_previous, 4), previous: previous.version, t: num(row.t_vs_previous, 1),
-      }) : '',
+      t('versions.tipXgAll', { skill: num(row.xgAll, 1), ll: num(row.log_loss_xg, 4) }),
+      hasEsXg ? t('versions.tipXg', { skill: num(row.xgEs, 1), ll: num(row.log_loss_eliteserien_xg, 4) }) : '',
+      previous && row.deltaXg != null
+        ? (row.tXg != null
+          ? t('versions.tipStep', { delta: signed(row.deltaXg, 4), previous: previous.version, t: num(row.tXg, 1) })
+          : t('versions.tipStepNoT', { delta: signed(row.deltaXg, 4), previous: previous.version }))
+        : '',
     ].filter(Boolean).join('<br>');
-    hit.setAttribute('aria-label', `${row.version}: ${t('versions.tipAll', { skill: num(row.all, 1), ll: num(row.log_loss, 4) })}`);
-    hit.addEventListener('pointerenter', () => {
-      guide.setAttribute('x1', x(i));
-      guide.setAttribute('x2', x(i));
-      guide.classList.add('is-on');
-    });
-    hit.addEventListener('pointerleave', () => guide.classList.remove('is-on'));
+    hit.setAttribute('aria-label', `${row.version}: ${t('versions.tipXgAll', { skill: num(row.xgAll, 1), ll: num(row.log_loss_xg, 4) })}`);
+    hit.addEventListener('pointerenter', () => showReadout(i));
+    hit.addEventListener('focus', () => showReadout(i));
+    hit.addEventListener('click', () => showReadout(i));
     attachTip(hit, tip);
     svg.appendChild(hit);
   });
+  showReadout(rows.length - 1);
 
   wrap.appendChild(el('p', 'explore-note versions__note', t('versions.note', {
-    n: num(history.n), from: history.first_season, to: history.last_season,
+    n: num(history.n_xg), nEs: num(history.n_eliteserien_xg), from: history.first_season_eliteserien_xg || 2020,
+    obosFrom: history.first_season_obos_xg || 2023, to: history.last_season,
   })));
 
   const first = rows[0];
   const last = rows[rows.length - 1];
-  const biggest = rows.slice(1).reduce((a, b) => (b.vs_previous < a.vs_previous ? b : a));
+  const biggest = rows.slice(1).reduce((a, b) => (b.deltaXg < a.deltaXg ? b : a));
   const facts = [{
-    value: `${num(first.all, 1)} → ${num(last.all, 1)}${percentSign()}`,
-    label: t('versions.fact.skill'),
-    text: t('versions.fact.skillText', { first: first.version, last: last.version, n: num(history.n) }),
+    value: `${num(first.xgAll, 1)} → ${num(last.xgAll, 1)}${percentSign()}`,
+    label: t('versions.fact.xg'),
+    text: t('versions.fact.xgText', { n: num(history.n_xg), first: first.version, last: last.version }),
   }];
-  if (hasXg) {
-    const both = (row) => versionSkill(row.log_loss_xg, history.base_rate_log_loss_xg);
+  if (hasEsXg && marketXg) {
     facts.push({
-      value: `${num(both(first), 1)} → ${num(both(last), 1)}${percentSign()}`,
-      label: t('versions.fact.xg'),
-      text: t('versions.fact.xgText', { n: num(history.n_xg), first: first.version, last: last.version }),
-    });
-    // The bookmakers' line is Eliteserien over every season; on Eliteserien's
-    // own xG seasons the comparison is like for like.
-    if (history.market_log_loss_eliteserien_xg != null && last.log_loss_eliteserien_xg != null) {
-      const base = history.base_rate_log_loss_eliteserien_xg;
-      facts[facts.length - 1].text += ` ${t('versions.fact.xgMarket', {
+      value: `${num(last.xgEs, 1)}${percentSign()} vs ${num(marketXg.value, 1)}${percentSign()}`,
+      label: t('versions.fact.xgMarketTitle'),
+      text: t('versions.fact.xgMarket', {
         n: num(history.n_eliteserien_xg), last: last.version,
-        model: num(versionSkill(last.log_loss_eliteserien_xg, base), 1),
-        market: num(versionSkill(history.market_log_loss_eliteserien_xg, base), 1),
-      })}`;
+        model: num(last.xgEs, 1), market: num(marketXg.value, 1),
+      }),
+    });
+    if (first.log_loss_eliteserien_xg > history.market_log_loss_eliteserien_xg) {
+      const closed = (first.log_loss_eliteserien_xg - last.log_loss_eliteserien_xg)
+        / (first.log_loss_eliteserien_xg - history.market_log_loss_eliteserien_xg);
+      facts.push({
+        value: pct(closed, 0),
+        label: t('versions.fact.gap'),
+        text: t('versions.fact.gapText', {
+          n: num(history.n_eliteserien_xg), first: first.version, last: last.version,
+          market: num(marketXg.value, 1), from: num(first.xgEs, 1), to: num(last.xgEs, 1),
+        }),
+      });
     }
   }
   facts.push({
     value: biggest.version,
     label: t('versions.fact.step'),
-    text: t('versions.fact.stepText', {
-      what: t(`versions.v.${biggest.version}`), delta: signed(biggest.vs_previous, 4), t: num(biggest.t_vs_previous, 1),
-    }),
-  });
-  if (market != null && first.log_loss_eliteserien > history.market_log_loss_priced) {
-    const closed = (first.log_loss_eliteserien - last.log_loss_eliteserien)
-      / (first.log_loss_eliteserien - history.market_log_loss_priced);
-    facts.push({
-      value: pct(closed, 0),
-      label: t('versions.fact.gap'),
-      text: t('versions.fact.gapText', {
-        n: num(history.n_priced), first: first.version, last: last.version,
-        market: num(market, 1), from: num(first.es, 1), to: num(last.es, 1),
+    text: biggest.tXg != null
+      ? t('versions.fact.stepText', {
+        what: t(`versions.v.${biggest.version}`), delta: signed(biggest.deltaXg, 4), t: num(biggest.tXg, 1),
+      })
+      : t('versions.fact.stepTextNoT', {
+        what: t(`versions.v.${biggest.version}`), delta: signed(biggest.deltaXg, 4),
       }),
-    });
-  }
+  });
   wrap.appendChild(exploreFacts(facts));
 }
 

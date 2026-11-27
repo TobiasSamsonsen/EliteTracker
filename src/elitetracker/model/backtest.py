@@ -191,6 +191,7 @@ def shipped_cards(
     values: dict[int, dict[str, float]] | None = None,
     league: str | None = None,
     scorelines: dict[tuple[int, int], list[float]] | None = None,
+    scoreline_ids: set[str] | None = None,
     stakes: dict[str, float] | None = None,
     playoffs: dict[int, list[Match]] | None = None,
     goals: dict[str, tuple[float, float]] | None = None,
@@ -201,9 +202,10 @@ def shipped_cards(
 
     `scorelines`, when given, collects per scoreline (goals capped at
     SCORELINE_CAP a side, "4" meaning 4 or more) [the summed predicted chance,
-    the times it happened] over the scored matches: the site's scoreline
-    model (`conditional_scorelines`) against the results. `stakes` as in
-    `walk_forward`, in both models; `playoffs` in Elo only, as in production."""
+    the times it happened] over the scored matches (or `scoreline_ids` when
+    given): the site's scoreline model (`conditional_scorelines`) against the
+    results. `stakes` as in `walk_forward`, in both models; `playoffs` in Elo
+    only, as in production."""
     stakes = stakes or {}
     elo = walk_forward(slices, seeds, EloConfig(), score_from_season=score_from_season, name="elo",
                        shots=shots, league=league, values=values, stakes=stakes, playoffs=playoffs)
@@ -218,7 +220,7 @@ def shipped_cards(
                     sum(i * p for i, row in enumerate(priced.grid) for p in row),
                     sum(j * p for row in priced.grid for j, p in enumerate(row)),
                 )
-            if scorelines is not None:
+            if scorelines is not None and (scoreline_ids is None or match.match_id in scoreline_ids):
                 for (i, j), chance in conditional_scorelines(priced.grid, priced.odds).items():
                     scorelines.setdefault((min(i, SCORELINE_CAP), min(j, SCORELINE_CAP)), [0.0, 0])[0] += chance
                 happened = (min(match.home_goals, SCORELINE_CAP), min(match.away_goals, SCORELINE_CAP))

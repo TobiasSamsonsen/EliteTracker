@@ -201,3 +201,43 @@ def test_reliability_bins_predicted_against_realised():
     home = {round(b["lo"], 1): b for b in bins["home_win"]}
     assert home[0.7]["n"] == 2 and home[0.7]["observed"] == 0.5 and abs(home[0.7]["predicted"] - 0.735) < 1e-9
     assert sum(b["n"] for b in bins["all"]) == 6  # three outcomes per match, pooled
+
+
+def test_calibration_payload_restricts_to_xg_matches_and_falls_back(monkeypatch):
+    from types import SimpleNamespace
+    from elitetracker import research
+    from elitetracker.model import benchmark
+
+    slices = [
+        SeasonSlice("eliteserien", "Eliteserien", 2019, [_match("m19", "A", "B", 2, 0, "2019-04-01")]),
+        SeasonSlice("eliteserien", "Eliteserien", 2020, [_match("m20", "A", "B", 1, 1, "2020-04-01")]),
+        SeasonSlice("obosligaen", "OBOS-ligaen", 2023, [_match("m23", "C", "D", 0, 2, "2023-04-01")]),
+    ]
+    seeds = {t: SimpleNamespace(rating=r) for t, r in [("A", 1600.0), ("B", 1500.0), ("C", 1450.0), ("D", 1400.0)]}
+
+    monkeypatch.setattr(research, "load_slices", lambda root=None: slices)
+    monkeypatch.setattr(research, "seed_ratings", lambda root=None: seeds)
+    monkeypatch.setattr(research, "market_values", lambda root=None: {})
+    monkeypatch.setattr(research, "stakes_table", lambda root=None: {})
+    monkeypatch.setattr(research, "playoff_played", lambda root=None: {})
+    monkeypatch.setattr(research, "red_table", lambda root=None: {})
+    monkeypatch.setattr(benchmark, "load_prices", lambda: {})
+
+    monkeypatch.setattr(research, "shot_table", lambda root=None: {"m20": (1.4, 1.1), "m23": (0.8, 1.7)})
+    payload = research.calibration_payload(score_from=2019)
+    assert payload["xg_only"] is True
+    assert payload["first_season"] == 2020
+    assert payload["first_seasons"] == {"eliteserien": 2020, "obosligaen": 2023}
+    assert payload["scores"]["all"]["n"] == 2
+    assert payload["scores"]["eliteserien"]["n"] == 1
+    assert payload["scores"]["obosligaen"]["n"] == 1
+    assert "base_rate_log_loss" in payload["scores"]["all"]
+    assert sum(b["n"] for b in payload["reliability"]["all"]) == 6
+    assert abs(sum(row["observed"] for row in payload["scorelines"]) - 1.0) < 1e-4
+
+    # When no xG shots are available, falls back to all scored matches cleanly.
+    monkeypatch.setattr(research, "shot_table", lambda root=None: {})
+    fallback = research.calibration_payload(score_from=2019)
+    assert fallback["xg_only"] is False
+    assert fallback["first_season"] == 2019
+    assert fallback["scores"]["all"]["n"] == 3
