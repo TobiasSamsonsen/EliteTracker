@@ -380,8 +380,9 @@ def calibration_payload(score_from: int = 2016, root=NORMALIZED_DIR) -> dict:
             out["base_rate_log_loss"] = round(base, 5)
         return out
 
-    # The match-for-match comparison: the Eliteserien matches with xG only.
-    with_xg = {mid for mid in common if mid in shots}
+    # The match-for-match comparison and value test: Eliteserien xG matches from
+    # BETTING_FROM (2021+), once ratings have a full prior season of xG behind them.
+    with_xg = {mid for mid in common if mid in shots and int(dates[mid][:4]) >= BETTING_FROM}
     model_es = restrict(shipped, with_xg, "model")
     market = None
     if with_xg:
@@ -394,10 +395,7 @@ def calibration_payload(score_from: int = 2016, root=NORMALIZED_DIR) -> dict:
             market[method] = {**scores(restrict(card, with_xg)), "paired_t": round(paired(model_es, card)[2], 2)}
     # Matches on one date in id order: a set iterates in hash order, which
     # differs run to run and moved the bankroll's drawdown with it.
-    order = sorted(common, key=lambda mid: (dates[mid], mid))
-    # Betting from the first season with a full year of xG behind the ratings
-    # (xG starts in 2020); the scores above keep the whole window.
-    bet_order = [mid for mid in order if int(dates[mid][:4]) >= BETTING_FROM]
+    bet_order = sorted(with_xg, key=lambda mid: (dates[mid], mid))
 
     def staking(book_prices: dict) -> dict:
         def run(**edges) -> dict:
