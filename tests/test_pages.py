@@ -45,7 +45,7 @@ def test_names_and_slugs_agree_with_app_js():
 
 
 def test_every_tool_has_norwegian_copy_in_i18n():
-    source = (ROOT / "public" / "i18n.js").read_text(encoding="utf-8")
+    source = (ROOT / "public" / "i18n" / "no.js").read_text(encoding="utf-8")
     for item in pages.EXPLORE:
         assert pages.norwegian_copy(source, f"explore.{item}.title")
         assert pages.norwegian_copy(source, f"explore.{item}.desc")
@@ -78,8 +78,9 @@ def test_build_pages_writes_a_page_per_club_tool_and_division(tmp_path):
     site, data = tmp_path / "public", tmp_path / "public" / "data"
     data.mkdir(parents=True)
     (site / "index.html").write_text(TEMPLATE, encoding="utf-8")
-    shutil_i18n = (ROOT / "public" / "i18n.js").read_text(encoding="utf-8")
-    (site / "i18n.js").write_text(shutil_i18n, encoding="utf-8")
+    (site / "i18n").mkdir()
+    shutil_i18n = (ROOT / "public" / "i18n" / "no.js").read_text(encoding="utf-8")
+    (site / "i18n" / "no.js").write_text(shutil_i18n, encoding="utf-8")
     row = lambda team, position, rating, probs: {"team": team, "position": position, "rating": rating, "position_probabilities": probs}  # noqa: E731
     (data / "report.json").write_text(json.dumps({
         "eliteserien": _table([row("Bodø/Glimt", 1, 1890.4, [0.575, 0.425]), row("Hamarkameratene", 2, 1700.0, [0.1, 0.9])],

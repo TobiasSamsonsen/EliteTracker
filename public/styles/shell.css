@@ -1,0 +1,707 @@
+/* ---------- tooltip ----------------------------------------------- */
+
+#tooltip {
+  position: fixed;
+  z-index: 80;
+  pointer-events: none;
+  background: var(--ink);
+  color: var(--paper);
+  padding: 0.45rem 0.65rem;
+  border-radius: var(--radius-sm);
+  font-size: 0.75rem;
+  line-height: 1.35;
+  box-shadow: 0 4px 16px rgb(0 0 0 / 0.25);
+  opacity: 0;
+  transition: opacity 0.1s var(--ease);
+  max-width: 240px;
+}
+
+#tooltip[data-show="true"] { opacity: 1; }
+#tooltip b { font-weight: 700; }
+/* Secondary line; the tooltip is inverted, so dimmed rather than recoloured. */
+#tooltip .tooltip__muted { opacity: 0.75; font-variant-numeric: tabular-nums; }
+#tooltip .tooltip__matches { border-collapse: collapse; margin-top: 0.2rem; font-variant-numeric: tabular-nums; }
+#tooltip .tooltip__matches td { padding: 0.05rem 0.6rem 0.05rem 0; white-space: nowrap; }
+#tooltip .tooltip__matches td:last-child { padding-right: 0; text-align: right; font-weight: 700; }
+
+/* ---------- state ------------------------------------------------- */
+
+.status {
+  padding: 3rem 1.25rem;
+  text-align: center;
+  color: var(--ink-muted);
+  /* A section's margin, so the first section lands where this line was
+     instead of shoving the whole page down when the season arrives. */
+  margin-block: clamp(1.5rem, 3vw, 2.25rem);
+}
+/* While it stands in for the page it is a screen tall, so the footer starts
+   below the fold rather than jumping down past the arriving content. */
+.status:has(+ #content[hidden]) { min-height: 100vh; min-height: 100dvh; }
+/* The skeleton under the loading line (index.html): a panel's head, then
+   cards (the overview, a club), rows (the table, the matches) or a block of
+   squares (the finish grid), whichever view the address opens on
+   (html[data-boot-view], set before the first paint). It shimmers unless
+   the reader has asked for less motion. */
+.status:has(> .skeleton-boot) { padding: 0; text-align: left; }
+.status:has(> .skeleton-boot) > .status__text {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+.skeleton-boot {
+  display: grid;
+  gap: var(--space-4);
+  padding: var(--space-5);
+  background: var(--panel);
+  border: 1px solid var(--rule);
+  border-radius: var(--radius);
+}
+.skeleton-boot__head { display: grid; gap: var(--space-2); }
+.skeleton-boot__cards, .skeleton-boot__rows, .skeleton-boot__grid { display: none; }
+html:not([data-boot-view]) .skeleton-boot__cards,
+html[data-boot-view="cards"] .skeleton-boot__cards { display: grid; gap: var(--space-3); }
+html[data-boot-view="table"] .skeleton-boot__rows { display: grid; gap: 6px; }
+html[data-boot-view="grid"] .skeleton-boot__grid { display: block; }
+.skel {
+  display: block;
+  border-radius: 8px;
+  background: linear-gradient(90deg, var(--panel-sunk) 25%, var(--rule) 50%, var(--panel-sunk) 75%);
+  background-size: 200% 100%;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .skel { animation: boot-shimmer 1.5s ease-in-out infinite; }
+}
+@keyframes boot-shimmer { from { background-position: 200% 0; } to { background-position: -200% 0; } }
+.skel--title { width: 40%; height: 1.6rem; }
+.skel--line { width: 75%; height: 0.9rem; }
+.skel--card { height: 9rem; border-radius: 12px; }
+.skel--short { height: 6rem; }
+.skel--row { height: 2.25rem; border-radius: 6px; }
+/* A grid of squares: the shimmer seen through the panel-coloured gaps. */
+.skel--grid {
+  height: 24rem;
+  border-radius: 4px;
+  -webkit-mask: linear-gradient(90deg, #000 calc(100% - 2px), transparent 0) 0 0 / calc(100% / 16) 100%,
+    linear-gradient(#000 calc(100% - 2px), transparent 0) 0 0 / 100% 1.5rem;
+  -webkit-mask-composite: source-in;
+  mask: linear-gradient(90deg, #000 calc(100% - 2px), transparent 0) 0 0 / calc(100% / 16) 100%,
+    linear-gradient(#000 calc(100% - 2px), transparent 0) 0 0 / 100% 1.5rem;
+  mask-composite: intersect;
+}
+@media (max-width: 480px) {
+  .skeleton-boot { margin-inline: calc(-1 * var(--gutter)); border-inline: 0; border-radius: 0; padding: var(--space-4); }
+}
+
+.status__retry {
+  appearance: none;
+  margin-left: 0.5rem;
+  font: inherit;
+  font-weight: 600;
+  color: var(--ink);
+  background: var(--panel);
+  border: 1px solid var(--rule-strong);
+  border-radius: var(--radius);
+  padding: 0.35rem 0.9rem;
+  min-height: 40px;
+  cursor: pointer;
+}
+.status__retry:hover { border-color: var(--ink-faint); }
+
+/* ---------- motion ------------------------------------------------ */
+
+/* One orchestrated load: the grid settles column by column, left to right,
+   the way a season resolves from the top of the table down. */
+@keyframes settle {
+  from { opacity: 0; transform: translateY(4px) scale(0.94); }
+  to   { opacity: 1; transform: none; }
+}
+
+.grid-animate .cell {
+  animation: settle 0.34s var(--ease) both;
+  animation-delay: calc(var(--col) * 24ms);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.001ms !important;
+    animation-delay: 0ms !important;
+    transition-duration: 0.001ms !important;
+  }
+  .cell:hover { transform: none; }
+}
+
+/* ---------- phone navigation -------------------------------------- */
+
+/* Eight views in a strip that showed three of them was the worst part of the
+   phone layout: the rest had to be discovered by swiping a control that gave
+   no sign it could scroll. Under 760px they move to a fixed bar in the thumb
+   zone, four of them plus a sheet holding the rest. The buttons carry the same
+   data-view attribute as the top strip, so nothing in the JS has to know which
+   control was tapped. */
+
+.mobilebar { display: none; }
+
+/* Touch ripple for interactive elements on mobile */
+@media (max-width: 760px) {
+  .touch-ripple { position: relative; overflow: hidden; }
+  .touch-ripple::after { content: ''; position: absolute; inset: 0; background: currentColor; opacity: 0; border-radius: inherit; pointer-events: none; }
+  .touch-ripple:active::after { animation: ripple 0.3s var(--ease); opacity: 0.1; }
+  @keyframes ripple { 0% { transform: scale(0.5); opacity: 0.15; } 100% { transform: scale(2.5); opacity: 0; } }
+}
+.sheet { display: none; }
+
+@media (max-width: 760px) {
+  .mobilebar {
+    position: fixed;
+    inset: auto 0 0 0;
+    z-index: 40;
+    display: grid;
+    grid-auto-flow: column;
+    grid-auto-columns: 1fr;
+    background: color-mix(in srgb, var(--panel) 94%, transparent);
+    backdrop-filter: blur(12px);
+    border-top: 1px solid var(--rule);
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+
+  .mobilebar__item {
+    appearance: none;
+    border: 0;
+    background: none;
+    color: var(--ink-faint);
+    font: inherit;
+    font-size: 0.6875rem;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.2rem;
+    min-height: 52px;
+    padding: 0.4rem 0.2rem;
+    cursor: pointer;
+  }
+
+  .mobilebar__icon { width: 17px; height: 17px; }
+
+  .mobilebar__item[aria-pressed="true"] { color: var(--ink); }
+
+  .mobilebar__item[aria-pressed="true"] .mobilebar__icon { color: var(--on-accent); }
+
+  /* The active tab gets a pill behind its icon, as native tab bars do. */
+  .mobilebar__item[aria-pressed="true"]::before {
+    content: "";
+    position: absolute;
+    top: 0.2rem;
+    width: 3.25rem;
+    height: 1.6rem;
+    border-radius: 999px;
+    background: var(--accent);
+    box-shadow: var(--glow-ring);
+    z-index: -1;
+  }
+
+  /* Once placed, one pill slides between the tabs in place of each tab's own. */
+  .mobilebar__thumb {
+    position: absolute;
+    top: 0.2rem;
+    left: 0;
+    width: 3.25rem;
+    height: 1.6rem;
+    border-radius: 999px;
+    background: var(--accent);
+    box-shadow: var(--glow-ring);
+    pointer-events: none;
+    transition: transform 0.3s var(--ease);
+  }
+
+  .mobilebar:has(> .mobilebar__thumb:not([hidden])) .mobilebar__item::before { content: none; }
+
+  .mobilebar__item { isolation: isolate; transition: color 0.15s var(--ease); }
+
+  .mobilebar__item { position: relative; }
+
+  body { padding-bottom: calc(52px + env(safe-area-inset-bottom, 0px)); }
+
+  .masthead__views { display: none; }
+
+  .sheet { display: block; position: fixed; inset: 0; z-index: 50; }
+  .sheet[hidden] { display: none; }
+
+  .sheet__scrim {
+    position: absolute;
+    inset: 0;
+    background: rgb(0 0 0 / 0.45);
+  }
+
+  .sheet__panel {
+    position: absolute;
+    inset: auto 0 0 0;
+    background: var(--panel);
+    border-top: 1px solid var(--rule);
+    border-radius: 14px 14px 0 0;
+    padding: 0.5rem 0.75rem calc(0.75rem + 52px + env(safe-area-inset-bottom, 0px));
+    display: grid;
+    gap: 2px;
+    animation: sheet-up 0.18s var(--ease);
+  }
+
+  .sheet__grip {
+    width: 2.25rem;
+    height: 4px;
+    border-radius: 2px;
+    background: var(--rule-strong);
+    margin: 0.25rem auto 0.6rem;
+  }
+
+  .sheet__item {
+    appearance: none;
+    border: 0;
+    background: none;
+    color: var(--ink);
+    font: inherit;
+    font-size: 0.9375rem;
+    font-weight: 600;
+    text-align: left;
+    min-height: 48px;
+    padding: 0 0.75rem;
+    border-radius: var(--radius);
+    cursor: pointer;
+    /* Each view with its icon, as the tab bar's, so the sheet reads as the
+       bar's continuation rather than a list of words. */
+    display: flex;
+    align-items: center;
+    gap: 0.85rem;
+  }
+  .sheet__icon { width: 18px; height: 18px; flex: none; color: var(--ink-muted); }
+
+  .sheet__item[aria-pressed="true"] { color: var(--accent-ink); background: var(--panel-sunk); }
+  .sheet__item[aria-pressed="true"] .sheet__icon { color: currentColor; }
+
+  .sheet__divider {
+    height: 1px;
+    background: var(--rule);
+    margin: 0.4rem 0.75rem;
+  }
+
+  .sheet__setting {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    min-height: 48px;
+    padding: 0 0.75rem;
+  }
+
+  .sheet__setting-label {
+    font-size: 0.9375rem;
+    font-weight: 600;
+    color: var(--ink);
+  }
+
+  .sheet__setting .switch { padding: 2px; }
+  .sheet__setting .switch button { padding: 0.3rem 0.65rem; font-size: 0.8125rem; }
+
+  /* Sheet swipe-to-dismiss. Pausing (never cancelling) the open animation
+     keeps a class toggle on any touch from restarting it. */
+  .sheet__panel.is-dragging {
+    animation-play-state: paused;
+    transition: transform 0.05s linear, opacity 0.05s linear;
+  }
+}
+
+@keyframes sheet-up {
+  from { transform: translateY(100%); }
+  to { transform: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sheet__panel { animation: none; }
+}
+
+.sheet__panel.is-dismissed {
+  transform: translateY(100%);
+  opacity: 0;
+  transition: transform 0.25s var(--ease), opacity 0.25s var(--ease);
+}
+
+/* ---------- touch ergonomics -------------------------------------- */
+
+/* Keyed to the input device first -- a tablet with a finger needs the room
+   whatever its width -- and to narrow screens as well, since a viewport this
+   small is a phone in all but the rarest case. */
+@media (pointer: coarse), (max-width: 760px) {
+  .switch button { min-height: 44px; padding-inline: 1rem; }
+  .season-select { min-height: 44px; }
+  .standings .sort-btn { min-height: 44px; }
+  .timeline__now { min-height: 44px; }
+  .table-control-btn { min-height: 44px; padding-inline: 1rem; }
+  .played-nav__btn { min-height: 44px; padding-inline: 1.25rem; }
+  .compare__option { min-height: 44px; }
+  .compare__swap-center { min-height: 44px; min-width: 44px; }
+  .settings-btn { min-height: 44px; min-width: 44px; }
+  .ladder__team { min-height: 44px; min-width: 44px; }
+  .played-card__team-name { min-height: 44px; min-width: 44px; display: inline-flex; align-items: center; }
+  .grid__team-name { min-height: 44px; min-width: 44px; }
+  .sort-btn { min-width: 44px; }
+  .grid-anim-speed button { min-height: 44px; min-width: 44px; padding: 0.5rem 0.75rem; }
+
+  /* A 47-step slider is about 7px per matchday; a bigger thumb and the step
+     buttons beside it make single matchdays reachable. Scoped through
+     .timeline .timeline__control so these outrank the base slider rules
+     further down the file rather than tying with them on source order. */
+  .timeline .timeline__control input[type="range"] { height: 2.75rem; }
+  .timeline .timeline__control input[type="range"]::-webkit-slider-thumb { width: 28px; height: 28px; margin-top: -11px; }
+  .timeline .timeline__control input[type="range"]::-moz-range-thumb { width: 28px; height: 28px; }
+
+  /* The default blue flash on tap reads as a rendering fault on a dark panel. */
+  * { -webkit-tap-highlight-color: transparent; }
+}
+
+/* Wordmark hit-area expansion: grow element's own rect downward to ~44px,
+   layout-neutral via padding + negative margin (masthead stays 60px). */
+@media (pointer: coarse), (max-width: 760px) {
+  .wordmark {
+    padding-block-end: 24px;
+    margin-block-end: -24px;
+  }
+}
+
+/* ---------- the step buttons beside the rewind slider -------------- */
+
+.timeline__step { display: none; }
+
+@media (pointer: coarse), (max-width: 760px) {
+  .timeline__control { display: flex; align-items: center; gap: 0.5rem; }
+  .timeline__control input[type="range"] { flex: 1; }
+
+  .timeline__step {
+    display: grid;
+    place-items: center;
+    flex: none;
+    width: 44px;
+    height: 44px;
+    appearance: none;
+    background: var(--panel-sunk);
+    border: 1px solid var(--rule);
+    border-radius: var(--radius);
+    color: var(--ink);
+    font: inherit;
+    font-size: 1.125rem;
+    font-weight: 700;
+    cursor: pointer;
+  }
+
+  .timeline__step:disabled { opacity: 0.4; cursor: default; }
+
+  /* The scale would otherwise sit in the flex row and squeeze the slider;
+     scoped so it outranks the base rule further down the file. */
+  .timeline .timeline__scale { display: none; }
+}
+
+/* ---------- responsive -------------------------------------------- */
+
+@media (max-width: 760px) {
+  /* Bring the title closer to the top on mobile so "Eliteserien 2026"
+     is visible immediately when scrolled to top, below the sticky masthead. */
+  .hero { padding-top: clamp(0.5rem, 2vw, 1rem); }
+
+  /* Input font size >= 16px to prevent iOS Safari zoom on focus */
+  select, textarea, input:not([type="range"]) { font-size: 16px; }
+
+  /* A phone has room for the story, not the ledger. The W/D/L/GF/GA tallies,
+      xPts and the form chips go; position, club, played, GD, points, rating and
+      the two odds stay. Tapping a row still opens the club's full history. */
+  /* The 720px floor exists so the full desktop column set never crushes. With
+      seven of those columns gone it is what was keeping the table off-screen. */
+  table.standings { min-width: 0; font-size: 0.8125rem; }
+  /* The ledger columns (W/D/L, GF/GA, form; xG/xGA/xGD) stay on the club's
+     own page. Current keeps #, club, played, GD, points and rating;
+     Prediction keeps #, club, xPts, fixtures and the two odds. */
+  table.standings .col--extra { display: none; }
+  table.standings .pos { width: 1.9rem; }
+  /* As FotMob's table does it: the number columns take what their figures need
+     and no more, and the club column takes the rest, a long name ending in an
+     ellipsis rather than pushing the last column off the screen. */
+  table.standings .num { width: auto; }
+  table.standings td.club { max-width: 0; }
+  .standings .club-btn { display: flex; align-items: center; flex: 1 1 auto; min-width: 0; max-width: 100%; }
+  .standings .club-btn__name { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+  /* Columns that give way as the screen narrows, least important first, so a
+     club's name stays readable. None now: from 320px the table keeps seven
+     values by dropping the crests instead (see the 359px block below). */
+        .standings .club-btn .team-logo { flex: none; }
+  .fixture-difficulty-pill { min-width: 34px; padding-inline: 4px; font-size: 0.6875rem; }
+  .career-table { min-width: 0; }
+  /* table.standings: the base cell rule outranks a bare .standings, which
+     left this dead and every cell at 9.6px of side padding. */
+  table.standings th, table.standings td { padding-inline: 0.25rem; }
+  /* Chrome that carries no data goes before any column does. The sorted column
+     is still marked by its ink, and aria-sort still announces the direction. */
+  .standings .sort-btn { gap: 0.15rem; }
+  /* A header's side padding sits on its button (#standings thead th has none),
+     so it is trimmed there, to the cell padding beneath it. */
+  #standings .sort-btn { padding-inline: 0.25rem; }
+  #standings th:first-child .sort-btn { padding-left: 0.5rem; }
+  #standings th:last-child .sort-btn { padding-right: 0.85rem; }
+  .standings .sort-btn__caret { display: none; }
+  .standings .pos { min-width: 0; }
+  .standings .band-mark { margin-right: 0.25rem; }
+  .standings .club-btn { gap: 0.35rem; }
+  .standings .team-logo { width: 17px; height: 17px; }
+  .standings th:first-child, .standings td:first-child { padding-left: 0.5rem; }
+  .standings th:last-child, .standings td:last-child { padding-right: 0.85rem; }
+  .standings .sort-btn__label { font-size: 0.6875rem; letter-spacing: 0.04em; }
+  /* Swap in the short heading: "Relegation" is wider than any number under it. */
+  .standings .sort-btn__label:has(+ .sort-btn__short) { display: none; }
+  .standings .sort-btn__short { display: inline; font-size: 0.6875rem; letter-spacing: 0.04em; }
+  /* One line per club. Left to wrap, "Bodø/Glimt" breaks at the slash, which
+     drops the column's min-content width and stacks the name under the crest. */
+  .standings .club-btn { white-space: nowrap; text-align: left; }
+
+  /* Left-aligned so the first view is the one you actually start on. */
+  .masthead__views { justify-content: flex-start; }
+
+  .team-summary__name { font-size: 1.25rem; }
+  .team-summary__rating { font-size: 1.75rem; }
+
+  .wordmark { margin-right: 0; white-space: nowrap; }
+  .wordmark span { display: none; }
+
+  /* The finish grid's explanation runs six lines on a phone -- more screen
+     than the grid it introduces. Clamped to two, faded so there is visibly
+     more, and expanded by tapping it. */
+  .panel__head p {
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    overflow: hidden;
+    cursor: pointer;
+    mask-image: linear-gradient(180deg, #000 55%, rgb(0 0 0 / 0.35) 100%);
+  }
+
+  .panel__head p.is-expanded {
+    -webkit-line-clamp: unset;
+    mask-image: none;
+  }
+
+  /* The rewind slider keeps its source place on a phone, under the hero's
+     figures and above the view. It used to sit under the content and jump up
+     once rewound, which moved it out from under the finger mid-drag. */
+  /* As a flex column the sections' margins no longer collapse, so each gap
+     would be both margins stacked (~48px of nothing). The gap replaces them. */
+  #content { display: flex; flex-direction: column; gap: 1rem; }
+  /* The display above would otherwise beat [hidden] and show the empty page
+     under the loading line, which then jumps up when the line goes. */
+  #content[hidden] { display: none; }
+  .status { margin-block: 0; }
+
+  /* Pull-to-refresh indicator. No height at rest, and the negative margin
+     cancels #content's gap, so it only takes room while pulled or loading. */
+  .ptr-indicator {
+    height: 0;
+    overflow: hidden;
+    margin-bottom: -1rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    color: var(--ink-muted);
+    font-size: 0.8125rem;
+    font-weight: 600;
+    transition: height 0.2s var(--ease), opacity 0.2s var(--ease);
+    opacity: 0;
+    pointer-events: none;
+  }
+  .ptr-indicator.pulling { color: var(--accent-ink); }
+  .ptr-indicator.loading { color: var(--accent-ink); }
+  .ptr-spinner {
+    width: 1.25rem;
+    height: 1.25rem;
+    border: 2px solid var(--rule);
+    border-top-color: var(--accent-ink);
+    border-radius: 50%;
+    animation: ptr-spin 0.8s linear infinite;
+  }
+  .ptr-indicator.loading .ptr-spinner { animation: ptr-spin 0.6s linear infinite; }
+  @keyframes ptr-spin { to { transform: rotate(360deg); } }
+
+  /* Skeleton loading states */
+  .skeleton { background: linear-gradient(90deg, var(--panel-sunk) 25%, var(--rule) 50%, var(--panel-sunk) 75%); background-size: 200% 100%; animation: shimmer 1.5s ease-in-out infinite; border-radius: var(--radius-sm); }
+  @keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+  .skeleton-text { height: 1rem; margin-bottom: 0.5rem; }
+  .skeleton-text:last-child { width: 60%; }
+  .skeleton-title { height: 1.5rem; width: 40%; margin-bottom: 0.75rem; }
+  .skeleton-row { height: 2.5rem; }
+  .skeleton-cell { height: 1.75rem; }
+  .skeleton-grid-cell { height: 1.35rem; border-radius: 2px; }
+  .skeleton-ladder-row { height: 2.25rem; border-radius: 0; border-bottom: 1px solid var(--rule); }
+  .skeleton-fixture { height: 4rem; border-radius: var(--radius); margin-bottom: 0.5rem; }
+  .skeleton-played-card { height: 3.5rem; border-radius: 0; border-bottom: 1px solid var(--rule); }
+
+
+  /* Wide tables scroll freely with native momentum. A mandatory x snap with
+     the table as its only snap point pulled every swipe back to the left
+     edge; overscroll stays inside the table instead of paging the browser. */
+  .scroller { -webkit-overflow-scrolling: touch; scroll-behavior: auto; overscroll-behavior-x: contain; }
+  #content > section { margin-block: 0; }
+  .hero { padding-bottom: 0.25rem; }
+
+  /* The divider row spans the whole scrolling table, so a label centred in it
+     sits off-screen. Size the label to the visible scrollport (cqi) and stick
+     it to the left edge, so it stays centred in view as the table scrolls. */
+  .scroller:has(> table.standings) { container-type: inline-size; }
+  table.standings .zone-divider__wrap { position: sticky; left: 0; width: 100cqi; }
+
+  /* A tighter masthead on small screens. Theme and language are in the More
+     sheet on a phone, so the settings button goes: the mark, the name and the
+     division and season pill get the bar to themselves. */
+  .masthead__inner { gap: 0.7rem 1rem; min-height: 0; padding-block: 0.7rem; }
+  #settings-btn { display: none; }
+  .wordmark { font-size: 0.95rem; }
+  .masthead__views .switch button { padding: 0.3rem 0.5rem; font-size: 0.75rem; }
+
+}
+
+@media (max-width: 480px) {
+  /* A phone has no width to spare on margins: the page gutter costs 32px of a
+     375px screen, which is most of a table column. */
+  :root { --gutter: 0.75rem; }
+
+  /* A view's panel runs edge to edge, as an app's sheet does: a card inside
+     a card cost the cards in it (the overview's races, a club's figures) the
+     gutter twice over. Rules above and below still part it from the page. */
+  main .panel {
+    margin-inline: calc(-1 * var(--gutter));
+    border-inline: 0;
+    border-radius: 0;
+    box-shadow: none;
+  }
+  /* Where the hero is empty (the views listed under "The league hero only
+     where it is the page's own story"), the panel starts under the masthead,
+     as Explore's does, not a strip of page below it: the empty hero gives
+     back #content's gap. */
+  body:is([data-view="overview"], [data-view="team"], [data-view="ladder"], [data-view="compare"], [data-view="model"], [data-view="explore"]) #content > .hero { margin-bottom: -1rem; }
+
+  /* Less generous panel padding so the wide tables and controls get the
+     maximum usable width on small phones. */
+  .panel__head, .timeline { padding: 0.9rem 1rem; }
+
+  .standings .club-btn--crest .team-logo { width: 16px; height: 16px; margin-right: 0.3rem; }
+  .standings .band-mark { margin-right: 0.2rem; }
+  .legend { padding: 0.8rem 1rem; }
+  .fixture { padding: 0.65rem 1rem; }
+
+  /* Tighter wordmark on small phones. */
+  .wordmark { font-size: 0.8rem; letter-spacing: 0; }
+
+  /* The division and season pill fits beside the wordmark and the settings
+     button: tighter halves, and the lists' text still in line with them. */
+  .masthead__inner { gap: 0.5rem; }
+  .masthead__end { gap: 0.25rem; }
+  .league-picker .hero-title-part { padding-inline: 0.6rem; }
+  .popover-menu--picker .popover-menu__btn { padding-inline: calc(0.6rem - 4px); }
+
+}
+
+/* ---------- season selector --------------------------------------- */
+
+.season-select,
+.compare__select {
+  appearance: none;
+  font: inherit;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--ink);
+  background: var(--panel-sunk);
+  border: 1px solid var(--rule);
+  border-radius: var(--radius);
+  padding: 0.36rem 1.9rem 0.36rem 0.7rem;
+  cursor: pointer;
+  background-image: linear-gradient(45deg, transparent 50%, currentColor 50%),
+                    linear-gradient(135deg, currentColor 50%, transparent 50%);
+  background-position: right 0.9rem center, right 0.6rem center;
+  background-size: 5px 5px, 5px 5px;
+  background-repeat: no-repeat;
+}
+
+/* ---------- settings button + popover menus ------------------------ */
+
+.settings-btn {
+  appearance: none;
+  min-width: 40px;
+  min-height: 40px;
+  border: 0;
+  background: none;
+  color: var(--ink-muted);
+  padding: 0.35rem;
+  border-radius: var(--radius);
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+  line-height: 0;
+  transition: color 0.15s var(--ease), background 0.15s var(--ease);
+}
+.settings-btn:hover { color: var(--ink); background: var(--panel-sunk); }
+
+.popover-menu {
+  position: absolute;
+  z-index: 40;
+  background: var(--panel);
+  border: 1px solid var(--rule);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 0.35rem;
+}
+.popover-menu[hidden] { display: none; }
+.popover-menu--scroll { max-height: 50vh; overflow-y: auto; }
+/* The picker's lists sit under their half of the pill, as wide as it, each
+   option's text in line with the half's own. */
+.popover-menu--picker { padding: 3px; }
+.popover-menu--picker .popover-menu__btn {
+  font-size: 0.8125rem;
+  padding: 0.45rem calc(0.8rem - 4px);
+  white-space: nowrap;
+}
+#settings-menu { min-width: 200px; }
+#views-more-menu { min-width: 180px; }
+#views-more-menu .popover-menu__btn { display: block; }
+a.popover-menu__btn, a.sheet__item { text-decoration: none; color: inherit; }
+#views-more-menu .popover-menu__btn[hidden] { display: none; }
+.views-more { display: inline-flex; align-items: center; gap: 0.3rem; }
+.views-more[hidden] { display: none; }
+
+.popover-menu__item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.4rem 0.5rem;
+}
+.popover-menu__label {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--ink);
+}
+.popover-menu__item .switch { padding: 2px; }
+.popover-menu__item .switch button { padding: 0.25rem 0.55rem; font-size: 0.75rem; }
+
+.popover-menu__btn {
+  appearance: none;
+  border: 0;
+  background: none;
+  color: var(--ink);
+  font: inherit;
+  font-size: 0.875rem;
+  font-weight: 600;
+  text-align: left;
+  padding: 0.5rem 0.65rem;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  width: 100%;
+}
+.popover-menu__btn:hover { background: var(--panel-sunk); }
+.popover-menu__btn[aria-pressed="true"] { color: var(--accent-ink); }

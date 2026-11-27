@@ -67,8 +67,8 @@ def short_name(name: str) -> str:
 
 
 def norwegian_copy(i18n_source: str, key: str) -> str:
-    """One Norwegian string out of i18n.js (its `no` table)."""
-    table = i18n_source.split("\n  no: {", 1)[1]
+    """One Norwegian string out of `public/i18n/no.js` (or combined `i18n.js`)."""
+    table = i18n_source.split("\n  no: {", 1)[1] if "\n  no: {" in i18n_source else i18n_source
     found = re.search(rf"'{re.escape(key)}':\s*'((?:[^'\\]|\\.)*)'", table)
     if not found:
         raise KeyError(key)
@@ -147,7 +147,8 @@ def build_pages(site_dir: Path, data_dir: Path) -> list[str]:
     if not (template_path.exists() and report_path.exists()):
         return []
     template = template_path.read_text(encoding="utf-8")
-    i18n_source = (site_dir / "i18n.js").read_text(encoding="utf-8")
+    no_path = site_dir / "i18n" / "no.js"
+    i18n_source = (no_path if no_path.exists() else site_dir / "i18n.js").read_text(encoding="utf-8")
     report = json.loads(report_path.read_text(encoding="utf-8"))
     written: list[str] = []
 

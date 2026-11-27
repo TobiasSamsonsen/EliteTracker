@@ -1,0 +1,962 @@
+/* EliteTracker
+   ------------------------------------------------------------------
+   One typeface (Archivo variable) worked across its width axis: expanded
+   for display, normal for prose, tabular figures for data. The palette is
+   deep navy and one electric blue, built the Material 3 way: the neutrals
+   are tinted toward the accent's hue (OKLCH 262, at the old greys'
+   lightness, so every contrast below held), and the accent comes in roles
+   -- a fill with its on-colour, and a text tone per theme, since a vivid
+   blue reads as a fill on dark but not as text. The accent is for
+   interface only (the selected tab, focus, a pressed menu item); every
+   other saturated colour belongs to data, so a hue on a chart or a table
+   always means something.
+
+   Data colours come from the validated data-viz palette:
+     sequential  blue 100..700   -> finishing-position probability
+     diverging   blue|grey|red   -> home win | draw | away win
+   Both were checked for colour-vision separation in light and dark.        */
+
+/* Archivo, self-hosted (Google Fonts v25, SIL OFL). optional, not swap: a
+   font that arrives late is kept for the next page load instead of
+   reflowing this one (a 0.2 layout shift at tablet width). */
+@font-face {
+  font-family: 'Archivo';
+  font-style: normal;
+  font-weight: 400 800;
+  font-stretch: 62% 125%;
+  font-display: optional;
+  src: url(/fonts/archivo-latin-ext.woff2) format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+@font-face {
+  font-family: 'Archivo';
+  font-style: normal;
+  font-weight: 400 800;
+  font-stretch: 62% 125%;
+  font-display: optional;
+  src: url(/fonts/archivo-latin.woff2) format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+/* ---------- tokens ------------------------------------------------ */
+
+:root {
+  color-scheme: light;
+
+  --paper: #e8edf5;
+  --panel: #ffffff;
+  --panel-sunk: #f3f5fa;
+  --ink: #0f1828;
+  --ink-muted: #5a6375;
+  --ink-faint: #5f697c;   /* 4.7:1 on paper */
+  --rule: #bfc6d3;
+  --rule-strong: #a2adc0;
+
+  /* The interface accent. --accent is the fill (white on it 5.1:1, and 3.4:1
+     or more against every surface in both themes); --accent-ink is the same
+     hue as text, icons and focus rings. */
+  --accent: #1f5eff;
+  --on-accent: #ffffff;
+  --accent-ink: #184ddd;  /* 5.7:1 on paper */
+
+  /* Default label ink on a cell, and the inverted ink used once the fill
+     has moved far enough from the surface. */
+  --cell-ink: #0f1828;
+  --cell-ink-invert: #ffffff;
+
+  /* Qualification markers only -- labelled status marks, not part of the
+     quantitative encoding above. The same electric blue and red as home and
+     away, one pair for both themes; drawn as text they take their -ink
+     tones, since a fill this vivid is under 4.5:1 as text on navy. */
+  --outcome-good: #1f5eff;
+  --outcome-bad: #d92b36;
+  --outcome-good-ink: var(--accent-ink);
+  --outcome-bad-ink: #c4242f;   /* 4.9:1 on paper */
+  /* The light a good or bad bar gives off (the odds, attack and defence):
+     a brighter take on the fill's own hue. */
+  --glow-good: #3d7bff;
+  --glow-bad: #ff3b46;
+  --glow-draw: #a6a69e;   /* the draw's grey, a step lighter */
+
+  /* Sequential data ramp. Multi-hue on purpose: sixteen stacked bands cannot
+     be told apart in one hue. Resampled at uniform OKLab lightness from the
+     ColorBrewer YlGnBu path, so lightness is monotone and every neighbouring
+     pair clears dE 10.5 (light) / 11.3 (dark). The ramp is oriented per theme
+     so it always moves away from the surface. */
+  --seq-1: #d0edb3;
+  --seq-2: #8bd1ba;
+  --seq-3: #3db2c4;
+  --seq-4: #1e8cbe;
+  --seq-5: #2265ac;
+  --seq-6: #253d98;
+  --seq-7: #12246b;
+  /* Model accuracy's version history: two series, validated in light mode. */
+  --versions-all: #1f5eff;
+  --versions-es: #3db2c4;
+  --versions-xg: #c9701c;
+
+  /* Race lines palette: 8 high-contrast, colour-vision-separated hues on light paper/panel. */
+  --race-1: #1f5eff;
+  --race-2: #d93b2b;
+  --race-3: #168a53;
+  --race-4: #c97a00;
+  --race-5: #7c3aed;
+  --race-6: #0e8aa3;
+  --race-7: #be185d;
+  --race-8: #658012;
+
+  /* Diverging: home win <- draw -> away win. Home is the electric accent and
+     away a red as saturated, one pair for both themes with white labels
+     (5.1:1 and 4.8:1). Machado CVD dE home-away 30-35, up from 19-31;
+     each against the draw holds 10 or more. */
+  --home: #1f5eff;
+  --draw: #8c8c86;
+  --away: #d92b36;
+
+
+
+  /* Division identity: two categories, so two fixed hues. Eliteserien's
+     violet keeps clear of --outcome-good, which is the blue that reads as
+     "win" on rating changes (this used to be #2a78d6, nearly that blue; dark
+     was #3987e5, exactly it). Light values must clear 4.5:1 as white text on
+     the season row's pill, dark ones as --panel text on it. */
+  --tier-1: #6f38d6;
+  --tier-2: #c94a1c;
+
+  /* Reserved status hues for qualification bands. Each ships with a label. */
+  --band-champion: #f2c600;   /* yellow, kept clear of the EL orange in hue */
+  /* The relegation play-off is the same red as relegation, a little softer: the
+     red with a touch of white, in both themes. */
+  --band-relegation-playoff: color-mix(in srgb, var(--outcome-bad) 74%, white);
+
+  /* European qualification edges on the season-shape chart.
+     CL reuses --outcome-good (blue). EL orange and ECL green chosen for
+     WCAG AA as label text on chart surface (paper) in BOTH themes. */
+  --edge-cl: var(--outcome-good);
+  --edge-el: #e07b1f;   /* orange, 4.8:1 on paper light, 5.2:1 on panel dark */
+  --edge-ecl: #1e8a49;  /* green,  5.1:1 on paper light, 5.4:1 on panel dark */
+
+  --shadow: 0 1px 2px rgb(15 24 40 / 0.04), 0 12px 32px -16px rgb(15 24 40 / 0.16);
+  /* A faint wash of the accent behind the top of the page, and the
+     same light around whatever control is active: the site's one glow. */
+  --glow: rgb(31 94 255 / 0.12);
+  --glow-ring: 0 4px 14px -3px rgb(31 94 255 / 0.55);   /* an active control */
+  --glow-hover: 0 0 0 1px rgb(31 94 255 / 0.35), 0 4px 16px -6px rgb(31 94 255 / 0.45);
+  /* The contour backdrop's strength: dark ink on light paper reads heavier
+     than light ink on navy, so each theme has its own. */
+  --backdrop-alpha: 0.055;
+
+  /* One spacing scale inside panels, so padding and row heights repeat. */
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-5: 1.25rem;
+  --space-6: 1.5rem;
+  --space-7: 2rem;
+
+  --measure: 68ch;
+  --gutter: clamp(1rem, 4vw, 3rem);
+  /* Panels and cards; controls use --radius-sm, toggles are full pills. */
+  --radius: 14px;
+  --radius-sm: 8px;
+
+  --display: "Archivo", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --body: "Archivo", system-ui, -apple-system, "Segoe UI", sans-serif;
+
+  --ease: cubic-bezier(0.2, 0.7, 0.3, 1);
+}
+
+/* Dark palette. data-resolved-theme is set by the head script (before first
+   paint) and by resolveTheme(): the user's choice, else the OS preference. */
+:root[data-resolved-theme="dark"] {
+  color-scheme: dark;
+
+  --paper: #080f1c;
+  --panel: #111929;
+  --panel-sunk: #0c1423;
+  --ink: #e8edf5;
+  --ink-muted: #98a3b7;
+  --ink-faint: #8490a5;   /* 5.5:1 on panel */
+  --rule: #222e43;
+  --rule-strong: #35435b;
+
+  /* The fill stays electric; as text it lifts to a lighter tone of the same
+     hue and chroma, since the vivid fill as text on navy is 3.4:1. */
+  --accent-ink: #588cff;  /* 5.5:1 on panel */
+
+  --cell-ink: #ffffff;
+  --cell-ink-invert: #0f1828;
+
+  --outcome-bad-ink: #f4514f;   /* 5.1:1 on panel */
+
+  --seq-1: #081d58;
+  --seq-2: #22318d;
+  --seq-3: #225aa6;
+  --seq-4: #1d7aac;   /* white numbers 4.7:1; #1f83b9 left both inks at 4.2:1 */
+  --seq-5: #36abc3;
+  --seq-6: #80cdbb;
+  --seq-7: #caeab4;
+  /* The version history's two series, their own dark steps (validated on #131c22). */
+  --versions-es: #2ba3a0;
+  --versions-xg: #c4772a;
+
+  /* Race lines palette (dark panel): lifted lightness for AA+ graphical contrast. */
+  --race-1: #5a92ff;
+  --race-2: #f87171;
+  --race-3: #34d399;
+  --race-4: #fbbf24;
+  --race-5: #c084fc;
+  --race-6: #38bdf8;
+  --race-7: #f472b6;
+  --race-8: #a3e635;
+
+  --draw: #b5b5ac;
+  --glow-draw: #d6d6cd;
+
+  --tier-1: #a78bfa;
+  --tier-2: #d95926;
+
+  --band-champion: #facc15;
+
+  /* European qualification edges on the season-shape chart (dark). */
+  --edge-cl: var(--outcome-good);
+  --edge-el: #f09c3a;   /* lighter orange, 5.3:1 on panel dark */
+  --edge-ecl: #4ade80;  /* lighter green,  5.5:1 on panel dark */
+
+  /* The inset line lifts a panel's top edge off the page, the way light falls on it. */
+  --shadow: inset 0 1px 0 rgb(122 168 255 / 0.08), 0 1px 2px rgb(0 0 0 / 0.35), 0 16px 40px -20px rgb(0 0 0 / 0.7);
+  --glow: rgb(31 94 255 / 0.3);
+  --glow-ring: 0 0 22px -2px rgb(31 94 255 / 0.8);
+  --glow-hover: 0 0 0 1px rgb(31 94 255 / 0.5), 0 0 22px -6px rgb(31 94 255 / 0.7);
+  --backdrop-alpha: 0.08;
+}
+
+/* ---------- base -------------------------------------------------- */
+
+*,
+*::before,
+*::after { box-sizing: border-box; }
+
+html { -webkit-text-size-adjust: 100%; }
+/* The scrollbar's room is kept on every view, so a short page (the ladder)
+   does not widen the page and shift the masthead under the reader. */
+html { scrollbar-gutter: stable; }
+
+/* The page must never scroll sideways. Wide tables scroll inside their own
+   panels, so anything overflowing to this level is a layout bug. clip (rather
+   than hidden) avoids making <body> a scroll container. */
+html, body { overflow-x: clip; }
+
+body {
+  margin: 0;
+  /* The contour backdrop spans the whole page from here. */
+  position: relative;
+  min-height: 100vh;
+  min-height: 100dvh; /* a phone's visible height, browser bars included */
+  background:
+    radial-gradient(1400px 640px at 50% -260px, var(--glow), transparent 70%) no-repeat,
+    var(--paper);
+  color: var(--ink);
+  font-family: var(--body);
+  font-size: 15px;
+  line-height: 1.55;
+  font-variant-numeric: tabular-nums;
+  font-synthesis-weight: none;
+}
+
+h1, h2, h3 {
+  font-family: var(--display);
+  font-variation-settings: "wdth" 118;
+  font-weight: 700;
+  letter-spacing: -0.015em;
+  line-height: 1.05;
+  margin: 0;
+  text-wrap: balance;
+}
+
+/* A small uppercase utility label. Used for eyebrows and column heads,
+   never for prose. */
+.label {
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+  font-variation-settings: "wdth" 105;
+}
+
+a { color: inherit; }
+
+:where(a, button, [tabindex]):focus-visible {
+  outline: 2px solid var(--accent-ink);
+  outline-offset: 2px;
+  border-radius: 2px;
+}
+
+.shell {
+  max-width: 1220px;
+  margin-inline: auto;
+  padding-inline: var(--gutter);
+}
+
+/* Off-screen until focused: the first Tab lands here and jumps past the
+   navigation to the content (WCAG 2.4.1). */
+.skip-link {
+  position: absolute;
+  left: 0.75rem;
+  top: 0.75rem;
+  z-index: 100;
+  padding: 0.6rem 1rem;
+  border-radius: 999px;
+  background: var(--ink);
+  color: var(--paper);
+  font-weight: 600;
+  text-decoration: none;
+  transform: translateY(-200%);
+  transition: transform 0.15s var(--ease);
+}
+.skip-link:focus { transform: none; }
+main:focus { outline: none; }
+
+.visually-hidden {
+  position: absolute;
+  width: 1px; height: 1px;
+  padding: 0; margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+/* ---------- header ------------------------------------------------ */
+
+/* The sticky masthead (and the phone bottom bar, below) would otherwise
+   cover whatever keyboard focus or a skip link scrolls to (WCAG 2.4.11). */
+html { scroll-padding-top: 76px; }
+@media (max-width: 760px) {
+  html { scroll-padding-bottom: calc(72px + env(safe-area-inset-bottom, 0px)); }
+}
+
+.masthead {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  background: color-mix(in srgb, var(--paper) 88%, transparent);
+  backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--rule);
+}
+
+/* The accent lights the masthead's bottom edge from the middle out. */
+.masthead::after {
+  content: "";
+  position: absolute;
+  inset: auto 10% -1px;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--accent), transparent);
+  box-shadow: 0 0 12px 0 var(--accent);
+  opacity: 0.7;
+  pointer-events: none;
+}
+
+.masthead__inner {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+  min-height: 60px;
+}
+
+.masthead__views {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex: 1;
+  min-width: 0;
+  overflow-x: auto;
+  scrollbar-width: none;
+  overscroll-behavior-x: contain;
+  /* A scroller clips at its padding box, so the active tab's glow needs room
+     of its own: padding as wide as the glow, taken back by the margin. */
+  padding: 22px;
+  margin: -22px;
+  /* That room reaches past the masthead's foot and into its neighbours'
+     gaps; it lets clicks through to whatever is beneath. */
+  pointer-events: none;
+}
+.masthead__views > * { pointer-events: auto; }
+
+.masthead__views::-webkit-scrollbar { display: none; }
+/* A label never breaks: a tab that does not fit goes to the More menu (fitViews). */
+.masthead__views button { white-space: nowrap; }
+
+/* Equal side columns keep the view switch centred on the page whatever the
+   wordmark and settings button weigh; the middle can still shrink and scroll. */
+@media (min-width: 761px) {
+  .masthead__inner { display: grid; grid-template-columns: 1fr minmax(0, auto) 1fr; }
+  .wordmark { justify-self: start; }
+  .masthead__end { justify-self: end; }
+}
+/* A tablet or a narrow desktop: centring would cost the tabs the room the
+   wider side takes twice, so the strip takes all the room between the
+   wordmark and the pickers instead, and the model badge steps out. */
+@media (min-width: 761px) and (max-width: 1199px) {
+  .masthead__inner { grid-template-columns: auto minmax(0, 1fr) auto; }
+  #model-badge { display: none; }
+}
+/* A tablet or a small laptop (761px to 1099px): the wordmark is its mark alone (the name stays
+   for screen readers, as on the narrowest phones) and the tabs sit a little
+   tighter, so four views fit beside More. */
+@media (min-width: 761px) and (max-width: 1099px) {
+  .masthead__inner { gap: 1rem; }
+  .wordmark__mark { width: 1.6rem; height: 1.6rem; }
+  /* The mark alone has no name to sit on: centred, as before. */
+  .wordmark .wordmark__mark { align-self: center; translate: 0 -0.06em; }
+  .wordmark__name {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+  .masthead__views .switch button { padding-inline: 0.65rem; }
+}
+
+/* Its contents sit at the right of the width it keeps (reserveMastheadEnd):
+   where a view hides the division picker, the season stays where it is with
+   the division beside it, rather than sliding left into the room. */
+.masthead__end { display: flex; align-items: center; justify-content: flex-end; gap: 1rem; margin-left: auto; }
+
+.wordmark {
+  font-family: var(--display);
+  font-variation-settings: "wdth" 125;
+  font-weight: 800;
+  font-size: 1.0625rem;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  text-decoration: none;
+  margin-right: auto;
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+  white-space: nowrap; /* the model badge stays beside the name */
+}
+
+/* The mark: a corner of the finish grid, as in public/icons/mark.svg.
+   Its middle is set on the middle of the name's capitals from the baseline, which holds at every size and
+   whatever sets the line box: baseline-aligned (a flex item with no baseline of its own sits with its
+   bottom on it), then moved down 0.231em, half the mark (0.575em) less half Archivo's cap height
+   (0.344em). Centring it in the line box and lifting it 0.06em was right on a desktop but left it 0.5px
+   low on a phone, where the line box is taller than the name. Measured level to 0.01px at both. */
+.wordmark__mark { width: 1.15em; height: 1.15em; flex: none; align-self: baseline; translate: 0 0.231em; fill: currentColor; }
+.wordmark__lead { fill: var(--accent); }
+.wordmark__name { font-weight: inherit; }
+/* Under 370px the name and the division and season pill overflow the bar
+   (the settings button is in the More sheet on a phone), so the mark stands
+   alone, larger; the name stays for screen readers. */
+@media (max-width: 369px) {
+  .wordmark__mark { width: 1.75rem; height: 1.75rem; align-self: center; translate: 0 -0.06em; }
+  .wordmark__name {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+}
+
+.wordmark span {
+  font-variation-settings: "wdth" 100;
+  font-weight: 500;
+  font-size: 0.6875rem;
+  letter-spacing: 0.14em;
+  color: var(--ink-faint);
+}
+
+/* Segmented control: the league switch and the theme switch share it. */
+.switch {
+    display: inline-flex;
+    background: var(--panel-sunk);
+    border: 1px solid var(--rule);
+    border-radius: 999px;
+    padding: 3px;
+    gap: 2px;
+  }
+
+  .switch button {
+    appearance: none;
+    border: 0;
+    background: transparent;
+    color: var(--ink-muted);
+    font: inherit;
+    font-size: 0.8125rem;
+    font-weight: 600;
+    padding: 0.3rem 0.85rem;
+    border-radius: 999px;
+    cursor: pointer;
+    transition: background 0.15s var(--ease), color 0.15s var(--ease), box-shadow 0.15s var(--ease);
+  }
+
+  .switch button:hover { color: var(--ink); }
+
+  /* The theme the device picked while none is chosen: outlined, so the switch
+     never reads as showing nothing, yet not lit as a choice made. */
+  .switch button[data-auto] { color: var(--ink); box-shadow: inset 0 0 0 1px var(--rule-strong); }
+
+  /* Every pressed segment is the accent pill; the view tabs share one that
+     slides (.switch__thumb), the phone's tab bar its own (.mobilebar__thumb). */
+  .switch button[aria-pressed="true"] {
+    background: var(--accent);
+    color: var(--on-accent);
+    box-shadow: var(--glow-ring);
+  }
+
+  /* Each segmented group has one pill that slides to the pressed button
+     (thumbs.js); until the script places it, the pressed button paints its own. */
+  :is(.switch, .table-controls, .grid-anim-speed),
+  :is(.switch, .table-controls, .grid-anim-speed) button { position: relative; }
+
+  .switch__thumb {
+    position: absolute;
+    left: 0;
+    border-radius: 999px;
+    background: var(--accent);
+    box-shadow: var(--glow-ring);
+    pointer-events: none;
+    transition: transform 0.3s var(--ease), width 0.3s var(--ease);
+  }
+
+  /* The pill takes over at once: a button that faded its own pill out (the buttons' background
+     transition) showed two pills for a few frames when a group was drawn anew, its own in the new
+     place and the sliding one on its way there. */
+  :is(.switch, .table-controls, .grid-anim-speed):has(> .switch__thumb:not([hidden])) [aria-pressed="true"] {
+    background: transparent;
+    box-shadow: none;
+    transition: color 0.15s var(--ease);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .switch__thumb, .mobilebar__thumb { transition: none; }
+  }
+
+/* Switching tab: the content slides the way the tabs run and fades, the
+   outgoing view leaving as the incoming one arrives a beat behind it, a
+   short shared-axis move (switchView sets --view-dir: 1 forward, -1 back).
+   The masthead, the phone's tab bar and the consent bar hold still: only
+   #content moves, and the page around it swaps at once. Without view transitions, or with
+   reduced motion, the view simply changes. */
+@media (prefers-reduced-motion: no-preference) {
+  #content { view-transition-name: content; }
+  ::view-transition-old(root),
+  ::view-transition-new(root) { animation: none; }
+  /* At the new view's place, not tweened from the old: the old view was
+     scrolled, the new one opens at the top. */
+  ::view-transition-group(content) { animation: none; }
+  ::view-transition-old(content) { animation: view-out 180ms var(--ease) both; }
+  ::view-transition-new(content) { animation: view-in 260ms var(--ease) 50ms both; }
+  /* The group stands at the new view's place, at the top of the page, so
+     the old picture is lifted by as far as the page was scrolled
+     (--view-scroll, from switchView): it leaves from where it stood rather
+     than jumping to its top first. */
+  ::view-transition-old(content) { translate: 0 calc(-1 * var(--view-scroll, 0px)); }
+
+  /* What floats over the content is captured on its own, so the sliding
+     view passes beneath it, and it swaps in place: its old picture dropped,
+     the new one live (the tab pill slides in it). */
+  .masthead { view-transition-name: masthead; }
+  .mobilebar { view-transition-name: tabbar; }
+  .consent { view-transition-name: consent; }
+  ::view-transition-old(masthead),
+  ::view-transition-old(tabbar),
+  ::view-transition-old(consent) { display: none; }
+  ::view-transition-group(masthead),
+  ::view-transition-group(tabbar),
+  ::view-transition-group(consent),
+  ::view-transition-new(masthead),
+  ::view-transition-new(tabbar),
+  ::view-transition-new(consent) { animation: none; }
+}
+@keyframes view-out { to { opacity: 0; transform: translateX(calc(var(--view-dir, 1) * -40px)); } }
+@keyframes view-in { from { opacity: 0; transform: translateX(calc(var(--view-dir, 1) * 40px)); } }
+@keyframes view-out-y { to { opacity: 0; transform: translateY(calc(var(--view-dir, 1) * -40px)); } }
+@keyframes view-in-y { from { opacity: 0; transform: translateY(calc(var(--view-dir, 1) * min(20vh, 160px))); } }
+@keyframes fade-out { to { opacity: 0; } }
+@keyframes fade-in { from { opacity: 0; } }
+
+@media (prefers-reduced-motion: no-preference) {
+  /* A phone's More-sheet views: the page rises from below going to one, as
+     the sheet did, and sinks coming back (switchView). */
+  :root[data-transition="vertical"]::view-transition-old(content) { animation-name: view-out-y; }
+  :root[data-transition="vertical"]::view-transition-new(content) { animation-name: view-in-y; animation-duration: 320ms; }
+
+  /* An Explore view grows out of its card's thumbnail and shrinks back into
+     it (openExplore); around it the page only crossfades. Both pictures fill
+     the morphing box, cropped from the top, so neither is squashed. */
+  :root[data-transition="explore"]::view-transition-old(content) { animation: fade-out 160ms var(--ease) both; }
+  :root[data-transition="explore"]::view-transition-new(content) { animation: fade-in 260ms var(--ease) 120ms both; }
+  ::view-transition-group(explore-open) { animation-duration: 440ms; animation-timing-function: cubic-bezier(0.2, 0.8, 0.2, 1); }
+  ::view-transition-old(explore-open),
+  ::view-transition-new(explore-open) { width: 100%; height: 100%; object-fit: cover; object-position: top; }
+  ::view-transition-old(explore-open) { animation: fade-out 220ms var(--ease) both; }
+  ::view-transition-new(explore-open) { animation: fade-in 320ms var(--ease) 60ms both; }
+}
+
+  /* Table view toggle: the same segmented pill as .switch. */
+  .table-controls {
+    display: inline-flex;
+    gap: 2px;
+    padding: 3px;
+    background: var(--panel-sunk);
+    border: 1px solid var(--rule);
+    border-radius: 999px;
+  }
+
+  .table-control-btn {
+    appearance: none;
+    border: 0;
+    background: transparent;
+    color: var(--ink-muted);
+    font: inherit;
+    font-size: 0.8125rem;
+    font-weight: 600;
+    padding: 0.3rem 0.95rem;
+    border-radius: 999px;
+    cursor: pointer;
+    transition: background 0.15s var(--ease), color 0.15s var(--ease), box-shadow 0.15s var(--ease);
+  }
+
+  .table-control-btn:hover { color: var(--ink); }
+
+  .table-control-btn[aria-pressed="true"] {
+    background: var(--accent);
+    color: var(--on-accent);
+    box-shadow: var(--glow-ring);
+  }
+
+/* Fixture difficulty pill — diverging red–gray–green ramp.
+   --fd-hue: 0 (red) or 135 (green); --fd-sat/--fd-light interpolated to gray at k=0.
+   --fd-alpha: 0.1 (mean) → 0.45 (league extreme). Flat bg, no gradient. */
+.fixture-difficulty-pill {
+    padding: 0 6px;
+    border: 1px solid transparent;
+    border-radius: 999px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    display: inline-block;
+    min-width: 42px;
+    text-align: center;
+    background: hsl(var(--fd-hue) var(--fd-sat) var(--fd-light) / var(--fd-alpha));
+    color: hsl(var(--fd-hue) var(--fd-sat) 24%);
+    transition: background-color 0.15s var(--ease), color 0.15s var(--ease);
+}
+
+:root[data-resolved-theme="dark"] .fixture-difficulty-pill {
+    color: hsl(var(--fd-hue) var(--fd-sat) 78%);
+}
+
+/* ---------- hero -------------------------------------------------- */
+
+/* The masthead already names the league and season, so the hero's job is to
+   say what the model thinks -- not to fill a screen before any data appears. */
+.hero {
+  padding-block: clamp(1.25rem, 3vw, 2rem) 1.25rem;
+  display: grid;
+  gap: 0.75rem 3rem;
+  align-items: end;
+  grid-template-columns: minmax(0, 1fr);
+}
+
+/* The motif: the season mountain's contour map (renderBackdrop), shown
+   once at the top of the page and scrolling with it. The square is as wide
+   as the page and at least as tall as the screen, centred, so it fills the
+   first screen on a phone too; it fades out towards its foot. Its size hangs
+   on the window alone, so switching views moves nothing. Faint; the panels
+   are opaque, so it shows only around them, never behind data. */
+.backdrop {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  overflow: hidden;
+  pointer-events: none;
+  color: var(--ink);
+  opacity: var(--backdrop-alpha);
+}
+.backdrop svg {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  translate: -50% 0;
+  width: max(100%, 100vh);
+  width: max(100%, 100lvh);
+  height: auto;
+  aspect-ratio: 1;
+  fill: none;
+  stroke: currentColor;
+  stroke-linejoin: round;
+  -webkit-mask-image: linear-gradient(to bottom, #000 55%, transparent);
+  mask-image: linear-gradient(to bottom, #000 55%, transparent);
+}
+.backdrop path { vector-effect: non-scaling-stroke; stroke-width: 1.25px; }
+
+/* The race the season is about: the clubs still contending for one band,
+   side by side. Archivo at its widest and heaviest, set tight, the unit a
+   step down so the number leads; fewer clubs, larger figures. */
+.race { display: grid; gap: var(--space-3); }
+.race__clubs {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-4) var(--space-7);
+}
+.race__club { display: grid; gap: var(--space-2); }
+.race__value {
+  font-family: var(--display);
+  font-variation-settings: "wdth" 125;
+  font-weight: 800;
+  font-size: clamp(2.75rem, 8vw, 5.5rem);
+  line-height: 0.85;
+  letter-spacing: -0.035em;
+}
+.race[data-count="1"] .race__value { font-size: clamp(3.5rem, 11vw, 7.5rem); }
+.race:is([data-count="3"], [data-count="4"]) .race__value { font-size: clamp(2.25rem, 5.5vw, 4rem); }
+.race:is([data-count="5"], [data-count="6"], [data-count="7"]) .race__value { font-size: clamp(1.75rem, 4.5vw, 3rem); }
+/* A club already through: the place is decided, so its figure steps back. */
+.race__club.is-through .race__value { color: var(--ink-faint); }
+.race__value small {
+  font-size: 0.4em;
+  font-weight: 700;
+  letter-spacing: 0;
+  margin-left: 0.12em;
+  color: var(--ink-muted);
+}
+.race__name { display: flex; align-items: center; gap: 0.5rem; font-weight: 600; color: var(--ink-muted); }
+.race__name .team-logo { width: 20px; height: 20px; }
+.race__own { color: var(--accent-ink); }
+/* The match of the week's draw stands between the clubs, a step back. */
+.race__club.is-draw .race__value { color: var(--ink-muted); }
+/* The table's climber and faller, in the app's good and bad tones: the figure
+   and a rule over the club, so the pair reads at a glance. */
+.race__club:is(.is-up, .is-down) { border-top: 2px solid; padding-top: var(--space-3); min-width: 7.5rem; }
+.race__club.is-up { border-color: var(--outcome-good); }
+.race__club.is-down { border-color: var(--outcome-bad); }
+.race__club.is-up .race__value { color: var(--outcome-good-ink); }
+.race__club.is-down .race__value { color: var(--outcome-bad-ink); }
+.race__sub { font-size: 0.8125rem; color: var(--ink-faint); }
+.race__note { margin: 0; font-size: 0.875rem; color: var(--ink-muted); }
+/* Everything in the hero stands on its centre: the label, each club's figure,
+   crest and name, the note. A played match is a grid of three equal-ish parts,
+   the score's dash in the middle one and a goal either side at the same
+   distance from it, so the dash is exactly between them. */
+.race { text-align: center; grid-template-columns: minmax(0, 1fr); justify-items: center; }
+.race__clubs { justify-content: center; }
+.race__club { justify-items: center; text-align: center; }
+.race__name { justify-content: center; }
+.race__value small:empty { display: none; }
+.race[data-count] .race__clubs:has(> .is-draw) {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  align-items: start;
+  justify-content: stretch;
+  gap: var(--space-4);
+  width: 100%;
+  /* Wide enough for three figures at their largest ("56.5 %" at 4rem is about
+     11rem) with the gaps, so the percent signs never run into the next one. */
+  max-width: 40rem;
+  margin-inline: auto;
+}
+/* Three side by side on a phone (a match with its draw, or a three-club
+   race), rather than two and one left over. */
+@media (max-width: 480px) {
+  .race[data-count="3"] .race__clubs { flex-wrap: nowrap; gap: var(--space-3); }
+  .race[data-count="3"] .race__value { font-size: clamp(1.5rem, 7vw, 2.25rem); }
+  .race[data-count="3"] .race__name { gap: 0.3rem; }
+  /* A match's two clubs and its draw: the crest above a smaller name that may
+     wrap, so "Kristiansund" stays inside its third down to a 320px phone. */
+  .race[data-count] .race__clubs:has(> .is-draw) { gap: var(--space-2); }
+  .race__clubs:has(> .is-draw) .race__name {
+    flex-direction: column;
+    gap: 0.25rem;
+    min-width: 0;
+    font-size: 0.75rem;
+    line-height: 1.2;
+    overflow-wrap: anywhere;
+  }
+  /* The draw has no crest: it starts as low as the clubs' names do. */
+  .race__clubs:has(> .is-draw) .is-draw .race__name { padding-top: calc(20px + 0.25rem); }
+  /* Two stay side by side down to a 320px phone; the movers' figure, with its
+     unit, steps down to fit half the width. */
+  .race[data-count="2"] .race__clubs {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--space-4);
+  }
+  .race__club:is(.is-up, .is-down) { min-width: 0; }
+  .race__club:is(.is-up, .is-down) .race__value { font-size: 2.25rem; }
+}
+@media (max-width: 340px) {
+  .race__club:is(.is-up, .is-down) .race__value { font-size: 1.75rem; }
+  .race[data-count="2"] .race__name { font-size: 0.8125rem; }
+}
+
+/* Four to seven, on a phone or a small tablet: the two in front large, side
+   by side, the rest in a quiet list beneath (name, then figure), so a crowded
+   race reads as a lead and a field rather than six equals. The list stops at
+   a reading width, so a name and its figure are never a screen apart. */
+@media (max-width: 760px) {
+  .race:is([data-count="4"], [data-count="5"], [data-count="6"], [data-count="7"]) .race__clubs {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--space-2) var(--space-5);
+    max-width: 26rem;
+  }
+  .race:is([data-count="4"], [data-count="5"], [data-count="6"], [data-count="7"]) .race__club:nth-child(-n+2) .race__value {
+    font-size: 2.5rem;
+  }
+  .race:is([data-count="4"], [data-count="5"], [data-count="6"], [data-count="7"]) .race__club:nth-child(2) ~ .race__club {
+    justify-items: stretch;
+    text-align: left;
+    grid-column: 1 / -1;
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-areas: "name value";
+    align-items: center;
+    gap: 0 var(--space-3);
+    padding-top: var(--space-2);
+    border-top: 1px solid var(--rule);
+  }
+  .race:is([data-count="4"], [data-count="5"], [data-count="6"], [data-count="7"]) .race__club:nth-child(2) ~ .race__club:nth-child(3) {
+    margin-top: var(--space-2);
+  }
+  .race:is([data-count="4"], [data-count="5"], [data-count="6"], [data-count="7"]) .race__club:nth-child(2) ~ .race__club .race__name { grid-area: name; justify-content: flex-start; }
+  .race:is([data-count="4"], [data-count="5"], [data-count="6"], [data-count="7"]) .race__club:nth-child(2) ~ .race__club .race__value {
+    grid-area: value;
+    font-size: 1.125rem;
+    line-height: 1.2;
+    letter-spacing: -0.01em;
+    color: var(--ink);
+  }
+  .race:is([data-count="4"], [data-count="5"], [data-count="6"], [data-count="7"]) .race__club:nth-child(2) ~ .race__club.is-through .race__value { color: var(--ink-faint); }
+  .race:is([data-count="4"], [data-count="5"], [data-count="6"], [data-count="7"]) .race__club:nth-child(2) ~ .race__club .race__value small { font-size: 0.75em; }
+}
+
+/* Division and season, in the masthead: one pill like the view switch, each
+   half opening a list exactly as wide as itself. */
+.league-picker {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 3px;
+  background: var(--panel-sunk);
+  border: 1px solid var(--rule);
+  border-radius: 999px;
+  white-space: nowrap;
+}
+
+.hero-title-part {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.3rem 0.8rem;
+  border-radius: 999px;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--ink);
+  cursor: pointer;
+  transition: background 0.15s var(--ease), color 0.15s var(--ease);
+}
+.hero-title-part:hover,
+.hero-title-part[aria-expanded="true"] { background: var(--panel); }
+.hero-title-part[aria-expanded="true"] { color: var(--accent-ink); }
+
+/* A chevron says "this opens a list"; it turns over while the list is open. */
+.hero-title-part::after {
+  content: "";
+  display: inline-block;
+  width: 0.32em;
+  height: 0.32em;
+  margin: 0 0 0.25em 0.5em;
+  border-right: 0.14em solid currentColor;
+  border-bottom: 0.14em solid currentColor;
+  transform: rotate(45deg);
+  opacity: 0.55;
+  transition: transform 0.15s var(--ease), opacity 0.15s var(--ease);
+}
+.hero-title-part:hover::after { opacity: 1; }
+.hero-title-part[aria-expanded="true"]::after { transform: translateY(0.12em) rotate(-135deg); opacity: 1; }
+
+.hero p {
+  margin: 0;
+  max-width: var(--measure);
+  color: var(--ink-muted);
+  font-size: 1rem;
+}
+
+/* The league hero only where it is the page's own story. In a club's view,
+   the ladder, the compare tool, the model card and the attack map, the
+   league's story is someone else's headline. The page heading stays (it is
+   visually hidden), and so do the pickers in the masthead. */
+body:is([data-view="team"], [data-view="ladder"], [data-view="compare"], [data-view="model"], [data-view="explore"], [data-view="predict"]) .race,
+body[data-view="overview"] #hero-race { display: none; }
+body:is([data-view="overview"], [data-view="team"], [data-view="ladder"], [data-view="compare"], [data-view="model"], [data-view="explore"], [data-view="predict"]) .hero { padding-block: 0; }
+/* The ladder and the compare tool take both divisions, and the model card
+   holds for both, so only the season is a choice there. */
+body[data-view="overview"] .hero-title-part[data-role="division"],
+body[data-view="ladder"] .hero-title-part[data-role="division"],
+body[data-view="compare"] .hero-title-part[data-role="division"],
+body[data-view="model"] .hero-title-part[data-role="division"] { display: none; }
+/* Explore: the gallery shows no league's numbers and the season mountain has
+   pickers of its own: no hero there, and no masthead pickers. */
+body[data-view="explore"]:is([data-viz=""], [data-viz="mountain"]) :is(.hero, .league-picker) { display: none; }
+/* Predict: the game picks its own division and plays only the current season. */
+body[data-view="predict"] :is(.hero, .league-picker) { display: none; }
+/* ---------- panels ------------------------------------------------ */
+
+section { margin-block: clamp(1.5rem, 3vw, 2.25rem); }
+
+.panel {
+  background: var(--panel);
+  border: 1px solid var(--rule);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  overflow: clip;
+}
+
+.panel__head {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 1rem 2rem;
+  flex-wrap: wrap;
+  padding: var(--space-5);
+  border-bottom: 1px solid var(--rule);
+}
+
+.panel__head h2 { font-size: 1.5rem; }
+
+.panel__head p {
+  margin: 0.35rem 0 0;
+  color: var(--ink-muted);
+  font-size: 0.875rem;
+  max-width: 62ch;
+}
+
+/* A scrollport. position: relative keeps absolutely-positioned descendants
+   (the .visually-hidden header labels inside the wide tables) inside this box,
+   so they are clipped here instead of escaping to widen the page. */
+.scroller { position: relative; overflow-x: auto; }
+
+/* Fade the trailing edge while there is more table to the right, so the scroll
+   is discoverable. scroll-timeline drives it off the scroller's own position,
+   so it clears as you reach the end; browsers without it get the plain fade. */
+@supports (animation-timeline: scroll(self inline)) {
+  .scroller {
+    scroll-timeline: --edge inline;
+    animation: scroller-fade linear both;
+    animation-timeline: --edge;
+  }
+
+  @keyframes scroller-fade {
+    from { mask-image: linear-gradient(90deg, #000 88%, transparent 100%); }
+    to { mask-image: linear-gradient(90deg, #000 100%, #000 100%); }
+  }
+}

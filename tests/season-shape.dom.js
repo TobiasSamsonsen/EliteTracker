@@ -56,7 +56,14 @@ async function main() {
 
   // Subresources are not loaded by default; run the app's own scripts as
   // inline classic scripts so their top-level bindings are shared with eval.
-  for (const file of ['i18n.js', 'season-sim.js', 'share.js', 'app.js']) { // index.html's order
+  const indexHtml = fs.readFileSync(path.join(ROOT, 'index.html'), 'utf8');
+  const scriptFiles = [
+    'i18n/no.js',
+    ...[...indexHtml.matchAll(/<script\s+src="\/([^"]+)"\s+defer><\/script>/g)]
+      .map((m) => m[1])
+      .filter((file) => file !== 'thumbs.js'),
+  ];
+  for (const file of scriptFiles) { // index.html's order
     const script = w.document.createElement('script');
     script.textContent = fs.readFileSync(path.join(ROOT, file), 'utf8');
     w.document.head.appendChild(script);

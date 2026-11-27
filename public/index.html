@@ -50,8 +50,23 @@
     : matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
   document.querySelector('meta[name=theme-color]').content =
     document.documentElement.dataset.resolvedTheme === 'dark' ? '#080f1c' : '#e8edf5';
+  try {
+    var initLang = localStorage.getItem('lang') === 'en' ? 'en' : 'no';
+    var langHint = document.createElement('link');
+    langHint.rel = 'preload';
+    langHint.as = 'script';
+    langHint.href = '/i18n/' + initLang + '.js';
+    document.head.appendChild(langHint);
+  } catch (e) {}
 </script>
-<link rel="stylesheet" href="/styles.css">
+<link rel="stylesheet" href="/styles/base.css">
+<link rel="stylesheet" href="/styles/views.css">
+<link rel="stylesheet" href="/styles/shell.css">
+<link rel="stylesheet" href="/styles/team.css">
+<link rel="stylesheet" href="/styles/mobile.css">
+<link rel="stylesheet" href="/styles/explore.css">
+<link rel="stylesheet" href="/styles/explore-tools.css">
+<link rel="stylesheet" href="/styles/overview.css">
 <link rel="icon" href="/icons/favicon.svg" type="image/svg+xml">
 </head>
 <body>
@@ -554,6 +569,21 @@
 <script src="/i18n.js" defer></script>
 <script src="/season-sim.js" defer></script>
 <script src="/share.js" defer></script>
+<script src="/app/helpers.js" defer></script>
+<script src="/app/grid.js" defer></script>
+<script src="/app/scenario.js" defer></script>
+<script src="/app/standings.js" defer></script>
+<script src="/app/ladder.js" defer></script>
+<script src="/app/matches.js" defer></script>
+<script src="/app/hero-model.js" defer></script>
+<script src="/app/overview.js" defer></script>
+<script src="/app/explore.js" defer></script>
+<script src="/app/explore-whatif.js" defer></script>
+<script src="/app/team.js" defer></script>
+<script src="/app/team-charts.js" defer></script>
+<script src="/app/rewind-backdrop.js" defer></script>
+<script src="/app/compare.js" defer></script>
+<script src="/app/gestures-analytics.js" defer></script>
 <script src="/app.js" defer></script>
 </body>
 </html>

@@ -1,0 +1,833 @@
+/* ---------- explore: what if (viz=whatif) ------------------------------- */
+
+/* The Matches cards with an editable score, and the chances beside them. */
+.whatif {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.12fr);
+  gap: 1rem 1.25rem;
+  align-items: start;
+  padding: 1rem;
+}
+.whatif__note { grid-column: 1 / -1; margin: 0; }
+/* Both panels start on the same line (a general section rule adds a top margin). */
+.whatif > .whatif__impact { margin-top: 0; }
+.whatif__matches {
+  position: relative;
+  background: var(--panel);
+  border: 1px solid var(--rule);
+  border-radius: var(--radius);
+  overflow: clip;
+}
+.whatif__list, .whatif__impact { scroll-margin-top: 4.75rem; }
+.whatif__bar { display: none; }
+
+.whatif-card { transition: box-shadow 0.15s var(--ease); }
+.whatif-card.is-locked { box-shadow: inset 3px 0 0 var(--accent); }
+/* The flag on a set score, and its undo: a small accent pill with a cross. */
+.whatif-flag {
+  appearance: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  margin-left: 0.5rem;
+  padding: 0.1rem 0.45rem 0.1rem 0.55rem;
+  font: inherit;
+  font-size: 0.75rem;
+  font-weight: 600;
+  line-height: 1.3;
+  vertical-align: middle;
+  /* Out of the line's height: the date line, and so the card, stays as tall
+     with the flag as without it, the touch size included. */
+  margin-block: -0.5rem;
+  color: var(--accent-ink);
+  background: color-mix(in srgb, var(--accent) 10%, transparent);
+  border: 1px solid color-mix(in srgb, var(--accent-ink) 35%, transparent);
+  border-radius: 999px;
+  cursor: pointer;
+  transition: background-color 0.12s var(--ease), border-color 0.12s var(--ease);
+}
+.whatif-flag:hover { background: color-mix(in srgb, var(--accent) 18%, transparent); border-color: var(--accent-ink); }
+.whatif-flag svg { opacity: 0.75; }
+
+/* The score: each side's goals between a pair of arrows. */
+.whatif-score { display: flex; align-items: center; gap: 0.3rem; flex: none; }
+.whatif-score__dash { color: var(--ink-faint); font-weight: 700; }
+.whatif-step { display: flex; flex-direction: column; align-items: center; }
+.whatif-step__value {
+  min-width: 1.6ch;
+  text-align: center;
+  font-family: var(--display);
+  font-size: 1.5rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.1;
+  color: var(--ink);
+}
+/* No score yet: an empty slot the arrows fill, the height of a digit's line,
+   so the card keeps its height when a score is set. */
+.whatif-step__value.is-empty {
+  box-sizing: border-box;
+  width: 1.1em;
+  height: 1.1em;
+  min-width: 0;
+  border: 1.5px dashed var(--rule-strong);
+  border-radius: 6px;
+}
+.whatif-step__btn {
+  display: grid;
+  place-items: center;
+  width: 2.5rem;
+  height: 1.6rem;
+  padding: 0;
+  color: var(--ink-muted);
+  background: none;
+  border: 0;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background-color 0.12s var(--ease), color 0.12s var(--ease);
+}
+.whatif-step__btn:hover:not(:disabled) { background: var(--panel-sunk); color: var(--ink); }
+.whatif-step__btn:active:not(:disabled) { background: var(--rule); }
+.whatif-step__btn:disabled { opacity: 0.25; cursor: default; }
+.whatif-step__btn:focus-visible, .whatif-chip:focus-visible, .whatif-reset:focus-visible, .whatif-flag:focus-visible,
+.whatif-impact__meta:focus-visible, .whatif__bar:focus-visible, .whatif-auto__summary:focus-visible {
+  outline: 2px solid var(--ink);
+  outline-offset: 2px;
+}
+@media (pointer: coarse) {
+  .whatif-step__btn { height: 2.25rem; width: 2.75rem; }
+  .whatif-chip { min-height: 2.25rem; }
+  .whatif-flag { min-height: 1.75rem; padding-inline: 0.65rem 0.55rem; }
+}
+
+/* The odds across the whole card, the likeliest scorelines beneath them. */
+.whatif-card__foot {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.4rem;
+  min-height: 1.5rem;
+}
+.whatif-card__foot .odds { align-self: stretch; }
+.whatif-chips { display: flex; flex-wrap: wrap; justify-content: center; gap: 0.3rem; }
+/* Home win, draw, away win: three equal pills over the odds bar, in the odds
+   bar's own colours once set. */
+.whatif-outcomes { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0.4rem; align-self: stretch; }
+.whatif-outcome {
+  min-height: 2.25rem;
+  border: 1px solid var(--rule);
+  border-radius: 999px;
+  background: var(--panel);
+  color: var(--ink-muted);
+  font: inherit;
+  font-size: 0.8125rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+.whatif-outcome:hover { color: var(--ink); border-color: var(--rule-strong); }
+.whatif-outcome[aria-pressed="true"] { color: #fff; border-color: transparent; }
+.whatif-outcome[data-outcome="home"][aria-pressed="true"] { background: var(--home); }
+.whatif-outcome[data-outcome="draw"][aria-pressed="true"] { background: var(--draw); color: #10171b; }
+.whatif-outcome[data-outcome="away"][aria-pressed="true"] { background: var(--away); }
+.whatif-outcome:focus-visible { outline: 2px solid var(--accent-ink); outline-offset: 2px; }
+/* The bar's way on, and the table's way back: a phone's. */
+.whatif__bar-go, .whatif-back { display: none; }
+@media (max-width: 760px) {
+  .whatif-outcome { min-height: 44px; font-size: 0.875rem; }
+  .whatif .whatif__bar { display: flex; align-items: center; gap: 0.75rem; }
+  .whatif__bar-text { flex: 1; min-width: 0; }
+  .whatif__bar-go {
+    display: inline-flex;
+    flex: none;
+    align-items: center;
+    min-height: 2rem;
+    padding: 0 0.7rem;
+    border-radius: 999px;
+    background: var(--accent);
+    color: var(--on-accent);
+    font-size: 0.75rem;
+    font-weight: 700;
+    white-space: nowrap;
+  }
+  .whatif-back {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+    margin-bottom: 0.5rem;
+    padding: 0 0.9rem;
+    border: 1px solid var(--rule);
+    border-radius: 999px;
+    background: var(--panel-sunk);
+    color: var(--ink);
+    font: inherit;
+    font-size: 0.8125rem;
+    font-weight: 600;
+    cursor: pointer;
+  }
+}
+.whatif-chip {
+  padding: 0.15rem 0.6rem;
+  font: inherit;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  color: var(--ink-muted);
+  background: var(--panel);
+  border: 1px solid var(--rule);
+  border-radius: 999px;
+  cursor: pointer;
+}
+.whatif-chip:hover { border-color: var(--rule-strong); color: var(--ink); }
+.whatif-chip[aria-pressed="true"] { color: var(--panel); background: var(--ink); border-color: var(--ink); }
+
+/* The chances. */
+.whatif__impact {
+  position: sticky;
+  top: 4.75rem;
+  max-height: calc(100vh - 5.75rem);
+  max-height: calc(100dvh - 5.75rem);
+  overflow: auto;
+  padding: 0.9rem 1rem 0.5rem;
+  background: var(--panel);
+  border: 1px solid var(--rule);
+  border-radius: var(--radius);
+}
+.whatif-impact__head { display: flex; align-items: center; justify-content: space-between; gap: 1rem; }
+.whatif-impact__title { margin: 0; font-size: 1rem; font-weight: 700; }
+/* Reset all and the share button, together at the head's right; the share
+   button the pill's height. */
+.whatif-impact__actions { display: flex; align-items: center; gap: 0.5rem; }
+.whatif-impact__actions .share-btn { width: 2rem; height: 2rem; margin: 0; align-self: center; }
+.whatif-impact__line { margin: 0.35rem 0 0.75rem; font-size: 0.875rem; font-weight: 600; line-height: 1.4; }
+.whatif-impact__line--error { color: var(--outcome-bad-ink); }
+.whatif-table__wrap { overflow-x: auto; transition: opacity 0.15s var(--ease); }
+.whatif__impact.is-updating .whatif-table__wrap { opacity: 0.5; }
+.whatif-table { width: 100%; border-collapse: collapse; font-size: 0.8125rem; font-variant-numeric: tabular-nums; }
+.whatif-table th, .whatif-table td { padding: 0.3rem 0.45rem; text-align: right; white-space: nowrap; line-height: 1.25; }
+.whatif-table thead th {
+  background: var(--panel);
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+}
+.whatif-table tbody tr { border-top: 1px solid var(--rule); }
+.whatif-table tbody tr.is-involved { background: color-mix(in srgb, var(--accent) 9%, var(--panel)); }
+.whatif-table .whatif-table__club {
+  position: sticky;
+  left: 0;
+  z-index: 1;
+  text-align: left;
+  font-weight: 600;
+  background: var(--panel);
+}
+.whatif-table tbody tr.is-involved .whatif-table__club { background: color-mix(in srgb, var(--accent) 9%, var(--panel)); }
+.whatif-table .whatif-table__club .team-logo { width: 18px; height: 18px; margin-right: 0.45rem; vertical-align: middle; }
+.whatif-chance { display: block; font-weight: 600; }
+.whatif-chance.is-nil { color: var(--ink-faint); font-weight: 400; }
+/* How it works, at the foot of the chances (the Luck page's box). */
+.whatif-how { margin: 0.75rem 0 0.5rem; }
+.whatif-how p { margin: 0.5rem 0 0; }
+.whatif-delta { display: block; min-height: 1.1em; font-size: 0.6875rem; font-weight: 600; color: var(--ink-muted); }
+.whatif-delta--good { color: var(--outcome-good-ink); }
+.whatif-delta--bad { color: var(--outcome-bad-ink); }
+
+/* Narrow: the cards first, and the headline of the chances stays in view
+   above the tab bar (--whatif-bar-bottom, set when the page is drawn). */
+@media (max-width: 900px) {
+  .whatif { grid-template-columns: minmax(0, 1fr); padding: 0.75rem 0.5rem 1rem; }
+  .whatif__impact { position: static; max-height: none; overflow: visible; }
+  .whatif__bar {
+    position: sticky;
+    bottom: var(--whatif-bar-bottom, 0px);
+    z-index: 5;
+    display: block;
+    width: 100%;
+    padding: 0.7rem 1rem;
+    font: inherit;
+    font-size: 0.8125rem;
+    font-weight: 600;
+    line-height: 1.35;
+    text-align: left;
+    color: var(--ink);
+    background: color-mix(in srgb, var(--panel) 94%, transparent);
+    backdrop-filter: blur(12px);
+    border: 0;
+    border-top: 1px solid var(--rule-strong);
+    cursor: pointer;
+  }
+  .whatif__bar.is-quiet { color: var(--ink-muted); font-weight: 500; }
+}
+@media (max-width: 760px) {
+  .whatif-step__value { font-size: 1.25rem; }
+  .whatif-step__btn { width: 2.25rem; }
+  .whatif-table .whatif-table__club { min-width: 6.75rem; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .whatif-card, .whatif-table__wrap { transition: none; }
+}
+.whatif-table thead th { white-space: normal; vertical-align: bottom; line-height: 1.15; }
+.whatif-table thead th:first-child { white-space: nowrap; }
+
+/* Auto-fill: under the pager, above the cards. */
+.whatif-tools { display: flex; flex-wrap: wrap; justify-content: center; gap: 0.5rem; padding: 0.75rem 1rem; border-bottom: 1px solid var(--rule); }
+.whatif-tool {
+  padding: 0.3rem 0.8rem;
+  font: inherit;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--ink);
+  background: var(--panel);
+  border: 1px solid var(--rule-strong);
+  border-radius: 999px;
+  cursor: pointer;
+  transition: background-color 0.12s var(--ease), border-color 0.12s var(--ease);
+}
+.whatif-tool:hover:not(:disabled) { background: var(--panel-sunk); border-color: var(--ink-muted); }
+.whatif-tool:disabled { opacity: 0.4; cursor: default; }
+.whatif-tool:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+@media (pointer: coarse), (max-width: 760px) { .whatif-tool { min-height: 2.25rem; } .whatif-tools { padding-inline: 0.5rem; } }
+
+/* By week / Your changes. */
+.whatif-views-row { display: flex; justify-content: center; padding: 0.85rem 1rem 0.2rem; }.whatif-views button { display: inline-flex; align-items: center; justify-content: center; gap: 0.4rem; min-width: 7.5rem; }
+.whatif-views button:disabled { opacity: 0.45; cursor: default; }
+.whatif-views__count {
+  min-width: 1.35rem;
+  padding: 0 0.4rem;
+  font-size: 0.6875rem;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.35rem;
+  /* Taller than the label's line: the negative margin keeps the switch's
+     height when the count comes in, so the cards below do not move. */
+  margin-block: -0.25rem;
+  text-align: center;
+  background: var(--rule);
+  border-radius: 999px;
+}
+.whatif-views button[aria-pressed="true"] .whatif-views__count { background: rgb(255 255 255 / 0.25); }
+.whatif-impact__meta { display: flex; margin: 0.5rem 0 0; white-space: normal; border-radius: var(--radius); }
+.whatif-auto { border-top: 1px solid var(--rule); }
+.whatif-auto__summary {
+  padding: 0.85rem 1.25rem;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+  cursor: pointer;
+}
+.whatif-auto__summary:hover { color: var(--ink); }
+/* Run-in heatmap: remaining fixtures across, the club's win chance per cell. */
+.runin { padding: 0.75rem 1rem 1rem; }
+.runin__scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+.runin__table { border-collapse: separate; border-spacing: 2px; font-size: 0.75rem; font-variant-numeric: tabular-nums; }
+.runin__table th { padding: 0.2rem 0.35rem; color: var(--ink-muted); font-weight: 600; white-space: nowrap; }
+.runin__club { position: sticky; left: 0; z-index: 1; display: flex; align-items: center; gap: 0.35rem; min-width: 8.5rem; background: var(--panel); color: var(--ink); text-align: left; cursor: pointer; }
+.runin__club:hover span { text-decoration: underline; }
+.runin__club .team-logo, .runin__cell .team-logo { width: 16px; height: 16px; }
+.runin__avg { padding: 0 0.4rem; color: var(--ink-muted); text-align: right; }
+.runin__modes { display: flex; justify-content: center; padding: 0 0 0.6rem; }
+.runin__cell { min-width: 4rem; height: 1.9rem; padding: 0 0.25rem; border-radius: 4px; color: var(--ink); text-align: center; white-space: nowrap; }
+.runin__cell > * { vertical-align: middle; }
+.runin__cell b { margin-left: 0.15rem; font-weight: 600; }
+.runin__venue { width: 11px; height: 11px; margin-left: 0.15rem; vertical-align: middle; opacity: 0.85; }
+.runin__venue svg { width: 11px; height: 11px; }
+.runin__venue.venue-icon--home, .runin__venue.venue-icon--away { color: inherit; }
+.runin__cell:focus-visible { outline: 2px solid var(--ink); outline-offset: 1px; }
+.runin__none { background: transparent; }
+/* The cell sets its own ink, so the grid's invert class has to win over it. */
+.runin__cell.cell--invert { color: var(--cell-ink-invert); }
+
+/* ---------- explore: relegation play-off (viz=playoff) ---------------- */
+
+/* Colour is division throughout: Eliteserien in --tier-1, OBOS-ligaen in --tier-2,
+   as on the ladder. Neither side of the tie is the bad one, so no good/bad tones. */
+.playoff { --es: var(--tier-1); --obos: var(--tier-2); display: grid; gap: 2rem; padding: 1rem 1rem 1.25rem; }
+.playoff__view { display: grid; gap: 2.25rem; min-width: 0; }
+/* The site spaces sections apart on its own; here the grid's gap does it. */
+.playoff > *, .playoff__view > * { margin-block: 0; }
+.playoff__view > .playoff__headline { margin-top: -1rem; }
+.playoff__lead { margin: 0; max-width: 38rem; color: var(--ink-muted); font-size: 0.9375rem; line-height: 1.5; }
+.playoff__section { display: grid; gap: 0.75rem; min-width: 0; }
+.playoff__heading { margin: 0; font-family: var(--display); font-size: 1.25rem; font-weight: 800; font-variation-settings: "wdth" 112; letter-spacing: -0.005em; }
+.playoff__intro { margin: -0.35rem 0 0.25rem; max-width: 40rem; color: var(--ink-muted); font-size: 0.8125rem; line-height: 1.5; }
+
+/* The answer: a sentence, and a hundred seasons as a hundred squares. */
+.playoff__headline { display: grid; gap: 0.9rem; max-width: 40rem; }
+.playoff__answer { margin: 0; font-family: var(--display); font-size: clamp(1.35rem, 3.2vw, 1.85rem); font-weight: 700; font-variation-settings: "wdth" 108; line-height: 1.25; text-wrap: balance; }
+.playoff__answer-n { font-size: 1.45em; font-weight: 800; font-variation-settings: "wdth" 125; font-variant-numeric: tabular-nums; }
+.playoff__waffle { display: grid; grid-template-columns: repeat(20, minmax(0, 1fr)); gap: 3px; max-width: 32rem; }
+.playoff__season { aspect-ratio: 1; border-radius: 2px; }
+.playoff__season--es { background: var(--es); }
+.playoff__season--obos { background: var(--obos); }
+.playoff__key { display: flex; flex-wrap: wrap; gap: 0.4rem 1.25rem; font-size: 0.8125rem; font-weight: 600; }
+.playoff__key-item { display: inline-flex; align-items: center; gap: 0.45rem; }
+.playoff__key-item i { width: 0.75rem; height: 0.75rem; border-radius: 2px; }
+.playoff__key-item--es i { background: var(--es); }
+.playoff__key-item--obos i { background: var(--obos); }
+
+/* The knockout table: a column per round, a card per match. The ladder climbs:
+   each round sits a step above the one before, the tie at the top. */
+.playoff__scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+.playoff__rounds { display: flex; align-items: flex-start; gap: 1.75rem; min-width: max-content; margin: 0; padding: 0.25rem 0 0.5rem; list-style: none; }
+.playoff__rounds--ladder .playoff__round { margin-top: calc(var(--step) * 1.6rem); }
+.playoff__round { position: relative; display: grid; gap: 0.2rem; width: 14rem; }
+.playoff__round-title { font-size: 0.875rem; font-weight: 700; }
+.playoff__round-date { color: var(--ink-muted); font-size: 0.75rem; }
+.playoff__match { position: relative; display: grid; gap: 0.35rem; margin-top: 0.4rem; padding: 0.45rem; border-radius: 8px; background: var(--panel-sunk); }
+/* The line on to the next round leaves from the middle of a match. */
+.playoff__rounds--ladder .playoff__round:not(:last-child) .playoff__match::after { content: ""; position: absolute; left: 100%; top: 50%; width: 1.75rem; border-top: 2px solid var(--rule); }
+.playoff__round--tie .playoff__match { outline: 2px solid var(--es); outline-offset: -2px; }
+.playoff__slot { display: grid; gap: 0.15rem; padding: 0.3rem 0.5rem; border-left: 3px solid; border-radius: 3px; background: var(--panel); }
+.playoff__slot--es { border-color: var(--es); }
+.playoff__slot--obos { border-color: var(--obos); }
+.playoff__slot--winner { border-left: 3px dashed var(--rule); background: transparent; color: var(--ink-muted); font-size: 0.8125rem; }
+.playoff__slot-label { color: var(--ink-muted); font-size: 0.6875rem; font-weight: 600; }
+.playoff__slot-club { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; font-size: 0.8125rem; }
+.playoff__slot-chance { color: var(--ink-muted); font-size: 0.75rem; font-variant-numeric: tabular-nums; }
+/* The match as fotmob lists it: its kickoff, or the score once played. */
+.playoff__fixture { margin: 0; padding: 0 0.5rem; color: var(--ink-muted); font-size: 0.75rem; font-variant-numeric: tabular-nums; }
+.playoff__fixture--played { color: var(--ink); font-weight: 700; }
+/* Under a match whose clubs are not settled yet: the pairings it most likely comes to. */
+.playoff__pairings { display: grid; gap: 0.2rem; margin-top: 0.15rem; padding: 0.4rem 0.5rem 0.1rem; border-top: 1px solid var(--rule); }
+.playoff__pairing { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; font-size: 0.75rem; border-radius: 3px; }
+.playoff__pairing:focus-visible { outline: 2px solid var(--ink); outline-offset: 1px; }
+.playoff__pairing-names { display: inline-flex; align-items: center; gap: 0.25rem; min-width: 0; font-weight: 600; white-space: nowrap; }
+.playoff__pairing-names .team-logo { flex: none; width: 14px; height: 14px; }
+.playoff__pairing-v { color: var(--ink-faint); }
+
+/* Who ends up in it: the two sides of the tie next to each other. */
+.playoff__sides { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1.5rem 2.5rem; }
+.playoff__side { display: grid; gap: 0.7rem; align-content: start; }
+.playoff__side-title { display: flex; align-items: center; gap: 0.5rem; margin: 0 0 0.15rem; font-size: 0.9375rem; font-weight: 700; }
+.playoff__side-title::before { content: ""; width: 0.75rem; height: 0.75rem; border-radius: 2px; background: currentColor; }
+.playoff__side--es .playoff__side-title::before { background: var(--es); }
+.playoff__side--obos .playoff__side-title::before { background: var(--obos); }
+.playoff__line { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 0.2rem 0.75rem; font-size: 0.8125rem; }
+.playoff__of100 { font-weight: 700; font-variant-numeric: tabular-nums; }
+.playoff__bar { grid-column: 1 / -1; height: 0.45rem; border-radius: 99px; background: var(--panel-sunk); overflow: hidden; }
+.playoff__bar-fill { display: block; height: 100%; border-radius: 99px; }
+.playoff__side--es .playoff__bar-fill { background: var(--es); }
+.playoff__side--obos .playoff__bar-fill { background: var(--obos); }
+.playoff__tail { grid-column: 1 / -1; color: var(--ink-muted); font-size: 0.75rem; }
+.playoff__club--rest { color: var(--ink-muted); font-weight: 500; }
+
+/* The likeliest ties, as scoreboards. */
+.playoff__cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(17rem, 1fr)); gap: 0.75rem; }
+.playoff__card { display: grid; gap: 0.45rem; align-content: start; padding: 0.75rem 0.85rem 0.85rem; border-radius: 10px; background: var(--panel-sunk); }
+.playoff__freq { margin: 0 0 0.1rem; color: var(--ink-muted); font-size: 0.75rem; }
+.playoff__card-club { display: flex; align-items: center; justify-content: space-between; gap: 0.75rem; }
+.playoff__card-chance { font-family: var(--display); font-size: 1.125rem; font-weight: 800; font-variant-numeric: tabular-nums; }
+.playoff__card-club--es .playoff__card-chance { color: var(--es); }
+.playoff__card-club--obos .playoff__card-chance { color: var(--obos); }
+.playoff__split { display: flex; height: 0.45rem; margin-top: 0.15rem; overflow: hidden; border-radius: 99px; }
+.playoff__split-es { background: var(--es); }
+.playoff__split-obos { background: var(--obos); }
+.playoff__split > :last-child { flex: 1; }
+.playoff__split-rest { background: var(--panel-sunk); }
+
+.playoff__club { appearance: none; display: inline-flex; align-items: center; gap: 0.45rem; min-width: 0; padding: 0; border: 0; background: none; color: var(--ink); font: inherit; font-weight: 600; text-align: left; cursor: pointer; }
+.playoff__club span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.playoff__club:hover span { text-decoration: underline; }
+.playoff__club:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+.playoff__club .team-logo { flex: none; width: 18px; height: 18px; }
+.playoff__club--col { flex-direction: column; gap: 0.2rem; font-size: 0.75rem; }
+.playoff__club--col .team-logo { width: 22px; height: 22px; }
+
+/* Every pairing, closed until asked for. */
+.playoff__all { padding-top: 1rem; border-top: 1px solid var(--rule); }
+.playoff__all > summary, .playoff__how > summary { cursor: pointer; font-weight: 700; }
+.playoff__all[open] > summary { margin-bottom: 0.6rem; }
+.playoff__how { margin-top: 1rem; }
+.playoff__how > summary { color: var(--ink-muted); font-size: 0.8125rem; font-weight: 600; }
+.playoff__how[open] > summary { margin-bottom: 0.5rem; }
+.playoff__table { border-collapse: separate; border-spacing: 3px; font-size: 0.8125rem; font-variant-numeric: tabular-nums; }
+.playoff__table th, .playoff__table td { padding: 0.2rem 0.4rem; white-space: nowrap; }
+.playoff__corner, .playoff__row { position: sticky; left: 0; z-index: 1; min-width: 8.5rem; background: var(--panel); text-align: left; }
+.playoff__col { min-width: 4.5rem; vertical-align: bottom; }
+.playoff__cell { height: 2.1rem; min-width: 4.5rem; border-radius: 5px; color: var(--ink); font-weight: 700; text-align: center; }
+.playoff__cell:focus-visible { outline: 2px solid var(--ink); outline-offset: 1px; }
+.playoff__none { background: transparent; }
+
+.playoff__settled { display: grid; gap: 0.5rem; }
+.playoff__settled .explore-note { margin: 0; }
+.playoff__versus { display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem 0.75rem; font-size: 1.125rem; }
+.playoff__v { color: var(--ink-muted); }
+.playoff__survival { padding-top: 1.5rem; border-top: 1px solid var(--rule); }
+.playoff__survival-row { display: grid; grid-template-columns: minmax(8rem, 11rem) minmax(8rem, 11rem) minmax(5rem, 14rem) auto; align-items: center; gap: 0.75rem; font-size: 0.8125rem; }
+.playoff__survival-p { color: var(--ink-muted); }
+.playoff__survival-stay { font-variant-numeric: tabular-nums; }
+
+@media (max-width: 760px) {
+  .playoff { padding: 0.75rem 0.75rem 1rem; }
+  .playoff__waffle { grid-template-columns: repeat(10, minmax(0, 1fr)); max-width: 17rem; }
+  .playoff__sides { grid-template-columns: 1fr; }
+  .playoff__survival-row { grid-template-columns: 1fr auto; row-gap: 0.35rem; }
+  .playoff__survival-row .playoff__split { grid-column: 1 / -1; grid-row: 3; }
+}
+
+/* ---------- how a finish happens (a grid cell's popup) ------------- */
+
+/* The cell is a button only where there is a season left to play, and not
+   while the season replays. */
+.grid--live .cell:not(.cell--empty) { cursor: pointer; }
+.grid--live.grid-anim .cell { cursor: default; }
+
+body.has-scenario { overflow: hidden; }
+
+.scenario {
+  position: fixed;
+  inset: 0;
+  z-index: 90;
+  display: grid;
+  place-items: center;
+  padding: 1rem;
+}
+.scenario__scrim { position: absolute; inset: 0; background: rgb(0 0 0 / 0.55); }
+.scenario__panel {
+  position: relative;
+  width: min(36rem, 100%);
+  max-height: min(92dvh, 58rem);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  background: var(--panel);
+  border: 1px solid var(--rule);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 1.25rem 1.25rem 1.5rem;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .scenario__panel { animation: scenario-in 0.18s var(--ease); }
+  @keyframes scenario-in { from { opacity: 0; transform: translateY(8px); } }
+}
+
+.scenario__head { display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem; }
+.scenario__eyebrow {
+  margin: 0 0 0.25rem;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--accent-ink);
+}
+.scenario__title {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  margin: 0;
+  font-size: 1.3125rem;
+  line-height: 1.2;
+}
+.scenario__title .team-logo { width: 1.9rem; height: 1.9rem; }
+.scenario__close {
+  flex: none;
+  width: 2rem;
+  height: 2rem;
+  border: 1px solid var(--rule);
+  border-radius: 8px;
+  background: transparent;
+  color: var(--ink-muted);
+  font-size: 1.25rem;
+  line-height: 1;
+  cursor: pointer;
+}
+.scenario__close:hover { color: var(--ink); border-color: var(--rule-strong); }
+
+.scenario__hero { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 0.5rem 1.1rem; margin-top: 1rem; }
+.scenario__figure {
+  margin: 0;
+  font-family: var(--display);
+  font-variation-settings: "wdth" 125;
+  font-weight: 800;
+  font-size: clamp(3rem, 14vw, 4.25rem);
+  line-height: 0.85;
+  letter-spacing: -0.035em;
+  font-variant-numeric: tabular-nums;
+}
+.scenario__figure small { font-size: 0.4em; font-weight: 700; letter-spacing: 0; margin-left: 0.12em; color: var(--ink-muted); }
+.scenario__hero-text { display: grid; gap: 0.15rem; min-width: 0; }
+.scenario__label { margin: 0; font-weight: 600; color: var(--ink-muted); }
+.scenario__sub { margin: 0; font-size: 0.8125rem; color: var(--ink-faint); font-variant-numeric: tabular-nums; }
+
+.scenario__wait { margin: 1.5rem 0 0.5rem; color: var(--ink-muted); font-size: 0.875rem; }
+.scenario__alone { margin: 1rem 0 0; color: var(--ink-muted); font-size: 0.875rem; }
+.scenario__about .scenario__mode { margin-top: 0.75rem; }
+.scenario__about { margin-top: 1rem; }
+.scenario__about summary { cursor: pointer; color: var(--accent-ink); font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; font-size: 0.75rem; }
+.scenario__about .scenario__howto { margin-top: 0.6rem; }
+.scenario__howto { margin: 0.75rem 0 0; font-size: 0.75rem; line-height: 1.45; color: var(--ink-faint); }
+.scenario__lock {
+  display: block;
+  margin-top: 1.25rem;
+  padding: 0.5rem 0.85rem;
+  border: 0;
+  border-radius: 8px;
+  background: var(--accent);
+  color: var(--on-accent);
+  font: inherit;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+.scenario__lock:hover { filter: brightness(1.08); }
+.scenario__close:focus-visible, .scenario__lock:focus-visible, .scenario-all summary:focus-visible, .scenario__about summary:focus-visible {
+  outline: 2px solid var(--accent-ink);
+  outline-offset: 2px;
+}
+
+.scenario-section { margin-top: 1.5rem; }
+.scenario-section__title {
+  margin: 0 0 0.25rem;
+  font-size: 0.75rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.scenario-section__sub { margin: 1rem 0 0.35rem; font-size: 0.75rem; color: var(--ink-muted); font-weight: 600; }
+.scenario-section__lead { margin: 0 0 0.75rem; color: var(--ink-muted); font-size: 0.8125rem; line-height: 1.45; }
+
+.scenario .team-logo { width: 1.1rem; height: 1.1rem; }
+.scenario__title .team-logo { width: 1.9rem; height: 1.9rem; }
+.scenario-side { display: inline-flex; align-items: center; gap: 0.35rem; min-width: 0; }
+
+.scenario-empty { margin: 0; padding: 0.75rem 0.9rem; border-radius: 10px; background: var(--panel-sunk); color: var(--ink-muted); font-size: 0.8125rem; }
+.scenario-matches { display: grid; grid-template-columns: minmax(0, 1fr); gap: 0.35rem; }
+/* A row: the chip, the sentence over its home/away and date, and the odds bar
+   beside them; on a phone the bar drops under the sentence. */
+.scenario-match {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) minmax(9rem, 40%);
+  align-items: center;
+  gap: 0.4rem 0.7rem;
+  padding: 0.6rem 0.75rem;
+  border-radius: 10px;
+  background: var(--panel-sunk);
+}
+.scenario-match__main { margin: 0; font-size: 0.875rem; font-weight: 700; line-height: 1.3; }
+.scenario-match__odds { display: flex; align-items: center; gap: 0.6rem; }
+.scenario-match__odds .odds { flex: 1; height: 0.75rem; min-width: 0; padding: 0; margin: 0; overflow: visible; }
+.scenario-match__odds .odds__seg { color: transparent; }
+.scenario-match__odds .odds__seg:not(.is-scenario) { opacity: 0.3; }
+.scenario-match__pct { flex: none; min-width: 2.6rem; text-align: right; font-size: 0.875rem; font-weight: 700; font-variant-numeric: tabular-nums; }
+@media (max-width: 760px) {
+  .scenario-match { grid-template-columns: auto minmax(0, 1fr); }
+  .scenario-match__odds { grid-column: 2; }
+}
+.scenario-match__teams { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 0.15rem 0.5rem; font-size: 0.875rem; font-weight: 700; }
+.scenario-match__teams .is-loser { font-weight: 500; color: var(--ink-muted); }
+.scenario-match__score { padding: 0 0.4rem; border-radius: 5px; background: var(--panel); font-variant-numeric: tabular-nums; font-weight: 700; }
+.scenario-match__meta { display: flex; align-items: center; gap: 0.25rem; margin: 0.15rem 0 0; font-size: 0.6875rem; color: var(--ink-muted); }
+
+.scenario-table__wrap { overflow-x: auto; }
+.scenario-table { width: 100%; border-collapse: collapse; font-size: 0.8125rem; }
+.scenario-table th { padding: 0.25rem 0.4rem; text-align: left; font-size: 0.6875rem; font-weight: 600; color: var(--ink-muted); }
+.scenario-table td { padding: 0.3rem 0.4rem; border-top: 1px solid var(--rule); font-variant-numeric: tabular-nums; }
+.scenario-table th:nth-child(n+3), .scenario-table td:nth-child(n+3) { text-align: right; }
+.scenario-table__pos span { display: inline-block; min-width: 1.1rem; }
+.scenario-table__move { margin-left: 0.2rem; font-size: 0.625rem; font-weight: 700; }
+.scenario-table__move.is-up { color: var(--outcome-good-ink); }
+.scenario-table__move.is-down { color: var(--outcome-bad-ink); }
+.scenario-table__gain { color: var(--ink-muted); }
+.scenario-table__key { margin-left: 0.4rem; font-size: 0.5rem; color: var(--accent-ink); vertical-align: middle; }
+.scenario-table__pos { width: 3.4rem; white-space: nowrap; color: var(--ink-muted); }
+.scenario-table__pts { font-weight: 700; }
+.scenario-table .is-self td { background: color-mix(in oklab, var(--accent) 14%, transparent); font-weight: 700; }
+
+.scenario-all { margin-top: 1rem; font-size: 0.8125rem; }
+.scenario-all summary { cursor: pointer; color: var(--accent-ink); font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; font-size: 0.75rem; }
+.scenario-all__heading { margin: 1rem 0 0.35rem; font-size: 0.6875rem; letter-spacing: 0.06em; text-transform: uppercase; color: var(--ink-muted); }
+.scenario-all__grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.2rem 0.6rem; }
+.scenario-all__row { padding: 0.2rem 0.4rem; border-radius: 6px; }
+.scenario-all__row .scenario-match__teams { font-size: 0.75rem; gap: 0.1rem 0.35rem; }
+.scenario-all__row .team-logo { display: none; }
+.scenario-all__row.is-own { background: color-mix(in oklab, var(--accent) 14%, transparent); }
+/* Against the odds: a dotted line under the score, no colour (colour here means data). */
+.scenario-all__row.is-odds .scenario-match__score, .scenario-all__legend .is-odds::before { text-decoration: underline dotted var(--ink-faint) 2px; text-underline-offset: 3px; }
+.scenario-all__legend { display: flex; flex-wrap: wrap; gap: 0.4rem 1rem; margin: 0.75rem 0 0; font-size: 0.6875rem; color: var(--ink-muted); }
+.scenario-all__legend span::before { content: ''; display: inline-block; width: 0.55rem; height: 0.55rem; margin-right: 0.35rem; border-radius: 2px; background: var(--rule-strong); }
+.scenario-all__legend .is-own::before { background: color-mix(in oklab, var(--accent) 45%, transparent); }
+.scenario-all__legend .is-odds::before { content: '1–0'; width: auto; height: auto; margin-right: 0.4rem; background: none; font-variant-numeric: tabular-nums; }
+
+/* On a desktop the popup is wider and its explanatory text a step larger. */
+@media (min-width: 761px) {
+  .scenario__panel { width: min(46rem, 100%); padding: 1.5rem 1.75rem 1.75rem; }
+  .scenario__sub, .scenario__wait { font-size: 0.9375rem; }
+  .scenario__howto { font-size: 0.875rem; }
+  .scenario-section__title { font-size: 0.875rem; }
+  .scenario-section__sub { font-size: 0.8125rem; }
+  .scenario-section__lead, .scenario-empty, .explore-note { font-size: 0.9375rem; }
+  .scenario-match__teams, .scenario-match__main { font-size: 1rem; }
+  .scenario-match__meta, .scenario-all__heading, .scenario-all__legend { font-size: 0.8125rem; }
+  .scenario-table, .scenario-all { font-size: 0.9375rem; }
+  .scenario-table th { font-size: 0.8125rem; }
+  .scenario-all summary { font-size: 0.8125rem; }
+  .scenario-all__row .scenario-match__teams { font-size: 0.8125rem; }
+}
+
+/* The grip shows only where the popup is a bottom sheet. */
+.scenario__grip { display: none; }
+@media (max-width: 760px) {
+  .scenario { padding: 0; place-items: end center; }
+  /* A bottom sheet: the grip and head stay at the top while the rest
+     scrolls under them (sticky inside the panel's own scroll), and the foot
+     clears the home indicator. */
+  .scenario__panel {
+    max-height: 94dvh;
+    border-radius: var(--radius) var(--radius) 0 0;
+    padding: 0 1rem calc(1.5rem + env(safe-area-inset-bottom, 0px));
+  }
+  .scenario__top {
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    margin-inline: -1rem;
+    padding: 0.4rem 1rem 0.6rem;
+    background: var(--panel);
+    border-bottom: 1px solid var(--rule);
+  }
+  .scenario__grip {
+    display: block;
+    width: 2.25rem;
+    height: 4px;
+    margin: 0.2rem auto 0.55rem;
+    border-radius: 2px;
+    background: var(--rule-strong);
+  }
+  .scenario__head { align-items: center; }
+  .scenario-all__grid { grid-template-columns: 1fr; }
+}
+.scenario__panel.is-dragging, .is-sheet.is-dragging { animation-play-state: paused; transition: transform 0.05s linear, opacity 0.05s linear; }
+.scenario__panel.is-dismissed, .is-sheet.is-dismissed {
+  transform: translateY(100%);
+  opacity: 0;
+  transition: transform 0.25s var(--ease), opacity 0.25s var(--ease);
+}
+
+/* The phone's pickers (division, season, a club to compare) as bottom
+   sheets (phoneMenu): full width over a scrim, a grip on top, rows a finger
+   tall, clear of the home indicator. */
+.menu-scrim { position: fixed; inset: 0; z-index: 55; background: rgb(0 0 0 / 0.45); }
+.menu-scrim[hidden] { display: none; }
+.popover-menu.is-sheet, .compare__menu.is-sheet {
+  position: fixed;
+  inset: auto 0 0 0;
+  z-index: 60;
+  width: auto;
+  max-height: 70dvh;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  display: grid;
+  gap: 2px;
+  padding: 0 0.75rem calc(0.75rem + env(safe-area-inset-bottom, 0px));
+  border-width: 1px 0 0;
+  border-radius: 14px 14px 0 0;
+  animation: sheet-up 0.18s var(--ease);
+}
+.is-sheet::before {
+  content: "";
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  display: block;
+  height: 1.4rem;
+  margin-inline: -0.75rem;
+  background:
+    linear-gradient(var(--rule-strong), var(--rule-strong)) center 0.6rem / 2.25rem 4px no-repeat,
+    var(--panel);
+  border-radius: 14px 14px 0 0;
+}
+.is-sheet .popover-menu__btn, .is-sheet .compare__option {
+  min-height: 48px;
+  padding: 0 0.75rem;
+  font-size: 0.9375rem;
+  border-radius: var(--radius);
+}
+.is-sheet .compare__option .team-logo { width: 28px; height: 28px; }
+.is-sheet .popover-menu__btn[aria-pressed="true"], .is-sheet .compare__option[aria-selected="true"] { background: var(--panel-sunk); }
+@media (prefers-reduced-motion: reduce) {
+  .popover-menu.is-sheet, .compare__menu.is-sheet { animation: none; }
+}
+
+/* The Explore tools that take a panel's numbers further, as the overview's
+   tool cards (renderToolLinks), centred: under the panel's head on a desktop
+   or a tablet (What if in Matches' head corner), at its foot under the legend
+   on a phone (placeToolLinks), so there the view's own content comes first.
+   Cards keep one width, so one or two do not stretch across the panel. */
+.tool-links { display: grid; justify-items: center; gap: var(--space-2); padding: var(--space-3) var(--space-5); border-bottom: 1px solid var(--rule); }
+.tool-links__list { display: flex; flex-wrap: wrap; justify-content: center; gap: var(--space-1) var(--space-4); width: 100%; }
+.tool-links .overview-tool { width: 20rem; max-width: 100%; }
+.tool-links [hidden] { display: none; }
+.tool-links--foot { border-top: 1px solid var(--rule); border-bottom: 0; padding-block: var(--space-4); }
+/* Matches: one card in the head's corner, over the count of matches; the
+   nav's name stands in for the heading, and the card's thumbnail lines up
+   with the count's right edge. */
+.panel__aside { display: grid; justify-items: end; gap: var(--space-2); }
+/* The title and description at the top, level with the card, not below it. */
+.panel__head:has(> .panel__aside) { align-items: flex-start; }
+.tool-links--head { padding: 0; border: 0; }
+.tool-links--head > .label { display: none; }
+.tool-links--head .overview-tool { margin-inline-end: calc(-1 * var(--space-2)); }
+@media (max-width: 760px) {
+  .tool-links { padding: var(--space-3); }
+  .tool-links .overview-tool { width: 100%; grid-template-columns: 5rem minmax(0, 1fr); }
+  /* At a panel's foot (and under the ladder's head): one row of chips that
+     scrolls sideways, each the tool's thumbnail and name, so three tools
+     never stack into a tall block on a 360px screen. The trailing fade says
+     there is more; Matches' corner card keeps its own shape. */
+  .tool-links:not(.tool-links--head) { justify-items: stretch; padding: var(--space-3) 0; }
+  .tool-links:not(.tool-links--head) > .label { padding-inline: var(--space-4); }
+  .tool-links:not(.tool-links--head) .tool-links__list {
+    flex-wrap: nowrap;
+    justify-content: flex-start;
+    gap: var(--space-2);
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    scrollbar-width: none;
+    padding: 2px var(--space-4);
+    scroll-padding-inline: var(--space-4);
+    mask-image: linear-gradient(90deg, transparent, #000 var(--space-3), #000 calc(100% - 2rem), transparent);
+  }
+  .tool-links:not(.tool-links--head) .tool-links__list::-webkit-scrollbar { display: none; }
+  .tool-links:not(.tool-links--head) .overview-tool {
+    flex: none;
+    width: 8.5rem;
+    grid-template-columns: minmax(0, 1fr);
+    justify-items: center;
+    gap: var(--space-2);
+    padding: var(--space-2);
+    border: 1px solid var(--rule);
+    border-radius: 12px;
+    background: var(--panel-sunk);
+    text-align: center;
+  }
+  .tool-links:not(.tool-links--head) .overview-tool .explore-card__thumb { width: 100%; border-radius: 8px; }
+  .tool-links:not(.tool-links--head) .overview-tool__text { justify-items: center; }
+  .tool-links:not(.tool-links--head) .overview-tool__title { font-size: 0.8125rem; line-height: 1.25; }
+  .tool-links:not(.tool-links--head) .overview-tool__desc { display: none; }
+  .panel__aside { flex: 1 1 100%; justify-items: stretch; }
+  .tool-links--head { padding: 0; }
+  .tool-links--head .overview-tool { margin-inline: calc(-1 * var(--space-2)); width: calc(100% + 2 * var(--space-2)); }
+}
+.share-btn:not(.overview-card__share) { align-self: center; margin-inline-start: auto; }
+/* In the popup's head: a pair with the close button, its size and shape, on
+   its line at the top, half the head's gap between them. */
+.scenario__head .share-btn {
+  align-self: flex-start;
+  width: 2rem;
+  height: 2rem;
+  margin-inline: auto -0.5rem;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--ink-muted);
+}
+.scenario__head .share-btn:hover { background: transparent; border-color: var(--accent); box-shadow: none; color: var(--accent-ink); }
+.scenario__head .share-btn svg { width: 16px; height: 16px; }
+/* A finger's size for the close and share buttons in the popup's head: the same 44px, on the same line
+   (after the share rule above, which would otherwise keep it 2rem and at the top). */
+@media (pointer: coarse), (max-width: 760px) {
+  .scenario__close { width: 44px; height: 44px; font-size: 1.5rem; }
+  .scenario__head .share-btn { width: 44px; height: 44px; align-self: auto; }
+  .scenario__head .share-btn svg { width: 20px; height: 20px; }
+}
+.footer__data { margin-bottom: 0.25rem; }

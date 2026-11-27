@@ -1,18 +1,59 @@
-/* Guards the pure logic in public/app.js: the form chips and the compare
-   tool's odds. Run with `node --test tests/frontend.test.js`.
-
-   app.js is a plain browser script with no exports, so the functions under
-   test are sliced out of the source rather than imported. */
+/* Guards the pure logic in public/app/*.js and public/model.js, plus i18n
+   parity and HTML script/stylesheet integrity.
+   Run with `node --test tests/frontend.test.js`. */
 const { test } = require('node:test');
 const assert = require('node:assert');
 const fs = require('node:fs');
+const path = require('node:path');
+const vm = require('node:vm');
 
-const src = fs.readFileSync(`${__dirname}/../public/app.js`, 'utf8');
-const pick = (name) => {
-  const start = src.indexOf(`function ${name}(`);
-  return src.slice(start, src.indexOf('\n}', start) + 2);
-};
-eval(pick('formByTeam') + pick('formPoints'));
+globalThis.localStorage = globalThis.localStorage || { getItem: () => 'en', setItem: () => {} };
+globalThis.document = globalThis.document || { querySelectorAll: () => [], getElementById: () => null, addEventListener: () => {}, documentElement: {} };
+
+const PUBLIC_DIR = path.join(__dirname, '..', 'public');
+const indexHtml = fs.readFileSync(path.join(PUBLIC_DIR, 'index.html'), 'utf8');
+const indexScripts = [...indexHtml.matchAll(/<script\s+src="\/([^"]+)"\s+defer><\/script>/g)].map((m) => m[1]);
+
+const i18n = require('../public/i18n.js');
+Object.assign(globalThis, i18n);
+const helpers = require('../public/app/helpers.js');
+Object.assign(globalThis, helpers);
+const sim = require('../public/season-sim.js');
+Object.assign(globalThis, sim);
+const gridMod = require('../public/app/grid.js');
+Object.assign(globalThis, gridMod);
+const compareMod = require('../public/app/compare.js');
+Object.assign(globalThis, compareMod);
+
+const {
+  stakePct, teamStakes, nextStake, stakesForFixture, stakeLegs, stakeCopy, stakeTip, fixtureModifiers,
+  formByTeam, formPoints, weekStart, whatIfStages,
+} = require('../public/app/matches.js');
+const { matchOdds, scoreGrid, topScorelines, blendOdds, expandH2h } = compareMod;
+const { matchdayIndex } = require('../public/app/rewind-backdrop.js');
+const { expectedFinish, timelineReports } = gridMod;
+const { trendDegree, rivalCopy, rivalResults } = require('../public/app/team.js');
+const { PERF_WINDOW, teamPerformanceRows } = require('../public/app/team-charts.js');
+const { bandChance, bandWithPlayoff, seasonOutcomes, sortedStandings } = require('../public/app/standings.js');
+const { RUN_IN_ROUNDS, runInStart } = require('../public/app/explore.js');
+const { predictInviteRound } = require('../public/app/overview.js');
+const {
+  xgPoints, luckChances, luckRows, luckSeasons, luckSummary, seasonSpan, luckTrend, withTrend,
+} = require('../public/app/explore-luck.js');
+const {
+  scorecardRows, scorecardLastSeason, scorecardHits, calibrationPool, calibrationInterval, calibrationRange,
+  versionSkill, versionShort,
+} = require('../public/app/model-accuracy.js');
+const { parseLocks, lockParam, whatIfRows, whatIfSwing, whatIfShown } = require('../public/app/explore-whatif.js');
+const {
+  PLAYOFF_MIN_SHARE, playoffGrid, playoffOf100, playoffCards, playoffWinners, playoffLikely,
+} = require('../public/app/explore-playoff.js');
+const {
+  refereeMinFilter, expandReferees, refereeFilter, refereeOverview, refereePairings,
+  clubDisciplineRows, seasonDisciplineRows, refereeTeamRows, teamRefereeRows,
+  refereePairingMatches, redCardImpact, varEraComparison, feistiestMatches,
+  refereeScatterLabels, refereeChanceSd, refereeChanceBand, refereeClubBaseline,
+} = require('../public/app/explore-referees-data.js');
 
 const match = (date, home, away, hg, ag) =>
   ({ date, home, away, home_goals: hg, away_goals: ag });
@@ -31,7 +72,6 @@ test('the away side gets the mirror of the home result', () => {
    port to the model it was ported from (model/pricing.py). The numbers are the
    Python model's own, written by tests/test_pricing.py, which fails first when
    the model moves. */
-eval(pick('matchOdds') + pick('scoreGrid') + pick('topScorelines') + pick('blendOdds'));
 
 const GOLDEN = JSON.parse(fs.readFileSync(`${__dirname}/fixtures/match_odds.json`, 'utf8'));
 const MODEL = GOLDEN.app.model;
@@ -174,7 +214,6 @@ test("the other side's keeping lowers a side's expected goals, as model/attack_d
 /* --- season rewind: where the slider sits in the live matchdays.
     The range comes from the live report, which spans the whole
     season even when the displayed view is rewound. */
-eval(pick('matchdayIndex'));
 
 const DAYS = [
   { date: '2026-03-01', matches_played: 2 },
@@ -205,14 +244,7 @@ test('an empty range has no index, so the slider stays hidden', () => {
   assert.equal(matchdayIndex([], '2026-03-08'), null);
 });
 
-/* --- high stakes: the decisive-match feature.
-     Pure helpers are sliced out like the rest; the sentence copy needs the
-     real i18n table, so that file is eval'd too (its top level only touches
-     localStorage, stubbed here). */
-globalThis.localStorage = globalThis.localStorage || { getItem: () => 'en', setItem: () => {} };
-globalThis.document = globalThis.document || { querySelectorAll: () => [], getElementById: () => null, documentElement: {} };
-const i18nSrc = fs.readFileSync(`${__dirname}/../public/i18n.js`, 'utf8');
-eval(i18nSrc + pick('bandName') + pick('bandEdgeName') + pick('stakePct') + pick('teamStakes') + pick('nextStake') + pick('stakesForFixture') + pick('stakeLegs') + pick('stakeCopy') + pick('stakeTip') + pick('timelineReports') + pick('clubSlug') + pick('esc'));
+/* --- high stakes: the decisive-match feature. */
 
 const NBSP = String.fromCharCode(160);
 const titleStake = {
@@ -325,7 +357,6 @@ test('the next-match stake is found per club and degrades without the key', () =
 });
 
 /* --- rating trend: total over the last five matches, five degrees. */
-eval(pick('trendDegree'));
 
 test('rating trend: steady within ±8 over five matches, fast beyond ±20', () => {
   const cuts = { mild: 8, strong: 20 };
@@ -368,8 +399,6 @@ function assertBothLanguages(keys) {
   setLang('en');
 }
 
-eval(pick('bandChance') + pick('bandWithPlayoff'));
-
 test('promotion and relegation count the play-offs where the report has them', () => {
   const top = { tone: 'top', first: 1, last: 2 };
   const down = { tone: 'relegation', first: 15, last: 16 };
@@ -390,9 +419,6 @@ test('the play-off and surface strings exist in both languages', () => {
     'team.playoffIncluded', 'model.surfaceEdge', 'model.stakes', 'model.stakesValue',
   ]);
 });
-
-eval(pick('runInStart'));
-const RUN_IN_ROUNDS = 10;
 
 test('a finished season runs in from the first day with ten rounds left', () => {
   // 16 clubs, 240 matches: ten rounds are 80, so the run-in starts at 160 played.
@@ -419,11 +445,7 @@ test('the time-axis note exists in both languages', () => {
 
 /* The luck table's xG points are model.elo.xg_implied_score's Poisson sum
    (12 goals, normalised), as points; golden values from Python. */
-eval(pick('xgPoints') + pick('luckChances') + pick('luckRows') + pick('luckSeasons') + pick('luckSummary')
-  + pick('seasonSpan') + pick('luckTrend') + pick('withTrend'));
-const LUCK_XG_SHARE = 0.9;
 const LUCK_CARRY = 3;  // the app has 5; these seasons are three matches a club
-const LUCK_FINISHING = 0.5;
 
 test('xG points match the Python recurrence', () => {
   const close = (a, b) => assert.ok(Math.abs(a - b) < 1e-12, `${a} vs ${b}`);
@@ -517,7 +539,7 @@ test('luck summary: champions, quarters by xG points, extremes and what lasts', 
     ['A', 'B', 0, 1, [2.0, 0.5]], ['C', 'D', 2, 0, [0.6, 1.8]],
   ], { table: ['C', 'B', 'A', 'D'] })]);
   const lucky = rows.map((row) => withTrend(row, luckTrend(rows)));
-  const summary = luckSummary(lucky);
+  const summary = luckSummary(lucky, LUCK_CARRY);
   assert.equal(summary.quarter, 1);
   assert.deepEqual(summary.champions.map((c) => [c.team_id, c.season, c.mostChances]), [['A', 2024, true], ['A', 2025, true], ['C', 2026, false]]);
   assert.ok(summary.top > 0 && summary.bottom < summary.top);
@@ -572,8 +594,6 @@ test('every luck-table string exists in both languages', () => {
   ]);
 });
 
-eval(pick('expectedFinish') + pick('scorecardRows') + pick('scorecardLastSeason') + pick('scorecardHits'));
-
 test('scorecard rows put the pre-season call against the final place', () => {
   const pre = [
     { team_id: 'A', position_probabilities: [0.7, 0.3, 0] },
@@ -617,8 +637,6 @@ test('every scorecard string exists in both languages', () => {
   ]);
 });
 
-eval(pick('calibrationPool') + pick('calibrationInterval') + pick('calibrationRange'));
-
 test('calibration pools the bins at the top of the range', () => {
   const bins = [
     { lo: 0.6, hi: 0.7, n: 10, predicted: 0.65, observed: 0.6 },
@@ -660,8 +678,6 @@ test('each calibration panel takes the same range on both axes, out to the next 
   // An exact tenth stays put, and the range never leaves 0-1.
   assert.deepEqual(calibrationRange([{ predicted: 0.2, observed: 0.25, n: 1e9 }, { predicted: 0.95, observed: 0.99, n: 60 }]), [0.2, 1]);
 });
-
-eval(pick('versionSkill') + pick('versionShort'));
 
 test('the version history measures each version against base rates and labels it short', () => {
   assert.ok(Math.abs(versionSkill(1.0, 1.0620) - (100 * (1 - 1 / 1.062))) < 1e-12);
@@ -753,8 +769,6 @@ test('the model page weighs table stakes the way model.stakes does', () => {
   for (const [d, left, tau, p] of GOLDEN.page.pressure) near(pageMath.pressure(d, left, tau), p);
 });
 
-eval(pick('bandFor') + pick('seasonOutcomes'));
-
 const ELITE_BANDS = [
   { label: 'Champions', first: 1, last: 1, tone: 'champion' },
   { label: 'Champions League qualification', first: 1, last: 2, tone: 'top' },
@@ -806,10 +820,11 @@ test('a play-off result cannot take more than its own place offers', () => {
   assert.ok(seasonOutcomes(evenRow(), ELITE_BANDS, 'eliteserien').some((s) => s.key === 'Relegation play-off' && !s.hatch));
 });
 
-const RACE_MAX_FEATURED = 6;
-eval(pick('raceSeries') + pick('raceSwing') + pick('raceWeek') + pick('raceRounds') + pick('spreadLabels')
-  + pick('raceYMax') + pick('raceGroups') + pick('raceMatchesInWindow') + pick('raceCurvePath')
-  + pick('raceSwingMatches') + pick('raceStatus') + pick('raceHighlights'));
+const {
+  RACE_MAX_FEATURED, spreadLabels, raceSeries, raceSwing, raceWeek, raceRounds,
+  raceYMax, raceGroups, raceMatchesInWindow, raceCurvePath, raceSwingMatches,
+  raceStatus, raceHighlights,
+} = require('../public/app/explore-races.js');
 
 const raceLayers = [
   { kind: 'pre', date: '2026-03-13', p: new Map([['A', [0.5, 0.3, 0.2]], ['B', [0.1, 0.2, 0.7]]]) },
@@ -961,10 +976,6 @@ test('raceSwingMatches includes major counter-moving rivals and deduplicates cla
   assert.deepEqual(ms.map((m) => m.match_id), ['10', '11']);
 });
 
-const SORT_THEN = { goals_for: 'goals_against', expected_goals_for: 'expected_goals_against' };
-const sortState = { sort: { key: 'goals_for', dir: -1 } };
-eval(pick('sortedStandings').replace('state.sort', 'sortState.sort'));
-
 test('the goals column sorts by goals for, then goals against, then position', () => {
   const rows = [
     { team: 'A', position: 1, goals_for: 30, goals_against: 20 },
@@ -973,21 +984,16 @@ test('the goals column sorts by goals for, then goals against, then position', (
     { team: 'D', position: 4, goals_for: 40, goals_against: 15 },
   ];
   // Best first: most scored, then fewest conceded, then table order.
-  sortState.sort = { key: 'goals_for', dir: -1 };
-  assert.deepEqual(sortedStandings(rows).map((r) => r.team), ['C', 'D', 'B', 'A']);
+  assert.deepEqual(sortedStandings(rows, { key: 'goals_for', dir: -1 }).map((r) => r.team), ['C', 'D', 'B', 'A']);
   // Worst first is the exact reverse for the figures (and position keeps equal clubs in table order).
-  sortState.sort = { key: 'goals_for', dir: 1 };
-  assert.deepEqual(sortedStandings(rows).map((r) => r.team), ['A', 'B', 'C', 'D']);
+  assert.deepEqual(sortedStandings(rows, { key: 'goals_for', dir: 1 }).map((r) => r.team), ['A', 'B', 'C', 'D']);
   // The projected goals work the same way.
   const projected = rows.map((r) => ({ ...r, expected_goals_for: r.goals_for, expected_goals_against: r.goals_against }));
-  sortState.sort = { key: 'expected_goals_for', dir: -1 };
-  assert.deepEqual(sortedStandings(projected).map((r) => r.team), ['C', 'D', 'B', 'A']);
+  assert.deepEqual(sortedStandings(projected, { key: 'expected_goals_for', dir: -1 }).map((r) => r.team), ['C', 'D', 'B', 'A']);
 });
 
 /* The what-if page: the season simulation in public/season-sim.js (which the
-   page runs in a worker) and the pure helpers around it in app.js. */
-const sim = require('../public/season-sim.js');
-eval(pick('parseLocks') + pick('lockParam') + pick('whatIfRows') + pick('whatIfSwing'));
+   page runs in a worker) and the pure helpers around it in explore-whatif.js. */
 const shiftedChances = sim.shiftedChances;
 
 // Three clubs, one fixture between A and B; C is far clear of both.
@@ -1362,9 +1368,6 @@ test('the keeping windows are used, not skipped', () => {
 });
 
 /* The tags on a fixture card: what moved its odds beyond the ratings. */
-const num = (value, digits = 0) => value.toFixed(digits);   // app.js's, without the locale
-eval(pick('fixtureModifiers'));
-
 test('a fixture card names the surface edge and table pressure that moved its odds', () => {
   setLang('en');
   const game = { home: 'Brann', away: 'Viking', surface_elo: 20, stakes_elo: -21.4 };
@@ -1377,15 +1380,12 @@ test('a fixture card names the surface edge and table pressure that moved its od
 });
 
 /* Rival watch: a rival match's entry in words. */
-const pct = (value) => `${Math.round(value * 100)} %`;   // app.js's, without the locale
-eval(pick('rivalCopy') + pick('rivalResults'));
-
 test('a rival match says what each result does to the club', () => {
   const entry = { home: 'Brann', away: 'Viking', p_baseline: 0.31, helps: 'home', p_helps: 0.42, hurts: 'away', p_hurts: 0.12 };
   setLang('en');
-  assert.deepEqual(rivalCopy(entry), { main: 'Brann – Viking', sub: '31 % → 42 % with a home win, 12 % with an away win' });
+  assert.deepEqual(rivalCopy(entry), { main: 'Brann – Viking', sub: '31% → 42% with a home win, 12% with an away win' });
   setLang('no');
-  assert.equal(rivalCopy(entry).sub, '31 % → 42 % ved hjemmeseier, 12 % ved borteseier');
+  assert.equal(rivalCopy(entry).sub, `31${NBSP}% → 42${NBSP}% ved hjemmeseier, 12${NBSP}% ved borteseier`);
   setLang('en');
 });
 
@@ -1395,19 +1395,17 @@ test('the model card strings added with elo-v17.0 exist in both languages', () =
 });
 
 /* The head-to-head meetings come as a compact file the Compare page expands. */
-const shortName = (name) => name.replace('Fotballklubb', 'FK');   // app.js's maps clubs to short names
-eval(pick('expandH2h'));
-
 test('head-to-head meetings expand to what the Compare page reads', () => {
+  const short = (name) => name.replace('Fotballklubb', 'FK');
   const meetings = expandH2h({
     names: ['A Fotballklubb', 'B'],
     matches: { 'a\tb': [['2020-05-01', 2020, 'a', 'b', 2, 1, 0, 1], ['2021-05-01', 2021, 'b', 'a', 0, 0, 1, 0]] },
-  });
+  }, short);
   assert.deepEqual(meetings['a\tb'][0], {
     date: '2020-05-01', season: 2020, home_id: 'a', away_id: 'b', home_goals: 2, away_goals: 1, home: 'A FK', away: 'B',
   });
   assert.equal(meetings['a\tb'][1].home, 'B');
-  assert.deepEqual(expandH2h({}), {});
+  assert.deepEqual(expandH2h({}, short), {});
 });
 
 test('a rival match draws its three results as the decisive matches do', () => {
@@ -1428,7 +1426,6 @@ test('the fixture-card tag strings exist in both languages', () => {
 });
 
 /* A fixture's card odds: the published ones, moved by the re-rating's ratio. */
-eval(pick('whatIfShown'));
 
 test('a fixture the re-rating did not move shows its published odds', () => {
   const game = { home_id: 'A', away_id: 'B', home_win: 0.2, draw: 0.25, away_win: 0.55 };
@@ -1450,7 +1447,6 @@ test('a home side priced up by the re-rating gains the same share on the card', 
   assert.ok(Math.abs(shown.home_win + shown.draw + shown.away_win - 1) < 1e-12);
 });
 /* Which locks a fixture is priced after: those of earlier weeks only. */
-eval(pick('weekStart') + pick('whatIfStages'));
 
 test('weeks start on Monday, in order as text', () => {
   assert.equal(weekStart('2026-11-21'), '2026-11-16'); // a Saturday
@@ -1470,7 +1466,7 @@ test('a locked fixture moves only the fixtures of later weeks', () => {
   assert.deepEqual(whatIfStages(games, [0, 2]), [0, 0, 1, 1, 2]);
 });
 
-eval(pick('runInRows'));
+const { runInRows } = require('../public/app/explore-runin.js');
 
 test('run-in rows read each fixture from both sides, easiest run-in first', () => {
   const table = [{ team_id: 'A', team: 'A' }, { team_id: 'B', team: 'B' }, { team_id: 'C', team: 'C' }, { team_id: 'D', team: 'D' }];
@@ -1515,9 +1511,10 @@ test('every run-in string exists in both languages', () => {
 /* A repeated key in an object literal is silently won by the later copy, so
    the parsed table cannot show it; the source can. */
 test('i18n.js has no repeated key within a language, and the two languages share every key', () => {
-  const [enBlock, noBlock] = i18nSrc.split(/^  no: \{$/m);
+  const enSrc = fs.readFileSync(path.join(PUBLIC_DIR, 'i18n', 'en.js'), 'utf8');
+  const noSrc = fs.readFileSync(path.join(PUBLIC_DIR, 'i18n', 'no.js'), 'utf8');
   const keysOf = (block) => [...block.matchAll(/^\s+'([^']+)':/gm)].map((m) => m[1]);
-  const [en, no] = [keysOf(enBlock), keysOf(noBlock)];
+  const [en, no] = [keysOf(enSrc), keysOf(noSrc)];
   const repeats = (keys) => keys.filter((key, i) => keys.indexOf(key) !== i);
   assert.deepEqual(repeats(en), [], 'repeated en keys');
   assert.deepEqual(repeats(no), [], 'repeated no keys');
@@ -1558,8 +1555,6 @@ test('esc makes a club name safe to put in the tooltip markup', () => {
 });
 
 /* The relegation play-off page's grid: rows and columns from the published pairs. */
-eval(/const PLAYOFF_MIN_SHARE = [^;]+;/.exec(src)[0] + pick('playoffGrid'));
-
 test('the play-off grid sums each club\'s pairings and how often the Eliteserien club stays up', () => {
   const tie = {
     teams: { a: 'A', b: 'B', x: 'X', y: 'Y', z: 'Z' },
@@ -1601,8 +1596,6 @@ test('every relegation play-off string exists in both languages', () => {
   ]);
 });
 
-eval(pick('playoffOf100') + pick('playoffCards'));
-
 test('the play-off page counts in whole seasons out of a hundred', () => {
   assert.equal(playoffOf100(0.631), '63');
   assert.equal(playoffOf100(0.004), '<1');
@@ -1618,8 +1611,6 @@ test('the likeliest matches are the common pairings, most common first, capped',
   assert.deepEqual(playoffCards(tie, 0.01, 2).map((pair) => `${pair.top}${pair.bottom}`), ['bx', 'ay']);
 });
 
-eval(pick('playoffLikely'));
-
 test('a bracket match lists its three likeliest pairings, and none once either side is settled', () => {
   const pair = (home, away, p) => ({ home, away, p });
   const open = [pair('a', 'x', 0.2), pair('b', 'y', 0.5), pair('c', 'x', 0.005), pair('d', 'x', 0.25), pair('e', 'y', 0.045)];
@@ -1630,8 +1621,6 @@ test('a bracket match lists its three likeliest pairings, and none once either s
   assert.deepEqual(playoffLikely([pair('a', 'x', 0.6), pair('a', 'y', 0.4)]), []);
   assert.deepEqual(playoffLikely([pair('a', 'z', 0.6), pair('b', 'z', 0.4)]), []);
 });
-
-eval(pick('playoffWinners'));
 
 test('a bracket match\'s winners add each pairing\'s chance of each side going through', () => {
   const winners = playoffWinners([
@@ -1644,7 +1633,6 @@ test('a bracket match\'s winners add each pairing\'s chance of each side going t
 });
 
 /* The Overview's Predict invite: the round a newcomer would tip next, from the report alone. */
-eval(pick('predictInviteRound'));
 
 test('the Predict invite names the next full round and its closest call', () => {
   const f = (round, date, time, h, d, a, id) => ({ round, date, time, home_win: h, draw: d, away_win: a, match_id: id });
@@ -1671,13 +1659,15 @@ test('the Predict invite names the next full round and its closest call', () => 
 /* The touch ripple puts position: relative on whatever it touches. A card's name button is stretched over its
    card by an ::after, so rippling it shrinks that to the name and a tap elsewhere on the card opens nothing. */
 test('the touch ripple leaves the Overview card name buttons alone', () => {
-  const list = pick('addTouchRipple').match(/const interactiveSelectors = \[([\s\S]*?)\];/)[1];
+  const gesturesSrc = fs.readFileSync(path.join(PUBLIC_DIR, 'app', 'gestures-analytics.js'), 'utf8');
+  const list = gesturesSrc.match(/const interactiveSelectors = \[([\s\S]*?)\];/)[1];
   assert.match(list, /'button:[^']*:not\(\.overview-card__open\)'/);
 });
 
 /* A browser holding a Predict session is signed in: its Overview card is the game's or nothing, never the invite. */
 test('the Overview shows the Predict invite only to a browser with no session', () => {
-  const body = pick('overviewPredict');
+  const overviewSrc = fs.readFileSync(path.join(PUBLIC_DIR, 'app', 'overview.js'), 'utf8');
+  const body = overviewSrc.slice(overviewSrc.indexOf('function overviewPredict('));
   const afterLoad = body.slice(body.indexOf('loadOverviewPredict().then'));
   assert.ok(!afterLoad.includes('fillPredictInvite'), 'a signed-in browser is never shown the invite');
   assert.match(body, /if \(!hasPredictSession\(\)\) return[^;]*fillPredictInvite/);
@@ -1685,8 +1675,6 @@ test('the Overview shows the Predict invite only to a browser with no session', 
 
 /* Back: a page is its view, Explore tool and club; the division, season, rewind and the like only replace the
    history entry (render's address write), so Back walks the pages the reader opened. */
-eval(pick('pageKeyOf'));
-
 test('a history entry is a view, a tool and a club, and nothing else in the address', () => {
   const key = (query) => pageKeyOf(new URLSearchParams(query));
   assert.equal(key('view=overview'), 'overview||');
@@ -1698,17 +1686,17 @@ test('a history entry is a view, a tool and a club, and nothing else in the addr
 });
 
 test('Back goes through the app where the page has something behind it, else to the arrow\'s own fallback', () => {
+  const prevWindow = globalThis.window;
   const run = (history) => {
     const calls = [];
-    new Function('window', 'goBackFallback', `${pick('historyDepth')}${pick('goBackOr')}goBackOr(goBackFallback);`)({ history: { ...history, back: () => calls.push('back') } }, () => calls.push('fallback'));
+    globalThis.window = { history: { ...history, back: () => calls.push('back') } };
+    try { goBackOr(() => calls.push('fallback')); } finally { globalThis.window = prevWindow; }
     return calls;
   };
   assert.deepEqual(run({ state: { n: 2 } }), ['back']);
   assert.deepEqual(run({ state: null }), ['fallback'], 'a page opened by a link never leaves the site');
   assert.deepEqual(run({ state: { n: 0 } }), ['fallback']);
 });
-
-eval(pick('refereeMinFilter') + pick('expandReferees') + pick('refereeFilter') + pick('refereeOverview') + pick('refereePairings') + pick('clubDisciplineRows') + pick('seasonDisciplineRows') + pick('refereeTeamRows') + pick('teamRefereeRows') + pick('refereePairingMatches') + pick('redCardImpact') + pick('varEraComparison') + pick('feistiestMatches') + pick('refereeScatterLabels') + pick('refereeChanceSd') + pick('refereeChanceBand') + pick('refereeClubBaseline'));
 
 test('referee aggregation computes benefit/drawback, home bias, and fouls per card without foul-missing bias', () => {
   const payload = {
@@ -1833,8 +1821,6 @@ test('referee aggregation computes benefit/drawback, home bias, and fouls per ca
   assert.equal(varCmp.varEra.redsPerMatch, 1);
 });
 
-eval('const PERF_WINDOW = 5;' + pick('teamPerformanceRows'));
-
 test('team performance rows read from the club side, with a trailing 5-match average', () => {
   const data = {
     leagues: ['eliteserien', 'obosligaen'],
@@ -1889,4 +1875,58 @@ test('referee i18n keys exist in both English and Norwegian', () => {
     'referees.explain.line', 'referees.explain.win', 'referees.explain.loss', 'referees.explain.example',
     'referees.tipInside', 'referees.tipOutside', 'referees.chanceNote', 'referees.chanceNoteClub', 'referees.how.chance',
   ]);
+});
+
+test('all classic scripts in HTML and Predict parse cleanly and have no duplicate top-level declarations', () => {
+  assert.ok(indexScripts.includes('app.js'));
+  const exploreCode = fs.readFileSync(path.join(PUBLIC_DIR, 'app', 'explore.js'), 'utf8');
+  const exploreScripts = [...exploreCode.match(/const EXPLORE_SCRIPTS = \{([\s\S]*?)\};/)[1].matchAll(/'\/([^']+)'/g)].map((m) => m[1]);
+  const allAppScripts = [...new Set([...indexScripts, 'i18n/en.js', 'i18n/no.js', ...exploreScripts, 'app/model-accuracy.js'])];
+  const seen = new Map();
+  const dupes = [];
+  for (const rel of allAppScripts) {
+    const filePath = path.join(PUBLIC_DIR, rel);
+    assert.ok(fs.existsSync(filePath), `missing script: ${rel}`);
+    const code = fs.readFileSync(filePath, 'utf8');
+    new vm.Script(code, { filename: rel });
+    for (const [idx, line] of code.split(/\r?\n/).entries()) {
+      const m = line.match(/^(?:async\s+)?function\s+([A-Za-z_$][\w$]*)|^(?:const|let|var)\s+([A-Za-z_$][\w$]*)/);
+      if (!m) continue;
+      const name = m[1] || m[2];
+      if (seen.has(name)) dupes.push(`${name}: ${seen.get(name)} vs ${rel}:${idx + 1}`);
+      else seen.set(name, `${rel}:${idx + 1}`);
+    }
+  }
+  assert.deepEqual(dupes, []);
+
+  // Also check model.html scripts and lazy-loaded Predict scripts parse cleanly.
+  const modelHtml = fs.readFileSync(path.join(PUBLIC_DIR, 'model.html'), 'utf8');
+  const modelScripts = [...modelHtml.matchAll(/<script\s+src="\/([^"]+)"\s+defer><\/script>/g)].map((m) => m[1]);
+  const appCode = fs.readFileSync(path.join(PUBLIC_DIR, 'app.js'), 'utf8');
+  const predictFiles = [...appCode.match(/const PREDICT_FILES = \[([^\]]+)\]/)[1].matchAll(/'\/([^']+)'/g)].map((m) => m[1]);
+  for (const rel of [...modelScripts, ...predictFiles]) {
+    const filePath = path.join(PUBLIC_DIR, rel);
+    assert.ok(fs.existsSync(filePath), `missing script: ${rel}`);
+    new vm.Script(fs.readFileSync(filePath, 'utf8'), { filename: rel });
+  }
+});
+
+test('all stylesheets linked from HTML pages exist and have balanced braces', () => {
+  for (const htmlName of ['index.html', 'model.html', '404.html', 'personvern.html']) {
+    const html = fs.readFileSync(path.join(PUBLIC_DIR, htmlName), 'utf8');
+    const sheets = [...html.matchAll(/<link\s+rel="stylesheet"\s+href="\/([^"]+)">/g)].map((m) => m[1]);
+    assert.ok(sheets.length > 0, `no stylesheets in ${htmlName}`);
+    for (const rel of sheets) {
+      const filePath = path.join(PUBLIC_DIR, rel);
+      assert.ok(fs.existsSync(filePath), `missing stylesheet ${rel} in ${htmlName}`);
+      const css = fs.readFileSync(filePath, 'utf8').replace(/\/\*[\s\S]*?\*\//g, '').replace(/'[^']*'|"[^"]*"/g, '');
+      let depth = 0;
+      for (const ch of css) {
+        if (ch === '{') depth += 1;
+        else if (ch === '}') depth -= 1;
+        assert.ok(depth >= 0, `unexpected closing brace in ${rel}`);
+      }
+      assert.equal(depth, 0, `unclosed brace in ${rel}`);
+    }
+  }
 });

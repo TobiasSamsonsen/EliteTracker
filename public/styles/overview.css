@@ -1,0 +1,933 @@
+/* ---------- overview ----------------------------------------------- */
+
+.overview { display: grid; gap: var(--space-6); padding: var(--space-5); }
+
+/* A division: its name (with its identity hue, as on the ladder), the round it
+   has reached and buttons to its table and matches on one line; then the
+   hero's figures for the title race and the round's key match; then a card for
+   each other race; then the clubs on the move. Divisions are told apart by a
+   hairline, as the model card's sections are, not by boxes. */
+.overview__division { display: grid; gap: var(--space-4); min-width: 0; }
+.overview__division + .overview__division { padding-top: var(--space-6); border-top: 1px solid var(--rule); }
+.overview__division-head { display: flex; align-items: center; gap: var(--space-2) var(--space-4); }
+.overview__division-name {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  margin: 0 auto 0 0;
+  font-size: 1.5rem;
+  line-height: 1.2;
+}
+.overview__division-name::before {
+  content: "";
+  width: 0.7rem;
+  height: 0.7rem;
+  border-radius: 3px;
+  background: var(--ink-faint);
+}
+.overview__division-name[data-tier="1"]::before { background: var(--tier-1); }
+.overview__division-name[data-tier="2"]::before { background: var(--tier-2); }
+.overview__round { margin-right: auto; font-size: 0.8125rem; color: var(--ink-muted); font-variant-numeric: tabular-nums; }
+.overview__division-head:has(.overview__round) .overview__division-name { margin-right: 0; }
+.overview__division-head .team-mini__full { flex: none; }
+
+/* A block that opens a page. Its name is a button stretched over the block
+   (::after), so the whole block is the target; a club inside it stays its own
+   target above that, and opens the club. */
+.overview-card {
+  position: relative;
+  border-radius: 12px;
+  transition: background 0.15s var(--ease), border-color 0.15s var(--ease), transform 0.15s var(--ease), box-shadow 0.15s var(--ease);
+}
+.overview-card__open {
+  appearance: none;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.overview-card__open::after { content: ""; position: absolute; inset: 0; border-radius: inherit; }
+.overview-card__open:focus-visible { outline: none; }
+.overview-card__open:focus-visible::after { outline: 2px solid var(--ink); outline-offset: 2px; }
+/* A block's title in the heroes' label ("UKENS KAMP · FRE. 20. NOV.", .label):
+   small spaced capitals, any caption after it on the same line. */
+.overview-card__head { display: grid; grid-template-columns: minmax(0, 1fr); align-items: start; }
+.overview-card__label { min-width: 0; line-height: 1.5; }
+.overview-card__label .overview-card__open { display: inline; text-align: left; }
+.overview-card__head :is(.overview-card__open, .overview-card__caption) {
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  font-variation-settings: "wdth" 105;
+  color: var(--ink-muted);
+}
+/* A caption wraps as a whole (to the next line, with its dot), never mid-phrase. */
+.overview-card__caption { color: var(--ink-faint); white-space: nowrap; }
+.overview-card__caption::before { content: "\00a0·\00a0"; }
+/* Every figure in the heroes' figure type (.race__value): Archivo stretched
+   wide and heavy, tightly set. */
+.overview-title__figure,
+.overview-race__figure:not(.is-done),
+.overview-top__points,
+.overview-champion__club,
+.overview-champion__points,
+.overview-match__score {
+  font-family: var(--display);
+  font-variation-settings: "wdth" 125;
+  font-weight: 800;
+  letter-spacing: -0.035em;
+}
+
+/* A chance's move since the last round: the table's arrow and its size in
+   percentage points, in the good or the bad tone for the club. */
+.overview-change {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.1rem;
+  font-family: var(--body);
+  font-size: 0.8125rem;
+  font-weight: 700;
+  font-variation-settings: normal;
+  letter-spacing: 0;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.overview-change.is-good { color: var(--outcome-good-ink); }
+.overview-change.is-bad { color: var(--outcome-bad-ink); }
+.overview-change__arrow { display: inline-flex; font-size: 1.05em; line-height: 1; }
+
+/* A finished division's champion, in the title race's row: the club and its
+   points in display type, the next places smaller under it. */
+.overview-champion { gap: var(--space-3); }
+.overview-champion__lead { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--space-2) var(--space-4); min-width: 0; }
+.overview-champion__club {
+  position: relative;
+  z-index: 1;
+  appearance: none;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--ink);
+  font-size: clamp(1.75rem, 4vw, 2.75rem);
+  line-height: 1.1;
+  cursor: pointer;
+}
+.overview-champion__club .team-logo { flex: none; width: 2.25rem; height: 2.25rem; }
+.overview-champion__club:hover { text-decoration: underline; text-underline-offset: 4px; }
+.overview-champion__club:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+.overview-champion__points { flex: none; font-size: clamp(1.5rem, 3vw, 2.25rem); line-height: 1; white-space: nowrap; }
+.overview-champion__rest {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--space-3) var(--space-5);
+  margin: 0;
+  padding: var(--space-3) 0 0;
+  border-top: 1px solid var(--rule);
+  list-style: none;
+}
+/* Places 2-4 three across where the card is wide enough for each name, else
+   one under another (never two and an orphan). */
+.overview-champion { container-type: inline-size; }
+@container (max-width: 46rem) {
+  .overview-champion__rest { grid-template-columns: minmax(0, 1fr); }
+}
+/* A place in the final table: its badge (in its band's colour, as the table
+   marks it), the club and its points. */
+.overview-top__row { display: grid; grid-template-columns: 1.75rem minmax(0, 1fr) auto; align-items: center; gap: var(--space-3); }
+/* The place with the Tabell view's band mark before it (.band-mark: a 3px stripe, 1.15em tall). */
+.overview-top__place {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  height: 1.75rem;
+  font-size: 0.8125rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--ink-muted);
+}
+.overview-top__place::before { content: ""; width: 3px; height: 1.15em; flex: none; border-radius: 2px; background: var(--strip, transparent); }
+.overview-top__points { font-size: 1.125rem; font-variant-numeric: tabular-nums; white-space: nowrap; }
+
+/* The races: a card each in the band's own colour, three across when there is
+   room, four two by two. */
+.overview__races { display: grid; grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr)); gap: var(--space-4); }
+.overview__races[data-count="4"] { grid-template-columns: repeat(auto-fit, minmax(max(16rem, 40%), 1fr)); }
+/* Three races where only two fit across (the row narrower than three cards of
+   16rem): the third takes the whole row under them rather than half of it. */
+.overview__races { container-type: inline-size; }
+@container (max-width: 49.9rem) {
+  .overview__races[data-count="3"] > :last-child { grid-column: 1 / -1; }
+}
+/* The match of the week, wide, and the movers beside it. */
+.overview__pair { display: grid; grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr)); gap: var(--space-4); }
+.overview__pair:has(> :nth-child(2)) { grid-template-columns: minmax(0, 2fr) minmax(16rem, 1fr); }
+.overview-race,
+.overview-match {
+  display: grid;
+  gap: var(--space-4);
+  align-content: start;
+  padding: var(--space-4) var(--space-5) var(--space-5);
+  background: var(--panel-sunk);
+  border: 1px solid var(--rule);
+}
+.overview-race:hover,
+.overview-match:hover {
+  border-color: color-mix(in srgb, var(--band-color, var(--accent)) 55%, var(--rule));
+  transform: translateY(-1px);
+  box-shadow: var(--shadow);
+}
+
+/* A club per row: its name, its move since the last round and its chance,
+   large, and a thick bar in the band's colour under them. */
+.overview-race__list { display: grid; gap: var(--space-3); margin: 0; padding: 0; list-style: none; }
+.overview-race__club { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: baseline; gap: 0.35rem var(--space-2); }
+.overview-race__name {
+  position: relative;
+  z-index: 1;
+  appearance: none;
+  display: block;
+  min-width: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--ink);
+  font: inherit;
+  font-size: 0.9375rem;
+  font-weight: 600;
+  text-align: left;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  cursor: pointer;
+}
+.overview-race__name .team-logo { width: 20px; height: 20px; margin-right: 0.5rem; vertical-align: -5px; }
+.overview-race__name:hover { text-decoration: underline; text-underline-offset: 2px; }
+.overview-race__name:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+.overview-race__value { display: inline-flex; align-items: baseline; gap: 0.375rem; justify-self: end; }
+.overview-race__value .overview-change { font-size: 0.75rem; }
+.overview-race__figure { font-size: 1.25rem; line-height: 1; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.overview-race__figure.is-done { font-family: inherit; font-size: 0.6875rem; font-weight: 600; letter-spacing: 0.14em; text-transform: uppercase; font-variation-settings: "wdth" 105; }
+.overview-race__bar { position: relative; grid-column: 1 / -1; height: 6px; border-radius: 999px; background: var(--rule); overflow: hidden; }
+.overview-race__bar::before { content: ""; position: absolute; inset: 0 auto 0 0; width: var(--p); border-radius: inherit; background: var(--band-color, var(--accent)); }
+.overview-race__club.is-through :is(.overview-race__figure, .overview-race__name) { color: var(--ink-muted); }
+.overview-race__club.is-through .overview-race__bar::before { opacity: 0.4; }
+/* Clubs already up or down, then a hairline, then those still in a play-off. */
+.overview-race.is-finished .overview-race__club.is-through + .overview-race__club:not(.is-through) { padding-top: var(--space-3); border-top: 1px solid var(--rule); }
+.overview-race__sub { grid-column: 1 / -1; margin-top: -0.2rem; font-size: 0.75rem; color: var(--ink-faint); font-variant-numeric: tabular-nums; }
+
+/* The climber and the faller: each under its label (the heroes' label type),
+   its rating change in the table's arrow and colours, its rating before and
+   after under the name. */
+/* The reader's own club: its name and place on one line, points and rating
+   under them, the next match, and a chip per open band. */
+.overview-own { --band-color: var(--accent); }
+/* Predict's card: one slim row. Left, where the open round stands (the invite's pill while there is something
+   to tip, and the invite's glow, full when nothing is tipped, fainter when some is); right, what the last
+   scored round came to. */
+.overview-predict { grid-template-columns: minmax(0, 1fr) auto; align-items: center; column-gap: var(--space-4); row-gap: 0.1rem; padding: var(--space-3) var(--space-4); }
+.overview-predict[hidden] { display: none; }
+.overview-predict > .overview-card__head { grid-column: 1; }
+.overview-predict__body { grid-column: 1; display: grid; gap: 0.15rem; min-width: 0; }
+.overview-predict__title { margin: 0; font-size: 1rem; font-weight: 800; line-height: 1.25; }
+.overview-predict__meta { display: flex; flex-wrap: wrap; align-items: center; gap: 0.35rem 0.9rem; }
+.overview-predict__body > .overview-predict__meta:has(.overview-predict__cta) { margin-top: 0.3rem; }
+.overview-predict__sub { font-size: 0.8125rem; color: var(--ink-muted); }
+.overview-predict__sub[data-urgent="true"] { color: var(--ink); font-weight: 700; }
+/* The pill, the same on the invite and the player's card: the site's primary pill (a pressed switch,
+   the game's .pbtn--primary), its words and an arrow icon. Archivo's capitals sit 0.06em above the
+   middle of its line box, so the words get 0.12em more room on top and the icon is lifted 0.06em
+   (as the wordmark's mark is): both then sit on the pill's middle. On the card's hover the arrow moves. */
+.overview-predict__cta { display: inline-flex; align-items: center; gap: 0.45rem; min-height: 2.25rem; padding: 0.12em 0.85rem 0 1.05rem; border-radius: 999px;
+  background: var(--accent); color: var(--on-accent); font-size: 0.875rem; font-weight: 700; line-height: 1; white-space: nowrap;
+  box-shadow: var(--glow-ring); transition: background 0.15s var(--ease); }
+.overview-predict__cta svg { flex: none; width: 1rem; height: 1rem; translate: 0 -0.06em; transition: transform 0.15s var(--ease); }
+.overview-card:hover .overview-predict__cta { background: color-mix(in srgb, var(--accent) 86%, #fff); }
+.overview-card:hover .overview-predict__cta svg { transform: translateX(3px); }
+/* Something to tip: the invite's accent border and glow from the top right; fainter while part is tipped. */
+.overview-predict:is(.overview-predict--invite, [data-state="empty"], [data-state="partial"]) {
+  --glow: 16%;
+  border-color: color-mix(in srgb, var(--accent) 55%, var(--rule));
+  background:
+    radial-gradient(110% 160% at 100% 0%, color-mix(in srgb, var(--accent) var(--glow), transparent), transparent 62%),
+    color-mix(in srgb, var(--accent) 4%, var(--panel-sunk));
+}
+.overview-predict[data-state="partial"] { --glow: 9%; border-color: color-mix(in srgb, var(--accent) 35%, var(--rule)); }
+.overview-predict:is(.overview-predict--invite, [data-state="empty"]):hover { border-color: var(--accent); }
+/* Every match tipped: a confirmation. A check in a filled circle of the good colour, "Tipsene dine er
+   inne" and a line on what still can be done; the card is tinted from the left, where the check is. */
+.overview-predict[data-state="done"] {
+  border-color: color-mix(in srgb, var(--outcome-good) 40%, var(--rule));
+  background: linear-gradient(90deg, color-mix(in srgb, var(--outcome-good) 11%, var(--panel-sunk)), var(--panel-sunk) 65%);
+}
+.overview-predict__body--done { grid-template-columns: auto minmax(0, 1fr); align-items: center; column-gap: var(--space-3); row-gap: 0.1rem; margin-top: 0.2rem; }
+.overview-predict__body--done > :not(.overview-predict__check) { grid-column: 2; }
+/* Centred on its two lines it hung 3px below the second one's baseline and read as low: lifted 0.2rem,
+   its foot sits on that baseline. */
+.overview-predict__check { grid-row: 1 / span 2; display: grid; place-items: center; width: 2.25rem; height: 2.25rem; border-radius: 50%;
+  background: var(--outcome-good); color: #fff; box-shadow: var(--glow-ring); translate: 0 -0.2rem; }
+.overview-predict__check svg { width: 1.25rem; height: 1.25rem; }
+/* On the right: your place on the season board, then the last round, a hairline between them. */
+.overview-predict__side { grid-column: 2; grid-row: 1 / span 2; display: flex; align-items: flex-start; }
+.overview-predict__side > * + * { margin-left: var(--space-5); padding-left: var(--space-5); border-left: 1px solid var(--rule); }
+.overview-predict__last { display: grid; justify-items: end; gap: 0.15rem; }
+.overview-predict__round { font-size: 0.6875rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-faint); }
+.overview-predict__figs { display: flex; gap: var(--space-4); }
+.overview-predict__fig { display: grid; justify-items: end; line-height: 1.15; }
+.overview-predict__fig strong { font-size: 1.25rem; font-weight: 900; font-variant-numeric: tabular-nums; }
+.overview-predict__fig[data-tone="good"] strong { color: var(--accent-ink); }
+.overview-predict__fig[data-tone="bad"] strong { color: var(--outcome-bad-ink); }
+.overview-predict__fig span { font-size: 0.6875rem; color: var(--ink-muted); }
+/* Words only a phone shows (the round in the points' label, where the strip has no heading). */
+.overview-predict__phone { display: none; }
+@media (max-width: 480px) {
+  .overview-predict__figs { gap: var(--space-3); }
+  .overview-predict__fig strong { font-size: 1.0625rem; }
+  .overview-predict__side > * + * { margin-left: var(--space-3); padding-left: var(--space-3); }
+}
+/* A phone: the place and the last round go under the round's line, left, as one row. */
+@media (max-width: 640px) {
+  .overview-predict:has(.overview-predict__side) { grid-template-columns: minmax(0, 1fr); row-gap: var(--space-2); }
+  .overview-predict__side { grid-column: 1; grid-row: auto; padding-top: var(--space-2); border-top: 1px solid var(--rule); }
+  .overview-predict__side .overview-predict__last { justify-items: start; }
+  .overview-predict__side .overview-predict__fig { justify-items: start; }
+}
+/* No round ahead: the season so far across the card, six figures in a row with hairlines between. */
+.overview-predict--season { grid-template-columns: minmax(0, 1fr); padding: var(--space-4) var(--space-5); }
+.overview-predict--season .overview-predict__body { gap: var(--space-3); }
+.overview-predict__season { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: var(--space-4) 0; margin: 0; padding: 0; list-style: none; }
+.overview-predict__stat { display: grid; align-content: start; gap: 0.2rem; padding: 0 var(--space-4); border-left: 1px solid var(--rule); min-width: 0; }
+.overview-predict__stat:first-child { padding-left: 0; border-left: 0; }
+.overview-predict__stat strong { font-family: var(--display); font-variation-settings: "wdth" 125; font-weight: 800; font-size: 1.625rem; line-height: 1;
+  letter-spacing: -0.02em; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.overview-predict__stat[data-tone="good"] strong { color: var(--accent-ink); }
+.overview-predict__stat[data-tone="bad"] strong { color: var(--outcome-bad-ink); }
+.overview-predict__stat span { font-size: 0.75rem; line-height: 1.3; color: var(--ink-muted); }
+@media (max-width: 900px) {
+  .overview-predict__season { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .overview-predict__stat:nth-child(3n + 1) { padding-left: 0; border-left: 0; }
+}
+@media (max-width: 640px) {
+  .overview-predict--season { padding: var(--space-4); }
+  .overview-predict__stat { padding: 0 var(--space-3); }
+  .overview-predict__stat strong { font-size: 1.25rem; }
+}
+/* A phone, where room is short: compromises. Every card keeps to its essentials.
+   - The pill stands beside the round's title and its time left, not on a line of its own.
+   - The place and the last round are the season card's strip in small, two columns: your place ("12.",
+     "av 340 spillere") and the last round's points ("+31.4", "poeng i runde 27"), the value over its
+     label, a hairline between, no group headings. The round's accuracy is left to the game: three
+     columns wrapped their labels and ran "Topp 35 %" into the points at 320px.
+   - The done card's check is smaller; the season keeps its first three figures (place, points,
+     accuracy) in one row. */
+@media (max-width: 640px) {
+  .overview-predict__body:has(.overview-predict__cta) { grid-template-columns: minmax(0, 1fr) auto; column-gap: var(--space-3); }
+  .overview-predict__body:has(.overview-predict__cta) > .overview-predict__meta { display: contents; }
+  .overview-predict__body .overview-predict__cta { grid-column: 2; grid-row: 1 / span 2; align-self: center; }
+  .overview-predict__body .overview-predict__meta .overview-predict__sub { grid-column: 1; }
+  .overview-predict__body:has(.overview-predict__cta) .overview-predict__title { font-size: 0.9375rem; }
+  .overview-predict__side { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); align-items: start; gap: 0; padding-top: var(--space-3); }
+  .overview-predict__side > * + * { margin-left: 0; padding-left: 0; border-left: 0; }
+  .overview-predict__side :is(.overview-predict__last, .overview-predict__figs) { display: contents; }
+  .overview-predict__side .overview-predict__round { display: none; }
+  .overview-predict__side .overview-predict__fig { display: grid; justify-items: start; align-content: start; gap: 0.2rem; min-width: 0;
+    padding: 0 var(--space-3); border-left: 1px solid var(--rule); }
+  .overview-predict__side > :first-child .overview-predict__fig:first-child { padding-left: 0; border-left: 0; }
+  .overview-predict__side .overview-predict__fig strong { font-family: var(--display); font-variation-settings: "wdth" 110; font-weight: 800;
+    font-size: 1.125rem; line-height: 1; letter-spacing: -0.01em; white-space: nowrap; }
+  .overview-predict__side .overview-predict__fig span { font-size: 0.75rem; line-height: 1.3; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
+  .overview-predict__side .overview-predict__fig span span { overflow: visible; }
+  .overview-predict__side .overview-predict__fig[data-kind="acc"] { display: none; }
+  .overview-predict__phone { display: inline; }
+  .overview-predict__check { width: 1.75rem; height: 1.75rem; translate: 0 -0.1rem; }
+  .overview-predict__check svg { width: 1rem; height: 1rem; }
+}
+@media (max-width: 480px) {
+  .overview-predict--season .overview-predict__body { gap: var(--space-2); }
+  .overview-predict__stat:nth-child(n + 4) { display: none; }
+  .overview-predict__stat .overview-predict__long { display: none; }
+  /* Columns as wide as their figures, the spare room shared evenly: equal thirds left "12." a wide
+     empty column and pressed "+612.4" against its hairline at 320px. */
+  .overview-predict__season { grid-template-columns: repeat(3, auto); }
+  .overview-predict__stat strong { font-size: 1.125rem; font-variation-settings: "wdth" 110; }
+}
+/* The narrowest phones: the invite's question in narrower type, so it keeps to one line. */
+@media (max-width: 380px) {
+  .overview-predict--invite .overview-predict__headline { font-variation-settings: "wdth" 108; }
+}
+@media (max-width: 640px) { .overview-predict .overview-card__caption { display: none; } }
+/* The invite, for a browser that has not played: a question in display type and one line on the game,
+   left; the round's hardest match to call with the model's odds, right; a pill and when the round is,
+   under them. An accent edge and a glow from the top right make it the one coloured card above the
+   races; it stays as tall as a race card, comes in once (no loop) and the × rests it for two weeks. */
+.overview-predict--invite {
+  grid-template-columns: minmax(0, 1fr) minmax(13rem, 18rem);
+  align-items: start;
+  gap: var(--space-2) var(--space-5);
+  padding: var(--space-4) var(--space-5);
+}
+.overview-predict--invite > .overview-card__head { grid-column: 1 / -1; grid-template-columns: minmax(0, 1fr) auto; align-items: center; }
+.overview-predict--invite > .overview-predict__body { grid-column: 1; grid-row: 2; gap: 0.35rem; }
+.overview-predict__new { display: inline-block; margin-left: 0.5rem; padding: 0.1rem 0.45rem; border-radius: 999px; background: var(--accent); color: var(--on-accent);
+  font-size: 0.625rem; font-weight: 800; line-height: 1.3; letter-spacing: 0.1em; text-transform: uppercase; vertical-align: 1px; }
+.overview-predict__rest { position: relative; z-index: 1; display: grid; place-items: center; width: 1.75rem; height: 1.75rem; margin: -0.4rem -0.5rem -0.4rem 0;
+  border: 0; border-radius: 999px; background: none; color: var(--ink-faint); font: inherit; font-size: 1.125rem; line-height: 1; cursor: pointer; }
+.overview-predict__rest:hover { color: var(--ink); background: color-mix(in srgb, var(--ink) 8%, transparent); }
+.overview-predict__rest:focus-visible { outline: 2px solid var(--ink); outline-offset: 1px; }
+/* A 44px target on touch; the larger negative margins keep the × where it was and the row as tall. */
+@media (pointer: coarse) { .overview-predict__rest { width: 44px; height: 44px; margin: -0.9rem -1rem -0.9rem 0; } }
+.overview-predict__headline { margin: 0; font-family: var(--display); font-variation-settings: "wdth" 125; font-weight: 800;
+  font-size: clamp(1.375rem, 2.6vw, 1.75rem); line-height: 1.05; letter-spacing: -0.02em; text-wrap: balance; }
+.overview-predict__pitch { margin: 0; max-width: 60ch; font-size: 0.875rem; line-height: 1.45; color: var(--ink-muted); }
+.overview-predict__go { grid-column: 1; grid-row: 3; align-self: end; margin-top: var(--space-2); gap: 0.35rem 0.9rem; }
+.overview-predict__teaser { grid-column: 2; grid-row: 2 / span 2; display: grid; gap: 0.45rem; min-width: 0; padding: var(--space-3);
+  border: 1px solid var(--rule); border-radius: 10px; background: var(--panel); }
+.overview-predict__pair { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); align-items: center; gap: 0.4rem; font-size: 0.875rem; font-weight: 800; }
+.overview-predict__club { display: flex; align-items: center; gap: 0.35rem; min-width: 0; }
+.overview-predict__club > span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.overview-predict__club--away { flex-direction: row-reverse; text-align: right; }
+.overview-predict__club .team-logo { flex: none; width: 20px; height: 20px; }
+.overview-predict__vs { color: var(--ink-faint); }
+/* The card is one button: the bar's tooltips would only take the click from it.
+   It is never wider than its box, so the phone's sideways-scrolling odds bar is undone here. */
+.overview-predict__teaser .odds { height: 1.375rem; padding: 0; margin: 0; overflow: visible; pointer-events: none; }
+.overview-predict__ask { font-size: 0.75rem; font-weight: 700; color: var(--accent-ink); }
+/* A phone: one column and no more than the title race's height. The match loses its box and its
+   question (the pill asks it), the pill and the round share a line. */
+@media (max-width: 640px) {
+  .overview-predict--invite { grid-template-columns: minmax(0, 1fr); gap: var(--space-2); padding: var(--space-3) var(--space-4) var(--space-4); }
+  .overview-predict--invite > :is(.overview-predict__body, .overview-predict__teaser, .overview-predict__go) { grid-column: 1; grid-row: auto; }
+  .overview-predict__headline { font-size: clamp(1.0625rem, 4.9vw, 1.3125rem); }
+  .overview-predict__pitch { font-size: 0.8125rem; line-height: 1.4; }
+  .overview-predict__teaser { gap: 0.3rem; margin-top: var(--space-1); padding: 0; border: 0; background: none; }
+  .overview-predict__ask { display: none; }
+  .overview-predict__go { flex-wrap: nowrap; margin-top: var(--space-1); }
+  .overview-predict__go .overview-predict__cta { flex: none; }
+  .overview-predict__go .overview-predict__sub { min-width: 0; font-size: 0.75rem; line-height: 1.3; }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .overview-predict--invite { animation: predict-invite-in 0.45s var(--ease) backwards; }
+}
+@keyframes predict-invite-in { from { opacity: 0; transform: translateY(6px); } }
+.overview-own__main { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: baseline; gap: 0.2rem var(--space-3); }
+.overview-own__club { font-size: 1.125rem; }
+.overview-own__club .team-logo { width: 24px; height: 24px; vertical-align: -6px; }
+.overview-own__place { font-size: 1.75rem; }
+.overview-own__facts { grid-column: 1 / -1; font-size: 0.8125rem; color: var(--ink-muted); font-variant-numeric: tabular-nums; }
+.overview-own__next { margin: 0; font-size: 0.875rem; color: var(--ink); }
+.overview-own__bands { display: flex; flex-wrap: wrap; gap: var(--space-2); margin: 0; padding: 0; list-style: none; }
+.overview-own__band {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.4rem;
+  padding: 0.3rem 0.65rem;
+  border: 1px solid color-mix(in srgb, var(--band-color) 45%, var(--rule));
+  border-radius: 999px;
+  font-size: 0.8125rem;
+  font-variant-numeric: tabular-nums;
+}
+.overview-own__band b { font-weight: 800; }
+.overview-movers__label {
+  grid-column: 1 / -1;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  font-variation-settings: "wdth" 105;
+  color: var(--ink-faint);
+}
+.overview-movers__club + .overview-movers__club { padding-top: var(--space-3); border-top: 1px solid var(--rule); }
+.overview-movers__value { align-items: center; gap: 0.25rem; }
+.overview-movers__value .overview-race__figure { color: inherit; font-size: 1.5rem; }
+.overview-movers__value .overview-change__arrow { font-size: 1.25rem; }
+
+/* The title race, a row of its own: each contender's chance in display type
+   (its move since the last round beside it), the first at the left and the
+   last at the right, over one bar split between them: the favourite in gold,
+   the rest of the field in slate. */
+.overview-title {
+  display: grid;
+  gap: var(--space-4);
+  padding: var(--space-4) var(--space-5) var(--space-5);
+  background: var(--panel-sunk);
+  border: 1px solid var(--rule);
+}
+.overview-title:hover {
+  border-color: color-mix(in srgb, var(--band-color) 55%, var(--rule));
+  transform: translateY(-1px);
+  box-shadow: var(--shadow);
+}
+.overview-title__clubs {
+  display: grid;
+  grid-template-columns: repeat(var(--n, 2), auto);
+  justify-content: space-between;
+  gap: var(--space-4) var(--space-6);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.overview-title__clubs[data-count="1"] { --n: 1; }
+.overview-title__clubs[data-count="3"] { --n: 3; }
+.overview-title__clubs[data-count="4"] { --n: 4; }
+.overview-title__clubs[data-count="5"] { --n: 5; }
+.overview-title__club { display: grid; gap: 0.4rem; justify-items: start; min-width: 0; }
+.overview-title__club:last-child:not(:first-child) { justify-items: end; text-align: right; }
+/* Three contenders or more: columns that wrap (each at least wide enough for
+   its figure), all from the left, the move since the last round under the
+   figure rather than beside it. Two keep the ends of the row. */
+.overview-title__clubs:not([data-count="1"]):not([data-count="2"]) { grid-template-columns: repeat(auto-fit, minmax(8.5rem, 1fr)); justify-content: stretch; }
+.overview-title__clubs:not([data-count="1"]):not([data-count="2"]) .overview-title__club:last-child { justify-items: start; text-align: left; }
+.overview-title__clubs:not([data-count="1"]):not([data-count="2"]) .overview-title__value { display: grid; justify-items: start; gap: 0.2rem; }
+.overview-title__value { display: inline-flex; align-items: baseline; gap: var(--space-2); flex-wrap: wrap; }
+.overview-title__club:last-child:not(:first-child) .overview-title__value { justify-content: flex-end; }
+.overview-title__figure { font-size: clamp(2.5rem, 5vw, 3.75rem); line-height: 0.95; font-variant-numeric: tabular-nums; }
+.overview-title__clubs[data-count="4"] .overview-title__figure,
+.overview-title__clubs[data-count="5"] .overview-title__figure { font-size: clamp(1.75rem, 3.5vw, 2.5rem); }
+.overview-title__club:not(:first-child) .overview-title__figure { color: var(--ink-muted); }
+.overview-title__club .overview-race__name { max-width: 100%; }
+.overview-title__bar { display: flex; gap: 4px; height: 14px; }
+/* The favourite's share in the title gold, the rest of the field in one dim
+   slate (no medal colour: not silver, not a second gold), the clubs not shown
+   as the bare track. */
+.overview-title__seg { min-width: 3px; border-radius: 3px; background: color-mix(in srgb, var(--ink-muted) 45%, var(--panel-sunk)); }
+.overview-title__seg:first-child { background: var(--band-color); }
+.overview-title__seg.is-rest { background: var(--rule); }
+
+/* The match of the week as a scoreboard: the head, the board (centred in
+   whatever height the movers beside it give the card), then the notes at the
+   foot. */
+.overview-match { grid-template-rows: auto 1fr auto; align-content: stretch; }
+.overview-match__body { display: grid; gap: var(--space-4); align-content: center; }
+.overview-match__board { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); align-items: center; gap: var(--space-4); }
+/* A side: the crest large over the name, its chance under it. */
+.overview-match__side { display: grid; justify-items: center; gap: 0.3rem; min-width: 0; text-align: center; transition: opacity 0.15s var(--ease); }
+.overview-match__club {
+  position: relative;
+  z-index: 1;
+  appearance: none;
+  display: grid;
+  justify-items: center;
+  gap: var(--space-2);
+  min-width: 0;
+  max-width: 100%;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--ink);
+  font: inherit;
+  cursor: pointer;
+}
+.overview-match__club .team-logo { width: 3rem; height: 3rem; object-fit: contain; }
+.overview-match__name { max-width: 100%; font-size: 1rem; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.overview-match__club:hover .overview-match__name { text-decoration: underline; text-underline-offset: 2px; }
+.overview-match__club:focus-visible { outline: 2px solid var(--ink); outline-offset: 4px; border-radius: 6px; }
+.overview-match__sub { font-size: 0.75rem; color: var(--ink-faint); font-variant-numeric: tabular-nums; }
+/* After the match the loser steps back, so the result reads before the score. */
+.overview-match__side.is-lost { opacity: 0.55; }
+/* Between the sides: the score after the match, the kick-off time before it. */
+.overview-match__score { font-size: clamp(2.25rem, 4.5vw, 3.25rem); line-height: 1; white-space: nowrap; }
+/* Room either side of the dash: at -0.035em tracking it touched both goals. */
+.overview-match__dash { margin-inline: 0.14em; }
+.overview-match__time {
+  font-family: var(--display);
+  font-variation-settings: "wdth" 125;
+  font-weight: 800;
+  font-size: clamp(1.5rem, 3vw, 2rem);
+  letter-spacing: -0.02em;
+  line-height: 1;
+  color: var(--ink-muted);
+  font-variant-numeric: tabular-nums;
+}
+.overview-match .odds { height: 1.75rem; }
+.overview-match .odds__seg { font-size: 0.75rem; }
+/* What the match decides or did: a line per club, marked in its band's
+   colour, over a hairline at the card's foot. */
+.overview-match__notes { display: grid; gap: var(--space-2); margin: 0; padding: var(--space-3) 0 0; border-top: 1px solid var(--rule); list-style: none; }
+.overview-match__note { display: flex; align-items: baseline; gap: var(--space-2); font-size: 0.875rem; color: var(--ink-muted); }
+.overview-match__note::before { content: ""; flex: none; width: 0.5rem; height: 0.5rem; border-radius: 2px; background: var(--mark, var(--ink-faint)); transform: translateY(-1px); }
+
+/* The way on from a division: its table and its matches, two tiles across the
+   width, the name in the accent colour with a fact under it and an arrow that
+   moves on hover, so they read as the way in rather than as small print. */
+.overview__links { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-4); }
+.overview-link {
+  appearance: none;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  min-width: 0;
+  padding: var(--space-4) var(--space-5);
+  border: 1px solid color-mix(in srgb, var(--accent) 35%, var(--rule));
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--accent) 7%, var(--panel-sunk));
+  color: var(--ink);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: background 0.15s var(--ease), border-color 0.15s var(--ease), transform 0.15s var(--ease);
+}
+.overview-link:hover { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 14%, var(--panel-sunk)); transform: translateY(-1px); }
+.overview-link:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+.overview-link__text { display: grid; gap: 0.2rem; min-width: 0; }
+.overview-link__title { font-size: 1.125rem; font-weight: 700; color: var(--accent-ink); }
+.overview-link__fact { font-size: 0.8125rem; color: var(--ink-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.overview-link__arrow { flex: none; font-size: 1.25rem; color: var(--accent-ink); transition: transform 0.15s var(--ease); }
+.overview-link:hover .overview-link__arrow { transform: translateX(4px); }
+/* The Explore tools on a desktop or a tablet: a thumbnail and what the tool
+   shows, three across, two under 1000px. */
+.overview__tools { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--space-2) var(--space-4); }
+.overview-tool {
+  appearance: none;
+  display: grid;
+  grid-template-columns: 6.5rem minmax(0, 1fr);
+  gap: var(--space-3);
+  align-items: center;
+  padding: var(--space-2);
+  border: 0;
+  border-radius: 12px;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: background 0.15s var(--ease);
+}
+.overview-tool:hover { background: var(--panel-sunk); }
+.overview-tool:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+.overview-tool .explore-card__thumb { margin: 0; border-radius: 8px; }
+.overview-tool:hover .explore-card__thumb { border-color: var(--accent); }
+.overview-tool__text { display: grid; gap: 0.15rem; min-width: 0; }
+.overview-tool__title { font-size: 0.875rem; font-weight: 700; }
+/* The short line is the phone pills' (.tool-links--pill); elsewhere the
+   description stands. */
+.overview-tool__short { display: none; }
+.overview-tool__desc {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+  font-size: 0.8125rem;
+  line-height: 1.4;
+  color: var(--ink-muted);
+}
+/* The Explore tools on a phone: one large button, the first four tools'
+   thumbnails two by two as its picture. Hidden above the phone breakpoint. */
+.overview-explore { display: none; justify-content: flex-start; padding: var(--space-4); }
+.overview-explore .overview-link__text { flex: 1; }
+.overview-explore .overview-link__title { font-family: var(--display); font-size: 1.125rem; font-variation-settings: "wdth" 118; }
+.overview-explore .overview-link__fact { white-space: normal; }
+.overview-explore__thumbs { flex: none; display: grid; grid-template-columns: repeat(2, 3.25rem); gap: 3px; }
+.overview-explore__thumbs .explore-card__thumb { margin: 0; border-radius: 4px; }
+
+@media (max-width: 1000px) {
+  .overview__tools { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+@media (max-width: 760px) {
+  .overview { padding: var(--space-4); gap: var(--space-5); }
+  .overview__division-head { gap: var(--space-2) var(--space-3); }
+  .overview__division-name { font-size: 1.3rem; min-width: 0; }
+  .overview__division-name::before { flex: none; }
+  .overview-link { padding: var(--space-3) var(--space-4); }
+  .overview-link__title { font-size: 1rem; }
+  .overview-link__fact { white-space: normal; }
+  .overview__explore { display: none; }
+  .overview-explore { display: flex; }
+  .overview-title { padding: var(--space-3) var(--space-4) var(--space-4); }
+  /* Three or more contenders: three to a row, all from the left. */
+  .overview-title__clubs:not([data-count="1"]):not([data-count="2"]) { grid-template-columns: repeat(3, minmax(0, 1fr)); justify-content: stretch; }
+  .overview-title__clubs:not([data-count="2"]) .overview-title__club:last-child { justify-items: start; text-align: left; }
+  .overview-title__clubs:not([data-count="2"]) .overview-title__club:last-child .overview-title__value { justify-content: flex-start; }
+  /* The heroes' wide figure type needs more room: two clubs at 2rem keep
+     clear of each other, three to a row at 1.25rem fit their columns. */
+  .overview-title__figure { font-size: 2rem; }
+  .overview-title__clubs:not([data-count="2"]) .overview-title__figure { font-size: 1.25rem; }
+  .overview-title__clubs:not([data-count="2"]) .overview-race__name { font-size: 0.8125rem; white-space: normal; overflow-wrap: anywhere; }
+  .overview-title__clubs:not([data-count="2"]) .overview-change { font-size: 0.6875rem; }
+  /* The odds bar keeps its full height here, not Kamper's scrolling strip. */
+  .overview-match .odds { height: 1.75rem; padding: 0; margin: 0; overflow: visible; }
+  .overview__races, .overview__races[data-count], .overview__pair, .overview__pair:has(> :nth-child(2)) { grid-template-columns: minmax(0, 1fr); gap: var(--space-3); }
+  .overview-race, .overview-match { padding: var(--space-3) var(--space-4) var(--space-4); }
+  /* The match of the week's names may wrap under their crests. */
+  .overview-match__name { font-size: 0.875rem; white-space: normal; overflow-wrap: anywhere; text-overflow: clip; }
+  .overview-match__club .team-logo { width: 2.5rem; height: 2.5rem; }
+  /* The champion's name keeps its width; its points drop to a line of their own
+     when they do not fit beside it. */
+  .overview-champion__club { font-size: 1.5rem; }
+  .overview-champion__club .team-logo { width: 1.75rem; height: 1.75rem; }
+  .overview-champion__points { margin-left: auto; font-size: 1.375rem; }
+  /* A phone's first screen: the title race, then this round's match and the
+     movers (what happened, what is next), then the other races. The
+     division's tiles stay last. */
+  .overview__division > .overview-title, .overview__division > .overview-champion { order: 1; }
+  .overview__division > .overview__pair { order: 2; }
+  .overview__division > .overview__races { order: 3; }
+  .overview__division > .overview__links { order: 4; }
+  /* The climber and the faller side by side, not stacked. */
+  .overview-movers .overview-race__list { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-4); }
+  .overview-movers__club + .overview-movers__club { padding-top: 0; border-top: 0; padding-left: var(--space-4); border-left: 1px solid var(--rule); }
+  .overview-movers__club { grid-template-columns: minmax(0, 1fr); }
+  .overview-movers__value { justify-self: start; }
+}
+
+/* The narrowest phones (380px and under): two contenders to a row, the two-club
+   figures with their move under them, the champion smaller, the table and
+   matches tiles one under the other, and the Explore button's thumbnails
+   over its text. */
+@media (max-width: 380px) {
+  .overview-title__clubs, .overview-title__clubs:not([data-count="1"]):not([data-count="2"]) { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-3); }
+  .overview-title__value { display: grid; justify-items: start; gap: 0.2rem; }
+  .overview-title__club .overview-race__name { font-size: 0.8125rem; }
+  .overview-title__club .overview-race__name .team-logo { width: 16px; height: 16px; margin-right: 0.35rem; vertical-align: -3px; }
+  .overview-race__name { font-size: 0.875rem; }
+  .overview-race__name .team-logo { width: 18px; height: 18px; margin-right: 0.4rem; vertical-align: -4px; }
+  .overview-title__club:last-child:not(:first-child) .overview-title__value { justify-items: end; }
+  .overview-title__clubs:not([data-count="2"]) .overview-title__club:last-child .overview-title__value { justify-items: start; }
+  .overview-title__figure { font-size: 1.5rem; }
+  .overview-champion__club { font-size: 1.25rem; gap: 0.5rem; }
+  .overview-champion__club .team-logo { width: 1.5rem; height: 1.5rem; }
+  .overview-champion__points { font-size: 1.125rem; }
+  /* Places 2-4: a closer row and smaller points, so an eleven-letter name
+     ("Kongsvinger") fits whole beside them. */
+  .overview-top__row { gap: var(--space-2); }
+  .overview-top__points { font-size: 1rem; }
+  .overview__links { grid-template-columns: minmax(0, 1fr); gap: var(--space-3); }
+  .overview-explore { display: grid; grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: "thumbs arrow" "text text"; gap: var(--space-3); }
+  .overview-explore__thumbs { grid-area: thumbs; }
+  .overview-explore .overview-link__text { grid-area: text; }
+  .overview-explore .overview-link__arrow { grid-area: arrow; align-self: center; }
+  .overview-race__figure { font-size: 1.125rem; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .overview-card, .overview-link, .overview-link__arrow, .overview-tool { transition: none; }
+  .overview-race:hover, .overview-match:hover, .overview-title:hover, .overview-link:hover, .overview-link:hover .overview-link__arrow { transform: none; }
+}
+
+/* ---------- sharing (share.js) ------------------------------------- */
+
+/* The share button: the share icon in a round button, the height, fill and
+   hover of the secondary buttons beside it (Play season, Rewind). */
+.share-btn {
+  appearance: none;
+  display: inline-grid;
+  place-items: center;
+  flex: none;
+  width: 2rem;
+  height: 2rem;
+  padding: 0;
+  border: 1px solid var(--rule);
+  border-radius: 999px;
+  background: var(--panel);
+  color: var(--ink);
+  cursor: pointer;
+  transition: background 0.15s var(--ease), border-color 0.15s var(--ease), box-shadow 0.15s var(--ease);
+}
+.share-btn:hover { background: var(--panel-sunk); border-color: var(--rule-strong); box-shadow: var(--glow-hover); }
+.share-btn:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+/* In an overview card's head: above the card's stretched button, beside the arrow. */
+.overview-card__head .share-btn { position: relative; z-index: 1; width: 2rem; height: 2rem; margin: -0.35rem 0 -0.35rem var(--space-2); }
+.overview-card__head:has(.share-btn) { grid-template-columns: minmax(0, 1fr) auto; }
+
+/* The share sheet: a dialog over a scrim, a bottom sheet on a phone. Above
+   the What it takes popup (90), whose share button opens it. */
+.share-sheet { position: fixed; inset: 0; z-index: 95; display: grid; place-items: center; padding: var(--space-4); }
+.share-sheet__scrim { position: absolute; inset: 0; background: rgb(4 8 16 / 0.6); }
+.share-sheet__panel {
+  position: relative;
+  display: grid;
+  gap: var(--space-3);
+  width: min(36rem, 100%);
+  max-height: calc(100vh - 2rem);
+  max-height: calc(100dvh - 2rem);
+  overflow: auto;
+  padding: var(--space-5);
+  border: 1px solid var(--rule);
+  border-radius: var(--radius);
+  background: var(--panel);
+  box-shadow: var(--shadow);
+}
+.share-sheet__head { display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); }
+.share-sheet__title { font-size: 1.25rem; }
+.share-sheet__close { appearance: none; width: 2rem; height: 2rem; border: 0; border-radius: 999px; background: none; color: var(--ink-muted); font-size: 1.5rem; line-height: 1; cursor: pointer; }
+.share-sheet__close:hover { color: var(--ink); background: var(--panel-sunk); }
+/* The preview takes the chosen format's shape, never taller than about half
+   the screen (a story stays in view beside its controls). */
+.share-sheet__figure {
+  display: grid;
+  place-items: center;
+  width: min(100%, calc(46vh * var(--wide, 1.905)));
+  margin: 0 auto;
+  aspect-ratio: var(--ratio, 1200 / 630);
+  border: 1px solid var(--rule);
+  border-radius: 10px;
+  background: var(--panel-sunk);
+  overflow: hidden;
+}
+.share-sheet__preview { display: block; width: 100%; height: 100%; object-fit: contain; }
+/* The format and the theme: a label and the site's segmented switch each. */
+.share-sheet__choices { display: grid; gap: var(--space-2); }
+.share-sheet__choice { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--space-2) var(--space-3); }
+.share-sheet__choice-label { font-size: 0.6875rem; font-weight: 600; letter-spacing: 0.14em; text-transform: uppercase; color: var(--ink-faint); }
+.share-sheet__status { margin: 0; padding: var(--space-4); font-size: 0.875rem; color: var(--ink-muted); text-align: center; }
+.share-sheet__actions { display: flex; flex-wrap: wrap; gap: var(--space-2); }
+.share-sheet__btn {
+  appearance: none;
+  padding: 0.55rem 1rem;
+  border: 1px solid var(--rule);
+  border-radius: 999px;
+  background: var(--panel-sunk);
+  color: var(--ink);
+  font: inherit;
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+.share-sheet__btn:hover:not(:disabled) { border-color: var(--accent); }
+.share-sheet__btn.is-primary { border-color: var(--accent); background: var(--accent); color: #fff; }
+.share-sheet__btn:disabled { opacity: 0.5; cursor: default; }
+.share-sheet__btn[hidden] { display: none; }
+.share-sheet__btn:focus-visible, .share-sheet__close:focus-visible, .share-sheet__url:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+.share-sheet__label { margin: var(--space-2) 0 0; font-size: 0.6875rem; font-weight: 600; letter-spacing: 0.14em; text-transform: uppercase; color: var(--ink-faint); }
+.share-sheet__link { display: flex; flex-wrap: wrap; gap: var(--space-2); }
+.share-sheet__url {
+  flex: 1 1 14rem;
+  min-width: 0;
+  padding: 0.55rem 0.8rem;
+  border: 1px solid var(--rule);
+  border-radius: 10px;
+  background: var(--panel-sunk);
+  color: var(--ink-muted);
+  font: inherit;
+  font-size: 0.8125rem;
+}
+@media (max-width: 760px) {
+  .share-sheet { place-items: end stretch; padding: 0; }
+  .share-sheet__panel { width: 100%; border-radius: var(--radius) var(--radius) 0 0; padding: var(--space-4) var(--space-4) calc(var(--space-4) + env(safe-area-inset-bottom, 0px)); }
+}
+/* Sammenlign's match heading with its share button at the right. */
+.compare__head { display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); }
+.compare__head .compare__subhead { margin: 0; }
+
+/* Measuring the masthead's right-hand group at its widest (reserveMastheadEnd):
+   every picker on show for that moment. */
+body.masthead-measure .league-picker,
+body.masthead-measure .hero-title-part[data-role="division"] { display: inline-flex !important; }
+/* On a phone a panel heading's share button takes the heading's top-right
+   corner (as on the club page) rather than a line of its own under the
+   heading's other buttons; the heading's text keeps clear of it. */
+@media (max-width: 760px) {
+  .panel__head:has(> .panel__tools > .share-btn) { position: relative; }
+  .panel__head > .panel__tools > .share-btn { position: absolute; top: var(--space-4); right: var(--space-4); margin: 0; }
+  .panel__head:has(> .panel__tools > .share-btn) > :first-child { padding-right: 2.75rem; }
+}
+
+/* ---------- touch targets on a phone ------------------------------------ */
+
+/* Every control a finger can reach is at least 44px on its short side
+   (experiments/mobile-audit/check.py checks it), without moving the layout:
+   - a name inside running rows (a match card, a race, a club link) grows to
+     44px tall through padding, given back by an equal negative margin;
+   - a small button (share, back, a stepper, a pill in a row) keeps its look
+     and gets an invisible hit area past its edges (::before), all round for
+     a square and above and below only for one already wide enough. */
+@media (pointer: coarse), (max-width: 760px) {
+  .overview-race__name, .overview-champion__club, .team-match__name, .playoff__club {
+    padding-block: max(0px, calc((44px - 1lh) / 2));
+    margin-block: min(0px, calc((1lh - 44px) / 2));
+  }
+  .team-mini__row, .caveats__link { min-height: 44px; }
+  .wordmark { padding-inline: 8px; margin-inline: -8px; }
+  #standings .sort-btn { min-width: 24px; }
+
+  :where(.share-btn, .team-back, .whatif-step__btn, .team-summary__own,
+    .whatif-chip, .whatif-tool, .accuracy__division, .races__race, .races__toggle, .table-control-btn,
+    .team-mini__full, .grid-anim-btn, .team-last__item, .overview-match__club) { position: relative; }
+  :is(.share-btn, .team-back, .whatif-step__btn, .team-summary__own)::before {
+    content: "";
+    position: absolute;
+    inset: -6px;
+    border-radius: 999px;
+  }
+  .team-back::before { inset: -2px; }
+  /* A match card's crest: the club's name button lies over it (36px). */
+  :is(#played-results, #fixtures, #whatif-list, #team-content) .played-card__team .played-card__team-name::before {
+    content: "";
+    position: absolute;
+    inset: -4px;
+  }
+  .whatif-step__btn::before { inset: -4px; }
+  :is(.whatif-chip, .whatif-tool, .accuracy__division, .races__race, .races__toggle, .table-control-btn,
+    .team-mini__full, .grid-anim-btn)::before {
+    content: "";
+    position: absolute;
+    inset: -8px 0;
+  }
+  :is(.team-last__item, .overview-match__club)::before {
+    content: "";
+    position: absolute;
+    inset: 0 -4px;
+  }
+}
+
+/* A phone's Explore tools at the top of the ladder and of Matches
+   (placeToolLinks): a pill the panel's width and a finger tall, a small
+   thumbnail and the tool's name on one line, no heading and no description,
+   so they lead on without pulling the eye from the view. */
+@media (max-width: 760px) {
+  .tool-links.tool-links--pill { justify-items: stretch; padding: var(--space-3) var(--space-4); }
+  .tool-links.tool-links--pill.tool-links--head { padding: 0; }
+  .tool-links.tool-links--pill > .label { display: none; }
+  .tool-links.tool-links--pill .tool-links__list {
+    width: 100%;
+    flex-wrap: wrap;
+    justify-content: flex-start;
+    gap: var(--space-2);
+    overflow: visible;
+    padding: 0;
+    mask-image: none;
+  }
+  .tool-links.tool-links--pill .overview-tool {
+    position: relative;
+    flex: 1 1 100%;
+    width: 100%;
+    min-height: 56px;
+    margin: 0;
+    grid-template-columns: 4.75rem minmax(0, 1fr);
+    justify-items: start;
+    gap: 0.75rem;
+    padding: 0.35rem 1.1rem 0.35rem 0.4rem;
+    border: 1px solid var(--rule);
+    border-radius: 999px;
+    background: var(--panel-sunk);
+    text-align: left;
+  }
+  .tool-links.tool-links--pill .overview-tool .explore-card__thumb { width: 4.75rem; border-radius: 999px; }
+  .tool-links.tool-links--pill .overview-tool__text { justify-items: start; gap: 0.05rem; min-width: 0; width: 100%; }
+  .tool-links.tool-links--pill .overview-tool__title { font-size: 0.875rem; font-weight: 600; white-space: nowrap; }
+  .tool-links.tool-links--pill .overview-tool__desc { display: none; }
+  /* The short line: one line where it fits, two on a narrower phone, never
+     cut short. */
+  .tool-links.tool-links--pill .overview-tool__short {
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    max-width: 100%;
+    overflow: hidden;
+    font-size: 0.75rem;
+    line-height: 1.3;
+    color: var(--ink-muted);
+  }
+}
+
+/* On a phone the scenario's table keeps the place, the club, the goals, the points gained and the total; goal difference is in the note when it decides. */
+@media (max-width: 760px) {
+  .scenario-table th:nth-child(4), .scenario-table td:nth-child(4) { display: none; }
+}

@@ -21,6 +21,7 @@ on:
       - 'firestore.indexes.json'
       - 'public/predict*'
       - 'public/i18n.js'
+      - 'public/i18n/**'
       - 'src/elitetracker/predict/**'
       - 'src/elitetracker/predict_sync.py'
       - 'src/elitetracker/sources/firestore.py'
