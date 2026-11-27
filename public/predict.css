@@ -252,6 +252,10 @@
 .pcard__retry { margin-left: 0.25rem; min-height: 32px; padding: 0 0.6rem; border-radius: 999px; border: 1px solid var(--outcome-bad);
   background: none; color: var(--outcome-bad-ink); font: inherit; font-size: 0.8125rem; font-weight: 700; cursor: pointer; }
 .pcard__acts { display: inline-flex; flex-wrap: wrap; justify-content: flex-end; align-items: center; gap: 0.4rem; margin-left: auto; }
+/* Undo appears for a few seconds after a pick is dragged: highlight it in the accent so it stands out from the quiet actions beside it. */
+.pcard__undo { background: color-mix(in srgb, var(--accent) 14%, var(--panel)); border-color: var(--accent); color: var(--accent-ink);
+  box-shadow: var(--glow-hover); animation: pundo 550ms var(--ease); }
+.pcard__undo:hover { background: var(--accent); border-color: var(--accent); color: var(--on-accent); box-shadow: var(--glow-ring); }
 
 .pcard__panel { margin: 0.25rem 0 0.35rem; padding-top: 0.75rem; border-top: 1px dashed var(--rule); display: grid; gap: 0.6rem; }
 /* The fine-tune switch: a pill with a dot that lights with it. */
@@ -601,6 +605,12 @@
 /* A complete round: the ring pops. */
 .pring.is-pop { animation: ppop 650ms var(--ease); }
 @keyframes ppop { 0% { transform: scale(1); } 40% { transform: scale(1.25); } 100% { transform: scale(1); } }
+/* Undo pops in with a brief accent ring when a drag replaces an existing pick. */
+@keyframes pundo {
+  0% { opacity: 0; transform: scale(0.92); box-shadow: 0 0 0 0 color-mix(in srgb, var(--accent) 60%, transparent), var(--glow-hover); }
+  55% { opacity: 1; transform: scale(1.04); }
+  100% { opacity: 1; transform: scale(1); box-shadow: 0 0 0 7px transparent, var(--glow-hover); }
+}
 
 /* ---- how to play ------------------------------------------------------------------------------- */
 
@@ -839,7 +849,7 @@
   .pcard .pcard__bar .odds__seg, .pring__arc, .pswitch, .pswitch::before, .preveal .odds__seg, .pcard,
   .pside__fill, .pbell__clip, .pbell__mark--you, .ptrait__dot, .ptable.is-sorting .ptable__row, .ptable__row.is-landing { transition: none; }
   .plist > .pcard[data-state="untouched"]:first-child .pcard__bar .odds__seg[data-outcome="draw"], .pskeleton span,
-  .pcard__status[data-state="saved"]::before, .pbadge[data-status="live"]::before, .pring.is-pop { animation: none; }
+  .pcard__status[data-state="saved"]::before, .pbadge[data-status="live"]::before, .pring.is-pop, .pcard__undo { animation: none; }
 }
 
 /* ---- the leaderboard: where you stand, a jump to your row, and the columns on a phone ------------ */
