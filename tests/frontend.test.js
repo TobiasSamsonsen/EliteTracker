@@ -36,7 +36,7 @@ const { trendDegree, rivalCopy, rivalResults } = require('../public/app/team.js'
 const { PERF_WINDOW, teamPerformanceRows } = require('../public/app/team-charts.js');
 const { bandChance, bandWithPlayoff, seasonOutcomes, sortedStandings } = require('../public/app/standings.js');
 const { RUN_IN_ROUNDS, runInStart } = require('../public/app/explore.js');
-const { predictInviteRound } = require('../public/app/overview.js');
+const { predictInviteRound, overviewOwnRaces } = require('../public/app/overview.js');
 const {
   xgPoints, luckChances, luckRows, luckSeasons, luckSummary, seasonSpan, luckTrend, withTrend,
 } = require('../public/app/explore-luck.js');
@@ -1929,4 +1929,52 @@ test('all stylesheets linked from HTML pages exist and have balanced braces', ()
       assert.equal(depth, 0, `unclosed brace in ${rel}`);
     }
   }
+});
+
+test('overviewOwnRaces filters open bands, drops play-off duplicates, and falls back to likeliest finish', () => {
+  globalThis.bandChance = bandChance;
+  const bands = [
+    { label: 'Champions', first: 1, last: 1, tone: 'champion' },
+    { label: 'Champions League qualification', first: 1, last: 2, tone: 'top' },
+    { label: 'Conference League qualification', first: 3, last: 4, tone: 'europe' },
+    { label: 'Relegation play-off', first: 14, last: 14, tone: 'playoff' },
+    { label: 'Relegation', first: 15, last: 16, tone: 'relegation' },
+  ];
+  const makeReport = (slug, remaining) => ({ league: { slug, bands }, model: { matches_remaining: remaining } });
+  const probs = (at) => { const a = Array(16).fill(0); a[at - 1] = 1; return a; };
+
+  // Live title contender: Champions + CL, no playoff band
+  const glimt = { position_probabilities: [0.93, 0.07, ...Array(14).fill(0)], relegation_probability: 0 };
+  const gOut = overviewOwnRaces(makeReport('eliteserien', 24), glimt);
+  assert.deepEqual(gOut.races.map((r) => r.band.tone), ['champion', 'top']);
+  assert.equal(gOut.likeliest, null);
+
+  // Live relegation fighter: only Relegation (play-off excluded since bandChance already counts it)
+  const kbk = { position_probabilities: [...Array(13).fill(0), 0.5, 0.3, 0.2], relegation_probability: 0.42 };
+  const kOut = overviewOwnRaces(makeReport('eliteserien', 24), kbk);
+  assert.deepEqual(kOut.races.map((r) => [r.band.tone, r.chance]), [['relegation', 0.42]]);
+  assert.equal(kOut.likeliest, null);
+
+  // Live mid-table safe club: no open races -> likeliest finish fallback
+  const vif = { position_probabilities: [0, 0, 0, 0, 0.05, 0.15, 0.25, 0.38, 0.12, 0.05, ...Array(6).fill(0)], relegation_probability: 0.002 };
+  const vOut = overviewOwnRaces(makeReport('eliteserien', 24), vif);
+  assert.deepEqual(vOut.races, []);
+  assert.deepEqual(vOut.likeliest, { place: 8, chance: 0.38 });
+
+  // Finished champion (OBOS): settled = true
+  const godset = { position_probabilities: probs(1), promotion_probability: 1, relegation_probability: 0 };
+  const sOut = overviewOwnRaces(makeReport('obosligaen', 0), godset);
+  assert.equal(sOut.races.every((r) => r.settled), true);
+  assert.equal(sOut.likeliest, null);
+
+  // Finished play-off contender (OBOS #14): settled = false, no likeliest fallback
+  const sogndal = { position_probabilities: probs(14), promotion_probability: 0, relegation_probability: 0.336 };
+  const sgOut = overviewOwnRaces(makeReport('obosligaen', 0), sogndal);
+  assert.deepEqual(sgOut.races.map((r) => [r.band.tone, r.settled]), [['relegation', false]]);
+
+  // Finished mid-table: no races and no likeliest fallback
+  const bryne = { position_probabilities: probs(6), promotion_probability: 0, relegation_probability: 0 };
+  const bOut = overviewOwnRaces(makeReport('obosligaen', 0), bryne);
+  assert.deepEqual(bOut.races, []);
+  assert.equal(bOut.likeliest, null);
 });

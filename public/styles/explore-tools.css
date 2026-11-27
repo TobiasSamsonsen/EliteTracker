@@ -604,6 +604,19 @@ body.has-scenario { overflow: hidden; }
   border-radius: 10px;
   background: var(--panel-sunk);
 }
+.scenario-match__chip {
+  min-width: 2.55rem;
+  padding: 0.25rem 0.45rem;
+  border-radius: 5px;
+  font-size: 0.8125rem;
+  font-weight: 700;
+  line-height: 1.2;
+  text-align: center;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+  color: #fff;
+}
+.scenario-match__chip.form__chip--d { color: #10171b; }
 .scenario-match__main { margin: 0; font-size: 0.875rem; font-weight: 700; line-height: 1.3; }
 .scenario-match__odds { display: flex; align-items: center; gap: 0.6rem; }
 .scenario-match__odds .odds { flex: 1; height: 0.75rem; min-width: 0; padding: 0; margin: 0; overflow: visible; }
@@ -658,6 +671,7 @@ body.has-scenario { overflow: hidden; }
   .scenario-section__sub { font-size: 0.8125rem; }
   .scenario-section__lead, .scenario-empty, .explore-note { font-size: 0.9375rem; }
   .scenario-match__teams, .scenario-match__main { font-size: 1rem; }
+  .scenario-match__chip { min-width: 2.8rem; font-size: 0.875rem; }
   .scenario-match__meta, .scenario-all__heading, .scenario-all__legend { font-size: 0.8125rem; }
   .scenario-table, .scenario-all { font-size: 0.9375rem; }
   .scenario-table th { font-size: 0.8125rem; }

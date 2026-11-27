@@ -75,7 +75,10 @@
 .overview-top__points,
 .overview-champion__club,
 .overview-champion__points,
-.overview-match__score {
+.overview-match__score,
+.overview-own__name,
+.overview-own__stat strong,
+.overview-own__race-pct {
   font-family: var(--display);
   font-variation-settings: "wdth" 125;
   font-weight: 800;
@@ -225,9 +228,23 @@
 /* The climber and the faller: each under its label (the heroes' label type),
    its rating change in the table's arrow and colours, its rating before and
    after under the name. */
-/* The reader's own club: its name and place on one line, points and rating
-   under them, the next match, and a chip per open band. */
-.overview-own { --band-color: var(--accent); }
+/* The reader's own club: crest, recent form, key figures, next/last match,
+   and open race chances in a two-column summary card. */
+.overview-own {
+  --band-color: var(--accent);
+  grid-template-columns: minmax(0, 1.15fr) minmax(16.5rem, 1fr);
+  align-items: center;
+  gap: var(--space-4) var(--space-5);
+  padding: var(--space-4) var(--space-5) var(--space-5);
+  border-color: color-mix(in srgb, var(--accent) 32%, var(--rule));
+  background:
+    radial-gradient(95% 150% at 0% 0%, color-mix(in srgb, var(--accent) 9%, transparent), transparent 60%),
+    var(--panel-sunk);
+}
+.overview-own:hover { border-color: color-mix(in srgb, var(--accent) 60%, var(--rule)); }
+.overview-own:not(:has(.overview-own__match)) { grid-template-columns: minmax(0, 1fr); }
+.overview-own > .overview-card__head { grid-column: 1 / -1; }
+.overview-own .overview-card__open::before { content: "★\00a0"; color: var(--accent-ink); }
 /* Predict's card: one slim row. Left, where the open round stands (the invite's pill while there is something
    to tip, and the invite's glow, full when nothing is tipped, fainter when some is); right, what the last
    scored round came to. */
@@ -415,24 +432,73 @@
   .overview-predict--invite { animation: predict-invite-in 0.45s var(--ease) backwards; }
 }
 @keyframes predict-invite-in { from { opacity: 0; transform: translateY(6px); } }
-.overview-own__main { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: baseline; gap: 0.2rem var(--space-3); }
-.overview-own__club { font-size: 1.125rem; }
-.overview-own__club .team-logo { width: 24px; height: 24px; vertical-align: -6px; }
-.overview-own__place { font-size: 1.75rem; }
-.overview-own__facts { grid-column: 1 / -1; font-size: 0.8125rem; color: var(--ink-muted); font-variant-numeric: tabular-nums; }
-.overview-own__next { margin: 0; font-size: 0.875rem; color: var(--ink); }
-.overview-own__bands { display: flex; flex-wrap: wrap; gap: var(--space-2); margin: 0; padding: 0; list-style: none; }
-.overview-own__band {
-  display: inline-flex;
-  align-items: baseline;
-  gap: 0.4rem;
-  padding: 0.3rem 0.65rem;
-  border: 1px solid color-mix(in srgb, var(--band-color) 45%, var(--rule));
-  border-radius: 999px;
-  font-size: 0.8125rem;
-  font-variant-numeric: tabular-nums;
+.overview-own__summary { display: grid; gap: var(--space-4); align-content: start; min-width: 0; }
+.overview-own__identity { display: flex; align-items: center; gap: var(--space-3); min-width: 0; }
+.overview-own__crest { width: 48px; height: 48px; object-fit: contain; flex: none; }
+.overview-own__title-block { display: grid; gap: 0.4rem; min-width: 0; }
+.overview-own__name { margin: 0; font-size: clamp(1.375rem, 2.5vw, 1.75rem); line-height: 1.05; color: var(--ink); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.overview-own__form { display: flex; flex-wrap: wrap; gap: 4px; position: relative; z-index: 1; }
+.overview-own__form .form__chip { width: 1.2rem; height: 1.2rem; font-size: 0.6875rem; border-radius: 4px; cursor: default; }
+.overview-own__stats { display: flex; align-items: stretch; margin: 0; padding: 0; list-style: none; }
+.overview-own__stat { display: grid; align-content: start; gap: 0.25rem; padding: 0 var(--space-4); border-left: 1px solid var(--rule); min-width: 0; }
+.overview-own__stat:first-child { padding-left: 0; border-left: 0; }
+.overview-own__stat:last-child { padding-right: 0; }
+.overview-own__stat strong { display: inline-flex; align-items: center; gap: 0.25rem; font-size: clamp(1.25rem, 2.2vw, 1.5rem); line-height: 1; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.overview-own__stat strong.gd--up { color: var(--outcome-good-ink); }
+.overview-own__stat strong.gd--down { color: var(--outcome-bad-ink); }
+.overview-own__place-val[style*="--strip"]::before { content: ""; width: 3px; height: 0.85em; flex: none; border-radius: 2px; background: var(--strip); }
+.overview-own__trend { display: inline-flex; font-size: 0.85em; line-height: 1; }
+.overview-own__stat-label { font-size: 0.75rem; line-height: 1.25; color: var(--ink-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+.overview-own__match { display: grid; gap: 0.6rem; align-content: center; min-width: 0; padding: 0.85rem var(--space-4); border: 1px solid var(--rule); border-radius: 10px; background: var(--panel); }
+.overview-own__match-head { margin: 0; font-size: 0.6875rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink-faint); font-variant-numeric: tabular-nums; }
+.overview-own__pair { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); align-items: center; gap: var(--space-2); font-size: 0.875rem; font-weight: 600; color: var(--ink-muted); }
+.overview-own__side { display: flex; align-items: center; gap: 0.35rem; min-width: 0; }
+.overview-own__side > span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.overview-own__side.is-own { font-weight: 800; color: var(--ink); }
+.overview-own__side--away { flex-direction: row-reverse; text-align: right; }
+.overview-own__side .team-logo { width: 20px; height: 20px; flex: none; }
+.overview-own__vs { color: var(--ink-faint); font-weight: 700; }
+.overview-own__result { padding: 0.15rem 0.5rem; border-radius: 5px; font-size: 0.875rem; font-weight: 800; line-height: 1.2; font-variant-numeric: tabular-nums; color: #fff; white-space: nowrap; }
+.overview-own__result.form__chip--d { color: #10171b; }
+.overview-own__match .odds { height: 1.5rem; padding: 0; margin: 0; overflow: visible; pointer-events: none; }
+.overview-own__match .odds__seg { font-size: 0.75rem; }
+.overview-own__stake { display: flex; align-items: baseline; gap: 0.4rem; margin: 0; font-size: 0.75rem; line-height: 1.35; color: var(--ink-muted); font-variant-numeric: tabular-nums; }
+.overview-own__stake::before { content: ""; flex: none; width: 0.45rem; height: 0.45rem; border-radius: 2px; background: var(--mark, var(--ink-faint)); transform: translateY(-1px); }
+.overview-own__scores { display: flex; flex-wrap: wrap; align-items: center; gap: 0.35rem; font-size: 0.75rem; color: var(--ink-muted); }
+.overview-own__scores-label { font-size: 0.6875rem; font-weight: 600; color: var(--ink-faint); margin-right: 0.1rem; }
+.overview-own__score-pill { padding: 0.1rem 0.45rem; border: 1px solid var(--rule); border-radius: 999px; background: var(--panel-sunk); color: var(--ink); font-weight: 700; font-variant-numeric: tabular-nums; position: relative; z-index: 1; cursor: default; }
+.overview-own__record { margin: 0; font-size: 0.75rem; color: var(--ink-muted); font-variant-numeric: tabular-nums; }
+
+.overview-own__races { grid-column: 1 / -1; display: grid; grid-template-columns: repeat(auto-fit, minmax(min(11rem, 100%), 1fr)); gap: var(--space-3) var(--space-7); margin: 0; padding: var(--space-4) 0 0; border-top: 1px solid var(--rule); list-style: none; }
+.overview-own__races:not(:has(.overview-own__race:not(.is-settled))) { display: flex; flex-wrap: wrap; gap: var(--space-2); }
+.overview-own__race { display: grid; gap: 0.35rem; align-content: start; min-width: 0; }
+.overview-own__race.is-settled { display: inline-flex; align-items: center; gap: 0.45rem; align-self: center; padding: 0.3rem 0.7rem; width: fit-content; border: 1px solid color-mix(in srgb, var(--band-color) 45%, var(--rule)); border-radius: 999px; background: color-mix(in srgb, var(--band-color) 10%, var(--panel)); }
+.overview-own__settled-dot { width: 0.5rem; height: 0.5rem; border-radius: 50%; background: var(--band-color); flex: none; }
+.overview-own__settled-label { font-size: 0.8125rem; font-weight: 700; color: var(--ink); }
+.overview-own__race-head { display: flex; align-items: baseline; justify-content: space-between; gap: var(--space-2); min-width: 0; }
+.overview-own__race-label { font-size: 0.8125rem; font-weight: 600; color: var(--ink); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.overview-own__race-tag { font-weight: 500; font-size: 0.75rem; color: var(--ink-muted); }
+.overview-own__race-val { display: inline-flex; align-items: baseline; gap: 0.35rem; flex: none; }
+.overview-own__race-val .overview-change { font-size: 0.75rem; }
+.overview-own__race-pct { font-size: 1.0625rem; line-height: 1; font-variant-numeric: tabular-nums; white-space: nowrap; }
+
+@media (max-width: 760px) {
+  .overview-own { grid-template-columns: minmax(0, 1fr); gap: var(--space-3); padding: var(--space-3) var(--space-4) var(--space-4); }
+  .overview-own__summary { gap: var(--space-3); }
+  .overview-own__crest { width: 40px; height: 40px; }
+  .overview-own__stats { display: grid; grid-template-columns: repeat(4, auto); justify-content: space-between; }
+  .overview-own__stat { padding: 0 var(--space-3); }
+  .overview-own__stat strong { font-size: 1.125rem; font-variation-settings: "wdth" 110; }
+  .overview-own__match { gap: 0.55rem; padding: var(--space-3); }
+  .overview-own__races { gap: 0.85rem var(--space-5); padding-top: var(--space-3); }
 }
-.overview-own__band b { font-weight: 800; }
+@media (max-width: 380px) {
+  .overview-own__stat { padding: 0 0.5rem; }
+  .overview-own__stat strong { font-size: 1rem; }
+  .overview-own__stat-label { font-size: 0.6875rem; }
+  .overview-own__races { grid-template-columns: minmax(0, 1fr); gap: var(--space-2); }
+}
 .overview-movers__label {
   grid-column: 1 / -1;
   font-size: 0.6875rem;

@@ -236,9 +236,10 @@ function scenarioScoreLine(report, prepared, f, typical) {
 /* One match of the scenario as a sentence about one club's result in it, the
    result the season shown plays: the club's own match from its side ("Beat
    Brann", "Lose to Sandefjord"), another match from the side that matters
-   (`subject`: "Bodø/Glimt lose to Molde"). A chip carries the same result in
-   colour; beside it the Matches page's odds bar, drawn from all the simulations,
-   with that result lit and the rest muted, and that result's chance. */
+   (`subject`: "Bodø/Glimt lose to Molde"). A chip carries the scenario's scoreline
+   from that club's side in the result's colour; beside it the Matches page's
+   odds bar, drawn from all the simulations, with that result lit and the rest
+   muted, and that result's chance. */
 function scenarioMatchRow(report, prepared, analysis, f, subject, own = false) {
   const { home, away, game } = prepared.games[f];
   const score = analysis.typical.scores[f];
@@ -246,7 +247,7 @@ function scenarioMatchRow(report, prepared, analysis, f, subject, own = false) {
   const mine = atHome ? score : [score[1], score[0]];
   const letter = mine[0] > mine[1] ? 'W' : mine[0] === mine[1] ? 'D' : 'L';
   const item = el('div', 'scenario-match');
-  item.appendChild(el('span', `form__chip form__chip--${letter.toLowerCase()}`, t(`form.${letter}`)));
+  item.appendChild(el('span', `scenario-match__chip form__chip--${letter.toLowerCase()}`, `${mine[0]}–${mine[1]}`));
   const sentence = t(`scenario.${own ? 'own' : 'they'}${letter}`, { team: report.table[subject].team, other: report.table[atHome ? away : home].team });
   const text = el('div', 'scenario-match__body');
   const meta = el('p', 'scenario-match__meta');

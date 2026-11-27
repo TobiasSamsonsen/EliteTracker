@@ -768,17 +768,14 @@ function shareClubFigures(report, teamId, row) {
   };
 }
 
-/* A figure: its label over it, the value (after the rating's trend arrow,
+/* A figure: its label over it, the value (before the rating's trend arrow,
    when `arrow` names one), a line under it. */
 function shareStat(ctx, x, y, w, [label, value, sub], { size, s = 1, arrow = null }) {
   paintText(ctx, label, x, y + 14 * s, { size: 14 * s, weight: 600, color: SC.faint, label: true, maxWidth: w - 10 });
   const base = y + 24 * s + size * 0.76;
-  let vx = x;
-  if (arrow) {
-    shareArrow(ctx, arrow, x + size * 0.3, base - size * 0.36, size * 0.62);
-    vx += size * 0.7;
-  }
-  paintText(ctx, value, vx, base, { size, weight: 800, wide: true, maxWidth: w - 10 - (vx - x), fit: true });
+  const arrowRoom = arrow ? size * 0.72 : 0;
+  const valueW = paintText(ctx, value, x, base, { size, weight: 800, wide: true, maxWidth: w - 10 - arrowRoom, fit: true });
+  if (arrow) shareArrow(ctx, arrow, x + valueW + size * 0.38, base - size * 0.36, size * 0.62);
   if (sub) paintText(ctx, sub, x, base + 30 * s, { size: 17 * s, weight: 600, color: SC.muted, maxWidth: w - 10 });
 }
 
@@ -802,7 +799,7 @@ function shareClubRace(ctx, x, y, w, { band, chance }, count, { s = 1 }) {
   return 50 * s;
 }
 
-/* A club: its crest and name; its rating (after the trend arrow) and where
+/* A club: its crest and name; its rating (with the trend arrow beside it) and where
    that ranks among every club; its likeliest place (its place once the
    season is over) and points; its attack and defence as the club page's bars
    from the division average; the races it has a chance of. Wide: the rating
@@ -821,9 +818,9 @@ async function shareClub(report, teamId) {
     const crest = 84;
     await shareDrawCrest(ctx, row.team_id, row.team, room.x, room.y + 4, crest);
     const base = room.y + 4 + crest * 0.7;
-    const ratingW = paintText(ctx, num(row.rating), room.x + room.w, base, { size: 58, weight: 800, wide: true, align: 'right' });
-    const arrowW = fig.trend ? 52 : 0;
-    if (fig.trend) shareArrow(ctx, fig.trend.direction, room.x + room.w - ratingW - 30, base - 21, 38);
+    const arrowW = fig.trend ? 50 : 0;
+    const ratingW = paintText(ctx, num(row.rating), room.x + room.w - arrowW, base, { size: 58, weight: 800, wide: true, align: 'right' });
+    if (fig.trend) shareArrow(ctx, fig.trend.direction, room.x + room.w - 19, base - 21, 38);
     paintText(ctx, fig.rankText, room.x + room.w, base + 30, { size: 17, weight: 600, color: SC.muted, align: 'right' });
     paintText(ctx, row.team, room.x + crest + 22, base, { size: 56, weight: 800, wide: true, maxWidth: room.w - crest - 22 - Math.max(ratingW + arrowW, 200) - 40, fit: true });
     const y0 = room.y + crest + 50;

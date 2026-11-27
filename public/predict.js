@@ -546,9 +546,11 @@
     const panelId = `pp-${key}-${slot}`;
     // Back to the model's draw: only on the curve, once an end has been dragged.
     const resetFine = h('button', { type: 'button', class: 'pbtn pbtn--small pcard__reset', on: { click: () => {
+      const was = snapshot();
       slider.pos = { g: slider.pos.g, k: DRAW_TENTHS.normal };
       fine = false; fineButton.setAttribute('aria-pressed', 'false'); panel.hidden = true; hint.hidden = true;
       touch(); release();
+      showUndo(was);
     } } }, t('predict.fine.reset'));
     const inputs = {};
     const readout = h('div', { class: 'pcard__readout' });
@@ -596,25 +598,37 @@
     const saveWord = h('span', { class: 'pcard__save', attrs: { 'aria-live': 'polite' } });
     const status = h('span', { class: 'pcard__status' }, reading, saveWord);
     const clearButton = h('button', { type: 'button', class: 'pbtn pbtn--small pcard__clear', hidden: true, on: { click: () => clearPick() } }, t('predict.clear'));
-    // A drag that moved a pick that was already there can be taken back for a few seconds.
-    let undoPos = null;
+    // A drag or a reset to the model's draw that moved a pick that was already there can be taken back for a few seconds.
+    let undoState = null;
     let undoTimer = 0;
+    const snapshot = () => (tipped ? { pos: { ...slider.pos, ...(slider.pos.p ? { p: slider.pos.p.slice() } : {}) }, fine, panelHidden: panel.hidden } : null);
+    function hideUndo() { clearTimeout(undoTimer); undoState = null; undoButton.hidden = true; }
+    function showUndo(was) {
+      if (!was || JSON.stringify(was.pos) === JSON.stringify(slider.pos)) return;
+      clearTimeout(undoTimer);
+      undoState = was;
+      undoButton.hidden = false;
+      undoTimer = setTimeout(hideUndo, 8000);
+    }
     const undoButton = h('button', { type: 'button', class: 'pbtn pbtn--small pcard__undo', hidden: true, on: { click: () => {
-      if (!undoPos) return;
-      slider.pos = undoPos;
+      const was = undoState;
+      if (!was) return;
+      slider.pos = was.pos;
+      if (was.fine !== fine) {
+        fine = was.fine;
+        panel.hidden = was.panelHidden;
+        hint.hidden = true;
+        fineButton.setAttribute('aria-pressed', String(!panel.hidden));
+      }
       hideUndo();
       touch(); release();
     } } }, t('predict.undo'));
-    function hideUndo() { clearTimeout(undoTimer); undoPos = null; undoButton.hidden = true; }
     let heldPos = null;
-    function beginDrag() { hideUndo(); heldPos = tipped ? { ...slider.pos, ...(slider.pos.p ? { p: slider.pos.p.slice() } : {}) } : null; }
+    function beginDrag() { hideUndo(); heldPos = snapshot(); }
     function endDrag() {
       const was = heldPos;
       heldPos = null;
-      if (!was || JSON.stringify(was) === JSON.stringify(slider.pos)) return;
-      undoPos = was;
-      undoButton.hidden = false;
-      undoTimer = setTimeout(hideUndo, 8000);
+      showUndo(was);
     }
     card.append(slider.control, h('div', { class: 'pcard__foot' }, status, h('span', { class: 'pcard__acts' }, undoButton, resetFine, clearButton, fineButton)), panel);
     let favourite = favouriteOf(pct());

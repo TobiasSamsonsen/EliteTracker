@@ -501,10 +501,33 @@ function overviewDivisionLinks(report, round) {
   return links;
 }
 
+/* The races open to one club (excluding the play-off band, which promotion and
+   relegation already count via `bandChance`), plus a fallback to its likeliest
+   finishing place when a live club sits outside every race. */
+function overviewOwnRaces(report, row) {
+  const live = report.model.matches_remaining > 0;
+  const slug = report.league.slug;
+  const races = (report.league.bands || [])
+    .filter((band) => band.tone !== 'playoff')
+    .map((band) => {
+      const chance = bandChance(row, band, slug);
+      return { band, chance, settled: !live && chance >= 0.999 };
+    })
+    .filter(({ chance }) => chance >= 0.005);
+  let likeliest = null;
+  if (!races.length && live && row.position_probabilities?.length) {
+    const probs = row.position_probabilities;
+    const best = probs.reduce((idx, p, i) => (p > probs[idx] ? i : idx), 0);
+    likeliest = { place: best + 1, chance: probs[best] };
+  }
+  return { races, likeliest };
+}
+
 /* The reader's own club (ownClub, set with the star on its page), first on
-   the overview where one is set: where it stands, its next match with its
-   chance of winning it, and its chance of each band still open to it, each
-   in the band's colour. The whole card opens the club. */
+   the overview where one is set: crest, recent form and key figures (place,
+   points, expected points or GD, rating with trend), its next match (or last
+   result once finished) with odds bar and stakes/scorelines, and its open race
+   chances with round-to-round movement. The whole card opens the club. */
 function overviewOwnClub() {
   const id = ownClub();
   if (!id) return null;
@@ -513,38 +536,197 @@ function overviewOwnClub() {
   if (!report) return null;
   const row = report.table.find((r) => String(r.team_id) === id);
   const slug = report.league.slug;
+  const count = report.table.length;
+  const live = report.model.matches_remaining > 0;
+
   const card = el('div', 'overview-card overview-race overview-own');
-  card.appendChild(overviewCardHead(t('overview.ownTitle'), report.league.name, () => openTeamView(row.team_id, row.team)));
-  const main = el('div', 'overview-own__main');
-  const facts = el('span', 'overview-own__facts',
-    `${t('overview.pointsShort', { n: num(row.points) })} · ${t('overview.ownRating', { n: num(Math.round(row.rating)) })}`);
-  const place = el('b', 'overview-own__place overview-race__figure', rankText(row.position));
-  place.setAttribute('aria-label', t('overview.ownPlace', { n: row.position }));
-  main.append(clubButton(row, 'overview-race__name overview-own__club'), place, facts);
-  card.appendChild(main);
-  const next = [...(report.fixtures || [])]
-    .filter((f) => String(f.home_id) === id || String(f.away_id) === id)
-    .sort((a, b) => `${a.date} ${a.time || ''}`.localeCompare(`${b.date} ${b.time || ''}`))[0];
-  if (next) {
-    const home = String(next.home_id) === id;
-    card.appendChild(el('p', 'overview-own__next', t('overview.ownNext', {
-      team: home ? next.away : next.home,
-      side: t(home ? 'team.homeShort' : 'team.awayShort'),
-      date: formatDate(next.date),
-      pct: pct(home ? next.home_win : next.away_win, 0),
-    })));
+  const head = overviewCardHead(t('overview.ownTitle'), report.league.name, () => openTeamView(row.team_id, row.team));
+  head.append(shareButton({
+    title: () => `${row.team} · ${report.league.name} ${report.league.season}`,
+    image: () => shareClub(report, row.team_id),
+    className: 'overview-card__share',
+  }));
+  card.appendChild(head);
+
+  const summary = el('div', 'overview-own__summary');
+  const identity = el('div', 'overview-own__identity');
+  const crest = teamLogo(row.team_id, row.team, true);
+  if (crest) {
+    crest.classList.add('overview-own__crest');
+    identity.appendChild(crest);
   }
-  if (report.model.matches_remaining > 0) {
-    const chips = el('ul', 'overview-own__bands');
-    for (const band of report.league.bands || []) {
-      const p = bandChance(row, band, slug);
-      if (p < 0.005 || p > 0.995) continue;
-      const chip = el('li', 'overview-own__band');
-      chip.style.setProperty('--band-color', bandColor(band, report.table.length));
-      chip.append(el('span', '', shortBandLabel(band, report)), el('b', '', pct(p, 0)));
-      chips.appendChild(chip);
+  const titleBlock = el('div', 'overview-own__title-block');
+  titleBlock.appendChild(el('h3', 'overview-own__name', row.team));
+
+  const clubMatches = [...(report.results || [])]
+    .filter((m) => m.home_goals != null && (String(m.home_id) === id || String(m.away_id) === id))
+    .sort((a, b) => a.date.localeCompare(b.date) || String(a.match_id).localeCompare(String(b.match_id)));
+  const lastFive = clubMatches.slice(-5);
+  if (lastFive.length) {
+    const formRow = el('div', 'overview-own__form');
+    let w = 0; let d = 0; let l = 0;
+    for (const m of lastFive) {
+      const isHome = String(m.home_id) === id;
+      const [gf, ga] = isHome ? [m.home_goals, m.away_goals] : [m.away_goals, m.home_goals];
+      const letter = gf > ga ? 'W' : gf === ga ? 'D' : 'L';
+      if (letter === 'W') w += 1;
+      else if (letter === 'D') d += 1;
+      else l += 1;
+      const chip = el('span', `form__chip form__chip--${letter.toLowerCase()}`, t(`form.${letter}`));
+      const opp = shortName(isHome ? m.away : m.home);
+      chip.title = `${opp} (${t(isHome ? 'team.homeShort' : 'team.awayShort')}) ${gf}–${ga} · ${formatDate(m.date)}`;
+      formRow.appendChild(chip);
     }
-    if (chips.children.length) card.appendChild(chips);
+    formRow.setAttribute('aria-label', t('form.tooltip', { w, d, l }));
+    titleBlock.appendChild(formRow);
+  }
+  identity.appendChild(titleBlock);
+  summary.appendChild(identity);
+
+  const stats = el('ul', 'overview-own__stats');
+  const addStat = (valNode, label, { ariaLabel, title } = {}) => {
+    const item = el('li', 'overview-own__stat');
+    if (ariaLabel) item.setAttribute('aria-label', ariaLabel);
+    if (title) item.title = title;
+    item.append(valNode, el('span', 'overview-own__stat-label', label));
+    stats.appendChild(item);
+  };
+
+  const placeVal = el('strong', 'overview-own__place-val', rankText(row.position));
+  const currentBand = bandFor(report.league.bands || [], row.position);
+  if (currentBand) placeVal.style.setProperty('--strip', bandColor(currentBand, count));
+  addStat(placeVal, t(live ? 'overview.ownStatPlace' : 'overview.ownStatFinished'), { ariaLabel: t('overview.ownPlace', { n: row.position }) });
+
+  addStat(el('strong', '', num(row.points)), t('team.points'));
+
+  if (live && row.expected_points != null) {
+    addStat(el('strong', '', num(row.expected_points, 0)), t('overview.ownStatExpected'));
+  } else {
+    addStat(el('strong', gdTone(row.goal_difference).trim(), signed(row.goal_difference)), t('team.gd'));
+  }
+
+  const ratingVal = el('strong', 'overview-own__rating-val');
+  const trend = computeRatingTrend(row.team, report);
+  ratingVal.appendChild(document.createTextNode(num(Math.round(row.rating))));
+  if (trend) {
+    const arrow = el('span', `overview-own__trend rating-trend--${trend.direction}`);
+    arrow.innerHTML = trend.svg;
+    arrow.setAttribute('aria-hidden', 'true');
+    ratingVal.appendChild(arrow);
+  }
+  addStat(ratingVal, t('share.rating'), trend ? { ariaLabel: `${num(Math.round(row.rating))} · ${trend.detail}`, title: trend.detail } : {});
+
+  summary.appendChild(stats);
+  card.appendChild(summary);
+
+  const buildPair = (homeId, homeName, awayId, awayName, centreNode) => {
+    const pair = el('div', 'overview-own__pair');
+    const makeSide = (teamId, name, side) => {
+      const box = el('span', `overview-own__side overview-own__side--${side}${String(teamId) === id ? ' is-own' : ''}`);
+      const sideCrest = teamLogo(teamId, name, true);
+      if (sideCrest) box.appendChild(sideCrest);
+      box.appendChild(el('span', '', shortName(name)));
+      return box;
+    };
+    pair.append(makeSide(homeId, homeName, 'home'), centreNode, makeSide(awayId, awayName, 'away'));
+    return pair;
+  };
+
+  const next = live ? [...(report.fixtures || [])]
+    .filter((f) => String(f.home_id) === id || String(f.away_id) === id)
+    .sort((a, b) => `${a.date} ${a.time || ''}`.localeCompare(`${b.date} ${b.time || ''}`))[0] : null;
+  const lastMatch = !live ? clubMatches[clubMatches.length - 1] : null;
+
+  if (next) {
+    const matchBox = el('div', 'overview-own__match');
+    const when = `${formatDate(next.date)}${next.time ? ` · ${next.time}` : ''}`;
+    matchBox.appendChild(el('p', 'overview-own__match-head', `${t('team.nextMatch')} · ${when}`));
+    matchBox.appendChild(buildPair(next.home_id, next.home, next.away_id, next.away, el('span', 'overview-own__vs', '–')));
+    matchBox.appendChild(oddsBar(shortName(next.home), shortName(next.away), next));
+    const stakes = stakesForFixture([...(report.next_stakes || []), ...(report.high_stakes || [])], next.match_id)
+      .filter((s) => String(s.team_id) === id)
+      .sort((a, b) => b.swing - a.swing);
+    const bestStake = stakes[0];
+    if (bestStake) {
+      const band = { label: bestStake.band_label, first: bestStake.band_first, last: bestStake.band_last, tone: bestStake.band_tone };
+      const stakeEl = el('p', 'overview-own__stake', t('overview.ownStake', {
+        band: bandEdgeName(band),
+        win: pct(bestStake.p_favourable, 0),
+        loss: pct(bestStake.p_unfavourable, 0),
+      }));
+      stakeEl.style.setProperty('--mark', bandColor(band, count));
+      matchBox.appendChild(stakeEl);
+    } else if (next.scorelines?.length) {
+      const scores = el('div', 'overview-own__scores');
+      scores.appendChild(el('span', 'overview-own__scores-label', t('overview.ownScorelines')));
+      for (const s of next.scorelines.slice(0, 3)) {
+        const pill = el('span', 'overview-own__score-pill', `${s.home_goals}–${s.away_goals}`);
+        pill.title = pct(s.probability, 1);
+        scores.appendChild(pill);
+      }
+      matchBox.appendChild(scores);
+    }
+    card.appendChild(matchBox);
+  } else if (lastMatch) {
+    const matchBox = el('div', 'overview-own__match');
+    matchBox.appendChild(el('p', 'overview-own__match-head', `${t('overview.ownLastMatch')} · ${formatDate(lastMatch.date)}`));
+    const isHome = String(lastMatch.home_id) === id;
+    const [gf, ga] = isHome ? [lastMatch.home_goals, lastMatch.away_goals] : [lastMatch.away_goals, lastMatch.home_goals];
+    const letter = gf > ga ? 'W' : gf === ga ? 'D' : 'L';
+    const scorePill = el('span', `overview-own__result form__chip--${letter.toLowerCase()}`, `${lastMatch.home_goals}–${lastMatch.away_goals}`);
+    matchBox.appendChild(buildPair(lastMatch.home_id, lastMatch.home, lastMatch.away_id, lastMatch.away, scorePill));
+    if (row.wins != null) {
+      matchBox.appendChild(el('p', 'overview-own__record', t('overview.ownRecord', {
+        w: num(row.wins), d: num(row.draws), l: num(row.losses),
+      })));
+    }
+    card.appendChild(matchBox);
+  }
+
+  const { races, likeliest } = overviewOwnRaces(report, row);
+  if (races.length || likeliest) {
+    const before = live ? overviewBefore(report) : null;
+    const old = rowIn(before, row);
+    const list = el('ul', 'overview-own__races');
+    for (const { band, chance, settled } of races) {
+      const item = el('li', `overview-own__race${settled ? ' is-settled' : ''}`);
+      item.style.setProperty('--band-color', bandColor(band, count));
+      if (settled) {
+        const label = band.tone === 'relegation' ? t('overview.relegated')
+          : band.tone === 'top' && slug === 'obosligaen' ? t('overview.promoted')
+            : bandName(band);
+        item.append(el('span', 'overview-own__settled-dot'), el('span', 'overview-own__settled-label', label));
+      } else {
+        const top = el('div', 'overview-own__race-head');
+        const labelWrap = el('span', 'overview-own__race-label', shortBandLabel(band, report));
+        if (!live) labelWrap.appendChild(el('span', 'overview-own__race-tag', ` · ${t('overview.inPlayoff')}`));
+        const val = el('span', 'overview-own__race-val');
+        const change = live && old && chanceChange(chance, bandChance(old, band, slug), { bad: band.tone === 'relegation' });
+        if (change) val.appendChild(change);
+        val.appendChild(el('b', 'overview-own__race-pct', pct(chance, chance < 0.1 ? 1 : 0)));
+        top.append(labelWrap, val);
+        const bar = el('span', 'overview-race__bar');
+        bar.style.setProperty('--p', `${Math.round(chance * 100)}%`);
+        bar.setAttribute('aria-hidden', 'true');
+        item.append(top, bar);
+      }
+      list.appendChild(item);
+    }
+    if (!races.length && likeliest) {
+      const item = el('li', 'overview-own__race is-likeliest');
+      item.style.setProperty('--band-color', 'var(--accent)');
+      const top = el('div', 'overview-own__race-head');
+      top.append(
+        el('span', 'overview-own__race-label', t('overview.ownLikeliest', { place: rankText(likeliest.place) })),
+        el('b', 'overview-own__race-pct', pct(likeliest.chance, 0)),
+      );
+      const bar = el('span', 'overview-race__bar');
+      bar.style.setProperty('--p', `${Math.round(likeliest.chance * 100)}%`);
+      bar.setAttribute('aria-hidden', 'true');
+      item.append(top, bar);
+      list.appendChild(item);
+    }
+    card.appendChild(list);
   }
   return card;
 }
@@ -975,5 +1157,5 @@ function overviewExploreButton() {
 }
 
 if (typeof module !== 'undefined') {
-  module.exports = { predictInviteRound };
+  module.exports = { predictInviteRound, overviewOwnRaces };
 }
