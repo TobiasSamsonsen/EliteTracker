@@ -790,8 +790,8 @@ def playoff_outcomes(root: Path = NORMALIZED_DIR) -> dict[int, dict[str, Any]]:
 
 
 # The survival tie of OBOS-ligaen's 14th against the tier below, once played:
-# fotmob does not list it, so it is recorded by hand (season -> club id -> stayed
-# up) until the season ends and `playoff_outcomes.json` takes it.
+# `refresh` does not read it (fotmob league 9754), so it is recorded by hand
+# (season -> club id -> {stayed, opponent, legs, source}) until the season ends and `playoff_outcomes.json` takes it.
 SURVIVAL_RESULTS_FILE = "survival_results.json"
 
 
@@ -800,7 +800,7 @@ def survival_results(root: Path = NORMALIZED_DIR) -> dict[int, dict[str, bool]]:
     path = Path(root) / SURVIVAL_RESULTS_FILE
     if not path.exists():
         return {}
-    return {int(season): {team: bool(stayed) for team, stayed in results.items()}
+    return {int(season): {team: bool(result["stayed"]) for team, result in results.items()}
             for season, results in json.loads(path.read_text(encoding="utf-8")).items()}
 
 
