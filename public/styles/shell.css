@@ -657,6 +657,25 @@ html[data-boot-view="grid"] .skeleton-boot__grid { display: block; }
   padding: 0.35rem;
 }
 .popover-menu[hidden] { display: none; }
+/* A pick-one list (pick-menu.js) is a popover of its own, so it can open over another popover: the browser's
+   own popover box is reset, and the script sets where it goes. */
+.popover-menu--pick { inset: auto; margin: 0; color: var(--ink); overflow: auto; max-width: calc(100vw - 16px); }
+/* Blocks, not full-width buttons: a percentage width would stretch the list to the room there is. */
+.popover-menu--pick .popover-menu__btn { display: block; width: auto; }
+
+/* The button that opens such a list (a <select>'s stand-in): the choice, and the masthead's chevron. */
+.pickbtn { display: inline-flex; align-items: center; justify-content: space-between; gap: 0.5rem; text-align: left; white-space: nowrap; }
+.pickbtn__text { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.pickbtn:disabled { cursor: default; opacity: 0.6; }
+/* The chevron says "this opens a list"; it turns over while the list is open. */
+.pickbtn::after, .pfield--pick::after {
+  content: ""; flex: none; width: 0.32em; height: 0.32em; margin: 0 0 0.25em 0.5em;
+  border-right: 0.14em solid currentColor; border-bottom: 0.14em solid currentColor;
+  transform: rotate(45deg); opacity: 0.55; transition: transform 0.15s var(--ease), opacity 0.15s var(--ease);
+}
+.pickbtn:hover::after, .pfield--pick:hover::after { opacity: 1; }
+.pickbtn[aria-expanded="true"]::after, .pfield--pick[aria-expanded="true"]::after { transform: translateY(0.12em) rotate(-135deg); opacity: 1; }
+.pickbtn[aria-expanded="true"], .pfield--pick[aria-expanded="true"] { color: var(--accent-ink); }
 .popover-menu--scroll { max-height: 50vh; overflow-y: auto; }
 /* The picker's lists sit under their half of the pill, as wide as it, each
    option's text in line with the half's own. */

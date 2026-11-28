@@ -529,6 +529,8 @@ function setupMatch(root) {
     filled = league;
   };
   leagueSwitch(root, (next) => { league = next; populate(); draw(); });
+  pickSelect(homeSelect);
+  pickSelect(awaySelect);
   homeSelect.addEventListener('change', () => draw());
   awaySelect.addEventListener('change', () => draw());
 
@@ -729,6 +731,7 @@ function setupSeason(root) {
   let league = 'eliteserien';
   let filled = null;
   leagueSwitch(root, (next) => { league = next; filled = null; draw(); });
+  pickSelect(select);
   select.addEventListener('change', () => draw());
 
   function draw() {

@@ -168,6 +168,8 @@ function mountainRoot() {
   });
   // Division and season go through the hero's own switches, so the rest of
   // the page follows as it would from there.
+  // The four lists are the site's own pickers (pick-menu.js), not the browser's; the selects keep the state.
+  for (const select of root.querySelectorAll('select.mountain__select')) pickSelect(select);
   root.querySelector('#mountain-league').addEventListener('change', (event) => {
     document.querySelector(`#hero-league-menu [data-league="${event.target.value}"]`)?.click();
   });

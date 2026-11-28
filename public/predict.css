@@ -85,7 +85,7 @@
 .pnav__caret::after { content: "▾"; font-size: 0.75em; color: var(--ink-muted); }
 .pnav__dates { font-size: 0.75rem; color: var(--ink-muted); font-weight: 600; white-space: nowrap; }
 /* The round list opens from the round's name: the native select lies over it, invisible. */
-.pnav__pick { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; font: inherit; }
+.pnav__pick { position: absolute; inset: 0; width: 100%; height: 100%; padding: 0; border: 0; background: none; opacity: 0; cursor: pointer; font: inherit; }
 .pnav__side { justify-self: end; display: flex; align-items: center; gap: 0.6rem; }
 .pnav__ring { display: flex; }
 /* The deadline as a line under the dates: a phone's bar shows it there instead of the badge. */
@@ -136,6 +136,7 @@
 #predict-view .ptut__title { margin: 0; font-size: 1.4rem; }
 .ptut__title:focus { outline: none; }
 .ptut__text { margin: 0; max-width: var(--measure); }
+.ptut__invite { margin: 0; padding: 0.5rem 0.75rem; max-width: var(--measure); border-radius: var(--radius-sm); background: var(--panel-sunk); border: 1px solid var(--rule); font-size: 0.875rem; font-weight: 600; }
 .ptut__hint { margin: 0; min-height: 1.4em; font-size: 0.875rem; font-weight: 700; color: var(--ink-muted); }
 .ptut__hint[data-ok="true"] { color: var(--outcome-good-ink); }
 .ptut__nav { display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: 0.5rem; }
@@ -468,7 +469,7 @@
 .pboard th[aria-sort="ascending"], .pboard th[aria-sort="descending"] { color: var(--ink); }
 .pboard__jump { display: inline-flex; }
 .pboard__row:focus { outline: 2px solid var(--accent); outline-offset: -2px; }
-.pfield.pfield--pick { width: auto; padding: 0 0.6rem 0 0.85rem; border-radius: 999px; cursor: pointer; font-size: 0.8125rem; font-weight: 600; }  /* the switches' type */
+.pfield.pfield--pick { display: inline-flex; align-items: center; width: auto; padding: 0 0.6rem 0 0.85rem; border-radius: 999px; cursor: pointer; font-size: 0.8125rem; font-weight: 600; }  /* the switches' type */
 .pboard__note, .pboard__me { color: var(--ink-muted); font-size: 0.8125rem; margin: 0.6rem auto; text-align: center; }
 /* A long board: the rows left out between the top and you are one quiet row that opens them. */
 .pboard .pboard__gap td { height: 2.25rem; padding: 0; text-align: center; background: color-mix(in srgb, var(--ink) 3%, transparent); }
@@ -547,6 +548,9 @@
 .pleagues__msg { text-align: center; }
 .pleagues__msg:empty { display: none; }
 .pleagues--none { max-width: 44rem; margin-inline: auto; padding-top: 0.5rem; }
+.pinvite__code { display: flex; align-items: center; justify-content: center; gap: 0.5rem; margin: 0.5rem 0; color: var(--ink-muted); font-size: 0.8125rem; }
+.pinvite__code code { letter-spacing: 0.12em; color: var(--ink); }
+.pinvite__acts { display: flex; flex-wrap: wrap; justify-content: center; gap: 0.5rem; margin: 1rem 0; }
 .pleagues--none h2, .pleagues--none > .pintro { text-align: center; }
 .pleague__head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 0.75rem 1rem;
   padding: 0.9rem 1rem; margin: 0 0 1rem; border: 1px solid var(--rule); border-left: 3px solid var(--accent); border-radius: var(--radius-sm);

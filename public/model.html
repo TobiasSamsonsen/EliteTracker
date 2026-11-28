@@ -154,12 +154,13 @@
 
   .calc { display: grid; grid-template-columns: max-content minmax(0, 7rem) minmax(0, 7rem); justify-content: start; gap: 0.4rem 0.6rem; align-items: center; margin-bottom: 1rem; font-size: 0.875rem; }
   .calc__col { font-size: 0.6875rem; font-weight: 600; letter-spacing: 0.14em; text-transform: uppercase; color: var(--ink-faint); }
-  .calc input, .fig select {
+  .calc input, .fig select, .fig .pickbtn {
     font: inherit; font-size: 0.875rem; color: var(--ink); background: var(--panel-sunk);
     border: 1px solid var(--rule); border-radius: var(--radius-sm); padding: 0.3rem 0.5rem; min-width: 0; width: 100%;
   }
   .pick { display: inline-flex; align-items: center; gap: 0.5rem; font-size: 0.875rem; color: var(--ink-muted); }
-  .pick select { width: auto; max-width: 13rem; }
+  .pick select, .pick .pickbtn { width: auto; max-width: 13rem; }
+  .fig .pickbtn { cursor: pointer; }
 
   /* A finger's worth of target on touch screens, as on the front page; 16px
      text in the fields so iOS does not zoom in on focus. */
@@ -167,7 +168,7 @@
     .fig__slider input { height: 2.75rem; }
     .fig__table summary { display: flex; align-items: center; min-height: 44px; }
     .chips button { min-height: 44px; padding-inline: 1rem; }
-    .calc input, .fig select { min-height: 44px; font-size: 1rem; }
+    .calc input, .fig select, .fig .pickbtn { min-height: 44px; font-size: 1rem; }
   }
 
   .fig svg .grid line { stroke: var(--rule); stroke-width: 1; }
@@ -698,6 +699,7 @@
 </main>
 <script src="/thumbs.js" defer></script>
 <script src="/elo-curve.js" defer></script>
+<script src="/pick-menu.js" defer></script>
 <script src="/model.js" defer></script>
 </body>
 </html>

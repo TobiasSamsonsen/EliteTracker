@@ -64,6 +64,16 @@
     return node;
   }
 
+  /* A pick-one list in the site's own picker style (app.js's openPickMenu), not the browser's: the button shows
+     the choice, and pressing it opens the list. options is a list of { value, text }, or a function giving one when it opens. */
+  function pickButton({ label, options, value, onPick, cls = 'pfield pfield--pick', text = null }) {
+    const shown = text !== null ? text : (typeof options === 'function' ? options() : options).find((o) => o.value === value);
+    const btn = h('button', { type: 'button', class: cls, attrs: { 'aria-label': label, 'aria-haspopup': 'true', 'aria-expanded': 'false' } },
+      text !== null ? text : shown ? shown.text : '');
+    btn.addEventListener('click', () => openPickMenu(btn, { label, options, value, onPick }));
+    return btn;
+  }
+
   const when = (date) => new Intl.DateTimeFormat(lang() === 'no' ? 'nb-NO' : 'en-GB',
     { weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }).format(date);
 
@@ -857,14 +867,6 @@
     return mine && mine.n > 0 ? `${base} · ${mine.n}/${round.n} · ${ptsText(totalPoints(mine.n, mine.b), true)} ${t('predict.recap.pts')}` : base;
   }
 
-  /* Your stats arrive after the list is drawn: the lines are filled in when they have. */
-  function refreshRoundPick() {
-    const pick = document.querySelector('.pnav__pick');
-    if (!pick) return;
-    const rounds = leagueRounds(S.league);
-    [...pick.options].forEach((option, i) => { if (rounds[i]) option.textContent = roundOptionText(rounds[i]); });
-  }
-
   function roundState(round) {
     const status = roundStatus(round, now());
     const text = status === 'future' ? t('predict.status.future', { span: spanText(round.opens.getTime() - now()) })
@@ -902,8 +904,8 @@
           h('h3', { class: 'pnav__title' }, t('predict.round', { n: round.round }), h('span', { class: 'pnav__caret', attrs: { 'aria-hidden': 'true' } })),
           h('span', { class: 'pnav__dates' }, roundDates(round.closes, round.last || round.closes)),
           statusLine(round),
-          h('select', { class: 'pnav__pick', attrs: { 'aria-label': t('predict.round.pick') }, on: { change: (e) => go(Number(e.target.value)) } },
-            rounds.map((r, i) => h('option', { value: String(i), selected: i === at }, roundOptionText(r))))),
+          pickButton({ cls: 'pnav__pick', label: t('predict.round.pick'), text: '', value: at,
+            options: () => leagueRounds(S.league).map((r, i) => ({ value: i, text: roundOptionText(r) })), onPick: go })),
         h('button', { type: 'button', class: 'pbtn pbtn--icon', disabled: at >= rounds.length - 1, attrs: { 'aria-label': t('predict.round.next') }, on: { click: () => go(at + 1) } }, '›')),
       h('div', { class: 'pnav__side' }, Object.assign(statusBadge(round), { id: 'predict-badge' }),
         status === 'open' || status === 'live' || status === 'partial' ? h('div', { id: 'predict-ring', class: 'pnav__ring' }) : null));
@@ -1453,8 +1455,8 @@
     const scopes = ['season', 'round', 'last10'];
     const season = S.boardSeason && current && S.boardSeason <= current ? S.boardSeason : current;
     const seasons = boardSeasons(current);
-    const seasonPick = h('select', { class: 'pfield pfield--pick', attrs: { 'aria-label': t('predict.board.season') }, on: { change: (e) => { S.boardSeason = Number(e.target.value); S.boardRound = {}; render(); } } },
-      seasons.map((s) => h('option', { value: String(s), selected: s === season }, String(s))));
+    const seasonPick = pickButton({ label: t('predict.board.season'), value: season, options: seasons.map((s) => ({ value: s, text: String(s) })),
+      onPick: (s) => { S.boardSeason = s; S.boardRound = {}; render(); } });
     // Rounds already scored this season, newest first: any of them has a board of its own.
     const scored = season === current ? leagueRounds(S.league).filter((r) => (Number.isInteger(r.settled) ? r.settled > 0 : roundStatus(r, now()) !== 'future')).reverse() : [];
     const pickedRound = (S.boardRound || {})[S.league] || null;
@@ -1462,8 +1464,9 @@
     const all = Boolean(S.boardAll);
     const scope = all ? 'season' : S.scope;
     const roundPick = scope === 'round' && scored.length
-      ? h('select', { class: 'pfield pfield--pick', attrs: { 'aria-label': t('predict.round.pick') }, on: { change: (e) => { S.boardRound = { ...(S.boardRound || {}), [S.league]: Number(e.target.value) || null }; render(); } } },
-        scored.map((r, i) => h('option', { value: String(i === 0 ? 0 : r.round), selected: i === 0 ? !pickedRound : pickedRound === r.round }, t('predict.round', { n: r.round }))))
+      ? pickButton({ label: t('predict.round.pick'), value: pickedRound && scored.some((r) => r.round === pickedRound) ? pickedRound : scored[0].round,
+        options: scored.map((r) => ({ value: r.round, text: t('predict.round', { n: r.round }) })),
+        onPick: (round) => { S.boardRound = { ...(S.boardRound || {}), [S.league]: round === scored[0].round ? null : round }; render(); } })
       : null;
     const divisions = h('div', { class: 'switch', attrs: { role: 'group', 'aria-label': t('predict.division') } },
       ['all', ...LEAGUES].map((id) => h('button', { type: 'button', data: { league: id }, attrs: { 'aria-pressed': String(id === 'all' ? all : !all && S.league === id) },
@@ -1709,6 +1712,16 @@
   const profileLeagues = () => ((S.profile && Array.isArray(S.profile.leagues)) ? S.profile.leagues : []);
   const inviteLink = (code) => `${location.origin}/predict/?join=${code}#leagues`;
 
+  /* An invite outlives the onboarding it can interrupt (a reload, a Google sign-in that clears the rest of
+     the page's storage): the code is kept in this browser for a week, until it is joined or turned down. */
+  const INVITE_KEY = 'predict.invite';
+  const keepInvite = (code) => { if (code) store.set(INVITE_KEY, `${code}:${Date.now()}`); else store.remove(INVITE_KEY); };
+  function keptInvite() {
+    const [code, at] = (store.get(INVITE_KEY) || '').split(':');
+    return isLeagueCode(code) && Date.now() - Number(at) < 7 * 86400000 ? code : null;
+  }
+  const dropInvite = () => { S.pendingJoin = null; S.inviteInfo = null; keepInvite(null); };
+
   /* The leaderboard's order on another plan: your leagues in a row of chips on top (the boards have a
      switch), the one picked under a header of its own (its name, your place, the code to share), then its
      board. Making or joining one sits behind a button once you are in a league; with none it is the page. */
@@ -1717,8 +1730,8 @@
     const saveLocal = () => store.set('predict.leagues', JSON.stringify(S.myLeagues));
     if (!S.myLeagues.some((e) => e.code === S.leagueShown)) S.leagueShown = S.myLeagues.length ? S.myLeagues[0].code : null;
     const has = S.myLeagues.length > 0;
-    const open = !has || Boolean(S.pendingJoin) || Boolean(S.leaguesFormOpen);
-    const message = h('p', { class: 'pleagues__msg', attrs: { 'aria-live': 'polite' } }, S.leagueNote || (S.pendingJoin ? t('predict.leagues.invited') : ''));
+    const open = !has || Boolean(S.leaguesFormOpen);
+    const message = h('p', { class: 'pleagues__msg', attrs: { 'aria-live': 'polite' } }, S.leagueNote || '');
     const say = (text) => { message.textContent = text; };
 
     /* Join and the profile's list of codes go in one commit: the job purges memberships from that list. */
@@ -1745,7 +1758,7 @@
     }
 
     const nameInput = h('input', { type: 'text', class: 'pfield', maxLength: 30, attrs: { 'aria-label': t('predict.leagues.name'), placeholder: t('predict.leagues.name') } });
-    const codeInput = h('input', { type: 'text', class: 'pfield pleagues__code', maxLength: 8, value: S.pendingJoin || '', attrs: { 'aria-label': t('predict.leagues.code'), placeholder: 'ABCD2345', autocapitalize: 'characters', spellcheck: 'false' } });
+    const codeInput = h('input', { type: 'text', class: 'pfield pleagues__code', maxLength: 8, attrs: { 'aria-label': t('predict.leagues.code'), placeholder: 'ABCD2345', autocapitalize: 'characters', spellcheck: 'false' } });
     const create = h('button', { type: 'button', class: 'pbtn pbtn--primary', on: { click: async () => {
       const name = nameInput.value.trim();
       if (name.length < 2) { say(t('predict.leagues.shortname')); return; }
@@ -1760,22 +1773,58 @@
         render();
       } catch (error) { say(errorText(error)); }
     } } }, t('predict.leagues.create'));
-    const join = h('button', { type: 'button', class: 'pbtn pbtn--primary', on: { click: async () => {
-      const code = codeInput.value.trim().toUpperCase();
-      if (!isLeagueCode(code)) { say(t('predict.leagues.badcode')); return; }
-      if (profileLeagues().includes(code)) { say(t('predict.leagues.already')); return; }
-      if (profileLeagues().length >= MAX_LEAGUES) { say(t('predict.leagues.full')); return; }
+    /* Joining by a typed code and by an invite page are the same act. */
+    async function joinLeague(code, report) {
+      if (!isLeagueCode(code)) { report(t('predict.leagues.badcode')); return; }
+      if (profileLeagues().includes(code)) { report(t('predict.leagues.already')); return; }
+      if (profileLeagues().length >= MAX_LEAGUES) { report(t('predict.leagues.full')); return; }
       try {
         await ensureAccount();
         const found = await client.get(`leagues/${code}`);
-        if (!found) { say(t('predict.leagues.nolatest')); return; }
+        if (!found) { report(t('predict.leagues.nolatest')); return; }
         await client.commit(joinWrites(code));
         remember(code, found.name);
-        S.pendingJoin = null;
+        dropInvite();
         S.leagueNote = t('predict.leagues.joined', { name: found.name });
         render();
-      } catch (error) { say(errorText(error)); }
-    } } }, t('predict.leagues.join'));
+      } catch (error) { report(errorText(error)); }
+    }
+    const join = h('button', { type: 'button', class: 'pbtn pbtn--primary', on: { click: () => joinLeague(codeInput.value.trim().toUpperCase(), say) } }, t('predict.leagues.join'));
+
+    /* An invite link, once the player has been through the introduction (or already plays): a page of its own
+       with one button, so the link is not pressed again. The league's name is readable only when signed in. */
+    if (S.pendingJoin && (profileLeagues().includes(S.pendingJoin) || S.myLeagues.some((e) => e.code === S.pendingJoin))) {
+      S.leagueShown = S.pendingJoin;
+      S.leagueNote = t('predict.leagues.already');
+      dropInvite();
+      return renderLeagues(root);
+    }
+    if (S.pendingJoin) {
+      const code = S.pendingJoin;
+      const title = h('h2', {}, t('predict.invite.title'));
+      const note = h('p', { class: 'pleagues__msg', attrs: { 'aria-live': 'polite' } });
+      const joinBtn = h('button', { type: 'button', class: 'pbtn pbtn--primary', on: { click: async () => {
+        joinBtn.disabled = true;
+        await joinLeague(code, (text) => { note.textContent = text; });
+        joinBtn.disabled = false;
+      } } }, t('predict.invite.join'));
+      const later = h('button', { type: 'button', class: 'pbtn', on: { click: () => { dropInvite(); render(); } } }, t('predict.invite.later'));
+      const paint = (info) => {
+        if (info && info.name) title.textContent = t('predict.invite.titleNamed', { name: info.name });
+        if (info && info.gone) { title.textContent = t('predict.invite.gone'); joinBtn.hidden = true; later.textContent = t('predict.invite.continue'); }
+      };
+      if (S.inviteInfo && S.inviteInfo.code === code) paint(S.inviteInfo);
+      else if (client.uid) {
+        client.get(`leagues/${code}`).then((found) => {
+          S.inviteInfo = { code, name: found ? found.name : null, gone: !found };
+          if (S.pendingJoin === code) paint(S.inviteInfo);
+        }).catch(() => { /* the button still works: it reads the league again */ });
+      }
+      root.append(h('section', { class: 'pleagues pleagues--none pinvite' }, title, h('p', { class: 'pintro' }, t('predict.invite.text')),
+        h('p', { class: 'pinvite__code' }, h('span', {}, t('predict.leagues.code')), h('code', {}, code)),
+        h('div', { class: 'pinvite__acts' }, joinBtn, later), note));
+      return;
+    }
     const card = (title, hint, field, button) => h('div', { class: 'pleagues__card' }, h('h3', {}, title), h('p', { class: 'pmuted' }, hint),
       h('span', { class: 'pinline' }, field, button));
     const forms = h('div', { class: 'pleagues__forms', hidden: !open },
@@ -1918,8 +1967,9 @@
       ['all', ...LEAGUES].map((id) => h('button', { type: 'button', attrs: { 'aria-pressed': String(scope === id) },
         on: { click: () => { S.styleScope = id; paintAnalysis(body); } } }, id === 'all' ? t('predict.style.all') : LEAGUE_NAME[id])));
     const seasonPick = seasons.length > 1
-      ? h('select', { class: 'pfield pfield--pick', attrs: { 'aria-label': t('predict.board.season') }, on: { change: (e) => { S.styleSeason = e.target.value; paintAnalysis(body); } } },
-        [h('option', { value: 'all', selected: seasonScope === 'all' }, t('predict.style.allSeasons')), ...seasons.map((s) => h('option', { value: s, selected: seasonScope === s }, s))])
+      ? pickButton({ label: t('predict.board.season'), value: seasonScope,
+        options: [{ value: 'all', text: t('predict.style.allSeasons') }, ...seasons.map((s) => ({ value: s, text: String(s) }))],
+        onPick: (s) => { S.styleSeason = s; paintAnalysis(body); } })
       : null;
     const chips = h('div', { class: 'ptoolbar' }, divisions, seasonPick);
     const out = analysePlay(rows);
@@ -2004,7 +2054,6 @@
     } catch (error) { /* the panel shows what it has */ }
     if (S.league !== wanted || !SIDE_TABS.includes(S.tab)) return;
     side.replaceChildren(sidePanel(season, league, league !== wanted));
-    if (S.tab === 'tip') refreshRoundPick();
   }
 
   /* How many settled matches the stats hold, all seasons: the tip from the analysis is stamped with it. */
@@ -2289,9 +2338,17 @@
     { id: 'account', account: true },
   ];
   const tutorialDue = () => store.get('predict.intro') !== 'seen' && !client.uid;
+  /* The introduction is over (finished or skipped): the game, or, for a player who came by an invite link,
+     the page that lets them join that league. */
+  function finishTutorial() {
+    store.set('predict.intro', 'seen');
+    S.replay = false; S.tut = null;
+    openTab(S.pendingJoin ? 'leagues' : 'tip');
+    window.scrollTo(0, 0);
+  }
   function tutorialOn() {
     if (S.replay && S.tab !== 'how') S.replay = false;
-    return Boolean(S.replay) || (tutorialDue() && ['tip', 'table', 'how'].includes(S.tab));
+    return Boolean(S.replay) || (tutorialDue() && (['tip', 'table', 'how'].includes(S.tab) || (S.tab === 'leagues' && Boolean(S.pendingJoin))));
   }
 
   function renderTutorial(root) {
@@ -2304,19 +2361,11 @@
     const back = h('button', { type: 'button', class: 'pbtn', on: { click: () => { T.step -= 1; show(true); } } }, t('predict.tut.back'));
     const next = h('button', { type: 'button', class: 'pbtn pbtn--primary', on: { click: () => {
       if (T.step < steps.length - 1) { T.step += 1; show(true); return; }
-      store.set('predict.intro', 'seen');
-      S.replay = false; S.tut = null;
-      openTab('tip');
-      window.scrollTo(0, 0);
+      finishTutorial();
     } } });
     const leave = S.replay ? h('button', { type: 'button', class: 'pbtn pbtn--small ptut__leave', on: { click: () => { S.replay = false; S.tut = null; render(); } } }, t('predict.tut.close')) : null;
     // A first visit can be skipped: the game opens, and the introduction stays in the guide (Slik spiller du).
-    const skip = S.replay ? null : h('button', { type: 'button', class: 'pbtn pbtn--small ptut__skip', on: { click: () => {
-      store.set('predict.intro', 'seen');
-      S.tut = null;
-      openTab('tip');
-      window.scrollTo(0, 0);
-    } } }, t('predict.tut.skip'));
+    const skip = S.replay ? null : h('button', { type: 'button', class: 'pbtn pbtn--small ptut__skip', on: { click: finishTutorial } }, t('predict.tut.skip'));
 
     // What the step waits for: the Next button and the line above it. Only these change while the bar is dragged.
     function gate() {
@@ -2332,6 +2381,7 @@
       body.replaceChildren(...[
         h('ol', { class: 'ptut__dots', attrs: { 'aria-hidden': 'true' } },
           steps.map((_, i) => h('li', { data: { state: i < T.step ? 'done' : i === T.step ? 'now' : 'todo' } }))),
+        S.pendingJoin && !S.replay ? h('p', { class: 'ptut__invite' }, t('predict.tut.invited')) : null,
         h('p', { class: 'ptut__count' }, t('predict.tut.step', { n: T.step + 1, m: steps.length })),
         title,
         h('p', { class: 'ptut__text' }, t(`predict.tut.${s.id}.text`)),
@@ -2436,9 +2486,8 @@
     const season = S.meSeason && seasons.includes(S.meSeason) ? S.meSeason : current && withData.includes(current) ? current : withData[0] || current;
     const totals = season ? seasonTotals(S.stats, season) : { n: 0, ab: 0, ar: 0, b: 0, r: 0, vm: 0, rounds: 0 };
     const isCurrent = season === current;
-    const seasonPick = seasons.length > 1 ? h('select', { class: 'pfield pfield--pick', attrs: { 'aria-label': t('predict.season.pick') },
-      on: { change: (e) => { S.meSeason = Number(e.target.value); render(); } } },
-      seasons.map((x) => h('option', { value: String(x), selected: x === season }, String(x)))) : null;
+    const seasonPick = seasons.length > 1 ? pickButton({ label: t('predict.season.pick'), value: season,
+      options: seasons.map((x) => ({ value: x, text: String(x) })), onPick: (x) => { S.meSeason = x; render(); } }) : null;
     const box = h('section', { class: 'ppanel pstats' }, h('div', { class: 'pstats__head' }, h('h2', {}, t('predict.stats.title')), seasonPick));
     if (!totals.n) { box.append(h('p', { class: 'pempty' }, t('predict.stats.none'))); return box; }
     const tone = (value) => (value > 0.00005 ? 'good' : value < -0.00005 ? 'bad' : 'even');
@@ -2679,6 +2728,7 @@
     try {
       await client.signInGoogle(credential, location.origin);
       resetLocal({ keepSession: true });
+      if (S.pendingJoin) keepInvite(S.pendingJoin);       // the sign-in clears this browser's keys; the invite is still to be answered
       await ensureAccount();                  // a Google account that has never played has no profile yet: it gets one now
       await boot();
     } catch (error) { message.textContent = errorText(error); }
@@ -2824,13 +2874,17 @@
     document.querySelector('.pnav__status')?.replaceWith(statusLine(round));
   }, 30000);
 
-  /* An invite link (/predict/?join=CODE) opens the mini-leagues with the code filled in; joining is still a tap. */
+  /* An invite link (/predict/?join=CODE) opens the mini-leagues on an invite page with one Join button; a player
+     who has not been through the introduction gets that first, and the page after it (tutorialOn, finishTutorial).
+     The code is kept (keepInvite), so a reload on the way does not lose it. */
   function readInvite() {
     try {
       const params = new URLSearchParams(location.search);
       const code = (params.get('join') || '').trim().toUpperCase();
-      if (!isLeagueCode(code)) return;
+      if (!isLeagueCode(code)) { S.pendingJoin = S.pendingJoin || keptInvite(); return; }
       S.pendingJoin = code;
+      S.inviteInfo = null;
+      keepInvite(code);
       params.delete('join');
       const rest = params.toString();
       history.replaceState(history.state, '', `${location.pathname}${rest ? `?${rest}` : ''}#leagues`);

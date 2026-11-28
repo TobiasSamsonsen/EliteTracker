@@ -1322,6 +1322,7 @@ let menuFocusCleanup = null;
 function closeAllMenus() {
   for (const menu of document.querySelectorAll('.popover-menu')) menu.hidden = true;
   for (const part of document.querySelectorAll('.hero-title-part')) part.setAttribute('aria-expanded', 'false');
+  if (typeof closePickMenu === 'function') closePickMenu();
   const btn = $('#settings-btn');
   if (btn) btn.setAttribute('aria-expanded', 'false');
   $('#views-more')?.setAttribute('aria-expanded', 'false');

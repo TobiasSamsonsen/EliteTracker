@@ -138,6 +138,25 @@ def test_the_page_against_the_emulators(site, tmp_path):
         code = re.search(r"[A-Z2-9]{8}", page.inner_text(".pleagues__msg")).group(0)
         assert code in (store.get(f"users/{uid}").get("leagues") or [])
         assert store.get(f"leagues/{code}")["name"] == "Kontoret"
+
+        # an invite link for someone who has never played: the introduction first (a reload on the way keeps the
+        # invite), then a page with one Join button, with no second press of the link
+        guest = browser.new_context(viewport={"width": 1100, "height": 900}).new_page()
+        guest.on("pageerror", lambda x: errors.append("pageerror: " + str(x)[:200]))
+        guest.goto(f"{site}/?view=predict&join={code}&emulator=1&project={PROJECT}")
+        guest.wait_for_selector(".ptut", timeout=20000)
+        assert guest.locator(".ptut__invite").count() == 1
+        assert "join=" not in guest.url
+        guest.reload()
+        guest.wait_for_selector(".ptut__invite", timeout=20000)
+        guest.click(".ptut__skip")
+        guest.wait_for_selector(".pinvite", timeout=15000)
+        assert code in guest.inner_text(".pinvite__code")
+        guest.click(".pinvite .pbtn--primary")
+        guest.wait_for_selector(".pleague__head h2", timeout=20000)
+        assert guest.inner_text(".pleague__head h2") == "Kontoret"
+        assert guest.locator(".pinvite").count() == 0
+        guest.context.close()
         summary = sync.run(store, now=now + timedelta(minutes=5), matches_by_slug=matches, season=season,
                            report=EMPTY_REPORT, data_dir=data)
         assert f"league_{code}" in summary["boards"]
@@ -166,7 +185,8 @@ def test_the_page_against_the_emulators(site, tmp_path):
         assert page.locator(".pgoogle__button").count() == 1
         page.click('button[data-tab="tip"]')
         page.wait_for_selector(".pnav__pick", timeout=15000)
-        assert page.locator(".pnav__pick option").count() >= 1
+        page.click(".pnav__pick")
+        assert page.locator(".popover-menu--pick .popover-menu__btn").count() >= 1
         # 404s are the missing crests and boards of a fixture season, and the season report the fixture
         # site does not have ([Boot]); anything else is a bug
         assert not [e for e in errors if "Failed to load resource" not in e and "[Boot]" not in e], errors
