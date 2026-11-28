@@ -306,3 +306,14 @@ def test_a_play_off_result_restamps_a_live_view_but_not_an_earlier_rewind(tmp_pa
     assert inputs_digest(tmp_path, 2025) == inputs_digest(tmp_path, 2025)
     assert [m.match_id for m in playoff_played(tmp_path)[2026]] == ["p1"]
     assert playoff_played(tmp_path, "2026-11-21") == {}
+
+
+def test_a_played_survival_tie_is_as_it_went_not_simulated():
+    """Sogndal (OBOS-ligaen's 14th, 2026) stayed up through its survival tie."""
+    from elitetracker.pipeline import build_report, survival_results
+
+    assert survival_results()[2026] == {"8616": True}
+    obos = build_report("obosligaen", 2026, **small())
+    row = next(row for row in obos["table"] if row["team_id"] == "8616")
+    assert row["relegation_probability"] == 0.0
+    assert obos["relegation_playoff"]["survival"] == [{"team_id": "8616", "p": 1.0, "stay": 1.0}]

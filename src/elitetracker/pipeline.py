@@ -789,6 +789,21 @@ def playoff_outcomes(root: Path = NORMALIZED_DIR) -> dict[int, dict[str, Any]]:
     return {int(season): outcome for season, outcome in json.loads(path.read_text(encoding="utf-8")).items()}
 
 
+# The survival tie of OBOS-ligaen's 14th against the tier below, once played:
+# fotmob does not list it, so it is recorded by hand (season -> club id -> stayed
+# up) until the season ends and `playoff_outcomes.json` takes it.
+SURVIVAL_RESULTS_FILE = "survival_results.json"
+
+
+def survival_results(root: Path = NORMALIZED_DIR) -> dict[int, dict[str, bool]]:
+    """OBOS-ligaen's 14th survival tie as played (`survival_results.json`), per season."""
+    path = Path(root) / SURVIVAL_RESULTS_FILE
+    if not path.exists():
+        return {}
+    return {int(season): {team: bool(stayed) for team, stayed in results.items()}
+            for season, results in json.loads(path.read_text(encoding="utf-8")).items()}
+
+
 # This season's play-off matches as fotmob lists them, played and to come
 # (`refresh.refresh_playoffs`), beside the match files.
 PLAYOFF_FIXTURES_FILE = "playoff_fixtures.json"
@@ -999,6 +1014,24 @@ def _postseason(
         survival_from_below=from_below, decided=decided, tie_through=playoff_tie(played)[1],
     )
     play_postseason(projection, playoffs, sim_ratings, sim_ad, elo_config, on)
+    _apply_survival_results(projection, slug, season, root, by_league)
+
+
+def _apply_survival_results(
+    projection: SeasonProjection, slug: str, season: int, root: Path, by_league: dict[str, list[Match]],
+) -> None:
+    """A survival tie already played goes as it went in every run. Only once the
+    division's table is final: its 14th is then known, and a view as of an earlier
+    date does not see a result that was not in yet."""
+    if slug != "obosligaen" or not all(match.played for match in by_league[slug]):
+        return
+    for team_id, stayed in survival_results(root).get(season, {}).items():
+        share, _ = (projection.survival_ties or {}).get(team_id, (0.0, 0.0))
+        if share:
+            projection.survival_ties[team_id] = (share, 1.0 if stayed else 0.0)
+            for team in projection.teams:
+                if team.team_id == team_id:
+                    team.relegated_via_playoff = 0.0 if stayed else share
 
 
 # A pairing of the shared play-off tie is published from this share of the runs
