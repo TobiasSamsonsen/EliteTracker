@@ -8,7 +8,8 @@ and replaces ``data/normalized/<league>_<season>_matches.json``.
 It also stores Norway's UEFA association rank for the season
 (``uefa_ranks.json``), which decides the league places that lead into Europe,
 and, while the play-off after the season is on, its matches
-(``playoff_fixtures.json``, `refresh_playoffs`).
+(``playoff_fixtures.json``, `refresh_playoffs`) and OBOS-ligaen's 14th survival
+tie (``survival_fixtures.json``, `refresh_survival`).
 
 Nothing here touches the model; the rating replay, table and simulations read
 the normalized files on every run, so once the files are current the
@@ -39,10 +40,12 @@ from typing import Any, Callable, Iterable
 from elitetracker.normalize.fotmob import normalize_matches, normalize_playoff_matches
 from elitetracker.normalize.matches import NormalizationError, dump
 from elitetracker.pipeline import (
-    NORMALIZED_DIR, PLAYOFF_FIXTURES_FILE, UEFA_RANKS_FILE, _europe_by_rank, current_season, load_matches,
-    playoff_outcomes, playoff_tie, save_playoff_matches,
+    NORMALIZED_DIR, UEFA_RANKS_FILE, _europe_by_rank, current_season, load_matches, obos_14th, playoff_matches,
+    playoff_outcomes, playoff_tie, save_playoff_matches, save_survival_matches, survival_matches, survival_winner,
 )
-from elitetracker.sources.fotmob import LEAGUES, FetchError, fetch_matches, fetch_qualification, update_xg
+from elitetracker.sources.fotmob import (
+    LEAGUES, FetchError, fetch_matches, fetch_qualification, fetch_survival, update_xg,
+)
 from elitetracker.sources.sofascore import (
     SofascoreBlocked, pending_obos_xg, update_obos_xg,
 )
@@ -178,6 +181,31 @@ def refresh_playoffs(
     kickoff still without a result, and otherwise at `PLAYOFF_CHECK_HOURS` for
     newly listed fixtures. Non-fatal: on a failed fetch the stored matches stand.
     """
+    _refresh_tie(root, season, fetch, now, "Play-offs", playoff_matches, save_playoff_matches,
+                 lambda entry, root, season: playoff_tie(entry)[1] is not None)
+
+
+def refresh_survival(
+    root: Path = NORMALIZED_DIR,
+    season: int | None = None,
+    *,
+    fetch: Callable[[int], list[dict[str, Any]]] = fetch_survival,
+    now: datetime | None = None,
+) -> None:
+    """Store the survival tie of OBOS-ligaen's 14th (`survival_fixtures.json`) from
+    fotmob: the same single request and the same window as `refresh_playoffs`,
+    until the 14th's tie is decided."""
+    _refresh_tie(root, season, fetch, now, "Survival tie", survival_matches, save_survival_matches,
+                 lambda entry, root, season: (team := obos_14th(root, season)) is not None
+                 and survival_winner(entry, team) is not None)
+
+
+def _refresh_tie(
+    root: Path, season: int | None, fetch: Callable[[int], list[dict[str, Any]]], now: datetime | None,
+    label: str, load: Callable[[Path], dict[int, list[dict[str, Any]]]],
+    save: Callable[[dict[str, list[dict[str, Any]]], Path], None],
+    decided: Callable[[list[dict[str, Any]], Path, int], bool],
+) -> None:
     root = Path(root)
     season = season or current_season(root)
     now = now or datetime.now(timezone.utc)
@@ -186,11 +214,10 @@ def refresh_playoffs(
         return
     if season in playoff_outcomes(root):
         return
-    path = root / PLAYOFF_FIXTURES_FILE
-    stored = json.loads(path.read_text(encoding="utf-8")) if path.exists() else {}
+    stored = {str(year): matches for year, matches in load(root).items()}
     entry = stored.get(str(season))
     if entry is not None:
-        if playoff_tie(entry)[1] is not None:
+        if decided(entry, root, season):
             return  # decided: nothing left to learn
         overdue = any(not match["played"] and match["kickoff_utc"]
                       and datetime.fromisoformat(match["kickoff_utc"].replace("Z", "+00:00")) < now
@@ -200,13 +227,13 @@ def refresh_playoffs(
     try:
         matches = normalize_playoff_matches(fetch(season))
     except (FetchError, NormalizationError) as exc:
-        print(f"Play-offs skipped: {exc}")
+        print(f"{label} skipped: {exc}")
         return
     if matches != entry:
         stored[str(season)] = matches
-        save_playoff_matches(stored, root)
+        save(stored, root)
         played = sum(match["played"] for match in matches)
-        print(f"Play-offs {season}: {len(matches)} matches ({played} played)")
+        print(f"{label} {season}: {len(matches)} matches ({played} played)")
 
 
 def _in_ci() -> bool:
@@ -224,6 +251,7 @@ def main(argv: list[str] | None = None) -> int:
     refresh_matches(args.root, season=args.season, refresh_guard=not args.force)
     refresh_uefa_rank(args.root, args.season)
     refresh_playoffs(args.root, args.season)
+    refresh_survival(args.root, args.season)
     # The attack/defence ratings and the Elo update both run on xG where there
     # is any: fotmob for Eliteserien, Sofascore for OBOS (fotmob has no shotmap
     # for the second division). Top up both for anything newly played.

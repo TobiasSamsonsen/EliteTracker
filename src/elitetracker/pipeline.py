@@ -789,19 +789,36 @@ def playoff_outcomes(root: Path = NORMALIZED_DIR) -> dict[int, dict[str, Any]]:
     return {int(season): outcome for season, outcome in json.loads(path.read_text(encoding="utf-8")).items()}
 
 
-# The survival tie of OBOS-ligaen's 14th against the tier below, once played:
-# `refresh` does not read it (fotmob league 9754), so it is recorded by hand
-# (season -> club id -> {stayed, opponent, legs, source}) until the season ends and `playoff_outcomes.json` takes it.
-SURVIVAL_RESULTS_FILE = "survival_results.json"
+# The survival tie of OBOS-ligaen's 14th against the tier below, as fotmob lists
+# it (`refresh.refresh_survival`), beside the match files.
+SURVIVAL_FIXTURES_FILE = "survival_fixtures.json"
 
 
-def survival_results(root: Path = NORMALIZED_DIR) -> dict[int, dict[str, bool]]:
-    """OBOS-ligaen's 14th survival tie as played (`survival_results.json`), per season."""
-    path = Path(root) / SURVIVAL_RESULTS_FILE
+def survival_matches(root: Path = NORMALIZED_DIR) -> dict[int, list[dict[str, Any]]]:
+    """Per season, the survival-tie matches stored by `refresh` (the semi-final too)."""
+    path = Path(root) / SURVIVAL_FIXTURES_FILE
     if not path.exists():
         return {}
-    return {int(season): {team: bool(result["stayed"]) for team, result in results.items()}
-            for season, results in json.loads(path.read_text(encoding="utf-8")).items()}
+    return {int(season): matches for season, matches in json.loads(path.read_text(encoding="utf-8")).items()}
+
+
+def save_survival_matches(stored: dict[str, list[dict[str, Any]]], root: Path = NORMALIZED_DIR) -> None:
+    """Write `survival_fixtures.json` (season -> matches), LF line endings on every platform."""
+    text = json.dumps(dict(sorted(stored.items())), indent=1, ensure_ascii=False) + "\n"
+    (Path(root) / SURVIVAL_FIXTURES_FILE).write_bytes(text.encode("utf-8"))
+
+
+def survival_winner(matches: list[dict[str, Any]], team_id: str) -> str | None:
+    """Who won `team_id`'s two-legged tie among a season's survival-tie matches
+    (`playoff_tie` on the legs it plays); None until both legs are in."""
+    return playoff_tie([match for match in matches if team_id in _sides(match)])[1]
+
+
+def obos_14th(root: Path, season: int) -> str | None:
+    """OBOS-ligaen's 14th that season, once the division has a table of 14."""
+    path = _matches_path("obosligaen", season, Path(root))
+    table = table_from_matches(load_matches(path)) if path.exists() else []
+    return table[13].team_id if len(table) >= 14 else None
 
 
 # This season's play-off matches as fotmob lists them, played and to come
@@ -1025,13 +1042,16 @@ def _apply_survival_results(
     date does not see a result that was not in yet."""
     if slug != "obosligaen" or not all(match.played for match in by_league[slug]):
         return
-    for team_id, stayed in survival_results(root).get(season, {}).items():
-        share, _ = (projection.survival_ties or {}).get(team_id, (0.0, 0.0))
-        if share:
-            projection.survival_ties[team_id] = (share, 1.0 if stayed else 0.0)
-            for team in projection.teams:
-                if team.team_id == team_id:
-                    team.relegated_via_playoff = 0.0 if stayed else share
+    fixtures = survival_matches(root).get(season, [])
+    for team_id, (share, _) in list((projection.survival_ties or {}).items()):
+        winner = survival_winner(fixtures, team_id)
+        if winner is None:
+            continue
+        stayed = winner == team_id
+        projection.survival_ties[team_id] = (share, 1.0 if stayed else 0.0)
+        for team in projection.teams:
+            if team.team_id == team_id:
+                team.relegated_via_playoff = 0.0 if stayed else share
 
 
 # A pairing of the shared play-off tie is published from this share of the runs

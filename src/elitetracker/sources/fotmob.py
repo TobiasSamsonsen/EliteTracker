@@ -33,7 +33,7 @@ RED_CARDS_PATH = Path("data/red_cards.json")
 _USER_AGENT = "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36"
 
 _NEXT_DATA = re.compile(
-    r'<script id="__NEXT_DATA__" type="application/json">(.*?)</script>', re.DOTALL
+    r'<script id="__NEXT_DATA__"[^>]*>(.*?)</script>', re.DOTALL
 )
 
 _TIMEOUT_SECONDS = 30
@@ -72,6 +72,24 @@ def fetch_qualification(season: int) -> list[dict[str, Any]]:
     matches = props.get("fixtures", {}).get("allMatches") or []
     if not isinstance(matches, list):
         raise FetchError(f"{url}: play-off matches are not a list")
+    return matches
+
+
+# OBOS-ligaen's 14th plays a two-legged tie against the tier below (fotmob's
+# "OBOS-ligaen Qualification"): a semi-final and a final between third-tier clubs,
+# and the final against the 14th. It lists the fixtures only on the fixtures tab,
+# by date, and asks for it only while the tie is on (`refresh_survival`).
+SURVIVAL = League("survival", "OBOS-ligaen qualification", 9754, "obos-ligaen-qualification", 0)
+
+
+def fetch_survival(season: int) -> list[dict[str, Any]]:
+    """The season's survival-tie matches as fotmob lists them (none yet: empty)."""
+    url = f"{_url(SURVIVAL, 'fixtures', season)}&group=by-date"
+    props = _page_props(_download(url), url)
+    _assert_season(props, season, url)
+    matches = props.get("fixtures", {}).get("allMatches") or []
+    if not isinstance(matches, list):
+        raise FetchError(f"{url}: survival-tie matches are not a list")
     return matches
 
 

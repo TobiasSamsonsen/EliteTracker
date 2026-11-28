@@ -259,6 +259,44 @@ def test_play_offs_are_asked_for_only_while_they_are_on(tmp_path):
     assert calls == [2026] * 3                           # on file by hand: done
 
 
+def test_the_survival_tie_is_asked_for_until_the_14th_has_won_or_lost_it(tmp_path):
+    from datetime import datetime, timezone
+
+    from elitetracker.normalize.matches import Match, dump
+    from elitetracker.refresh import refresh_survival
+
+    # A 14-club division whose 14th, "N", has played every match.
+    clubs = [f"C{i:02d}" for i in range(1, 14)] + ["N"]
+    dump([Match(match_id=f"{home}{away}", date="2026-11-08", time="15:00", home=home, away=away, home_goals=1,
+                away_goals=0, played=True, home_id=home, away_id=away, kickoff_utc="2026-11-08T14:00:00Z")
+          for i, home in enumerate(clubs) for away in clubs[i + 1:]], tmp_path / "obosligaen_2026_matches.json")
+
+    def leg(match_id, home, away, goals, day):
+        return {"id": match_id, "home": {"name": home, "id": home}, "away": {"name": away, "id": away},
+                "status": {"utcTime": f"2026-11-{day}T12:00:00Z", "finished": goals is not None, "cancelled": False,
+                           "scoreStr": f"{goals[0]} - {goals[1]}" if goals else None}}
+
+    calls = []
+    listed = [[leg("1", "N", "B", (3, 3), 22), leg("2", "B", "N", None, 28)]]
+
+    def fetch(season):
+        calls.append(season)
+        return listed[-1]
+
+    at = lambda day, hour: datetime(2026, 11, day, hour, 5, tzinfo=timezone.utc)
+    refresh_survival(tmp_path, 2026, fetch=fetch, now=at(23, 10))
+    assert calls == [2026]                              # first sight
+    refresh_survival(tmp_path, 2026, fetch=fetch, now=at(28, 13))
+    assert calls == [2026] * 2                          # second leg kicked off, no result
+    listed.append([leg("1", "N", "B", (3, 3), 22), leg("2", "B", "N", (1, 2), 28)])
+    refresh_survival(tmp_path, 2026, fetch=fetch, now=at(28, 15))
+    assert calls == [2026] * 3
+    stored = json.loads((tmp_path / "survival_fixtures.json").read_text(encoding="utf-8"))["2026"]
+    assert [match["played"] for match in stored] == [True, True]
+    refresh_survival(tmp_path, 2026, fetch=fetch, now=at(28, 18))
+    assert calls == [2026] * 3                          # decided: done
+
+
 def _league_file(tmp_path, kickoff, played=False):
     record = {"match_id": "1", "date": kickoff.date().isoformat(), "time": "12:00", "home": "A", "away": "B",
               "home_goals": 1 if played else None, "away_goals": 0 if played else None, "played": played,

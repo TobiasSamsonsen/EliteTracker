@@ -1,0 +1,60 @@
+{
+ "2026": [
+  {
+   "match_id": "6548824",
+   "date": "2026-11-07",
+   "time": "14:00",
+   "kickoff_utc": "2026-11-07T13:00:00Z",
+   "home": "Bjarg",
+   "home_id": "161378",
+   "away": "Kjelsås",
+   "away_id": "6560",
+   "home_goals": 2,
+   "away_goals": 0,
+   "played": true,
+   "eliminated": null
+  },
+  {
+   "match_id": "6548825",
+   "date": "2026-11-14",
+   "time": "13:00",
+   "kickoff_utc": "2026-11-14T12:00:00Z",
+   "home": "Kjelsås",
+   "home_id": "6560",
+   "away": "Bjarg",
+   "away_id": "161378",
+   "home_goals": 2,
+   "away_goals": 3,
+   "played": true,
+   "eliminated": null
+  },
+  {
+   "match_id": "6651328",
+   "date": "2026-11-22",
+   "time": "13:00",
+   "kickoff_utc": "2026-11-22T12:00:00Z",
+   "home": "Sogndal",
+   "home_id": "8616",
+   "away": "Bjarg",
+   "away_id": "161378",
+   "home_goals": 3,
+   "away_goals": 3,
+   "played": true,
+   "eliminated": null
+  },
+  {
+   "match_id": "6651329",
+   "date": "2026-11-28",
+   "time": "13:00",
+   "kickoff_utc": "2026-11-28T12:00:00Z",
+   "home": "Bjarg",
+   "home_id": "161378",
+   "away": "Sogndal",
+   "away_id": "8616",
+   "home_goals": 1,
+   "away_goals": 2,
+   "played": true,
+   "eliminated": null
+  }
+ ]
+}
